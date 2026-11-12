@@ -16,6 +16,8 @@ def test_object_storage_overview_is_high_level_fleet_composition() -> None:
 
     assert '_fleet_posture.html' in index
     assert '_summary_cards.html' in index
+    assert index.index('_snapshot_boundary.html') < index.index('_summary_cards.html')
+    assert index.index('_summary_cards.html') < index.index('_fleet_posture.html')
     assert '_systems_snapshot.html' not in index
     assert 'resource_detail_modal.inventory_host(' not in index
     assert "page_hero.intro('database-zap', 'Object Storage Inventory', 'database')" in hero
@@ -32,8 +34,8 @@ def test_object_storage_overview_is_high_level_fleet_composition() -> None:
     assert 'components/operational_section_card.html' in fleet
     assert 'components/resource_posture_grid.html' in fleet
     assert "'Object Storage Fleet Evidence'" in fleet
-    assert "body_classes='p-0'" in fleet
-    assert 'posture_grid.render(overview.fleet_posture_metrics, columns=4)' in fleet
+    assert "body_classes='p-5'" in fleet
+    assert 'posture_grid.render(overview.fleet_posture_metrics, columns=4, compact=true)' in fleet
     assert 'operational_callout.render' not in fleet
     assert 'components/section_intro.html' in navigation
     assert "section_intro.render('Inventory Assets'," in navigation
@@ -41,8 +43,10 @@ def test_object_storage_overview_is_high_level_fleet_composition() -> None:
     assert 'components/operational_section_card.html' in navigation
     assert "id='object-storage-asset-catalog'" in navigation
     assert 'header_badge=asset_badge' in navigation
-    assert 'inventory_asset_card.render' in navigation
-    assert 'action_label=asset.action_label' in navigation
+    assert 'components/workspace_link_card.html' in navigation
+    assert 'workspace_card.render(' in navigation
+    assert '}, compact=true)' in navigation
+    assert "'action_label': asset.action_label" in navigation
 
 
 def test_resource_level_system_detail_is_owned_by_systems_workspace() -> None:
@@ -133,7 +137,7 @@ def test_object_storage_inventory_matches_registry_grouped_visual_hierarchy() ->
     registry = read('app/templates/artifact_registry/partials/_inventory_overview.html')
     presentation = read('app/storage/object_storage/inventory/presentation.py')
     metrics = read('app/templates/components/resource_posture_grid.html')
-    cards = read('app/templates/components/inventory_asset_card.html')
+    cards = read('app/templates/components/workspace_link_card.html')
 
     for template in (fleet, catalog, registry, metrics, cards):
         Environment().parse(template)
@@ -147,22 +151,20 @@ def test_object_storage_inventory_matches_registry_grouped_visual_hierarchy() ->
     assert "section_intro.render('Inventory Assets'," in registry
     assert "table_label.metadata_label(overview.asset_catalog|length ~ ' Asset Types'" in catalog
     assert "table_label.metadata_label(inventory.asset_catalog|length ~ ' Asset Types'" in registry
-    assert 'posture_grid.render(overview.fleet_posture_metrics, columns=4)' in fleet
+    assert 'posture_grid.render(overview.fleet_posture_metrics, columns=4, compact=true)' in fleet
     assert 'posture_grid.render(inventory.fleet_posture_metrics, columns=3)' in registry
-    assert "body_classes='p-0'" in fleet
+    assert "body_classes='p-5'" in fleet
     assert (
         "table_label.metadata_label(overview.fleet_posture_metrics|length ~ ' Indicators'"
         in fleet
     )
     assert 'header_badge=fleet_badge' in fleet
     assert "body_classes='p-5'" in catalog
-    assert 'compact_count=true' in catalog
-    assert (
-        "macro render(title, count, description, href, icon, "
-        "action_label='Open Inventory', compact_count=false)"
-        in cards
-    )
-    assert "table_label.metadata_label(count, icon='layers-3')" in cards
+    assert 'components/workspace_link_card.html' in catalog
+    assert 'workspace_card.render(' in catalog
+    assert '}, compact=true)' in catalog
+    assert "'scope': asset_scope" in catalog
+    assert "workspace.action_label|default('Open Workspace', true)" in cards
     assert 'sm:grid-cols-2' in catalog
     assert "'action_label': 'Browse Systems'" in presentation
     assert "'action_label': 'Browse Buckets & Containers'" in presentation
@@ -170,7 +172,8 @@ def test_object_storage_inventory_matches_registry_grouped_visual_hierarchy() ->
     assert "'fleet_posture_metrics': _overview_fleet_posture_metrics(bucket_posture, fleet_readings)" in presentation
     assert "if total else 'No Evidence'" in presentation
     assert 'zip(readings, metric_values, strict=True)' in presentation
-    assert 'data-kaori-inventory-identity-icon' in cards
+    assert 'data-workspace-card' in cards
+    assert 'macro render(workspace, compact=false)' in cards
 
     env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
     overview = {
@@ -206,36 +209,49 @@ def test_object_storage_inventory_matches_registry_grouped_visual_hierarchy() ->
         overview=overview, url_for=lambda endpoint: '/' + endpoint.replace('.', '/')
     )
     assert '4 Indicators' in html_fleet
-    assert html_fleet.count('>Quota Assessed</p>') == 1
+    assert html_fleet.count('>Quota Assessed</h3>') == 1
     assert 'Protection Attention' in html_fleet
     assert 'Public Exposure' in html_fleet
     assert 'Usage Collected' in html_fleet
     assert 'No public exposure observed.' in html_fleet
     assert 'object-storage-asset-catalog' in html_catalog
     assert '2 Asset Types' in html_catalog
-    assert html_catalog.count('data-lucide="layers-3"') == 3
+    assert html_catalog.count('data-lucide="layers-3"') == 1
+    assert '1 System' in html_catalog
+    assert '3 Assets' in html_catalog
+    assert html_catalog.count('data-workspace-card') == 2
     assert 'text-2xl font-semibold leading-none' not in html_catalog
     assert 'Browse Systems' in html_catalog
     assert 'Browse Buckets &amp; Containers' in html_catalog
     assert '/object_storage_inventory/systems' in html_catalog
     assert '/object_storage_inventory/buckets' in html_catalog
 
-def test_compact_object_storage_asset_counts_preserve_default_shared_card_behavior() -> None:
+
+def test_object_storage_navigation_reuses_kubernetes_compact_workspace_cards() -> None:
     from jinja2 import Environment, FileSystemLoader
 
     env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
-    card = env.get_template('components/inventory_asset_card.html').module.render
-    normal = card('Nodes', 8, 'Committed Nodes.', '/nodes', 'server')
-    compact = card('Systems', 1, 'Committed systems.', '/systems', 'server', compact_count=True)
+    render = env.get_template('components/workspace_link_card.html').module.render
+    workspace = {
+        'href': '/systems',
+        'title': 'Systems',
+        'label': 'Committed Inventory',
+        'description': 'Browse committed system records.',
+        'icon': 'server',
+        'scope': '1 System',
+        'search_text': 'Systems',
+    }
+    normal = render(workspace)
+    compact = render(workspace, compact=True)
+    custom = render({**workspace, 'action_label': 'Browse Systems'}, compact=True)
 
-    assert 'text-2xl font-semibold leading-none' in normal
-    assert 'text-2xl font-semibold leading-none' not in compact
-    assert 'kaori-semantic-label' in compact
-    assert 'data-lucide="layers-3"' in compact
-    assert 'Committed systems.' in compact
-    assert 'href="/systems"' in compact
-    for source in (normal, compact):
-        assert 'data-kaori-inventory-identity-icon' in source
-        assert 'data-lucide="arrow-up-right"' in source
-        assert 'focus-visible:ring-outline-focus' in source
-
+    assert 'Open Workspace' in normal
+    assert 'Open Workspace' in compact
+    assert 'Browse Systems' in custom
+    assert '1 System' in custom
+    assert 'min-h-56' in normal
+    assert 'min-h-40' in compact
+    assert 'data-workspace-card' in custom
+    assert 'href="/systems"' in custom
+    assert 'focus-visible:ring-outline-focus' in custom
+    assert 'data-lucide="arrow-up-right"' in custom
