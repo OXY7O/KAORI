@@ -84,45 +84,46 @@ Supported components are intentionally restricted to kubeadm's known control-pla
 
 The validator rejects unknown keys, invalid UTC timestamps, duplicate components, inconsistent CA/leaf classification, unknown types, oversized source files and mismatched cluster identities. A `complete` manifest replaces the complete known inventory for the exact cluster+node+source; use `partial` until completeness has been verified. A failed validation commits nothing. A repeated normalized manifest is idempotent; older evidence cannot overwrite a newer committed snapshot.
 
-### PostgreSQL migration permission failure — `permission denied for schema public`
+### PostgreSQL migration permission failure — use the **existing KAORI privileged migration service**
 
-Observed Dev Container sequence: `flask db current` returned `20261025_bot_protection`, `flask db heads` returned `20261112_internal_pki`, and `flask db upgrade` failed when creating `internal_pki_evidence_batches` because the connected database role lacked **CREATE on schema public**. The separately executed `flask seed-rbac` reported **5 roles / 68 permissions**; that does **not** repair the failed schema migration. Keep the inventory state **Inventory Schema Upgrade Required**, not Empty/Healthy.
+**Canonical authority:** [DevContainer PostgreSQL first-run & upgrade](../../operations/devcontainer-postgres-first-run.md) (#1427, merged #1462), `scripts/devcontainer/bootstrap-db.sh`, and the existing [least-privilege contract](../../../tests/contracts/release/test_devcontainer_postgres_runtime_role_contract.py). These **supersede generic DBA GRANT instructions for the KAORI DevContainer**.
 
-**Before retrying DDL**, confirm the exact Dev Container database/role and backup plan. Using a SQL session connected to the **same intended database and role**, run read-only diagnostics:
+The operator's `flask db current` showed `20261025_bot_protection` and `flask db heads` showed `20261112_internal_pki`. Direct `flask db upgrade` inside the workspace failed at `CREATE TABLE internal_pki_evidence_batches` with `permission denied for schema public` **by design**: normal Flask runs as restricted `kaori_runtime`, which **must not have schema CREATE privilege**. `flask seed-rbac` independently succeeded (5 roles / 68 permissions), but did not advance Alembic or create PKI tables.
 
-```sql
-SELECT current_database(), current_user, current_schema();
-SELECT has_schema_privilege(current_user, 'public', 'USAGE') AS can_use_public,
-       has_schema_privilege(current_user, 'public', 'CREATE') AS can_create_public;
-SELECT version_num FROM public.alembic_version;
-SELECT to_regclass('public.internal_pki_evidence_batches') AS evidence_table,
-       to_regclass('public.internal_pki_certificate_inventory') AS inventory_table;
+**Do not attempt to fix the failure with schema grants to `kaori_runtime`, an ad-hoc DBA login, copying migration credentials into the container, `flask db stamp`, or a volume reset.** Instead, for a reviewed local `kaori-dev` UAT schema upgrade, run the **existing one-shot Compose service from the host's checkout root**, preferably native Windows PowerShell when WSL/OneDrive secret-file permissions differ:
+
+```powershell
+# Non-mutating Compose configuration/secret-file preflight.
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml config --quiet
+
+# Operator-authorized migration + post-DDL runtime grants/RBAC/ledger checks.
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap sh scripts/devcontainer/bootstrap-db.sh --upgrade-only
 ```
 
-The role issuing migrations must have the required DDL rights on `public` **and** suitable ownership/REFERENCES privileges for existing objects (including the `clusters` foreign key). A PostgreSQL administrator should prefer the **existing approved migration/DDL identity** rather than granting schema-create privileges to the long-running KAORI application role. If needed on the **UAT database only**, the DBA can grant the specific migration role (not `PUBLIC`) the scoped privilege, after checking existing grants:
+The service consumes the scoped protected `secrets/devcontainer/postgres-migrate.env` credential, validates the exact `kaori-dev` database and `kaori_migrator` owner, runs Alembic under the ephemeral **`KAORI_DB_MIGRATION_URL`**, refreshes restricted **`kaori_runtime`** grants (including immutable Capsule protection), seeds RBAC without recreating the first admin, then validates runtime admission. `--upgrade-only` does not reset or delete PGDATA. The existing `db-first-run` service **must not** automatically migrate an already-initialized schema.
 
-```sql
--- DBA action; replace this identifier with the approved *migration* role.
-GRANT USAGE, CREATE ON SCHEMA public TO approved_kaori_migration_role;
-```
+After successful operator execution, inspect `flask db current` from the regular Dev Container runtime and confirm **`20261112_internal_pki (head)`** plus both actual PKI tables, with redacted migration logs. A migration failure remains a blocker; do not treat the newly seeded permission or an empty inventory as evidence of a successful schema upgrade. If the one-shot runner fails its ownership, credential, grants or Capsule guard, investigate the specific gate in the canonical runbook instead of bypassing it.
 
-Then connect Flask migration tooling using that approved DDL identity and run `flask db upgrade`. Where a separate migration role owns new tables, grant the KAORI application/import roles only the **specific table/sequence read-write privileges** needed by the existing access model. Revoke temporary elevated privileges only when confirmed safe for the next migration and consistent with the existing database governance (do not blindly change schema ownership). Never issue `GRANT ALL ... TO PUBLIC`, `ALTER ROLE ... SUPERUSER`, `flask db stamp`, or drop/recreate the schema to bypass this failure.
-
-Finally confirm `flask db current` reports `20261112_internal_pki`, both required tables exist, and rerun the approved tests/schema readiness. PostgreSQL transactional DDL normally rolls back a failed migration, but **verify** both the Alembic revision and tables rather than assuming that. Until the schema upgrade completes, no metadata manifest may be imported and no real certificate records can appear.
-
-Reference: [PostgreSQL schema privileges](https://www.postgresql.org/docs/current/ddl-schemas.html).
+**Deployment boundary:** the above is **DevContainer-only**. For server/VM or external DBA-managed PostgreSQL, use [production governed migration authority](../../operations/postgres-dba-migration-contract.md), not DevContainer migration secrets or this Compose service.
 
 ## 3. Controlled Dev Container import
 
 Confirm the database target, review backup/restore and migration plan and ensure the input file is a restricted, redacted **metadata-only** manifest. Apply the database revision **before** using the new read model:
 
 ```bash
+# In Dev Container, inspect schema state only (non-mutating):
 git fetch origin
 git switch kaori/review/staging-uat
 git pull --ff-only origin kaori/review/staging-uat
 flask db heads
 flask db current
-flask db upgrade
+
+# Do NOT run `flask db upgrade` with the restricted workspace DATABASE_URL.
+# First execute the canonical host-side db-bootstrap --upgrade-only command
+# above, then verify the schema is current:
+flask db current
+
+# Only with approved non-secret source metadata and completed PKI migration:
 flask import-internal-pki --input-file /secure/operator-reviewed/internal-pki-evidence.json
 ```
 
