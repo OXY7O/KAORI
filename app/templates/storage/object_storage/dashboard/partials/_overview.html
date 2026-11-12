@@ -2,9 +2,19 @@
 {% import "components/operational_evidence_tile.html" as evidence_tile %}
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/peer_content_grid.html" as peer_content_grid %}
+{% import "components/section_intro.html" as section_intro %}
 <div id="object-storage-dashboard-section-overview" class="space-y-5">
-    {% include "storage/object_storage/dashboard/partials/_system_health.html" %}
-    <div class="{{ peer_content_grid.layout_classes() }}">
+    <section class="space-y-4" aria-labelledby="object-storage-operations-health-heading">
+        {{ section_intro.render('Operational Health',
+            'Review the committed health and readiness of Object Storage systems.',
+            'object-storage-operations-health-heading') }}
+        {% include "storage/object_storage/dashboard/partials/_system_health.html" %}
+    </section>
+    <section class="space-y-4" aria-labelledby="object-storage-operations-evidence-heading">
+        {{ section_intro.render('Committed Evidence',
+            'Inspect inventory coverage and the freshness of operational evidence.',
+            'object-storage-operations-evidence-heading') }}
+        <div class="{{ peer_content_grid.layout_classes() }}">
         <div class="{{ peer_content_grid.column_classes('primary') }}">
             {% call operational_section_card.render(
                 'Inventory Snapshot',
@@ -55,5 +65,6 @@
                 {% endfor %}
             {% endcall %}
         </div>
-    </div>
+        </div>
+    </section>
 </div>
