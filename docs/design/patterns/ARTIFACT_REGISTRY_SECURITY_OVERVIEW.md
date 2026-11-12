@@ -56,6 +56,35 @@ pagination (default five), keyboard focus, filters or latest-request-wins HTMX
 behavior. On narrower viewports the existing horizontal scroll must preserve
 access to all columns and actions; do not clip or mask evidence.
 
+## Compact Security metrics and CVE Runtime Impact drill-down (Human UAT #4468 / #2603)
+
+The Vulnerabilities and Supply Chain `Security Evidence Summary` cards retain the
+same committed metric values, scope predicates, status semantics, and four-column
+shared posture grid. Each supporting description must be concise enough for a
+single desktop line in its metric card where the viewport permits. Use natural
+responsive wrapping rather than `nowrap` or truncating evidence. Provider
+signature presence is not a verified signature/trust policy, and unknown runtime
+correlation must not be inferred safe from a zero.
+
+The read-only exact-CVE drill-down uses the same shared two-column Violet Hero
+composition as Registry Runtime Overview: `page_hero.intro` occupies the primary
+column and `page_hero.context_card` displays actual committed correlation
+readiness, source-qualified affected digests, runtime binding counts, and the
+existing back-to-Vulnerabilities action in the secondary column. Do not leave the
+second column blank or place a stretched standalone action in the first column.
+The topbar breadcrumb resolves `artifact_registry.security_cve_impact` to
+**CVE Impact**, not a default Overview label.
+
+The shared `snapshot_context_bar` must use concise displayed scope/coverage
+labels to avoid clipping on desktop; exact Registry/Kubernetes scope and readiness
+authority remain in the committed correlation model and displayed explanatory
+copy. `Not Qualified` must remain distinguishable from `Current`. Reuse the
+existing shared `table_ui.block_classes()` card surface for the two paginated
+evidence tables. Preserve full digest identities, source and scan timestamps,
+CVE/severity/fix evidence, digest-vs-tag binding confidence, canonical footers,
+RBAC, HTMX, and direct Runtime Usage drill-down. The tables are read-only
+committed evidence, not authoritative Application/Team ownership.
+
 ## QA and admission
 
 - Exact-commit djlint and Ruff check/format on updated templates and Python files.
