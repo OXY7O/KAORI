@@ -332,6 +332,8 @@ def test_internal_pki_source_workspace_shows_committed_registry_with_unknown_pki
     content = response.get_data(as_text=True)
     assert 'Internal PKI Evidence' in content
     assert 'data-kaori-tab-variant="query-backed-htmx"' in content
+    assert 'hx-target="#internal-pki-evidence-workspace"' in content
+    assert 'hx-select="#internal-pki-evidence-workspace"' in content
     assert 'Internal PKI Source Registry' in content
     assert 'Internal Certificate Registry' not in content
     assert 'aria-selected="true"' in content
@@ -352,6 +354,15 @@ def test_internal_pki_source_workspace_shows_committed_registry_with_unknown_pki
     assert invalid.status_code == 200
     assert 'Internal PKI Source Registry' in invalid.get_data(as_text=True)
     assert 'Internal Certificate Registry' not in invalid.get_data(as_text=True)
+    retained = client.get(
+        '/governance/internal-certificates?cert_search=apiserver&cert_page=2&cert_per_page=10'
+    )
+    assert retained.status_code == 200
+    retained_html = retained.get_data(as_text=True)
+    assert 'name="evidence_tab" value="sources"' in retained_html
+    assert 'name="cert_search" value="apiserver"' in retained_html
+    assert 'name="cert_page" value="2"' in retained_html
+    assert 'name="cert_per_page" value="10"' in retained_html
 
 
 def test_internal_pki_source_clusterless_blocks_registry_query(
