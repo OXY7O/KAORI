@@ -74,7 +74,7 @@
                                     'platform': payload.filters.platform,
                                     'page': payload.pagination.page,
                                     'per_page': payload.pagination.per_page,
-                                    'cert_search': inventory.search if inventory else request.args.get('cert_search', ''),
+                                    'cert_search': inventory.search if inventory else request.args.get('cert_search', '') ,
                                     'cert_kind': inventory.filters.kind if inventory else request.args.get('cert_kind', ''),
                                     'cert_expiry': inventory.filters.expiry if inventory else request.args.get('cert_expiry', ''),
                                     'cert_coverage': inventory.filters.coverage if inventory else request.args.get('cert_coverage', ''),
@@ -102,22 +102,21 @@
                             <section id="internal-pki-source-registry"
                                      class="{{ table_ui.block_classes() }}">
                                 {% set source_clear_query = {
-                                    'evidence_tab': 'sources',
-                                    'clear_filters': 'sources',
-                                    'per_page': payload.pagination.per_page,
-                                    'cert_search': inventory.search if inventory else request.args.get('cert_search', ''),
-                                    'cert_kind': inventory.filters.kind if inventory else request.args.get('cert_kind', ''),
-                                    'cert_expiry': inventory.filters.expiry if inventory else request.args.get('cert_expiry', ''),
-                                    'cert_coverage': inventory.filters.coverage if inventory else request.args.get('cert_coverage', ''),
-                                    'cert_freshness': inventory.filters.freshness if inventory else request.args.get('cert_freshness', ''),
-                                    'cert_page': inventory.pagination.page if inventory else request.args.get('cert_page', 1),
-                                    'cert_per_page': inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5)
-                                } %}
+                                                                    'evidence_tab': 'sources',
+                                                                    'clear_filters': 'sources',
+                                                                    'per_page': payload.pagination.per_page,
+                                                                    'cert_search': inventory.search if inventory else request.args.get('cert_search', ''),
+                                                                    'cert_kind': inventory.filters.kind if inventory else request.args.get('cert_kind', ''),
+                                                                    'cert_expiry': inventory.filters.expiry if inventory else request.args.get('cert_expiry', ''),
+                                                                    'cert_coverage': inventory.filters.coverage if inventory else request.args.get('cert_coverage', ''),
+                                                                    'cert_freshness': inventory.filters.freshness if inventory else request.args.get('cert_freshness', ''),
+                                                                    'cert_page': inventory.pagination.page if inventory else request.args.get('cert_page', 1),
+                                                                    'cert_per_page': inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5)
+                                                                } %}
                                 {% set source_clear_action %}
                                     {% if payload.search or payload.filters.environment or payload.filters.platform or payload.selected_cluster_id %}
                                         <span class="inline-flex" hx-boost="false" hx-disable>
-                                            {{ registry_ui.clear_filters_action(
-                                            url_for('governance.internal_certificates', **source_clear_query),
+                                            {{ registry_ui.clear_filters_action(url_for('governance.internal_certificates', **source_clear_query) ,
                                             table_ui.action_classes(),
                                             marker='internal-pki-evidence-workspace',
                                             lead=false) }}
@@ -205,7 +204,6 @@
                                                 {% endfor %}
                                             </select>
                                         </div>
-
                                     {% endcall %}
                                 </div>
                                 <div class="w-full overflow-x-auto">
@@ -270,7 +268,7 @@
                                                                 'internal-pki-source-loading',
                                                                 payload.pagination,
                                                     {'search': payload.search, 'environment': payload.filters.environment, 'platform': payload.filters.platform, 'cluster_id': payload.selected_cluster_id, 'evidence_tab': 'sources', 'cert_search': inventory.search if inventory else request.args.get('cert_search', ''), 'cert_kind': inventory.filters.kind if inventory else request.args.get('cert_kind', ''), 'cert_expiry': inventory.filters.expiry if inventory else request.args.get('cert_expiry', ''), 'cert_coverage': inventory.filters.coverage if inventory else request.args.get('cert_coverage', ''), 'cert_freshness': inventory.filters.freshness if inventory else request.args.get('cert_freshness', ''), 'cert_page': inventory.pagination.page if inventory else request.args.get('cert_page', 1), 'cert_per_page': inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5)},
-                                                                payload.pagination.allowed_per_page,
+                                payload.pagination.allowed_per_page,
                                 resource_label='Clusters',
                                 rows_aria_label='Clusters per page',
                                 control_name='internal-pki-source') }}
