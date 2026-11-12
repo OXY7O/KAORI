@@ -345,3 +345,114 @@ def test_internal_pki_source_clusterless_blocks_registry_query(
     response = client.get('/governance/internal-certificates')
     assert response.status_code == 200
     assert 'Connect Your First Kubernetes Cluster' in response.get_data(as_text=True)
+
+
+def test_internal_pki_committed_inventory_renders_after_readiness_without_live_provider(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    user = GovernanceRouteUser({'governance.view', 'clusters.view', 'internal_certificates.view'})
+    client = _client_for_user(app, monkeypatch, user)
+    monkeypatch.setattr(internal_pki_routes, 'has_registered_clusters', lambda: True)
+    monkeypatch.setattr(
+        internal_pki_routes,
+        'get_internal_certificates_source_page',
+        lambda _args: _internal_pki_source_page(),
+    )
+    monkeypatch.setattr(
+        internal_pki_routes,
+        'check_internal_pki_schema_readiness',
+        lambda: SimpleNamespace(ready=True),
+    )
+
+    def mark_attested(payload: dict) -> None:
+        payload['records'][0]['collection_status'] = 'Operator Attested'
+        payload['records'][0]['collection_tone'] = 'info'
+
+    monkeypatch.setattr(internal_pki_routes, 'enrich_internal_pki_source_states', mark_attested)
+    observed = datetime.now(UTC)
+    calls: list[str] = []
+
+    def committed_certificate_page(_args) -> dict:
+        calls.append('read')
+        return {
+            'total': 1,
+            'records': [
+                {
+                    'component': 'apiserver',
+                    'kind': 'leaf',
+                    'cluster_name': 'Pilot Cluster',
+                    'node_name': 'control-plane-01',
+                    'issuer': 'ca',
+                    'externally_managed': False,
+                    'not_after': observed + timedelta(days=45),
+                    'collected_at': observed,
+                    'source_version': 'v1.31.0',
+                    'source_kind': 'kubeadm_check_expiration',
+                    'coverage': 'partial',
+                    'reference': 'CHG-001',
+                    'status': 'Outside Window',
+                    'tone': 'normal',
+                }
+            ],
+            'search': '',
+            'cluster_id': '',
+            'pagination': {
+                'page': 1,
+                'per_page': 5,
+                'allowed_per_page': (5, 10, 25, 50),
+                'total_items': 1,
+                'total_pages': 1,
+                'start_item': 1,
+                'end_item': 1,
+                'has_prev': False,
+                'has_next': False,
+                'prev_page': 1,
+                'next_page': 1,
+            },
+        }
+
+    monkeypatch.setattr(internal_pki_routes, 'get_internal_certificate_inventory_page', committed_certificate_page)
+    response = client.get('/governance/internal-certificates')
+    assert response.status_code == 200
+    assert calls == ['read']
+    content = response.get_data(as_text=True)
+    assert 'Internal Certificate Registry' in content
+    assert 'apiserver' in content
+    assert 'control-plane-01' in content
+    assert 'Operator Attested' in content
+    assert 'Installed status unverified' in content
+    assert 'Request Renewal' not in content
+    assert content.index('data-kaori-capability-navigation') < content.index('Internal Certificates</h1>')
+
+
+def test_internal_pki_schema_not_ready_never_queries_certificate_rows(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _client_for_user(
+        app,
+        monkeypatch,
+        GovernanceRouteUser({'governance.view', 'clusters.view', 'internal_certificates.view'}),
+    )
+    monkeypatch.setattr(internal_pki_routes, 'has_registered_clusters', lambda: True)
+    monkeypatch.setattr(
+        internal_pki_routes,
+        'get_internal_certificates_source_page',
+        lambda _args: _internal_pki_source_page(),
+    )
+    monkeypatch.setattr(
+        internal_pki_routes,
+        'check_internal_pki_schema_readiness',
+        lambda: SimpleNamespace(ready=False),
+    )
+
+    def must_not_query(_args) -> None:
+        raise AssertionError('Missing schema cannot be treated as empty certificate inventory')
+
+    monkeypatch.setattr(internal_pki_routes, 'get_internal_certificate_inventory_page', must_not_query)
+    response = client.get('/governance/internal-certificates')
+    assert response.status_code == 200
+    assert 'Inventory Schema Upgrade Required' in response.get_data(as_text=True)
