@@ -607,6 +607,18 @@ committed-evidence View More modal. Security findings may drill into Runtime Usa
 `artifact_id` so the operator can move directly from vulnerability evidence to the affected runtime
 blast radius without performing a live Registry or Kubernetes request.
 
+In the **Runtime Usage → Runtime Correlation** summary, the existing
+`operational_section_card` shows a `runtime_metrics|length`-derived
+**4 Indicators** badge beside `Runtime Evidence Summary`, consistent with
+the shared Security/Runtime Overview header pattern. The four committed
+metrics and their digest/tag confidence and exposure tones are unchanged.
+Use compact supporting sentences for the two wider descriptions:
+`Committed Registry–Kubernetes bindings.` and
+`Bindings with Critical/High findings.` These still describe committed
+runtime *bindings* (not live health or distinct CVE totals). Keep natural
+wrapping on narrow screens; never force a single line with overflow or
+`whitespace-nowrap` merely to satisfy desktop Visual UAT.
+
 Correlation prerequisites govern **rematerialization eligibility**, not committed-evidence readability.
 Once Runtime Correlation has committed a snapshot, Runtime Usage continues to expose that committed evidence
 if a later Registry artifact snapshot or current Kubernetes Pod generation becomes unavailable. The workspace
