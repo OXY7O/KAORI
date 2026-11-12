@@ -67,6 +67,24 @@ def test_notification_center_evidence_context_precedes_register() -> None:
     assert 'Transient toasts remain outside Data Lifecycle.' in content
 
 
+def test_notification_center_uses_canonical_title_guides_and_concise_evidence_copy() -> None:
+    content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
+
+    assert 'components/info_tip.html' in content
+    assert content.count("variant='guide'") == 2
+    for title, guide_id in (
+        ('Personal Operations Inbox', 'notification-center-personal-inbox-guide'),
+        ('Notification Register', 'notification-center-register-guide'),
+    ):
+        heading = content.index(f'>{title}</h')
+        guide = content.index(f"'{guide_id}'", heading)
+        assert guide < content.index('</div>', heading)
+    assert 'Transient toasts remain outside Data Lifecycle.' in content
+    assert 'Activity Audit shows system-wide notification evidence.' in content
+    assert 'Only persisted outcomes appear here. Transient toasts' not in content
+    assert 'Activity Audit remains the system-wide evidence view for authorized administrators.' not in content
+
+
 def test_notification_center_uses_quiet_kaori_surfaces() -> None:
     content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
     items = read('app/templates/platform_operations/notifications/components/_activity_center_items.html')
