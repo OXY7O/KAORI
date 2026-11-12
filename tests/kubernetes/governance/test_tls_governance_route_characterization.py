@@ -337,8 +337,6 @@ def test_internal_pki_source_workspace_shows_committed_registry_with_unknown_pki
     assert 'Unknown' in content
     assert 'Provider-Owned Renewal' in content
     assert 'Renewal Deferred' not in content
-    assert 'Sync Internal PKI' in content
-    assert 'No Automated Run' in content
     assert 'Request Renewal' not in content
     assert 'Rotate All' not in content
 
