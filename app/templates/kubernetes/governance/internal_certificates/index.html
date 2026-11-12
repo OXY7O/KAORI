@@ -156,16 +156,14 @@
                                                class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
                                                aria-label="Review internal PKI evidence for {{ record.name }}">
                                                 View PKI Evidence
-                                                <i data-lucide="arrow-up-right"
-                                                   class="h-3 w-3"
-                                                   aria-hidden="true"></i>
+                                                <i data-lucide="arrow-up-right" class="h-3 w-3" aria-hidden="true"></i>
                                             </a>
                                         </td>
                                         <td class="px-4 py-3 align-top">
                                             <p class="text-content-primary">{{ record.connection_platform or 'Not Reported' }}</p>
                                             <p class="mt-1 text-xs text-content-muted">Detected platform · {{ record.connection_version or 'Version not reported' }}</p>
                                         </td>
-                                        <td class="px-4 py-3 align-top">{{ table_label.status_indicator_label(record.collection_status, record.collection_tone|default('unknown')) }}</td>
+                                        <td class="px-4 py-3 align-top">{{ table_label.status_indicator_label(record.collection_status, record.collection_tone|default('unknown') ) }}</td>
                                         <td class="px-4 py-3 align-top">{{ table_label.status_indicator_label(record.authority_status, 'unknown') }}</td>
                                         <td class="px-4 py-3 align-top">{{ table_label.status_indicator_label(record.expiry_status, 'unknown') }}</td>
                                     </tr>
