@@ -252,7 +252,6 @@ def test_cli_rejects_in_place_temporary_evidence_tampering(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A same-inode temporary rewrite must not become published evidence."""
-    import scripts.ci_zap_safe_summary as zap_summary
 
     raw = tmp_path / 'baseline.json'
     raw.write_text(json.dumps(_report()), encoding='utf-8')
@@ -293,3 +292,29 @@ def test_cli_rejects_symlinked_input_parent_without_publishing(
     assert not output.exists()
     assert raw.exists()
     assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_cli_rejects_input_parent_swapped_to_symlink_during_parse(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A safe descriptor must not authorize a subsequently redirected pathname."""
+    import scripts.ci_zap_safe_summary as zap_summary
+
+    reports = tmp_path / 'reports'
+    reports.mkdir()
+    raw = reports / 'baseline.json'
+    raw.write_text(json.dumps(_report()), encoding='utf-8')
+    output = tmp_path / 'summary.md'
+    output.write_text('stale evidence', encoding='utf-8')
+    original_render = zap_summary.render_summary
+
+    def swap_parent(payload: object, source_sha: str) -> str:
+        result = original_render(payload, source_sha)
+        reports.rename(tmp_path / 'moved-reports')
+        reports.symlink_to(tmp_path / 'moved-reports', target_is_directory=True)
+        return result
+
+    monkeypatch.setattr(zap_summary, 'render_summary', swap_parent)
+    assert main(['--input', str(raw), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not output.exists()
+    assert (tmp_path / 'moved-reports' / 'baseline.json').exists()
