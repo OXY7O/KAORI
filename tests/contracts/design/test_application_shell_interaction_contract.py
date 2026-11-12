@@ -52,7 +52,6 @@ def test_desktop_sidebar_toggle_uses_state_aware_panel_icons() -> None:
     assert 'data-lucide="menu"' in mobile
 
 
-
 def test_quick_notification_and_account_controls_share_one_controller() -> None:
     navbar = read('app/templates/components/navigation/navbar.html')
     notification_center = read('app/templates/components/navigation/_notification_center.html')
