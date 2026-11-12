@@ -137,6 +137,7 @@
                     path_params={'cve_id': impact.cve_id},
                     aria_label='Filter affected artifact findings'
                     ) %}
+                    <input type="hidden" name="evidence_tab" value="findings">
                     <input type="hidden" name="runtime_page" value="{{ impact.runtime_pagination.page }}">
                     <input type="hidden" name="runtime_per_page" value="{{ impact.runtime_pagination.per_page }}">
                     <input type="hidden" name="runtime_q" value="{{ impact.filters.runtime_search }}">
@@ -168,13 +169,15 @@
                             table_ui.action_classes(),
                             query_params={
                             'cve_id': impact.cve_id,
+                            'evidence_tab': 'findings',
                             'runtime_page': impact.runtime_pagination.page,
                             'runtime_per_page': impact.runtime_pagination.per_page,
                             'runtime_q': impact.filters.runtime_search,
                             'runtime_match': impact.filters.runtime_match
                             },
                             page_param='finding_page',
-                            per_page_param='finding_per_page') }}
+                            per_page_param='finding_per_page',
+                            lead=false) }}
                     {% endif %}
                 {% endcall %}
             </div>
@@ -183,11 +186,11 @@
                     <caption class="sr-only">Exact CVE findings from committed scans</caption>
                     <thead class="{{ table_ui.head_classes() }}">
                         <tr>
-                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Source / Artifact</th>
-                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Package / Version</th>
-                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Severity / Fix</th>
-                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Scan Evidence</th>
-                            <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Runtime</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[34%]">Source / Artifact</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">Package / Version</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Severity / Fix</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Scan Evidence</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Runtime</th>
                         </tr>
                     </thead>
                     <tbody class="{{ table_ui.body_classes() }}">
@@ -195,19 +198,21 @@
                             <tr class="{{ table_ui.row_classes() }}">
                                 <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                                     {{ table_ui.title_cell(row.repository, row.project ~ ' · ' ~ row.source, 'package-search') }}
-                                    <p class="mt-1 min-w-0 max-w-[22rem] break-all font-mono text-xs leading-5 text-content-muted"
-                                       title="{{ row.digest }}">{{ row.digest }}</p>
+                                    <p class="mt-2 min-w-0 break-all font-mono text-xs leading-5 text-content-muted"
+                                       title="{{ row.digest }}">
+                                        <span class="font-semibold text-content-secondary">Digest:</span> {{ row.digest }}
+                                    </p>
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                                     {{ table_ui.title_cell(row.package, 'Installed: ' ~ row.installed_version, 'package') }}
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }} align-middle">
                                     {{ table_label.status_indicator_label(row.severity, 'critical' if row.severity == 'Critical' else 'warning') }}
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Fix: {{ row.fixed_version }}</p>
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Fix: {{ row.fixed_version }}</p>
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }} align-middle">
                                     {{ table_label.status_indicator_label(row.freshness.label, row.freshness.tone) }}
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.observed_at|user_datetime }}</p>
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">{{ row.observed_at|user_datetime }}</p>
                                 </td>
                                 <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
                                     <a class="{{ table_ui.action_classes() }}"
@@ -239,6 +244,7 @@
                         impact.finding_pagination,
                         {
                         'cve_id': impact.cve_id,
+                        'evidence_tab': 'findings',
                         'runtime_page': impact.runtime_pagination.page,
                         'runtime_per_page': impact.runtime_pagination.per_page,
                         'runtime_q': impact.filters.runtime_search,
@@ -277,6 +283,7 @@
                     path_params={'cve_id': impact.cve_id},
                     aria_label='Filter Kubernetes runtime bindings'
                     ) %}
+                    <input type="hidden" name="evidence_tab" value="runtime">
                     <input type="hidden" name="finding_page" value="{{ impact.finding_pagination.page }}">
                     <input type="hidden" name="finding_per_page" value="{{ impact.finding_pagination.per_page }}">
                     <input type="hidden" name="finding_q" value="{{ impact.filters.finding_search }}">
@@ -308,13 +315,15 @@
                             table_ui.action_classes(),
                             query_params={
                             'cve_id': impact.cve_id,
+                            'evidence_tab': 'runtime',
                             'finding_page': impact.finding_pagination.page,
                             'finding_per_page': impact.finding_pagination.per_page,
                             'finding_q': impact.filters.finding_search,
                             'finding_severity': impact.filters.finding_severity
                             },
                             page_param='runtime_page',
-                            per_page_param='runtime_per_page') }}
+                            per_page_param='runtime_per_page',
+                            lead=false) }}
                     {% endif %}
                 {% endcall %}
             </div>
@@ -328,11 +337,11 @@
                     <caption class="sr-only">Kubernetes runtime bindings for affected artifact digests</caption>
                     <thead class="{{ table_ui.head_classes() }}">
                         <tr>
-                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Cluster / Namespace</th>
-                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Workload / Pod</th>
-                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Correlation</th>
-                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed</th>
-                            <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">Cluster / Namespace</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[30%]">Workload / Pod</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Correlation</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Observed</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[14%]">Details</th>
                         </tr>
                     </thead>
                     <tbody class="{{ table_ui.body_classes() }}">
@@ -342,12 +351,17 @@
                                     {{ table_ui.title_cell(row.cluster, row.namespace, 'boxes') }}
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
-                                    {{ table_ui.title_cell(row.workload, row.workload_type ~ ' · ' ~ row.pod, 'waypoints') }}
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Container: {{ row.container }}</p>
+                                    {{ table_ui.title_cell(row.workload, row.workload_type, 'waypoints') }}
+                                    <p class="mt-2 min-w-0 break-all text-xs leading-5 text-content-muted">
+                                        <span class="font-semibold text-content-secondary">Pod:</span> {{ row.pod }}
+                                    </p>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">
+                                        <span class="font-semibold text-content-secondary">Container:</span> {{ row.container }}
+                                    </p>
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }} align-middle">
                                     {{ table_label.status_indicator_label(row.match.label, row.match.tone) }}
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.match.description }}</p>
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">{{ row.match.description }}</p>
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }} align-middle">
                                     <span title="{{ row.observed_at|user_datetime }}">{{ row.observed_at|user_datetime }}</span>
@@ -382,6 +396,7 @@
                         impact.runtime_pagination,
                         {
                         'cve_id': impact.cve_id,
+                        'evidence_tab': 'runtime',
                         'finding_page': impact.finding_pagination.page,
                         'finding_per_page': impact.finding_pagination.per_page,
                         'finding_q': impact.filters.finding_search,
