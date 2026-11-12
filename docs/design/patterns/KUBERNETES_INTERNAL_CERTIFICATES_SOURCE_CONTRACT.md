@@ -110,6 +110,10 @@ Important: `unsupported` with zero records is not a successful inventory, and `c
 
 No certificate renewal, CA rotation, CSR approval, static-Pod restart or host mutation is permitted by this document.
 
+## Renewal design handoff (deferred)
+
+The implementation-ready **design-only** renewal workflow, policy, safe Ansible/provider boundary, preflight, recovery and testing matrix is retained in [KUBERNETES_INTERNAL_CERTIFICATES_RENEWAL_BLUEPRINT.md](KUBERNETES_INTERNAL_CERTIFICATES_RENEWAL_BLUEPRINT.md) (#4445). It is not an approved mutation implementation or permission to add a Renew button before Ansible execution and security gates are admitted.
+
 ## 7. Next evidence needed
 
 For one **non-production pilot** cluster: approved distribution/version confirmation, control-plane/etcd topology, owning team, source tool/version, permitted read-only execution identity, redacted field inventory and permission outcome, actual collection window and full/partial coverage assessment. Then update this matrix and #4442 before #4443 collector work begins.
