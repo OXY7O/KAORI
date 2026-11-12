@@ -37,9 +37,7 @@ def test_notification_center_rows_selection_survives_poll_and_keeps_filters(
         assert 'page=1' in page.url
 
     with page.expect_response(
-        lambda result: '/notifications/' in result.url
-        and 'per_page=50' in result.url
-        and result.status == 200
+        lambda result: '/notifications/' in result.url and 'per_page=50' in result.url and result.status == 200
     ):
         page.locator('body').dispatch_event('kaori:notifications-changed')
     expect(rows).to_have_value('50')
