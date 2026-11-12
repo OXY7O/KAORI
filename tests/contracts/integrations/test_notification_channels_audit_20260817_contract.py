@@ -1297,6 +1297,7 @@ def test_channel_event_disclosures_preserve_nested_inspection_and_action_securit
     assert 'channel.retirement_reason' in drawer
     assert 'data-kaori-channel-archived-boundary' in drawer
 
+
 def test_notification_snapshot_verifier_accepts_shared_recent_delivery_title_cell() -> None:
     verifier = read('scripts/verify_notification_channels.py')
     page = read('app/templates/integrations/delivery/notification_channels/index.html')
