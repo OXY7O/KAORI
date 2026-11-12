@@ -135,6 +135,8 @@ Standard status labels use the global semantic palette with a soft background an
 
 Metadata labels use borderless Violet or neutral context styling through `table_label.metadata_label(...)`. Timestamps stay plain text.
 
+For a metadata count that changes within an existing client-side committed-data view (for example Topology graph filters/reload), the optional `text_id` hook identifies only the label's text span. Updating its `textContent` preserves the shared badge geometry and does not authorize live provider reads; a static section heading need not use this hook.
+
 A compact icon + border treatment is an explicit exception for a special posture, eligibility, security, or high-attention state. It must use `table_label.special_label(...)`. Do not add borders or icons to ordinary status labels inline.
 
 Labels remain brief, such as `Ready`, `Degraded`, `Pending`, `Not Observed`, or `Disabled`. Longer evidence belongs outside the label.
