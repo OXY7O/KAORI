@@ -100,7 +100,8 @@ def main() -> int:
     )
     for item in (
         'Cluster.query',
-        'selectinload(Cluster.kubernetes_connection)',
+        'KubernetesConnection.detected_platform',
+        'KubernetesConnection.detected_version',
         "'collection_status': 'Not Collected'",
         "'authority_status': 'Not Verified'",
         "'expiry_status': 'Unknown'",
