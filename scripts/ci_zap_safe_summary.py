@@ -30,6 +30,7 @@ MAX_ALERT_FAMILIES = 100_000
 MAX_SITE_ENTRIES = 100_000
 MAX_OBJECT_MEMBERS = 10_000
 MAX_JSON_OBJECTS = 100_000
+MAX_JSON_ARRAY_ITEMS = 100_000
 MAX_ALERT_INSTANCES = 1_000_000
 
 
@@ -130,6 +131,21 @@ def _count_risks(payload: Any) -> tuple[int, Counter[int], int | None]:
             totals[_risk_code(alert.get('riskcode'))] += 1
 
     return len(sites), totals, instances if complete_instance_counts else None
+
+
+def _check_array_budget(payload: Any) -> None:
+    """Reject oversized arrays even when they occur in ignored report fields."""
+    pending = [payload]
+    items_seen = 0
+    while pending:
+        value = pending.pop()
+        if isinstance(value, list):
+            items_seen += len(value)
+            if items_seen > MAX_JSON_ARRAY_ITEMS:
+                raise UnverifiedZapReport('Excessive JSON array entries')
+            pending.extend(value)
+        elif isinstance(value, dict):
+            pending.extend(value.values())
 
 
 def render_summary(payload: Any, source_sha: str) -> str:
@@ -273,6 +289,7 @@ def main(argv: list[str] | None = None) -> int:
             parse_float=_finite_float,
             parse_int=_bounded_int,
         )
+        _check_array_budget(payload)
         summary = render_summary(payload, args.source_sha)
         # The descriptor can remain stable even when its pathname is replaced
         # after open. Reject a different on-disk report before publication.
