@@ -399,7 +399,7 @@ def test_runtime_overview_metric_summary_is_inset_from_header_and_filters() -> N
     assert after_header.index('data-kaori-runtime-metrics-region') < after_header.index(
         'table_ui.inventory_filter_bar_classes()'
     )
-    assert 'integration_ui.metric_grid_classes(5)' in region
+    assert 'class="{{ integration_ui.metric_grid_classes(5) }}"' in region
     assert 'overflow-hidden rounded-xl border border-outline-subtle' in region
     assert 'metric_grid_classes(5) }} border-b border-outline-subtle' not in region
     assert 'integration_ui.metric_card(label, value, helper, icon, tone)' in region

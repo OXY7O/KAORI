@@ -67,16 +67,18 @@
     {% else %}
         <div class="px-5 py-4 sm:px-6"
              data-kaori-runtime-metrics-region>
-            <div class="{{ integration_ui.metric_grid_classes(5) }} overflow-hidden rounded-xl border border-outline-subtle">
-                {% for label, value, helper, icon, tone in [
-                    ('Healthy', runtime_stats.healthy, 'Latest observation is healthy', 'circle-check', 'brand'),
-                    ('Degraded', runtime_stats.degraded, 'Runtime review is recommended', 'triangle-alert', 'brand'),
-                    ('Unhealthy', runtime_stats.unhealthy, 'Runtime intervention is required', 'circle-x', 'brand'),
-                    ('Not Observed', runtime_stats.not_observed, 'No persisted runtime observation', 'circle-help', 'brand'),
-                    ('Capability Attention', runtime_stats.capability_attention, 'Targets requiring capability review', 'puzzle', 'brand')
-                    ] %}
-                    {{ integration_ui.metric_card(label, value, helper, icon, tone) }}
-                {% endfor %}
+            <div class="overflow-hidden rounded-xl border border-outline-subtle">
+                <div class="{{ integration_ui.metric_grid_classes(5) }}">
+                    {% for label, value, helper, icon, tone in [
+                        ('Healthy', runtime_stats.healthy, 'Latest observation is healthy', 'circle-check', 'brand'),
+                        ('Degraded', runtime_stats.degraded, 'Runtime review is recommended', 'triangle-alert', 'brand'),
+                        ('Unhealthy', runtime_stats.unhealthy, 'Runtime intervention is required', 'circle-x', 'brand'),
+                        ('Not Observed', runtime_stats.not_observed, 'No persisted runtime observation', 'circle-help', 'brand'),
+                        ('Capability Attention', runtime_stats.capability_attention, 'Targets requiring capability review', 'puzzle', 'brand')
+                        ] %}
+                        {{ integration_ui.metric_card(label, value, helper, icon, tone) }}
+                    {% endfor %}
+                </div>
             </div>
         </div>
         <div class="{{ table_ui.inventory_filter_bar_classes() }}">
