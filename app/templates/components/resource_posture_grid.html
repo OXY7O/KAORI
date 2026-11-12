@@ -4,24 +4,32 @@
   Each metric tuple: (icon, label, value, description, tone).
   Optional parallel status_labels adds committed evidence/status labels without
   changing the existing default rendering used by Kubernetes Tenant Estate.
+  Compact mode uses the canonical Kubernetes Operations governance-tile
+  visual grammar while retaining values and source-derived signal tones.
 #}
 {% macro render(metrics, columns=3, status_labels=none, compact=false) -%}
     {% set grid_classes = 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' if columns == 5 else ('sm:grid-cols-2 xl:grid-cols-3' if columns == 3 else 'sm:grid-cols-2 xl:grid-cols-4') %}
-    <div class="grid gap-px bg-outline-subtle {{ grid_classes }}">
+    {% if compact %}
+        {% set grid_classes = 'md:grid-cols-4' if columns == 4 else ('md:grid-cols-3' if columns == 3 else grid_classes) %}
+    {% endif %}
+    <div class="grid gap-px bg-outline-subtle {{ grid_classes }} {{ 'overflow-hidden rounded-xl border border-outline-subtle' if compact else '' }}">
         {% for icon, label, value, description, tone in metrics %}
             {% set icon_surface = 'bg-status-normal-soft text-status-normal-text' if tone == 'normal' else ('bg-status-warning-soft text-status-warning-text' if tone == 'warning' else ('bg-status-critical-soft text-status-critical-text' if tone == 'critical' else ('bg-status-info-soft text-status-info-text' if tone == 'info' else ('bg-status-unknown-soft text-status-unknown-text' if tone == 'unknown' else 'bg-kaori-soft text-kaori-primary')))) %}
             {% if compact %}
+                {% set value_tone = 'text-status-warning-text' if tone == 'warning' else ('text-status-critical-text' if tone == 'critical' else ('text-status-unknown-text' if tone == 'unknown' else 'text-content-primary')) %}
                 <article class="min-w-0 bg-surface-card p-4">
-                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg {{ icon_surface }}"
+                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                           aria-hidden="true">
                         <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                     </span>
-                    <h3 class="mt-3 min-w-0 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ label }}</h3>
-                    <p class="mt-1 min-w-0 break-words text-xl font-semibold leading-7 text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
+                    <h3 class="mt-3 text-sm font-semibold text-content-primary">{{ label }}</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                        <span class="font-semibold {{ value_tone }}">{{ value }}</span>
+                        <span>· {{ description }}</span>
+                    </p>
                     {% if status_labels and loop.index0 < status_labels|length %}
                         <div class="mt-2">{{ table_label.status_indicator_label(status_labels[loop.index0], tone) }}</div>
                     {% endif %}
-                    <p class="mt-1 min-w-0 break-words text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ description }}</p>
                 </article>
             {% else %}
                 <article class="flex min-h-32 items-start justify-between gap-4 bg-surface-card p-5">
