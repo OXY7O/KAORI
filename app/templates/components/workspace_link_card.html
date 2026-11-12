@@ -24,13 +24,20 @@
                 <i data-lucide="{{ workspace.icon }}"
                    class="{{ 'h-5 w-5' if compact else 'h-4 w-4' }}"></i>
             </span>
-            {{ table_label.metadata_label(workspace.scope) }}
+            {% if workspace.status_tone|default(none) %}
+                {{ table_label.status_label(workspace.scope, workspace.status_tone) }}
+            {% else %}
+                {{ table_label.metadata_label(workspace.scope) }}
+            {% endif %}
         </div>
         <div class="{{ body_classes }}">
             {% if compact %}
                 <p class="sr-only">{{ workspace.label }}</p>
                 <h3 class="text-base font-semibold text-content-primary">{{ workspace.title }}</h3>
                 <p class="mt-1 text-xs leading-5 text-content-muted">{{ workspace.description }}</p>
+                {% if workspace.supporting|default(none) %}
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ workspace.supporting }}</p>
+                {% endif %}
             {% else %}
                 <p class="text-xs font-semibold text-kaori-primary">{{ workspace.label }}</p>
                 <h4 class="mt-2 text-base font-semibold leading-6 text-content-primary">{{ workspace.title }}</h4>
@@ -38,7 +45,7 @@
             {% endif %}
         </div>
         <div class="flex items-center justify-between gap-3 border-t border-outline-subtle {{ footer_classes }}">
-            <span class="{{ '' if compact else 'text-sm font-semibold text-kaori-primary' }}">Open Workspace</span>
+            <span class="{{ '' if compact else 'text-sm font-semibold text-kaori-primary' }}">{{ workspace.action_label|default('Open Workspace') }}</span>
             {% if compact %}
                 <i data-lucide="arrow-up-right"
                    class="h-4 w-4 transition-transform group-hover:translate-x-0.5"
