@@ -125,62 +125,61 @@
                 {% endcall %}
             </div>
             <div class="w-full overflow-x-auto">
-                <table class="w-full min-w-[920px] text-left text-sm text-content-secondary">
-                    <caption class="sr-only">Operator-attested internal Kubernetes certificate metadata. Validity is source-reported, not proof of active installation.</caption>
+                <table class="{{ table_ui.table_classes('min-w-[62rem]') }}">
+                    <caption class="sr-only">Source-reported internal certificate expiry and provenance; not proof of installed certificate validity.</caption>
                     <thead class="{{ table_ui.head_classes() }}">
                         <tr>
-                            <th scope="col" class="px-4 py-3">Certificate / Component</th>
-                            <th scope="col" class="px-4 py-3">Cluster / Node</th>
-                            <th scope="col" class="px-4 py-3">Issuer / Authority</th>
-                            <th scope="col" class="px-4 py-3">Reported Expiry</th>
-                            <th scope="col" class="px-4 py-3">Evidence Status</th>
-                            <th scope="col" class="px-4 py-3">Source / Coverage</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">Certificate / Component</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Cluster / Node</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Issuer</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Reported Expiry</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Evidence Status</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Source / Coverage</th>
                         </tr>
                     </thead>
                     <tbody class="{{ table_ui.body_classes() }}">
                         {% for certificate in inventory.records %}
                             <tr class="{{ table_ui.row_classes() }}">
-                                <td class="px-4 py-3 align-top">
+                                <td class="{{ table_ui.cell_classes() }} align-top">
                                     <p class="font-semibold text-content-primary">{{ certificate.component }}</p>
                                     <p class="mt-1 text-xs text-content-muted">{{ 'Certificate Authority' if certificate.kind == 'ca' else 'Leaf Certificate' }}</p>
                                 </td>
-                                <td class="px-4 py-3 align-top">
+                                <td class="{{ table_ui.cell_classes() }} align-top">
                                     <p class="font-medium text-content-primary">{{ certificate.cluster_name }}</p>
                                     <p class="mt-1 text-xs text-content-muted">{{ certificate.node_name }}</p>
                                 </td>
-                                <td class="px-4 py-3 align-top">
-                                    <p class="text-content-primary">{{ certificate.issuer or 'Not Reported' }}</p>
+                                <td class="{{ table_ui.cell_classes() }} align-top">
+                                    <p class="font-medium text-content-primary">{{ certificate.issuer or 'Not Reported' }}</p>
                                     <p class="mt-1 text-xs text-content-muted">
                                         {% if certificate.externally_managed is sameas true %}
-                                            External CA Management
+                                            External authority
                                         {% elif certificate.externally_managed is sameas false %}
-                                            Source Reports Managed Locally
+                                            Source reports local
                                         {% else %}
-                                            Authority Not Verified
+                                            Authority unverified
                                         {% endif %}
                                     </p>
                                 </td>
-                                <td class="px-4 py-3 align-top">
-                                    <p class="font-semibold text-content-primary">{{ certificate.not_after|user_date('Unknown') }}</p>
+                                <td class="{{ table_ui.cell_classes() }} align-top">
+                                    <p class="whitespace-nowrap font-semibold text-content-primary">{{ certificate.not_after|user_date("Unknown") }}</p>
                                     <p class="mt-1 text-xs text-content-muted">Source-reported NotAfter</p>
                                 </td>
-                                <td class="px-4 py-3 align-top">
-                                    {{ table_label.status_indicator_label(certificate.status, certificate.tone) }}
+                                <td class="{{ table_ui.cell_classes() }} align-top">
+                                    <div>{{ table_label.status_indicator_label(certificate.status, certificate.tone) }}</div>
                                     <div class="mt-1">{{ table_label.status_indicator_label(certificate.freshness, certificate.freshness_tone) }}</div>
                                     <p class="mt-1 text-xs text-content-muted">Installed status unverified</p>
                                 </td>
-                                <td class="px-4 py-3 align-top">
+                                <td class="{{ table_ui.cell_classes() }} align-top">
                                     <p class="font-medium text-content-primary">Operator Attested</p>
-                                    <p class="mt-1 text-xs text-content-muted">{{ certificate.source_version }} · {{ certificate.coverage|title }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">Collected {{ certificate.collected_at|user_date('Unknown') }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">Evidence {{ certificate.reference }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ certificate.source_version }} · {{ certificate.coverage|title }} coverage</p>
+                                    <p class="mt-1 text-xs text-content-muted">Collected {{ certificate.collected_at|user_date("Unknown") }}</p>
+                                    <p class="mt-1 break-all font-mono text-xs text-content-muted" title="{{ certificate.reference }}">Ref: {{ certificate.reference }}</p>
                                 </td>
                             </tr>
                         {% else %}
                             <tr>
                                 <td colspan="6" class="px-5 py-8 text-center text-sm text-content-muted">
-                                    No internal certificate evidence is committed for the selected scope.
-                                    Import approved metadata through the governed CLI to populate this registry.
+                                    No committed certificates match the selected scope or filters. Clear filters to review other source-reported evidence.
                                 </td>
                             </tr>
                         {% endfor %}
