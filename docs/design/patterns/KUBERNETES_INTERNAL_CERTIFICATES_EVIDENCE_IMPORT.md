@@ -350,4 +350,4 @@ Run existing quality gates, focused importer/read-model/route tests, schema upgr
 
 **Human acceptance requires actual non-production source evidence.** The code path can be reviewed without it, but the operational requirement “certificate values visible” is not complete until a real authorized source is imported and verified in Dev Container. Keep #4443/#4444 OPEN; no PKI renewal or host mutation is implemented here.
 
-Related: [Source Contract](KUBERNETES_INTERNAL_CERTIFICATES_SOURCE_CONTRACT.md), [Deferred Renewal Blueprint](KUBERNETES_INTERNAL_CERTIFICATES_RENEWAL_BLUEPRINT.md), #4461, #4443, #4444, #4445.
+Related: [Source Contract](KUBERNETES_INTERNAL_CERTIFICATES_SOURCE_CONTRACT.md), [Native Renewal Ownership](KUBERNETES_INTERNAL_CERTIFICATES_RENEWAL_BLUEPRINT.md), #4461, #4443, #4444, #4445.
