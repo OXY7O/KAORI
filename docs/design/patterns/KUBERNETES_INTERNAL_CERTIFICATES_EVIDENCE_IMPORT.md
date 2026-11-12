@@ -321,7 +321,26 @@ Collection Snapshot → Internal PKI Collection Operations → Certificate Postu
 CVE Evidence, with **Registered Source Coverage** (default) and **Certificate
 Inventory** (on demand) in one workspace panel. `View PKI Evidence` opens the
 certificate tab scoped to the selected cluster, and browser navigation retains
-each tab's independent search/page/rows parameters. It reuses canonical
+each tab's independent search/page/rows parameters. Filtering and pagination
+refresh the **entire tab workspace**, so tab URLs and inactive-tab parameters
+remain synchronized without a new JavaScript controller. Both registry forms
+use the existing `table_registry.clear_filters_link` only when a tab has active
+filters; clearing a tab resets that tab's page and search/facets while keeping
+the selected cluster, the opposite tab's filter/page/rows, and the current
+Rows setting.
+
+Registered Source Coverage supports committed **Cluster Search, Environment,
+Detected Platform** filters; the option lists are derived only from committed
+non-secret registration metadata, including when PKI migration readiness is
+blocked. Certificate Inventory supports **Component/Node/Issuer Search,
+Certificate Type (Leaf/CA), Reported Expiry (Outside/Renewal/Critical/Expired/
+Not Yet Valid), source-declared Coverage (Partial/Complete), and Evidence
+Freshness (Recently Collected/Stale)**. All facets operate server-side before
+count/pagination, with default 5 rows. Source tables and certificates use the
+canonical KAORI table/header/cell hierarchy and a truthful source-qualified
+empty state. Filtered expiry is **not** independently verified installed health.
+
+It reuses canonical
 `snapshot_context_bar`, `action_button`, `operational_section_card`, and
 `resource_posture_grid` components. The original **PKI Evidence Boundaries**
 explanation remains an Info Tip on Collection Operations, not a redundant
