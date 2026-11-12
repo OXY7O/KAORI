@@ -313,6 +313,16 @@ def main(argv: list[str] | None = None) -> int:
             ) as stream:
                 temporary = Path(stream.name)
                 stream.write(summary)
+                temporary_stat = os.fstat(stream.fileno())
+            # Never publish a swapped temporary symlink or a replacement file.
+            # os.replace() would otherwise install the attacker's pathname as
+            # the final sanitized evidence, potentially exposing raw data.
+            published_temp_stat = temporary.stat(follow_symlinks=False)
+            if not stat.S_ISREG(published_temp_stat.st_mode) or any(
+                getattr(published_temp_stat, field) != getattr(temporary_stat, field)
+                for field in ('st_dev', 'st_ino', 'st_mode')
+            ):
+                raise UnverifiedZapReport('Temporary evidence changed before publication')
             # A workspace actor can replace the input or output directory while
             # the temporary summary is being written. Recheck both identities
             # immediately before the atomic publication boundary.
