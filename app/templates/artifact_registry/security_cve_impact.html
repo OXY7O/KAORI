@@ -1,6 +1,5 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% import "components/section_intro.html" as section_intro %}
 {% import "components/snapshot_context_bar.html" as snapshot_context_bar %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
@@ -45,12 +44,12 @@
                 scope_label='Registry × Kubernetes',
                 scope_supporting='Committed evidence',
                 coverage_label=impact.source_count ~ (' source' if impact.source_count == 1 else ' sources') ~ ' · ' ~ impact.affected_artifacts ~ (' digest' if impact.affected_artifacts == 1 else ' digests'),
-                exceptions_label='Not Qualified' if not impact.evidence_ready else 'Current',
-                coverage_tone='warning' if not impact.finding_count else 'normal',
-                exceptions_tone='warning' if not impact.evidence_ready else 'normal',
-                icon='waypoints',
-                title='Runtime Correlation Evidence',
-                coverage_supporting='Latest usable scans') }}
+        exceptions_label='Not Qualified' if not impact.evidence_ready else 'Current',
+        coverage_tone='warning' if not impact.finding_count else 'normal',
+        exceptions_tone='warning' if not impact.evidence_ready else 'normal',
+        icon='waypoints',
+        title='Runtime Correlation Evidence',
+        coverage_supporting='Latest usable scans') }}
         {% if not impact.evidence_ready %}
             <div role="status"
                  class="rounded-xl border border-outline-subtle bg-surface-hover p-4 text-sm text-content-secondary">
@@ -63,16 +62,18 @@
             </div>
         {% endif %}
         <section id="artifact-registry-cve-findings"
-                 aria-labelledby="artifact-registry-cve-findings-heading"
+                 aria-label="Affected Artifact Evidence"
                  class="{{ table_ui.block_classes() }}">
-            <div class="p-4 sm:p-5">
-                {{ section_intro.render('Affected Artifact Evidence',
-                                'Scanner-observed package findings linked to immutable Registry artifact digests.',
-                                'artifact-registry-cve-findings-heading') }}
-            </div>
-            <span id="artifact-registry-cve-findings-loading"
-                  class="htmx-indicator sr-only"
-                  role="status">Loading findings</span>
+            {% set findings_badge %}
+                {{ table_label.metadata_label(impact.finding_count ~ (' Finding' if impact.finding_count == 1 else ' Findings'), icon='layout-grid') }}
+            {% endset %}
+            {{ table_ui.inventory_block_header('package-search',
+                        'Affected Artifact Evidence',
+                        'Scanner findings linked to immutable Registry artifact digests.',
+                        'artifact-registry-cve-findings-loading',
+                        'Loading findings',
+                        none,
+                        title_extra=findings_badge) }}
             <div class="overflow-x-auto">
                 <table class="{{ table_ui.table_classes('min-w-[60rem]') }}">
                     <caption class="sr-only">Exact CVE findings from committed scans</caption>
@@ -88,25 +89,29 @@
                     <tbody class="{{ table_ui.body_classes() }}">
                         {% for row in impact.finding_rows %}
                             <tr class="{{ table_ui.row_classes() }}">
-                                <td class="{{ table_ui.cell_classes() }}">
+                                <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                                     {{ table_ui.title_cell(row.repository, row.project ~ ' · ' ~ row.source, 'package-search') }}
-                                    <p class="mt-1 break-all text-xs text-content-muted"
+                                    <p class="mt-1 min-w-0 max-w-[22rem] break-all font-mono text-xs leading-5 text-content-muted"
                                        title="{{ row.digest }}">{{ row.digest }}</p>
                                 </td>
-                                <td class="{{ table_ui.cell_classes() }}">
+                                <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                                     {{ table_ui.title_cell(row.package, 'Installed: ' ~ row.installed_version, 'package') }}
                                 </td>
-                                <td class="{{ table_ui.cell_classes() }}">
+                                <td class="{{ table_ui.cell_classes() }} align-middle">
                                     {{ table_label.status_indicator_label(row.severity, 'critical' if row.severity == 'Critical' else 'warning') }}
-                                    <p class="mt-1 text-xs text-content-muted">{{ row.fixed_version }}</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Fix: {{ row.fixed_version }}</p>
                                 </td>
-                                <td class="{{ table_ui.cell_classes() }}">
+                                <td class="{{ table_ui.cell_classes() }} align-middle">
                                     {{ table_label.status_indicator_label(row.freshness.label, row.freshness.tone) }}
-                                    <p class="mt-1 text-xs text-content-muted">{{ row.observed_at|user_datetime }}</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.observed_at|user_datetime }}</p>
                                 </td>
-                                <td class="{{ table_ui.cell_classes(action=true) }}">
+                                <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
                                     <a class="{{ table_ui.action_classes() }}"
-                                       href="{{ url_for('artifact_registry.runtime', artifact_id=row.artifact_id) }}">View Runtime</a>
+                                       href="{{ url_for('artifact_registry.runtime', artifact_id=row.artifact_id) }}"
+                                       aria-label="View runtime usage for {{ row.repository }} artifact {{ row.digest }}">
+                                        <i data-lucide="waypoints" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                        View Runtime
+                                    </a>
                                 </td>
                             </tr>
                         {% else %}
@@ -131,20 +136,23 @@
                         page_param='finding_page') }}
         </section>
         <section id="artifact-registry-cve-runtime"
-                 aria-labelledby="artifact-registry-cve-runtime-heading"
+                 aria-label="Kubernetes Runtime Exposure"
                  class="{{ table_ui.block_classes() }}">
-            <div class="p-4 sm:p-5">
-                {{ section_intro.render('Kubernetes Runtime Exposure',
-                                'Distinct committed workload bindings. Digest matches are stronger than mutable tag references.',
-                                'artifact-registry-cve-runtime-heading') }}
-                <p class="mt-1 text-xs text-content-muted">
-                    {{ impact.digest_count }} digest bindings · {{ impact.tag_count }} other/reference bindings.
-                    Workload names are not canonical application or Team identities.
-                </p>
+            {% set runtime_badge %}
+                {{ table_label.metadata_label(impact.binding_count ~ (' Binding' if impact.binding_count == 1 else ' Bindings'), icon='layout-grid') }}
+            {% endset %}
+            {{ table_ui.inventory_block_header('waypoints',
+                        'Kubernetes Runtime Exposure',
+                        'Committed workload bindings correlated to affected artifact digests.',
+                        'artifact-registry-cve-runtime-loading',
+                        'Loading bindings',
+                        none,
+                        title_extra=runtime_badge) }}
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-outline-subtle px-5 py-3 text-xs leading-5 text-content-muted"
+                 role="note">
+                <span>{{ impact.digest_count }} digest matches · {{ impact.tag_count }} other/reference matches.</span>
+                <span>Digest matches are stronger than mutable tags; workload names do not establish Application or Team ownership.</span>
             </div>
-            <span id="artifact-registry-cve-runtime-loading"
-                  class="htmx-indicator sr-only"
-                  role="status">Loading bindings</span>
             <div class="overflow-x-auto">
                 <table class="{{ table_ui.table_classes('min-w-[60rem]') }}">
                     <caption class="sr-only">Kubernetes runtime bindings for affected artifact digests</caption>
@@ -160,19 +168,27 @@
                     <tbody class="{{ table_ui.body_classes() }}">
                         {% for row in impact.runtime_rows %}
                             <tr class="{{ table_ui.row_classes() }}">
-                                <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(row.cluster, row.namespace, 'boxes') }}</td>
-                                <td class="{{ table_ui.cell_classes() }}">
+                                <td class="{{ table_ui.cell_classes() }} align-middle">
+                                    {{ table_ui.title_cell(row.cluster, row.namespace, 'boxes') }}
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                                     {{ table_ui.title_cell(row.workload, row.workload_type ~ ' · ' ~ row.pod, 'waypoints') }}
-                                    <p class="mt-1 text-xs text-content-muted">Container: {{ row.container }}</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Container: {{ row.container }}</p>
                                 </td>
-                                <td class="{{ table_ui.cell_classes() }}">
+                                <td class="{{ table_ui.cell_classes() }} align-middle">
                                     {{ table_label.status_indicator_label(row.match.label, row.match.tone) }}
-                                    <p class="mt-1 text-xs text-content-muted">{{ row.match.description }}</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.match.description }}</p>
                                 </td>
-                                <td class="{{ table_ui.cell_classes() }}">{{ row.observed_at|user_datetime }}</td>
-                                <td class="{{ table_ui.cell_classes(action=true) }}">
+                                <td class="{{ table_ui.cell_classes() }} align-middle">
+                                    <span title="{{ row.observed_at|user_datetime }}">{{ row.observed_at|user_datetime }}</span>
+                                </td>
+                                <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
                                     <a class="{{ table_ui.action_classes() }}"
-                                       href="{{ url_for('artifact_registry.runtime', artifact_id=row.artifact_id) }}">View Runtime</a>
+                                       href="{{ url_for('artifact_registry.runtime', artifact_id=row.artifact_id) }}"
+                                       aria-label="View runtime usage for {{ row.workload }} in {{ row.namespace }}">
+                                        <i data-lucide="waypoints" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                        View Runtime
+                                    </a>
                                 </td>
                             </tr>
                         {% else %}
