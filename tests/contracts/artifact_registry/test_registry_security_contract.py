@@ -148,9 +148,9 @@ def test_security_navigation_adds_overview_before_existing_focused_tabs() -> Non
     routes = read('app/artifact_registry/routes.py')
 
     assert "'artifact_registry_security': (" in catalog
-    capability_tabs = catalog.split("'artifact_registry_security': (", 1)[1].split(
-        "'object_storage_inventory':", 1
-    )[0]
+    capability_tabs = catalog.split('_CAPABILITY_VIEWS:', 1)[1].split(
+        "'artifact_registry_security': (", 1
+    )[1].split("'object_storage_inventory':", 1)[0]
     assert capability_tabs.index("'overview'") < capability_tabs.index("'vulnerabilities'")
     assert capability_tabs.index("'vulnerabilities'") < capability_tabs.index("'supply_chain'")
     assert "'artifact_registry.security_overview'" in capability_tabs
