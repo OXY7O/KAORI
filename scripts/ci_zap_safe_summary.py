@@ -293,6 +293,10 @@ def main(argv: list[str] | None = None) -> int:
         )
         _check_array_budget(payload)
         summary = render_summary(payload, args.source_sha)
+        # A parent directory can be replaced with a symlink after the initial
+        # no-follow check. Revalidate the entire input path before publication.
+        if args.input.parent.resolve() != args.input.parent.absolute():
+            raise UnverifiedZapReport('Unsafe ZAP report input directory')
         # The descriptor can remain stable even when its pathname is replaced
         # after open. Reject a different on-disk report before publication.
         current_input = args.input.stat(follow_symlinks=False)
