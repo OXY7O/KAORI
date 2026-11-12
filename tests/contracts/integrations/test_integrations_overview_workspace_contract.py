@@ -413,3 +413,25 @@ def test_runtime_overview_metric_summary_is_inset_from_header_and_filters() -> N
     assert 'hx-trigger="change delay:100ms"' in runtime
     assert 'Open Data Lifecycle' in runtime
     assert 'Reload Evidence' in runtime
+
+
+def test_runtime_final_lock_checks_authorized_lifecycle_header_instead_of_legacy_footer() -> None:
+    runtime = read('app/templates/integrations/partials/_runtime_overview.html')
+    verifier = read('scripts/verify_integrations_final_lock.py')
+
+    header = runtime.split('</header>', 1)[0]
+    assert 'Open Data Lifecycle' in header
+    assert 'Runtime Evidence Lifecycle' not in runtime
+    assert "runtime_header = runtime_overview.split('</header>', 1)[0]" in verifier
+    assert "'components/states/_empty_state.html'" in verifier
+    assert 'No Integration Targets Registered' in verifier
+    assert 'No Runtime Targets Match These Filters' in verifier
+    assert "current_user.has_permission('platform_operations.view_data_lifecycle')" in verifier
+    assert "url_for('platform_operations.data_lifecycle.index', domain='runtime_observation')" in verifier
+    assert "runtime_header.count('Open Data Lifecycle') == 1" in verifier
+    assert "'Reload Evidence' in runtime_header" in verifier
+    assert "'Runtime Evidence Lifecycle' not in runtime_overview" in verifier
+    assert 'provider_registry.pagination_footer(runtime_pagination' in verifier
+    assert '<div id="integration-runtime-modal-host"></div>' in verifier
+    assert 'Runtime Overview must expose authorized Data Lifecycle governance in header' in verifier
+    assert "'Runtime Evidence Lifecycle' in runtime_overview" not in verifier
