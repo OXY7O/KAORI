@@ -90,7 +90,9 @@ def main() -> int:
         'app/templates/kubernetes/governance/internal_certificates/partials/_collection_operations.html'
     )
     pki_posture = read('app/templates/kubernetes/governance/internal_certificates/partials/_posture.html')
-    pki_inventory = read('app/templates/kubernetes/governance/internal_certificates/partials/_certificate_inventory.html')
+    pki_inventory = read(
+        'app/templates/kubernetes/governance/internal_certificates/partials/_certificate_inventory.html'
+    )
     access_defaults = read('app/definitions/catalogs/access/rbac/access.yaml')
     governance_overview = read('app/templates/kubernetes/governance/overview/index.html')
     for guard in (
