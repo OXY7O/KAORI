@@ -85,6 +85,39 @@ CVE/severity/fix evidence, digest-vs-tag binding confidence, canonical footers,
 RBAC, HTMX, and direct Runtime Usage drill-down. The tables are read-only
 committed evidence, not authoritative Application/Team ownership.
 
+## Exact-CVE evidence tables: multi-record presentation (Human UAT #2603)
+
+The two red-marked `CVE Runtime Impact` sections are **one-to-many committed
+datasets**, even when a sample CVE happens to have only one row. A CVE may
+appear across several Registry artifacts, projects, sources, and packages;
+each affected digest can have several independent Kubernetes runtime bindings.
+Therefore both sections remain **canonical KAORI tables**, not static cards or
+single-record fact sheets. The read model retains two independently paginated
+server-side queries, with a default of five rows and existing choices of
+5/10/25/50. The tables must not silently show only a sample row.
+
+Both sections use one `table_ui.block_classes()` surface each, with a shared
+`table_ui.inventory_block_header` that owns its icon, descriptive hierarchy,
+loading indicator, and a source-counted `N Findings` or `N Bindings` metadata
+badge. Do not nest an extra colored card or unowned standalone heading around
+the table. Reuse `table_ui.table_classes`, column/body/row/cell classes,
+accessible captions, horizontal scrolling and the canonical `registry.footer`
+with independent `finding_page`/`runtime_page` route identity and page-size
+controls. The embedded `components/states/_empty_state.html` is the source of
+consistent empty states, with explicit **unknown/unverified** language when
+correlation evidence is not current.
+
+The scanner evidence table presents Registry source/artifact/digest provenance,
+package/installed version, severity, fix version, last observed scan and
+Runtime Usage drill-down. The runtime table presents cluster/namespace,
+workload/pod/container, provider-neutral match confidence, observation time
+and Runtime Usage drill-down. Full immutable digests remain visible in a
+responsive wrapping value; interactive links remain keyboard accessible.
+A digest match carries stronger evidence than a mutable tag/reference.
+No runtime rows never means the CVE or the application estate is safe;
+external provider findings and committed KAORI correlation remain authoritative.
+This is a view-only redesign: no query, provider, worker, RBAC or schema change.
+
 ## QA and admission
 
 - Exact-commit djlint and Ruff check/format on updated templates and Python files.
