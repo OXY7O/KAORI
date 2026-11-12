@@ -127,8 +127,17 @@ def main() -> int:
         'partials/_snapshot_context.html',
         'partials/_collection_operations.html',
         'partials/_posture.html',
+        'Internal PKI Evidence',
+        'workspace_tabs.render_query_tabs(evidence_tabs',
+        'hx-select="#internal-pki-evidence-workspace"',
+        "active_tab == 'sources'",
     ):
         require(item in internal_page, f'Internal PKI workspace is missing: {item}', errors)
+    require(
+        "active_tab = request.args.get('evidence_tab', 'sources')" in internal_routes,
+        'Internal PKI evidence tabs must be safe query-backed server navigation.',
+        errors,
+    )
     for item in ('Internal PKI Collection Snapshot', 'components/snapshot_context_bar.html'):
         require(item in pki_snapshot, f'Internal PKI collection snapshot is missing: {item}', errors)
     for item in ('Internal PKI Collection Operations', 'PKI Evidence Boundaries', 'Sync Internal PKI', 'disabled'):
