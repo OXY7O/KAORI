@@ -891,3 +891,76 @@ def build_security(
         'pagination': pagination,
         'active_pagination': active_pagination,
     }
+
+
+def build_security_overview(*, source_id: int | None = None) -> dict[str, Any]:
+    """Read-only security landing derived from the existing committed evidence projection."""
+    registered_sources = _registered_sources()
+    sources = _providers()
+    if source_id is not None and not any(int(item.id) == source_id for item in sources):
+        raise NotFound('The selected committed Registry security source is unavailable.')
+    scoped_sources = _scoped_sources(sources, provider='', source_id=source_id)
+    evidence = _security_scope_evidence(
+        sources=sources,
+        scoped_sources=scoped_sources,
+        explicit_scope=source_id is not None,
+        view='vulnerabilities',
+    )
+    scope_label, source_label = _security_scope_labels(
+        provider_value='',
+        source_id=source_id,
+        scoped_sources=scoped_sources,
+    )
+    snapshot = _security_snapshot_context(
+        evidence,
+        active_scope_label=scope_label,
+        source_label=source_label,
+        view='vulnerabilities',
+    )
+    observed_scans = bool(evidence['current_scanned_artifacts'])
+    unknown = not observed_scans
+    return {
+        'title': 'Security Overview',
+        'setup_blocked': not registered_sources,
+        'inventory_required': bool(registered_sources) and not sources,
+        'snapshot': snapshot,
+        'posture': _security_posture(evidence),
+        'critical': int(evidence['critical_total']),
+        'high': int(evidence['high_total']),
+        'affected_artifacts': int(evidence['affected_artifacts']),
+        'runtime_exposed': int(evidence['runtime_exposed']),
+        'signature_observed': int(evidence['signature_observed']),
+        'sbom_available': int(evidence['sbom_available']),
+        'coverage_gaps': int(evidence['coverage_gaps']),
+        'source_count': len(scoped_sources),
+        'posture_metrics': [
+            (
+                'octagon-alert',
+                'Critical Findings',
+                int(evidence['critical_total']),
+                'Committed critical findings.',
+                'unknown' if unknown else 'critical' if evidence['critical_total'] else 'info',
+            ),
+            (
+                'triangle-alert',
+                'High Findings',
+                int(evidence['high_total']),
+                'Committed high-severity findings.',
+                'unknown' if unknown else 'warning' if evidence['high_total'] else 'info',
+            ),
+            (
+                'package-search',
+                'Affected Artifacts',
+                int(evidence['affected_artifacts']),
+                'Distinct high-risk artifact digests.',
+                'unknown' if unknown else 'warning' if evidence['affected_artifacts'] else 'info',
+            ),
+            (
+                'waypoints',
+                'Runtime Exposed',
+                int(evidence['runtime_exposed']),
+                'Correlated runtime bindings.',
+                'unknown' if unknown else 'critical' if evidence['runtime_exposed'] else 'info',
+            ),
+        ],
+    }
