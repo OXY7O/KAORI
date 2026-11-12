@@ -192,8 +192,6 @@ def test_runtime_read_and_materialization_bounded_projection() -> None:
     assert "'Bindings with Critical/High findings.'" in workspace
 
 
-
-
 def test_runtime_binding_detail_reuses_kubernetes_compact_modal_grammar() -> None:
     from jinja2 import Environment
 
