@@ -179,12 +179,9 @@ def test_internal_pki_posture_is_scope_qualified_and_keeps_stale_partial_evidenc
         db.session.commit()
         stale_manifest = _manifest(old_cluster, collected_at=datetime.now(UTC) - timedelta(days=60))
         stale_manifest['coverage_state'] = 'partial'
-        stale_manifest['certificates'][0]['not_after'] = (
-            datetime.now(UTC) - timedelta(days=1)
-        ).isoformat()
-        stale_manifest['certificates'][1]['not_after'] = (
-            datetime.now(UTC) + timedelta(days=365)
-        ).isoformat()
+        now = datetime.now(UTC)
+        stale_manifest['certificates'][0]['not_after'] = (now - timedelta(days=1)).isoformat()
+        stale_manifest['certificates'][1]['not_after'] = (now + timedelta(days=365)).isoformat()
         import_attested_pki_metadata(stale_manifest)
         import_attested_pki_metadata(_manifest(new_cluster))
 
