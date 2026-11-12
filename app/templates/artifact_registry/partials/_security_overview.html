@@ -96,7 +96,7 @@
                             'action_label': 'Browse Vulnerabilities'
                             }, compact=true) }}
                     {{ workspace_card.render({
-                            'href': url_for('artifact_registry.security_supply_chain', source_id=request.args.get('source_id')),
+                            'href': url_for('artifact_registry.security_supply_chain', source_id=security.source_id),
                             'title': 'Supply Chain',
                             'label': 'Provider Evidence',
                             'description': 'Review observed signatures, SBOM availability, and evidence gaps.',
