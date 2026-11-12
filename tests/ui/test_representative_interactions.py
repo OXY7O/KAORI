@@ -236,14 +236,40 @@ def test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewp
         assert response.ok
 
         expect(page.get_by_role('heading', name='Welcome to KAORI')).to_be_visible()
+        secrets_card = page.get_by_role('link', name='Open Secrets & PKI Workspace')
         tenant_card = page.get_by_role('link', name='Open Tenant Management Workspace')
         access_card = page.get_by_role('link', name='Open Access Workspace')
+        expect(secrets_card).to_be_visible()
         expect(tenant_card).to_be_visible()
         expect(access_card).to_be_visible()
+        expect(secrets_card).to_contain_text('Secret values')
         expect(tenant_card).to_contain_text('Governed Tenancy')
         expect(tenant_card).to_contain_text(re.compile(r'namespace provisioning', re.I))
         expect(access_card).to_contain_text(re.compile(r'identity providers', re.I))
         expect(access_card).to_contain_text('directory-projected external identities')
+
+        # Operator-reviewed Welcome card copy must fit naturally without clipping.
+        if viewport_name in {'large-desktop', 'laptop'}:
+            for title, card in (
+                ('Secrets & PKI', secrets_card),
+                ('Tenant Management', tenant_card),
+                ('Access', access_card),
+            ):
+                description = card.locator('p').last
+                dimensions = description.evaluate(
+                    """element => ({
+                        height: element.getBoundingClientRect().height,
+                        lineHeight: parseFloat(getComputedStyle(element).lineHeight),
+                        scrollHeight: element.scrollHeight,
+                        clientHeight: element.clientHeight
+                    })"""
+                )
+                assert dimensions['height'] <= dimensions['lineHeight'] * 2 + 1, (
+                    f'{title} Welcome description exceeds two desktop lines: {dimensions}'
+                )
+                assert dimensions['scrollHeight'] <= dimensions['clientHeight'] + 1, (
+                    f'{title} Welcome description is clipped: {dimensions}'
+                )
 
         assert_document_fits_viewport(page)
         cards = page.locator('[data-workspace-card]')
