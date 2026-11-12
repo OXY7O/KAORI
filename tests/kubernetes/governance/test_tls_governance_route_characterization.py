@@ -6,8 +6,8 @@ import pytest
 from flask_login import UserMixin
 
 from app import create_app
-from app.common.navigation import build_navigation_breadcrumb
 from app.bootstrap import presentation as bootstrap_presentation
+from app.common.navigation import build_navigation_breadcrumb
 from app.common.workspace_navigation import build_capability_navigation
 from app.extensions import login as login_extension
 from app.extensions import login_manager
