@@ -871,6 +871,11 @@ const startTopologyWorkspace = () => {
         setText('topology-hero-namespaces', summary.namespaces ?? 0)
         setText('topology-hero-resources', summary.resources ?? 0)
         setText('topology-hero-relationships', summary.relationships ?? 0)
+        const relationships = Number(summary.relationships ?? 0)
+        setText(
+            'topology-relationship-badge-count',
+            `${relationships} Relationship${relationships === 1 ? '' : 's'}`
+        )
         setText('topology-hero-coverage', summary.omitted_nodes ?? 0)
         $('topology-hero-coverage-complete')?.classList.toggle('hidden', Boolean(summary.truncated))
         $('topology-hero-coverage-limited')?.classList.toggle('hidden', !summary.truncated)

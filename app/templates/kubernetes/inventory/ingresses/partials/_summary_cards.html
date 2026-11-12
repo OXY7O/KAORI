@@ -1,4 +1,5 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/table_label.html" as table_label %}
 {% import "components/resource_posture_grid.html" as posture_grid %}
 {% set empty_tone = 'unknown' if inventory.total_ingresses == 0 else 'brand' %}
 {% set metrics = [
@@ -9,10 +10,14 @@
     ('map-pin-off', 'Publication Exceptions', inventory.publication_exceptions, 'Ingresses with pending or unreported controller publication evidence.', 'unknown' if inventory.total_ingresses == 0 else ('warning' if inventory.publication_exceptions > 0 else 'normal')),
     ('route-off', 'Routing Exceptions', inventory.routing_exceptions, 'Ingresses without represented backend routes or specification evidence.', 'unknown' if inventory.total_ingresses == 0 else ('warning' if inventory.routing_exceptions > 0 else 'normal'))
 ] %}
+{% set posture_badge %}
+    {{ table_label.metadata_label(metrics|length ~ ' Indicators', icon='layout-grid') }}
+{% endset %}
 {% call operational_section_card.render(
     'Ingress Publication Posture',
     'Declared publication, TLS references, routing composition, and evidence exceptions for the active Ingress filters.',
     'gauge',
+    header_badge=posture_badge,
     body_classes='p-0'
     ) %}
     {{ posture_grid.render(metrics, columns=3) }}

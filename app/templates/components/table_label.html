@@ -83,14 +83,14 @@
         <span>{{ text }}</span>
     </span>
 {%- endmacro %}
-{% macro metadata_label(text, icon=None, wrap=false, size='compact') -%}
+{% macro metadata_label(text, icon=None, wrap=false, size='compact', text_id=None) -%}
     <span class="kaori-semantic-label inline-flex min-h-6 max-w-full items-center gap-1 rounded-md bg-kaori-soft px-2 py-0.5 font-semibold {{ 'text-xs leading-5' if size == 'detail' else 'text-xs leading-4' }} text-kaori-primary-dark dark:text-kaori-accent">
         {% if icon %}
             <i data-lucide="{{ icon }}"
                class="h-3 w-3 shrink-0 text-kaori-primary dark:text-kaori-accent"
                aria-hidden="true"></i>
         {% endif %}
-        <span class="{{ 'break-all whitespace-normal' if wrap else 'whitespace-nowrap' }}">{{ text }}</span>
+        <span class="{{ 'break-all whitespace-normal' if wrap else 'whitespace-nowrap' }}"{% if text_id %} id="{{ text_id }}"{% endif %}>{{ text }}</span>
     </span>
 {%- endmacro %}
 {# Non-interactive filtered-total indicator for KAORI table headers. #}

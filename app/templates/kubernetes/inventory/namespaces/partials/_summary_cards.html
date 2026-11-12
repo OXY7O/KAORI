@@ -1,4 +1,5 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/table_label.html" as table_label %}
 {% import "components/resource_posture_grid.html" as posture_grid %}
 {% set posture_metrics = [
     (
@@ -44,10 +45,14 @@
     'unknown' if inventory.total_namespaces == 0 else ('warning' if inventory.unknown_namespaces > 0 else ('info' if inventory.terminating_namespaces > 0 else 'normal'))
     )
 ] %}
+{% set posture_badge %}
+    {{ table_label.metadata_label(posture_metrics|length ~ ' Indicators', icon='layout-grid') }}
+{% endset %}
 {% call operational_section_card.render(
     'Namespace Control Posture',
     'Lifecycle, resource-control, and security evidence for the active Namespace Inventory filters.',
     'shield-check',
+    header_badge=posture_badge,
     body_classes='p-0'
     ) %}
     {{ posture_grid.render(posture_metrics, columns=3) }}
