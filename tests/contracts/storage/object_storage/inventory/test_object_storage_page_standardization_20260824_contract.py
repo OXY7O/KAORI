@@ -22,10 +22,13 @@ def test_object_storage_requested_wording_is_concise_and_locked() -> None:
     presentation = read('app/storage/object_storage/inventory/presentation.py')
     summary = read('app/templates/storage/object_storage/inventory/buckets/partials/_summary_cards.html')
     detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
+    filters = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_card.html')
 
     assert 'Committed inventory is available; snapshot or provider conditions need review.' in system_presentation
     assert 'Usage metrics are optional.' in presentation
     assert 'Latest committed inventory observation.' in summary
+    assert "'Name, system, type'" in filters
+    assert 'Search name, system, provider, type, or location' not in filters
     assert (
         'Usage is collected separately from quota. Prefer provider_metrics; '
         'use full_scan only for exact object enumeration.'
