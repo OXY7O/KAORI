@@ -379,6 +379,7 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
         calls.append('read')
         return {
             'total': 1,
+            'committed_total': 1,
             'records': [
                 {
                     'component': 'apiserver',
@@ -395,6 +396,8 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
                     'reference': 'CHG-001',
                     'status': 'Outside Window',
                     'tone': 'normal',
+                    'freshness': 'Recently Collected',
+                    'freshness_tone': 'info',
                 }
             ],
             'search': '',
