@@ -518,3 +518,28 @@ def test_short_read_with_stable_descriptor_metadata_is_not_verified(tmp_path, mo
     assert not output.exists()
     assert report.exists()
     assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_output_parent_swapped_to_symlink_during_parse_fails_closed(tmp_path, monkeypatch, capsys):
+    report = tmp_path / 'zap.json'
+    report.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
+    safe_parent = tmp_path / 'safe'
+    safe_parent.mkdir()
+    output = safe_parent / 'summary.md'
+    output.write_text('stale summary', encoding='utf-8')
+    outside = tmp_path / 'outside'
+    outside.mkdir()
+    original_render = zap.render_summary
+
+    def swap_parent_during_parse(payload, source_sha):
+        summary = original_render(payload, source_sha)
+        safe_parent.rename(tmp_path / 'old-safe')
+        safe_parent.symlink_to(outside, target_is_directory=True)
+        return summary
+
+    monkeypatch.setattr(zap, 'render_summary', swap_parent_during_parse)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not (outside / 'summary.md').exists()
+    assert not list(outside.glob('.zap-summary-*.tmp'))
+    assert not (tmp_path / 'old-safe' / 'summary.md').exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
