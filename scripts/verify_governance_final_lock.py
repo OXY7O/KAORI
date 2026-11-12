@@ -85,6 +85,9 @@ def main() -> int:
     internal_routes = read('app/kubernetes/governance/internal_certificates/routes.py')
     internal_service = read('app/kubernetes/governance/internal_certificates/service.py')
     internal_page = read('app/templates/kubernetes/governance/internal_certificates/index.html')
+    pki_snapshot = read('app/templates/kubernetes/governance/internal_certificates/partials/_snapshot_context.html')
+    pki_operations = read('app/templates/kubernetes/governance/internal_certificates/partials/_collection_operations.html')
+    pki_posture = read('app/templates/kubernetes/governance/internal_certificates/partials/_posture.html')
     access_defaults = read('app/definitions/catalogs/access/rbac/access.yaml')
     governance_overview = read('app/templates/kubernetes/governance/overview/index.html')
     for guard in (
@@ -118,12 +121,23 @@ def main() -> int:
         'Internal PKI Source Registry',
         "registry_ui.filter_form('governance.internal_certificates'",
         "registry_ui.footer('governance.internal_certificates'",
-        'Not Collected',
-        'Not Verified',
         'Provider-Owned Renewal',
-        "'Renewal', 'Provider Owned',",
+        'partials/_snapshot_context.html',
+        'partials/_collection_operations.html',
+        'partials/_posture.html',
     ):
         require(item in internal_page, f'Internal PKI workspace is missing: {item}', errors)
+    for item in ('Internal PKI Collection Snapshot', 'components/snapshot_context_bar.html'):
+        require(item in pki_snapshot, f'Internal PKI collection snapshot is missing: {item}', errors)
+    for item in ('Internal PKI Collection Operations', 'PKI Evidence Boundaries', 'Sync Internal PKI', 'disabled'):
+        require(item in pki_operations, f'Internal PKI collection operations is missing: {item}', errors)
+    for item in ('Source-Reported Certificate Posture', 'components/resource_posture_grid.html'):
+        require(item in pki_posture, f'Internal PKI posture is missing: {item}', errors)
+    require(
+        'hx-post' not in pki_operations and '<form' not in pki_operations,
+        'Internal PKI Sync must not expose a mutation route while collection is unavailable.',
+        errors,
+    )
     require(
         "section_intro.render('Source Readiness'" not in internal_page,
         'Internal PKI must not render a standalone Source Readiness intro directly after Hero.',
@@ -135,7 +149,8 @@ def main() -> int:
         errors,
     )
     require(
-        'Request Renewal' not in internal_page and 'Rotate All' not in internal_page,
+        'Request Renewal' not in internal_page + pki_operations
+        and 'Rotate All' not in internal_page + pki_operations,
         'Internal PKI source readiness must remain non-mutating.',
         errors,
     )
