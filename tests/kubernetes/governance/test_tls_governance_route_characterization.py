@@ -171,7 +171,7 @@ def test_governance_only_user_cannot_read_or_see_tls_snapshot(
 ) -> None:
     client = _client_for_user(app, monkeypatch, GovernanceRouteUser({'governance.view'}))
 
-    def unexpected_tls_probe():
+    def unexpected_tls_probe() -> None:
         raise AssertionError('TLS snapshot read or cluster probe must not run without child permission')
 
     monkeypatch.setattr(governance_routes, 'has_registered_clusters', unexpected_tls_probe)
@@ -226,7 +226,7 @@ def test_governance_clusterless_does_not_load_tls_snapshot_even_with_permission(
     monkeypatch.setattr(bootstrap_presentation, 'build_cluster_onboarding_context', _clusterless_context)
     monkeypatch.setattr(governance_routes, 'has_registered_clusters', lambda: False)
 
-    def unexpected_tls_query():
+    def unexpected_tls_query() -> None:
         raise AssertionError('TLS snapshot must not be queried when cluster setup is blocked')
 
     monkeypatch.setattr(governance_routes, 'get_tls_collection_snapshot', unexpected_tls_query)
