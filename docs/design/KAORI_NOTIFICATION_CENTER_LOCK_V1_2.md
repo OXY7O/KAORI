@@ -39,6 +39,17 @@ Stored event keys are unchanged; category is presentation/filter metadata.
 
 Default Rows remains 5 with 5/10/25/50 options. Pagination renders **Previous**, numeric pages, and **Next** through shared KAORI pagination classes.
 
+The Notification Register's Rows selector sends a canonical server-backed **GET on change**, rather
+than dispatching a second generic `requestSubmit()` event. The request contains the selected
+`per_page`, resets `page=1`, and preserves `view=notifications`, search, category, status,
+and read-state filters. It swaps only `#activity-notification-page` and pushes the selected
+state into browser history. The owning 15-second HTMX refresh and explicit operator Rows change
+share a synchronization boundary: an in-flight old poll must not overwrite the newer user
+choice. A no-JavaScript `Apply Rows` submit fallback retains native GET behavior.
+
+Do not change the global `data-kaori-auto-submit` controller for this domain-specific request
+boundary; other KAORI registries continue to use their existing approved controls.
+
 ## Empty-state semantics
 
 Notification Center **page tabs** use the canonical
