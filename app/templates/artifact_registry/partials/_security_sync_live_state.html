@@ -19,8 +19,7 @@
                     class="text-sm font-semibold text-content-primary">Security Evidence Operations</h3>
                 {{ table_label.status_label(security_sync_state.label, security_sync_state.tone, none, 'detail') }}
             </div>
-            <p class="mt-1 text-xs leading-5 text-content-muted">{{ security_sync_state.helper }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Read-only · does not trigger provider scans.</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">{{ security_sync_state.compact_helper }} · Read-only; no provider scans.</p>
             {% if security_sync_state.active_job %}
                 <div class="mt-3">
                     {{ progress_bar.job_progress(security_sync_state.active_job,
