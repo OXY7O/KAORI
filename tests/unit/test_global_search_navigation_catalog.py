@@ -132,9 +132,7 @@ def test_cve_navigation_targets_buildable_vulnerability_registry(monkeypatch: An
             )
             assert [result['url'] for result in results] == ['/artifact-registry/security/vulnerabilities']
             assert results[0]['title'] == 'Vulnerabilities'
-        assert (
-            service.navigation_results(query='cve', has_permission=lambda permission: False) == []
-        )
+        assert service.navigation_results(query='cve', has_permission=lambda permission: False) == []
 
 
 def test_unbuildable_legacy_destination_is_logged_and_excluded(monkeypatch: Any, caplog: Any) -> None:
