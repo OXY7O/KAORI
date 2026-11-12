@@ -32,6 +32,8 @@ KAORI scheduled/on-demand evidence collection (#4443, future)
 
 The current `flask prepare-internal-pki` + `flask import-internal-pki` manual operator-attested path remains a restricted **non-production UAT/controlled fallback**. It proves normalization and persistence, **not** automated collection, installed certificate use, CA trust, or full-node coverage. #4443 is the separate authority to implement scheduled collection after source owner/identity and runner compatibility are approved.
 
+**Automated-collection adapter boundary:** the current v1 manual importer and the UI explicitly label committed batches **Operator Attested**. Do not wire an Ansible result directly into that operator-attested CLI path and present it as independently verified. #4443 must introduce or extend existing collection-run provenance (runner/job identity, approved source version, node scope, outcome, timestamps and evidence authority), reuse safe normalization where valid, and make UI source labels distinguish operator attestation from automated source-qualified collection. Migration/contract changes require a separate bounded implementation issue and tests; collection remains read-only.
+
 ## 3. Collection support and evidence boundaries
 
 | Source family | Read-only evidence source | Coverage / provenance rule | Lifecycle owner |
