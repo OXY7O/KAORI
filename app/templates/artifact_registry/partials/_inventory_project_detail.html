@@ -37,7 +37,7 @@
                     project.visibility.label,
                     'status',
                     project.visibility.tone,
-                    description='Project identity and visibility.'
+                    description='Identity and visibility.'
                     ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_technical_row('Project Name', project.name, class_name='lg:col-span-2') }}
@@ -64,7 +64,7 @@
                     'Repository Coverage',
                     'package-open',
                     project.repository_count ~ (' Repository' if project.repository_count == 1 else ' Repositories'),
-                    description='Repositories in this snapshot.'
+                    description='Committed repositories.'
                     ) %}
                     {% if project.repository_preview %}
                         <div class="overflow-x-auto">
@@ -118,7 +118,7 @@
                     project.snapshot.label,
                     'status',
                     project.snapshot.tone,
-                    description='Snapshot freshness and scope.'
+                    description='Snapshot freshness.'
                     ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_status_row('Snapshot State', project.snapshot.label, project.snapshot.tone) }}
