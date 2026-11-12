@@ -64,15 +64,9 @@ def test_operations_overview_follows_inventory_section_hierarchy_with_metadata_b
         assert f'aria-labelledby="{section_id}"' in page
         assert f"'{section_id}'" in page
 
-    assert page.index("section_intro.render('Operational Capabilities'") < page.index(
-        "'Operation Workspace Catalog'"
-    )
-    assert page.index("section_intro.render('Execution Governance'") < page.index(
-        "'Execution & Evidence Model'"
-    )
-    assert page.index("'Operation Workspace Catalog'") < page.index(
-        "'Execution & Evidence Model'"
-    )
+    assert page.index("section_intro.render('Operational Capabilities'") < page.index("'Operation Workspace Catalog'")
+    assert page.index("section_intro.render('Execution Governance'") < page.index("'Execution & Evidence Model'")
+    assert page.index("'Operation Workspace Catalog'") < page.index("'Execution & Evidence Model'")
 
 
 def test_operations_cards_opt_into_compact_navigation_without_changing_defaults() -> None:
