@@ -71,10 +71,7 @@ def get_internal_certificates_source_page(args: Any) -> dict[str, Any]:
         stmt = stmt.where(KubernetesConnection.detected_platform == platform)
 
     environments = db.session.scalars(
-        select(Cluster.environment)
-        .where(Cluster.environment.is_not(None))
-        .distinct()
-        .order_by(Cluster.environment)
+        select(Cluster.environment).where(Cluster.environment.is_not(None)).distinct().order_by(Cluster.environment)
     ).all()
     platforms = db.session.scalars(
         select(KubernetesConnection.detected_platform)
@@ -249,7 +246,9 @@ def get_internal_certificate_inventory_page(args: Any) -> dict[str, Any]:
     coverage = str(args.get('cert_coverage') or '').strip()
     freshness = str(args.get('cert_freshness') or '').strip()
     kind = kind if kind in {'leaf', 'ca'} else ''
-    expiry = expiry if expiry in {'outside_window', 'renewal_window', 'critical_window', 'expired', 'not_yet_valid'} else ''
+    expiry = (
+        expiry if expiry in {'outside_window', 'renewal_window', 'critical_window', 'expired', 'not_yet_valid'} else ''
+    )
     coverage = coverage if coverage in {'partial', 'complete'} else ''
     freshness = freshness if freshness in {'recent', 'stale'} else ''
     page = _page_number(args.get('cert_page'))
@@ -287,9 +286,7 @@ def get_internal_certificate_inventory_page(args: Any) -> dict[str, Any]:
             certificate.not_after <= now + timedelta(days=30),
         )
     elif expiry == 'critical_window':
-        query = query.filter(
-            valid_from, certificate.not_after > now, certificate.not_after <= now + timedelta(days=7)
-        )
+        query = query.filter(valid_from, certificate.not_after > now, certificate.not_after <= now + timedelta(days=7))
     elif expiry == 'expired':
         query = query.filter(valid_from, certificate.not_after <= now)
     elif expiry == 'not_yet_valid':
