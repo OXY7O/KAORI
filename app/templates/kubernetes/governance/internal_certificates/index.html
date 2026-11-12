@@ -76,9 +76,15 @@
                         evidence_tab='sources',
                         cluster_id=payload.selected_cluster_id,
                         search=payload.search,
+                        environment=payload.filters.environment,
+                        platform=payload.filters.platform,
                         page=payload.pagination.page,
                         per_page=payload.pagination.per_page,
                         cert_search=inventory.search if inventory else request.args.get('cert_search', ''),
+                        cert_kind=inventory.filters.kind if inventory else request.args.get('cert_kind', ''),
+                        cert_expiry=inventory.filters.expiry if inventory else request.args.get('cert_expiry', ''),
+                        cert_coverage=inventory.filters.coverage if inventory else request.args.get('cert_coverage', ''),
+                        cert_freshness=inventory.filters.freshness if inventory else request.args.get('cert_freshness', ''),
                         cert_page=inventory.pagination.page if inventory else request.args.get('cert_page', 1),
                         cert_per_page=inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5))
                     ),
@@ -90,9 +96,15 @@
                         evidence_tab='certificates',
                         cluster_id=payload.selected_cluster_id,
                         search=payload.search,
+                        environment=payload.filters.environment,
+                        platform=payload.filters.platform,
                         page=payload.pagination.page,
                         per_page=payload.pagination.per_page,
                         cert_search=inventory.search if inventory else request.args.get('cert_search', ''),
+                        cert_kind=inventory.filters.kind if inventory else request.args.get('cert_kind', ''),
+                        cert_expiry=inventory.filters.expiry if inventory else request.args.get('cert_expiry', ''),
+                        cert_coverage=inventory.filters.coverage if inventory else request.args.get('cert_coverage', ''),
+                        cert_freshness=inventory.filters.freshness if inventory else request.args.get('cert_freshness', ''),
                         cert_page=inventory.pagination.page if inventory else request.args.get('cert_page', 1),
                         cert_per_page=inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5))
                     )
@@ -136,6 +148,10 @@
                                         form_id='internal-pki-source-filter',
                                         aria_label='Filter registered clusters for internal PKI source assessment') %}
                                         <input type="hidden" name="evidence_tab" value="sources">
+                                        <input type="hidden" name="cert_kind" value="{{ inventory.filters.kind if inventory else request.args.get('cert_kind', '') }}">
+                                        <input type="hidden" name="cert_expiry" value="{{ inventory.filters.expiry if inventory else request.args.get('cert_expiry', '') }}">
+                                        <input type="hidden" name="cert_coverage" value="{{ inventory.filters.coverage if inventory else request.args.get('cert_coverage', '') }}">
+                                        <input type="hidden" name="cert_freshness" value="{{ inventory.filters.freshness if inventory else request.args.get('cert_freshness', '') }}">
                                         <input type="hidden" name="cert_search" value="{{ inventory.search if inventory else request.args.get('cert_search', '') }}">
                                         <input type="hidden" name="cert_page" value="{{ inventory.pagination.page if inventory else request.args.get('cert_page', 1) }}">
                                         <input type="hidden" name="cert_per_page" value="{{ inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5) }}">
@@ -155,6 +171,51 @@
                                                    class="mt-1 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary"
                                                    autocomplete="off">
                                         </label>
+                                        <div class="min-w-0 sm:w-40">
+                                            <label for="internal-pki-environment-filter"
+                                                   class="{{ table_ui.filter_label_classes() }}">Environment</label>
+                                            <select id="internal-pki-environment-filter"
+                                                    name="environment"
+                                                    class="{{ table_ui.filter_select_classes() }}">
+                                                <option value="">All Environments</option>
+                                                {% for environment in payload.filter_options.environments %}
+                                                    <option value="{{ environment }}"
+                                                            {% if payload.filters.environment == environment %}selected{% endif %}>{{ environment }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="min-w-0 sm:w-40">
+                                            <label for="internal-pki-platform-filter"
+                                                   class="{{ table_ui.filter_label_classes() }}">Detected Platform</label>
+                                            <select id="internal-pki-platform-filter"
+                                                    name="platform"
+                                                    class="{{ table_ui.filter_select_classes() }}">
+                                                <option value="">All Platforms</option>
+                                                {% for platform in payload.filter_options.platforms %}
+                                                    <option value="{{ platform }}"
+                                                            {% if payload.filters.platform == platform %}selected{% endif %}>{{ platform }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        {% if payload.search or payload.filters.environment or payload.filters.platform %}
+                                            {{ registry_ui.clear_filters_link('governance.internal_certificates',
+                                                'internal-pki-source-registry',
+                                                'internal-pki-source-loading',
+                                                payload.pagination.per_page,
+                                                table_ui.action_classes(),
+                                                query_params={
+                                                'evidence_tab': 'sources',
+                                                'cluster_id': payload.selected_cluster_id,
+                                                'cert_search': inventory.search if inventory else request.args.get('cert_search', ''),
+                                                'cert_kind': inventory.filters.kind if inventory else request.args.get('cert_kind', ''),
+                                                'cert_expiry': inventory.filters.expiry if inventory else request.args.get('cert_expiry', ''),
+                                                'cert_coverage': inventory.filters.coverage if inventory else request.args.get('cert_coverage', ''),
+                                                'cert_freshness': inventory.filters.freshness if inventory else request.args.get('cert_freshness', ''),
+                                                'cert_page': inventory.pagination.page if inventory else request.args.get('cert_page', 1),
+                                                'cert_per_page': inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5)
+                                                },
+                                                lead=false) }}
+                                        {% endif %}
                                     {% endcall %}
                                 </div>
                                 <div class="w-full overflow-x-auto">
@@ -207,7 +268,7 @@
                                                     'internal-pki-source-registry',
                                                     'internal-pki-source-loading',
                                                     payload.pagination,
-                                                    {'search': payload.search, 'cluster_id': payload.selected_cluster_id, 'evidence_tab': 'sources', 'cert_search': inventory.search if inventory else request.args.get('cert_search', ''), 'cert_page': inventory.pagination.page if inventory else request.args.get('cert_page', 1), 'cert_per_page': inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5)},
+                                                    {'search': payload.search, 'environment': payload.filters.environment, 'platform': payload.filters.platform, 'cluster_id': payload.selected_cluster_id, 'evidence_tab': 'sources', 'cert_search': inventory.search if inventory else request.args.get('cert_search', ''), 'cert_kind': inventory.filters.kind if inventory else request.args.get('cert_kind', ''), 'cert_expiry': inventory.filters.expiry if inventory else request.args.get('cert_expiry', ''), 'cert_coverage': inventory.filters.coverage if inventory else request.args.get('cert_coverage', ''), 'cert_freshness': inventory.filters.freshness if inventory else request.args.get('cert_freshness', ''), 'cert_page': inventory.pagination.page if inventory else request.args.get('cert_page', 1), 'cert_per_page': inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5)},
                                                     payload.pagination.allowed_per_page,
                                                     resource_label='Clusters',
                                                     rows_aria_label='Clusters per page',
