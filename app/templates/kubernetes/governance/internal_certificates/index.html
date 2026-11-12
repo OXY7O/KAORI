@@ -1,12 +1,9 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/section_intro.html" as section_intro %}
-{% import "components/operational_section_card.html" as section_card %}
-{% import "components/resource_posture_grid.html" as posture_grid %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/table_label.html" as table_label %}
-{% import "components/info_tip.html" as info_tip %}
 {% block title %}Internal Certificates{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6">
@@ -57,30 +54,13 @@
                 <p class="mt-1 text-xs text-content-secondary">Source assessment is unavailable. No certificate health or expiry status is inferred.</p>
             </section>
         {% elif payload %}
-            <section class="space-y-4" aria-label="Internal PKI source readiness">
-                {% set source_guide %}
-                    {{ info_tip.render('internal-pki-source-readiness-guide',
-                                        'Internal PKI Source Readiness Guide',
-                                        'This workspace shows committed cluster registrations and operator-attested expiry metadata when available; active certificate use is not verified.',
-                                        items=[
-                                        'Control-plane and etcd expiry require approved host-local or provider-owned evidence.',
-                                        'Kubelet CSR metadata is not proof of an installed certificate or its expiration.',
-                                        'Certificate renewal is managed by the native Kubernetes platform or PKI provider, outside KAORI.'
-                                        ],
-                                        placement='right',
-                                        variant='guide') }}
-                {% endset %}
-                {% call section_card.render(
-                    'PKI Evidence Boundaries',
-                    'Source qualification comes before expiry posture; renewal stays with the platform or PKI owner.',
-                    'shield-alert',
-                    header_badge=source_guide,
-                    body_classes='p-4',
-                    aria_label='Internal certificate source evidence boundaries'
-                    ) %}
-                    {% set metrics = [('database', 'Internal PKI Evidence', inventory.committed_total ~ ' Reported' if inventory and inventory.committed_total else 'Not Collected', 'Operator-attested metadata; installed status unverified', 'info' if inventory and inventory.committed_total else 'unknown'), ('shield-help', 'PKI Authority', 'Operator Supplied' if inventory and inventory.committed_total else 'Not Verified', 'Owner and source verification required', 'info' if inventory and inventory.committed_total else 'unknown'), ('workflow', 'Renewal', 'Provider Owned', 'Use native platform or external PKI procedures', 'info')] %}
-                    {{ posture_grid.render(metrics, columns=3, compact=true) }}
-                {% endcall %}
+            {% include "kubernetes/governance/internal_certificates/partials/_snapshot_context.html" %}
+            {% include "kubernetes/governance/internal_certificates/partials/_collection_operations.html" %}
+            <section class="space-y-4" aria-labelledby="internal-pki-posture-heading">
+                {{ section_intro.render('Certificate Posture',
+                                'Assess source-reported validity and coverage from committed Internal PKI evidence.',
+                                'internal-pki-posture-heading') }}
+                {% include "kubernetes/governance/internal_certificates/partials/_posture.html" %}
             </section>
             <section class="space-y-4" aria-labelledby="internal-pki-inventory-heading">
                 {{ section_intro.render('Registered Source Coverage',
@@ -133,7 +113,7 @@
                     </div>
                     <div class="w-full overflow-x-auto">
                         <table class="w-full min-w-[680px] text-left text-sm text-content-secondary">
-                            <caption class="sr-only">Registered cluster source readiness for internal Kubernetes PKI. No certificate expiration evidence is collected.</caption>
+                            <caption class="sr-only">Registered cluster source readiness for internal Kubernetes PKI; reported expiry is presented separately as committed evidence.</caption>
                             <thead class="{{ table_ui.head_classes() }}">
                                 <tr>
                                     <th scope="col" class="px-4 py-3">Cluster</th>
@@ -189,11 +169,6 @@
                 </section>
             </section>
             {% include "kubernetes/governance/internal_certificates/partials/_certificate_inventory.html" %}
-            <section class="rounded-xl border border-outline-default bg-surface-card p-5"
-                     aria-label="Internal certificate collection next step">
-                <h2 class="text-sm font-semibold text-content-primary">{{ 'Automated PKI Collection Pending' if inventory and inventory.committed_total else 'Collection source not configured' }}</h2>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Operator-attested metadata can be imported for an approved cluster and node. Confirm distribution, PKI authority, and source identity before automatic collection. Once an approved Ansible collection integration is available, it can populate this inventory automatically. Renewal stays with the platform or PKI provider.</p>
-            </section>
         {% endif %}
     </div>
 {% endblock dashboard_content %}
