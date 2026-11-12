@@ -309,11 +309,13 @@ def test_cve_impact_query_tabs_show_one_canonical_evidence_table_at_a_time() -> 
     ):
         assert marker in page
 
-    # Clear action follows the filters, not the search field.
-    assert page.count('lead=false') == 2
-    assert page.count('<dl class="mt-2 grid min-w-0') == 2
-    assert page.count('min-w-0 break-all font-mono text-content-muted') == 3
-    assert 'grid-cols-[3.25rem_minmax(0,1fr)]' in page
+    # The shared header owns Clear Filters; filters remain two full-width peers.
+    assert page.count("header_actions=findings_header_actions") == 1
+    assert page.count("header_actions=runtime_header_actions") == 1
+    assert page.count("registry.clear_filters_link(") == 2
+    assert page.count("'artifact-registry-cve-evidence-workspace',") == 6
+    assert page.count("lead=false") == 0
+    assert page.count('<dl class="mt-2 grid min-w-0') == 1
     assert 'grid-cols-[4.5rem_minmax(0,1fr)]' in page
 
 
@@ -327,9 +329,14 @@ def test_cve_impact_snapshot_and_detail_cells_follow_compact_kaori_style() -> No
     assert len(summary) <= 48
     assert 'description=impact.correlation.description' not in page
 
-    # Preserve full technical evidence and semantic key/value hierarchy.
-    assert page.count('<dl class="mt-2 grid min-w-0') == 2
+    # Compact digest preview is disclosed without losing the immutable value.
+    assert page.count('<dl class="mt-2 grid min-w-0') == 1
     assert page.count('</dl>') == 2
+    assert '<details class="min-w-0">' in page
+    assert '<summary class="flex min-w-0 cursor-pointer' in page
+    assert "row.digest[:23] ~ '…' ~ row.digest[-12:]" in page
+    assert '>{{ row.digest }}</code>' in page
+    assert 'aria-label="Show full digest for {{ row.repository }}"' in page
     for key, value in (
         ('Digest', 'row.digest'),
         ('Pod', 'row.pod'),
@@ -341,11 +348,16 @@ def test_cve_impact_snapshot_and_detail_cells_follow_compact_kaori_style() -> No
     assert 'border-t border-outline-subtle pt-2' in page
     assert 'font-mono text-content-muted' in page
 
-    # Reuse the shared Clear Filters action without an extra responsive wrapper.
-    assert page.count("table_ui.action_classes() ~ ' h-10 self-end'") == 2
-    assert page.count('lead=false') == 2
+    # Header actions use the shared registry reset, not a third filter control.
+    assert page.count('table_ui.action_classes(),') == 2
     assert page.count('registry.clear_filters_link(') == 2
     assert page.count('registry.filter_form(') == 2
+    for tab in ('findings', 'runtime'):
+        body = page.split(f'id="artifact-registry-cve-{tab}"', 1)[1]
+        form = body.split('registry.filter_form(', 1)[1].split('{% endcall %}', 1)[0]
+        assert 'registry.clear_filters_link(' not in form
+        assert "'artifact-registry-cve-evidence-workspace'" in form
+    assert 'header_actions=' in read('app/templates/components/table.html')
 
 
 def test_cve_impact_canonical_filter_form_handles_required_identity_and_htmx() -> None:
