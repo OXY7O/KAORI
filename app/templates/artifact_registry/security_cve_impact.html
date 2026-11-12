@@ -22,12 +22,19 @@
                             {{ page_hero.meta_label('waypoints', impact.binding_count ~ ' Runtime Bindings') }}
                         </div>
                     {% endcall %}
-                    <a href="{{ url_for('artifact_registry.security', q=impact.cve_id) }}"
-                       class="{{ table_ui.action_classes() }}">
-                        <i data-lucide="arrow-left" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                        Back to Vulnerabilities
-                    </a>
                 </div>
+                {{ page_hero.context_card('Committed CVE correlation',
+                                'Committed Runtime Evidence',
+                                'Correlation Readiness',
+                                impact.correlation.status,
+                                impact.correlation.tone,
+                                [
+                                ('package-search', 'Affected Digests', impact.affected_artifacts, 'Latest usable scanner evidence') ,
+                ('waypoints', 'Runtime Bindings', impact.binding_count, 'Committed Kubernetes bindings')
+                ],
+                'Back to Vulnerabilities',
+                url_for('artifact_registry.security', q=impact.cve_id),
+                action_icon='arrow-left') }}
             </div>
         </section>
         {{ snapshot_context_bar.render(source_label='Committed Registry × Kubernetes',
@@ -35,14 +42,15 @@
                 tone=impact.correlation.tone,
                 description=impact.correlation.description,
                 latest_collected=impact.correlation.latest_correlated_at|user_datetime if impact.correlation.latest_correlated_at else 'Not Materialized',
-                scope_label='Active Registry sources × committed Kubernetes runtime',
-                coverage_label=impact.source_count ~ ' Registry sources · ' ~ impact.affected_artifacts ~ ' affected digests',
-                exceptions_label='Not Qualified' if not impact.evidence_ready else 'Correlation Current',
+                scope_label='Registry × Kubernetes',
+                scope_supporting='Committed evidence',
+                coverage_label=impact.source_count ~ (' source' if impact.source_count == 1 else ' sources') ~ ' · ' ~ impact.affected_artifacts ~ (' digest' if impact.affected_artifacts == 1 else ' digests'),
+                exceptions_label='Not Qualified' if not impact.evidence_ready else 'Current',
                 coverage_tone='warning' if not impact.finding_count else 'normal',
                 exceptions_tone='warning' if not impact.evidence_ready else 'normal',
                 icon='waypoints',
                 title='Runtime Correlation Evidence',
-                coverage_supporting='Latest usable scanner findings; not global scan coverage.') }}
+                coverage_supporting='Latest usable scans') }}
         {% if not impact.evidence_ready %}
             <div role="status"
                  class="rounded-xl border border-outline-subtle bg-surface-hover p-4 text-sm text-content-secondary">
@@ -56,7 +64,7 @@
         {% endif %}
         <section id="artifact-registry-cve-findings"
                  aria-labelledby="artifact-registry-cve-findings-heading"
-                 class="overflow-hidden rounded-xl border border-outline-subtle bg-surface">
+                 class="{{ table_ui.block_classes() }}">
             <div class="p-4 sm:p-5">
                 {{ section_intro.render('Affected Artifact Evidence',
                                 'Scanner-observed package findings linked to immutable Registry artifact digests.',
@@ -124,7 +132,7 @@
         </section>
         <section id="artifact-registry-cve-runtime"
                  aria-labelledby="artifact-registry-cve-runtime-heading"
-                 class="overflow-hidden rounded-xl border border-outline-subtle bg-surface">
+                 class="{{ table_ui.block_classes() }}">
             <div class="p-4 sm:p-5">
                 {{ section_intro.render('Kubernetes Runtime Exposure',
                                 'Distinct committed workload bindings. Digest matches are stronger than mutable tag references.',
