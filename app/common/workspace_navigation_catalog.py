@@ -152,7 +152,7 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 'security',
                 'Security',
                 'shield-check',
-                'artifact_registry.security',
+                'artifact_registry.security_overview',
                 ('artifact_registry.view',),
             ),
             WorkspaceCapabilityDefinition(
@@ -669,6 +669,13 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
         ),
     ),
     'artifact_registry_security': (
+        CapabilityViewDefinition(
+            'overview',
+            'Overview',
+            'layout-grid',
+            'artifact_registry.security_overview',
+            ('artifact_registry.view',),
+        ),
         CapabilityViewDefinition(
             'vulnerabilities',
             'Vulnerabilities',
