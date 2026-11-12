@@ -1,28 +1,58 @@
 {% import "components/table_label.html" as table_label %}
-{% macro render(workspace) -%}
+{% macro render(workspace, compact=false) -%}
+    {% if compact %}
+        {% set card_size_classes = 'h-full min-h-40 p-4 hover:border-kaori-primary/30 hover:bg-kaori-mist' %}
+        {% set icon_variant_classes = 'border-kaori-primary/15' %}
+        {% set body_classes = 'mt-4 min-w-0 flex-1' %}
+        {% set footer_classes = 'mt-4 pt-3 text-xs font-semibold text-kaori-primary' %}
+    {% else %}
+        {% set card_size_classes = 'min-h-56 p-5 shadow-sm duration-200 hover:border-outline-focus ' ~
+            'focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card' %}
+        {% set icon_variant_classes = 'border-brand-outline transition group-hover:bg-kaori-primary ' ~
+            'group-hover:text-white' %}
+        {% set body_classes = 'mt-5 flex-1' %}
+        {% set footer_classes = 'mt-5 pt-4' %}
+    {% endif %}
     <a href="{{ workspace.href }}"
-       class="kaori-workspace-card group flex min-h-56 flex-col rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm transition duration-200 hover:border-outline-focus hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card"
+       class="kaori-workspace-card group flex flex-col rounded-xl border border-outline-default
+              bg-surface-card transition hover:shadow-md focus-visible:outline-none
+              focus-visible:ring-2 focus-visible:ring-outline-focus {{ card_size_classes }}"
        aria-label="Open {{ workspace.title }} Workspace"
        data-workspace-card
        data-search-text="{{ workspace.search_text }}">
         <div class="flex items-start justify-between gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary transition group-hover:bg-kaori-primary group-hover:text-white"
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border
+                         bg-kaori-soft text-kaori-primary {{ icon_variant_classes }}"
                   aria-hidden="true">
-                <i data-lucide="{{ workspace.icon }}" class="h-4 w-4"></i>
+                <i data-lucide="{{ workspace.icon }}"
+                   class="{{ 'h-5 w-5' if compact else 'h-4 w-4' }}"></i>
             </span>
             {{ table_label.metadata_label(workspace.scope) }}
         </div>
-        <div class="mt-5 flex-1">
-            <p class="text-xs font-semibold text-kaori-primary">{{ workspace.label }}</p>
-            <h4 class="mt-2 text-base font-semibold leading-6 text-content-primary">{{ workspace.title }}</h4>
-            <p class="mt-2 text-sm leading-6 text-content-muted">{{ workspace.description }}</p>
+        <div class="{{ body_classes }}">
+            {% if compact %}
+                <p class="sr-only">{{ workspace.label }}</p>
+                <h3 class="text-base font-semibold text-content-primary">{{ workspace.title }}</h3>
+                <p class="mt-1 text-xs leading-5 text-content-muted">{{ workspace.description }}</p>
+            {% else %}
+                <p class="text-xs font-semibold text-kaori-primary">{{ workspace.label }}</p>
+                <h4 class="mt-2 text-base font-semibold leading-6 text-content-primary">{{ workspace.title }}</h4>
+                <p class="mt-2 text-sm leading-6 text-content-muted">{{ workspace.description }}</p>
+            {% endif %}
         </div>
-        <div class="mt-5 flex items-center justify-between gap-3 border-t border-outline-subtle pt-4">
-            <span class="text-sm font-semibold text-kaori-primary">Open Workspace</span>
-            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary transition group-hover:bg-kaori-primary group-hover:text-white"
-                  aria-hidden="true">
-                <i data-lucide="arrow-up-right" class="h-4 w-4"></i>
-            </span>
+        <div class="flex items-center justify-between gap-3 border-t border-outline-subtle {{ footer_classes }}">
+            <span class="{{ '' if compact else 'text-sm font-semibold text-kaori-primary' }}">Open Workspace</span>
+            {% if compact %}
+                <i data-lucide="arrow-up-right"
+                   class="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                   aria-hidden="true"></i>
+            {% else %}
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft
+                             text-kaori-primary transition group-hover:bg-kaori-primary group-hover:text-white"
+                      aria-hidden="true">
+                    <i data-lucide="arrow-up-right" class="h-4 w-4"></i>
+                </span>
+            {% endif %}
         </div>
     </a>
 {%- endmacro %}

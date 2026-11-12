@@ -42,6 +42,61 @@ def test_operations_overview_is_permission_scoped_navigation() -> None:
     assert 'components/workspace_link_card.html' in page
 
 
+def test_operations_overview_follows_inventory_section_hierarchy_with_metadata_badges() -> None:
+    page = read('app/templates/kubernetes/operations/overview.html')
+    inventory = read('app/templates/kubernetes/inventory/overview/index.html')
+    catalog = read('app/templates/kubernetes/inventory/overview/partials/_kpi_cards.html')
+
+    assert 'components/section_intro.html' in inventory
+    assert 'components/section_intro.html' in page
+    assert 'components/table_label.html' in page
+    assert 'table_label.metadata_label(' in catalog
+    assert 'header_badge=capability_badge' in page
+    assert "available_capabilities ~ (' Workspace' if available_capabilities == 1 else ' Workspaces')" in page
+    assert "table_label.metadata_label('Info', icon='info')" in page
+    assert 'header_badge=evidence_info_badge' in page
+
+    for heading, section_id in (
+        ('Operational Capabilities', 'operations-capabilities-heading'),
+        ('Execution Governance', 'operations-execution-heading'),
+    ):
+        assert f"section_intro.render('{heading}'" in page
+        assert f'aria-labelledby="{section_id}"' in page
+        assert f"'{section_id}'" in page
+
+    assert page.index("section_intro.render('Operational Capabilities'") < page.index(
+        "'Operation Workspace Catalog'"
+    )
+    assert page.index("section_intro.render('Execution Governance'") < page.index(
+        "'Execution & Evidence Model'"
+    )
+    assert page.index("'Operation Workspace Catalog'") < page.index(
+        "'Execution & Evidence Model'"
+    )
+
+
+def test_operations_cards_opt_into_compact_navigation_without_changing_defaults() -> None:
+    page = read('app/templates/kubernetes/operations/overview.html')
+    shared = read('app/templates/components/workspace_link_card.html')
+
+    assert 'macro render(workspace, compact=false)' in shared
+    assert "min-h-40" in shared
+    assert "min-h-56" in shared
+    assert "'mt-4' if compact else 'mt-5'" in shared
+    assert 'workspace.href' in shared
+    assert 'workspace.search_text' in shared
+    assert 'workspace.scope' in shared
+    assert 'aria-label="Open {{ workspace.title }} Workspace"' in shared
+    assert 'data-workspace-card' in shared
+
+    assert page.count('compact=true) }}') == 2
+    assert 'sm:grid-cols-2' in page
+    assert "url_for('kubernetes_operations.configmap_management')" in page
+    assert "url_for('kubernetes_operations.secret_management')" in page
+    assert '{% if can_configmaps %}' in page
+    assert '{% if can_secrets %}' in page
+
+
 def test_both_delete_pages_use_shared_governed_confirmation() -> None:
     component = read('app/templates/components/destructive_confirmation_modal.html')
     script = read('app/static/js/destructive_confirmation_modal.js')
