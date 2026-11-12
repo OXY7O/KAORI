@@ -332,7 +332,7 @@ def main(argv: list[str] | None = None) -> int:
             published_temp_stat = temporary.stat(follow_symlinks=False)
             if not stat.S_ISREG(published_temp_stat.st_mode) or any(
                 getattr(published_temp_stat, field) != getattr(temporary_stat, field)
-                for field in ('st_dev', 'st_ino', 'st_mode')
+                for field in ('st_dev', 'st_ino', 'st_mode', 'st_size', 'st_mtime_ns', 'st_ctime_ns')
             ):
                 raise UnverifiedZapReport('Temporary evidence changed before publication')
             # A workspace actor can replace the input or output directory while
