@@ -192,7 +192,7 @@
                                     ('octagon-alert', 'Critical Findings', security.critical, 'Critical findings in the latest committed scan.', 'critical' if security.critical else 'info'),
                                     ('triangle-alert', 'High Findings', security.high, 'High findings in the latest committed scan.', 'warning' if security.high else 'info'),
                                     ('package-search', 'Affected Artifacts', security.affected_artifacts, 'Digests with critical/high findings.', 'warning' if security.affected_artifacts else 'info'),
-                                    ('waypoints', 'Runtime Exposed', security.runtime_exposed, 'Kubernetes bindings to high-risk artifacts.', 'critical' if security.runtime_exposed else 'info')
+                                    ('waypoints', 'Runtime Exposed', security.runtime_exposed, 'Kubernetes high-risk bindings.', 'critical' if security.runtime_exposed else 'info')
                                 ] %}
             {% else %}
                 {% set security_metrics = [
