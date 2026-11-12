@@ -1,6 +1,6 @@
 # Kubernetes Internal Certificates — Source and Support Contract
 
-> **Status:** Proposed source contract, 2026-11-12; source support is **not yet verified** against registered production clusters. Authority: #4441 / discovery #4442; subsequent collector #4443 and workspace #4444. **No collection, renewal, menu or mutation is authorized by this document.**
+> **Status:** Operator-observed non-production kubeadm v1.36.4 source format documented, 2026-11-12. A read-only Governance workspace (#4453) and manual metadata import (#4461) exist; actual inventory rows require operator-reviewed import. Production PKI source qualification, automated collector (#4443), and all renewal/mutation (#4445) remain deferred. Authority: #4441 / #4442.
 
 ## 1. Domain boundary
 
@@ -34,15 +34,43 @@ Reference: [Kubernetes kubeadm certificate management](https://kubernetes.io/doc
 
 ### Observed local pilot — Docker Desktop (2026-11-12)
 
-The user reports the local test environment is **Docker Desktop Kubernetes** and `sudo kubeadm` on workstation `X300` returned `command not found`. This is a **workstation result**, not a control-plane PKI expiry report. Docker Desktop can provision with **kubeadm** or **kind**; the exact local provisioner has not been confirmed and must not be guessed.
+The operator confirmed the active `kubectl` context is `docker-desktop`,
+two nodes `desktop-control-plane` and `desktop-worker` are Ready with
+Kubernetes `v1.36.4`, and `kindnet` pods exist. **This supports a
+kind-style Docker Desktop provisioner** but is not proof of cluster
+PKI authority. Subsequent owner-supplied direct read-only observation
+**inside the Docker Desktop control-plane container** established that
+`kubeadm version -o short` reports `v1.36.4` and
+`kubeadm certs check-expiration -o json` returns
+`CertificateExpirationInfo / output.kubeadm.k8s.io/v1alpha3`, with
+**11 leaf/kubeconfig records and 3 CAs**.
 
-| Docker Desktop mode | Current Internal PKI source decision | Renewal ownership |
+| Docker Desktop source / capability | Evidence decision | Lifecycle boundary |
 |---|---|---|
-| `kind` | **Unsupported by current kubeadm-only v1 metadata importer**; no host-local PKI source has been qualified. UI stays `Not Collected / Not Verified` | Docker Desktop / kind provider manages its own lifecycle; KAORI does not renew |
-| `kubeadm` | **Conditional, unverified**; kubeadm executable being absent on workstation is expected for a container-managed control plane. Obtain owner-approved source-local metadata evidence before any import | Docker Desktop manages its lifecycle; do not offer KAORI `kubeadm certs renew` |
-| Unknown Docker Desktop provisioning | **Not Verified**; inspect Docker Desktop Kubernetes Settings / Edit cluster first | No mutation action |
+| kind-style Docker Desktop provisioner | The **provisioner** is managed by Docker Desktop/kind; not an automatic host PKI source or renewal engine | Docker Desktop remains lifecycle owner |
+| `kubeadm v1.36.4` on `desktop-control-plane` with exact `output.kubeadm.k8s.io/v1alpha3` JSON | **Pilot source verified for metadata only**, now supported by the deliberately version-qualified operator-only `flask prepare-internal-pki` adapter and existing strict v1 import after human review | Source-reported `NotAfter` is not proof of active use; no rotation |
+| Generic kind output, unknown other kubeadm versions, inaccessible control plane or alternate CA | **Unsupported / Not Verified** until a separately reviewed adapter and source identity exist | No mutation action |
 
-Use non-mutating context checks and provider-owned configuration information described in [KUBERNETES_INTERNAL_CERTIFICATES_EVIDENCE_IMPORT.md](KUBERNETES_INTERNAL_CERTIFICATES_EVIDENCE_IMPORT.md). Never attempt to SSH into/exec arbitrary infrastructure containers, extract private keys, or fake `NotAfter` to populate the UI. Per-platform PKI collectors and renewal capabilities require **separate** child workstream/approval under #4442/#4443 and #4445 respectively.
+**Permission boundary:** the operator obtained this read-only source from a
+local non-production Docker Desktop node they administer. KAORI never
+runs `docker exec`, privileged SSH, file mounts or host commands in an
+HTTP request. Never extract any private key, PEM, CSR, kubeconfig or
+CA signing material. The new adapter accepts **only exact known public
+metadata fields** and does not change the existing source importer,
+RBAC, migration or cluster executor. Raw report and prepared manifest
+remain operator-local outside Git.
+
+**Observed validity from this report:** ten of the leaf/kubeconfig entries
+have `NotAfter=2027-09-11T04:08:18Z`, apiserver has
+`NotAfter=2027-11-12T03:45:43Z`, and three CAs have
+`NotAfter=2036-09-08T04:08:18Z`. The metadata has not been
+committed to KAORI until the operator runs the reviewed importer against
+the registered cluster UUID; a verified source does not imply a
+populated inventory or accepted active-certificate posture.
+
+Implementation and safe operator steps:
+[KUBERNETES_INTERNAL_CERTIFICATES_EVIDENCE_IMPORT.md](KUBERNETES_INTERNAL_CERTIFICATES_EVIDENCE_IMPORT.md).
+Approval to execute any renewal through Ansible remains **deferred** (#4445).
 
 ## 4. Discovery checklist per actual registered cluster
 
@@ -115,9 +143,9 @@ Important: `unsupported` with zero records is not a successful inventory, and `c
 
 | Workstream | Ready when | Explicit blocker |
 |---|---|---|
-| #4442 source discovery | Owner-verified distribution + provider identity + approved read-only source per pilot cluster; security source review | **Current discovery evidence missing** |
-| #4443 committed collection | Approved source and identity; schema validation; worker/runner authorization; migration; negative and retry tests; committed/read-only evidence | Cannot substitute a live page request or stale TLS Secret inventory |
-| #4444 read-only workspace | Actual #4443 committed data; role/cluster-scoped pagination 5; coverage+unknown states; no live calls | Do not place a placeholder second catalog card or claim `2 Capabilities` |
+| #4442 source discovery | Non-production Docker Desktop v1.36.4 output schema observed; owner validates source identity, security and local-only access | **Pilot report now supplied; source/owner review still required for admission and other clusters** |
+| #4443 committed collection | Existing strict operator-only import and schema/read model are implemented; automated worker/runner requires separate authority | **Automated PKI collection remains deferred; CLI preparation does not perform a provider call** |
+| #4444 read-only workspace | Existing visible Source Pending card and registry, permission-aware, committed read model; verify actual 14-row pilot import, scoped 5/page, coverage/unknown, no live calls | **Empty until operator-approved source import; UAT/Human Acceptance outstanding** |
 | #4445 renewal feasibility | Source ownership, exact provider capability and execution-plane contract independently approved | **Deferred pending Ansible orchestration readiness and operator approval** |
 
 No certificate renewal, CA rotation, CSR approval, static-Pod restart or host mutation is permitted by this document.

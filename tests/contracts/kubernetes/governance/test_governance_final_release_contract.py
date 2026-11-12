@@ -255,12 +255,24 @@ def test_internal_pki_certificate_registry_uses_committed_attested_evidence_only
     assert 'db.session.get(Cluster,' in importer
     assert 'import_internal_pki' in commands
     assert 'import-internal-pki' in cli
+    adapter = read('app/kubernetes/governance/internal_certificates/kubeadm_adapter.py')
+    assert 'def prepare_kubeadm_metadata_manifest(' in adapter
+    assert "_SUPPORTED_VERSION = 'v1.36.4'" in adapter
+    assert "_SOURCE_API_VERSION = 'output.kubeadm.k8s.io/v1alpha3'" in adapter
+    assert 'validate_metadata_manifest(manifest)' in adapter
+    assert 'prepare-internal-pki' in cli
+    assert 'os.O_EXCL' in cli
+    assert '0o600' in cli
+    assert 'app.cli.add_command(prepare_internal_pki)' in commands
     assert 'MAX_MANIFEST_BYTES + 1' in cli
     assert 'InternalPKICertificateInventory' in model
     assert 'InternalPKIEvidenceBatch' in model
     assert 'op.create_table(' in migration
     assert 'op.drop_table(' in migration
 
+    assert "section_intro.render('Source Readiness'" not in template
+    assert 'aria-label="Internal PKI source readiness"' in template
+    assert 'PKI Evidence Boundaries' in template
     assert 'partials/_certificate_inventory.html' in template
     assert 'inventory.committed_total' in template
     assert 'inventory.total' in partial
