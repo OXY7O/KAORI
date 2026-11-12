@@ -221,6 +221,9 @@ def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace
     assert 'registry_ui.clear_filters_action(' in workspace
     assert "url_for('governance.internal_certificates', **source_clear_query)" in workspace
     assert "'evidence_tab': 'sources'" in workspace
+    assert "'clear_filters': 'sources'" in workspace
+    assert 'hx-boost="false" hx-disable' in workspace
+    assert "url_for('governance.internal_certificates', **source_clear_query)" in workspace
     assert 'payload.selected_cluster_id' in workspace
     assert "marker='internal-pki-evidence-workspace'" in workspace
     assert 'header_actions=source_clear_action' in workspace
@@ -342,6 +345,8 @@ def test_internal_pki_certificate_registry_uses_committed_attested_evidence_only
     assert "url_for('governance.internal_certificates', **certificate_clear_query)" in partial
     assert 'inventory.cluster_id' in partial
     assert 'certificate_scope_badge' in partial
+    assert "'clear_filters': 'certificates'" in partial
+    assert 'hx-boost="false" hx-disable' in partial
     assert 'header_actions=certificate_clear_action' in partial
     assert 'table_ui.title_cell(certificate.component' in partial
     assert "'key-round' if certificate.kind == 'ca' else 'file-badge'" in partial

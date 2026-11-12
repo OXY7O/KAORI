@@ -135,8 +135,10 @@ def main() -> int:
         'hx-select="#internal-pki-evidence-workspace"',
         "active_tab == 'sources'",
         'registry_ui.clear_filters_action(',
+        "'clear_filters': 'sources'",
+        'hx-boost="false" hx-disable',
         'header_actions=source_clear_action',
-        'url_for(\'governance.internal_certificates\', **source_clear_query)',
+        "url_for('governance.internal_certificates', **source_clear_query)",
         'table_ui.cluster_identity(record.name, record.environment)',
         'aria-label="View PKI Evidence for {{ record.name }}"',
         'name="environment"',
@@ -149,6 +151,12 @@ def main() -> int:
         'Internal PKI evidence tabs must be safe query-backed server navigation.',
         errors,
     )
+    require(
+        "clear_tab = request.args.get('clear_filters')" in internal_routes
+        and "return redirect(url_for('governance.internal_certificates', **query), code=303)" in internal_routes,
+        'Internal PKI Clear Filters must canonicalize reset intent server-side.',
+        errors,
+    )
     for item in ('Internal PKI Collection Snapshot', 'components/snapshot_context_bar.html'):
         require(item in pki_snapshot, f'Internal PKI collection snapshot is missing: {item}', errors)
     for item in ('Internal PKI Collection Operations', 'PKI Evidence Boundaries', 'Sync Internal PKI', 'disabled'):
@@ -157,6 +165,8 @@ def main() -> int:
         require(item in pki_posture, f'Internal PKI posture is missing: {item}', errors)
     for item in (
         'registry_ui.clear_filters_action(',
+        "'clear_filters': 'certificates'",
+        'hx-boost="false" hx-disable',
         'header_actions=certificate_clear_action',
         'certificate_scope_badge',
         'table_ui.title_cell(certificate.component',

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import render_template, request
+from flask import redirect, render_template, request, url_for
 
 from app.access.rbac.decorators import permission_required
 from app.kubernetes.cluster.onboarding import has_registered_clusters
@@ -17,6 +17,28 @@ from app.kubernetes.governance.internal_certificates.service import (
 @permission_required('internal_certificates.view')
 def internal_certificates_index():
     """Read-only, committed cluster source assessment; never contact a PKI provider."""
+    clear_tab = request.args.get('clear_filters')
+    if clear_tab in {'sources', 'certificates'}:
+        # An explicit GET reset is authoritative even if stale form values were re-sent.
+        query = request.args.to_dict(flat=True)
+        query.pop('clear_filters', None)
+        if clear_tab == 'sources':
+            reset_fields = ('cluster_id', 'search', 'environment', 'platform', 'page')
+        else:
+            reset_fields = (
+                'cluster_id',
+                'cert_search',
+                'cert_kind',
+                'cert_expiry',
+                'cert_coverage',
+                'cert_freshness',
+                'cert_page',
+            )
+        for field in reset_fields:
+            query.pop(field, None)
+        query['evidence_tab'] = clear_tab
+        return redirect(url_for('governance.internal_certificates', **query), code=303)
+
     active_tab = request.args.get('evidence_tab', 'sources')
     if active_tab not in {'sources', 'certificates'}:
         active_tab = 'sources'
