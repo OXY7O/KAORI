@@ -25,8 +25,8 @@ from app.kubernetes.governance.internal_certificates.service import (
 )
 from app.models.audit import AuditEvent
 from app.models.cluster import Cluster
-from app.models.internal_certificates import InternalPKICertificateInventory, InternalPKIEvidenceBatch
 from app.models.integration import IntegrationInstance
+from app.models.internal_certificates import InternalPKICertificateInventory, InternalPKIEvidenceBatch
 from app.models.kubernetes import KubernetesConnection
 
 
