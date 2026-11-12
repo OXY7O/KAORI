@@ -148,9 +148,11 @@ def test_security_navigation_adds_overview_before_existing_focused_tabs() -> Non
     routes = read('app/artifact_registry/routes.py')
 
     assert "'artifact_registry_security': (" in catalog
-    capability_tabs = catalog.split('_CAPABILITY_VIEWS:', 1)[1].split(
-        "'artifact_registry_security': (", 1
-    )[1].split("'object_storage_inventory':", 1)[0]
+    capability_tabs = (
+        catalog.split('_CAPABILITY_VIEWS:', 1)[1]
+        .split("'artifact_registry_security': (", 1)[1]
+        .split("'object_storage_inventory':", 1)[0]
+    )
     assert capability_tabs.index("'overview'") < capability_tabs.index("'vulnerabilities'")
     assert capability_tabs.index("'vulnerabilities'") < capability_tabs.index("'supply_chain'")
     assert "'artifact_registry.security_overview'" in capability_tabs
@@ -211,10 +213,10 @@ def test_security_overview_reuses_committed_evidence_and_approved_ui_components(
     assert 'if source_id is not None and not any(' in projection
     assert "raise NotFound('The selected committed Registry security source is unavailable.')" in projection
     assert '_security_scope_evidence(' in projection
-    assert "_security_snapshot_context(" in projection
-    assert "_security_posture(evidence)" in projection
+    assert '_security_snapshot_context(' in projection
+    assert '_security_posture(evidence)' in projection
     assert "'source_id': source_id" in projection
-    assert "unknown = not observed_scans" in projection
+    assert 'unknown = not observed_scans' in projection
     for metric in ('critical_total', 'high_total', 'affected_artifacts', 'runtime_exposed'):
         assert f"evidence['{metric}']" in projection
     assert 'HarborClient' not in projection
@@ -633,6 +635,8 @@ def test_security_summary_uses_registry_section_intro_and_grouped_metrics() -> N
 
     assert 'artifact-registry-security-summary-heading' in template
     assert 'section_card.render(' in summary
+    assert "table_label.metadata_label(security_metrics|length ~ ' Indicators', icon='layout-grid')" in summary
+    assert 'header_badge=summary_badge' in summary
     assert 'posture_grid.render(security_metrics, columns=4)' in summary
     assert "body_classes='p-0'" in summary
     assert "'Security Evidence Summary'" in summary
@@ -654,6 +658,50 @@ def test_security_summary_uses_registry_section_intro_and_grouped_metrics() -> N
     assert "'critical' if security.runtime_exposed else 'info'" in summary
     assert 'operational_metric_card' not in summary
     assert 'registry.footer(' in template
+
+
+def test_vulnerability_registry_table_uses_shared_dense_evidence_groups() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/artifact_registry/partials/_security_workspace.html')
+    shared = read('app/templates/components/table_primitives.html')
+    Environment().parse(template)
+
+    start = template.index("table_ui.table_classes('min-w-[72rem] !table-fixed')")
+    end = template.index("{% else %}\n                                        <table", start)
+    table = template[start:end]
+
+    assert 'table_ui.table_classes(' in table
+    assert "table_ui.header_cell_classes(action=true)" in table
+    assert table.count('<th scope="col"') == 6
+    assert 'table_ui.body_classes()' in table
+    assert 'table_ui.row_classes()' in table
+    assert "table_ui.title_cell(row.vulnerability_id, icon='shield-alert', supporting_content=severity_badge)" in table
+    assert "table_ui.title_cell(row.repository, 'Project: ' ~ row.project, 'package-search')" in table
+    assert "table_ui.title_cell(row.package, 'Installed: ' ~ row.installed_version)" in table
+    assert "table_ui.title_cell(row.source_name, icon='blocks', supporting_content=freshness_badge)" in table
+    assert "table_label.status_indicator_label(row.severity_label, severity_tone)" in table
+    assert "table_label.status_indicator_label(row.freshness.label, row.freshness.tone)" in table
+    assert "'Fix observed' if row.fix_available else 'No fix observed'" in table
+    assert "row.runtime_exposure_count == 1 else ' Bindings'" in table
+    assert "table_label.status_indicator_label('Not Observed', 'unknown')" in table
+    assert 'table_ui.action_grid_classes(columns=1)' in table
+    assert table.count('class="{{ table_ui.action_classes() }} w-full"') == 2
+    assert 'data-kaori-dialog-open' in table
+    assert "url_for('artifact_registry.security_cve_impact'" in table
+    assert 'supply_chain_detail.vulnerability(row, vulnerability_dialog_id)' in table
+    assert 'components/states/_empty_state.html' in table
+
+    assert "macro title_cell(name, supporting_text='', icon='', supporting_content=None)" in shared
+    assert "macro action_grid_classes(columns=2)" in shared
+    assert "macro row_classes()" in shared
+
+    # Both focused views retain the canonical HTMX filter/pagination owner.
+    assert "registry.filter_form(" in template
+    assert "registry.footer(" in template
+    assert 'security.pagination.per_page' in template
+    assert "security.filters.search" in template
+    assert 'min-w-[72rem]' in template
 
 
 def test_security_sync_action_states_fleet_scope_independently_of_view_filters() -> None:
