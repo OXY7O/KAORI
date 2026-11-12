@@ -670,6 +670,28 @@ prerequisite gating, Hero, navigation, empty state, RBAC and snapshot semantics
 remain unchanged. Test mobile/light-dark, keyboard/card links and filtered
 destination URLs as part of Visual UAT before official staging admission.
 
+### Dependency Topology relationship header badge (Human Visual UAT #4564)
+
+The **Artifact-to-Runtime Explorer** follows the approved Kubernetes Inventory
+**Inventory Relationship Map** pattern. Its existing shared
+`visualization_workspace.render(..., header_badge=...)` displays a compact Violet
+`table_label.metadata_label` with **N Relationship(s)** next to the title.
+The count comes from the `edges` array of the **currently loaded, bounded
+committed Registry–Kubernetes topology graph**, including its structural
+`contains`/`owns` edges and evidence-backed `runtime_usage` edges. It is
+**not** `Runtime Bindings`, `displayed_bindings`, total available provider
+relationships or a cluster health signal.
+
+The existing Registry topology client refreshes that label after successful
+initial load, server-side scope filtering and **Reload Snapshot**, matching the
+Kubernetes Topology pattern. Before evidence is loaded or if loading fails,
+display a pending/unavailable state rather than a false numeric zero. A failed
+Cytoscape canvas must not hide a valid count from the committed JSON payload:
+the **Resource List** remains usable. A local graph visibility toggle only
+changes presentation, not the committed bounded graph count. Truncation and
+omitted-binding warnings remain separate from relationship counts. No new
+provider calls, projection, model or mutation authority is introduced.
+
 ## Registry Alert Analytics Contract
 
 Artifact Registry alert analytics extends the same Alert Source architecture already used by Kubernetes and

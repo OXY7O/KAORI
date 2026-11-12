@@ -30,6 +30,16 @@ if (canvas && form) {
     const resourceToggles = [...document.querySelectorAll('[data-registry-topology-type]')]
     const relationshipToggles = [...document.querySelectorAll('[data-registry-topology-relationship]')]
     const scopeSummary = $('registry-topology-scope-summary')
+    const relationshipBadge = $('registry-topology-relationship-badge-count')
+    const setRelationshipBadge = (edges) => {
+        if (!relationshipBadge) return
+        if (!Array.isArray(edges)) {
+            relationshipBadge.textContent = 'Relationships Unavailable'
+            return
+        }
+        const count = edges.length
+        relationshipBadge.textContent = `${count} Relationship${count === 1 ? '' : 's'}`
+    }
     const loading = $('registry-topology-loading')
     const clearFiltersButton = $('registry-topology-clear-filters')
     const close = $('registry-topology-inspector-close')
@@ -1201,6 +1211,7 @@ if (canvas && form) {
         const requestController = new AbortController()
         controller = requestController
         setLoading(true)
+        if (relationshipBadge) relationshipBadge.textContent = 'Loading Relationships'
         status.classList.remove('hidden')
         status.textContent = 'Loading committed dependency evidence…'
         warning.classList.add('hidden')
@@ -1218,6 +1229,7 @@ if (canvas && form) {
             })
             if (!response.ok) throw new Error(`Graph request failed (HTTP ${response.status})`)
             payload = await response.json()
+            setRelationshipBadge(payload.edges)
             highlightedNodeId = null
             collapsedNodeIds.clear()
             if (cy) {
@@ -1264,6 +1276,7 @@ if (canvas && form) {
             errorPanel.classList.remove('hidden')
             status.classList.add('hidden')
             scopeSummary.textContent = 'Topology unavailable — no evidence conclusion can be drawn.'
+            setRelationshipBadge(null)
         } finally {
             // Abort from an older request cannot dismiss a newer request's bar.
             if (controller === requestController) setLoading(false)

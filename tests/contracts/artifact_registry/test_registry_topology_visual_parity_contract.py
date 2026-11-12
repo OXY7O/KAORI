@@ -62,6 +62,45 @@ def test_registry_topology_reuses_kubernetes_canvas_first_shell() -> None:
     assert 'components/states/_empty_state.html' in registry
 
 
+def test_registry_topology_header_badge_tracks_committed_relationship_edges() -> None:
+    registry = REGISTRY.read_text(encoding='utf-8')
+    kubernetes = K8S.read_text(encoding='utf-8')
+    renderer = RUNTIME_JS.read_text(encoding='utf-8')
+    projection = (ROOT / 'app/artifact_registry/presentation_topology.py').read_text(encoding='utf-8')
+    shared = (ROOT / 'app/templates/components/visualization_workspace.html').read_text(
+        encoding='utf-8'
+    )
+    Environment().parse(registry)
+
+    # Same shared Violet title-adjacent metadata badge used by Kubernetes Topology.
+    assert "table_label.metadata_label('Loading Relationships', icon='git-fork'," in registry
+    assert "text_id='registry-topology-relationship-badge-count'" in registry
+    assert 'header_badge=registry_topology_relationship_badge' in registry
+    assert 'header_badge=relationship_badge' in kubernetes
+    assert 'header_badge=None' in shared
+
+    # Relationship count is the current bounded graph edge array, not the binding count.
+    assert "'edges': list(edges.values())" in projection
+    assert "'displayed_bindings': len(visible_bindings)" in projection
+    assert "const relationshipBadge = $('registry-topology-relationship-badge-count')" in renderer
+    assert 'const setRelationshipBadge = (edges) =>' in renderer
+    assert 'if (!Array.isArray(edges))' in renderer
+    assert 'const count = edges.length' in renderer
+    assert "Relationship${count === 1 ? '' : 's'}" in renderer
+    assert 'setRelationshipBadge(payload.edges)' in renderer
+    assert 'setRelationshipBadge(null)' in renderer
+
+    # Loading and failures must not assert a false zero; successful Resource List
+    # data still updates the badge even if the graph canvas cannot render.
+    assert "relationshipBadge.textContent = 'Loading Relationships'" in renderer
+    assert "relationshipBadge.textContent = 'Relationships Unavailable'" in renderer
+    reload_source = renderer.split('const reload = async () =>', 1)[1]
+    assert reload_source.index('setRelationshipBadge(payload.edges)') < reload_source.index('renderList()')
+    assert reload_source.index('setRelationshipBadge(payload.edges)') < reload_source.index(
+        'await renderGraph()'
+    )
+
+
 def test_registry_renderer_adopts_kubernetes_graph_semantics() -> None:
     renderer = RUNTIME_JS.read_text(encoding='utf-8')
     canonical = (ROOT / 'app/static/js/kubernetes/inventory/topology.js').read_text(encoding='utf-8')
