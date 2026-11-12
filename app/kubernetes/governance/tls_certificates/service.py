@@ -362,7 +362,7 @@ def _collection_snapshot(
         'source_label': 'Kubernetes TLS Secrets + Ingresses',
         'status': evidence_label,
         'tone': evidence_tone,
-        'description': 'Worker-generated certificate metadata and declared Ingress host relationships.',
+        'description': 'TLS certificates and Ingress host mappings.',
         'latest_collected': sync_state['last_success_label'],
         'latest_supporting': 'Worker-generated snapshot',
         'scope_label': scope_label,
