@@ -94,8 +94,11 @@ def test_registry_topology_header_badge_tracks_committed_relationship_edges() ->
     # data still updates the badge even if the graph canvas cannot render.
     assert "relationshipBadge.textContent = 'Loading Relationships'" in renderer
     assert "relationshipBadge.textContent = 'Relationships Unavailable'" in renderer
-    assert renderer.index('setRelationshipBadge(payload.edges)') < renderer.index('renderList()', renderer.index('const reload = async () =>'))
-    assert renderer.index('setRelationshipBadge(payload.edges)') < renderer.index('await renderGraph()', renderer.index('const reload = async ()'))
+    reload_source = renderer.split('const reload = async () =>', 1)[1]
+    assert reload_source.index('setRelationshipBadge(payload.edges)') < reload_source.index('renderList()')
+    assert reload_source.index('setRelationshipBadge(payload.edges)') < reload_source.index(
+        'await renderGraph()'
+    )
 
 
 def test_registry_renderer_adopts_kubernetes_graph_semantics() -> None:
