@@ -179,6 +179,32 @@ remains five rows. Server queries escape LIKE wildcards, cap free text to
 128 characters, and enforce the allowed selector values. No live provider
 query, scan dispatch, RBAC change, or unsanctioned new UI primitive.
 
+## Compact CVE correlation snapshot and evidence identity fields (Human UAT #2603)
+
+The exact-CVE Runtime Correlation Evidence snapshot uses concise committed-copy
+(`Committed Registry × Kubernetes correlation.`) to keep the four-column
+desktop snapshot readable without forcing `whitespace-nowrap` on narrow
+screens or hiding actual readiness/provenance. The authoritative status,
+timestamp, source scope, coverage and exception indicators are unchanged.
+
+Within the canonical five-column Affected Artifact Evidence table, show the
+**full immutable SHA digest** as a semantic label/value pair (`dl/dt/dd`),
+with an explicitly named `Digest` label, a monospace breakable value and
+its unshortened `title` for inspection. The runtime Workload / Pod cell
+similarly shows `Pod` and `Container` as aligned semantic label/value
+rows beneath the canonical workload identity. Do not collapse the pod into
+the workload title or truncate the digest to save horizontal space.
+
+Both evidence filter bars retain the shared
+`table_registry.clear_filters_link` action at the trailing side.
+The action is the same 40px height as the shared input/select fields and
+aligns to the bottom of the existing wrapping filter layout; do not add an
+extra flex child wrapper that defeats the filter layout's
+`data-kaori-filter-action` rules. Clear only the active table's filters,
+preserve its `evidence_tab` and the other table's search/page/Rows state.
+Use the existing canonical styles for light/dark, hover, focus and
+responsive breakpoints.
+
 ## QA and admission
 
 - Exact-commit djlint and Ruff check/format on updated templates and Python files.
