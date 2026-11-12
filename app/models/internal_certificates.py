@@ -19,6 +19,7 @@ class InternalPKIEvidenceBatch(db.Model):
     source_kind: Mapped[str] = mapped_column(String(50), nullable=False)
     source_version: Mapped[str] = mapped_column(String(64), nullable=False)
     operator_reference: Mapped[str] = mapped_column(String(120), nullable=False)
+    manifest_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     coverage_state: Mapped[str] = mapped_column(String(20), nullable=False)
     collected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     imported_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
