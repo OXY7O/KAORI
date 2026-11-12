@@ -38,11 +38,11 @@
                                         'Not Collected',
                                         'unknown',
                                         [
-                                        ('server', 'Registered Clusters', payload.registered_total, 'Committed KAORI cluster registrations'),
-                                        ('shield-alert', 'PKI Evidence', 'Not Collected', 'No approved collector has been run')
-                                        ],
-                                        'Open Cluster Integrations',
-                                        url_for('integrations.kubernetes'),
+                                        ('server', 'Registered Clusters', payload.registered_total, 'Committed KAORI cluster registrations') ,
+                    ('shield-alert', 'PKI Evidence', 'Not Collected', 'No approved collector has been run')
+                    ],
+                    'Open Cluster Integrations',
+                    url_for('integrations.kubernetes'),
                     'server-cog'
                     ) }}
                 {% endif %}
@@ -63,15 +63,15 @@
                                 'internal-pki-posture-heading') }}
                 {% set source_guide %}
                     {{ info_tip.render('internal-pki-source-readiness-guide',
-                                    'Internal PKI Source Readiness Guide',
-                                    'This workspace currently reports committed cluster registrations, not collected certificate validity.',
-                                    items=[
-                                    'Control-plane and etcd expiry require approved host-local or provider-owned evidence.',
-                                    'Kubelet CSR metadata is not proof of an installed certificate or its expiration.',
-                                    'Renewal remains disabled until a separately approved Ansible or provider workflow exists.'
-                                    ],
-                                    placement='right',
-                                    variant='guide') }}
+                                        'Internal PKI Source Readiness Guide',
+                                        'This workspace currently reports committed cluster registrations, not collected certificate validity.',
+                                        items=[
+                                        'Control-plane and etcd expiry require approved host-local or provider-owned evidence.',
+                                        'Kubelet CSR metadata is not proof of an installed certificate or its expiration.',
+                                        'Renewal remains disabled until a separately approved Ansible or provider workflow exists.'
+                                        ],
+                                        placement='right',
+                                        variant='guide') }}
                 {% endset %}
                 {% call section_card.render(
                     'PKI Evidence Boundaries',
@@ -81,11 +81,7 @@
                     body_classes='p-4',
                     aria_label='Internal certificate source evidence boundaries'
                     ) %}
-                    {% set metrics = [
-                        ('database', 'Internal PKI Evidence', 'Not Collected', 'No approved PKI collector or expiry evidence', 'unknown'),
-                        ('shield-help', 'PKI Authority', 'Not Verified', 'Confirm distribution, owner, and source identity', 'unknown'),
-                        ('workflow', 'Renewal', 'Deferred', 'Ansible and security approval required', 'info')
-                        ] %}
+                    {% set metrics = [('database', 'Internal PKI Evidence', 'Not Collected', 'No approved PKI collector or expiry evidence', 'unknown'), ('shield-help', 'PKI Authority', 'Not Verified', 'Confirm distribution, owner, and source identity', 'unknown'), ('workflow', 'Renewal', 'Deferred', 'Ansible and security approval required', 'info')] %}
                     {{ posture_grid.render(metrics, columns=3, compact=true) }}
                 {% endcall %}
             </section>
@@ -93,16 +89,17 @@
                 {{ section_intro.render('Registered Source Coverage',
                                 'Review registered clusters and identify missing internal PKI collection sources.',
                                 'internal-pki-inventory-heading') }}
-                <section id="internal-pki-source-registry" class="{{ table_ui.block_classes() }}">
+                <section id="internal-pki-source-registry"
+                         class="{{ table_ui.block_classes() }}">
                     {% set source_badge = table_label.metadata_label(table_label.count_text(payload.pagination.total_items, 'Cluster'), icon='server') %}
                     {{ table_ui.inventory_block_header('server-cog',
-                        'Internal PKI Source Registry',
-                        'Committed cluster connection metadata only; not proof of control-plane certificate validity.',
-                        'internal-pki-source-loading',
-                        'Refreshing Internal PKI Source Registry',
-                        url_for('integrations.kubernetes'),
-                        'Open Cluster Integrations',
-                        title_extra=source_badge) }}
+                                        'Internal PKI Source Registry',
+                                        'Committed cluster connection metadata only; not proof of control-plane certificate validity.',
+                                        'internal-pki-source-loading',
+                                        'Refreshing Internal PKI Source Registry',
+                                        url_for('integrations.kubernetes') ,
+                    'Open Cluster Integrations',
+                    title_extra=source_badge) }}
                     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
                         {% call registry_ui.filter_form('governance.internal_certificates',
                             'internal-pki-source-registry',
@@ -160,16 +157,18 @@
                             </tbody>
                         </table>
                     </div>
-                    <span id="internal-pki-source-loading" class="htmx-indicator sr-only" role="status">Loading cluster source records</span>
+                    <span id="internal-pki-source-loading"
+                          class="htmx-indicator sr-only"
+                          role="status">Loading cluster source records</span>
                     {{ registry_ui.footer('governance.internal_certificates',
-                        'internal-pki-source-registry',
-                        'internal-pki-source-loading',
-                        payload.pagination,
-                        {'search': payload.search},
-                        payload.pagination.allowed_per_page,
-                        resource_label='Clusters',
-                        rows_aria_label='Clusters per page',
-                        control_name='internal-pki-source') }}
+                                        'internal-pki-source-registry',
+                                        'internal-pki-source-loading',
+                                        payload.pagination,
+                                        {'search': payload.search},
+                                        payload.pagination.allowed_per_page,
+                                        resource_label='Clusters',
+                                        rows_aria_label='Clusters per page',
+                                        control_name='internal-pki-source') }}
                 </section>
             </section>
             <section class="rounded-xl border border-outline-default bg-surface-card p-5"
