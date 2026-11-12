@@ -168,7 +168,7 @@ def main(argv: list[str] | None = None) -> int:
         # outside the intended output tree even when the filename is regular.
         if args.output.parent.resolve() != args.output.parent.absolute():
             raise UnverifiedZapReport('Unsafe evidence output directory')
-        # Refuse aliasing the raw report: unlinking output would destroy input.
+        # Bind publication to the same existing directory inode observed before\n        # reading the untrusted report. A same-path directory replacement can\n        # otherwise redirect evidence without introducing a symlink.\n        original_output_parent = (\n            args.output.parent.stat() if args.output.parent.is_dir() else None\n        )\n        # Refuse aliasing the raw report: unlinking output would destroy input.
         # A symlink output could otherwise redirect publication to another file.
         if (
             args.output.is_symlink()
@@ -244,7 +244,7 @@ def main(argv: list[str] | None = None) -> int:
         # a symlink while parsing; do not publish through that changed alias.
         if args.output.parent.resolve() != args.output.parent.absolute():
             raise UnverifiedZapReport('Unsafe evidence output directory')
-        # Publish atomically: a symlink introduced after the initial alias check
+        if original_output_parent is not None:\n            current_output_parent = args.output.parent.stat()\n            if (\n                current_output_parent.st_dev != original_output_parent.st_dev\n                or current_output_parent.st_ino != original_output_parent.st_ino\n            ):\n                raise UnverifiedZapReport('Evidence output directory changed during parse')\n        # Publish atomically: a symlink introduced after the initial alias check
         # must never redirect writes to the raw report or another sensitive file.
         # A failed write also must not expose a partial, verified-looking summary.
         temporary: Path | None = None
