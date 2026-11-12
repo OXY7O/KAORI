@@ -1,4 +1,5 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "integrations/components/_provider_registry.html" as provider_registry %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
@@ -100,9 +101,9 @@
                             <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.compatibility_profile or "Validation Required" }}</p>
                             <p class="mt-1 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ row.version or "Version not discovered" }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="font-semibold tabular-nums text-content-primary">{{ row.source_binding_count }}</p>
-                            <p class="mt-1 text-xs text-content-muted">Consumer associations</p>
+                        <td class="{{ table_ui.cell_classes() }}"
+                            title="{{ table_label.count_text(row.source_binding_count, 'Consumer association') }}">
+                            {{ table_label.metadata_label(table_label.count_text(row.source_binding_count, 'Source')) }}
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
                             <a href="{{ url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id) }}"

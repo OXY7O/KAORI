@@ -565,3 +565,31 @@ def test_kubernetes_registry_detail_actions_use_shared_semantic_border_authority
     assert 'Alert Source' in template
     assert 'Open Observability' in template
     assert template_path not in baseline['files']
+
+
+def test_kubernetes_registry_bindings_use_compact_source_count_label() -> None:
+    from jinja2 import Environment
+
+    registry = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html'
+    )
+    labels = read('app/templates/components/table_label.html')
+    shared = read('app/templates/integrations/components/_provider_registry.html')
+    Environment().parse(registry)
+
+    assert '{% import "components/table_label.html" as table_label %}' in registry
+    assert "table_label.metadata_label(table_label.count_text(row.source_binding_count, 'Source'))" in registry
+    assert "title=\"{{ table_label.count_text(row.source_binding_count, 'Consumer association') }}\"" in registry
+    assert '{% macro count_text(count, singular, plural=None)' in labels
+    assert '{% macro metadata_label(text, icon=None, wrap=false' in labels
+    assert 'whitespace-nowrap' in labels
+    assert 'Consumer associations</p>' not in registry
+    assert (
+        '<p class="font-semibold tabular-nums text-content-primary">{{ row.source_binding_count }}</p>'
+        not in registry
+    )
+    assert 'provider_registry.connection_registry_colgroup()' in registry
+    assert 'provider_registry.connection_registry_head()' in registry
+    assert '<th class="{{ table_ui.header_cell_classes() }}">Bindings</th>' in shared
+    assert "url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id)" in registry
+    assert 'provider_registry.pagination_footer(pagination' in registry
