@@ -7,6 +7,12 @@ core a small, stable API while provider implementation remains isolated.
 Route → Domain Service → Integration Registry → Adapter → External System
 ```
 
+## Integrations Runtime Overview — evidence inspection and actions (#4526)
+
+The Runtime Overview uses the existing KAORI shared record-detail dialog to inspect committed observations. Below its four-item persisted metric strip, the overview detail now composes one bordered evidence context instead of five peer cards: a two-column runtime/capability gate, full-width diagnostic evidence, and a quieter paired Evidence Boundary / Recommended Action interpretation. Long capability profiles and diagnostic messages wrap naturally. Runtime health and Full Validation readiness remain separate persisted signals; healthy alone does not imply validation or human delivery.
+
+The permitted **Open Data Lifecycle** action is now beside **Reload Evidence** in the Runtime Overview header, including no-target views. It retains the exact `platform_operations.view_data_lifecycle` permission and existing `runtime_observation` domain-scoped Data Lifecycle URL. The redundant lifecycle footer beneath the canonical five-row pagination has been removed; the runtime modal host, HTMX scoped reload, filters, empty state and pagination still follow existing contracts. Platform Operations remains authoritative for retention/archive/cleanup. This is presentation only: no provider refresh, new state or data-model change.
+
 ## Integrations Overview — portfolio guidance (#4516)
 
 The global **Integration Portfolio Snapshot** has one title-adjacent Violet `Guide` using the approved `info_tip.render(..., variant='guide')` behavior. Compact KPI helper copy keeps the four-column desktop row readable without CSS nowrap, ellipsis or font shrinking; smaller viewports may wrap naturally. The Guide preserves each SQL-backed count boundary: **Configured Targets** have a usable endpoint or canonical Kubernetes connection; **Ready for Use** additionally requires canonical enabled/active lifecycle and validated ready readiness; **Readiness Review** includes configured but disabled, degraded, blocked or awaiting-validation targets; **Not Configured** lacks usable connection settings and cannot enter validation until setup is complete. The external provider remains authoritative for native runtime state; KAORI presents committed registry, validation and correlation evidence. Review Jobs stays an independent permissioned action.

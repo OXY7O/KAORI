@@ -29,17 +29,17 @@
                                 <h2 id="integration-portfolio-title"
                                     class="text-base font-semibold text-content-primary">Integration Portfolio Snapshot</h2>
                                 {{ info_tip.render('integration-portfolio-snapshot-guide',
-                                                        'Integration Portfolio Snapshot',
-                                                        'Interpret committed integration configuration separately from operational readiness.',
-                                                        items=[
-                                                        'Configured Targets have a usable provider endpoint or a canonical Kubernetes connection; configuration alone is not readiness.',
-                                                        'Ready for Use requires canonical active/enabled lifecycle and validated ready state.',
-                                                        'Readiness Review counts configured targets that are disabled, degraded, blocked, or still awaiting validation.',
-                                                        'Not Configured means usable connection setup is missing; readiness validation cannot start until configuration is complete.',
-                                                        'External providers remain authoritative for native runtime data; KAORI correlates committed records, bindings, and validation evidence.'
-                                                        ],
-                                                        placement='right',
-                                                        variant='guide') }}
+                                                                'Integration Portfolio Snapshot',
+                                                                'Interpret committed integration configuration separately from operational readiness.',
+                                                                items=[
+                                                                'Configured Targets have a usable provider endpoint or a canonical Kubernetes connection; configuration alone is not readiness.',
+                                                                'Ready for Use requires canonical active/enabled lifecycle and validated ready state.',
+                                                                'Readiness Review counts configured targets that are disabled, degraded, blocked, or still awaiting validation.',
+                                                                'Not Configured means usable connection setup is missing; readiness validation cannot start until configuration is complete.',
+                                                                'External providers remain authoritative for native runtime data; KAORI correlates committed records, bindings, and validation evidence.'
+                                                                ],
+                                                                placement='right',
+                                                                variant='guide') }}
                             </div>
                             <p class="mt-1 text-sm leading-6 text-content-secondary">Separate configured targets, operational readiness, validation work, and incomplete setup.</p>
                         </div>

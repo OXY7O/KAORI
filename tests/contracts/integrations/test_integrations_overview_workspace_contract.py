@@ -310,10 +310,75 @@ def test_integration_portfolio_snapshot_owns_title_guide_and_concise_metric_copy
     ):
         assert meaning in header
 
-    assert "stats.ready" in overview
+    assert 'stats.ready' in overview
     assert 'validated' in overview.lower()
     assert 'whitespace-nowrap' not in header
-    assert 'whitespace-nowrap' not in overview.split(
-        '<div class="{{ integration_ui.metric_grid_classes(4) }}">', 1
-    )[1].split('</div>', 1)[0]
+    assert (
+        'whitespace-nowrap'
+        not in overview.split('<div class="{{ integration_ui.metric_grid_classes(4) }}">', 1)[1].split('</div>', 1)[0]
+    )
     assert "totals['readiness_review']" in sql
+
+
+def test_runtime_overview_lifecycle_action_moves_to_authorized_header() -> None:
+    from jinja2 import Environment
+
+    runtime = read('app/templates/integrations/partials/_runtime_overview.html')
+    Environment().parse(runtime)
+
+    header = runtime.split('<header', 1)[1].split('</header>', 1)[0]
+    after_pagination = runtime.split('provider_registry.pagination_footer(runtime_pagination', 1)[1]
+
+    assert header.count('Open Data Lifecycle') == 1
+    assert "current_user.has_permission('platform_operations.view_data_lifecycle')" in header
+    assert "url_for('platform_operations.data_lifecycle.index', domain='runtime_observation')" in header
+    assert header.index('Open Data Lifecycle') < header.index('Reload Evidence')
+    assert "class=\"{{ table_ui.action_classes() }}\"" in header
+    assert 'Runtime Evidence Lifecycle' not in runtime
+    assert 'Open Data Lifecycle' not in after_pagination
+    assert 'data-kaori-runtime-overview-violet-icons' in runtime
+    assert "provider_registry.pagination_footer(runtime_pagination" in runtime
+    assert '<div id="integration-runtime-modal-host"></div>' in runtime
+    assert 'hx-target="#integration-runtime-overview"' in header
+    assert 'hx-push-url="true"' in header
+    assert 'No Integration Targets Registered' in runtime
+    assert 'No Runtime Targets Match These Filters' in runtime
+
+
+def test_runtime_overview_modal_uses_single_readable_evidence_context() -> None:
+    from jinja2 import Environment
+
+    modal = read('app/templates/integrations/partials/_runtime_overview_modal.html')
+    Environment().parse(modal)
+
+    assert 'record_detail_modal.render(' in modal
+    assert 'data-kaori-runtime-overview-modal' in modal
+    assert modal.count('data-kaori-runtime-overview-evidence-context') == 1
+    assert 'data-kaori-runtime-overview-diagnostic-evidence' in modal
+    assert 'data-kaori-runtime-overview-evidence-boundary' in modal
+    assert 'data-kaori-runtime-overview-recommended-action' in modal
+    assert modal.count('class="grid gap-px bg-outline-subtle sm:grid-cols-2"') == 1
+    assert 'grid gap-px border-t border-outline-subtle bg-outline-subtle sm:grid-cols-2' in modal
+    assert 'border-t border-outline-subtle px-4 py-4 sm:px-5' in modal
+
+    for heading in (
+        'Current Runtime Gate',
+        'Capability Context',
+        'Diagnostic Evidence',
+        'Evidence Boundary',
+        'Recommended Action',
+    ):
+        assert heading in modal
+
+    assert "integration_status(detail.health_status, display='indicator')" in modal
+    assert "integration_status(detail.readiness, display='indicator')" in modal
+    assert "detail.capability_profile or 'Not Observed'" in modal
+    assert 'detail.capability_attention_display' in modal
+    assert "detail.message or 'No runtime or validation diagnostic message" in modal
+    assert 'Runtime health comes only from a persisted observation.' in modal
+    assert "if detail.health_status != 'healthy' else" in modal
+    assert 'href="{{ workspace_url }}"' in modal
+    assert '{{ workspace_label }}' in modal
+    assert '[overflow-wrap:anywhere]' in modal
+    assert 'bg-surface-hover' in modal
+    assert "footer_text='Runtime evidence is persisted independently" in modal
