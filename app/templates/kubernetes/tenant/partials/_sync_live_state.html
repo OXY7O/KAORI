@@ -19,15 +19,15 @@
                     class="text-sm font-semibold text-content-primary">Tenant Inventory Operations</h3>
                 {{ table_label.status_label(tenant_sync_state.label, tenant_sync_state.tone, none, 'detail') }}
                 {{ info_tip.render('tenant-inventory-operations-guide',
-                    'Tenant Inventory Operations Guide',
-                    'Sync Tenant refreshes committed Tenant ownership and Kubernetes namespace inventory correlation; it does not provision resources.',
-                    items=[
-                    'The background worker uses committed Tenant, cluster, and namespace evidence instead of live provider reads in the page.',
-                    'Configure Sync manages the registered automatic Tenant inventory schedule.',
-                    'Sync Tenant does not provision namespaces, change Tenant ownership, or mutate Kubernetes resources.'
-                    ],
-                    placement='right',
-                    variant='guide') }}
+                                    'Tenant Inventory Operations Guide',
+                                    'Sync Tenant refreshes committed Tenant ownership and Kubernetes namespace inventory correlation; it does not provision resources.',
+                                    items=[
+                                    'The background worker uses committed Tenant, cluster, and namespace evidence instead of live provider reads in the page.',
+                                    'Configure Sync manages the registered automatic Tenant inventory schedule.',
+                                    'Sync Tenant does not provision namespaces, change Tenant ownership, or mutate Kubernetes resources.'
+                                    ],
+                                    placement='right',
+                                    variant='guide') }}
             </div>
             <p class="mt-1 text-xs leading-5 text-content-muted">
                 {{ tenant_sync_state.progress_message or tenant_sync_state.helper }}
