@@ -101,6 +101,13 @@
                         {% if active_tab == 'sources' %}
                             <section id="internal-pki-source-registry"
                                      class="{{ table_ui.block_classes() }}">
+                                {% set source_clear_query = evidence_query.copy() %}
+                                {% set _ = source_clear_query.update({
+                                    'evidence_tab': 'sources',
+                                    'search': '',
+                                    'environment': '',
+                                    'platform': ''
+                                }) %}
                                 {% set source_clear_action %}
                                     {% if payload.search or payload.filters.environment or payload.filters.platform %}
                                         {{ registry_ui.clear_filters_link('governance.internal_certificates',
@@ -108,17 +115,7 @@
                                             'internal-pki-source-loading',
                                             payload.pagination.per_page,
                                             table_ui.action_classes(),
-                                            query_params={
-                                            'evidence_tab': 'sources',
-                                            'cluster_id': payload.selected_cluster_id,
-                                            'cert_search': inventory.search if inventory else request.args.get('cert_search', ''),
-                                            'cert_kind': inventory.filters.kind if inventory else request.args.get('cert_kind', ''),
-                                            'cert_expiry': inventory.filters.expiry if inventory else request.args.get('cert_expiry', ''),
-                                            'cert_coverage': inventory.filters.coverage if inventory else request.args.get('cert_coverage', ''),
-                                            'cert_freshness': inventory.filters.freshness if inventory else request.args.get('cert_freshness', ''),
-                                            'cert_page': inventory.pagination.page if inventory else request.args.get('cert_page', 1),
-                                            'cert_per_page': inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5)
-                                            },
+                                            query_params=source_clear_query,
                                             lead=false) }}
                                     {% endif %}
                                 {% endset %}
@@ -149,13 +146,27 @@
                                         form_id='internal-pki-source-filter',
                                         aria_label='Filter registered clusters for internal PKI source assessment') %}
                                         <input type="hidden" name="evidence_tab" value="sources">
-                                        <input type="hidden" name="cert_kind" value="{{ inventory.filters.kind if inventory else request.args.get('cert_kind', '') }}">
-                                        <input type="hidden" name="cert_expiry" value="{{ inventory.filters.expiry if inventory else request.args.get('cert_expiry', '') }}">
-                                        <input type="hidden" name="cert_coverage" value="{{ inventory.filters.coverage if inventory else request.args.get('cert_coverage', '') }}">
-                                        <input type="hidden" name="cert_freshness" value="{{ inventory.filters.freshness if inventory else request.args.get('cert_freshness', '') }}">
-                                        <input type="hidden" name="cert_search" value="{{ inventory.search if inventory else request.args.get('cert_search', '') }}">
-                                        <input type="hidden" name="cert_page" value="{{ inventory.pagination.page if inventory else request.args.get('cert_page', 1) }}">
-                                        <input type="hidden" name="cert_per_page" value="{{ inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5) }}">
+                                        <input type="hidden"
+                                               name="cert_kind"
+                                               value="{{ inventory.filters.kind if inventory else request.args.get('cert_kind', '') }}">
+                                        <input type="hidden"
+                                               name="cert_expiry"
+                                               value="{{ inventory.filters.expiry if inventory else request.args.get('cert_expiry', '') }}">
+                                        <input type="hidden"
+                                               name="cert_coverage"
+                                               value="{{ inventory.filters.coverage if inventory else request.args.get('cert_coverage', '') }}">
+                                        <input type="hidden"
+                                               name="cert_freshness"
+                                               value="{{ inventory.filters.freshness if inventory else request.args.get('cert_freshness', '') }}">
+                                        <input type="hidden"
+                                               name="cert_search"
+                                               value="{{ inventory.search if inventory else request.args.get('cert_search', '') }}">
+                                        <input type="hidden"
+                                               name="cert_page"
+                                               value="{{ inventory.pagination.page if inventory else request.args.get('cert_page', 1) }}">
+                                        <input type="hidden"
+                                               name="cert_per_page"
+                                               value="{{ inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5) }}">
                                         {% if payload.selected_cluster_id %}
                                             <input type="hidden"
                                                    name="cluster_id"
@@ -225,7 +236,7 @@
                                                         <p class="mt-1 text-xs text-content-muted">Version {{ record.connection_version or 'not reported' }}</p>
                                                     </td>
                                                     <td class="{{ table_ui.cell_classes() }} align-top">
-                                                        {{ table_label.status_indicator_label(record.collection_status, record.collection_tone|default('unknown')) }}
+                                                        {{ table_label.status_indicator_label(record.collection_status, record.collection_tone|default('unknown') ) }}
                                                         <p class="mt-1 text-xs text-content-muted">Committed source evidence</p>
                                                     </td>
                                                     <td class="{{ table_ui.cell_classes() }} align-top">
