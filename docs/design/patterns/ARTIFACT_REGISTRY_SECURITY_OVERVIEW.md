@@ -34,6 +34,28 @@ When providers are unregistered or committed inventory is not ready, retain the 
 
 On focused Vulnerabilities and Supply Chain pages, `_security_sync_live_state.html` displays a **single concise line** combining a source-qualified queued/syncing/failed/not-collected/ready state with **read-only; no provider scans**. It must wrap naturally on narrow viewports; never truncate or use `nowrap`. Progress, polling, disable-duplicate execution, Jobs & Executions authority, and the canonical `artifact_registry.security.sync` job remain intact.
 
+## Security Evidence Summary and finding-table consistency (Human Visual UAT #4468)
+
+Both focused Security tabs, **Vulnerabilities** and **Supply Chain**, retain their four
+committed, domain-specific Security Evidence Summary metrics. The existing shared
+`table_label.metadata_label(security_metrics|length ~ ' Indicators', icon='layout-grid')`
+is displayed in the `operational_section_card` header as a **static** `4 Indicators`
+badge, not an interactive Guide. Do not conflate a missing scan with zero findings
+or a signed artifact with evaluated trust.
+
+The Vulnerability Registry continues to use KAORI `table_ui` / `table_registry`
+visual and HTMX contracts, with the existing six columns and 68rem responsive
+minimum width. Prefer the shared `table_ui.title_cell` supporting-content slot
+to group severity beneath the CVE identity and freshness beneath the provider
+source. Keep artifact/project hierarchy and installed package/fix context together,
+display singular `1 Binding` versus plural `N Bindings`, and use the shared
+`table_ui.action_grid_classes(columns=1)` for aligned `View More` / conditional
+`Impact` actions. The grouped styling must not change evidence availability,
+severity semantics, scan freshness, provider provenance, modal actions, canonical
+pagination (default five), keyboard focus, filters or latest-request-wins HTMX
+behavior. On narrower viewports the existing horizontal scroll must preserve
+access to all columns and actions; do not clip or mask evidence.
+
 ## QA and admission
 
 - Exact-commit djlint and Ruff check/format on updated templates and Python files.
