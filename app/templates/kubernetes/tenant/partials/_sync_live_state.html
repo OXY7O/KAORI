@@ -1,5 +1,6 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 <div id="tenant-sync-live-state"
      class="min-w-0"
      {% if tenant_sync_state.is_active and tenant_sync_state.active_job_public_id %} hx-get="{{ url_for('tenant.inventory_sync_status', public_id=tenant_sync_state.active_job_public_id) }}" hx-trigger="every 1s" hx-target="this" hx-swap="outerHTML swap:0ms settle:0ms" hx-indicator="#tenant-sync-panel-poll-indicator" hx-sync="this:replace" {% endif %}>
@@ -17,6 +18,16 @@
                 <h3 id="tenant-inventory-operations-heading"
                     class="text-sm font-semibold text-content-primary">Tenant Inventory Operations</h3>
                 {{ table_label.status_label(tenant_sync_state.label, tenant_sync_state.tone, none, 'detail') }}
+                {{ info_tip.render('tenant-inventory-operations-guide',
+                                'Tenant Inventory Operations Guide',
+                                'Sync Tenant refreshes committed Tenant ownership and Kubernetes namespace inventory correlation; it does not provision resources.',
+                                items=[
+                                'The background worker uses committed Tenant, cluster, and namespace evidence instead of live provider reads in the page.',
+                                'Configure Sync manages the registered automatic Tenant inventory schedule.',
+                                'Sync Tenant does not provision namespaces, change Tenant ownership, or mutate Kubernetes resources.'
+                                ],
+                                placement='right',
+                                variant='guide') }}
             </div>
             <p class="mt-1 text-xs leading-5 text-content-muted">
                 {{ tenant_sync_state.progress_message or tenant_sync_state.helper }}
