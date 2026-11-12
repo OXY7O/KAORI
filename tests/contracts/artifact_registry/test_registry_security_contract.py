@@ -466,11 +466,11 @@ def test_vulnerability_registry_compact_rows_preserve_complete_committed_evidenc
         '{% else %}\n                                        <table', 1
     )[0]
     assert 'w-[19%]">Finding</th>' in vulns
-    assert 'w-[21%]">Artifact</th>' in vulns
-    assert 'w-[23%]">Package / Fix</th>' in vulns
+    assert 'w-[20%]">Artifact</th>' in vulns
+    assert 'w-[22%]">Package / Fix</th>' in vulns
     assert 'w-[14%]">Runtime Exposure</th>' in vulns
     assert 'w-[13%]">Evidence</th>' in vulns
-    assert 'w-[10%]">Details</th>' in vulns
+    assert 'w-[12%]">Details</th>' in vulns
     assert vulns.count('row.severity_label, severity_tone') == 1
     assert 'row.installed_version' in vulns
     assert 'row.fix_available' in vulns
@@ -480,13 +480,13 @@ def test_vulnerability_registry_compact_rows_preserve_complete_committed_evidenc
     # Restore existing icon-bearing title_cell (not a new styling component).
     # Every registry identity renders one semantic icon without duplicating
     # the severity or freshness evidence labels.
-    assert "table_ui.title_cell(row.vulnerability_id, '', 'shield-alert')" in vulns
+    assert "table_ui.title_cell(row.vulnerability_id, icon='shield-alert', supporting_content=severity_badge)" in vulns
     assert "table_ui.title_cell(row.repository, 'Project: ' ~ row.project, 'package-search')" in vulns
-    assert "table_ui.title_cell(row.source_name, '', 'blocks')" in vulns
-    assert vulns.count("table_ui.title_cell(row.vulnerability_id, '', 'shield-alert')") == 1
+    assert "table_ui.title_cell(row.source_name, icon='blocks', supporting_content=freshness_badge)" in vulns
+    assert vulns.count('supporting_content=severity_badge') == 1
     assert vulns.count("table_ui.title_cell(row.repository, 'Project: ' ~ row.project, 'package-search')") == 1
-    assert vulns.count("table_ui.title_cell(row.source_name, '', 'blocks')") == 1
-    assert 'title="{{ row.package }}"' in vulns
+    assert vulns.count('supporting_content=freshness_badge') == 1
+    assert "table_ui.title_cell(row.package, 'Installed: ' ~ row.installed_version)" in vulns
     assert "macro title_cell(name, supporting_text='', icon='', supporting_content=None)" in read(
         'app/templates/components/table_primitives.html'
     )
@@ -499,6 +499,8 @@ def test_vulnerability_registry_compact_rows_preserve_complete_committed_evidenc
     assert 'supply_chain_detail.vulnerability(row, vulnerability_dialog_id)' in vulns
     assert 'colspan="6"' in vulns
     assert 'security.finding_empty_state.title' in vulns
+    assert 'table_ui.action_grid_classes(columns=1)' in vulns
+    assert "row.runtime_exposure_count == 1 else ' Bindings'" in vulns
 
     # The shell is the existing approved, keyboard-closeable KAORI dialog.
     assert '{% macro vulnerability(row, dialog_id)' in detail
@@ -657,6 +659,15 @@ def test_security_summary_uses_registry_section_intro_and_grouped_metrics() -> N
     assert "'warning' if security.high else 'info'" in summary
     assert "'critical' if security.runtime_exposed else 'info'" in summary
     assert 'operational_metric_card' not in summary
+    for concise_copy in (
+        'Digests with critical/high findings.',
+        'Kubernetes high-risk bindings.',
+        'Provider-reported signatures.',
+        'Provider-reported SBOMs.',
+        'Registry sources in this scope.',
+    ):
+        assert concise_copy in summary
+        assert len(concise_copy) <= 38
     assert 'registry.footer(' in template
 
 
