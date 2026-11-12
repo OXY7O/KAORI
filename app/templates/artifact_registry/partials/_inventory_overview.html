@@ -1,5 +1,5 @@
 {% import "components/page_hero.html" as page_hero %}
-{% import "components/inventory_asset_card.html" as inventory_asset_card %}
+{% import "components/workspace_link_card.html" as workspace_card %}
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/resource_posture_grid.html" as posture_grid %}
 {% import "components/table_label.html" as table_label %}
@@ -56,19 +56,6 @@
                 coverage_tone=inventory.snapshot_context.coverage_tone,
                 exceptions_tone=inventory.snapshot_context.exceptions_tone,
                 metric_icon_palette='brand') }}
-        <section class="space-y-4" aria-labelledby="registry-fleet-posture-heading">
-            {{ section_intro.render('Fleet Inventory Posture',
-                        'Review committed provider coverage, snapshot exceptions, and project visibility across Registry inventory.',
-                        'registry-fleet-posture-heading') }}
-            {% call operational_section_card.render(
-                'Registry Fleet Evidence',
-                'Committed provider, snapshot, and project visibility evidence for this Registry scope.',
-                'database-backup',
-                body_classes='p-0'
-                ) %}
-                {{ posture_grid.render(inventory.fleet_posture_metrics, columns=3) }}
-            {% endcall %}
-        </section>
         <section class="space-y-4" aria-labelledby="registry-assets-heading">
             {{ section_intro.render('Inventory Assets',
                         'Open an asset inventory from the current committed Registry snapshots.',
@@ -86,14 +73,36 @@
                 ) %}
                 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {% for asset in inventory.asset_catalog %}
-                        {{ inventory_asset_card.render(asset.title,
-                                                asset.count,
-                                                asset.description,
-                                                url_for(asset.endpoint) ,
-                        asset.icon,
-                        action_label=asset.action_label) }}
+                        {% set asset_unit = 'Project' if asset.title == 'Projects' else ('Repository' if asset.title == 'Repositories' else 'Artifact') %}
+                        {% set asset_scope = asset.count ~ ' ' ~ (asset.title if asset.count != 1 else asset_unit) %}
+                        {{ workspace_card.render({
+                                        'href': url_for(asset.endpoint) ,
+                        'title': asset.title,
+                        'label': 'Committed Inventory',
+                        'description': asset.description,
+                        'icon': asset.icon,
+                        'scope': asset_scope,
+                        'search_text': asset.title,
+                        'action_label': asset.action_label
+                        }, compact=true) }}
                     {% endfor %}
                 </div>
+            {% endcall %}
+        </section>        <section class="space-y-4" aria-labelledby="registry-fleet-posture-heading">
+            {{ section_intro.render('Fleet Inventory Posture',
+                        'Review committed provider coverage, snapshot exceptions, and project visibility across Registry inventory.',
+                        'registry-fleet-posture-heading') }}
+            {% set fleet_badge %}
+                {{ table_label.metadata_label(inventory.fleet_posture_metrics|length ~ ' Indicators', icon='layout-grid') }}
+            {% endset %}
+            {% call operational_section_card.render(
+                'Registry Fleet Evidence',
+                'Committed provider, snapshot, and project visibility evidence for this Registry scope.',
+                'database-backup',
+                header_badge=fleet_badge,
+                body_classes='p-5'
+                ) %}
+                {{ posture_grid.render(inventory.fleet_posture_metrics, columns=3, compact=true) }}
             {% endcall %}
         </section>
     {% endif %}
