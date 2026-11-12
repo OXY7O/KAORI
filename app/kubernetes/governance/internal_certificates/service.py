@@ -37,7 +37,7 @@ def get_internal_certificates_source_page(args: Any) -> dict[str, Any]:
     page = _page_number(args.get('page'))
     per_page = _per_page(args.get('per_page'))
     search = str(args.get('search') or '').strip()[:100]
-    query = Cluster.query.options(selectinload(Cluster.kubernetes_connection))
+    query = Cluster.query
     if search:
         query = query.filter(Cluster.name.ilike(f'%{search}%'))
     if selected_cluster_id:
@@ -45,7 +45,9 @@ def get_internal_certificates_source_page(args: Any) -> dict[str, Any]:
     total_items = query.count()
     total_pages = max(ceil(total_items / per_page), 1)
     page = min(page, total_pages)
-    records = query.order_by(Cluster.name.asc(), Cluster.id.asc()).offset(
+    records = query.options(selectinload(Cluster.kubernetes_connection)).order_by(
+        Cluster.name.asc(), Cluster.id.asc()
+    ).offset(
         (page - 1) * per_page
     ).limit(per_page).all()
 
