@@ -222,22 +222,22 @@ def test_cve_impact_section_intros_and_filters_use_shared_kaori_contracts() -> N
     assert "per_page_param='runtime_per_page'" in page
     assert "impact.finding_pagination.total_items ~ (' Finding'" in page
     assert "impact.runtime_pagination.total_items ~ (' Binding'" in page
-    assert "hx-sync=" in canonical
+    assert 'hx-sync=' in canonical
     assert 'path_params=none' in canonical
     assert 'url_for(endpoint, **(path_params or {})' in canonical
     assert 'data-kaori-canonical-registry-filter' in canonical
-    assert "visible_findings = findings" in read_model
-    assert "visible_bindings = bindings" in read_model
-    assert "visible_findings.options(" in read_model
-    assert "visible_bindings.order_by(" in read_model
-    assert "RegistryProject.integration_instance_id.in_(source_ids)" in read_model
-    assert "func.upper(RegistryVulnerability.vulnerability_id) == canonical_cve" in read_model
-    assert "matching_sources" in read_model
-    assert "matching_clusters" in read_model
+    assert 'visible_findings = findings' in read_model
+    assert 'visible_bindings = bindings' in read_model
+    assert 'visible_findings.options(' in read_model
+    assert 'visible_bindings.order_by(' in read_model
+    assert 'RegistryProject.integration_instance_id.in_(source_ids)' in read_model
+    assert 'func.upper(RegistryVulnerability.vulnerability_id) == canonical_cve' in read_model
+    assert 'matching_sources' in read_model
+    assert 'matching_clusters' in read_model
     assert "RegistryWorkloadBinding.match_type == 'digest'" in read_model
     assert "RegistryWorkloadBinding.match_type != 'digest'" in read_model
-    assert "per_page=finding_per_page if finding_per_page is not None else per_page" in read_model
-    assert "per_page=runtime_per_page if runtime_per_page is not None else per_page" in read_model
+    assert 'per_page=finding_per_page if finding_per_page is not None else per_page' in read_model
+    assert 'per_page=runtime_per_page if runtime_per_page is not None else per_page' in read_model
     assert "'finding_search': finding_search" in read_model
     assert "'runtime_search': runtime_search" in read_model
 
