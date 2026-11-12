@@ -26,6 +26,8 @@ from app.kubernetes.governance.internal_certificates.service import (
 from app.models.audit import AuditEvent
 from app.models.cluster import Cluster
 from app.models.internal_certificates import InternalPKICertificateInventory, InternalPKIEvidenceBatch
+from app.models.integration import IntegrationInstance
+from app.models.kubernetes import KubernetesConnection
 
 
 def _manifest(cluster_id: str, *, collected_at: datetime | None = None) -> dict:
@@ -71,6 +73,8 @@ def pki_repository_app():
     db.init_app(app)
     with app.app_context():
         Cluster.__table__.create(db.engine)
+        IntegrationInstance.__table__.create(db.engine)
+        KubernetesConnection.__table__.create(db.engine)
         InternalPKIEvidenceBatch.__table__.create(db.engine)
         InternalPKICertificateInventory.__table__.create(db.engine)
         AuditEvent.__table__.create(db.engine)
@@ -79,6 +83,8 @@ def pki_repository_app():
         AuditEvent.__table__.drop(db.engine)
         InternalPKICertificateInventory.__table__.drop(db.engine)
         InternalPKIEvidenceBatch.__table__.drop(db.engine)
+        KubernetesConnection.__table__.drop(db.engine)
+        IntegrationInstance.__table__.drop(db.engine)
         Cluster.__table__.drop(db.engine)
 
 
@@ -428,9 +434,7 @@ def test_prepared_kubeadm_1364_manifest_commits_14_source_qualified_rows(
         assert cleared['pagination']['total_pages'] == 3
         assert all(record['coverage'] == 'partial' for record in cleared['records'])
 
-        completed = get_internal_certificate_inventory_page(
-            {'cluster_id': cluster_id, 'cert_coverage': 'complete'}
-        )
+        completed = get_internal_certificate_inventory_page({'cluster_id': cluster_id, 'cert_coverage': 'complete'})
         assert completed['filters']['coverage'] == 'complete'
         assert completed['total'] == 0
 
