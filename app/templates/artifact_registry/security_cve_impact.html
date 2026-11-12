@@ -41,7 +41,7 @@
         {{ snapshot_context_bar.render(source_label='Committed Registry × Kubernetes',
                 status=impact.correlation.status,
                 tone=impact.correlation.tone,
-                description=impact.correlation.description,
+                description='Committed Registry × Kubernetes correlation.',
                 latest_collected=impact.correlation.latest_correlated_at|user_datetime if impact.correlation.latest_correlated_at else 'Not Materialized',
                 scope_label='Registry × Kubernetes',
                 scope_supporting='Committed evidence',
@@ -166,7 +166,7 @@
                                             'artifact-registry-cve-findings',
                                             'artifact-registry-cve-findings-loading',
                                             impact.finding_pagination.per_page,
-                                            table_ui.action_classes(),
+                                            table_ui.action_classes() ~ ' h-10 self-end',
                                             query_params={
                                             'cve_id': impact.cve_id,
                                             'evidence_tab': 'findings',
@@ -198,10 +198,11 @@
                                             <tr class="{{ table_ui.row_classes() }}">
                                                 <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                                                     {{ table_ui.title_cell(row.repository, row.project ~ ' · ' ~ row.source, 'package-search') }}
-                                                    <p class="mt-2 min-w-0 break-all font-mono text-xs leading-5 text-content-muted"
-                                                       title="{{ row.digest }}">
-                                                        <span class="font-semibold text-content-secondary">Digest:</span> {{ row.digest }}
-                                                    </p>
+                                                    <dl class="mt-2 grid min-w-0 grid-cols-[3.25rem_minmax(0,1fr)] gap-x-2 gap-y-1 border-t border-outline-subtle pt-2 text-xs leading-5">
+                                                        <dt class="font-semibold text-content-secondary">Digest</dt>
+                                                        <dd class="min-w-0 break-all font-mono text-content-muted"
+                                                            title="{{ row.digest }}">{{ row.digest }}</dd>
+                                                    </dl>
                                                 </td>
                                                 <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                                                     {{ table_ui.title_cell(row.package, 'Installed: ' ~ row.installed_version, 'package') }}
@@ -312,7 +313,7 @@
                                             'artifact-registry-cve-runtime',
                                             'artifact-registry-cve-runtime-loading',
                                             impact.runtime_pagination.per_page,
-                                            table_ui.action_classes(),
+                                            table_ui.action_classes() ~ ' h-10 self-end',
                                             query_params={
                                             'cve_id': impact.cve_id,
                                             'evidence_tab': 'runtime',
@@ -352,12 +353,14 @@
                                                 </td>
                                                 <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                                                     {{ table_ui.title_cell(row.workload, row.workload_type, 'waypoints') }}
-                                                    <p class="mt-2 min-w-0 break-all text-xs leading-5 text-content-muted">
-                                                        <span class="font-semibold text-content-secondary">Pod:</span> {{ row.pod }}
-                                                    </p>
-                                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">
-                                                        <span class="font-semibold text-content-secondary">Container:</span> {{ row.container }}
-                                                    </p>
+                                                    <dl class="mt-2 grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] gap-x-2 gap-y-1 text-xs leading-5">
+                                                        <dt class="font-semibold text-content-secondary">Pod</dt>
+                                                        <dd class="min-w-0 break-all font-mono text-content-muted"
+                                                            title="{{ row.pod }}">{{ row.pod }}</dd>
+                                                        <dt class="font-semibold text-content-secondary">Container</dt>
+                                                        <dd class="min-w-0 break-all font-mono text-content-muted"
+                                                            title="{{ row.container }}">{{ row.container }}</dd>
+                                                    </dl>
                                                 </td>
                                                 <td class="{{ table_ui.cell_classes() }} align-middle">
                                                     {{ table_label.status_indicator_label(row.match.label, row.match.tone) }}
