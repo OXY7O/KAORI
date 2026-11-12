@@ -592,3 +592,42 @@ def test_kubernetes_registry_bindings_use_compact_source_count_label() -> None:
     assert '<th class="{{ table_ui.header_cell_classes() }}">Bindings</th>' in shared
     assert "url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id)" in registry
     assert 'provider_registry.pagination_footer(pagination' in registry
+
+
+def test_kubernetes_validation_copy_is_compact_without_changing_capability_or_rbac_contract() -> None:
+    from jinja2 import Environment
+
+    capability = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/'
+        '_capability_workspace.html'
+    )
+    rbac = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/'
+        '_capsule_rbac_bootstrap.html'
+    )
+    shared_readiness = read('app/templates/integrations/components/_capability_readiness.html')
+
+    Environment().parse(capability)
+    Environment().parse(rbac)
+
+    assert "'label': 'Required Blocks'" in capability
+    assert "'description': 'Blocked by API discovery or RBAC.'" in capability
+    assert 'Core capability contracts blocked by API discovery or RBAC.' not in capability
+    assert "'value': blocked_features|length" in capability
+    assert "'tone': 'critical' if blocked_features else 'normal'" in capability
+    assert 'capability_readiness.render(' in capability
+    assert 'data-kaori-provider-capability-readiness' in shared_readiness
+
+    assert 'Capsule Cluster RBAC Bootstrap' in rbac
+    assert 'Reusable ClusterRoles for governed Capsule Access Grants.' in rbac
+    assert 'Provision once per cluster and reuse across Tenants.' not in rbac
+    assert 'Check RBAC' in rbac
+    assert 'Bootstrap Missing Roles' in rbac
+    assert 'name="confirm_cluster_rbac"' in rbac
+    assert 'data-capsule-rbac-bootstrap' in rbac
+    assert "{% include 'components/operation_feedback_oob.html' %}" in rbac
+
+    assert 'metric.description' in shared_readiness
+    assert 'whitespace-nowrap' not in shared_readiness
+    assert 'text-ellipsis' not in rbac
+    assert '<p class="mt-1 max-w-2xl text-xs leading-5 text-content-secondary">' in rbac

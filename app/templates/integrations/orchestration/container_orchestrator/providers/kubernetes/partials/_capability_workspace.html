@@ -50,7 +50,7 @@
 {% set capability_metrics = [
     {'icon': 'layers-3', 'tone': 'normal', 'label': 'Validated Capabilities', 'value': validated_feature_count, 'description': 'Usable Kubernetes API and effective RBAC evidence.'},
     {'icon': 'history', 'tone': 'warning' if legacy_features else 'neutral', 'label': 'Legacy Fallbacks', 'value': legacy_features|length, 'description': 'Required contracts currently resolved through fallback APIs.'},
-    {'icon': 'shield-x', 'tone': 'critical' if blocked_features else 'normal', 'label': 'Required Blocks', 'value': blocked_features|length, 'description': 'Core capability contracts blocked by API discovery or RBAC.'}
+    {'icon': 'shield-x', 'tone': 'critical' if blocked_features else 'normal', 'label': 'Required Blocks', 'value': blocked_features|length, 'description': 'Blocked by API discovery or RBAC.'}
 ] %}
 {% if blocked_features %}
     {% set capability_next_action = 'Resolve ' ~ (blocked_features|length) ~ ' required API or RBAC block' ~ ('' if blocked_features|length == 1 else 's') ~ ', then rerun Full Validation.' %}
