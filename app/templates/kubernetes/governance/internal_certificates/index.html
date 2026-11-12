@@ -101,21 +101,23 @@
                         {% if active_tab == 'sources' %}
                             <section id="internal-pki-source-registry"
                                      class="{{ table_ui.block_classes() }}">
-                                {% set source_clear_query = evidence_query.copy() %}
-                                {% set _ = source_clear_query.update({
+                                {% set source_clear_query = {
                                     'evidence_tab': 'sources',
-                                    'search': '',
-                                    'environment': '',
-                                    'platform': ''
-                                }) %}
+                                    'per_page': payload.pagination.per_page,
+                                    'cert_search': inventory.search if inventory else request.args.get('cert_search', ''),
+                                    'cert_kind': inventory.filters.kind if inventory else request.args.get('cert_kind', ''),
+                                    'cert_expiry': inventory.filters.expiry if inventory else request.args.get('cert_expiry', ''),
+                                    'cert_coverage': inventory.filters.coverage if inventory else request.args.get('cert_coverage', ''),
+                                    'cert_freshness': inventory.filters.freshness if inventory else request.args.get('cert_freshness', ''),
+                                    'cert_page': inventory.pagination.page if inventory else request.args.get('cert_page', 1),
+                                    'cert_per_page': inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5)
+                                } %}
                                 {% set source_clear_action %}
-                                    {% if payload.search or payload.filters.environment or payload.filters.platform %}
-                                        {{ registry_ui.clear_filters_link('governance.internal_certificates',
-                                            'internal-pki-evidence-workspace',
-                                            'internal-pki-source-loading',
-                                            payload.pagination.per_page,
+                                    {% if payload.search or payload.filters.environment or payload.filters.platform or payload.selected_cluster_id %}
+                                        {{ registry_ui.clear_filters_action(
+                                            url_for('governance.internal_certificates', **source_clear_query),
                                             table_ui.action_classes(),
-                                            query_params=source_clear_query,
+                                            marker='internal-pki-evidence-workspace',
                                             lead=false) }}
                                     {% endif %}
                                 {% endset %}
@@ -129,15 +131,6 @@
                                 'Open Cluster Integrations',
                                 title_extra=source_badge,
                                 header_actions=source_clear_action) }}
-                                {% if payload.selected_cluster_id %}
-                                    <div class="border-b border-outline-subtle px-5 py-3">
-                                        <a href="{{ url_for('governance.internal_certificates', evidence_tab='sources') }}"
-                                           class="inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                                            <i data-lucide="x" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                            Clear Cluster Scope
-                                        </a>
-                                    </div>
-                                {% endif %}
                                 <div class="{{ table_ui.inventory_filter_bar_classes() }}">
                                     {% call registry_ui.filter_form('governance.internal_certificates',
                                         'internal-pki-evidence-workspace',
