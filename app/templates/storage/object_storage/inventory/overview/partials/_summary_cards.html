@@ -22,14 +22,14 @@
                 {% set asset_unit = 'System' if asset.title == 'Systems' else 'Asset' %}
                 {% set asset_scope = asset.count ~ ' ' ~ asset_unit ~ ('s' if asset.count != 1 else '') %}
                 {{ workspace_card.render({
-                    'href': url_for(asset.endpoint),
-                    'title': asset.title,
-                    'label': 'Committed Inventory',
-                    'description': asset.description,
-                    'icon': asset.icon,
-                    'scope': asset_scope,
-                    'search_text': asset.title,
-                    'action_label': asset.action_label
+                                'href': url_for(asset.endpoint) ,
+                'title': asset.title,
+                'label': 'Committed Inventory',
+                'description': asset.description,
+                'icon': asset.icon,
+                'scope': asset_scope,
+                'search_text': asset.title,
+                'action_label': asset.action_label
                 }, compact=true) }}
             {% endfor %}
         </div>
