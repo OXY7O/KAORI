@@ -178,7 +178,8 @@ def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace
     assert 'KubernetesConnection.detected_platform' in service
     assert 'KubernetesConnection.detected_version' in service
     assert 'select(func.count(Cluster.id))' in service
-    assert 'KubernetesConnection.kubeconfig' not in service.split('Explicit column projections')[0]
+    assert 'KubernetesConnection.kubeconfig,' not in service
+    assert 'Cluster.kubernetes_connection' not in service
     assert 'Cluster.name.ilike' in service
     assert '_DEFAULT_PER_PAGE = 5' in service
     assert "'collection_status': 'Not Collected'" in service
