@@ -168,6 +168,16 @@ def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace
     assert 'capability.search_text' in overview
     assert 'workspace_card.render(' in overview
 
+    navigation_catalog = read('app/common/workspace_navigation_catalog.py')
+    navigation = read('app/common/workspace_navigation.py')
+    navigation_standard = read('docs/design/components/DOMAIN_WORKSPACE_NAVIGATION.md')
+    assert "'governance.internal_certificates'" in navigation_catalog
+    assert "'internal_certificates.view'" in navigation_catalog
+    assert "'governance.internal_certificates': 'internal_certificates'" in navigation
+    assert "view.endpoint != 'governance.internal_certificates'" in navigation
+    assert "user.has_permission('clusters.view')" in navigation
+    assert 'Overview · TLS Certificates · Internal Certificates' in navigation_standard
+
     assert 'permission_dependencies:' in access
     assert 'internal_certificates.view: [governance.view, clusters.view]' in access
     assert '- key: internal_certificates.view' in access
