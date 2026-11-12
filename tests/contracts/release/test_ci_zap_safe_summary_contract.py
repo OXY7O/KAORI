@@ -184,3 +184,35 @@ def test_cli_rejects_descriptor_identity_or_mode_drift(
     assert calls >= 2
     assert not output.exists()
     assert raw.exists()
+
+
+def test_cli_rejects_excessive_json_object_members_without_publishing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A small raw report must not amplify into an unbounded JSON object."""
+    from scripts.ci_zap_safe_summary import MAX_OBJECT_MEMBERS
+
+    raw = tmp_path / 'baseline.json'
+    # Include an otherwise valid site: the member limit must apply even when
+    # excess fields would be ignored by the sanitized aggregate renderer.
+    members = ','.join(f'"ignored_{index}":0' for index in range(MAX_OBJECT_MEMBERS))
+    raw.write_text('{"site":[{"alerts":[]}],' + members + '}', encoding='utf-8')
+    output = tmp_path / 'summary.md'
+    output.write_text('stale verified evidence', encoding='utf-8')
+
+    assert main(['--input', str(raw), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not output.exists()
+    assert raw.exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_cli_accepts_bounded_json_object_members(tmp_path: Path) -> None:
+    from scripts.ci_zap_safe_summary import MAX_OBJECT_MEMBERS
+
+    raw = tmp_path / 'baseline.json'
+    members = ','.join(f'"ignored_{index}":0' for index in range(MAX_OBJECT_MEMBERS - 1))
+    raw.write_text('{"site":[{"alerts":[]}],' + members + '}', encoding='utf-8')
+    output = tmp_path / 'summary.md'
+
+    assert main(['--input', str(raw), '--output', str(output), '--source-sha', SHA]) == 0
+    assert '| **Total** | **0** |' in output.read_text(encoding='utf-8')
