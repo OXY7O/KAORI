@@ -113,6 +113,7 @@ _CAPABILITY_ACTIVE_EXACT: dict[str, dict[str, str]] = {
     'artifact_registry_security': {
         'artifact_registry.security_overview': 'overview',
         'artifact_registry.security': 'vulnerabilities',
+        'artifact_registry.security_cve_impact': 'vulnerabilities',
         'artifact_registry.security_supply_chain': 'supply_chain',
     },
     'artifact_registry_runtime': {
