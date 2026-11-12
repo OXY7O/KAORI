@@ -51,6 +51,47 @@ def test_full_center_uses_standard_filters_loading_and_pagination() -> None:
     assert "pagination_ui.resource_name('Notifications'" in content
 
 
+def test_notification_page_size_uses_one_change_request_and_preserves_filters() -> None:
+    from jinja2 import Environment
+
+    content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
+    pagination = read('app/static/js/pagination.js')
+    routes = read('app/platform_operations/notifications/routes.py')
+    queries = read('app/platform_operations/notifications/queries.py')
+
+    Environment().parse(content)
+    rows = content.split('id="notification-center-per-page"', 1)[0].rsplit('<form method="get"', 1)[1]
+    rows += content.split('id="notification-center-per-page"', 1)[1].split('</form>', 1)[0]
+    for token in (
+        'hx-trigger="change"',
+        'hx-target="#activity-notification-page"',
+        'hx-select="#activity-notification-page"',
+        'hx-swap="outerHTML"',
+        'hx-push-url="true"',
+        'hx-sync="#activity-notification-page:replace"',
+        'name="view" value="notifications"',
+        'name="page" value="1"',
+        'name="search"',
+        'name="category"',
+        'name="status"',
+        'name="read_state"',
+        'name="per_page"',
+        'Apply Rows',
+    ):
+        assert token in rows
+    assert 'data-kaori-auto-submit' not in rows
+    assert "control.form.requestSubmit()" in pagination  # Existing shared fallback stays unchanged.
+    assert 'hx-sync="this:drop"' in content
+    assert "per_page=_request_int('per_page', 5)" in routes
+    assert 'ACTIVITY_PER_PAGE_OPTIONS = (5, 10, 25, 50)' in read(
+        'app/platform_operations/notifications/constants.py'
+    )
+    assert 'per_page=normalized_per_page' in queries
+    assert 'per_page=pager.per_page' in content
+    assert 'option == pager.per_page' in content
+
+
+
 def test_notification_center_evidence_context_precedes_register() -> None:
     content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
 
