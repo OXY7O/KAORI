@@ -253,13 +253,18 @@ def test_cve_impact_query_tabs_show_one_canonical_evidence_table_at_a_time() -> 
     Environment().parse(page)
 
     # Reuse the exact Membership Registry/Tenant Group Registry tab pattern.
-    membership = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
+    membership = read(
+        'app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html'
+    )
     assert 'workspace_tabs.render_query_tabs(' in membership
     assert 'workspace_tabs.render_query_tabs(evidence_tabs,' in page
     assert "impact.active_tab == 'findings'" in page
     assert "evidence_tab='findings'" in page
     assert "evidence_tab='runtime'" in page
-    assert "impact['active_tab'] = 'runtime' if active_tab == 'runtime' else 'findings'" in routes
+    assert (
+        "impact['active_tab'] = 'runtime' if active_tab == 'runtime' else 'findings'"
+        in routes
+    )
     assert page.count('section_intro.render(') == 1
     assert "section_intro.render('CVE Evidence'" in page
     assert 'id="artifact-registry-cve-evidence-workspace"' in page
