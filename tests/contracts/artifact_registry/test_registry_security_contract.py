@@ -158,6 +158,7 @@ def test_security_navigation_adds_overview_before_existing_focused_tabs() -> Non
     assert "'artifact_registry.security_supply_chain'" in capability_tabs
     assert "'artifact_registry.security_overview': 'overview'" in navigation
     assert "'artifact_registry.security': 'vulnerabilities'" in navigation
+    assert "'artifact_registry.security_cve_impact': 'vulnerabilities'" in navigation
     assert "'artifact_registry.security_supply_chain': 'supply_chain'" in navigation
     assert "'Vulnerabilities'" in catalog
     assert "'Supply Chain'" in catalog
