@@ -377,6 +377,11 @@ def test_internal_pki_source_workspace_shows_committed_registry_with_unknown_pki
     assert filtered.status_code == 200
     filtered_html = filtered.get_data(as_text=True)
     assert 'Clear Filters' in filtered_html
+    assert 'data-kaori-clear-filters' in filtered_html
+    assert filtered_html.index('data-kaori-clear-filters') < filtered_html.index('id="internal-pki-source-filter"')
+    assert 'View PKI Evidence for Pilot Cluster' in filtered_html
+    assert '<th scope="col"' in filtered_html
+    assert 'Actions</th>' in filtered_html
     assert 'name="environment"' in filtered_html
     assert 'Registered Source Coverage' in filtered_html
 
@@ -518,7 +523,11 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
     assert 'All Freshness' in content
     filtered = client.get('/governance/internal-certificates?evidence_tab=certificates&cert_search=ca&cert_kind=ca')
     assert filtered.status_code == 200
-    assert 'Clear Filters' in filtered.get_data(as_text=True)
+    filtered_html = filtered.get_data(as_text=True)
+    assert 'Clear Filters' in filtered_html
+    assert filtered_html.index('data-kaori-clear-filters') < filtered_html.index('id="internal-pki-certificate-filter"')
+    assert 'data-lucide="file-badge"' in filtered_html
+    assert 'data-lucide="calendar-clock"' in filtered_html
     assert 'Request Renewal' not in content
     assert content.index('data-kaori-capability-navigation') < content.index('Internal Certificates</h1>')
 
