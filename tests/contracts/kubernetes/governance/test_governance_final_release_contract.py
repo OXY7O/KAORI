@@ -110,7 +110,6 @@ def test_governance_overview_reuses_authorized_tls_snapshot_and_operations_compa
     assert 'two-column grid' in standard
 
 
-
 def test_tls_snapshot_copy_posture_badge_and_search_follow_shared_inventory_patterns() -> None:
     service = read('app/kubernetes/governance/tls_certificates/service.py')
     snapshot_partial = read('app/templates/kubernetes/governance/tls_certificates/partials/_snapshot_context.html')
@@ -130,7 +129,7 @@ def test_tls_snapshot_copy_posture_badge_and_search_follow_shared_inventory_patt
     assert 'posture_grid.render(metrics, columns=3)' in posture
     assert "table_label.metadata_label(posture_metrics|length ~ ' Indicators', icon='layout-grid')" in inventory
     assert "'Search certificates...'" in filters
-    assert "name=\"search\"" in filters
+    assert "table_ui.search_field('search'," in filters
     assert "id='tls-search-filter'" in filters
     assert 'Search Secret name, namespace, subject, or issuer' not in filters
 
