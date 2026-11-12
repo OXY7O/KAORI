@@ -477,6 +477,12 @@ def test_artifact_registry_data_freshness_uses_evidence_age_not_coverage_counts(
     assert '_freshness_value(' in presentation
     assert 'latest_security_at' in projection
     assert 'latest_analytics_at' in projection
+    assert 'Current and stale Registry analytics are assessed separately.' in presentation
+    retired_copy = (
+        'Current and stale materialized Registry analytics are assessed '
+        'separately across this scope.'
+    )
+    assert retired_copy not in presentation
 
 
 def test_artifact_registry_signals_match_object_storage_scope_and_alert_logic() -> None:
