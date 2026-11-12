@@ -221,6 +221,10 @@ def main(argv: list[str] | None = None) -> int:
         # The stale output has already been cleared to avoid false prior evidence.
         if not SHA_PATTERN.fullmatch(args.source_sha):
             raise UnverifiedZapReport('Invalid source identity')
+        # O_NOFOLLOW protects the final component only. Refuse a symlinked
+        # parent as well, so an alias cannot redirect the report pathname.
+        if args.input.parent.resolve() != args.input.parent.absolute():
+            raise UnverifiedZapReport('Unsafe ZAP report input directory')
         # Open without following symlinks or blocking on a FIFO swapped in
         # after the initial path check. Validate the opened descriptor, not
         # only the pathname (which may change between stat and open).
