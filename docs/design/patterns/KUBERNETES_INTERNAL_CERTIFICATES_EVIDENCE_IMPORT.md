@@ -299,12 +299,20 @@ Custom roles must be reviewed and updated through existing Access workflows.
 In **Internal PKI Source Registry**, select a registered cluster using **View
 Evidence** (accessible name `View PKI Evidence for <cluster>`). The URL explicitly
 sets `evidence_tab=certificates&cluster_id=<clicked cluster>`, so the certificate
-registry filters to that committed cluster, not to a live provider API. A
-source-qualified scoped-cluster badge appears beside the certificate count.
-**Clear Filters** in either registry header returns the active tab to the
-**All Clusters** scope; a redundant `Clear Cluster Scope` toolbar is not
-rendered. Search and default five-row pagination remain scoped until cleared,
-and the committed certificate count must not include a different cluster.
+registry filters to that committed cluster, not to a live provider API. The
+**Cluster** dropdown in Certificate Inventory visibly selects the clicked
+cluster (for example `Kubernetes X300`); a matching `Cluster: …` badge
+summarizes the active scope. Its options come from the **full committed
+registration identity list** (id/name only), independent of the Source Registry
+search and five-row pagination. The selector uses the existing canonical
+GET/HTMX filter form. **Clear Filters** returns this dropdown to
+**All Clusters**; a redundant `Clear Cluster Scope` toolbar is not rendered.
+When the pilot has **only one registered cluster**, the same 14 certificates
+may be listed before and after clearing: the meaningful change is that
+the scope is explicitly selected or reset, not that the record count changes.
+Adding a second committed source demonstrates that scoped inventory excludes
+the other cluster. Search and default five-row pagination remain scoped
+until cleared.
 
 If `flask db current` shows an unapplied internal PKI schema revision, apply the
 approved migration before import; `Inventory Schema Upgrade Required` is distinct
@@ -352,6 +360,10 @@ assert both the independent source values and the cleared filter state.
 No provider request, certificate renewal, or database mutation occurs.
 Regression tests must follow the rendered URL **and** verify the actual
 committed read-model's filter state; mocked route tests alone are insufficient.
+
+The Partial Evidence metric uses the concise qualified copy
+`Partial source coverage; full-cluster status unverified.`; it does not
+assert installed or active certificate health.
 
 Registered Source Coverage supports committed **Cluster Search, Environment,
 Detected Platform** filters; the option lists are derived only from committed
