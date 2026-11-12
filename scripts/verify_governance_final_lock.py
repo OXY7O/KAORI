@@ -94,12 +94,12 @@ def main() -> int:
     ):
         require(guard in internal_routes, f'Internal PKI source route missing guard: {guard}', errors)
     require(
-        "if registered_clusters is True else None" in internal_routes,
+        'if registered_clusters is True else None' in internal_routes,
         'Internal PKI must block clusterless/unknown source reads before hitting the registry.',
         errors,
     )
     for item in (
-        'Cluster.query',
+        'db.session.execute(',
         'KubernetesConnection.detected_platform',
         'KubernetesConnection.detected_version',
         "'collection_status': 'Not Collected'",
