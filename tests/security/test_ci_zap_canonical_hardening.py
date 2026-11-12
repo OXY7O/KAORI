@@ -471,3 +471,25 @@ def test_unchanged_descriptor_remains_publishable(tmp_path):
     report.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
     assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 0
     assert 'Scanned site entries: **1**.' in output.read_text(encoding='utf-8')
+
+
+def test_missing_nofollow_support_fails_closed_before_raw_report_open(tmp_path, monkeypatch, capsys):
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
+    output.write_text('stale verified-looking evidence', encoding='utf-8')
+    opened_report = []
+    original_open = zap.os.open
+
+    def track_open(path, flags, *args, **kwargs):
+        if path == report:
+            opened_report.append(path)
+        return original_open(path, flags, *args, **kwargs)
+
+    monkeypatch.setattr(zap.os, 'open', track_open)
+    monkeypatch.delattr(zap.os, 'O_NOFOLLOW', raising=False)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not opened_report
+    assert not output.exists()
+    assert report.exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
