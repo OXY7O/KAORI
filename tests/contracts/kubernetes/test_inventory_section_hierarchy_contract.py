@@ -64,6 +64,39 @@ def test_inventory_overview_and_topology_use_the_same_hierarchy() -> None:
     )
 
 
+def test_inventory_posture_headers_reuse_the_asset_catalog_metadata_label() -> None:
+    catalog = read(INVENTORY_ROOT / 'overview/partials/_kpi_cards.html')
+    assert 'table_label.metadata_label(overview.asset_catalog|length' in catalog
+
+    for page in RESOURCE_PAGES:
+        posture = read(INVENTORY_ROOT / page / 'partials/_summary_cards.html')
+        list_name = 'metrics' if page in {'services', 'ingresses', 'storage'} else 'posture_metrics'
+        assert 'components/table_label.html' in posture, page
+        assert f"table_label.metadata_label({list_name}|length ~ ' Indicators'" in posture, page
+        assert 'header_badge=posture_badge' in posture, page
+        assert f'posture_grid.render({list_name},' in posture, page
+        assert "operational_section_card.render(" in posture, page
+
+
+def test_topology_relationship_header_badge_tracks_committed_graph_updates() -> None:
+    topology = read(INVENTORY_ROOT / 'topology/partials/_workspace.html')
+    visualization = read('app/templates/components/visualization_workspace.html')
+    labels = read('app/templates/components/table_label.html')
+    script = read('app/static/js/kubernetes/inventory/topology.js')
+
+    assert "table_label.count_text(graph.summary.relationships, 'Relationship')" in topology
+    assert "text_id='topology-relationship-badge-count'" in topology
+    assert 'header_badge=relationship_badge' in topology
+    assert 'header_badge=None' in visualization
+    assert 'if header_badge' in visualization
+    assert 'text_id=None' in labels
+    assert 'id="{{ text_id }}"' in labels
+    assert "const updateSummary = (payload) => {" in script
+    assert "Number(summary.relationships ?? 0)" in script
+    assert "'topology-relationship-badge-count'" in script
+    assert "topology-hero-relationships" in script
+
+
 def test_cluster_source_actions_use_open_cluster_integrations() -> None:
     hero_paths = [
         INVENTORY_ROOT / 'overview/partials/_hero.html',
