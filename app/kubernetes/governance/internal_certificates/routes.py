@@ -7,6 +7,8 @@ from app.kubernetes.cluster.onboarding import has_registered_clusters
 from app.kubernetes.governance.internal_certificates.service import get_internal_certificates_source_page
 
 
+@permission_required('governance.view')
+@permission_required('clusters.view')
 @permission_required('internal_certificates.view')
 def internal_certificates_index():
     """Read-only, committed cluster source assessment; never contact a PKI provider."""
