@@ -78,6 +78,9 @@ _CAPABILITY_ACTIVE_EXACT: dict[str, dict[str, str]] = {
         'inventory.configuration': 'configuration',
         'inventory.configuration_details': 'configuration',
     },
+    'kubernetes_governance': {
+        'governance.internal_certificates': 'internal_certificates',
+    },
     'kubernetes_operations': {
         'kubernetes_operations.overview': 'overview',
         'kubernetes_operations.create_configmap': 'configmaps',
