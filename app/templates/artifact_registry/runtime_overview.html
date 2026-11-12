@@ -109,22 +109,22 @@
                     ) %}
                     <div class="grid gap-4 sm:grid-cols-2">
                         {{ workspace_card.render({
-                                            'href': usage_url,
-                        'title': 'Runtime Usage',
-                        'label': 'Committed Runtime',
-                        'description': 'Filter artifact-to-workload bindings, match confidence, and security evidence.',
-                        'icon': 'list',
-                        'scope': runtime.total ~ (' Binding' if runtime.total == 1 else ' Bindings'),
+                                                'href': usage_url,
+                                                'title': 'Runtime Usage',
+                                                'label': 'Committed Runtime',
+                                                'description': 'Filter artifact-to-workload bindings, match confidence, and security evidence.',
+                                                'icon': 'list',
+                                                'scope': runtime.total ~ (' Binding' if runtime.total == 1 else ' Bindings') ,
                         'search_text': 'Runtime Usage',
                         'action_label': 'Open Runtime Usage'
                         }, compact=true) }}
                         {{ workspace_card.render({
-                                            'href': topology_url,
-                        'title': 'Topology',
-                        'label': 'Committed Correlation',
-                        'description': 'Trace bounded artifact-to-Kubernetes dependency paths with evidence-backed inspection.',
-                        'icon': 'waypoints',
-                        'scope': runtime.artifact_count ~ (' Artifact' if runtime.artifact_count == 1 else ' Artifacts'),
+                                                'href': topology_url,
+                                                'title': 'Topology',
+                                                'label': 'Committed Correlation',
+                                                'description': 'Trace bounded artifact-to-Kubernetes dependency paths with evidence-backed inspection.',
+                                                'icon': 'waypoints',
+                                                'scope': runtime.artifact_count ~ (' Artifact' if runtime.artifact_count == 1 else ' Artifacts') ,
                         'search_text': 'Topology',
                         'action_label': 'Open Topology'
                         }, compact=true) }}
@@ -138,13 +138,13 @@
                                 'registry-runtime-overview-posture-heading') }}
                 {% set runtime_metrics = [
                                     ('package-search', 'Correlated Artifacts', runtime.artifact_count,
-                                    'Distinct committed artifact identities in the selected scope.', 'info'),
+                                    'Correlated artifacts in scope.', 'info'),
                                     ('fingerprint', 'Digest Matched', runtime.digest_matches,
                                     'Bindings supported by immutable digest identity.', 'info'),
                                     ('tags', 'Tag Matched', runtime.tag_matches,
                                     'Mutable tag references; lower match confidence.', 'warning' if runtime.tag_matches else 'info'),
                                     ('shield-alert', 'Security Exposed', runtime.security_exposed,
-                                    'Bindings associated with Critical or High artifact findings.',
+                                    'Bindings with Critical/High findings.',
                                     'critical' if runtime.security_exposed else 'info')
                                 ] %}
                 {% set posture_badge %}

@@ -144,7 +144,7 @@ def test_runtime_overview_reuses_security_catalog_and_compact_posture() -> None:
     for page in (runtime, security):
         assert page.index('snapshot_context_bar.render(') < page.index("'2 Workspaces'")
         assert page.index("'2 Workspaces'") < page.index('posture_grid.render(')
-        assert "workspace_card.render({" in page
+        assert 'workspace_card.render({' in page
         assert page.count('}, compact=true)') == 2
         assert "body_classes='p-5'" in page
         assert 'header_badge=workspace_badge' in page
@@ -174,8 +174,7 @@ def test_runtime_overview_reuses_security_catalog_and_compact_posture() -> None:
     assert "'href': topology_url" in runtime
     assert "'scope': runtime.total ~ (' Binding' if runtime.total == 1 else ' Bindings')" in runtime
     assert (
-        "'scope': runtime.artifact_count ~ "
-        "(' Artifact' if runtime.artifact_count == 1 else ' Artifacts')"
+        "'scope': runtime.artifact_count ~ (' Artifact' if runtime.artifact_count == 1 else ' Artifacts')"
     ) in runtime
     for value in (
         'runtime.artifact_count',
@@ -189,5 +188,9 @@ def test_runtime_overview_reuses_security_catalog_and_compact_posture() -> None:
     assert '{% if runtime.setup.is_blocked %}' in runtime
     assert 'components/states/_blocked_state.html' in runtime
     assert 'Committed correlation counts are not live runtime health checks' in runtime
+    assert "'Correlated artifacts in scope.'" in runtime
+    assert "'Bindings with Critical/High findings.'" in runtime
+    assert 'Distinct committed artifact identities in the selected scope.' not in runtime
+    assert 'Bindings associated with Critical or High artifact findings.' not in runtime
     assert 'Runtime Explorer' not in runtime
     assert 'Explore Runtime' not in runtime

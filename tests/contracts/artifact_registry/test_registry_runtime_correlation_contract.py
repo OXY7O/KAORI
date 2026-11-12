@@ -159,6 +159,8 @@ def test_runtime_generation_freshness_and_active_scope_contract() -> None:
     assert "'input_signature': input_signature" in correlation
     assert 'latest_success.result_summary_json' in presentation
     assert "status, tone = 'Inputs Changed', 'warning'" in presentation
+    assert "description = 'Committed runtime correlation is ready.'" in presentation
+    assert 'Committed cross-domain runtime correlation is available for the active scope.' not in presentation
     assert "description = 'Inputs changed or correlation lacks generation proof; rebuild.'" in presentation
     assert 'or the previous correlation has no input-generation proof.' not in presentation
     assert 'RegistryProject.integration_instance_id.in_(active_source_ids)' in presentation
