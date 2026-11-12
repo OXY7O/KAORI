@@ -67,7 +67,6 @@ def test_notification_center_evidence_context_precedes_register() -> None:
     assert 'Transient toasts remain outside Data Lifecycle.' in content
 
 
-
 def test_notification_center_uses_canonical_title_guides_and_concise_evidence_copy() -> None:
     content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
 
@@ -81,7 +80,7 @@ def test_notification_center_uses_canonical_title_guides_and_concise_evidence_co
         guide = content.index(f"'{guide_id}'", heading)
         assert guide < content.index('</div>', heading)
     assert 'Transient toasts remain outside Data Lifecycle.' in content
-    assert 'Activity Audit shows authorized system-wide evidence.' in content
+    assert 'Activity Audit shows system-wide notification evidence.' in content
     assert 'Only persisted outcomes appear here. Transient toasts' not in content
     assert 'Activity Audit remains the system-wide evidence view for authorized administrators.' not in content
 
