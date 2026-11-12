@@ -118,6 +118,46 @@ No runtime rows never means the CVE or the application estate is safe;
 external provider findings and committed KAORI correlation remain authoritative.
 This is a view-only redesign: no query, provider, worker, RBAC or schema change.
 
+## CVE Impact section hierarchy and independent filtering (Human UAT #2603)
+
+The exact-CVE page has **two major evidence sections**, each introduced with
+the approved shared `section_intro.render` heading and concise supporting
+description above its own canonical table card. The card itself still owns
+the `inventory_block_header` (icon, domain evidence title, scoped result badge,
+loading bar), with no extra nested surface or standalone floating controls.
+
+Both evidence tables can contain many records. Each therefore exposes the
+canonical `table_registry.filter_form` and `clear_filters_link`, not a static
+textbox or page-local HTMX pattern. The form macro accepts an optional
+`path_params` argument for routes with required path identity (here:
+`/artifact-registry/security/cve/<cve_id>/impact`). Default form behavior for
+routes without path variables is unchanged. The shared form retains its
+latest-request-wins `hx-sync`, section-owned `hx-target` / `hx-select`,
+accessible label, debounced input, and push-URL behavior.
+
+The **Affected Artifacts** table supports a literal case-insensitive text
+search over Registry source, repository/project, immutable digest, package and
+installed version, plus a severity selector. The **Runtime Exposure** table
+supports literal case-insensitive search over cluster, namespace, workload,
+pod, container and image reference, plus a **Digest Match / Other Reference**
+selector. Filters are applied in the committed read model **before**
+pagination, never as client-side filtering of just the visible five records.
+The exact CVE, last-good scanner authority and source-qualified bound
+artifact set remain fixed. A filtered-out finding or binding must **not**
+change the overall Hero/correlation evidence counts, imply no risk, or
+change the provider authority. Card result badges reflect filtered table
+totals and the shared footer reflects the filtered result window.
+
+URL-backed state is independent: `finding_q`, `finding_severity`,
+`finding_page`, `finding_per_page` versus `runtime_q`, `runtime_match`,
+`runtime_page`, `runtime_per_page`. Submitting or clearing one table
+resets only that table's page to one, while preserving the other table's
+filters, page, and page size. Both table footers retain the counterpart
+state and the original allowed 5/10/25/50 page-size options; the default
+remains five rows. Server queries escape LIKE wildcards, cap free text to
+128 characters, and enforce the allowed selector values. No live provider
+query, scan dispatch, RBAC change, or unsanctioned new UI primitive.
+
 ## QA and admission
 
 - Exact-commit djlint and Ruff check/format on updated templates and Python files.
