@@ -211,6 +211,14 @@ def test_runtime_binding_detail_reuses_kubernetes_compact_modal_grammar() -> Non
     assert "'label': binding.namespace" in runtime
     assert 'detail.inventory_title(binding.repository, compact=true)' in runtime
     assert 'table_label.metadata_label(binding.project' not in runtime
+    assert "'Registry Artifact'," in runtime
+    assert "'Kubernetes Workload'," in runtime
+    assert "binding.project ~ '/' ~ binding.repository" not in runtime
+    assert "binding.cluster_name ~ ' · ' ~ binding.namespace" not in runtime
+    assert "detail.inventory_row('Project', binding.project)" in runtime
+    assert "detail.inventory_row('Repository', binding.repository)" in runtime
+    assert "detail.inventory_row('Cluster', binding.cluster_name)" in runtime
+    assert "detail.inventory_row('Namespace', binding.namespace)" in runtime
     assert 'table_label.status_label(binding.match.label, binding.match.tone)' in runtime
     assert "'Committed artifact, runtime, and security evidence.'" in runtime
     assert runtime.count('detail.inventory_section(') == 5
