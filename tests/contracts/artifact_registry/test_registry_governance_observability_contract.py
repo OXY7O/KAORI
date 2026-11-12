@@ -117,7 +117,10 @@ def test_governance_sync_guide_and_compact_snapshot_copy_follow_kaori() -> None:
     assert "'latest_collected_at': summary['latest_committed_at']" in presenter
     assert "'exception_count': exception_count" in presenter
     assert "f'{ready_count}/{provider_count} Providers Committed'" in presenter
-    assert 'resource_posture_grid.render(coverage_metrics, columns=4, status_labels=coverage_status_labels)' in workspace
+    assert (
+        'resource_posture_grid.render(coverage_metrics, columns=4, status_labels=coverage_status_labels)'
+        in workspace
+    )
 
 
 def test_governance_sync_uses_registered_jobexecution_boundary() -> None:
