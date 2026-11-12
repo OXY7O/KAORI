@@ -31,7 +31,7 @@
                     'Artifact Identity',
                     'fingerprint',
                     artifact.type,
-                    description='Digest identity and format.'
+                    description='Digest and format.'
                     ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_technical_row('Digest', artifact.digest, copyable=true, class_name='lg:col-span-2') }}
@@ -47,7 +47,7 @@
                     'Registry Location',
                     'package-open',
                     artifact.repository_name,
-                    description='Project and repository scope.'
+                    description='Project and repository.'
                     ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Project', artifact.project_name) }}
@@ -60,7 +60,7 @@
                     'Tag References',
                     'tags',
                     artifact.tag_count ~ (' Tag' if artifact.tag_count == 1 else ' Tags'),
-                    description='Tags linked to this digest.'
+                    description='Tags for this digest.'
                     ) %}
                     {% if artifact.tag_preview %}
                         <div class="overflow-x-auto">
@@ -109,7 +109,7 @@
                     'Artifact Timing',
                     'clock-3',
                     artifact.observed_at|user_datetime,
-                    description='Provider and observed times.'
+                    description='Push, pull, observation.'
                     ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Push Time', artifact.push_time|user_datetime if artifact.push_time else 'Not Collected', nowrap=true) }}
@@ -143,7 +143,7 @@
                     artifact.snapshot.label,
                     'status',
                     artifact.snapshot.tone,
-                    description='Snapshot freshness and scope.'
+                    description='Snapshot freshness.'
                     ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_status_row('Snapshot State', artifact.snapshot.label, artifact.snapshot.tone) }}
