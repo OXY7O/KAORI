@@ -17,6 +17,9 @@ from app.kubernetes.governance.internal_certificates.service import (
 @permission_required('internal_certificates.view')
 def internal_certificates_index():
     """Read-only, committed cluster source assessment; never contact a PKI provider."""
+    active_tab = request.args.get('evidence_tab', 'sources')
+    if active_tab not in {'sources', 'certificates'}:
+        active_tab = 'sources'
     registered_clusters = has_registered_clusters()
     payload = get_internal_certificates_source_page(request.args) if registered_clusters is True else None
     schema_readiness = check_internal_pki_schema_readiness() if payload is not None else None
@@ -30,5 +33,6 @@ def internal_certificates_index():
         payload=payload,
         inventory=inventory,
         schema_readiness=schema_readiness,
+        active_tab=active_tab,
         source_unavailable=registered_clusters is None,
     )

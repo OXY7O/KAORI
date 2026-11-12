@@ -330,7 +330,13 @@ def test_internal_pki_source_workspace_shows_committed_registry_with_unknown_pki
     assert response.status_code == 200
     assert calls == ['read']
     content = response.get_data(as_text=True)
+    assert 'Internal PKI Evidence' in content
+    assert 'data-kaori-tab-variant="query-backed-htmx"' in content
+    assert 'hx-target="#internal-pki-evidence-workspace"' in content
+    assert 'hx-select="#internal-pki-evidence-workspace"' in content
     assert 'Internal PKI Source Registry' in content
+    assert 'Internal Certificate Registry' not in content
+    assert 'aria-selected="true"' in content
     assert 'Pilot Cluster' in content
     assert 'Not Collected' in content
     assert 'Not Verified' in content
@@ -344,6 +350,19 @@ def test_internal_pki_source_workspace_shows_committed_registry_with_unknown_pki
     assert 'Renewal Deferred' not in content
     assert 'Request Renewal' not in content
     assert 'Rotate All' not in content
+    invalid = client.get('/governance/internal-certificates?evidence_tab=unrecognized')
+    assert invalid.status_code == 200
+    assert 'Internal PKI Source Registry' in invalid.get_data(as_text=True)
+    assert 'Internal Certificate Registry' not in invalid.get_data(as_text=True)
+    retained = client.get(
+        '/governance/internal-certificates?cert_search=apiserver&cert_page=2&cert_per_page=10'
+    )
+    assert retained.status_code == 200
+    retained_html = retained.get_data(as_text=True)
+    assert 'name="evidence_tab" value="sources"' in retained_html
+    assert 'name="cert_search" value="apiserver"' in retained_html
+    assert 'name="cert_page" value="2"' in retained_html
+    assert 'name="cert_per_page" value="10"' in retained_html
 
 
 def test_internal_pki_source_clusterless_blocks_registry_query(
@@ -454,10 +473,11 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
         }
 
     monkeypatch.setattr(internal_pki_routes, 'get_internal_certificate_inventory_page', committed_certificate_page)
-    response = client.get('/governance/internal-certificates')
+    response = client.get('/governance/internal-certificates?evidence_tab=certificates')
     assert response.status_code == 200
     assert calls == ['read']
     content = response.get_data(as_text=True)
+    assert 'Internal PKI Source Registry' not in content
     assert 'Internal Certificate Registry' in content
     assert 'apiserver' in content
     assert 'control-plane-01' in content
@@ -469,6 +489,7 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
     assert 'Sync Internal PKI' in content
     assert 'No Worker Runs' in content
     assert 'Not Scheduled' in content
+    assert 'name="evidence_tab" value="certificates"' in content
     assert 'Request Renewal' not in content
     assert content.index('data-kaori-capability-navigation') < content.index('Internal Certificates</h1>')
 
@@ -500,7 +521,10 @@ def test_internal_pki_schema_not_ready_never_queries_certificate_rows(
     monkeypatch.setattr(internal_pki_routes, 'get_internal_certificate_inventory_page', must_not_query)
     response = client.get('/governance/internal-certificates')
     assert response.status_code == 200
-    assert 'Inventory Schema Upgrade Required' in response.get_data(as_text=True)
+    assert 'Internal PKI Source Registry' in response.get_data(as_text=True)
+    certificate_view = client.get('/governance/internal-certificates?evidence_tab=certificates')
+    assert certificate_view.status_code == 200
+    assert 'Inventory Schema Upgrade Required' in certificate_view.get_data(as_text=True)
 
 
 def test_governance_above_hero_tabs_are_role_aware_and_preserve_cluster_context(app) -> None:
@@ -554,8 +578,12 @@ def test_governance_internal_pki_registered_cluster_links_preserve_inventory_sco
     content = response.get_data(as_text=True)
     assert 'View PKI Evidence' in content
     assert 'cluster_id=cluster-01' in content
+    assert 'evidence_tab=certificates' in content
     assert 'Internal Certificate Registry' not in content
-    assert 'Inventory Schema Upgrade Required' in content
+    assert 'Inventory Schema Upgrade Required' not in content
+    certificate_view = client.get('/governance/internal-certificates?evidence_tab=certificates')
+    assert certificate_view.status_code == 200
+    assert 'Inventory Schema Upgrade Required' in certificate_view.get_data(as_text=True)
 
 
 def test_governance_breadcrumb_reflects_active_internal_certificate_view() -> None:

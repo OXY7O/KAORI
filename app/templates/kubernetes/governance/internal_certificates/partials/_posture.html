@@ -3,7 +3,7 @@
 {% import "components/table_label.html" as table_label %}
 {% set operational = inventory.operational if inventory and inventory.operational is defined else none %}
 {% set assessed = operational and operational.total > 0 %}
-{% set unknown = 'Not Assessed' %}
+{% set unknown = "Not Assessed" %}
 {% set metrics = [
     ('calendar-check', 'Outside Window', operational.outside_window if assessed else unknown, 'Source-reported expiry beyond 30 days; active use unverified.', 'info' if assessed else 'unknown'),
     ('calendar-clock', 'Renewal Window', operational.renewal_window if assessed else unknown, 'Source-reported expiry in more than 7 and at most 30 days.', 'warning' if assessed and operational.renewal_window else ('info' if assessed else 'unknown')),
@@ -21,6 +21,6 @@
     'gauge',
     header_badge=posture_badge,
     body_classes='p-0'
-) %}
+    ) %}
     {{ posture_grid.render(metrics, columns=3) }}
 {% endcall %}

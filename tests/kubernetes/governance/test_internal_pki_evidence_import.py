@@ -216,7 +216,6 @@ def test_rejected_older_import_preserves_latest_committed_evidence(pki_repositor
         assert InternalPKICertificateInventory.query.count() == 2
 
 
-
 def _kubeadm_1364_report() -> dict:
     """Metadata-only synthetic fixture matching the operator-reviewed v1alpha3 shape."""
     families = {
@@ -382,4 +381,3 @@ def test_prepare_cli_writes_private_metadata_without_committing_database(pki_rep
     repeated = pki_repository_app.test_cli_runner().invoke(args=args)
     assert repeated.exit_code != 0
     assert 'Cannot read the source or create the private metadata manifest.' in repeated.output
-

@@ -2,18 +2,16 @@
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
 {% set source_guide %}
-    {{ info_tip.render(
-        'internal-pki-source-readiness-guide',
+    {{ info_tip.render('internal-pki-source-readiness-guide',
         'PKI Evidence Boundaries',
         'Source-qualified certificate expiry metadata does not establish installed certificate health.',
         items=[
-            'Control-plane and etcd evidence require approved node-local or provider-owned read-only collection.',
-            'Kubelet CSR metadata is not proof of an installed client or serving certificate.',
-            'Native Kubernetes and PKI providers own renewal; KAORI will only collect and monitor evidence.'
+        'Control-plane and etcd evidence require approved node-local or provider-owned read-only collection.',
+        'Kubelet CSR metadata is not proof of an installed client or serving certificate.',
+        'Native Kubernetes and PKI providers own renewal; KAORI will only collect and monitor evidence.'
         ],
         placement='right',
-        variant='guide'
-    ) }}
+        variant='guide') }}
 {% endset %}
 <section id="internal-pki-collection-operations"
          class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"

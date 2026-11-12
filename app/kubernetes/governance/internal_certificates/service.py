@@ -182,9 +182,7 @@ def get_internal_pki_operational_summary(cluster_id: str) -> dict[str, Any]:
             .label('critical_window'),
             func.count(inventory.id).filter(inventory.not_after <= now).label('expired'),
             func.count(inventory.id).filter(inventory.not_before > now).label('not_yet_valid'),
-            func.count(inventory.id)
-            .filter(inventory.collected_at < now - timedelta(days=30))
-            .label('stale'),
+            func.count(inventory.id).filter(inventory.collected_at < now - timedelta(days=30)).label('stale'),
             func.count(inventory.id).filter(batch.coverage_state == 'partial').label('partial_evidence'),
             func.max(inventory.collected_at).label('latest_collected'),
         )

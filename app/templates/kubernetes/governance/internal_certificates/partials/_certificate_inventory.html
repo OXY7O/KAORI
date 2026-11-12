@@ -1,11 +1,7 @@
-{% import "components/section_intro.html" as section_intro %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/table_label.html" as table_label %}
-<section class="space-y-4" aria-labelledby="internal-pki-certificates-heading">
-    {{ section_intro.render('Certificate Inventory',
-                    'Inspect source-qualified certificate expiry metadata committed to KAORI.',
-                    'internal-pki-certificates-heading') }}
+<section aria-label="Certificate inventory evidence">
     {% if not schema_readiness or not schema_readiness.ready %}
         <div class="rounded-xl border border-outline-default bg-surface-card p-5"
              role="status">
@@ -35,6 +31,10 @@
                     per_page_param='cert_per_page',
                     form_id='internal-pki-certificate-filter',
                     aria_label='Filter committed internal certificate evidence') %}
+                    <input type="hidden" name="evidence_tab" value="certificates">
+                    <input type="hidden" name="search" value="{{ payload.search }}">
+                    <input type="hidden" name="page" value="{{ payload.pagination.page }}">
+                    <input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">
                     <label class="min-w-0 flex-1 text-xs font-semibold text-content-secondary"
                            for="internal-pki-certificate-search">
                         Search Certificate Evidence
@@ -121,7 +121,7 @@
                 'internal-pki-certificate-registry',
                 'internal-pki-certificate-loading',
                 inventory.pagination,
-                {'cert_search': inventory.search, 'cluster_id': inventory.cluster_id},
+                {'cert_search': inventory.search, 'cluster_id': inventory.cluster_id, 'evidence_tab': 'certificates', 'search': payload.search, 'page': payload.pagination.page, 'per_page': payload.pagination.per_page},
                 inventory.pagination.allowed_per_page,
                 resource_label='Certificates',
                 rows_aria_label='Certificates per page',
