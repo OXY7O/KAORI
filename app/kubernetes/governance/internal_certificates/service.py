@@ -219,6 +219,9 @@ def get_internal_certificate_inventory_page(args: Any) -> dict[str, Any]:
                 'freshness_tone': 'warning' if stale else 'info',
             }
         )
+    committed_count = select(func.count(InternalPKICertificateInventory.id))
+    if cluster_id:
+        committed_count = committed_count.where(InternalPKICertificateInventory.cluster_id == cluster_id)
     return {
         'records': records,
         'search': search,
@@ -237,6 +240,6 @@ def get_internal_certificate_inventory_page(args: Any) -> dict[str, Any]:
             'next_page': min(page + 1, pages),
         },
         'total': total,
-        'committed_total': db.session.scalar(select(func.count(InternalPKICertificateInventory.id))) or 0,
+        'committed_total': db.session.scalar(committed_count) or 0,
         'source_label': 'Operator Attested',
     }
