@@ -133,6 +133,17 @@ def test_tenant_overview_uses_tls_style_collection_snapshot_and_contextual_sync_
     assert "title='Tenant Collection Snapshot'" in snapshot_context
     assert "latest_supporting='Source: '" in snapshot_context
     assert 'Tenant Inventory Operations' in live_state
+    assert 'components/info_tip.html' in live_state
+    assert "info_tip.render('tenant-inventory-operations-guide'" in live_state
+    assert "'Tenant Inventory Operations Guide'" in live_state
+    assert "variant='guide'" in live_state
+    assert "placement='right'" in live_state
+    assert live_state.index('table_label.status_label(tenant_sync_state.label') < live_state.index(
+        "info_tip.render('tenant-inventory-operations-guide'"
+    )
+    assert 'does not provision resources' in live_state
+    assert 'Configure Sync manages the registered automatic Tenant inventory schedule.' in live_state
+    assert 'does not provision namespaces' in live_state
     assert 'Automatic Sync' in sync_workspace
     assert 'Last Successful' in sync_workspace
     assert 'Next Scheduled' in sync_workspace
@@ -147,6 +158,23 @@ def test_tenant_overview_uses_tls_style_collection_snapshot_and_contextual_sync_
     assert 'Add Tenant' not in overview
     assert 'Resource Profiles' not in overview
     assert 'Provision Namespace' not in overview
+
+
+def test_tenant_estate_descriptions_fit_compact_desktop_tiles_without_truncation() -> None:
+    overview = (ROOT / 'app/templates/kubernetes/tenant/overview.html').read_text(encoding='utf-8')
+    shared_grid = (ROOT / 'app/templates/components/resource_posture_grid.html').read_text(encoding='utf-8')
+
+    assert "'Committed tenant records'" in overview
+    assert "'Ready / registered clusters'" in overview
+    assert "'Committed Tenant ownership records'" not in overview
+    assert "'Ready / registered Kubernetes clusters'" not in overview
+    assert "('building-2', 'Tenants', tenant_count" in overview
+    assert "('server', 'Managed Clusters', (ready_clusters|length)" in overview
+    assert "resource_posture_grid.render(estate_metrics, columns=5)" in overview
+    assert 'break-words' in shared_grid
+    assert 'whitespace-nowrap' not in shared_grid
+    assert len('Committed tenant records') <= 28
+    assert len('Ready / registered clusters') <= 28
 
 
 def test_tenant_overview_keeps_multicluster_posture_compact_and_canonical() -> None:
