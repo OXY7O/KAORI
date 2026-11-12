@@ -120,11 +120,27 @@ This is a view-only redesign: no query, provider, worker, RBAC or schema change.
 
 ## CVE Impact section hierarchy and independent filtering (Human UAT #2603)
 
-The exact-CVE page has **two major evidence sections**, each introduced with
-the approved shared `section_intro.render` heading and concise supporting
-description above its own canonical table card. The card itself still owns
-the `inventory_block_header` (icon, domain evidence title, scoped result badge,
-loading bar), with no extra nested surface or standalone floating controls.
+The exact-CVE page has one `CVE Evidence` section heading and a shared
+`workspace_tabs.render_query_tabs` tab strip using the **same query-backed
+HTMX tab geometry** as the approved Kubernetes Tenant Membership Registry.
+The tabs are **Affected Artifact Evidence** and **Kubernetes Runtime Exposure**.
+Each tab displays only its own canonical table card; both tables must never
+stack or render simultaneously in the DOM. The selected tab is the validated
+URL parameter `evidence_tab=findings|runtime`, defaulting to findings for
+missing/invalid values. Normal navigation works without JavaScript; HTMX
+replaces only the `#artifact-registry-cve-evidence-workspace` container with
+inherited `hx-select`, preserving the Hero and correlation snapshot.
+
+Each active table card still owns its `inventory_block_header` (icon,
+domain evidence title, filtered result count badge and loading bar), with no
+extra nested colored surface or independent second section heading. Shared
+`table_ui` column/body/cell styles and canonical registry filtering, empty
+states, pagination and runtime actions remain authoritative. The content
+hierarchy prioritizes asset/workload identity, then visible full digest or
+pod/container metadata, followed by source-qualified severity/freshness or
+correlation badges. Keep digest strings breakable rather than truncating
+immutable identities; give both tables proportional column widths with
+responsive horizontal scrolling.
 
 Both evidence tables can contain many records. Each therefore exposes the
 canonical `table_registry.filter_form` and `clear_filters_link`, not a static
@@ -148,9 +164,14 @@ change the overall Hero/correlation evidence counts, imply no risk, or
 change the provider authority. Card result badges reflect filtered table
 totals and the shared footer reflects the filtered result window.
 
-URL-backed state is independent: `finding_q`, `finding_severity`,
-`finding_page`, `finding_per_page` versus `runtime_q`, `runtime_match`,
-`runtime_page`, `runtime_per_page`. Submitting or clearing one table
+URL-backed state is independent: `evidence_tab` selects the owning
+view without changing CVE identity, while `finding_q`, `finding_severity`,
+`finding_page`, `finding_per_page` and `runtime_q`, `runtime_match`,
+`runtime_page`, `runtime_per_page` preserve both tables' respective state.
+Both tab destinations carry all filter/page/Rows parameters so switching
+tabs restores the previous operator context. Every filter form, Clear Filters
+link and pagination request also retains the active `evidence_tab`.
+Submitting or clearing one table
 resets only that table's page to one, while preserving the other table's
 filters, page, and page size. Both table footers retain the counterpart
 state and the original allowed 5/10/25/50 page-size options; the default
