@@ -120,7 +120,7 @@ def test_canonical_tabs_render_above_hero_not_inside_individual_pages() -> None:
     assert "BreadcrumbItem('Runtime', 'waypoints')" in catalog
 
     assert 'Runtime Overview' in overview
-    assert 'Runtime Correlation Posture' in overview
+    assert 'Runtime Evidence Posture' in overview
     assert 'snapshot_context_bar.render(' in overview
     assert 'Runtime Usage' in overview
     assert 'Topology' in overview
@@ -130,3 +130,61 @@ def test_canonical_tabs_render_above_hero_not_inside_individual_pages() -> None:
     assert 'Runtime Bindings' in usage_workspace
     assert 'Open Dependency Topology' not in usage_workspace
     assert 'Dependency Topology' in topology
+
+
+def test_runtime_overview_reuses_security_catalog_and_compact_posture() -> None:
+    """Runtime and Security keep the same snapshot > workspaces > posture order."""
+    runtime = _read('app/templates/artifact_registry/runtime_overview.html')
+    security = _read('app/templates/artifact_registry/partials/_security_overview.html')
+    workspace = _read('app/templates/components/workspace_link_card.html')
+    clipboard_free = _read('app/templates/components/resource_posture_grid.html')
+
+    Environment().parse(runtime)
+
+    for page in (runtime, security):
+        assert page.index('snapshot_context_bar.render(') < page.index("'2 Workspaces'")
+        assert page.index("'2 Workspaces'") < page.index('posture_grid.render(')
+        assert "workspace_card.render({" in page
+        assert page.count('}, compact=true)') == 2
+        assert "body_classes='p-5'" in page
+        assert 'header_badge=workspace_badge' in page
+        assert 'header_badge=posture_badge' in page
+        assert 'posture_grid.render(' in page
+        assert 'compact=true)' in page
+
+    assert 'components/workspace_link_card.html' in runtime
+    assert 'components/table_label.html' in runtime
+    assert 'components/inventory_asset_card.html' not in runtime
+    assert "section_intro.render('Runtime Workspaces'" in runtime
+    assert "'Runtime Workspace Catalog'" in runtime
+    assert "'Registry Runtime Evidence'" in runtime
+    assert "section_intro.render('Runtime Evidence Posture'" in runtime
+    assert "table_label.metadata_label('2 Workspaces', icon='layout-grid')" in runtime
+    assert "table_label.metadata_label(runtime_metrics|length ~ ' Indicators', icon='layout-grid')" in runtime
+    assert 'posture_grid.render(runtime_metrics, columns=4, compact=true)' in runtime
+    assert 'md:grid-cols-4' in clipboard_free
+    assert 'data-workspace-card' in workspace
+
+    # Preserve the exact committed read-model values, URL-backed scope and RBAC route.
+    assert "url_for('artifact_registry.runtime'," in runtime
+    assert "url_for('artifact_registry.runtime_topology'," in runtime
+    for name in ('q', 'source_id', 'cluster_id', 'namespace', 'match_type', 'exposure', 'artifact_id'):
+        assert f'{name}=runtime.filters.' in runtime
+    assert "'href': usage_url" in runtime
+    assert "'href': topology_url" in runtime
+    assert "'scope': runtime.total ~ ' Bindings'" in runtime
+    assert "'scope': runtime.artifact_count ~ ' Artifacts'" in runtime
+    for value in (
+        'runtime.artifact_count',
+        'runtime.digest_matches',
+        'runtime.tag_matches',
+        'runtime.security_exposed',
+    ):
+        assert value in runtime
+    assert "'warning' if runtime.tag_matches else 'info'" in runtime
+    assert "'critical' if runtime.security_exposed else 'info'" in runtime
+    assert '{% if runtime.setup.is_blocked %}' in runtime
+    assert 'components/states/_blocked_state.html' in runtime
+    assert 'Committed correlation counts are not live runtime health checks' in runtime
+    assert 'Runtime Explorer' not in runtime
+    assert 'Explore Runtime' not in runtime
