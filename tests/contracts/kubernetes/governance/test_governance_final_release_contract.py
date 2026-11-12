@@ -218,6 +218,14 @@ def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace
     assert "evidence_tab='certificates'" in workspace
     assert 'Internal PKI Source Registry' in workspace
     assert "registry_ui.filter_form('governance.internal_certificates'" in workspace
+    assert "registry_ui.clear_filters_link('governance.internal_certificates'" in workspace
+    assert 'name="environment"' in workspace
+    assert 'name="platform"' in workspace
+    assert 'payload.filter_options.environments' in workspace
+    assert 'payload.filter_options.platforms' in workspace
+    assert 'table_ui.table_classes' in workspace
+    assert 'table_ui.header_cell_classes' in workspace
+    assert 'table_ui.cell_classes' in workspace
     assert "registry_ui.footer('governance.internal_certificates'" in workspace
     assert 'Not Collected' in service
     assert 'Not Verified' in service
@@ -266,6 +274,12 @@ def test_internal_pki_certificate_registry_uses_committed_attested_evidence_only
     assert 'statement = statement.where(inventory.cluster_id == cluster_id)' in service
     assert "'committed_total': operational['total']" in service
     assert 'InternalPKICertificateInventory.query' in service
+    assert "Cluster.environment == environment" in service
+    assert "KubernetesConnection.detected_platform == platform" in service
+    assert "certificate.kind == kind" in service
+    assert "InternalPKIEvidenceBatch.coverage_state == coverage" in service
+    assert "certificate.not_after <= now" in service
+    assert "certificate.collected_at < now - timedelta(days=30)" in service
     assert 'InternalPKIEvidenceBatch' in service
     assert 'source_rows = db.session.execute(' in service
     assert 'func.max(InternalPKIEvidenceBatch.collected_at)' in service
@@ -301,7 +315,7 @@ def test_internal_pki_certificate_registry_uses_committed_attested_evidence_only
     assert 'op.drop_table(' in migration
 
     assert "section_intro.render('Source Readiness'" not in template
-    assert 'aria-label="Internal PKI source readiness"' in template
+    assert 'aria-label="Internal PKI evidence workspaces"' in template
     assert 'partials/_snapshot_context.html' in template
     assert 'partials/_collection_operations.html' in template
     assert 'partials/_posture.html' in template
@@ -311,6 +325,14 @@ def test_internal_pki_certificate_registry_uses_committed_attested_evidence_only
     assert 'Internal Certificate Registry' in partial
     assert "registry_ui.filter_form('governance.internal_certificates'" in partial
     assert "registry_ui.footer('governance.internal_certificates'" in partial
+    assert "registry_ui.clear_filters_link('governance.internal_certificates'" in partial
+    assert 'name="cert_kind"' in partial
+    assert 'name="cert_expiry"' in partial
+    assert 'name="cert_coverage"' in partial
+    assert 'name="cert_freshness"' in partial
+    assert 'table_ui.table_classes' in partial
+    assert 'table_ui.header_cell_classes' in partial
+    assert 'table_ui.cell_classes' in partial
     assert 'name="evidence_tab" value="certificates"' in partial
     assert "'evidence_tab': 'certificates'" in partial
     assert 'name="search"' in partial

@@ -67,35 +67,26 @@
                 {{ section_intro.render('Internal PKI Evidence',
                                 'Review committed cluster source coverage or source-reported certificate inventory.',
                                 'internal-pki-evidence-heading') }}
+                {% set evidence_query = {
+                    'cluster_id': payload.selected_cluster_id,
+                    'search': payload.search,
+                    'environment': payload.filters.environment,
+                    'platform': payload.filters.platform,
+                    'page': payload.pagination.page,
+                    'per_page': payload.pagination.per_page,
+                    'cert_search': inventory.search if inventory else request.args.get('cert_search', ''),
+                    'cert_kind': inventory.filters.kind if inventory else request.args.get('cert_kind', ''),
+                    'cert_expiry': inventory.filters.expiry if inventory else request.args.get('cert_expiry', ''),
+                    'cert_coverage': inventory.filters.coverage if inventory else request.args.get('cert_coverage', ''),
+                    'cert_freshness': inventory.filters.freshness if inventory else request.args.get('cert_freshness', ''),
+                    'cert_page': inventory.pagination.page if inventory else request.args.get('cert_page', 1),
+                    'cert_per_page': inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5)
+                } %}
                 {% set evidence_tabs = [
-                    (
-                    'sources',
-                    'Registered Source Coverage',
-                    'server-cog',
-                    url_for('governance.internal_certificates',
-                        evidence_tab='sources',
-                        cluster_id=payload.selected_cluster_id,
-                        search=payload.search,
-                        page=payload.pagination.page,
-                        per_page=payload.pagination.per_page,
-                        cert_search=inventory.search if inventory else request.args.get('cert_search', ''),
-                        cert_page=inventory.pagination.page if inventory else request.args.get('cert_page', 1),
-                        cert_per_page=inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5))
-                    ),
-                    (
-                    'certificates',
-                    'Certificate Inventory',
-                    'file-badge',
-                    url_for('governance.internal_certificates',
-                        evidence_tab='certificates',
-                        cluster_id=payload.selected_cluster_id,
-                        search=payload.search,
-                        page=payload.pagination.page,
-                        per_page=payload.pagination.per_page,
-                        cert_search=inventory.search if inventory else request.args.get('cert_search', ''),
-                        cert_page=inventory.pagination.page if inventory else request.args.get('cert_page', 1),
-                        cert_per_page=inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5))
-                    )
+                    ('sources', 'Registered Source Coverage', 'server-cog',
+                        url_for('governance.internal_certificates', evidence_tab='sources', **evidence_query)),
+                    ('certificates', 'Certificate Inventory', 'file-badge',
+                        url_for('governance.internal_certificates', evidence_tab='certificates', **evidence_query))
                 ] %}
                 <section id="internal-pki-evidence-workspace"
                          aria-label="Internal PKI evidence workspaces"
@@ -130,12 +121,16 @@
                                 {% endif %}
                                 <div class="{{ table_ui.inventory_filter_bar_classes() }}">
                                     {% call registry_ui.filter_form('governance.internal_certificates',
-                                        'internal-pki-source-registry',
+                                        'internal-pki-evidence-workspace',
                                         'internal-pki-source-loading',
                                         payload.pagination.per_page,
                                         form_id='internal-pki-source-filter',
                                         aria_label='Filter registered clusters for internal PKI source assessment') %}
                                         <input type="hidden" name="evidence_tab" value="sources">
+                                        <input type="hidden" name="cert_kind" value="{{ inventory.filters.kind if inventory else request.args.get('cert_kind', '') }}">
+                                        <input type="hidden" name="cert_expiry" value="{{ inventory.filters.expiry if inventory else request.args.get('cert_expiry', '') }}">
+                                        <input type="hidden" name="cert_coverage" value="{{ inventory.filters.coverage if inventory else request.args.get('cert_coverage', '') }}">
+                                        <input type="hidden" name="cert_freshness" value="{{ inventory.filters.freshness if inventory else request.args.get('cert_freshness', '') }}">
                                         <input type="hidden" name="cert_search" value="{{ inventory.search if inventory else request.args.get('cert_search', '') }}">
                                         <input type="hidden" name="cert_page" value="{{ inventory.pagination.page if inventory else request.args.get('cert_page', 1) }}">
                                         <input type="hidden" name="cert_per_page" value="{{ inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5) }}">
@@ -155,45 +150,99 @@
                                                    class="mt-1 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary"
                                                    autocomplete="off">
                                         </label>
+                                        <div class="min-w-0 sm:w-40">
+                                            <label for="internal-pki-environment-filter"
+                                                   class="{{ table_ui.filter_label_classes() }}">Environment</label>
+                                            <select id="internal-pki-environment-filter"
+                                                    name="environment"
+                                                    class="{{ table_ui.filter_select_classes() }}">
+                                                <option value="">All Environments</option>
+                                                {% for environment in payload.filter_options.environments %}
+                                                    <option value="{{ environment }}"
+                                                            {% if payload.filters.environment == environment %}selected{% endif %}>{{ environment }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="min-w-0 sm:w-40">
+                                            <label for="internal-pki-platform-filter"
+                                                   class="{{ table_ui.filter_label_classes() }}">Detected Platform</label>
+                                            <select id="internal-pki-platform-filter"
+                                                    name="platform"
+                                                    class="{{ table_ui.filter_select_classes() }}">
+                                                <option value="">All Platforms</option>
+                                                {% for platform in payload.filter_options.platforms %}
+                                                    <option value="{{ platform }}"
+                                                            {% if payload.filters.platform == platform %}selected{% endif %}>{{ platform }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        {% if payload.search or payload.filters.environment or payload.filters.platform %}
+                                            {{ registry_ui.clear_filters_link('governance.internal_certificates',
+                                                'internal-pki-evidence-workspace',
+                                                'internal-pki-source-loading',
+                                                payload.pagination.per_page,
+                                                table_ui.action_classes(),
+                                                query_params={
+                                                'evidence_tab': 'sources',
+                                                'cluster_id': payload.selected_cluster_id,
+                                                'cert_search': inventory.search if inventory else request.args.get('cert_search', ''),
+                                                'cert_kind': inventory.filters.kind if inventory else request.args.get('cert_kind', ''),
+                                                'cert_expiry': inventory.filters.expiry if inventory else request.args.get('cert_expiry', ''),
+                                                'cert_coverage': inventory.filters.coverage if inventory else request.args.get('cert_coverage', ''),
+                                                'cert_freshness': inventory.filters.freshness if inventory else request.args.get('cert_freshness', ''),
+                                                'cert_page': inventory.pagination.page if inventory else request.args.get('cert_page', 1),
+                                                'cert_per_page': inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5)
+                                                },
+                                                lead=false) }}
+                                        {% endif %}
                                     {% endcall %}
                                 </div>
                                 <div class="w-full overflow-x-auto">
-                                    <table class="w-full min-w-[680px] text-left text-sm text-content-secondary">
-                                        <caption class="sr-only">Registered cluster source readiness for internal Kubernetes PKI; reported expiry is presented separately as committed evidence.</caption>
+                                    <table class="{{ table_ui.table_classes('min-w-[52rem]') }}">
+                                        <caption class="sr-only">Registered cluster metadata and operator-attested PKI source readiness, not verified active certificate health.</caption>
                                         <thead class="{{ table_ui.head_classes() }}">
                                             <tr>
-                                                <th scope="col" class="px-4 py-3">Cluster</th>
-                                                <th scope="col" class="px-4 py-3">Connection Metadata</th>
-                                                <th scope="col" class="px-4 py-3">PKI Evidence</th>
-                                                <th scope="col" class="px-4 py-3">Source Authority</th>
-                                                <th scope="col" class="px-4 py-3">Expiry</th>
+                                                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[26%]">Cluster</th>
+                                                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Connection</th>
+                                                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">PKI Evidence</th>
+                                                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Authority</th>
+                                                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Expiry Evidence</th>
                                             </tr>
                                         </thead>
                                         <tbody class="{{ table_ui.body_classes() }}">
                                             {% for record in payload.records %}
                                                 <tr class="{{ table_ui.row_classes() }}">
-                                                    <td class="px-4 py-3 align-top">
+                                                    <td class="{{ table_ui.cell_classes() }} align-top">
                                                         <p class="font-semibold text-content-primary">{{ record.name }}</p>
-                                                        <p class="mt-1 text-xs text-content-muted">{{ record.environment }}</p>
+                                                        <p class="mt-1 text-xs text-content-muted">{{ record.environment or 'Environment not reported' }}</p>
                                                         <a href="{{ url_for('governance.internal_certificates', cluster_id=record.id, evidence_tab='certificates') }}"
                                                            class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
                                                            aria-label="Review internal PKI evidence for {{ record.name }}">
                                                             View PKI Evidence
-                                                            <i data-lucide="arrow-up-right" class="h-3 w-3" aria-hidden="true"></i>
+                                                            <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                         </a>
                                                     </td>
-                                                    <td class="px-4 py-3 align-top">
-                                                        <p class="text-content-primary">{{ record.connection_platform or 'Not Reported' }}</p>
-                                                        <p class="mt-1 text-xs text-content-muted">Detected platform · {{ record.connection_version or 'Version not reported' }}</p>
+                                                    <td class="{{ table_ui.cell_classes() }} align-top">
+                                                        <p class="font-medium text-content-primary">{{ record.connection_platform or 'Not Reported' }}</p>
+                                                        <p class="mt-1 text-xs text-content-muted">Version {{ record.connection_version or 'not reported' }}</p>
                                                     </td>
-                                                    <td class="px-4 py-3 align-top">{{ table_label.status_indicator_label(record.collection_status, record.collection_tone|default('unknown') ) }}</td>
-                                                    <td class="px-4 py-3 align-top">{{ table_label.status_indicator_label(record.authority_status, 'unknown') }}</td>
-                                                    <td class="px-4 py-3 align-top">{{ table_label.status_indicator_label(record.expiry_status, 'unknown') }}</td>
+                                                    <td class="{{ table_ui.cell_classes() }} align-top">
+                                                        {{ table_label.status_indicator_label(record.collection_status, record.collection_tone|default('unknown')) }}
+                                                        <p class="mt-1 text-xs text-content-muted">Committed source evidence</p>
+                                                    </td>
+                                                    <td class="{{ table_ui.cell_classes() }} align-top">
+                                                        {{ table_label.status_indicator_label(record.authority_status, 'unknown') }}
+                                                        <p class="mt-1 text-xs text-content-muted">Source ownership unverified</p>
+                                                    </td>
+                                                    <td class="{{ table_ui.cell_classes() }} align-top">
+                                                        {{ table_label.status_indicator_label(record.expiry_status, 'unknown') }}
+                                                        <p class="mt-1 text-xs text-content-muted">Active use not verified</p>
+                                                    </td>
                                                 </tr>
                                             {% else %}
                                                 <tr>
                                                     <td colspan="5" class="px-5 py-8 text-center text-sm text-content-muted">
-                                                        No registered clusters match the current filter. Internal PKI certificate collection has not been configured.
+                                                        No clusters match the current search or filters. Clear filters to review the available source registrations.
                                                     </td>
                                                 </tr>
                                             {% endfor %}
@@ -204,10 +253,10 @@
                                       class="htmx-indicator sr-only"
                                       role="status">Loading cluster source records</span>
                                 {{ registry_ui.footer('governance.internal_certificates',
-                                                    'internal-pki-source-registry',
+                                                    'internal-pki-evidence-workspace',
                                                     'internal-pki-source-loading',
                                                     payload.pagination,
-                                                    {'search': payload.search, 'cluster_id': payload.selected_cluster_id, 'evidence_tab': 'sources', 'cert_search': inventory.search if inventory else request.args.get('cert_search', ''), 'cert_page': inventory.pagination.page if inventory else request.args.get('cert_page', 1), 'cert_per_page': inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5)},
+                                                    {'search': payload.search, 'environment': payload.filters.environment, 'platform': payload.filters.platform, 'cluster_id': payload.selected_cluster_id, 'evidence_tab': 'sources', 'cert_search': inventory.search if inventory else request.args.get('cert_search', ''), 'cert_kind': inventory.filters.kind if inventory else request.args.get('cert_kind', ''), 'cert_expiry': inventory.filters.expiry if inventory else request.args.get('cert_expiry', ''), 'cert_coverage': inventory.filters.coverage if inventory else request.args.get('cert_coverage', ''), 'cert_freshness': inventory.filters.freshness if inventory else request.args.get('cert_freshness', ''), 'cert_page': inventory.pagination.page if inventory else request.args.get('cert_page', 1), 'cert_per_page': inventory.pagination.per_page if inventory else request.args.get('cert_per_page', 5)},
                                                     payload.pagination.allowed_per_page,
                                                     resource_label='Clusters',
                                                     rows_aria_label='Clusters per page',
