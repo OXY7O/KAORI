@@ -61,7 +61,7 @@
                 {% set source_guide %}
                     {{ info_tip.render('internal-pki-source-readiness-guide',
                                         'Internal PKI Source Readiness Guide',
-                                        'This workspace currently reports committed cluster registrations, not collected certificate validity.',
+                                        'This workspace shows committed cluster registrations and operator-attested expiry metadata when available; active certificate use is not verified.',
                                         items=[
                                         'Control-plane and etcd expiry require approved host-local or provider-owned evidence.',
                                         'Kubelet CSR metadata is not proof of an installed certificate or its expiration.',
@@ -78,7 +78,7 @@
                     body_classes='p-4',
                     aria_label='Internal certificate source evidence boundaries'
                     ) %}
-                    {% set metrics = [('database', 'Internal PKI Evidence', inventory.committed_total ~ ' Reported' if inventory and inventory.committed_total else 'Not Collected', 'Operator-attested metadata; installed status unverified', 'info' if inventory and inventory.committed_total else 'unknown'), ('shield-help', 'PKI Authority', 'Not Verified', 'Confirm distribution, owner, and source identity', 'unknown'), ('workflow', 'Renewal', 'Deferred', 'Ansible and security approval required', 'info')] %}
+                    {% set metrics = [('database', 'Internal PKI Evidence', inventory.committed_total ~ ' Reported' if inventory and inventory.committed_total else 'Not Collected', 'Operator-attested metadata; installed status unverified', 'info' if inventory and inventory.committed_total else 'unknown'), ('shield-help', 'PKI Authority', 'Operator Supplied' if inventory and inventory.committed_total else 'Not Verified', 'Owner and source verification required', 'info' if inventory and inventory.committed_total else 'unknown'), ('workflow', 'Renewal', 'Deferred', 'Ansible and security approval required', 'info')] %}
                     {{ posture_grid.render(metrics, columns=3, compact=true) }}
                 {% endcall %}
             </section>
