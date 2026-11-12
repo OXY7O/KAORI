@@ -609,3 +609,22 @@ def test_normal_json_integer_remains_supported(tmp_path):
     report.write_text('{"site":[{"alerts":[{"riskcode":3,"instances":[]}]}]}', encoding='utf-8')
     assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 0
     assert '| High | 1 |' in output.read_text(encoding='utf-8')
+
+
+@pytest.mark.parametrize('number', ['1.' + '9' * 1000, '1e' + '9' * 1000])
+def test_oversized_float_in_ignored_json_field_fails_closed(tmp_path, capsys, number):
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text('{"site":[{"alerts":[]}],"ignored":' + number + '}', encoding='utf-8')
+    output.write_text('stale verified evidence', encoding='utf-8')
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not output.exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_bounded_finite_json_float_in_ignored_field_remains_compatible(tmp_path):
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text('{"site":[{"alerts":[]}],"ignored":1.25e2}', encoding='utf-8')
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 0
+    assert 'Scanned site entries: **1**.' in output.read_text(encoding='utf-8')
