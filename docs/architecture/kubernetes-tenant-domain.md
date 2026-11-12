@@ -53,6 +53,8 @@ Capsule compatibility follows KAORI's annual compatibility policy and five-year 
 
 Operational management belongs to **Kubernetes → Tenant**. Settings does not receive a second Tenant management surface. When downstream provider discovery/compatibility work owns the evidence, **Settings → General → System Information** and **Compatibility Versions** extend their existing contracts with relevant Tenant/Capsule information.
 
+Tenant Overview keeps the existing **Tenant Collection Snapshot → Tenant Inventory Operations → Governance Scope** hierarchy. The Inventory Operations status row displays a canonical title-adjacent **Guide**, reusing the shared `info_tip.render(..., variant='guide')` popover. It explains that **Sync Tenant** refreshes committed Tenant ownership and namespace-inventory correlation via the existing background worker; it does not provision, reconcile, or mutate Kubernetes resources. **Configure Sync** remains the registered schedule handoff. The five-column Tenant Estate retains all counts and signal tones; compact supporting text reads **Committed tenant records** and **Ready / registered clusters** at desktop widths, with natural wrapping permitted on narrow screens (no ellipsis or forced nowrap).
+
 ## Full-cycle acceptance target
 
 The completed feature must prove create → provider selection → profile/namespace provisioning → access/credential governance → managed resources/policy → reconciliation → effective-state verification → audit/governance evidence → update/revoke → governed decommission. Native Kubernetes baseline UAT is mandatory; Capsule-backed UAT is required when the approved compatible Capsule test cluster is available.
