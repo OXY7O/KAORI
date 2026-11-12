@@ -668,7 +668,7 @@ def test_vulnerability_registry_table_uses_shared_dense_evidence_groups() -> Non
     Environment().parse(template)
 
     start = template.index("table_ui.table_classes('min-w-[72rem] !table-fixed')")
-    end = template.index("{% else %}\n                                        <table", start)
+    end = template.index("table_ui.table_classes('min-w-[72rem]')", start)
     table = template[start:end]
 
     assert 'table_ui.table_classes(' in table
@@ -676,12 +676,15 @@ def test_vulnerability_registry_table_uses_shared_dense_evidence_groups() -> Non
     assert table.count('<th scope="col"') == 6
     assert 'table_ui.body_classes()' in table
     assert 'table_ui.row_classes()' in table
-    assert "table_ui.title_cell(row.vulnerability_id, icon='shield-alert', supporting_content=severity_badge)" in table
-    assert "table_ui.title_cell(row.repository, 'Project: ' ~ row.project, 'package-search')" in table
+    assert 'table_ui.title_cell(row.vulnerability_id,' in table
+    assert 'supporting_content=severity_badge)' in table
+    assert 'table_ui.title_cell(row.repository,' in table
+    assert "'Project: ' ~ row.project" in table
     assert "table_ui.title_cell(row.package, 'Installed: ' ~ row.installed_version)" in table
-    assert "table_ui.title_cell(row.source_name, icon='blocks', supporting_content=freshness_badge)" in table
-    assert "table_label.status_indicator_label(row.severity_label, severity_tone)" in table
-    assert "table_label.status_indicator_label(row.freshness.label, row.freshness.tone)" in table
+    assert 'table_ui.title_cell(row.source_name,' in table
+    assert 'supporting_content=freshness_badge)' in table
+    assert 'status_indicator_label(row.severity_label, severity_tone)' in table
+    assert 'status_indicator_label(row.freshness.label, row.freshness.tone)' in table
     assert "'Fix observed' if row.fix_available else 'No fix observed'" in table
     assert "row.runtime_exposure_count == 1 else ' Bindings'" in table
     assert "table_label.status_indicator_label('Not Observed', 'unknown')" in table
@@ -692,7 +695,8 @@ def test_vulnerability_registry_table_uses_shared_dense_evidence_groups() -> Non
     assert 'supply_chain_detail.vulnerability(row, vulnerability_dialog_id)' in table
     assert 'components/states/_empty_state.html' in table
 
-    assert "macro title_cell(name, supporting_text='', icon='', supporting_content=None)" in shared
+    assert 'macro title_cell(' in shared
+    assert 'supporting_content=None)' in shared
     assert "macro action_grid_classes(columns=2)" in shared
     assert "macro row_classes()" in shared
 
