@@ -1,15 +1,20 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/resource_posture_grid.html" as posture_grid %}
+{% import "components/table_label.html" as table_label %}
 {% import "components/section_intro.html" as section_intro %}
 <section class="space-y-4"
          aria-labelledby="object-storage-fleet-posture-heading">
     {{ section_intro.render('Fleet Inventory Posture',
         'Prioritized committed-snapshot signals across quota, protection, exposure, and optional usage evidence.',
         'object-storage-fleet-posture-heading') }}
+    {% set fleet_badge %}
+        {{ table_label.metadata_label(overview.fleet_posture_metrics|length ~ ' Indicators', icon='layout-grid') }}
+    {% endset %}
     {% call operational_section_card.render(
         'Object Storage Fleet Evidence',
         'Committed quota, protection, exposure, and optional usage evidence for bucket and container assets.',
         'database',
+        header_badge=fleet_badge,
         body_classes='p-0'
         ) %}
         {{ posture_grid.render(overview.fleet_posture_metrics, columns=4) }}
