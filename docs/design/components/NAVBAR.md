@@ -131,6 +131,14 @@ accessibility, Violet and responsive geometry unchanged. Updating an implemented
 sidebar capability should make that capability discoverable through Search
 without adding another hard-coded list of navigation routes.
 
+A global navigation result must point to a URL buildable without unknown record
+identifiers. In particular, `artifact_registry.security_cve_impact` requires a
+real `cve_id`: search terms such as `cve` or `impact` navigate to the
+permissioned Artifact Registry **Vulnerabilities** inventory, where a committed
+finding can link to its exact CVE Impact evidence. Never invent a default CVE.
+If a historical navigation alias cannot be built, exclude that item with
+an application warning instead of returning HTTP 500 for the whole search.
+
 Broader cross-domain committed-resource indexing requires separate authorization,
 evidence/read-model ownership and tests; do not treat a provider's live search API
 as KAORI's normal operational index.
