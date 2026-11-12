@@ -921,6 +921,7 @@ def build_security_overview(*, source_id: int | None = None) -> dict[str, Any]:
     unknown = not observed_scans
     return {
         'title': 'Security Overview',
+        'source_id': source_id,
         'setup_blocked': not registered_sources,
         'inventory_required': bool(registered_sources) and not sources,
         'snapshot': snapshot,
