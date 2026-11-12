@@ -210,9 +210,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {
         'title': 'Tenant Management',
         'label': 'Governed Tenancy',
-        'description': (
-            'Manage tenants, profiles, namespace provisioning, access, capacity, and lifecycle.'
-        ),
+        'description': ('Manage tenants, profiles, namespace provisioning, access, capacity, and lifecycle.'),
         'icon': 'building-2',
         'scope': 'Compute',
         'group': 'operations',
@@ -254,9 +252,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {
         'title': 'Access',
         'label': 'Identity, Access & Audit',
-        'description': (
-            'Manage users, roles, identity providers, directory-projected external identities, and audit.'
-        ),
+        'description': ('Manage users, roles, identity providers, directory-projected external identities, and audit.'),
         'icon': 'users-round',
         'scope': 'Platform',
         'group': 'platform',
