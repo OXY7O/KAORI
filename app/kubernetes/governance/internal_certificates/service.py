@@ -135,11 +135,11 @@ def enrich_internal_pki_source_states(payload: dict[str, Any]) -> None:
         record['expiry_status'] = 'Expiry Evidence Available'
 
 
-def _expiry_presentation(not_after: datetime, collected_at: datetime) -> tuple[str, str]:
-    """Reported expiry posture, never an assertion of active installation or trust."""
+def _expiry_presentation(not_before: datetime | None, not_after: datetime) -> tuple[str, str]:
+    """Reported expiry posture; freshness is shown separately from expiration."""
     now = datetime.now(UTC)
-    if now - _aware(collected_at) > timedelta(days=30):
-        return 'Stale Evidence', 'warning'
+    if not_before is not None and _aware(not_before) > now:
+        return 'Not Yet Valid', 'unknown'
     remaining = _aware(not_after) - now
     if remaining <= timedelta(0):
         return 'Expired', 'critical'
@@ -196,7 +196,8 @@ def get_internal_certificate_inventory_page(args: Any) -> dict[str, Any]:
     )
     records = []
     for certificate, cluster_name, version, coverage, reference in source_rows:
-        status, tone = _expiry_presentation(certificate.not_after, certificate.collected_at)
+        status, tone = _expiry_presentation(certificate.not_before, certificate.not_after)
+        stale = datetime.now(UTC) - _aware(certificate.collected_at) > timedelta(days=30)
         records.append(
             {
                 'cluster_name': cluster_name,
@@ -214,6 +215,8 @@ def get_internal_certificate_inventory_page(args: Any) -> dict[str, Any]:
                 'reference': reference,
                 'status': status,
                 'tone': tone,
+                'freshness': 'Stale Evidence' if stale else 'Recently Collected',
+                'freshness_tone': 'warning' if stale else 'info',
             }
         )
     return {
@@ -234,5 +237,6 @@ def get_internal_certificate_inventory_page(args: Any) -> dict[str, Any]:
             'next_page': min(page + 1, pages),
         },
         'total': total,
+        'committed_total': db.session.scalar(select(func.count(InternalPKICertificateInventory.id))) or 0,
         'source_label': 'Operator Attested',
     }
