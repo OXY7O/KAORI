@@ -53,6 +53,10 @@ def _bounded_int(value: str) -> int:
 
 
 def _finite_float(value: str) -> float:
+    # Even ignored JSON fields must not force unbounded numeric conversion.
+    # Ordinary ZAP counts are integers; keep a generous finite-float limit.
+    if len(value) > 128:
+        raise UnverifiedZapReport('Excessive JSON floating-point literal')
     parsed = float(value)
     if not math.isfinite(parsed):
         raise UnverifiedZapReport('Non-finite JSON number')
