@@ -22,6 +22,7 @@ from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 
 MAX_RESULTS_PER_RESOURCE = 8
 MAX_RESULTS_TOTAL = 24
+MAX_NAVIGATION_RESULTS = 16
 MIN_RESOURCE_QUERY_LENGTH = 2
 
 
@@ -139,18 +140,56 @@ NAVIGATION_ENTRIES: tuple[NavigationEntry, ...] = (
     ),
     NavigationEntry('Rule Catalog', 'Intelligence', 'intelligence.catalog', 'list-checks', 'intelligence.view'),
     NavigationEntry('Reports', 'Generated and scheduled reports', 'reports.overview', 'file-bar-chart', 'reports.view'),
+    NavigationEntry(
+        'Notification Center',
+        'Personal Operations Inbox and active work',
+        'notifications.center',
+        'bell',
+        None,
+        ('notifications', 'personal inbox', 'active work'),
+    ),
+    NavigationEntry(
+        'CVE Impact',
+        'Artifact Registry security findings and runtime impact',
+        'artifact_registry.security_cve_impact',
+        'shield-alert',
+        'artifact_registry.view',
+        ('registry security', 'vulnerabilities'),
+    ),
+    NavigationEntry(
+        'Supply Chain',
+        'Artifact Registry committed supply-chain evidence',
+        'artifact_registry.security_supply_chain',
+        'shield-check',
+        'artifact_registry.view',
+        ('registry', 'security'),
+    ),
+    NavigationEntry(
+        'Runtime Topology',
+        'Artifact Registry runtime correlation',
+        'artifact_registry.runtime_topology',
+        'waypoints',
+        'artifact_registry.view',
+        ('registry', 'runtime'),
+    ),
 )
 
-QUICK_NAV_ENDPOINTS = {
-    'welcome.index',
-    'kubernetes_dashboard.index',
-    'inventory.overview',
-    'object_storage_inventory.overview',
-    'analytics.overview',
-    'analytics.object_storage_overview',
-    'alert_intelligence.index',
-    'reports.overview',
-}
+# Quick Navigation selects implemented sidebar capabilities, never unapproved provider roots.
+QUICK_NAVIGATION_KEYS: tuple[tuple[str, str], ...] = (
+    ('welcome', ''),
+    ('kubernetes', 'overview'),
+    ('object_storage', 'overview'),
+    ('artifact_registry', 'overview'),
+    ('source_control', 'overview'),
+    ('secrets_pki', 'overview'),
+    ('security_posture', 'overview'),
+    ('intelligence', 'overview'),
+    ('reports', 'overview'),
+    ('operations_center', 'overview'),
+    ('integrations', 'overview'),
+    ('access', 'overview'),
+    ('settings', 'general'),
+)
 
 
 def _normalize(value: object) -> str:
@@ -207,12 +246,71 @@ def _result(draft: ResultDraft, *, query: str, current_scope: bool = False) -> d
     }
 
 
-def navigation_results(*, query: str, has_permission: Callable[[str], bool]) -> list[dict[str, Any]]:
-    entries: list[dict[str, Any]] = []
+def _sidebar_navigation_results(
+    *,
+    query: str,
+    sidebar_sections: tuple[dict[str, Any], ...],
+) -> list[dict[str, Any]]:
+    """Reuse the permission-filtered sidebar as the source of navigable capabilities."""
+    results: list[dict[str, Any]] = []
+    quick_positions = {key: position for position, key in enumerate(QUICK_NAVIGATION_KEYS)}
+    for section in sidebar_sections:
+        for workspace in section['items']:
+            children = workspace['children']
+            destinations = children if children else (workspace,)
+            for child in destinations:
+                identity = (str(workspace['key']), str(child['key']) if children else '')
+                if not query and identity not in quick_positions:
+                    continue
+                label = str(child['label'])
+                title = f"{workspace['label']} · {label}" if children else label
+                subtitle = f"{section['label']} · {workspace['label']}"
+                searchable = f'{title} {subtitle}'
+                score = _score(query, title, searchable) if query else len(QUICK_NAVIGATION_KEYS) - quick_positions[identity]
+                if query and score <= 0:
+                    continue
+                results.append(
+                    {
+                        'id': f"navigation:{workspace['key']}:{child['key'] if children else 'home'}",
+                        'kind': 'Navigation',
+                        'title': title,
+                        'subtitle': subtitle,
+                        'url': str(child['href']),
+                        'icon': str(child['icon']),
+                        'status': '',
+                        'status_tone': '',
+                        '_score': score,
+                    }
+                )
+    return results
+
+
+def navigation_results(
+    *,
+    query: str,
+    has_permission: Callable[[str], bool],
+    sidebar_sections: tuple[dict[str, Any], ...] = (),
+) -> list[dict[str, Any]]:
+    # The sidebar already applies capability RBAC and Source Control local-admin constraints.
+    entries = _sidebar_navigation_results(query=query, sidebar_sections=sidebar_sections)
+    if not query and sidebar_sections:
+        entries.sort(key=lambda item: -int(item['_score']))
+        return entries[:MAX_NAVIGATION_RESULTS]
+
+    # Retain approved local-page shortcuts not represented in the two-level sidebar.
     for entry in NAVIGATION_ENTRIES:
         if entry.permission and not has_permission(entry.permission):
             continue
-        if not query and entry.endpoint not in QUICK_NAV_ENDPOINTS:
+        if not query and entry.endpoint not in {
+            'welcome.index',
+            'kubernetes_dashboard.index',
+            'inventory.overview',
+            'object_storage_inventory.overview',
+            'analytics.overview',
+            'analytics.object_storage_overview',
+            'alert_intelligence.index',
+            'reports.overview',
+        }:
             continue
         searchable = ' '.join((entry.label, entry.description, *entry.keywords))
         score = _score(query, entry.label, searchable) if query else 1
@@ -231,10 +329,16 @@ def navigation_results(*, query: str, has_permission: Callable[[str], bool]) -> 
                 '_score': score,
             }
         )
-    if query:
-        entries.sort(key=lambda item: (-int(item['_score']), str(item['title']).lower()))
-    return entries[:8]
 
+    # Distinct navigation routes must not appear twice just because the old catalog overlaps.
+    by_url: dict[str, dict[str, Any]] = {}
+    for item in entries:
+        url = str(item['url'])
+        if url not in by_url or int(item['_score']) > int(by_url[url]['_score']):
+            by_url[url] = item
+    deduplicated = list(by_url.values())
+    deduplicated.sort(key=lambda item: (-int(item['_score']), str(item['title']).lower()))
+    return deduplicated[:MAX_NAVIGATION_RESULTS]
 
 def _kubernetes_resource_results(query: str, current_cluster_id: str) -> list[dict[str, Any]]:
     like = f'%{query}%'

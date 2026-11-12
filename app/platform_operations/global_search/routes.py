@@ -3,6 +3,7 @@ from __future__ import annotations
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 
+from app.common.workspace_navigation import build_sidebar_navigation
 from app.platform_operations.global_search.service import navigation_results, resource_results, strip_internal_score
 
 bp = Blueprint('global_search', __name__, url_prefix='/search')
@@ -21,7 +22,11 @@ def global_search():
         can_view_kubernetes_inventory=has_permission('inventory.view'),
         can_view_object_storage_inventory=has_permission('object_storage_inventory.view'),
     )
-    navigation = navigation_results(query=query, has_permission=has_permission)
+    navigation = navigation_results(
+        query=query,
+        has_permission=has_permission,
+        sidebar_sections=build_sidebar_navigation(None, current_user),
+    )
 
     sections = []
     if resources:
