@@ -274,3 +274,22 @@ def test_cli_rejects_in_place_temporary_evidence_tampering(
     assert tampered
     assert not output.exists()
     assert raw.exists()
+
+
+def test_cli_rejects_symlinked_input_parent_without_publishing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """O_NOFOLLOW on the final file must not permit a redirected parent."""
+    real_dir = tmp_path / 'actual-reports'
+    real_dir.mkdir()
+    raw = real_dir / 'baseline.json'
+    raw.write_text(json.dumps(_report()), encoding='utf-8')
+    alias = tmp_path / 'report-alias'
+    alias.symlink_to(real_dir, target_is_directory=True)
+    output = tmp_path / 'summary.md'
+    output.write_text('stale verified evidence', encoding='utf-8')
+
+    assert main(['--input', str(alias / 'baseline.json'), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not output.exists()
+    assert raw.exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
