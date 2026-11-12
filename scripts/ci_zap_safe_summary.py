@@ -205,9 +205,7 @@ def main(argv: list[str] | None = None) -> int:
         # Bind publication to the same existing directory inode observed before
         # reading the untrusted report. A same-path directory replacement can
         # otherwise redirect evidence without introducing a symlink.
-        original_output_parent = (
-            args.output.parent.stat() if args.output.parent.is_dir() else None
-        )
+        original_output_parent = args.output.parent.stat() if args.output.parent.is_dir() else None
         # Refuse aliasing the raw report: unlinking output would destroy input.
         # A symlink output could otherwise redirect publication to another file.
         if (
@@ -294,12 +292,9 @@ def main(argv: list[str] | None = None) -> int:
         # The descriptor can remain stable even when its pathname is replaced
         # after open. Reject a different on-disk report before publication.
         current_input = args.input.stat(follow_symlinks=False)
-        if (
-            not stat.S_ISREG(current_input.st_mode)
-            or any(
-                getattr(current_input, field) != getattr(final_stat, field)
-                for field in ('st_dev', 'st_ino', 'st_mode', 'st_size', 'st_mtime_ns', 'st_ctime_ns')
-            )
+        if not stat.S_ISREG(current_input.st_mode) or any(
+            getattr(current_input, field) != getattr(final_stat, field)
+            for field in ('st_dev', 'st_ino', 'st_mode', 'st_size', 'st_mtime_ns', 'st_ctime_ns')
         ):
             raise UnverifiedZapReport('ZAP report path changed during parse')
         args.output.parent.mkdir(parents=True, exist_ok=True)
