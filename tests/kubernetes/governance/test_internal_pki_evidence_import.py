@@ -20,6 +20,7 @@ from app.kubernetes.governance.internal_certificates.kubeadm_adapter import (
 from app.kubernetes.governance.internal_certificates.service import (
     enrich_internal_pki_source_states,
     get_internal_certificate_inventory_page,
+    get_internal_pki_operational_summary,
 )
 from app.models.audit import AuditEvent
 from app.models.cluster import Cluster
@@ -128,6 +129,13 @@ def test_committed_pki_import_is_idempotent_and_supports_bounded_inventory(
         assert page['pagination']['per_page'] == 5
         assert {row['component'] for row in page['records']} == {'apiserver', 'ca'}
         assert all(row['source_kind'] == 'kubeadm_check_expiration' for row in page['records'])
+        operational = page['operational']
+        assert operational['total'] == 2
+        assert operational['outside_window'] == 2
+        assert operational['partial_evidence'] == 0
+        assert operational['stale'] == 0
+        assert operational['status'] == 'Operator Attested'
+        assert operational['tone'] == 'info'
 
         source_payload = {
             'records': [
@@ -142,6 +150,59 @@ def test_committed_pki_import_is_idempotent_and_supports_bounded_inventory(
         enrich_internal_pki_source_states(source_payload)
         assert source_payload['records'][0]['collection_status'] == 'Operator Attested'
         assert source_payload['records'][0]['authority_status'] == 'Operator Supplied'
+
+
+def test_internal_pki_operational_summary_does_not_claim_health_without_evidence(pki_repository_app) -> None:
+    with pki_repository_app.app_context():
+        cluster_id = str(uuid4())
+        db.session.add(Cluster(id=cluster_id, name='Empty PKI', environment='non-production'))
+        db.session.commit()
+        summary = get_internal_pki_operational_summary(cluster_id)
+        assert summary['total'] == 0
+        assert summary['status'] == 'Not Collected'
+        assert summary['tone'] == 'unknown'
+        assert summary['coverage_label'] == 'Not Assessed'
+        assert summary['exceptions_label'] == 'Not Assessed'
+        assert summary['latest_collected'] == 'Not Collected'
+
+
+def test_internal_pki_posture_is_scope_qualified_and_keeps_stale_partial_evidence(pki_repository_app) -> None:
+    with pki_repository_app.app_context():
+        old_cluster = str(uuid4())
+        new_cluster = str(uuid4())
+        db.session.add_all(
+            [
+                Cluster(id=old_cluster, name='Old PKI', environment='non-production'),
+                Cluster(id=new_cluster, name='New PKI', environment='non-production'),
+            ]
+        )
+        db.session.commit()
+        stale_manifest = _manifest(old_cluster, collected_at=datetime.now(UTC) - timedelta(days=60))
+        stale_manifest['coverage_state'] = 'partial'
+        stale_manifest['certificates'][0]['not_after'] = (
+            datetime.now(UTC) - timedelta(days=1)
+        ).isoformat()
+        stale_manifest['certificates'][1]['not_after'] = (
+            datetime.now(UTC) + timedelta(days=365)
+        ).isoformat()
+        import_attested_pki_metadata(stale_manifest)
+        import_attested_pki_metadata(_manifest(new_cluster))
+
+        old_summary = get_internal_pki_operational_summary(old_cluster)
+        assert old_summary['total'] == 2
+        assert old_summary['expired'] == 1
+        assert old_summary['stale'] == 2
+        assert old_summary['partial_evidence'] == 2
+        assert old_summary['status'] == 'Stale Evidence'
+        assert old_summary['coverage_label'] == 'Partial Source Evidence'
+
+        new_summary = get_internal_pki_operational_summary(new_cluster)
+        assert new_summary['total'] == 2
+        assert new_summary['expired'] == 0
+        assert new_summary['stale'] == 0
+        assert new_summary['partial_evidence'] == 0
+        assert new_summary['status'] == 'Operator Attested'
+        assert get_internal_pki_operational_summary('')['total'] == 4
 
 
 def test_rejected_older_import_preserves_latest_committed_evidence(pki_repository_app) -> None:
@@ -280,6 +341,11 @@ def test_prepared_kubeadm_1364_manifest_commits_14_source_qualified_rows(
         assert inventory['pagination']['per_page'] == 5
         assert inventory['pagination']['total_pages'] == 3
         assert all(row['source_kind'] == 'kubeadm_check_expiration' for row in inventory['records'])
+        assert inventory['operational']['total'] == 14
+        assert inventory['operational']['outside_window'] == 14
+        assert inventory['operational']['partial_evidence'] == 14
+        assert inventory['operational']['status'] == 'Operator Attested'
+        assert inventory['operational']['coverage_label'] == 'Partial Source Evidence'
 
 
 def test_prepare_cli_writes_private_metadata_without_committing_database(pki_repository_app, tmp_path) -> None:
