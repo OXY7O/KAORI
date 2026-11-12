@@ -161,7 +161,11 @@ def main() -> int:
         require(item in pki_snapshot, f'Internal PKI collection snapshot is missing: {item}', errors)
     for item in ('Internal PKI Collection Operations', 'PKI Evidence Boundaries', 'Sync Internal PKI', 'disabled'):
         require(item in pki_operations, f'Internal PKI collection operations is missing: {item}', errors)
-    for item in ('Source-Reported Certificate Posture', 'components/resource_posture_grid.html'):
+    for item in (
+        'Source-Reported Certificate Posture',
+        'components/resource_posture_grid.html',
+        'Partial source coverage; full-cluster status unverified.',
+    ):
         require(item in pki_posture, f'Internal PKI posture is missing: {item}', errors)
     for item in (
         'registry_ui.clear_filters_action(',
@@ -169,6 +173,10 @@ def main() -> int:
         'hx-boost="false" hx-disable',
         'header_actions=certificate_clear_action',
         'certificate_scope_badge',
+        'id="internal-pki-cluster-filter"',
+        'name="cluster_id"',
+        'All Clusters',
+        'payload.filter_options.clusters',
         'table_ui.title_cell(certificate.component',
         'name="cert_kind"',
         'name="cert_expiry"',

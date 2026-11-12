@@ -239,6 +239,9 @@ def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace
     assert 'name="platform"' in workspace
     assert 'payload.filter_options.environments' in workspace
     assert 'payload.filter_options.platforms' in workspace
+    assert "payload.filter_options.clusters" in workspace
+    assert "'clusters': clusters" in service
+    assert "select(Cluster.id, Cluster.name)" in service
     assert 'table_ui.table_classes' in workspace
     assert 'table_ui.header_cell_classes' in workspace
     assert 'table_ui.cell_classes' in workspace
@@ -263,6 +266,7 @@ def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace
     assert 'components/resource_posture_grid.html' in posture
     assert 'Not Assessed' in posture
     assert 'Partial Evidence' in posture
+    assert 'Partial source coverage; full-cluster status unverified.' in posture
     assert 'Request Renewal' not in workspace + operations
     assert 'Rotate All' not in workspace + operations
     assert workspace.index('partials/_snapshot_context.html') < workspace.index('partials/_collection_operations.html')
@@ -356,6 +360,13 @@ def test_internal_pki_certificate_registry_uses_committed_attested_evidence_only
         "registry_ui.filter_form('governance.internal_certificates'"
     )
     assert 'name="cert_kind"' in partial
+    assert 'id="internal-pki-cluster-filter"' in partial
+    assert 'name="cluster_id"' in partial
+    assert 'All Clusters' in partial
+    assert "inventory.cluster_id == cluster.id" in partial
+    assert "payload.filter_options.clusters" in partial
+    assert "table_label.metadata_label('Cluster: ' ~ scope_name" in partial
+    assert '<input type="hidden" name="cluster_id"' not in partial
     assert 'name="cert_expiry"' in partial
     assert 'name="cert_coverage"' in partial
     assert 'name="cert_freshness"' in partial
