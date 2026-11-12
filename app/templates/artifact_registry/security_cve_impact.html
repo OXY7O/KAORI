@@ -123,20 +123,20 @@
                             {% if impact.filters.finding_search or impact.filters.finding_severity %}
                                 {% set findings_header_actions %}
                                     {{ registry.clear_filters_link('artifact_registry.security_cve_impact',
-                                        'artifact-registry-cve-evidence-workspace',
-                                        'artifact-registry-cve-findings-loading',
-                                        impact.finding_pagination.per_page,
-                                        table_ui.action_classes(),
-                                        query_params={
-                                        'cve_id': impact.cve_id,
-                                        'evidence_tab': 'findings',
-                                        'runtime_page': impact.runtime_pagination.page,
-                                        'runtime_per_page': impact.runtime_pagination.per_page,
-                                        'runtime_q': impact.filters.runtime_search,
-                                        'runtime_match': impact.filters.runtime_match
-                                        },
-                                        page_param='finding_page',
-                                        per_page_param='finding_per_page') }}
+                                                                        'artifact-registry-cve-evidence-workspace',
+                                                                        'artifact-registry-cve-findings-loading',
+                                                                        impact.finding_pagination.per_page,
+                                                                        table_ui.action_classes() ,
+                                    query_params={
+                                    'cve_id': impact.cve_id,
+                                    'evidence_tab': 'findings',
+                                    'runtime_page': impact.runtime_pagination.page,
+                                    'runtime_per_page': impact.runtime_pagination.per_page,
+                                    'runtime_q': impact.filters.runtime_search,
+                                    'runtime_match': impact.filters.runtime_match
+                                    },
+                                    page_param='finding_page',
+                                    per_page_param='finding_per_page') }}
                                 {% endset %}
                             {% endif %}
                             {{ table_ui.inventory_block_header('package-search',
@@ -190,7 +190,6 @@
                                             {% endfor %}
                                         </select>
                                     </label>
-
                                 {% endcall %}
                             </div>
                             <div class="overflow-x-auto">
@@ -211,19 +210,26 @@
                                             <tr class="{{ table_ui.row_classes() }}">
                                                 <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                                                     {{ table_ui.title_cell(row.repository, row.project ~ ' · ' ~ row.source, 'package-search') }}
-                                                    <dl class="mt-2 min-w-0 border-t border-outline-subtle pt-2 text-xs leading-5">
-                                                        <dt class="font-semibold text-content-secondary">Digest</dt>
-                                                        <dd class="mt-1 min-w-0">
-                                                            <details class="min-w-0">
-                                                                <summary class="flex min-w-0 cursor-pointer items-center gap-2 rounded-md text-content-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
-                                                                         title="{{ row.digest }}"
-                                                                         aria-label="Show full digest for {{ row.repository }}">
-                                                                    <code class="min-w-0 truncate font-mono text-[11px] leading-4">{{ row.digest[:23] ~ '…' ~ row.digest[-12:] if row.digest|length > 39 else row.digest }}</code>
-                                                                    <span class="shrink-0 text-xs font-medium text-kaori-primary">Full digest</span>
-                                                                </summary>
-                                                                <code class="mt-1 block min-w-0 break-all rounded-md bg-surface-hover px-2 py-1.5 font-mono text-xs leading-5 text-content-secondary"
-                                                                      title="{{ row.digest }}">{{ row.digest }}</code>
-                                                            </details>
+                                                    <dl data-kaori-copy-root
+                                                        class="mt-2 flex min-w-0 items-center gap-2 border-t border-outline-subtle pt-2 text-xs leading-5">
+                                                        <dt class="shrink-0 font-semibold text-content-secondary">Digest</dt>
+                                                        <dd class="flex min-w-0 flex-1 items-center gap-2">
+                                                            <code class="min-w-0 flex-1 truncate font-mono text-[11px] text-content-muted"
+                                                                  title="{{ row.digest }}">{{ row.digest[:18] ~ '…' ~ row.digest[-8:] if row.digest|length > 30 else row.digest }}</code>
+                                                            <span data-kaori-copy-source hidden>{{ row.digest }}</span>
+                                                            <button type="button"
+                                                                    data-kaori-copy-button
+                                                                    data-copy-label="Copy Digest"
+                                                                    data-copied-label="Copied"
+                                                                    aria-label="Copy full digest for {{ row.repository }}"
+                                                                    title="Copy full immutable SHA digest"
+                                                                    class="{{ table_ui.action_classes() }} shrink-0">
+                                                                <i data-kaori-copy-icon
+                                                                   data-lucide="copy"
+                                                                   class="h-3.5 w-3.5"
+                                                                   aria-hidden="true"></i>
+                                                                <span data-kaori-copy-label>Copy Digest</span>
+                                                            </button>
                                                         </dd>
                                                     </dl>
                                                 </td>
@@ -293,20 +299,20 @@
                             {% if impact.filters.runtime_search or impact.filters.runtime_match %}
                                 {% set runtime_header_actions %}
                                     {{ registry.clear_filters_link('artifact_registry.security_cve_impact',
-                                        'artifact-registry-cve-evidence-workspace',
-                                        'artifact-registry-cve-runtime-loading',
-                                        impact.runtime_pagination.per_page,
-                                        table_ui.action_classes(),
-                                        query_params={
-                                        'cve_id': impact.cve_id,
-                                        'evidence_tab': 'runtime',
-                                        'finding_page': impact.finding_pagination.page,
-                                        'finding_per_page': impact.finding_pagination.per_page,
-                                        'finding_q': impact.filters.finding_search,
-                                        'finding_severity': impact.filters.finding_severity
-                                        },
-                                        page_param='runtime_page',
-                                        per_page_param='runtime_per_page') }}
+                                                                        'artifact-registry-cve-evidence-workspace',
+                                                                        'artifact-registry-cve-runtime-loading',
+                                                                        impact.runtime_pagination.per_page,
+                                                                        table_ui.action_classes() ,
+                                    query_params={
+                                    'cve_id': impact.cve_id,
+                                    'evidence_tab': 'runtime',
+                                    'finding_page': impact.finding_pagination.page,
+                                    'finding_per_page': impact.finding_pagination.per_page,
+                                    'finding_q': impact.filters.finding_search,
+                                    'finding_severity': impact.filters.finding_severity
+                                    },
+                                    page_param='runtime_page',
+                                    per_page_param='runtime_per_page') }}
                                 {% endset %}
                             {% endif %}
                             {{ table_ui.inventory_block_header('waypoints',
@@ -359,7 +365,6 @@
                                                     {% if impact.filters.runtime_match == 'other' %}selected{% endif %}>Other / Reference</option>
                                         </select>
                                     </label>
-
                                 {% endcall %}
                             </div>
                             <div class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-outline-subtle px-5 py-3 text-xs leading-5 text-content-muted"

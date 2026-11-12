@@ -112,8 +112,8 @@ package/installed version, severity, fix version, last observed scan and
 Runtime Usage drill-down. The runtime table presents cluster/namespace,
 workload/pod/container, provider-neutral match confidence, observation time
 and Runtime Usage drill-down. Digest previews are compact in the multi-record
-table, while the entire immutable value remains available in a native,
-keyboard-operable disclosure with breakable monospace content.
+table, while the entire immutable value remains available through
+the canonical keyboard-operable Copy Digest action and the full-value title.
 A digest match carries stronger evidence than a mutable tag/reference.
 No runtime rows never means the CVE or the application estate is safe;
 external provider findings and committed KAORI correlation remain authoritative.
@@ -138,10 +138,10 @@ extra nested colored surface or independent second section heading. Shared
 `table_ui` column/body/cell styles and canonical registry filtering, empty
 states, pagination and runtime actions remain authoritative. The content
 hierarchy prioritizes asset/workload identity, then a compact digest preview
-with accessible full-value disclosure or pod/container metadata, followed by
-source-qualified severity/freshness or correlation badges. Preserve the full
-breakable immutable identity inside its disclosure, with proportional columns
-and responsive horizontal scrolling.
+with the existing accessible Copy Digest action or pod/container metadata,
+followed by source-qualified severity/freshness or correlation badges.
+Retain the full immutable digest as the hidden clipboard source and full-value
+title, with proportional columns and responsive horizontal scrolling.
 
 Both evidence tables can contain many records. Each therefore exposes the
 canonical `table_registry.filter_form` and `clear_filters_link`, not a static
@@ -190,13 +190,18 @@ screens or hiding actual readiness/provenance. The authoritative status,
 timestamp, source scope, coverage and exception indicators are unchanged.
 
 Within the canonical five-column Affected Artifact Evidence table, retain
-the `Digest` semantic label/value pair (`dl/dt/dd`). Show a compact
-prefix-and-suffix digest preview inside a native `details/summary`
-disclosure. The expanded content contains the **full immutable SHA digest**
-untruncated in a breakable monospace value, also available in `title` for
-inspection. The entire digest remains selectable and copyable with no JS or
-provider call. The runtime Workload / Pod cell keeps `Pod` and `Container`
-as aligned semantic rows beneath the workload identity.
+the `Digest` semantic label/value pair (`dl/dt/dd`) in a single compact
+metadata row. Show a bounded prefix-and-suffix SHA preview with the full
+immutable digest retained in its `title` for inspection. Follow it with
+**Copy Digest** using the existing global `app/static/js/clipboard.js`
+delegated `data-kaori-copy-root`, `data-kaori-copy-source`, and
+`data-kaori-copy-button` contract. The hidden copy-source contains the
+**entire exact digest** (not the ellipsized preview); shared feedback changes
+the action label to `Copied` after success. Do not render an expanded
+disclosure or duplicate full-length digest block in table rows. This is
+read-only client-side copy with no provider call, extra script, or mutation.
+The runtime Workload / Pod cell keeps `Pod` and `Container` as aligned
+semantic rows beneath the workload identity.
 
 Following the approved table-header action-group standard
 (`docs/design/components/TABLE_AND_LABEL.md` §11), both tabs render
