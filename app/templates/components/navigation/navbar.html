@@ -136,18 +136,18 @@
                      @click.outside="quickOpen = false"
                      x-transition.origin.top.right
                      class="absolute right-0 mt-3 w-[min(23rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-2xl shadow-black/15">
-                    <div class="border-b border-outline-subtle px-4 py-3 ">
+                    <div class="border-b border-outline-subtle px-4 py-3">
                         <div class="flex items-center gap-3">
                             <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="zap" class="h-4 w-4"></i>
                             </span>
                             <div>
                                 <p class="text-sm font-semibold text-content-primary">Quick Actions</p>
-                                <p class="mt-0.5 text-xs text-content-muted">Run common operational workflows.</p>
+                                <p class="mt-0.5 text-xs text-content-muted">Queue operational work or open a workspace.</p>
                             </div>
                         </div>
                     </div>
-                    <div class="space-y-2 p-2.5">
+                    <div class="space-y-1.5 p-2.5">
                         {% set can_sync_kubernetes_inventory = current_user.has_permission('clusters.sync') %}
                         {% set can_sync_object_storage_inventory = current_user.has_permission('storage.sync') %}
                         {% set can_sync_artifact_registry_inventory = current_user.has_permission('artifact_registry.sync') %}
@@ -163,41 +163,41 @@
                                         hx-disabled-elt="this"
                                         @click="quickOpen = false"
                                         data-quick-action-card="true"
-                                        class="group flex w-full items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3 text-left transition hover:border-kaori-primary/25 hover:bg-kaori-soft disabled:cursor-wait disabled:opacity-75">
+                                        class="group flex w-full items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card px-3 py-2.5 text-left transition hover:border-kaori-primary/25 hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-75">
                                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="refresh-cw"
    class="h-4 w-4 group-[.htmx-request]:animate-spin"></i></span>
                                     <span class="min-w-0 flex-1">
-                                        <span class="flex items-start justify-between gap-2"><span class="text-xs font-semibold text-content-primary">Sync All Inventory</span><span class="rounded-md bg-kaori-soft px-2 py-1 text-xs font-semibold uppercase tracking-wide text-kaori-primary">Inventory</span></span>
-                                        <span class="mt-1 block text-xs leading-4 text-content-muted">Queue canonical inventory collection for every eligible managed domain.</span>
+                                        <span class="flex items-start justify-between gap-2"><span class="text-xs font-semibold text-content-primary">Sync All Inventory</span><span class="rounded-md bg-kaori-soft px-2 py-1 text-xs font-semibold uppercase tracking-wide text-kaori-primary">Queue</span></span>
+                                        <span class="mt-1 block text-xs leading-4 text-content-muted">Queue inventory sync for eligible domains.</span>
                                     </span>
-                                    <i data-lucide="chevron-right"
+                                    <i data-lucide="play"
                                        class="mt-2 h-4 w-4 shrink-0 text-content-disabled"></i>
                                 </button>
                             </form>
                         {% endif %}
                         <a href="{{ url_for('reports.generate_report') }}"
                            data-quick-action-card="true"
-                           class="flex w-full items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3 text-left transition hover:border-kaori-primary/25 hover:bg-kaori-soft">
+                           class="flex w-full items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card px-3 py-2.5 text-left transition hover:border-kaori-primary/25 hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="file-plus-2" class="h-4 w-4"></i></span>
-                            <span class="min-w-0 flex-1"><span class="flex items-start justify-between gap-2"><span class="text-xs font-semibold text-content-primary">Generate Report</span><span class="rounded-md bg-kaori-soft px-2 py-1 text-xs font-semibold uppercase tracking-wide text-kaori-primary">Reports</span></span><span class="mt-1 block text-xs leading-4 text-content-muted">Create a new operational report from a governed report contract.</span></span>
+                            <span class="min-w-0 flex-1"><span class="flex items-start justify-between gap-2"><span class="text-xs font-semibold text-content-primary">Generate Report</span><span class="rounded-md bg-kaori-soft px-2 py-1 text-xs font-semibold uppercase tracking-wide text-kaori-primary">Open</span></span><span class="mt-1 block text-xs leading-4 text-content-muted">Open governed report creation.</span></span>
                             <i data-lucide="chevron-right"
                                class="mt-2 h-4 w-4 shrink-0 text-content-disabled"></i>
                         </a>
                         {% if current_user.has_permission('jobs.view') %}
                             <a href="{{ url_for('jobs.executions') }}"
                                data-quick-action-card="true"
-                               class="flex w-full items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3 text-left transition hover:border-kaori-primary/25 hover:bg-kaori-soft">
+                               class="flex w-full items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card px-3 py-2.5 text-left transition hover:border-kaori-primary/25 hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
-                                <span class="min-w-0 flex-1"><span class="flex items-start justify-between gap-2"><span class="text-xs font-semibold text-content-primary">Jobs &amp; Executions</span><span class="rounded-md bg-kaori-soft px-2 py-1 text-xs font-semibold uppercase tracking-wide text-kaori-primary">Operations</span></span><span class="mt-1 block text-xs leading-4 text-content-muted">Review worker-backed executions, queues, and recent job outcomes.</span></span>
+                                <span class="min-w-0 flex-1"><span class="flex items-start justify-between gap-2"><span class="text-xs font-semibold text-content-primary">Jobs &amp; Executions</span><span class="rounded-md bg-kaori-soft px-2 py-1 text-xs font-semibold uppercase tracking-wide text-kaori-primary">Open</span></span><span class="mt-1 block text-xs leading-4 text-content-muted">Review queues and execution outcomes.</span></span>
                                 <i data-lucide="chevron-right"
                                    class="mt-2 h-4 w-4 shrink-0 text-content-disabled"></i>
                             </a>
                         {% endif %}
                         <a href="{{ url_for('alert_intelligence.index') }}"
                            data-quick-action-card="true"
-                           class="flex w-full items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3 text-left transition hover:border-kaori-primary/25 hover:bg-kaori-soft">
+                           class="flex w-full items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card px-3 py-2.5 text-left transition hover:border-kaori-primary/25 hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="bell-ring" class="h-4 w-4"></i></span>
-                            <span class="min-w-0 flex-1"><span class="flex items-start justify-between gap-2"><span class="text-xs font-semibold text-content-primary">Alert Center</span><span class="rounded-md bg-kaori-soft px-2 py-1 text-xs font-semibold uppercase tracking-wide text-kaori-primary">Intelligence</span></span><span class="mt-1 block text-xs leading-4 text-content-muted">Review active alert cases, ownership, suppression, and response state.</span></span>
+                            <span class="min-w-0 flex-1"><span class="flex items-start justify-between gap-2"><span class="text-xs font-semibold text-content-primary">Alert Center</span><span class="rounded-md bg-kaori-soft px-2 py-1 text-xs font-semibold uppercase tracking-wide text-kaori-primary">Open</span></span><span class="mt-1 block text-xs leading-4 text-content-muted">Review alert cases and response state.</span></span>
                             <i data-lucide="chevron-right"
                                class="mt-2 h-4 w-4 shrink-0 text-content-disabled"></i>
                         </a>
