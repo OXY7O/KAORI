@@ -142,12 +142,23 @@ def test_security_registry_actions_use_shared_style_and_leading_header_clear() -
     assert 'data-kaori-dialog-open' in template
 
 
-def test_security_has_two_level_three_views_above_the_hero() -> None:
+def test_security_navigation_adds_overview_before_existing_focused_tabs() -> None:
     catalog = read('app/common/workspace_navigation_catalog.py')
     navigation = read('app/common/workspace_navigation.py')
     routes = read('app/artifact_registry/routes.py')
 
     assert "'artifact_registry_security': (" in catalog
+    capability_tabs = catalog.split("'artifact_registry_security': (", 1)[1].split(
+        "'object_storage_inventory':", 1
+    )[0]
+    assert capability_tabs.index("'overview'") < capability_tabs.index("'vulnerabilities'")
+    assert capability_tabs.index("'vulnerabilities'") < capability_tabs.index("'supply_chain'")
+    assert "'artifact_registry.security_overview'" in capability_tabs
+    assert "'artifact_registry.security'" in capability_tabs
+    assert "'artifact_registry.security_supply_chain'" in capability_tabs
+    assert "'artifact_registry.security_overview': 'overview'" in navigation
+    assert "'artifact_registry.security': 'vulnerabilities'" in navigation
+    assert "'artifact_registry.security_supply_chain': 'supply_chain'" in navigation
     assert "'Vulnerabilities'" in catalog
     assert "'Supply Chain'" in catalog
     assert "return 'artifact_registry_security'" in navigation
@@ -160,6 +171,85 @@ def test_security_has_two_level_three_views_above_the_hero() -> None:
     assert "section=request.args.get('section', '', type=str)" in routes
     assert "section=request.form.get('section', '', type=str)" in routes
     assert "return _security_response('vulnerabilities')" in routes
+
+
+
+def test_security_overview_reuses_committed_evidence_and_approved_ui_components() -> None:
+    from jinja2 import Environment
+
+    outer = read('app/templates/artifact_registry/security_overview.html')
+    overview = read('app/templates/artifact_registry/partials/_security_overview.html')
+    presentation = read('app/artifact_registry/security/presentation.py')
+    routes = read('app/artifact_registry/routes.py')
+
+    Environment().parse(outer)
+    Environment().parse(overview)
+    assert 'artifact_registry/partials/_security_overview.html' in outer
+    assert 'components/page_hero.html' in overview
+    assert 'components/snapshot_context_bar.html' in overview
+    assert 'components/section_intro.html' in overview
+    assert 'components/operational_section_card.html' in overview
+    assert 'components/resource_posture_grid.html' in overview
+    assert 'components/workspace_link_card.html' in overview
+    assert 'components/table_label.html' in overview
+    assert 'Security Workspace Catalog' in overview
+    assert 'Registry Security Evidence' in overview
+    assert "'2 Workspaces'" in overview
+    assert "security.posture_metrics|length ~ ' Indicators'" in overview
+    assert 'posture_grid.render(security.posture_metrics, columns=4, compact=true)' in overview
+    assert overview.count('workspace_card.render({') == 2
+    assert "url_for('artifact_registry.security', source_id=security.source_id)" in overview
+    assert "url_for('artifact_registry.security_supply_chain', source_id=security.source_id)" in overview
+    assert 'security.setup_blocked' in overview
+    assert 'security.inventory_required' in overview
+    assert 'Security Evidence Snapshot' in overview
+    assert 'No Findings = Secure' not in overview
+
+    projection = presentation.split('def build_security_overview(', 1)[1]
+    assert 'registered_sources = _registered_sources()' in projection
+    assert 'sources = _providers()' in projection
+    assert 'if source_id is not None and not any(' in projection
+    assert "raise NotFound('The selected committed Registry security source is unavailable.')" in projection
+    assert '_security_scope_evidence(' in projection
+    assert "_security_snapshot_context(" in projection
+    assert "_security_posture(evidence)" in projection
+    assert "'source_id': source_id" in projection
+    assert "unknown = not observed_scans" in projection
+    for metric in ('critical_total', 'high_total', 'affected_artifacts', 'runtime_exposed'):
+        assert f"evidence['{metric}']" in projection
+    assert 'HarborClient' not in projection
+    assert 'dispatch_registered_job(' not in projection
+
+    assert "@artifact_registry_bp.get('/security')" in routes
+    assert 'def security_overview() -> ResponseReturnValue:' in routes
+    assert 'context = build_security_overview(source_id=_security_source_id())' in routes
+    assert "'artifact_registry/security_overview.html'" in routes
+    assert "'artifact_registry/partials/_security_overview.html'" in routes
+    assert "@artifact_registry_bp.get('/security/vulnerabilities')" in routes
+    assert "return _security_response('vulnerabilities')" in routes
+    assert "@artifact_registry_bp.get('/security/supply-chain')" in routes
+    assert routes.count("@permission_required('artifact_registry.view')") >= 3
+
+
+def test_security_operations_guidance_is_one_line_and_keeps_execution_status() -> None:
+    from jinja2 import Environment
+
+    live = read('app/templates/artifact_registry/partials/_security_sync_live_state.html')
+    jobs = read('app/artifact_registry/security/job_adapter.py')
+
+    Environment().parse(live)
+    assert 'Security Evidence Operations' in live
+    assert 'security_sync_state.compact_helper' in live
+    assert 'Read-only; no provider scans.' in live
+    assert live.count('<p class="mt-1 text-xs leading-5 text-content-muted">') == 1
+    assert 'security_sync_state.active_job' in live
+    assert 'progress_bar.job_progress(' in live
+    assert 'hx-trigger="every 1s"' in live
+    assert 'whitespace-nowrap' not in live
+    for state in ('Queued', 'Syncing', 'Sync Failed', 'Not Collected', 'Ready'):
+        assert f"'{state}':" in jobs
+    assert "'compact_helper': compact_helper" in jobs
+    assert "'helper': helper" in jobs
 
 
 def test_registry_security_capabilities_are_provider_declared() -> None:
