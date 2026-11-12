@@ -193,13 +193,17 @@ Within the canonical five-column Affected Artifact Evidence table, retain
 the `Digest` semantic label/value pair (`dl/dt/dd`) in a single compact
 metadata row. Show a bounded prefix-and-suffix SHA preview with the full
 immutable digest retained in its `title` for inspection. Follow it with
-**Copy Digest** using the existing global `app/static/js/clipboard.js`
+a compact text-only **Copy** action, with no icon, border or filled
+button chrome, using the existing global `app/static/js/clipboard.js`
 delegated `data-kaori-copy-root`, `data-kaori-copy-source`, and
-`data-kaori-copy-button` contract. The hidden copy-source contains the
-**entire exact digest** (not the ellipsized preview); shared feedback changes
-the action label to `Copied` after success. Do not render an expanded
-disclosure or duplicate full-length digest block in table rows. This is
-read-only client-side copy with no provider call, extra script, or mutation.
+`data-kaori-copy-button` contract. Keep the semantic `button type="button"`
+for keyboard accessibility, but style it as a subtle inline text affordance
+with Violet hover/focus and dark-mode contrast. The hidden copy-source
+contains the **entire exact digest** (not the ellipsized preview); shared
+feedback changes the action label to `Copied` after success. Do not render
+an expanded disclosure, icon, duplicate full-length digest block, or separate
+outlined action in table rows. This remains read-only client-side copy with
+no provider call, extra script, or mutation.
 The runtime Workload / Pod cell keeps `Pod` and `Container` as aligned
 semantic rows beneath the workload identity.
 
