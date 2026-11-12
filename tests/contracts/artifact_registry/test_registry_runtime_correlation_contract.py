@@ -198,17 +198,16 @@ def test_runtime_binding_detail_reuses_kubernetes_compact_modal_grammar() -> Non
     from jinja2 import Environment
 
     runtime = (ROOT / 'app/templates/artifact_registry/partials/_runtime_binding_detail.html').read_text()
-    pod = (
-        ROOT / 'app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html'
-    ).read_text()
+    pod = (ROOT / 'app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html').read_text()
     for page in (runtime, pod):
         Environment().parse(page)
         assert 'detail.workspace_header(' in page
         assert 'detail.header_identity_row()' in page
         assert 'compact=true' in page
         assert 'detail.inventory_section(' in page
-        assert 'detail.resource_sheet()' in page
 
+    assert 'detail.resource_sheet()' in runtime
+    assert 'data-kaori-unified-resource-sheet' in pod
     assert 'context_items=[' in runtime
     assert "'label': binding.project" in runtime
     assert "'label': binding.namespace" in runtime
