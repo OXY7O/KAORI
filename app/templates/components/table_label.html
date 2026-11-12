@@ -90,7 +90,8 @@
                class="h-3 w-3 shrink-0 text-kaori-primary dark:text-kaori-accent"
                aria-hidden="true"></i>
         {% endif %}
-        <span class="{{ 'break-all whitespace-normal' if wrap else 'whitespace-nowrap' }}"{% if text_id %} id="{{ text_id }}"{% endif %}>{{ text }}</span>
+        <span class="{{ 'break-all whitespace-normal' if wrap else 'whitespace-nowrap' }}"
+              {% if text_id %} id="{{ text_id }}"{% endif %}>{{ text }}</span>
     </span>
 {%- endmacro %}
 {# Non-interactive filtered-total indicator for KAORI table headers. #}
