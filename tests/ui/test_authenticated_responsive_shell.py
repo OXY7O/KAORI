@@ -146,6 +146,45 @@ def test_authenticated_shell_adapts_across_canonical_viewports(
     _capture(page, 'authenticated-responsive-shell', viewport_name)
 
 
+def test_desktop_sidebar_toggle_swaps_panel_icon_and_persists_state(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+    if viewport_name in ADAPTIVE_VIEWPORTS:
+        return
+
+    _login(page, kaori_authenticated_base_url)
+    page.evaluate("localStorage.setItem('kaori.sidebarExpanded', 'true')")
+    page.reload(wait_until='networkidle')
+
+    collapse = page.get_by_role('button', name='Collapse navigation')
+    expect(collapse).to_have_attribute('aria-expanded', 'true')
+    expect(collapse.locator('svg.lucide-panel-right-open')).to_be_visible()
+    expect(collapse.locator('svg.lucide-panel-right-close')).to_be_hidden()
+
+    collapse.click()
+    expand = page.get_by_role('button', name='Expand navigation')
+    expect(expand).to_have_attribute('aria-expanded', 'false')
+    expect(expand.locator('svg.lucide-panel-right-open')).to_be_hidden()
+    expect(expand.locator('svg.lucide-panel-right-close')).to_be_visible()
+    assert page.evaluate("localStorage.getItem('kaori.sidebarExpanded')") == 'false'
+    assert page.evaluate("document.documentElement.classList.contains('sidebar-collapsed')")
+
+    page.reload(wait_until='networkidle')
+    expand = page.get_by_role('button', name='Expand navigation')
+    expect(expand.locator('svg.lucide-panel-right-close')).to_be_visible()
+
+    expand.click()
+    collapse = page.get_by_role('button', name='Collapse navigation')
+    expect(collapse).to_have_attribute('aria-expanded', 'true')
+    expect(collapse.locator('svg.lucide-panel-right-open')).to_be_visible()
+    assert page.evaluate("localStorage.getItem('kaori.sidebarExpanded')") == 'true'
+    assert not page.evaluate("document.documentElement.classList.contains('sidebar-collapsed')")
+
+
 def test_mobile_navigation_closes_after_destination_selection(
     configured_page: Page,
     kaori_viewport: tuple[str, tuple[int, int]],
