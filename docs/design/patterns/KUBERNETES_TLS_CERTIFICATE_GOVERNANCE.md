@@ -12,20 +12,41 @@ Kubernetes Governance Overview is the **domain-first** landing page for Kubernet
 
 The ready-state Hero represents the generic Kubernetes governance boundary: Kubernetes is authoritative for live resource/enforcement state, KAORI owns normalized governance evidence and orchestration, and the canonical Hero action is **Open Cluster Integrations**. Overview itself remains read-only and issues no live Kubernetes request.
 
-Canonical Overview hierarchy:
+Canonical Overview hierarchy (2026-11-12 visual UAT amendment):
 
 ```text
 Hero — Kubernetes Governance / Overview
-Governance Scope
-└── Governance Capabilities
-    └── TLS Certificates                  # current implemented child capability
-Governance Model
-└── Governance Operating Model
-    ├── Provider Authority
-    ├── Policy & Guardrails
-    ├── Committed Evidence
-    └── Controlled Handoffs
+→ Governance Control Context — domain-level presentation only (no TLS snapshot data)
+→ Governance Scope — shared external Section Intro
+  └── Governance Capabilities — compact catalog + N Capabilities metadata label
+      └── TLS Certificates               # current implemented child capability
+→ Governance Model — shared external Section Intro
+  └── Governance Operating Model — shared Guide + inset four-tile model
+      ├── Provider Authority
+      ├── Policy & Guardrails
+      ├── Committed Evidence
+      └── Controlled Handoffs
 ```
+
+The narrow post-Hero **Governance Control Context** reuses only the approved
+`snapshot_context_bar` presentation geometry from TLS Collection Snapshot.
+All metric labels are overridden to express truthful domain facts: provider
+authority, domain scope, number of implemented catalog capabilities, and the
+governed execution handoff. Its state is **Read-only**, not collection success,
+snapshot freshness or TLS coverage. The source is the KAORI capability
+definitions; no collection timestamp, TLS Secret count, snapshot exception,
+per-capability evidence, or request-time Kubernetes provider read is allowed.
+It renders only in the ready-state branch, never during cluster setup blocking.
+
+The existing capability list supplies the count shown both in the compact
+context bar and the catalog's shared Violet metadata badge. Restricted
+capabilities may be identified as implemented, but their action remains
+permission-gated; the count is not an assertion of user authorization.
+The catalog uses the existing auto-fit equal-height grid and compact Violet
+navigation-card proportions, with each capability's own status and action.
+The model's existing four statements appear inside a rounded inset tile grid
+and gain the canonical title-adjacent interactive `Guide`, retaining the
+read-only, provider-authoritative governance boundary.
 
 Detailed TLS posture, validity, coverage, collection evidence, and rotation context remain owned by the TLS Certificates capability page.
 
