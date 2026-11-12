@@ -709,3 +709,31 @@ def test_json_object_limit_resets_between_successive_reports(tmp_path, monkeypat
     for _ in range(2):
         assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 0
         assert 'Scanned site entries: **1**.' in output.read_text(encoding='utf-8')
+
+
+def test_swapped_temporary_symlink_never_becomes_published_evidence(tmp_path, monkeypatch, capsys):
+    """Replacing a closed temporary file must not publish a private symlink."""
+    from contextlib import contextmanager
+
+    report = tmp_path / 'zap.json'
+    report.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
+    output = tmp_path / 'summary.md'
+    output.write_text('stale evidence', encoding='utf-8')
+    private = tmp_path / 'private.txt'
+    private.write_text('private raw content', encoding='utf-8')
+    original_temporary = zap.tempfile.NamedTemporaryFile
+
+    @contextmanager
+    def replace_closed_temporary(*args, **kwargs):
+        with original_temporary(*args, **kwargs) as stream:
+            temporary_path = Path(stream.name)
+            yield stream
+        temporary_path.unlink()
+        temporary_path.symlink_to(private)
+
+    monkeypatch.setattr(zap.tempfile, 'NamedTemporaryFile', replace_closed_temporary)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not output.exists()
+    assert private.read_text(encoding='utf-8') == 'private raw content'
+    assert not list(tmp_path.glob('.zap-summary-*.tmp'))
+    assert 'NOT VERIFIED' in capsys.readouterr().err
