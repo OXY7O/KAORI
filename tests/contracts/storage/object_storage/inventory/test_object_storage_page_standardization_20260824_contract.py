@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from jinja2 import Environment
+
 ROOT = Path(__file__).resolve().parents[5]
 
 
@@ -245,8 +247,6 @@ def test_legacy_minio_bucket_metadata_gets_display_only_compact_copy() -> None:
 
 
 def test_object_storage_posture_titles_expose_accessible_shared_guides() -> None:
-    from jinja2 import Environment
-
     guide = read('app/templates/components/info_tip.html')
     assert "variant='guide'" in guide
     assert '<span>Guide</span>' in guide
