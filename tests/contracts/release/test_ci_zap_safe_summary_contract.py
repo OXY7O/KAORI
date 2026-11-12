@@ -150,3 +150,37 @@ def test_existing_zap_gate_remains_authoritative_and_summary_is_not_sarif() -> N
     assert 'Runtime and DAST results are deployment/security checks' in workflow
     assert 'category: kaori-dast-zap' not in workflow
     assert 'security-events: write' not in workflow
+
+
+@pytest.mark.parametrize('changed_field', ['st_dev', 'st_ino', 'st_mode'])
+def test_cli_rejects_descriptor_identity_or_mode_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, changed_field: str
+) -> None:
+    """Do not publish evidence if the opened report's identity changes."""
+    import os
+    from types import SimpleNamespace
+
+    raw = tmp_path / 'baseline.json'
+    raw.write_text(json.dumps(_report()), encoding='utf-8')
+    output = tmp_path / 'summary.md'
+    output.write_text('stale verified evidence', encoding='utf-8')
+    real_fstat = os.fstat
+    calls = 0
+
+    def drifting_fstat(fd: int) -> object:
+        nonlocal calls
+        original = real_fstat(fd)
+        calls += 1
+        fields = {
+            key: getattr(original, key)
+            for key in ('st_dev', 'st_ino', 'st_mode', 'st_size', 'st_mtime_ns', 'st_ctime_ns')
+        }
+        if calls == 2:
+            fields[changed_field] += 1
+        return SimpleNamespace(**fields)
+
+    monkeypatch.setattr(os, 'fstat', drifting_fstat)
+    assert main(['--input', str(raw), '--output', str(output), '--source-sha', SHA]) == 2
+    assert calls >= 2
+    assert not output.exists()
+    assert raw.exists()
