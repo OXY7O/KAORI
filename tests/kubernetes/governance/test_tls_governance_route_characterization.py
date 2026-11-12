@@ -151,7 +151,7 @@ def _committed_tls_snapshot() -> dict[str, str]:
         'source_label': 'Kubernetes TLS Secrets + Ingresses',
         'status': 'Complete',
         'tone': 'normal',
-        'description': 'Worker-generated certificate metadata and declared Ingress host relationships.',
+        'description': 'TLS certificates and Ingress host mappings.',
         'latest_collected': '12 Nov 2026 10:47 WIB',
         'latest_supporting': 'Worker-generated snapshot',
         'scope_label': 'All Clusters',
