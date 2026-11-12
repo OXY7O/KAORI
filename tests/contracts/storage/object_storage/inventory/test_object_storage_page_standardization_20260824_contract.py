@@ -242,3 +242,38 @@ def test_legacy_minio_bucket_metadata_gets_display_only_compact_copy() -> None:
     assert "'description': 'Collected MinIO S3 settings.'" in client
     assert 'section.description' in bucket
     assert 'bucket.provider_detail_sections' in bucket
+
+def test_object_storage_posture_titles_expose_accessible_shared_guides() -> None:
+    from jinja2 import Environment
+
+    guide = read('app/templates/components/info_tip.html')
+    assert "variant='guide'" in guide
+    assert '<span>Guide</span>' in guide
+    assert 'data-kaori-info-tip-trigger' in guide
+    assert 'role="tooltip"' in guide
+
+    for path, title, guide_id in (
+        (
+            'app/templates/storage/object_storage/inventory/systems/partials/_summary_cards.html',
+            'System Inventory Posture',
+            'object-storage-systems-posture-guide',
+        ),
+        (
+            'app/templates/storage/object_storage/inventory/buckets/partials/_summary_cards.html',
+            'Object Storage Namespace Posture',
+            'object-storage-namespaces-posture-guide',
+        ),
+    ):
+        source = read(path)
+        assert 'components/info_tip.html' in source
+        assert f"info_tip.render('{guide_id}'" in source
+        assert f"'{title} Guide'" in source
+        assert f"'{title}'" in source
+        assert "variant='guide'" in source
+        assert "placement='right'" in source
+        assert 'header_badge=posture_guide' in source
+        assert 'posture_grid.render(metrics, columns=4)' in source
+        assert "body_classes='p-0'" in source
+        assert 'table_label.metadata_label(\'Info\'' not in source
+        Environment().parse(source)
+
