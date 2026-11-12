@@ -38,7 +38,7 @@ def test_governance_overview_reuses_authorized_tls_snapshot_and_operations_compa
     assert 'if can_view_tls and has_registered_clusters() is True:' in routes
     assert 'tls_snapshot = get_tls_collection_snapshot()' in routes
     assert 'get_tls_certificate_page' not in routes
-    permission_position = routes.index("can_view_tls = current_user.has_permission(")
+    permission_position = routes.index('can_view_tls = current_user.has_permission(')
     readiness_position = routes.index('if can_view_tls and has_registered_clusters() is True:')
     snapshot_position = routes.index('tls_snapshot = get_tls_collection_snapshot()')
     assert permission_position < readiness_position < snapshot_position
