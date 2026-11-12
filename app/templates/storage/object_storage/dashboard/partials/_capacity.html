@@ -40,13 +40,13 @@
                             <div class="grid gap-3 lg:grid-cols-3">
                                 {% for label, value, color, percent, percent_meaning, helper in capacity_metrics %}
                                     <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-                                        <div class="flex items-center justify-between gap-3">
+                                        <div class="space-y-1.5">
                                             <div class="flex min-w-0 items-center gap-2">
                                                 <span class="h-2.5 w-2.5 shrink-0 rounded-full {{ color }}"
                                                       aria-hidden="true"></span>
                                                 <span class="text-sm font-semibold text-content-primary">{{ label }}</span>
                                             </div>
-                                            <span class="shrink-0 text-xs font-semibold text-content-secondary">
+                                            <span class="block text-right text-xs font-semibold text-content-secondary">
                                                 {% if percent is not none %}
                                                     {{ percent|round(1) }}% {{ percent_meaning }}
                                                 {% else %}
