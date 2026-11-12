@@ -145,7 +145,7 @@ products:
   upstream_lifecycle_label: 'Current: v0.42.x · older qualified lines: KAORI Extended'
   support_label: Current + Extended
   support_tone: info
-  capability_summary: Long-retention PromQL through the shared Prometheus HTTP API v1 contract.
+  capability_summary: Long-retention PromQL via Prometheus HTTP API v1.
   validation_basis: Provider query APIs and Thanos endpoint identity validate separately from asset metric bindings.
 - key: alertmanager
   label: Alertmanager

@@ -228,6 +228,7 @@ def test_mfa_feedback_review_has_one_clear_guide_with_four_steps() -> None:
         'Save recovery codes',
     ):
         assert title in html
+    assert 'Store one-time codes securely.' in html
     assert 'Need help?' in html
     assert 'If setup fails, sign in again and confirm your current password.' in html
     assert 'border border-kaori-primary/20 bg-kaori-soft/60' not in html
