@@ -110,6 +110,26 @@ Important: `unsupported` with zero records is not a successful inventory, and `c
 
 No certificate renewal, CA rotation, CSR approval, static-Pod restart or host mutation is permitted by this document.
 
+## Operator-attested PKI inventory milestone (#4461)
+
+While automated host-side collection #4443 remains blocked by approved read-only
+execution identity, a **strict metadata-only import** is available for an
+authorized kubeadm pilot under #4461. The operational source mapping,
+normalization contract, SQL migration, audit and Dev Container command are
+documented in
+[KUBERNETES_INTERNAL_CERTIFICATES_EVIDENCE_IMPORT.md](KUBERNETES_INTERNAL_CERTIFICATES_EVIDENCE_IMPORT.md).
+The collected PKI certificate records are **operator-attested**, never
+provider-verified installation state. No raw CLI output, PEM, keys, kubeconfigs,
+or provider secrets may be stored or committed to source control.
+
+The Internal Certificates workspace may show these actual committed
+certificates after an approved source manifest is imported and the database
+migration is applied. Until then, the certificate table is empty or
+**Inventory Schema Upgrade Required**; the Source Registry continues to report
+committed cluster registration metadata. The planned Ansible collector and
+renewal execution remain separate future work. No sample manifest counts as
+live PKI evidence.
+
 ## Renewal design handoff (deferred)
 
 The implementation-ready **design-only** renewal workflow, policy, safe Ansible/provider boundary, preflight, recovery and testing matrix is retained in [KUBERNETES_INTERNAL_CERTIFICATES_RENEWAL_BLUEPRINT.md](KUBERNETES_INTERNAL_CERTIFICATES_RENEWAL_BLUEPRINT.md) (#4445). It is not an approved mutation implementation or permission to add a Renew button before Ansible execution and security gates are admitted.
