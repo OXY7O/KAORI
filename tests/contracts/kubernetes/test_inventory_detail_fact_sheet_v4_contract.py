@@ -109,7 +109,7 @@ def test_structured_metadata_json_is_pretty_printed_without_changing_data() -> N
     assert native_pretty is not None
     assert json.loads(native_pretty) == original
     assert native_metadata == original
-    assert '\\n  "config": {\\n' in native_pretty
+    assert '\n  "config": {\n' in native_pretty
     assert pretty_structured_json(['linux', {'os': 'linux'}]) is not None
     assert pretty_structured_json({'invalid': object()}) is None
 
