@@ -109,11 +109,11 @@ Do not compensate with page-local `mt-*`, inline offsets, or domain-specific spa
 ## Global Search capability discovery
 
 The authenticated **Search KAORI** overlay uses the existing
-\`components/navigation/_global_search.html\` dialog and \`kaoriNavbar\` controller.
-Its read-only \`/search/global\` response has two deliberately separate sources:
+`components/navigation/_global_search.html` dialog and `kaoriNavbar` controller.
+Its read-only `/search/global` response has two deliberately separate sources:
 
 - **Navigation and Quick Navigation:** authorized two-level workspace/capability
-  destinations from \`app/common/workspace_navigation.py::build_sidebar_navigation\`.
+  destinations from `app/common/workspace_navigation.py::build_sidebar_navigation`.
   This is the same server-side source as the current sidebar; Source Control's
   local-administrator eligibility and each capability's permission filtering
   must be applied **before** results are assembled. Empty-query Quick Navigation
