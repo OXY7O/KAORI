@@ -245,6 +245,12 @@ def security_cve_impact(cve_id: str) -> ResponseReturnValue:
         finding_page=request.args.get('finding_page', 1, type=int) or 1,
         runtime_page=request.args.get('runtime_page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
+        finding_per_page=request.args.get('finding_per_page', type=int),
+        runtime_per_page=request.args.get('runtime_per_page', type=int),
+        finding_search=request.args.get('finding_q', '', type=str),
+        finding_severity=request.args.get('finding_severity', '', type=str),
+        runtime_search=request.args.get('runtime_q', '', type=str),
+        runtime_match=request.args.get('runtime_match', '', type=str),
     )
     return render_template('artifact_registry/security_cve_impact.html', impact=impact)
 
