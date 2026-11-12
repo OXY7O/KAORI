@@ -20,6 +20,7 @@ from app.kubernetes.governance.internal_certificates.kubeadm_adapter import (
 from app.kubernetes.governance.internal_certificates.service import (
     enrich_internal_pki_source_states,
     get_internal_certificate_inventory_page,
+    get_internal_certificates_source_page,
     get_internal_pki_operational_summary,
 )
 from app.models.audit import AuditEvent
@@ -170,6 +171,46 @@ def test_committed_pki_import_is_idempotent_and_supports_bounded_inventory(
         enrich_internal_pki_source_states(source_payload)
         assert source_payload['records'][0]['collection_status'] == 'Operator Attested'
         assert source_payload['records'][0]['authority_status'] == 'Operator Supplied'
+
+
+def test_view_evidence_cluster_scope_filters_committed_inventory_and_lists_all_registered_options(
+    pki_repository_app,
+) -> None:
+    with pki_repository_app.app_context():
+        first_id = str(uuid4())
+        second_id = str(uuid4())
+        db.session.add_all(
+            [
+                Cluster(id=first_id, name='Alpha PKI Cluster', environment='development'),
+                Cluster(id=second_id, name='Beta PKI Cluster', environment='production'),
+            ]
+        )
+        db.session.commit()
+        import_attested_pki_metadata(_manifest(first_id))
+        import_attested_pki_metadata(_manifest(second_id))
+
+        # View Evidence scopes actual committed records, not just an interface badge.
+        first = get_internal_certificate_inventory_page({'cluster_id': first_id})
+        assert first['total'] == 2
+        assert {row['cluster_name'] for row in first['records']} == {'Alpha PKI Cluster'}
+        all_clusters = get_internal_certificate_inventory_page({})
+        assert all_clusters['total'] == 4
+        assert {row['cluster_name'] for row in all_clusters['records']} == {
+            'Alpha PKI Cluster',
+            'Beta PKI Cluster',
+        }
+
+        # The select options cannot be limited to the filtered source table.
+        scoped_source = get_internal_certificates_source_page({'cluster_id': first_id, 'search': 'Alpha'})
+        assert scoped_source['pagination']['total_items'] == 1
+        assert {row['id'] for row in scoped_source['filter_options']['clusters']} == {
+            first_id,
+            second_id,
+        }
+        assert {row['name'] for row in scoped_source['filter_options']['clusters']} == {
+            'Alpha PKI Cluster',
+            'Beta PKI Cluster',
+        }
 
 
 def test_internal_pki_operational_summary_does_not_claim_health_without_evidence(pki_repository_app) -> None:
