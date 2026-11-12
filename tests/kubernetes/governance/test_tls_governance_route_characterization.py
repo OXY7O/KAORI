@@ -236,4 +236,3 @@ def test_governance_clusterless_does_not_load_tls_snapshot_even_with_permission(
     content = response.get_data(as_text=True)
     assert 'Connect Your First Kubernetes Cluster' in content
     assert 'TLS Collection Snapshot' not in content
-
