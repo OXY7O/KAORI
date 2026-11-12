@@ -36,6 +36,7 @@ TITLE_GUIDE_TEMPLATES = (
     'access/identity_providers/partials/_ldap_configuration.html',
     'artifact_registry/partials/_security_workspace.html',
     'integrations/partials/_domain_workspace.html',
+    'integrations/overview.html',
     'integrations/delivery/notification_channels/index.html',
     'integrations/delivery/notification_channels/partials/_channels_workspace.html',
     'platform_operations/data_lifecycle/index.html',

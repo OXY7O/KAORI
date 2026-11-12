@@ -7,6 +7,10 @@ core a small, stable API while provider implementation remains isolated.
 Route → Domain Service → Integration Registry → Adapter → External System
 ```
 
+## Integrations Overview — portfolio guidance (#4516)
+
+The global **Integration Portfolio Snapshot** has one title-adjacent Violet `Guide` using the approved `info_tip.render(..., variant='guide')` behavior. Compact KPI helper copy keeps the four-column desktop row readable without CSS nowrap, ellipsis or font shrinking; smaller viewports may wrap naturally. The Guide preserves each SQL-backed count boundary: **Configured Targets** have a usable endpoint or canonical Kubernetes connection; **Ready for Use** additionally requires canonical enabled/active lifecycle and validated ready readiness; **Readiness Review** includes configured but disabled, degraded, blocked or awaiting-validation targets; **Not Configured** lacks usable connection settings and cannot enter validation until setup is complete. The external provider remains authoritative for native runtime state; KAORI presents committed registry, validation and correlation evidence. Review Jobs stays an independent permissioned action.
+
 ## Integration taxonomy
 
 Providers are registered under a stable domain and capability. Taxonomy is

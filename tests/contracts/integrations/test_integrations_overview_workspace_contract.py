@@ -216,10 +216,13 @@ def test_integration_overview_readiness_copy_is_explicit_and_actionable() -> Non
     overview = read('app/templates/integrations/overview.html')
 
     assert 'Validated targets eligible for governed use.' in overview
-    assert (
-        'Registered targets that still lack a complete, usable connection configuration and cannot enter readiness validation.'
-        in overview
-    )
+    for short_copy in (
+        'Usable endpoint or Kubernetes connection.',
+        'Disabled, degraded, blocked, or unvalidated.',
+        'Connection setup incomplete or unusable.',
+    ):
+        assert short_copy in overview
+    assert 'readiness validation cannot start until configuration is complete.' in overview
     assert 'Validated targets eligible for governed use' in overview
 
 
@@ -264,3 +267,53 @@ def test_integration_hero_navigation_does_not_scroll_outer_shell() -> None:
     assert "hx_swap='outerHTML show:none'" in read('app/templates/integrations/overview.html')
     assert 'data-kaori-main-scroll' in shell
     assert 'h-full overflow-hidden' in shell
+
+
+def test_integration_portfolio_snapshot_owns_title_guide_and_concise_metric_copy() -> None:
+    from jinja2 import Environment
+
+    overview = read('app/templates/integrations/overview.html')
+    sql = read('app/integrations/overview_sql.py')
+    Environment().parse(overview)
+
+    header = overview.split('aria-labelledby="integration-portfolio-title"', 1)[1].split(
+        '<div class="{{ integration_ui.metric_grid_classes(4) }}">', 1
+    )[0]
+    assert '{% import "components/info_tip.html" as info_tip %}' in overview
+    assert header.count("info_tip.render('integration-portfolio-snapshot-guide'") == 1
+    assert header.index('>Integration Portfolio Snapshot</h2>') < header.index(
+        "info_tip.render('integration-portfolio-snapshot-guide'"
+    )
+    assert "variant='guide'" in header
+    assert "placement='right'" in header
+    assert "current_user.has_permission('jobs.view')" in header
+    assert 'Review Jobs' in header
+
+    assert "integration_ui.metric_card('Configured Targets', stats.configured" in overview
+    assert "integration_ui.metric_card('Ready for Use', stats.ready" in overview
+    assert "integration_ui.metric_card('Readiness Review', stats.readiness_review" in overview
+    assert "integration_ui.metric_card('Not Configured', stats.not_configured" in overview
+
+    for detail in (
+        'Usable endpoint or Kubernetes connection.',
+        'Disabled, degraded, blocked, or unvalidated.',
+        'Connection setup incomplete or unusable.',
+    ):
+        assert detail in overview
+        assert len(detail) <= 46
+    for meaning in (
+        'configuration alone is not readiness',
+        'canonical active/enabled lifecycle and validated ready state',
+        'still awaiting validation',
+        'readiness validation cannot start',
+        'External providers remain authoritative',
+    ):
+        assert meaning in header
+
+    assert "stats.ready" in overview
+    assert 'validated' in overview.lower()
+    assert 'whitespace-nowrap' not in header
+    assert 'whitespace-nowrap' not in overview.split(
+        '<div class="{{ integration_ui.metric_grid_classes(4) }}">', 1
+    )[1].split('</div>', 1)[0]
+    assert "totals['readiness_review']" in sql
