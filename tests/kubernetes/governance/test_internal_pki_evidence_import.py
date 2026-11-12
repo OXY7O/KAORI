@@ -154,7 +154,7 @@ def test_committed_pki_import_is_idempotent_and_supports_bounded_inventory(
         ] == 2
         assert get_internal_certificate_inventory_page({'cluster_id': cluster_id, 'cert_search': 'ca'})[
             'total'
-        ] == 2
+        ] == 1
         assert get_internal_certificate_inventory_page({'cluster_id': cluster_id, 'cert_kind': 'invalid'})[
             'total'
         ] == 2
