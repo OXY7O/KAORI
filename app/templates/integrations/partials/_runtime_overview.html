@@ -65,8 +65,7 @@
         {% set empty_state_min_height = "min-h-[220px]" %}
         {% include 'components/states/_empty_state.html' %}
     {% else %}
-        <div class="px-5 py-4 sm:px-6"
-             data-kaori-runtime-metrics-region>
+        <div class="px-5 py-4 sm:px-6" data-kaori-runtime-metrics-region>
             <div class="overflow-hidden rounded-xl border border-outline-subtle">
                 <div class="{{ integration_ui.metric_grid_classes(5) }}">
                     {% for label, value, helper, icon, tone in [
