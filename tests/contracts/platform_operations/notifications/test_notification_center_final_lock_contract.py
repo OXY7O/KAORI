@@ -99,6 +99,38 @@ def test_notification_register_filter_actions_keep_title_and_guide_first() -> No
     assert '{% if filter_active %}' in content[guide:clear_action]
 
 
+def test_notification_tabs_use_shared_semantic_empty_states() -> None:
+    from jinja2 import Environment
+
+    page = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
+    shared = read('app/templates/components/states/_empty_state.html')
+    runtime = read('app/static/js/application_shell.js')
+
+    Environment().parse(page)
+    assert page.count('{% include "components/states/_empty_state.html" %}') == 2
+    assert 'data-kaori-empty-state' in shared
+    assert "empty_state_variant='panel'" in page
+    assert "empty_state_label='Queue Clear'" in page
+    assert "empty_state_tone='normal'" in page
+    assert "empty_state_title='No Active Work'" in page
+    assert 'Queued and running jobs or active page operations will appear here automatically.' in page
+    assert 'data-running-empty class="{% if active_jobs %}hidden{% endif %}"' in page
+    assert "surface.querySelectorAll('[data-running-empty]')" in runtime
+    assert "emptyState.classList.toggle('hidden', totalCount > 0)" in runtime
+
+    assert "empty_state_label='No Results' if filter_active else 'No Data'" in page
+    assert "empty_state_title='No Matching Notifications' if filter_active else 'No Notifications Yet'" in page
+    assert 'Adjust the filters to find matching notifications.' in page
+    assert 'Persistent account notifications will appear here after KAORI commits operational outcomes.' in page
+    assert page.index("empty_state_label='No Results'") < page.index(
+        '<footer class="{{ pagination_ui.footer_classes() }}">'
+    )
+    assert 'pager.total' in page
+    assert "pagination_ui.resource_name('Notifications'" in page
+    assert 'class="px-5 py-12 text-center"' not in page
+
+
+
 def test_notification_center_uses_quiet_kaori_surfaces() -> None:
     content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
     items = read('app/templates/platform_operations/notifications/components/_activity_center_items.html')
