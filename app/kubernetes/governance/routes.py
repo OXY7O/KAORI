@@ -25,7 +25,7 @@ governance_bp = Blueprint(
 @permission_required('governance.view')
 def overview():
     can_view_tls = current_user.has_permission('tls_certificates.view')
-    can_view_internal_certificates = current_user.has_permission('internal_certificates.view')
+    can_view_internal_certificates = current_user.has_permission('internal_certificates.view') and current_user.has_permission('clusters.view')
     tls_snapshot = None
     # Gate TLS evidence behind child authorization and registered-cluster readiness.
     if can_view_tls and has_registered_clusters() is True:
