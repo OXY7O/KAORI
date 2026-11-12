@@ -222,10 +222,11 @@ def test_devcontainer_operator_bootstrap_image_has_mfa_dependency_and_rebuild_ru
     command_prefix = 'docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml'
     assert f'{command_prefix} build db-bootstrap' in guide
     assert f'{command_prefix} run --rm db-bootstrap python -c "import qrcode;' in guide
-    assert f'{command_prefix} run --rm db-bootstrap sh scripts/devcontainer/bootstrap-db.sh --upgrade-only' in guide
+    upgrade_command = f'{command_prefix} run --rm db-bootstrap sh scripts/devcontainer/bootstrap-db.sh --upgrade-only'
+    assert upgrade_command in guide
     assert 'No Alembic upgrade' in guide
     assert 'devcontainer-postgres-first-run.md' in pki_guide
-    assert 'No schema migration completed' in pki_guide or 'no schema migration completed' in pki_guide
+    assert 'no schema migration completed' in pki_guide
 
 
 def test_devcontainer_operator_bootstrap_orders_schema_grants_and_app_admin() -> None:
