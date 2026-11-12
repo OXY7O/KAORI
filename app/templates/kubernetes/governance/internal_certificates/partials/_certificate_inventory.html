@@ -1,0 +1,132 @@
+{% import "components/section_intro.html" as section_intro %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "components/table_label.html" as table_label %}
+<section class="space-y-4" aria-labelledby="internal-pki-certificates-heading">
+    {{ section_intro.render('Certificate Inventory',
+                    'Inspect source-qualified certificate expiry metadata committed to KAORI.',
+                    'internal-pki-certificates-heading') }}
+    {% if not schema_readiness or not schema_readiness.ready %}
+        <div class="rounded-xl border border-outline-default bg-surface-card p-5"
+             role="status">
+            <h2 class="text-sm font-semibold text-content-primary">Inventory Schema Upgrade Required</h2>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">
+                The internal PKI evidence tables are not ready. Apply the approved database migration
+                before importing metadata. No certificate health or expiration is inferred.
+            </p>
+        </div>
+    {% elif inventory %}
+        <section id="internal-pki-certificate-registry" class="{{ table_ui.block_classes() }}">
+            {% set certificate_badge = table_label.metadata_label(table_label.count_text(inventory.total, 'Certificate'), icon='file-badge') %}
+            {{ table_ui.inventory_block_header('file-badge',
+                'Internal Certificate Registry',
+                'Operator-attested kubeadm metadata; installation and active-use status are not verified.',
+                'internal-pki-certificate-loading',
+                'Refreshing Internal Certificate Registry',
+                url_for('integrations.kubernetes') ,
+                'Open Cluster Integrations',
+                title_extra=certificate_badge) }}
+            <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+                {% call registry_ui.filter_form('governance.internal_certificates',
+                    'internal-pki-certificate-registry',
+                    'internal-pki-certificate-loading',
+                    inventory.pagination.per_page,
+                    page_param='cert_page',
+                    per_page_param='cert_per_page',
+                    form_id='internal-pki-certificate-filter',
+                    aria_label='Filter committed internal certificate evidence') %}
+                    <label class="min-w-0 flex-1 text-xs font-semibold text-content-secondary"
+                           for="internal-pki-certificate-search">
+                        Search Certificate Evidence
+                        <input id="internal-pki-certificate-search"
+                               type="search"
+                               name="cert_search"
+                               value="{{ inventory.search }}"
+                               placeholder="Search components or nodes..."
+                               class="mt-1 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary"
+                               autocomplete="off">
+                    </label>
+                    {% if inventory.cluster_id %}
+                        <input type="hidden" name="cluster_id" value="{{ inventory.cluster_id }}">
+                    {% endif %}
+                {% endcall %}
+            </div>
+            <div class="w-full overflow-x-auto">
+                <table class="w-full min-w-[920px] text-left text-sm text-content-secondary">
+                    <caption class="sr-only">Operator-attested internal Kubernetes certificate metadata. Validity is source-reported, not proof of active installation.</caption>
+                    <thead class="{{ table_ui.head_classes() }}">
+                        <tr>
+                            <th scope="col" class="px-4 py-3">Certificate / Component</th>
+                            <th scope="col" class="px-4 py-3">Cluster / Node</th>
+                            <th scope="col" class="px-4 py-3">Issuer / Authority</th>
+                            <th scope="col" class="px-4 py-3">Reported Expiry</th>
+                            <th scope="col" class="px-4 py-3">Evidence Status</th>
+                            <th scope="col" class="px-4 py-3">Source / Coverage</th>
+                        </tr>
+                    </thead>
+                    <tbody class="{{ table_ui.body_classes() }}">
+                        {% for certificate in inventory.records %}
+                            <tr class="{{ table_ui.row_classes() }}">
+                                <td class="px-4 py-3 align-top">
+                                    <p class="font-semibold text-content-primary">{{ certificate.component }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ 'Certificate Authority' if certificate.kind == 'ca' else 'Leaf Certificate' }}</p>
+                                </td>
+                                <td class="px-4 py-3 align-top">
+                                    <p class="font-medium text-content-primary">{{ certificate.cluster_name }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ certificate.node_name }}</p>
+                                </td>
+                                <td class="px-4 py-3 align-top">
+                                    <p class="text-content-primary">{{ certificate.issuer or 'Not Reported' }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">
+                                        {% if certificate.externally_managed is sameas true %}
+                                            External CA Management
+                                        {% elif certificate.externally_managed is sameas false %}
+                                            Source Reports Managed Locally
+                                        {% else %}
+                                            Authority Not Verified
+                                        {% endif %}
+                                    </p>
+                                </td>
+                                <td class="px-4 py-3 align-top">
+                                    <p class="font-semibold text-content-primary">{{ certificate.not_after|user_date('Unknown') }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">Source-reported NotAfter</p>
+                                </td>
+                                <td class="px-4 py-3 align-top">
+                                    {{ table_label.status_indicator_label(certificate.status, certificate.tone) }}
+                                    <p class="mt-1 text-xs text-content-muted">Installed status unverified</p>
+                                </td>
+                                <td class="px-4 py-3 align-top">
+                                    <p class="font-medium text-content-primary">Operator Attested</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ certificate.source_version }} · {{ certificate.coverage|title }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">Collected {{ certificate.collected_at|user_date('Unknown') }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">Evidence {{ certificate.reference }}</p>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="px-5 py-8 text-center text-sm text-content-muted">
+                                    No internal certificate evidence is committed for the selected scope.
+                                    Import approved metadata through the governed CLI to populate this registry.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <span id="internal-pki-certificate-loading"
+                  class="htmx-indicator sr-only"
+                  role="status">Loading committed certificate evidence</span>
+            {{ registry_ui.footer('governance.internal_certificates',
+                'internal-pki-certificate-registry',
+                'internal-pki-certificate-loading',
+                inventory.pagination,
+                {'cert_search': inventory.search, 'cluster_id': inventory.cluster_id},
+                inventory.pagination.allowed_per_page,
+                resource_label='Certificates',
+                rows_aria_label='Certificates per page',
+                control_name='internal-pki-certificate',
+                page_param='cert_page',
+                per_page_param='cert_per_page') }}
+        </section>
+    {% endif %}
+</section>
