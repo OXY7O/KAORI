@@ -125,6 +125,28 @@ TLS Governance reuses `components/section_intro.html` for the plain hierarchy ab
 
 Cluster-source navigation is labeled **Open Cluster Integrations** and routes to `integrations.kubernetes`, matching Kubernetes Inventory.
 
+### TLS Collection Snapshot, posture badge, and registry search copy
+
+The shared TLS Collection Snapshot (including its authorized Governance Overview
+preview) displays the concise purpose line **TLS certificates and Ingress host
+mappings.** above the authoritative worker-generated source description.
+The shorter line does not change collection scope, result completeness, or
+committed evidence; retain natural text wrapping on mobile rather than forcing
+`whitespace-nowrap` or truncation.
+
+**Certificate Validity** reuses the same title-adjacent Violet
+`table_label.metadata_label` as Kubernetes Inventory Posture cards:
+`N Indicators` derives from the **existing rendered `metrics|length`** (six
+indicator slots currently), not the number of certificates, alerts, or healthy
+outcomes. The existing metric grid, validity classifications and thresholds
+remain authoritative.
+
+The TLS Registry search field keeps the same shared filter input, keyboard and
+HTMX behavior, plus server-side search over Secret name, namespace, subject and
+issuer. Only its placeholder is shortened to **Search certificates...**; the
+visible field label **Search TLS Certificates** remains unchanged.
+
+
 ## Compact registry table
 
 ```text
