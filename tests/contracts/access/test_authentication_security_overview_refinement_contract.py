@@ -114,3 +114,13 @@ def test_other_security_configuration_tabs_still_present() -> None:
     assert "url_for('access.authentication_security.save_mfa_policy')" in source
     assert "url_for('access.authentication_security.save_bot_policy')" in source
     assert 'Session Security' in source
+
+
+def test_assurance_overview_has_single_line_friendly_committed_copy() -> None:
+    overview = _overview()
+    assert 'MFA follows committed policy.' in overview
+    assert 'Turnstile applies only when enabled.' in overview
+    assert 'Stored setup is not live readiness.' in overview
+    assert "bot_mode == 'always'" in overview
+    assert 'bot_has_secret and bot_site_key and bot_hostname' in overview
+    assert 'whitespace-nowrap' not in overview

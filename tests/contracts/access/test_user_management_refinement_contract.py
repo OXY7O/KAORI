@@ -348,7 +348,7 @@ def test_uat4_user_create_copy_is_compact_and_canonical() -> None:
         in form
     )
     assert (
-        '<strong class="font-semibold text-content-secondary">Super Admin</strong> is Local Database-only, never Directory/SSO; keep one active.'
+        '<strong class="font-semibold text-content-secondary">Super Admin</strong>: Local DB only; keep one active.'
         in form
     )
     assert 'if not can_manage_admin_fields' in form

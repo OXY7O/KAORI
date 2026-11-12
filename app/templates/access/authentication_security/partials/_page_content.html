@@ -58,9 +58,9 @@
                                 'info' if mfa_active or bot_active else 'unknown',
                                 'shield-check',
                                 [
-                                ('shield-check', 'MFA Policy', mfa_display, 'Second-factor requirements follow the committed policy.', 'bg-kaori-soft text-kaori-primary') ,
-                ('bot', 'Bot Protection', 'Enforced' if bot_active else 'Disabled', 'Turnstile verification is required only when enabled.', 'bg-status-normal-soft text-status-normal-text' if bot_active else 'bg-kaori-soft text-kaori-primary'),
-                ('key-round', 'Provider Setup', 'Configured' if bot_has_secret and bot_site_key and bot_hostname else 'Not Configured', 'Stored credentials do not establish provider availability.', 'bg-status-info-soft text-status-info-text'),
+                                ('shield-check', 'MFA Policy', mfa_display, 'MFA follows committed policy.', 'bg-kaori-soft text-kaori-primary') ,
+                ('bot', 'Bot Protection', 'Enforced' if bot_active else 'Disabled', 'Turnstile applies only when enabled.', 'bg-status-normal-soft text-status-normal-text' if bot_active else 'bg-kaori-soft text-kaori-primary'),
+                ('key-round', 'Provider Setup', 'Configured' if bot_has_secret and bot_site_key and bot_hostname else 'Not Configured', 'Stored setup is not live readiness.', 'bg-status-info-soft text-status-info-text'),
                 ('monitor-check', 'Session Security', 'Active', 'Single active login generation per account.', 'bg-status-normal-soft text-status-normal-text')
                 ],
                 [

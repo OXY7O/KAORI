@@ -71,7 +71,7 @@ def _identity_provider_supporting_text(summary: dict[str, Any]) -> str:
         return f'{summary["jit_policy_review"]} enabled JIT provider(s) need default-role or admission-policy review.'
     if summary['enabled']:
         return (
-            'Enabled providers have complete configuration and admission policy at the stored-configuration boundary.'
+            'Enabled: stored setup and admission complete.'
         )
     return 'Providers are stored but disabled; enable them only after configuration and admission policy are ready.'
 
@@ -130,7 +130,7 @@ def build_access_overview() -> dict[str, Any]:
             {
                 'key': 'users',
                 'label': 'User Management',
-                'description': 'Account lifecycle, identity source, activation, and role assignment.',
+                'description': 'User lifecycle, source, activation, and roles.',
                 'icon': 'users-round',
                 'status_label': users['posture_label'],
                 'status_tone': users['posture_tone'],
@@ -231,7 +231,7 @@ def build_access_overview() -> dict[str, Any]:
         boundaries.append(
             {
                 'title': 'Authorization Policy',
-                'description': ('Roles enforce code permissions; inactive roles deny access.'),
+                'description': ('Code RBAC; inactive roles deny access.'),
                 'status_label': 'Review Required' if authorization_review else 'Current',
                 'status_tone': 'warning' if authorization_review else 'normal',
             }

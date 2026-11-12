@@ -190,3 +190,12 @@ def test_identity_provider_workspace_guides_own_title_context_only() -> None:
     assert "current_user.has_permission('identity_providers.provision')" in directory
     assert "table_label.status_indicator_label('Read Only', 'unknown')" in directory
     assert 'data-kaori-idp-directory-launch' in directory
+
+
+def test_directory_authorization_owner_keeps_provider_local_boundary_concise() -> None:
+    directory = read('app/templates/access/identity_providers/partials/_directory_provisioning_strip.html')
+    assert 'Directory owns identity; KAORI owns access.' in directory
+    assert 'summary.directory_identity_links' in directory
+    assert 'summary.directory' in directory
+    assert "current_user.has_permission('identity_providers.provision')" in directory
+    assert 'whitespace-nowrap' not in directory

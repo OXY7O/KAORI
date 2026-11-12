@@ -131,3 +131,14 @@ def test_uat_review2_user_account_counts_keep_dynamic_break_glass_evidence() -> 
     assert 'account admission issue(s)' in supporting_text({**baseline, 'access_review': 3})
     assert 'No active user account' in supporting_text({**baseline, 'active': 0})
     assert 'registered account(s) with' not in source
+
+
+def test_access_overview_highlighted_descriptions_preserve_sources_and_rbac() -> None:
+    source = read('app/access/overview/presentation.py')
+    assert 'User lifecycle, source, activation, and roles.' in source
+    assert 'Enabled: stored setup and admission complete.' in source
+    assert 'Code RBAC; inactive roles deny access.' in source
+    assert "if summary['enabled_incomplete']:" in source
+    assert "if summary['jit_policy_review']:" in source
+    assert "summary['inactive_assigned_users']" in source
+    assert "permission_summary['posture_tone']" in source
