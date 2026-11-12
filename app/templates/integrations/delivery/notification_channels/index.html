@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/workspace_tabs.html" as workspace_tabs %}
 {% import "components/section_intro.html" as section_intro %}
@@ -8,9 +9,9 @@
 {% import "components/table.html" as table_block %}
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
-{% macro notification_section(title, description, icon='send', badge_text='', badge_tone='info') -%}
+{% macro notification_section(title, description, icon='send', badge_text='', badge_tone='info', title_extra=none) -%}
     <section class="{{ integration_ui.section_shell_classes() }}">
-        {{ integration_ui.section_header(icon, title, description, tone='brand') }}
+        {{ integration_ui.section_header(icon, title, description, tone='brand', title_extra=title_extra) }}
         {% if badge_text %}
             <div class="border-b border-outline-subtle px-5 py-3 sm:px-6">{{ table_label.status_label(badge_text, badge_tone, size='compact') }}</div>
         {% endif %}
@@ -83,12 +84,26 @@
         </section>
         <section class="space-y-5" aria-label="Notification Channels Content">
             {% if active_tab == 'overview' %}
+                {% set delivery_overview_guide %}
+                    {{ info_tip.render('notification-delivery-overview-guide',
+                                            'Delivery Overview',
+                                            'Read committed notification delivery posture, not live provider health.',
+                                            items=[
+                                            'Active and archived channels reflect committed lifecycle state; eligible channels are enabled and successfully tested.',
+                                            'Outcome totals cover all-time committed attempts; Recent Delivery previews only the latest five.',
+                                            'Delivered means provider acceptance, not confirmation that a person received or read the message.',
+                                            'Consumers own event meaning, destinations and delivery policy; KAORI governs channels, transport, retries and delivery evidence.'
+                                            ],
+                                            placement='right',
+                                            variant='guide') }}
+                {% endset %}
                 {% call notification_section(
                     'Delivery Overview',
                     'Committed channel posture, lifecycle and delivery evidence.',
                     'layout-dashboard',
                     payload.posture.label,
-                    payload.posture.tone
+                    payload.posture.tone,
+                    title_extra=delivery_overview_guide
                     ) %}
                     <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4"
                          aria-label="Notification summary metrics">

@@ -44,7 +44,7 @@ def test_notification_overview_summarizes_committed_workspaces_not_provider_cata
     assert "'overview': notification_overview_metrics() if include_overview else None" in service
     routes = read('app/integrations/delivery/notification_channels/routes.py')
     assert "include_overview=active_tab == 'overview'" in routes
-    assert "'ownership': 'Consumers emit governed events; Notification Channels delivers.'" in service
+    assert "'ownership': 'Consumers emit; KAORI delivers.'" in service
     assert 'credential_payload' not in overview
 
 
@@ -1134,3 +1134,33 @@ def test_recent_delivery_preview_uses_canonical_icon_and_subtle_info_footer() ->
     assert 'hx-target="#notification-channels-workspace"' in overview
     assert 'Provider acceptance does not prove human receipt.' in overview
     assert 'whitespace-nowrap' not in preview
+
+def test_notification_delivery_overview_guide_and_compact_ownership_preserve_authority() -> None:
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    shared = read('app/templates/integrations/components/_workspace.html')
+    Environment().parse(page)
+
+    overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split(
+        "{% elif active_tab == 'channels' %}", 1
+    )[0]
+    section = page.split('{% macro notification_section(', 1)[1].split('{%- endmacro %}', 1)[0]
+
+    assert '{% import "components/info_tip.html" as info_tip %}' in page
+    assert "title_extra=none" in section
+    assert "title_extra=title_extra" in section
+    assert "title_extra=delivery_overview_guide" in overview
+    assert overview.count("info_tip.render('notification-delivery-overview-guide'") == 1
+    assert "variant='guide'" in overview
+    assert "placement='right'" in overview
+    assert "title_extra" in shared
+    assert "Read committed notification delivery posture, not live provider health." in overview
+    assert "Outcome totals cover all-time committed attempts" in overview
+    assert "provider acceptance, not confirmation" in overview
+    assert "Consumers own event meaning, destinations and delivery policy" in overview
+    assert "('Ownership', payload.delivery_contract.ownership, 'waypoints')" in overview
+    assert "'ownership': 'Consumers emit; KAORI delivers.'" in service
+    assert len('Consumers emit; KAORI delivers.') <= 36
+    assert "notification_section('Delivery Governance'" not in overview
+    assert "payload.delivery_contract.retry" in overview
+    assert "payload.delivery_contract.deduplication" in overview
