@@ -1,6 +1,6 @@
 # Kubernetes Internal Certificates — Source and Support Contract
 
-> **Status:** Operator-observed non-production kubeadm v1.36.4 source format documented, 2026-11-12. A read-only Governance workspace (#4453) and manual metadata import (#4461) exist; actual inventory rows require operator-reviewed import. Production source qualification and automated collection (#4443) remain pending. Renewal/CA rotation stay native to the platform or PKI owner **outside KAORI** by decision #4445; Ansible is collection-only. Authority: #4441 / #4442.
+> **Status:** Operator-observed non-production kubeadm v1.36.4 source format documented, 2026-11-12. A read-only Governance workspace (#4453) and manual metadata import (#4461) exist; a 14-record pilot batch was committed and audit-verified in the operator's Dev Container on 2026-11-12. Production automated ingestion remains separate. Production source qualification and automated collection (#4443) remain pending. Renewal/CA rotation stay native to the platform or PKI owner **outside KAORI** by decision #4445; Ansible is collection-only. Authority: #4441 / #4442.
 
 ## 1. Domain boundary
 
@@ -135,6 +135,8 @@ Important: `unsupported` with zero records is not a successful inventory, and `c
 **State precedence:** explicit collection failure/unsupported → unknown coverage; partial evidence → partial scope; successfully reported but expired certificate → Expired; a currently unexpired certificate from an old/stale collection → Stale Evidence, **not** Healthy. Expiration classifications must respect exact timestamps and a separately approved policy; 90/60/30/7 days are **proposals**, not approved KAORI taxonomy.
 
 **Normalization invariants:** unique key by cluster, source, node and source-qualified certificate identity; upsert is idempotent; commit a complete bounded batch atomically; separate collection state from individual certificate rows; retain previous successful evidence while marking it stale if a later run fails; preserve node/correlation/source provenance; enforce cluster-level RBAC on both list and detail; allow no private keys, base64 kubeconfigs, bearer tokens or unredacted stdout; do not reprint rejected source data in parser exceptions.
+
+**Automated ingestion qualification:** today's `import_attested_pki_metadata` CLI/read model is specifically **operator-attested**. A future Ansible/provider collector under #4443 must not silently reuse that provenance label: it must record actual authorized job/source identity, source kind/version, per-node coverage, run outcome/freshness and distinguish automated source-qualified evidence from manual operator attestation in the committed read model. Reuse strict metadata normalization but extend the execution evidence contract separately with compatibility/negative tests. Provider-owned renewal remains outside this collector.
 
 ## 6. Acceptance gates and blockers
 
