@@ -667,7 +667,7 @@ def test_vulnerability_registry_table_uses_shared_dense_evidence_groups() -> Non
     shared = read('app/templates/components/table_primitives.html')
     Environment().parse(template)
 
-    start = template.index("table_ui.table_classes('min-w-[72rem] !table-fixed')")
+    start = template.index("table_ui.table_classes('min-w-[68rem] !table-fixed')")
     end = template.index("table_ui.table_classes('min-w-[72rem]')", start)
     table = template[start:end]
 
@@ -705,7 +705,7 @@ def test_vulnerability_registry_table_uses_shared_dense_evidence_groups() -> Non
     assert "registry.footer(" in template
     assert 'security.pagination.per_page' in template
     assert "security.filters.search" in template
-    assert 'min-w-[72rem]' in template
+    assert 'min-w-[68rem]' in template
 
 
 def test_security_sync_action_states_fleet_scope_independently_of_view_filters() -> None:
