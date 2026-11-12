@@ -653,11 +653,8 @@ def test_report_path_replaced_after_read_fails_closed(tmp_path, monkeypatch, cap
     assert 'NOT VERIFIED' in capsys.readouterr().err
 
 
-
 @pytest.mark.parametrize('swap_target', ['input', 'output_parent'])
-def test_swap_during_temporary_evidence_write_fails_closed(
-    tmp_path, monkeypatch, capsys, swap_target
-):
+def test_swap_during_temporary_evidence_write_fails_closed(tmp_path, monkeypatch, capsys, swap_target):
     """The final publication boundary must reject late path replacement."""
     report = tmp_path / 'zap.json'
     report.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
