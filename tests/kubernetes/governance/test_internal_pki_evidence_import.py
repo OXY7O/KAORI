@@ -368,6 +368,30 @@ def test_prepared_kubeadm_1364_manifest_commits_14_source_qualified_rows(
         assert inventory['operational']['partial_evidence'] == 14
         assert inventory['operational']['status'] == 'Operator Attested'
         assert inventory['operational']['coverage_label'] == 'Partial Source Evidence'
+        # Source provenance and the user-selected filter are distinct: the import
+        # reports partial coverage, but an unfiltered inventory must not preselect it.
+        assert inventory['filters']['coverage'] == ''
+        assert all(record['coverage'] == 'partial' for record in inventory['records'])
+
+        explicitly_partial = get_internal_certificate_inventory_page(
+            {'cluster_id': cluster_id, 'cert_coverage': 'partial', 'cert_per_page': '5'}
+        )
+        assert explicitly_partial['filters']['coverage'] == 'partial'
+        assert explicitly_partial['total'] == 14
+
+        cleared = get_internal_certificate_inventory_page(
+            {'cluster_id': cluster_id, 'cert_coverage': '', 'cert_per_page': '5'}
+        )
+        assert cleared['filters']['coverage'] == ''
+        assert cleared['total'] == 14
+        assert cleared['pagination']['total_pages'] == 3
+        assert all(record['coverage'] == 'partial' for record in cleared['records'])
+
+        completed = get_internal_certificate_inventory_page(
+            {'cluster_id': cluster_id, 'cert_coverage': 'complete'}
+        )
+        assert completed['filters']['coverage'] == 'complete'
+        assert completed['total'] == 0
 
 
 def test_prepare_cli_writes_private_metadata_without_committing_database(pki_repository_app, tmp_path) -> None:
