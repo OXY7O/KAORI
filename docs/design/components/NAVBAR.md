@@ -31,6 +31,23 @@ The global navbar owns:
 
 These are application-shell utilities. Domain pages must not create parallel implementations.
 
+## Desktop sidebar toggle icon states
+
+The desktop navigation toggle uses canonical Lucide panel glyphs, not bare
+chevrons. Its visual arrow indicates the **next action** while the panel outline
+remains consistent with the approved Violet application shell:
+
+- **Expanded sidebar (250 px):** `panel-right-open` — right divider and
+  left-pointing arrow, matching the accepted operator reference, indicates
+  **Collapse navigation**.
+- **Collapsed sidebar (78 px):** `panel-right-close` — the same outline
+  with a right-pointing arrow indicates **Expand navigation**.
+
+The existing `sidebarExpanded` state controls which glyph is visible,
+`aria-expanded`, accessible label/title, and local-storage persistence.
+The separate mobile off-canvas `menu` trigger is unchanged. Keep the existing
+40 px toggle target and light/dark hover/focus treatment.
+
 ## Alpine ownership
 
 Navbar state and notification refresh behavior are owned by the named Alpine component `kaoriNavbar` in `app/static/js/navbar.js`.
