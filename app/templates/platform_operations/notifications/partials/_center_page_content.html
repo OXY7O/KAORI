@@ -22,6 +22,7 @@
      hx-target="this"
      hx-select="#activity-notification-page"
      hx-swap="outerHTML"
+     hx-sync="this:drop"
      hx-history="false">
     <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
         <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -95,7 +96,9 @@
                     {% if activity_center.unread_count %}
                         <form method="POST"
                               action="{{ url_for('notifications.mark_all_read', surface='page', view='notifications', page=pager.page, per_page=pager.per_page, search=filters.search, category=filters.category, status=filters.status, read_state=filters.read_state) }}">
-                            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                            {% if csrf_token is defined %}
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            {% endif %}
                             <button type="submit"
                                     hx-post="{{ url_for('notifications.mark_all_read', surface='page', view='notifications', page=pager.page, per_page=pager.per_page, search=filters.search, category=filters.category, status=filters.status, read_state=filters.read_state) }}"
                                     hx-target="#activity-notification-page"
@@ -334,11 +337,13 @@
                             <form method="get"
                                   action="{{ url_for('notifications.center') }}"
                                   hx-get="{{ url_for('notifications.center') }}"
+                                  hx-trigger="change"
                                   hx-target="#activity-notification-page"
                                   hx-select="#activity-notification-page"
                                   hx-swap="outerHTML"
                                   hx-indicator="#notification-center-loading"
                                   hx-push-url="true"
+                                  hx-sync="#activity-notification-page:replace"
                                   class="{{ pagination_ui.rows_group_classes() }}">
                                 <input type="hidden" name="view" value="notifications">
                                 <input type="hidden" name="page" value="1">
@@ -351,13 +356,15 @@
                                 <select id="notification-center-per-page"
                                         name="per_page"
                                         aria-label="Rows Per Page"
-                                        data-kaori-auto-submit
                                         class="{{ pagination_ui.page_size_classes() }}">
                                     {% for option in pager.allowed_per_page %}
                                         <option value="{{ option }}"
                                                 {% if option == pager.per_page %}selected{% endif %}>{{ option }}</option>
                                     {% endfor %}
                                 </select>
+                                <noscript>
+                                    <button type="submit" class="{{ table_ui.action_classes() }}">Apply Rows</button>
+                                </noscript>
                             </form>
                         </div>
                         <nav class="{{ pagination_ui.navigation_group_classes() }}"
