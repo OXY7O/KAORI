@@ -189,7 +189,69 @@ def test_runtime_read_and_materialization_bounded_projection() -> None:
     assert 'def _runtime_security_index(' in presentation
     assert 'RegistryArtifact.id.in_(bound_artifact_ids)' in presentation
     assert '.yield_per(250)' in presentation
-    assert 'Runtime bindings associated with artifacts reporting Critical or High findings.' in workspace
+    assert "'Bindings with Critical/High findings.'" in workspace
+
+
+
+
+def test_runtime_binding_detail_reuses_kubernetes_compact_modal_grammar() -> None:
+    from jinja2 import Environment
+
+    runtime = (ROOT / 'app/templates/artifact_registry/partials/_runtime_binding_detail.html').read_text()
+    pod = (
+        ROOT / 'app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html'
+    ).read_text()
+    for page in (runtime, pod):
+        Environment().parse(page)
+        assert 'detail.workspace_header(' in page
+        assert 'detail.header_identity_row()' in page
+        assert 'compact=true' in page
+        assert 'detail.inventory_section(' in page
+        assert 'detail.resource_sheet()' in page
+
+    assert 'context_items=[' in runtime
+    assert "'label': binding.project" in runtime
+    assert "'label': binding.namespace" in runtime
+    assert 'detail.inventory_title(binding.repository, compact=true)' in runtime
+    assert 'table_label.metadata_label(binding.project' not in runtime
+    assert 'table_label.status_label(binding.match.label, binding.match.tone)' in runtime
+    assert "'Committed artifact, runtime, and security evidence.'" in runtime
+    assert runtime.count('detail.inventory_section(') == 5
+
+    expected_sections = (
+        'Digest, tags, repository.',
+        'Source and provider.',
+        'Workload and container.',
+        'Match type and confidence.',
+        'Committed scan findings.',
+    )
+    for description in expected_sections:
+        assert f"description='{description}'" in runtime
+        assert len(description) <= 28
+    assert 'description=binding.match.description' not in runtime
+
+    # Every original committed identity, provenance, runtime and security field survives.
+    for evidence in (
+        'binding.digest',
+        'binding.tags',
+        'binding.provider_name',
+        'binding.registry_observed_at',
+        'binding.cluster_name',
+        'binding.namespace',
+        'binding.workload_name',
+        'binding.pod_name',
+        'binding.container_name',
+        'binding.image_reference',
+        'binding.match.confidence',
+        'binding.match.description',
+        'binding.correlated_at',
+        'binding.security.critical',
+        'binding.security.high',
+        'binding.scan_status',
+        'binding.security.label',
+    ):
+        assert evidence in runtime
+    assert 'Committed Artifact Registry and Kubernetes inventory only' in runtime
 
 
 def test_runtime_binding_detail_template_compiles_and_handles_optional_containers() -> None:
