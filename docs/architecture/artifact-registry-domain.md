@@ -619,6 +619,22 @@ runtime *bindings* (not live health or distinct CVE totals). Keep natural
 wrapping on narrow screens; never force a single line with overflow or
 `whitespace-nowrap` merely to satisfy desktop Visual UAT.
 
+**Runtime Binding detail modal presentation (Human Visual UAT #4552).** Follow
+the existing Kubernetes Inventory compact **Unified Resource Sheet** grammar
+(`components/details/_detail_content.html`, Pod and Workload detail reference
+templates). Use `detail.workspace_header(..., context_items=..., compact=true)`
+and `detail.inventory_title(..., compact=true)` to keep the repository as
+the primary identity, semantic digest/tag match status beside it, and Registry
+project / Kubernetes namespace in the shared contextual metadata row. Preserve
+the committed summary strip and the five existing `detail.inventory_section`
+bands, but keep their left-rail descriptions concise (≤28 characters) for
+Artifact Identity, Registry Provenance, Runtime Target, Correlation Evidence
+and Security Exposure. Full digest, mutable tag confidence, source/observed
+timestamps, workload/Pod/container/image evidence and Critical/High findings
+stay visible in the existing fact rows. The section copy must never imply
+provider-side runtime verification or a fresh scanner request. Normal responsive
+wrapping is allowed at narrow widths; no new modal family or local styling.
+
 Correlation prerequisites govern **rematerialization eligibility**, not committed-evidence readability.
 Once Runtime Correlation has committed a snapshot, Runtime Usage continues to expose that committed evidence
 if a later Registry artifact snapshot or current Kubernetes Pod generation becomes unavailable. The workspace
