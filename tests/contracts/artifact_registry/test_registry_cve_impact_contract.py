@@ -195,9 +195,10 @@ def test_cve_impact_section_intros_and_filters_use_shared_kaori_contracts() -> N
     Environment().parse(page)
 
     assert 'components/section_intro.html' in page
-    assert page.count('section_intro.render(') == 2
-    assert "section_intro.render('Affected Artifacts'" in page
-    assert "section_intro.render('Runtime Exposure'" in page
+    assert page.count('section_intro.render(') == 1
+    assert "section_intro.render('CVE Evidence'" in page
+    assert 'components/workspace_tabs.html' in page
+    assert 'workspace_tabs.render_query_tabs(' in page
     assert page.count('registry.filter_form(') == 2
     assert page.count('registry.clear_filters_link(') == 2
     assert page.count('table_ui.inventory_filter_bar_classes()') == 2
@@ -221,28 +222,99 @@ def test_cve_impact_section_intros_and_filters_use_shared_kaori_contracts() -> N
     assert "per_page_param='runtime_per_page'" in page
     assert "impact.finding_pagination.total_items ~ (' Finding'" in page
     assert "impact.runtime_pagination.total_items ~ (' Binding'" in page
-    assert "hx-sync=" in canonical
+    assert 'hx-sync=' in canonical
     assert 'path_params=none' in canonical
     assert 'url_for(endpoint, **(path_params or {})' in canonical
     assert 'data-kaori-canonical-registry-filter' in canonical
-    assert "visible_findings = findings" in read_model
-    assert "visible_bindings = bindings" in read_model
-    assert "visible_findings.options(" in read_model
-    assert "visible_bindings.order_by(" in read_model
-    assert "RegistryProject.integration_instance_id.in_(source_ids)" in read_model
-    assert "func.upper(RegistryVulnerability.vulnerability_id) == canonical_cve" in read_model
-    assert "matching_sources" in read_model
-    assert "matching_clusters" in read_model
+    assert 'visible_findings = findings' in read_model
+    assert 'visible_bindings = bindings' in read_model
+    assert 'visible_findings.options(' in read_model
+    assert 'visible_bindings.order_by(' in read_model
+    assert 'RegistryProject.integration_instance_id.in_(source_ids)' in read_model
+    assert 'func.upper(RegistryVulnerability.vulnerability_id) == canonical_cve' in read_model
+    assert 'matching_sources' in read_model
+    assert 'matching_clusters' in read_model
     assert "RegistryWorkloadBinding.match_type == 'digest'" in read_model
     assert "RegistryWorkloadBinding.match_type != 'digest'" in read_model
-    assert "per_page=finding_per_page if finding_per_page is not None else per_page" in read_model
-    assert "per_page=runtime_per_page if runtime_per_page is not None else per_page" in read_model
+    assert 'per_page=finding_per_page if finding_per_page is not None else per_page' in read_model
+    assert 'per_page=runtime_per_page if runtime_per_page is not None else per_page' in read_model
     assert "'finding_search': finding_search" in read_model
     assert "'runtime_search': runtime_search" in read_model
 
     assert _literal_contains('redis') == '%redis%'
     assert _literal_contains(r'red%_\\') == r'%red\%\_\\\\%'
     assert 'HarborClient' not in read_model
+
+
+def test_cve_impact_query_tabs_show_one_canonical_evidence_table_at_a_time() -> None:
+    page = read('app/templates/artifact_registry/security_cve_impact.html')
+    routes = read('app/artifact_registry/routes.py')
+    shared = read('app/templates/components/workspace_tabs.html')
+    Environment().parse(page)
+
+    # Reuse the exact Membership Registry/Tenant Group Registry tab pattern.
+    membership = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
+    assert 'workspace_tabs.render_query_tabs(' in membership
+    assert 'workspace_tabs.render_query_tabs(evidence_tabs,' in page
+    assert "impact.active_tab == 'findings'" in page
+    assert "evidence_tab='findings'" in page
+    assert "evidence_tab='runtime'" in page
+    assert "impact['active_tab'] = 'runtime' if active_tab == 'runtime' else 'findings'" in routes
+    assert page.count('section_intro.render(') == 1
+    assert "section_intro.render('CVE Evidence'" in page
+    assert 'id="artifact-registry-cve-evidence-workspace"' in page
+    assert 'hx-select="#artifact-registry-cve-evidence-workspace"' in page
+    assert "hx_target='#artifact-registry-cve-evidence-workspace'" in page
+    assert "hx_sync='#artifact-registry-cve-evidence-workspace:replace'" in page
+    assert 'data-kaori-tab-variant="query-backed-htmx"' in shared
+    assert 'hx-get="{{ tab_href }}"' in shared
+    assert 'aria-selected="{{ ' in shared
+    assert page.count('name="evidence_tab"') == 2
+    assert 'value="findings"' in page
+    assert 'value="runtime"' in page
+    assert "'evidence_tab': 'findings'" in page
+    assert "'evidence_tab': 'runtime'" in page
+
+    # Both remain independent server-backed multi-row tables in source.
+    assert page.count('table_ui.inventory_block_header(') == 2
+    assert page.count('registry.filter_form(') == 2
+    assert page.count('registry.footer(') == 2
+    assert 'for row in impact.finding_rows' in page
+    assert 'for row in impact.runtime_rows' in page
+    assert "per_page_param='finding_per_page'" in page
+    assert "per_page_param='runtime_per_page'" in page
+
+    finding = page.split('id="artifact-registry-cve-findings"', 1)[1].split(
+        'id="artifact-registry-cve-runtime"', 1
+    )[0]
+    runtime = page.split('id="artifact-registry-cve-runtime"', 1)[1]
+    for section in (finding, runtime):
+        assert 'registry.filter_form(' in section
+        assert 'registry.footer(' in section
+        assert 'components/states/_empty_state.html' in section
+
+    # Operator-facing metadata stays complete and readable.
+    for marker in (
+        'Digest:',
+        'row.digest',
+        'row.project',
+        'row.source',
+        'Installed:',
+        'Fix:',
+        'Scan Evidence',
+        'Pod:',
+        'row.pod',
+        'Container:',
+        'row.container',
+        'row.match.description',
+        'row.observed_at|user_datetime',
+    ):
+        assert marker in page
+
+    # Clear action follows the filters, not the search field.
+    assert page.count('lead=false') == 2
+    assert 'min-w-0 break-all font-mono' in page
+    assert 'min-w-0 break-all text-xs' in page
 
 
 def test_cve_impact_canonical_filter_form_handles_required_identity_and_htmx() -> None:
