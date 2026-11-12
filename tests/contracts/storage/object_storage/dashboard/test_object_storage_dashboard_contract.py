@@ -926,7 +926,7 @@ def test_object_storage_overview_matches_canonical_section_intro_hierarchy() -> 
     assert 'Data Freshness' in overview
     assert 'peer_content_grid.layout_classes()' in overview
     assert 'storage/object_storage/dashboard/partials/_system_health.html' in overview
-    assert "dashboard_workspace.standard_tabs" in content
+    assert 'dashboard_workspace.standard_tabs' in content
     assert 'hx-trigger="revealed"' in content
 
 
@@ -956,4 +956,3 @@ def test_object_storage_reporting_and_capacity_labels_keep_compact_readable_hier
     assert 'percentage unavailable' in shared_capacity
     assert 'whitespace-nowrap' not in header
     assert 'truncate' not in header
-
