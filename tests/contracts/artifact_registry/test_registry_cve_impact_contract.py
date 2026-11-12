@@ -337,9 +337,17 @@ def test_cve_impact_snapshot_and_detail_cells_follow_compact_kaori_style() -> No
     assert '<dl data-kaori-copy-root' in page
     assert page.count('data-kaori-copy-button') == 1
     assert page.count('data-kaori-copy-source') == 1
-    assert 'data-copy-label="Copy Digest"' in page
+    assert 'data-copy-label="Copy"' in page
     assert 'data-copied-label="Copied"' in page
+    assert '<span data-kaori-copy-label>Copy</span>' in page
     assert 'aria-label="Copy full digest for {{ row.repository }}"' in page
+    copy_action = page.split('data-kaori-copy-button', 1)[1].split('</button>', 1)[0]
+    assert 'table_ui.action_classes()' not in copy_action
+    assert 'data-kaori-copy-icon' not in copy_action
+    assert 'data-lucide="copy"' not in copy_action
+    assert 'hover:underline' in copy_action
+    assert 'focus-visible:ring-2' in copy_action
+    assert 'dark:text-kaori-accent' in copy_action
     assert "row.digest[:18] ~ '…' ~ row.digest[-8:]" in page
     assert '<span data-kaori-copy-source hidden>{{ row.digest }}</span>' in page
     assert 'title="{{ row.digest }}"' in page
