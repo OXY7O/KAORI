@@ -107,7 +107,7 @@ def prepare_internal_pki(
         raise click.ClickException('Cannot read the source or create the private metadata manifest.') from exc
 
     click.echo(
-        f'Internal PKI metadata prepared for operator review: '
+        'Internal PKI metadata prepared for operator review: '
         f'records={len(manifest["certificates"])}, source={source_version}, '
         f'coverage={coverage_state}. No database records were changed.'
     )
