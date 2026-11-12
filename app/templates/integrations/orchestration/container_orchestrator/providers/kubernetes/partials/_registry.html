@@ -103,7 +103,7 @@
                         </td>
                         <td class="{{ table_ui.cell_classes() }}"
                             title="{{ table_label.count_text(row.source_binding_count, 'Consumer association') }}">
-                            {{ table_label.metadata_label(table_label.count_text(row.source_binding_count, 'Source')) }}
+                            {{ table_label.metadata_label(table_label.count_text(row.source_binding_count, 'Source') ) }}
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
                             <a href="{{ url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id) }}"

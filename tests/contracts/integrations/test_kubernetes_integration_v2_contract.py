@@ -578,15 +578,14 @@ def test_kubernetes_registry_bindings_use_compact_source_count_label() -> None:
     Environment().parse(registry)
 
     assert '{% import "components/table_label.html" as table_label %}' in registry
-    assert "table_label.metadata_label(table_label.count_text(row.source_binding_count, 'Source'))" in registry
-    assert "title=\"{{ table_label.count_text(row.source_binding_count, 'Consumer association') }}\"" in registry
+    assert "table_label.metadata_label(table_label.count_text(row.source_binding_count, 'Source') )" in registry
+    assert 'title="{{ table_label.count_text(row.source_binding_count, \'Consumer association\') }}"' in registry
     assert '{% macro count_text(count, singular, plural=None)' in labels
     assert '{% macro metadata_label(text, icon=None, wrap=false' in labels
     assert 'whitespace-nowrap' in labels
     assert 'Consumer associations</p>' not in registry
     assert (
-        '<p class="font-semibold tabular-nums text-content-primary">{{ row.source_binding_count }}</p>'
-        not in registry
+        '<p class="font-semibold tabular-nums text-content-primary">{{ row.source_binding_count }}</p>' not in registry
     )
     assert 'provider_registry.connection_registry_colgroup()' in registry
     assert 'provider_registry.connection_registry_head()' in registry
