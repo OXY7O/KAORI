@@ -120,7 +120,7 @@ def main() -> int:
         "registry_ui.footer('governance.internal_certificates'",
         'Not Collected',
         'Not Verified',
-        'Native Renewal',
+        'Provider-Owned Renewal',
         "'Renewal', 'Provider Owned',"
     ):
         require(item in internal_page, f'Internal PKI workspace is missing: {item}', errors)
