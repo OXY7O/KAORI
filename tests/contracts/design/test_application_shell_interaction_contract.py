@@ -108,7 +108,6 @@ def test_quick_actions_distinguish_queued_work_from_navigation() -> None:
     assert 'Review alert cases and response state.' in quick
 
 
-
 def test_navbar_javascript_is_syntax_checked() -> None:
     result = subprocess.run(
         [sys.executable, 'scripts/verify_javascript_syntax.py'],
