@@ -99,7 +99,6 @@ def test_notification_register_filter_actions_keep_title_and_guide_first() -> No
     assert '{% if filter_active %}' in content[guide:clear_action]
 
 
-
 def test_notification_center_uses_quiet_kaori_surfaces() -> None:
     content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
     items = read('app/templates/platform_operations/notifications/components/_activity_center_items.html')

@@ -28,18 +28,16 @@
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h2 class="text-base font-semibold text-content-primary">Personal Operations Inbox</h2>
-                    {{ info_tip.render(
-                    'notification-center-personal-inbox-guide',
-                    'Personal Operations Inbox',
-                    'This workspace combines persisted account notifications and read-only active work.',
-                    [
-                    'Notifications are account-scoped committed outcomes; transient toasts are not inbox records.',
-                    'Active Work mirrors canonical Jobs & Executions state without initiating jobs.',
-                    'Activity Audit exposes separate permissioned, Notification-backed system-wide evidence.'
-                    ],
-                    placement='right',
-                    variant='guide'
-                    ) }}
+                    {{ info_tip.render('notification-center-personal-inbox-guide',
+                                        'Personal Operations Inbox',
+                                        'This workspace combines persisted account notifications and read-only active work.',
+                                        [
+                                        'Notifications are account-scoped committed outcomes; transient toasts are not inbox records.',
+                                        'Active Work mirrors canonical Jobs & Executions state without initiating jobs.',
+                                        'Activity Audit exposes separate permissioned, Notification-backed system-wide evidence.'
+                                        ],
+                                        placement='right',
+                                        variant='guide') }}
                 </div>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Persistent account outcomes and canonical active work in one synchronized surface.</p>
             </div>
@@ -163,18 +161,16 @@
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="{{ table_ui.block_title_classes() }}">Notification Register</h3>
-                                        {{ info_tip.render(
-                                        'notification-center-register-guide',
-                                        'Notification Register',
-                                        'Search and filter persisted notifications for the current account.',
-                                        [
-                                        'Category, Status, State, and text filters apply to account-scoped outcomes.',
-                                        'The register defaults to five rows per page and retains filters during pagination.',
-                                        'Mark Read changes notification read state, not source outcomes or audit evidence.'
-                                        ],
-                                        placement='right',
-                                        variant='guide'
-                                        ) }}
+                                        {{ info_tip.render('notification-center-register-guide',
+                                                                                'Notification Register',
+                                                                                'Search and filter persisted notifications for the current account.',
+                                                                                [
+                                                                                'Category, Status, State, and text filters apply to account-scoped outcomes.',
+                                                                                'The register defaults to five rows per page and retains filters during pagination.',
+                                                                                'Mark Read changes notification read state, not source outcomes or audit evidence.'
+                                                                                ],
+                                                                                placement='right',
+                                                                                variant='guide') }}
                                     </div>
                                     <p class="{{ table_ui.block_description_classes() }}">Filter persistent account outcomes by category, status, state, or text.</p>
                                 </div>
