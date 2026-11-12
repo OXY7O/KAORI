@@ -73,6 +73,25 @@ Only one navbar utility surface is open at a time:
 
 Quick Actions and Account are anchored dropdowns. Notification Deck is the canonical right-side overlay/drawer surface.
 
+## Quick Actions: queue versus open
+
+The authenticated navbar's **Quick Actions** dropdown is a compact, anchored
+Violet shell utility, not a second workflow navigation system. Each entry
+retains its authorized destination, interaction semantics, and evidence owner:
+
+- **QUEUE** marks **Sync All Inventory**, an authorized CSRF-protected POST
+  that enqueues eligible managed-domain inventory jobs. Keep HTMX double-submit
+  protection and the existing operational feedback contract.
+- **OPEN** marks **Generate Report**, **Jobs & Executions**, and **Alert
+  Center**. These are ordinary navigation links to their existing governed
+  workspaces; opening a report form must not imply that a report was generated.
+
+Use concise sentence-case descriptions, compact shared shell spacing, semantic
+Violet chips, and distinct queue-action versus navigation icons. Preserve
+keyboard focus, exclusive dropdown state, Escape/outside-click behavior,
+responsive anchoring, light/dark tokens, and RBAC filtering. Do not introduce
+new page-local cards or an ungoverned action dispatcher.
+
 ## Notification refresh
 
 Notification Deck snapshot refresh:
