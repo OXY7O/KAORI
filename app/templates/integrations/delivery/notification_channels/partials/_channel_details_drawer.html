@@ -126,7 +126,8 @@
                     <h4 class="text-xs font-semibold text-content-secondary">Allowed Event Capabilities</h4>
                     <p class="text-xs text-content-muted">Expand a group to inspect allowed events.</p>
                 </div>
-                <div class="mt-2 divide-y divide-outline-subtle" data-kaori-channel-event-groups>
+                <div class="mt-2 divide-y divide-outline-subtle"
+                     data-kaori-channel-event-groups>
                     {% for group in channel.event_type_groups %}
                         <details class="group" data-kaori-channel-event-group>
                             <summary class="flex cursor-pointer list-none items-center justify-between gap-3 rounded-md px-2 py-2.5 text-xs hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
@@ -138,7 +139,8 @@
                                        aria-hidden="true"></i>
                                 </span>
                             </summary>
-                            <ul class="space-y-1 px-3 pb-3 pt-1" aria-label="{{ group.label }} allowed events">
+                            <ul class="space-y-1 px-3 pb-3 pt-1"
+                                aria-label="{{ group.label }} allowed events">
                                 {% for event_label in group.events %}
                                     <li class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
                                         <i data-lucide="check"
