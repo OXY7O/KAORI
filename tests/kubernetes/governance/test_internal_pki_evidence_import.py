@@ -136,6 +136,28 @@ def test_committed_pki_import_is_idempotent_and_supports_bounded_inventory(
         assert operational['stale'] == 0
         assert operational['status'] == 'Operator Attested'
         assert operational['tone'] == 'info'
+        ca = get_internal_certificate_inventory_page({'cluster_id': cluster_id, 'cert_kind': 'ca'})
+        assert ca['total'] == 1
+        assert ca['records'][0]['component'] == 'ca'
+        leaf = get_internal_certificate_inventory_page({'cluster_id': cluster_id, 'cert_kind': 'leaf'})
+        assert leaf['total'] == 1
+        outside = get_internal_certificate_inventory_page({'cluster_id': cluster_id, 'cert_expiry': 'outside_window'})
+        assert outside['total'] == 2
+        assert get_internal_certificate_inventory_page({'cluster_id': cluster_id, 'cert_expiry': 'expired'})[
+            'total'
+        ] == 0
+        assert get_internal_certificate_inventory_page({'cluster_id': cluster_id, 'cert_coverage': 'complete'})[
+            'total'
+        ] == 2
+        assert get_internal_certificate_inventory_page({'cluster_id': cluster_id, 'cert_freshness': 'recent'})[
+            'total'
+        ] == 2
+        assert get_internal_certificate_inventory_page({'cluster_id': cluster_id, 'cert_search': 'ca'})[
+            'total'
+        ] == 1
+        assert get_internal_certificate_inventory_page({'cluster_id': cluster_id, 'cert_kind': 'invalid'})[
+            'total'
+        ] == 2
 
         source_payload = {
             'records': [
@@ -192,6 +214,18 @@ def test_internal_pki_posture_is_scope_qualified_and_keeps_stale_partial_evidenc
         assert old_summary['partial_evidence'] == 2
         assert old_summary['status'] == 'Stale Evidence'
         assert old_summary['coverage_label'] == 'Partial Source Evidence'
+        old_certificates = {'cluster_id': old_cluster}
+        assert get_internal_certificate_inventory_page({**old_certificates, 'cert_kind': 'leaf'})['total'] == 1
+        assert get_internal_certificate_inventory_page({**old_certificates, 'cert_expiry': 'expired'})['total'] == 1
+        assert get_internal_certificate_inventory_page({**old_certificates, 'cert_coverage': 'partial'})[
+            'total'
+        ] == 2
+        assert get_internal_certificate_inventory_page({**old_certificates, 'cert_freshness': 'stale'})[
+            'total'
+        ] == 2
+        assert get_internal_certificate_inventory_page({**old_certificates, 'cert_freshness': 'recent'})[
+            'total'
+        ] == 0
 
         new_summary = get_internal_pki_operational_summary(new_cluster)
         assert new_summary['total'] == 2
