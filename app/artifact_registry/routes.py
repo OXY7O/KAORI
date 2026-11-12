@@ -252,6 +252,8 @@ def security_cve_impact(cve_id: str) -> ResponseReturnValue:
         runtime_search=request.args.get('runtime_q', '', type=str),
         runtime_match=request.args.get('runtime_match', '', type=str),
     )
+    active_tab = request.args.get('evidence_tab', 'findings', type=str)
+    impact['active_tab'] = 'runtime' if active_tab == 'runtime' else 'findings'
     return render_template('artifact_registry/security_cve_impact.html', impact=impact)
 
 
