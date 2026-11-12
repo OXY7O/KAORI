@@ -114,7 +114,7 @@
                         'label': 'Committed Runtime',
                         'description': 'Filter artifact-to-workload bindings, match confidence, and security evidence.',
                         'icon': 'list',
-                        'scope': runtime.total ~ ' Bindings',
+                        'scope': runtime.total ~ (' Binding' if runtime.total == 1 else ' Bindings'),
                         'search_text': 'Runtime Usage',
                         'action_label': 'Open Runtime Usage'
                         }, compact=true) }}
@@ -124,7 +124,7 @@
                         'label': 'Committed Correlation',
                         'description': 'Trace bounded artifact-to-Kubernetes dependency paths with evidence-backed inspection.',
                         'icon': 'waypoints',
-                        'scope': runtime.artifact_count ~ ' Artifacts',
+                        'scope': runtime.artifact_count ~ (' Artifact' if runtime.artifact_count == 1 else ' Artifacts'),
                         'search_text': 'Topology',
                         'action_label': 'Open Topology'
                         }, compact=true) }}
@@ -138,13 +138,13 @@
                                 'registry-runtime-overview-posture-heading') }}
                 {% set runtime_metrics = [
                                     ('package-search', 'Correlated Artifacts', runtime.artifact_count,
-                                    'Distinct committed artifact identities observed in the selected runtime scope.', 'info'),
+                                    'Distinct committed artifact identities in the selected scope.', 'info'),
                                     ('fingerprint', 'Digest Matched', runtime.digest_matches,
-                                    'Bindings supported by immutable artifact digest identity.', 'info'),
+                                    'Bindings supported by immutable digest identity.', 'info'),
                                     ('tags', 'Tag Matched', runtime.tag_matches,
-                                    'Mutable tag references have lower match confidence.', 'warning' if runtime.tag_matches else 'info'),
+                                    'Mutable tag references; lower match confidence.', 'warning' if runtime.tag_matches else 'info'),
                                     ('shield-alert', 'Security Exposed', runtime.security_exposed,
-                                    'Runtime bindings associated with Critical or High artifact findings.',
+                                    'Bindings associated with Critical or High artifact findings.',
                                     'critical' if runtime.security_exposed else 'info')
                                 ] %}
                 {% set posture_badge %}
