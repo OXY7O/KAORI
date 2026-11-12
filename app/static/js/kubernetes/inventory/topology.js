@@ -874,7 +874,7 @@ const startTopologyWorkspace = () => {
         const relationships = Number(summary.relationships ?? 0)
         setText(
             'topology-relationship-badge-count',
-            `${relationships} Relationship${relationships === 1 ? '' : 's'}`
+            `${relationships} Relationship${relationships === 1 ? '' : 's'}`,
         )
         setText('topology-hero-coverage', summary.omitted_nodes ?? 0)
         $('topology-hero-coverage-complete')?.classList.toggle('hidden', Boolean(summary.truncated))
