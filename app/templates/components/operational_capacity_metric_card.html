@@ -14,7 +14,8 @@
             </div>
             <span class="block text-right text-xs font-semibold tabular-nums text-content-secondary">
                 {% if percent is not none %}
-                    {{ percent|round(digits) }}% {{ percentage_label }}
+                    {% set rounded_percent = percent|round(digits) %}
+                    {{ rounded_percent|int if rounded_percent == rounded_percent|int else rounded_percent }}% {{ percentage_label }}
                 {% else %}
                     {{ missing_label }}
                 {% endif %}
