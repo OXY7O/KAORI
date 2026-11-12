@@ -25,25 +25,45 @@ def test_tls_routes_own_authorized_clusterless_handling() -> None:
     )
 
 
-def test_governance_overview_is_domain_first_and_child_capability_evidence_stays_out() -> None:
+def test_governance_overview_reuses_authorized_tls_snapshot_and_operations_compact_catalog() -> None:
     routes = read('app/kubernetes/governance/routes.py')
     overview = read('app/templates/kubernetes/governance/overview/index.html')
+    service = read('app/kubernetes/governance/tls_certificates/service.py')
+    snapshot_partial = read('app/templates/kubernetes/governance/tls_certificates/partials/_snapshot_context.html')
+    shared_card = read('app/templates/components/workspace_link_card.html')
     standard = read('docs/design/patterns/KUBERNETES_TLS_CERTIFICATE_GOVERNANCE.md')
 
     assert "@permission_required('governance.view')\ndef overview" in routes
-    assert "can_view_tls=current_user.has_permission('tls_certificates.view')" in routes
+    assert "can_view_tls = current_user.has_permission('tls_certificates.view')" in routes
+    assert "if can_view_tls and has_registered_clusters() is True:" in routes
+    assert 'tls_snapshot = get_tls_collection_snapshot()' in routes
     assert 'get_tls_certificate_page' not in routes
-    assert 'has_registered_clusters' not in routes
-    assert 'tls_payload' not in routes
+    assert routes.index("can_view_tls = current_user.has_permission(") < routes.index(
+        'if can_view_tls and has_registered_clusters() is True:'
+    ) < routes.index('tls_snapshot = get_tls_collection_snapshot()')
+
+    assert 'def get_tls_collection_snapshot() -> dict[str, Any]:' in service
+    assert 'check_tls_governance_schema_readiness()' in service
+    assert 'return _collection_snapshot(' in service
+    assert 'selected_cluster_id=\'\',' in service
+    assert "summary={'total': total}" in service
+    assert 'TLSCertificateInventory.id' in service
+    assert 'get_tls_certificate_page({})' not in routes
+    assert 'TLS Collection Snapshot' in snapshot_partial
+    assert 'snapshot_context.render(' in snapshot_partial
 
     for token in (
         'Kubernetes Governance',
         'Review Kubernetes governance controls, evidence, and ownership.',
+        'Governance Scope',
         'Governance Capabilities',
         'Implemented governance controls are added as independent capability cards without changing the Overview structure.',
-        '[grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr))]',
+        'sm:grid-cols-2',
         "'title': 'TLS Certificates'",
         "'action': 'Open TLS Certificates' if can_view_tls else 'View Permission Required'",
+        'workspace_card.render(',
+        'compact=true',
+        'Governance Model',
         'Governance Operating Model',
         'Provider Authority',
         'Policy & Guardrails',
@@ -52,50 +72,42 @@ def test_governance_overview_is_domain_first_and_child_capability_evidence_stays
         'KAORI applies governance policy and authorization guardrails without cloning the provider control plane.',
         'Open Cluster Integrations',
         'View Permission Required',
-        'New governance capabilities join this catalog only after implementation and authorization',
+        'header_badge=capability_badge',
+        "info_tip.render('governance-operating-model-guide'",
+        "variant='guide'",
+        'header_badge=model_guide',
+        'overflow-hidden rounded-xl border border-outline-subtle',
     ):
         assert token in overview
 
-    for retired_tls_overview in (
-        'Committed Governance Posture',
-        'TLS Governance Snapshot',
-        'TLS Governance Posture',
-        "title='TLS Collection Snapshot'",
-        'tls_payload',
-        '{% if can_view_tls and tls_payload %}',
-        'TLS View Restricted',
-    ):
-        assert retired_tls_overview not in overview
-
-    # The TLS snapshot component may lend its compact *presentation* shell to
-    # domain metadata, but Governance Overview must not claim collection evidence.
-    assert 'components/snapshot_context_bar.html' in overview
-    assert "title='Governance Control Context'" in overview
-    assert "status='Read-only'" in overview
-    assert "latest_label='Provider Authority'" in overview
-    assert "coverage_metric_label='Implemented Capabilities'" in overview
-    assert "exceptions_metric_label='Execution Handoff'" in overview
-    assert "coverage_label=table_label.count_text(governance_capabilities|length, 'Capability')|trim" in overview
-    assert "header_badge=capability_badge" in overview
-    assert "info_tip.render('governance-operating-model-guide'" in overview
-    assert "variant='guide'" in overview
-    assert 'header_badge=model_guide' in overview
-    assert "body_classes='p-5'" in overview
-    assert 'overflow-hidden rounded-xl border border-outline-subtle' in overview
-    context_position = overview.index("title='Governance Control Context'")
-    scope_position = overview.index("section_intro.render('Governance Scope'")
-    model_position = overview.index("section_intro.render('Governance Model'")
-    assert context_position < scope_position < model_position
+    assert "{% if can_view_tls and tls_snapshot is not none %}" in overview
+    assert """{% with payload={'snapshot': tls_snapshot} %}""" in overview
+    assert 'kubernetes/governance/tls_certificates/partials/_snapshot_context.html' in overview
+    assert overview.index('partials/_snapshot_context.html') < overview.index("section_intro.render('Governance Scope'")
+    assert overview.index("section_intro.render('Governance Scope'") < overview.index(
+        "section_intro.render('Governance Model'"
+    )
+    assert '{% if cluster_onboarding.is_blocked %}' in overview
+    assert 'components/cluster/_onboarding_banner.html' in overview
+    assert 'components/snapshot_context_bar.html' not in overview
+    assert 'Governance Control Context' not in overview
+    assert 'New governance capabilities join this catalog only after implementation' not in overview
+    assert '[grid-template-columns:repeat(auto-fit' not in overview
+    assert "action_href=url_for('governance.tls_certificates')" not in overview
     assert 'get_tls_certificate_page' not in overview
-    assert "latest_collected=payload.snapshot.latest_collected" not in overview
+    assert 'tls_payload' not in overview
+    assert 'workspace.status_tone|default(none)' in shared_card
+    assert "workspace.action_label|default('Open Workspace')" in shared_card
 
     assert 'Governance Overview landing contract' in standard
     assert 'domain-first' in standard
-    assert 'does **not** load TLS certificate inventory' in standard
+    assert 'get_tls_collection_snapshot()' in standard
+    assert 'TLS Collection Snapshot' in standard
     assert '**Open Cluster Integrations**' in standard
     assert 'scalable equal-height catalog' in standard
     assert 'parent section owns no TLS-specific action' in standard
-    assert 'auto-fitting minimum-width grid' in standard
+    assert 'two-column grid' in standard
+
 
 
 def test_governance_dead_job_presentation_helper_is_retired() -> None:
