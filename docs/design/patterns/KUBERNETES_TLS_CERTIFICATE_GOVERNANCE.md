@@ -4,6 +4,10 @@
 
 TLS Certificate Governance is a read-oriented registry for certificate validity, declared-host coverage, Ingress relationships, collection evidence, and controlled rotation handoff.
 
+## Internal Kubernetes PKI boundary (separate workstream)
+
+The current TLS Certificates resource registry covers **TLS Secrets and Ingress host coverage**, not Kubernetes control-plane CA/leaf certificates or kubelet active client certificates. The distinct `Internal Certificates` capability is being planned under #4441. Its source and support contract is [KUBERNETES_INTERNAL_CERTIFICATES_SOURCE_CONTRACT.md](KUBERNETES_INTERNAL_CERTIFICATES_SOURCE_CONTRACT.md) (#4442); committed evidence #4443 and read-only workspace #4444 must be implemented and validated before Governance Overview may advertise a second Implemented capability. A future Ansible-governed renewal design is tracked separately under #4445; neither a renewal button nor a second placeholder card belongs to this TLS capability.
+
 ## Governance Overview landing contract
 
 Kubernetes Governance Overview remains **domain-first**: the Hero represents the entire Kubernetes governance domain, not TLS. The catalog lists only implemented, independently authorized governance capabilities; its operating model covers Provider Authority, Policy & Guardrails, Committed Evidence and Controlled Handoffs. The Hero action is **Open Cluster Integrations**. Provider-side Kubernetes operations remain authoritative, while KAORI owns committed evidence and governance context.
