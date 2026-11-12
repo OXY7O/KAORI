@@ -687,3 +687,25 @@ def test_swap_during_temporary_evidence_write_fails_closed(
     assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
     assert not output.exists()
     assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_cumulative_json_object_limit_rejects_nested_ignored_data(tmp_path, monkeypatch, capsys):
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    # The third object is in an ignored field, but still costs parser memory.
+    report.write_text('{"site":[{"alerts":[]}],"ignored":{"nested":{}}}', encoding='utf-8')
+    output.write_text('stale verified-looking evidence', encoding='utf-8')
+    monkeypatch.setattr(zap, 'MAX_JSON_OBJECTS', 3)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not output.exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_json_object_limit_resets_between_successive_reports(tmp_path, monkeypatch):
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
+    monkeypatch.setattr(zap, 'MAX_JSON_OBJECTS', 2)
+    for _ in range(2):
+        assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 0
+        assert 'Scanned site entries: **1**.' in output.read_text(encoding='utf-8')
