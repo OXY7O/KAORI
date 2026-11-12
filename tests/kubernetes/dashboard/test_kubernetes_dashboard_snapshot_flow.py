@@ -501,6 +501,7 @@ def test_dashboard_kpi_display_copy_uses_title_case() -> None:
     descriptions = {item.label: item.description for item in kpis}
     assert descriptions['Clusters'] == '3 Healthy • 1 Warning'
     assert descriptions['Namespaces'] == 'Discovered Kubernetes Namespaces'
+    assert descriptions['Workloads'] == 'Five Kubernetes workload types.'
     assert descriptions['Pods'] == '166 Running • 24 Need Attention'
     assert descriptions['CPU Usage'] == 'Committed Worker Snapshot'
     assert descriptions['Memory Usage'] == 'Committed Worker Snapshot'
