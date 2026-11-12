@@ -57,7 +57,20 @@
                                 'href': url_for('governance.tls_certificates') if can_view_tls else none,
                                 'action': 'Open TLS Certificates' if can_view_tls else 'View Permission Required',
                                 'action_icon': 'arrow-right' if can_view_tls else 'lock',
-                                'available': can_view_tls
+                                'available': can_view_tls,
+                                'search_text': 'kubernetes tls certificates governance lifecycle ingress'
+                            },
+                            {
+                                'icon': 'shield-alert',
+                                'title': 'Internal Certificates',
+                                'status': 'Source Pending',
+                                'tone': 'unknown',
+                                'description': 'Review internal PKI source readiness and collection coverage.',
+                                'href': url_for('governance.internal_certificates') if can_view_internal_certificates else none,
+                                'action': 'Open Internal Certificates' if can_view_internal_certificates else 'View Permission Required',
+                                'action_icon': 'arrow-right' if can_view_internal_certificates else 'lock',
+                                'available': can_view_internal_certificates,
+                                'search_text': 'kubernetes internal certificates pki source readiness'
                             }
                         ] %}
             {% if can_view_tls and tls_snapshot is not none %}
@@ -92,11 +105,11 @@
                                                                 'scope': capability.status,
                                                                 'status_tone': capability.tone,
                                                                 'action_label': capability.action,
-                                                                'search_text': 'kubernetes tls certificates governance lifecycle ingress'
+                                                                'search_text': capability.search_text
                                                                 }, compact=true) }}
                             {% else %}
                                 <article class="flex h-full min-h-40 min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-4"
-                                         aria-label="TLS Certificates permission required">
+                                         aria-label="{{ capability.title }} permission required">
                                     <div class="flex items-start justify-between gap-3">
                                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary"
                                               aria-hidden="true">
