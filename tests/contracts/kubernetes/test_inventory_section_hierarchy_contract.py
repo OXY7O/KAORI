@@ -75,7 +75,7 @@ def test_inventory_posture_headers_reuse_the_asset_catalog_metadata_label() -> N
         assert f"table_label.metadata_label({list_name}|length ~ ' Indicators'" in posture, page
         assert 'header_badge=posture_badge' in posture, page
         assert f'posture_grid.render({list_name},' in posture, page
-        assert "operational_section_card.render(" in posture, page
+        assert 'operational_section_card.render(' in posture, page
 
 
 def test_topology_relationship_header_badge_tracks_committed_graph_updates() -> None:
@@ -91,10 +91,10 @@ def test_topology_relationship_header_badge_tracks_committed_graph_updates() -> 
     assert 'if header_badge' in visualization
     assert 'text_id=None' in labels
     assert 'id="{{ text_id }}"' in labels
-    assert "const updateSummary = (payload) => {" in script
-    assert "Number(summary.relationships ?? 0)" in script
+    assert 'const updateSummary = (payload) => {' in script
+    assert 'Number(summary.relationships ?? 0)' in script
     assert "'topology-relationship-badge-count'" in script
-    assert "topology-hero-relationships" in script
+    assert 'topology-hero-relationships' in script
 
 
 def test_cluster_source_actions_use_open_cluster_integrations() -> None:
