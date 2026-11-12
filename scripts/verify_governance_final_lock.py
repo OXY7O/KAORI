@@ -121,7 +121,7 @@ def main() -> int:
         'Not Collected',
         'Not Verified',
         'Provider-Owned Renewal',
-        "'Renewal', 'Provider Owned',"
+        "'Renewal', 'Provider Owned',",
     ):
         require(item in internal_page, f'Internal PKI workspace is missing: {item}', errors)
     require(
