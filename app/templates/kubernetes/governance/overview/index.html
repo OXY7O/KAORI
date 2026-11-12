@@ -80,14 +80,14 @@
             {% endif %}
             <section class="space-y-4" aria-labelledby="governance-capabilities-heading">
                 {{ section_intro.render('Governance Scope',
-                                'Open implemented Kubernetes governance capabilities from one domain-level control catalog.',
+                                'Open Kubernetes governance capabilities and review their source readiness.',
                                 'governance-capabilities-heading') }}
                 {% set capability_badge %}
                     {{ table_label.metadata_label(table_label.count_text(governance_capabilities|length, 'Capability') , icon='layout-grid') }}
                 {% endset %}
                 {% call operational_section_card.render(
                     'Governance Capabilities',
-                    'Implemented governance controls are added as independent capability cards without changing the Overview structure.',
+                    'Open independent governance workspaces with explicit evidence and source-readiness status.',
                     'layout-dashboard',
                     header_badge=capability_badge,
                     body_classes='p-5',
