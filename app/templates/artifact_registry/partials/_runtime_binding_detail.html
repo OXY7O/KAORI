@@ -10,8 +10,8 @@
             'Committed artifact, runtime, and security evidence.',
             'waypoints',
             context_items=[
-                {'label': binding.project, 'icon': 'folder-kanban'},
-                {'label': binding.namespace, 'icon': 'folder-tree'}
+            {'label': binding.project, 'icon': 'folder-kanban'},
+            {'label': binding.namespace, 'icon': 'folder-tree'}
             ],
             compact=true
             ) %}
@@ -31,7 +31,7 @@
                 {% call detail.inventory_section(
                     'Artifact Identity',
                     'fingerprint',
-                    binding.project ~ '/' ~ binding.repository,
+                    'Registry Artifact',
                     description='Digest, tags, repository.'
                     ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
@@ -58,7 +58,7 @@
                 {% call detail.inventory_section(
                     'Runtime Target',
                     'boxes',
-                    binding.cluster_name ~ ' · ' ~ binding.namespace,
+                    'Kubernetes Workload',
                     description='Workload and container.'
                     ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
