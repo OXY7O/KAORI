@@ -313,12 +313,32 @@ and the redacted evidence batch ID. Never attach raw kubeadm stdout or keys.
 
 ## 4. Read-only UI and expected states
 
-The approved Internal Certificates layout is **above-Hero capability tabs → Hero →
-PKI Evidence Boundaries card**, followed by the separate source/certificate
-registry sections. Do **not** render a standalone `Source Readiness`
-heading/description directly beneath Hero; relevant explanation belongs to
-the existing card/Guide. The current UI reads committed KAORI data only.
+The approved Internal Certificates layout follows the already-admitted TLS
+operational composition: **above-Hero capability tabs → Hero → Internal PKI
+Collection Snapshot → Internal PKI Collection Operations → Certificate Posture
+→ Registered Source Coverage → Certificate Inventory**. It reuses canonical
+`snapshot_context_bar`, `action_button`, `operational_section_card`, and
+`resource_posture_grid` components. The original **PKI Evidence Boundaries**
+explanation remains an Info Tip on Collection Operations, not a redundant
+full-size card or standalone Source Readiness heading.
 
+The snapshot and posture are derived from **committed KAORI inventory/batch
+rows**. The latest source report is a source-capture timestamp in UTC, **not**
+a successful automated worker run. The scope follows the selected cluster
+(or all clusters); indicators aggregate the whole scoped committed inventory,
+not just the current five-row table page. Six posture indicators show reported
+Outside Window, Renewal Window, Critical Window, Expired, Stale Evidence and
+Partial Evidence. Partial Evidence counts records from source batches explicitly
+marked partial; it is not an independently verified cluster-wide completeness
+assessment. Reported expiry does not establish actual in-use certificate health.
+
+**Sync Internal PKI is intentionally disabled** (button with no form/action or
+HTMX mutation endpoint). Until #4443 and the approved #556 Ansible read-only
+collector are admitted, operations show `Not Configured`, `No Worker Runs`,
+and `Not Scheduled`. Operator-attested import does not populate automated run
+fields. Schema missing or no committed source displays **Not Assessed / Not
+Collected**, not fabricated zero-health or success. Kubernetes and PKI providers
+remain authoritative for renewal outside KAORI.
 
 
 After a successful import and refresh:
