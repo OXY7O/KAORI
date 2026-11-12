@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[3]
 TENANT = ROOT / 'app' / 'templates' / 'kubernetes' / 'tenant' / 'partials'
 
 TITLE_GUIDES = {
+    '_sync_live_state.html': ('tenant-inventory-operations-guide',),
     '_tenant_registry.html': ('tenant-registry-status-tip',),
     '_tenant_discovery.html': ('tenant-discovery-status-tip',),
     '_group_registry.html': ('tenant-group-lifecycle-tip',),
