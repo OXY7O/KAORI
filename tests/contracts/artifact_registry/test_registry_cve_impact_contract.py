@@ -241,7 +241,7 @@ def test_cve_impact_section_intros_and_filters_use_shared_kaori_contracts() -> N
     assert "'runtime_search': runtime_search" in read_model
 
     assert _literal_contains('redis') == '%redis%'
-    assert _literal_contains(r'red%_\\') == r'%red\\%\\_\\\\%'
+    assert _literal_contains(r'red%_\\') == r'%red\%\_\\\\%'
     assert 'HarborClient' not in read_model
 
 
