@@ -246,6 +246,8 @@ def _internal_pki_source_page() -> dict[str, object]:
         'registered_total': 1,
         'selected_cluster_id': '',
         'search': '',
+        'filters': {'environment': '', 'platform': ''},
+        'filter_options': {'environments': ['non-production'], 'platforms': ['kubernetes']},
         'records': [
             {
                 'id': 'cluster-01',
@@ -354,15 +356,17 @@ def test_internal_pki_source_workspace_shows_committed_registry_with_unknown_pki
     assert invalid.status_code == 200
     assert 'Internal PKI Source Registry' in invalid.get_data(as_text=True)
     assert 'Internal Certificate Registry' not in invalid.get_data(as_text=True)
-    retained = client.get(
-        '/governance/internal-certificates?cert_search=apiserver&cert_page=2&cert_per_page=10'
-    )
+    retained = client.get('/governance/internal-certificates?cert_search=apiserver&cert_page=2&cert_per_page=10')
     assert retained.status_code == 200
     retained_html = retained.get_data(as_text=True)
     assert 'name="evidence_tab" value="sources"' in retained_html
     assert 'name="cert_search" value="apiserver"' in retained_html
     assert 'name="cert_page" value="2"' in retained_html
     assert 'name="cert_per_page" value="10"' in retained_html
+    assert 'name="environment"' in retained_html
+    assert 'name="platform"' in retained_html
+    assert 'All Environments' in retained_html
+    assert 'All Platforms' in retained_html
 
 
 def test_internal_pki_source_clusterless_blocks_registry_query(
@@ -419,6 +423,7 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
         return {
             'total': 1,
             'committed_total': 1,
+            'filters': {'kind': '', 'expiry': '', 'coverage': '', 'freshness': ''},
             'operational': {
                 'total': 1,
                 'outside_window': 1,
