@@ -91,9 +91,9 @@ def test_governance_sync_guide_and_compact_snapshot_copy_follow_kaori() -> None:
     assert partial.index('table_label.status_label(') < partial.index('info_tip.render(')
     assert "info_tip.render('registry-governance-operations-guide'," in partial
     assert "variant='guide'" in partial
-    assert "items=[" in partial
+    assert 'items=[' in partial
     assert 'data-kaori-info-tip-trigger' in info_tip
-    assert "data-kaori-info-tip-variant" in info_tip
+    assert 'data-kaori-info-tip-variant' in info_tip
     assert 'Governance displays committed provider-observed policies' in partial
     assert 'Missing, stale, partial, unavailable, or superseded evidence requires review' in partial
 
@@ -118,8 +118,7 @@ def test_governance_sync_guide_and_compact_snapshot_copy_follow_kaori() -> None:
     assert "'exception_count': exception_count" in presenter
     assert "f'{ready_count}/{provider_count} Providers Committed'" in presenter
     assert (
-        'resource_posture_grid.render(coverage_metrics, columns=4, status_labels=coverage_status_labels)'
-        in workspace
+        'resource_posture_grid.render(coverage_metrics, columns=4, status_labels=coverage_status_labels)' in workspace
     )
 
 
@@ -437,7 +436,7 @@ def test_governance_coverage_and_evidence_follow_canonical_section_layout() -> N
     posture = (ROOT / 'app/templates/components/resource_posture_grid.html').read_text()
     tenant = (ROOT / 'app/templates/kubernetes/tenant/overview.html').read_text()
     Environment().parse(posture)
-    assert 'macro render(metrics, columns=3, status_labels=none)' in posture
+    assert 'macro render(metrics, columns=3, status_labels=none, compact=false)' in posture
     assert 'table_label.status_indicator_label(status_labels[loop.index0], tone)' in posture
     assert 'grid gap-px bg-outline-subtle' in posture
     assert '[overflow-wrap:anywhere]' in posture
@@ -479,4 +478,4 @@ def test_registry_guidance_copy_keeps_provider_and_committed_evidence_authority(
     )
     assert 'Harbor owns repositories, artifacts, policies, and runtime;' in harbor
     assert 'KAORI validates, normalizes, correlates, and commits evidence.' in harbor
-    assert 'Committed project retention and immutability evidence.' in governance
+    assert 'Retention and immutability evidence.' in governance
