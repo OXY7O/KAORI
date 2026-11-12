@@ -423,7 +423,11 @@ def test_internal_pki_source_workspace_shows_committed_registry_with_unknown_pki
     assert 'search' not in source_clear_query
     assert 'environment' not in source_clear_query
     assert 'platform' not in source_clear_query
-    source_cleared = client.get(source_clear_href)
+    assert source_clear_query['clear_filters'] == ['sources']
+    source_clear_response = client.get(source_clear_href)
+    assert source_clear_response.status_code == 303
+    assert 'clear_filters' not in urlsplit(source_clear_response.headers['Location']).query
+    source_cleared = client.get(source_clear_href, follow_redirects=True)
     assert source_cleared.status_code == 200
     assert 'Clear Filters' not in source_cleared.get_data(as_text=True)
     assert 'Clear Cluster Scope' not in source_cleared.get_data(as_text=True)
@@ -459,11 +463,17 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
     user = GovernanceRouteUser({'governance.view', 'clusters.view', 'internal_certificates.view'})
     client = _client_for_user(app, monkeypatch, user)
     monkeypatch.setattr(internal_pki_routes, 'has_registered_clusters', lambda: True)
-    monkeypatch.setattr(
-        internal_pki_routes,
-        'get_internal_certificates_source_page',
-        lambda _args: _internal_pki_source_page(),
-    )
+    def read_source(args) -> dict[str, object]:
+        page = _internal_pki_source_page()
+        page['search'] = str(args.get('search') or '')
+        page['selected_cluster_id'] = str(args.get('cluster_id') or '')
+        page['filters'] = {
+            'environment': str(args.get('environment') or ''),
+            'platform': str(args.get('platform') or ''),
+        }
+        return page
+
+    monkeypatch.setattr(internal_pki_routes, 'get_internal_certificates_source_page', read_source)
     monkeypatch.setattr(
         internal_pki_routes,
         'check_internal_pki_schema_readiness',
@@ -584,18 +594,39 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
     certificate_clear_href = _rendered_clear_href(cluster_html)
     certificate_clear_query = parse_qs(urlsplit(certificate_clear_href).query)
     assert certificate_clear_query['evidence_tab'] == ['certificates']
+    assert certificate_clear_query['clear_filters'] == ['certificates']
     assert certificate_clear_query['search'] == ['Pilot']
     assert certificate_clear_query['per_page'] == ['5']  # Fixture uses a five-row source page.
     assert 'cluster_id' not in certificate_clear_query
     assert 'cert_coverage' not in certificate_clear_query
     assert 'cert_kind' not in certificate_clear_query
     assert 'cert_search' not in certificate_clear_query
-    cleared = client.get(certificate_clear_href)
+    cert_clear_response = client.get(certificate_clear_href)
+    assert cert_clear_response.status_code == 303
+    assert 'clear_filters' not in urlsplit(cert_clear_response.headers['Location']).query
+    cleared = client.get(certificate_clear_href, follow_redirects=True)
     assert cleared.status_code == 200
     cleared_html = cleared.get_data(as_text=True)
     assert 'Internal Certificate Registry' in cleared_html
     assert 'Clear Filters' not in cleared_html
     assert 'Clear Cluster Scope' not in cleared_html
+    assert 'All Coverage' in cleared_html
+    assert 'name="cert_coverage"' in cleared_html
+    assert 'hx-disable' not in cleared_html or 'data-kaori-clear-filters' not in cleared_html
+
+    # Even if an HTMX request re-injects stale form fields, clear intent wins.
+    stale = client.get(
+        '/governance/internal-certificates?evidence_tab=certificates&clear_filters=certificates'
+        '&cert_coverage=partial&cert_kind=ca&cluster_id=cluster-01&cert_page=3'
+        '&search=Pilot&per_page=10'
+    )
+    assert stale.status_code == 303
+    normalized = parse_qs(urlsplit(stale.headers['Location']).query)
+    assert normalized['evidence_tab'] == ['certificates']
+    assert normalized['search'] == ['Pilot']
+    assert normalized['per_page'] == ['10']
+    for key in ('clear_filters', 'cert_coverage', 'cert_kind', 'cluster_id', 'cert_page'):
+        assert key not in normalized
     assert 'Request Renewal' not in content
     assert content.index('data-kaori-capability-navigation') < content.index('Internal Certificates</h1>')
 
