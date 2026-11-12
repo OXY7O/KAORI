@@ -173,7 +173,6 @@ def test_security_navigation_adds_overview_before_existing_focused_tabs() -> Non
     assert "return _security_response('vulnerabilities')" in routes
 
 
-
 def test_security_overview_reuses_committed_evidence_and_approved_ui_components() -> None:
     from jinja2 import Environment
 
