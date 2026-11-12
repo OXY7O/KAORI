@@ -15,7 +15,8 @@
     action_icon='refresh-cw',
     loading_id=None,
     header_actions='',
-    action_classes=''
+    action_classes='',
+    header_badge=None
     ) -%}
     <section id="{{ id }}"
              data-kaori-visualization-workspace="adaptive-explorer"
@@ -28,7 +29,10 @@
                         <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
                     </span>
                     <div class="min-w-0">
-                        <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
+                            {% if header_badge %}{{ header_badge }}{% endif %}
+                        </div>
                         <p class="mt-1 text-sm leading-5 text-content-muted">{{ description }}</p>
                     </div>
                 </div>
