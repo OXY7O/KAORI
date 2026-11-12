@@ -543,3 +543,25 @@ def test_output_parent_swapped_to_symlink_during_parse_fails_closed(tmp_path, mo
     assert not list(outside.glob('.zap-summary-*.tmp'))
     assert not (tmp_path / 'old-safe' / 'summary.md').exists()
     assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_missing_nonblocking_support_fails_closed_before_raw_report_open(tmp_path, monkeypatch, capsys):
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
+    output.write_text('stale verified-looking evidence', encoding='utf-8')
+    opened_report = []
+    original_open = zap.os.open
+
+    def track_open(path, flags, *args, **kwargs):
+        if path == report:
+            opened_report.append(path)
+        return original_open(path, flags, *args, **kwargs)
+
+    monkeypatch.setattr(zap.os, 'open', track_open)
+    monkeypatch.delattr(zap.os, 'O_NONBLOCK', raising=False)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not opened_report
+    assert not output.exists()
+    assert report.exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
