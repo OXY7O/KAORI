@@ -39,11 +39,139 @@ kubectl --context docker-desktop get pods -n kube-system -o wide
 
 Run the context-specific commands **only if** the intended test context is `docker-desktop`. If the context is different, do not silently switch or probe an unrelated cluster. These API results establish cluster identity/nodes, **not** active apiserver, etcd or kubelet certificate `NotAfter` values. Never infer source authority just from a pod name or image.
 
-- **Docker Desktop / kind**: treat Kubernetes PKI as **Docker Desktop / kind-managed**. The current `kaori.internal-pki-evidence.v1` importer explicitly accepts **only verified kubeadm check-expiration metadata** and is **not supported** for generic kind output. Mark **Not Collected / Not Verified** rather than fabricating an import or using a kubeadm manifest schema.
+- **Docker Desktop / kind**: Docker Desktop/kind owns the cluster lifecycle. A generic kind report is **not supported** by the kubeadm-only v1 manifest. **However**, the operator has now verified `kubeadm v1.36.4` inside `desktop-control-plane` and the exact `output.kubeadm.k8s.io/v1alpha3` report; the narrowly version-locked, metadata-only adapter below can normalize *this specific kubeadm source* after owner review. This does **not** grant CA/renewal authority or make kind a kubeadm-managed provider.
 - **Docker Desktop / kubeadm**: native provisioning may use kubeadm under Docker Desktop's managed control plane, but `kubeadm` is not expected to run on the workstation. An owner-approved control-plane-local, version-qualified, **read-only** source is still required before constructing the strict kubeadm manifest. Do not `docker exec` into infrastructure containers or mount control-plane paths just to bypass permission controls.
 - Docker Desktop manages its own Kubernetes lifecycle. **Never attempt to renew, overwrite or rotate its control-plane/etcd PKI from KAORI**, and do not use `kubeadm certs renew` as a Docker Desktop operational playbook. For a disposable local cluster, lifecycle/reset actions remain under Docker Desktop ownership and need separate human approval because reset may discard local workloads/resources.
 
 Reference: [Docker Desktop Kubernetes provider/provisioner documentation](https://docs.docker.com/desktop/use-desktop/kubernetes/). The `#4442` source support matrix and deferred `#4445` renewal blueprint must carry the provider-specific decision; the current view is source readiness, not verified PKI expiry.
+
+## Verified Docker Desktop control-plane report — v1.36.4 pilot (2026-11-12)
+
+The operator has now demonstrated an **actual read-only source observation** for
+`docker-desktop` from the local non-production control-plane container:
+`docker exec desktop-control-plane kubeadm version -o short` returned
+`v1.36.4`, and `kubeadm certs check-expiration -o json` returned
+`CertificateExpirationInfo / output.kubeadm.k8s.io/v1alpha3`, with
+**11 leaf/kubeconfig entries and 3 CAs**. Reported expiry is 11 September
+2027 for most leaf entries, 12 November 2027 for apiserver, and 8 September
+2036 for the CAs. Source file observation does **not** cryptographically prove
+active certificate installation or authorize rotation. The PKI tables were
+previously empty; this is **source evidence, not a completed KAORI import**.
+
+Docker Desktop may use the **kind** cluster provisioner even when its
+`desktop-control-plane` node has a functional **kubeadm** binary. These are
+different facts: the provisioner remains Docker Desktop/kind, while the
+accepted *metadata source tool* is kubeadm. **KAORI never acquires Docker
+Desktop lifecycle/renewal authority** from this read-only observation.
+
+### Prepare an actual manifest, review, then commit through existing CLI
+
+A bounded, version-qualified adapter is available **only** for
+`kubeadm v1.36.4` and the **exact** report schema
+`output.kubeadm.k8s.io/v1alpha3`. It rejects unexpected fields,
+unsupported/missing components, duplicate entries, unknown CA references,
+malformed timestamps, unknown source versions and credential-bearing keys.
+It translates only the supported public expiry/issuer/externally-managed
+metadata; `residualTime` is discarded and `not_before` remains `null`
+because this report does not supply it. It cannot create new keys, restart
+components, or contact the cluster.
+
+**Capture from the already-authorized local pilot source** using the
+verified `docker-desktop` context on the operator's WSL workstation.
+Capture time must correspond to the same *new* report; do not invent it
+from this chat or assume the original report's exact timestamp:
+
+```bash
+kubectl config current-context   # Must be docker-desktop
+umask 077
+EVIDENCE_DIR="$(mktemp -d -t kaori-pki-uat.XXXXXX)"
+COLLECTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+docker exec desktop-control-plane kubeadm version -o short
+docker exec desktop-control-plane kubeadm certs check-expiration -o json > "$EVIDENCE_DIR/report.json"
+printf 'Collected at %s; private source directory: %s\n' "$COLLECTED_AT" "$EVIDENCE_DIR"
+```
+
+This creates a temporary source file **outside Git**. The user must
+review that the target is their intended local cluster and that the report
+has only metadata (never private keys, kubeconfigs, PEM or CSRs). Do not
+generalize `docker exec` to production, nor use it as a KAORI web/worker
+collection path. The operator explicitly authorizes local source access;
+the adapter itself performs **no Docker or SSH execution**.
+
+Copy only the reviewed metadata source file to the **actual Dev Container**
+under a private temporary path by the operator's approved local file-transfer
+workflow (e.g. `docker cp` after verifying the workspace container ID).
+Do not place either the raw source or the prepared manifest under
+`/workspace/kaori` or commit it to Git.
+
+Find the correct registered **KAORI Cluster UUID** from the already
+migrated Dev Container DB; `docker-desktop` is a *kubectl context name*,
+**not** the required UUID:
+
+```bash
+flask db current  # Must be 20261112_internal_pki (head)
+flask shell
+# Inside the Python shell:
+# from app.models.cluster import Cluster
+# [(cluster.id, cluster.name, cluster.environment) for cluster in Cluster.query.order_by(Cluster.name).all()]
+# exit()
+```
+
+In the Dev Container, protect the output location and prepare a candidate
+manifest **without any database write**. Replace the marked values with the
+actual cluster UUID, UTC capture timestamp printed above, and the
+operator's own evidence/change reference; the following paths are illustrative:
+
+```bash
+mkdir -p /tmp/kaori-pki-evidence
+chmod 700 /tmp/kaori-pki-evidence
+
+flask prepare-internal-pki \
+  --input-file /tmp/kaori-kubeadm-report.json \
+  --output-file /tmp/kaori-pki-evidence/reviewed-manifest.json \
+  --cluster-id '<REGISTERED-KAORI-CLUSTER-UUID>' \
+  --node-name desktop-control-plane \
+  --source-version v1.36.4 \
+  --collected-at '<UTC-CAPTURE-TIMESTAMP>' \
+  --reference UAT-DD-PKI-20261112-001 \
+  --coverage-state partial
+```
+
+The converter creates its target file with **0600** mode, refuses
+overwriting an existing path and refuses writing into the repository.
+`partial` is intentionally the safe default until the operator
+independently verifies that the reported 14 components form a
+complete source scope. The `--reference` above is an illustrative UAT
+evidence ID, **not an asserted approved production change ticket**.
+
+**Review the resulting JSON**: exactly 14 allowlisted metadata records
+(11 leaf/kubeconfig, 3 CA), correct CA associations, real source
+`expirationDate`, `not_before: null`, `externally_managed` flags,
+correct cluster UUID/node, and trusted operator reference. The converter
+does not query or assert the active runtime certificate chain.
+
+Only after the reviewed UAT manifest matches the actual source and
+database target, invoke the already-approved import path:
+
+```bash
+flask import-internal-pki --input-file /tmp/kaori-pki-evidence/reviewed-manifest.json
+# Expected on success: records=14, status=operator-attested (with batch UUID).
+```
+
+Confirm counts using **read-only** SQL against the same verified Dev Container
+database or the existing Flask application shell, and review the
+`Kubernetes → Governance → Internal Certificates` workspace with
+`cluster_id` correctly scoped. The registry uses **5 results per page**;
+14 imported source reports should occupy **three pages**. Expiration is
+displayed as **source reported**, not active certificate verification.
+Keep the batch ID and redacted count as UAT evidence, then dispose of
+temporary raw/manifest files through the operator's approved process.
+No secrets or source reports are attached to GitHub issues.
+
+The importer remains unchanged and authoritative: strict v1 manifest,
+registered UUID, source-qualified deduplicated upsert, Activity Audit,
+and no mutation on validation failures. #4443 automated collection and
+#4445 Ansible-governed renewal remain separate, deferred work.
 
 ## 2. Strict, metadata-only manifest
 
@@ -186,6 +314,14 @@ screenshot of a cluster-scoped certificate registry after a real approved import
 and the redacted evidence batch ID. Never attach raw kubeadm stdout or keys.
 
 ## 4. Read-only UI and expected states
+
+The approved Internal Certificates layout is **above-Hero capability tabs → Hero →
+PKI Evidence Boundaries card**, followed by the separate source/certificate
+registry sections. Do **not** render a standalone `Source Readiness`
+heading/description directly beneath Hero; relevant explanation belongs to
+the existing card/Guide. The current UI reads committed KAORI data only.
+
+
 
 After a successful import and refresh:
 - `Kubernetes → Governance → Internal Certificates` shows the committed **Internal Certificate Registry** with default 5/page, cluster/node/component, kind, issuer, source-reported `NotAfter`, externally managed flag, evidence reference/collection time, status and source coverage.
