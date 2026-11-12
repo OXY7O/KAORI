@@ -146,7 +146,7 @@ def test_cve_impact_evidence_tables_use_canonical_registry_patterns() -> None:
     assert 'for row in impact.finding_rows' in page
     assert 'for row in impact.runtime_rows' in page
     assert 'finding_items, finding_pagination = paginate_query(' in read_model
-    assert 'runtime_items, runtime_pagination = paginate_query(' in read_model
+    assert 'binding_items, runtime_pagination = paginate_query(' in read_model
     assert "page_param='finding_page'" in page
     assert "page_param='runtime_page'" in page
     assert "impact.runtime_pagination.page" in page
