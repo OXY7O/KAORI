@@ -25,30 +25,30 @@
                         security.posture.label,
                         security.posture.tone,
                         [
-                        ('package-search', 'Affected Artifacts', security.affected_artifacts, 'Committed critical/high findings'),
-                        ('waypoints', 'Runtime Exposed', security.runtime_exposed, 'Committed workload bindings')
-                        ],
-                        'Review Vulnerabilities',
-                        url_for('artifact_registry.security'),
-                        action_icon='shield-alert',
-                        blocked=security.setup_blocked or security.inventory_required,
-                        blocked_info='Register a Registry provider to begin security collection.' if security.setup_blocked else 'Collect committed inventory before reviewing security evidence.',
-                        blocked_label='Setup Required' if security.setup_blocked else 'Inventory Required') }}
+                        ('package-search', 'Affected Artifacts', security.affected_artifacts, 'Committed critical/high findings') ,
+            ('waypoints', 'Runtime Exposed', security.runtime_exposed, 'Committed workload bindings')
+            ],
+            'Review Vulnerabilities',
+            url_for('artifact_registry.security'),
+            action_icon='shield-alert',
+            blocked=security.setup_blocked or security.inventory_required,
+            blocked_info='Register a Registry provider to begin security collection.' if security.setup_blocked else 'Collect committed inventory before reviewing security evidence.',
+            blocked_label='Setup Required' if security.setup_blocked else 'Inventory Required') }}
         </div>
     </section>
     {% if security.setup_blocked %}
         {% include "artifact_registry/components/_setup_blocker.html" %}
     {% elif security.inventory_required %}
-        {% set blocked_state_icon = 'package-search' %}
-        {% set blocked_state_label = 'Inventory Required' %}
-        {% set blocked_state_title = 'Collect Artifact Inventory First' %}
-        {% set blocked_state_description = 'Security evidence is associated with committed artifact digests. Run Inventory Sync before reviewing security posture.' %}
-        {% set blocked_state_steps = ['Open Artifact Registry Inventory', 'Run Inventory Sync', 'Return To Security', 'Review Committed Evidence'] %}
+        {% set blocked_state_icon = "package-search" %}
+        {% set blocked_state_label = "Inventory Required" %}
+        {% set blocked_state_title = "Collect Artifact Inventory First" %}
+        {% set blocked_state_description = "Security evidence is associated with committed artifact digests. Run Inventory Sync before reviewing security posture." %}
+        {% set blocked_state_steps = ["Open Artifact Registry Inventory", "Run Inventory Sync", "Return To Security", "Review Committed Evidence"] %}
         {% set blocked_state_action_url = url_for('artifact_registry.inventory') %}
-        {% set blocked_state_action_label = 'Open Inventory' %}
-        {% set blocked_state_action_icon = 'boxes' %}
-        {% set blocked_state_permission = 'artifact_registry.view' %}
-        {% set blocked_state_variant = 'section' %}
+        {% set blocked_state_action_label = "Open Inventory" %}
+        {% set blocked_state_action_icon = "boxes" %}
+        {% set blocked_state_permission = "artifact_registry.view" %}
+        {% set blocked_state_variant = "section" %}
         {% include "components/states/_blocked_state.html" %}
     {% else %}
         {{ snapshot_context_bar.render(source_label=security.snapshot.source_label,
@@ -70,7 +70,8 @@
                 metric_icon_palette='brand',
                 coverage_metric_label='Security Coverage',
                 exceptions_metric_label='Security Exceptions') }}
-        <section class="space-y-4" aria-labelledby="artifact-registry-security-overview-workspaces-heading">
+        <section class="space-y-4"
+                 aria-labelledby="artifact-registry-security-overview-workspaces-heading">
             {{ section_intro.render('Security Workspaces',
                         'Open the evidence workspace for vulnerability or supply-chain review.',
                         'artifact-registry-security-overview-workspaces-heading') }}
@@ -86,7 +87,7 @@
                 ) %}
                 <div class="grid gap-4 sm:grid-cols-2">
                     {{ workspace_card.render({
-                                            'href': url_for('artifact_registry.security', source_id=security.source_id),
+                                        'href': url_for('artifact_registry.security', source_id=security.source_id) ,
                     'title': 'Vulnerabilities',
                     'label': 'Committed Security',
                     'description': 'Review committed findings and correlated runtime exposure.',
@@ -96,7 +97,7 @@
                     'action_label': 'Browse Vulnerabilities'
                     }, compact=true) }}
                     {{ workspace_card.render({
-                                            'href': url_for('artifact_registry.security_supply_chain', source_id=security.source_id),
+                                        'href': url_for('artifact_registry.security_supply_chain', source_id=security.source_id) ,
                     'title': 'Supply Chain',
                     'label': 'Provider Evidence',
                     'description': 'Review observed signatures, SBOM availability, and evidence gaps.',
@@ -108,7 +109,8 @@
                 </div>
             {% endcall %}
         </section>
-        <section class="space-y-4" aria-labelledby="artifact-registry-security-overview-posture-heading">
+        <section class="space-y-4"
+                 aria-labelledby="artifact-registry-security-overview-posture-heading">
             {{ section_intro.render('Security Evidence Posture',
                         'Prioritized committed scan and runtime correlation signals.',
                         'artifact-registry-security-overview-posture-heading') }}
