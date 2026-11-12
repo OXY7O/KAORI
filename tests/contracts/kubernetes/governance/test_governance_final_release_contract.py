@@ -175,7 +175,10 @@ def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace
     assert access.count('  - internal_certificates.view') == 5
 
     assert 'Cluster.query' in service
-    assert 'selectinload(Cluster.kubernetes_connection)' in service
+    assert 'KubernetesConnection.detected_platform' in service
+    assert 'KubernetesConnection.detected_version' in service
+    assert 'select(func.count(Cluster.id))' in service
+    assert 'KubernetesConnection.kubeconfig' not in service.split('Explicit column projections')[0]
     assert 'Cluster.name.ilike' in service
     assert '_DEFAULT_PER_PAGE = 5' in service
     assert "'collection_status': 'Not Collected'" in service
