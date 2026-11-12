@@ -69,39 +69,39 @@
                         'Inspect committed artifact findings and correlated Kubernetes runtime bindings.',
                         'artifact-registry-cve-evidence-heading') }}
             {% set evidence_tabs = [
-                (
-                'findings',
-                'Affected Artifact Evidence',
-                'package-search',
-                url_for('artifact_registry.security_cve_impact',
-                    cve_id=impact.cve_id,
-                    evidence_tab='findings',
-                    finding_q=impact.filters.finding_search,
-                    finding_severity=impact.filters.finding_severity,
-                    finding_page=impact.finding_pagination.page,
-                    finding_per_page=impact.finding_pagination.per_page,
-                    runtime_q=impact.filters.runtime_search,
-                    runtime_match=impact.filters.runtime_match,
-                    runtime_page=impact.runtime_pagination.page,
-                    runtime_per_page=impact.runtime_pagination.per_page)
-                ),
-                (
-                'runtime',
-                'Kubernetes Runtime Exposure',
-                'waypoints',
-                url_for('artifact_registry.security_cve_impact',
-                    cve_id=impact.cve_id,
-                    evidence_tab='runtime',
-                    finding_q=impact.filters.finding_search,
-                    finding_severity=impact.filters.finding_severity,
-                    finding_page=impact.finding_pagination.page,
-                    finding_per_page=impact.finding_pagination.per_page,
-                    runtime_q=impact.filters.runtime_search,
-                    runtime_match=impact.filters.runtime_match,
-                    runtime_page=impact.runtime_pagination.page,
-                    runtime_per_page=impact.runtime_pagination.per_page)
-                )
-                ] %}
+                            (
+                            'findings',
+                            'Affected Artifact Evidence',
+                            'package-search',
+                            url_for('artifact_registry.security_cve_impact',
+                            cve_id=impact.cve_id,
+                            evidence_tab='findings',
+                            finding_q=impact.filters.finding_search,
+                            finding_severity=impact.filters.finding_severity,
+                            finding_page=impact.finding_pagination.page,
+                            finding_per_page=impact.finding_pagination.per_page,
+                            runtime_q=impact.filters.runtime_search,
+                            runtime_match=impact.filters.runtime_match,
+                            runtime_page=impact.runtime_pagination.page,
+                            runtime_per_page=impact.runtime_pagination.per_page)
+                            ),
+                            (
+                            'runtime',
+                            'Kubernetes Runtime Exposure',
+                            'waypoints',
+                            url_for('artifact_registry.security_cve_impact',
+                            cve_id=impact.cve_id,
+                            evidence_tab='runtime',
+                            finding_q=impact.filters.finding_search,
+                            finding_severity=impact.filters.finding_severity,
+                            finding_page=impact.finding_pagination.page,
+                            finding_per_page=impact.finding_pagination.per_page,
+                            runtime_q=impact.filters.runtime_search,
+                            runtime_match=impact.filters.runtime_match,
+                            runtime_page=impact.runtime_pagination.page,
+                            runtime_per_page=impact.runtime_pagination.per_page)
+                            )
+                        ] %}
             <section id="artifact-registry-cve-evidence-workspace"
                      aria-label="CVE evidence workspaces"
                      hx-select="#artifact-registry-cve-evidence-workspace"
@@ -120,12 +120,12 @@
                                 {{ table_label.metadata_label(impact.finding_pagination.total_items ~ (' Finding' if impact.finding_pagination.total_items == 1 else ' Findings') , icon='layout-grid') }}
                             {% endset %}
                             {{ table_ui.inventory_block_header('package-search',
-                                        'Affected Artifact Evidence',
-                                        'Scanner findings linked to immutable Registry artifact digests.',
-                                        'artifact-registry-cve-findings-loading',
-                                        'Loading findings',
-                                        none,
-                                        title_extra=findings_badge) }}
+                                                        'Affected Artifact Evidence',
+                                                        'Scanner findings linked to immutable Registry artifact digests.',
+                                                        'artifact-registry-cve-findings-loading',
+                                                        'Loading findings',
+                                                        none,
+                                                        title_extra=findings_badge) }}
                             <div class="{{ table_ui.inventory_filter_bar_classes() }}">
                                 {% call registry.filter_form(
                                     'artifact_registry.security_cve_impact',
@@ -138,21 +138,30 @@
                                     aria_label='Filter affected artifact findings'
                                     ) %}
                                     <input type="hidden" name="evidence_tab" value="findings">
-                                    <input type="hidden" name="runtime_page" value="{{ impact.runtime_pagination.page }}">
-                                    <input type="hidden" name="runtime_per_page" value="{{ impact.runtime_pagination.per_page }}">
-                                    <input type="hidden" name="runtime_q" value="{{ impact.filters.runtime_search }}">
-                                    <input type="hidden" name="runtime_match" value="{{ impact.filters.runtime_match }}">
+                                    <input type="hidden"
+                                           name="runtime_page"
+                                           value="{{ impact.runtime_pagination.page }}">
+                                    <input type="hidden"
+                                           name="runtime_per_page"
+                                           value="{{ impact.runtime_pagination.per_page }}">
+                                    <input type="hidden"
+                                           name="runtime_q"
+                                           value="{{ impact.filters.runtime_search }}">
+                                    <input type="hidden"
+                                           name="runtime_match"
+                                           value="{{ impact.filters.runtime_match }}">
                                     <div class="min-w-0 flex-1">
                                         <label for="artifact-registry-cve-finding-search"
                                                class="{{ table_ui.filter_label_classes() }}">Search Findings</label>
                                         {{ table_ui.search_field('finding_q',
-                                                            impact.filters.finding_search,
-                                                            'Search source, repo, digest…',
-                                                            'artifact-registry-cve-finding-search') }}
+                                                                                impact.filters.finding_search,
+                                                                                'Search source, repo, digest…',
+                                                                                'artifact-registry-cve-finding-search') }}
                                     </div>
                                     <label>
                                         <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
-                                        <select name="finding_severity" class="{{ table_ui.filter_select_classes() }}">
+                                        <select name="finding_severity"
+                                                class="{{ table_ui.filter_select_classes() }}">
                                             <option value="">All Severities</option>
                                             {% for severity in ['critical', 'high', 'medium', 'low', 'unknown'] %}
                                                 <option value="{{ severity }}"
@@ -161,23 +170,22 @@
                                         </select>
                                     </label>
                                     {% if impact.filters.finding_search or impact.filters.finding_severity %}
-                                        {{ registry.clear_filters_link(
-                                            'artifact_registry.security_cve_impact',
-                                            'artifact-registry-cve-findings',
-                                            'artifact-registry-cve-findings-loading',
-                                            impact.finding_pagination.per_page,
-                                            table_ui.action_classes() ~ ' h-10 self-end',
-                                            query_params={
-                                            'cve_id': impact.cve_id,
-                                            'evidence_tab': 'findings',
-                                            'runtime_page': impact.runtime_pagination.page,
-                                            'runtime_per_page': impact.runtime_pagination.per_page,
-                                            'runtime_q': impact.filters.runtime_search,
-                                            'runtime_match': impact.filters.runtime_match
-                                            },
-                                            page_param='finding_page',
-                                            per_page_param='finding_per_page',
-                                            lead=false) }}
+                                        {{ registry.clear_filters_link('artifact_registry.security_cve_impact',
+                                                                                'artifact-registry-cve-findings',
+                                                                                'artifact-registry-cve-findings-loading',
+                                                                                impact.finding_pagination.per_page,
+                                                                                table_ui.action_classes() ~ ' h-10 self-end' ,
+                                        query_params={
+                                        'cve_id': impact.cve_id,
+                                        'evidence_tab': 'findings',
+                                        'runtime_page': impact.runtime_pagination.page,
+                                        'runtime_per_page': impact.runtime_pagination.per_page,
+                                        'runtime_q': impact.filters.runtime_search,
+                                        'runtime_match': impact.filters.runtime_match
+                                        },
+                                        page_param='finding_page',
+                                        per_page_param='finding_per_page',
+                                        lead=false) }}
                                     {% endif %}
                                 {% endcall %}
                             </div>
@@ -190,7 +198,8 @@
                                             <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">Package / Version</th>
                                             <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Severity / Fix</th>
                                             <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Scan Evidence</th>
-                                            <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Runtime</th>
+                                            <th scope="col"
+                                                class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Runtime</th>
                                         </tr>
                                     </thead>
                                     <tbody class="{{ table_ui.body_classes() }}">
@@ -240,24 +249,24 @@
                                 </table>
                             </div>
                             {{ registry.footer('artifact_registry.security_cve_impact',
-                                        'artifact-registry-cve-findings',
-                                        'artifact-registry-cve-findings-loading',
-                                        impact.finding_pagination,
-                                        {
-                                        'cve_id': impact.cve_id,
-                                        'evidence_tab': 'findings',
-                                        'runtime_page': impact.runtime_pagination.page,
-                                        'runtime_per_page': impact.runtime_pagination.per_page,
-                                        'runtime_q': impact.filters.runtime_search,
-                                        'runtime_match': impact.filters.runtime_match,
-                                        'finding_q': impact.filters.finding_search,
-                                        'finding_severity': impact.filters.finding_severity
-                                        },
-                                        [5, 10, 25, 50],
-                                        resource_label='Findings',
-                                        control_name='artifact-registry-cve-findings',
-                                        page_param='finding_page',
-                                        per_page_param='finding_per_page') }}
+                                                        'artifact-registry-cve-findings',
+                                                        'artifact-registry-cve-findings-loading',
+                                                        impact.finding_pagination,
+                                                        {
+                                                        'cve_id': impact.cve_id,
+                                                        'evidence_tab': 'findings',
+                                                        'runtime_page': impact.runtime_pagination.page,
+                                                        'runtime_per_page': impact.runtime_pagination.per_page,
+                                                        'runtime_q': impact.filters.runtime_search,
+                                                        'runtime_match': impact.filters.runtime_match,
+                                                        'finding_q': impact.filters.finding_search,
+                                                        'finding_severity': impact.filters.finding_severity
+                                                        },
+                                                        [5, 10, 25, 50],
+                                                        resource_label='Findings',
+                                                        control_name='artifact-registry-cve-findings',
+                                                        page_param='finding_page',
+                                                        per_page_param='finding_per_page') }}
                         </section>
                     {% else %}
                         <section id="artifact-registry-cve-runtime"
@@ -267,12 +276,12 @@
                                 {{ table_label.metadata_label(impact.runtime_pagination.total_items ~ (' Binding' if impact.runtime_pagination.total_items == 1 else ' Bindings') , icon='layout-grid') }}
                             {% endset %}
                             {{ table_ui.inventory_block_header('waypoints',
-                                        'Kubernetes Runtime Exposure',
-                                        'Committed workload bindings correlated to affected artifact digests.',
-                                        'artifact-registry-cve-runtime-loading',
-                                        'Loading bindings',
-                                        none,
-                                        title_extra=runtime_badge) }}
+                                                        'Kubernetes Runtime Exposure',
+                                                        'Committed workload bindings correlated to affected artifact digests.',
+                                                        'artifact-registry-cve-runtime-loading',
+                                                        'Loading bindings',
+                                                        none,
+                                                        title_extra=runtime_badge) }}
                             <div class="{{ table_ui.inventory_filter_bar_classes() }}">
                                 {% call registry.filter_form(
                                     'artifact_registry.security_cve_impact',
@@ -285,17 +294,25 @@
                                     aria_label='Filter Kubernetes runtime bindings'
                                     ) %}
                                     <input type="hidden" name="evidence_tab" value="runtime">
-                                    <input type="hidden" name="finding_page" value="{{ impact.finding_pagination.page }}">
-                                    <input type="hidden" name="finding_per_page" value="{{ impact.finding_pagination.per_page }}">
-                                    <input type="hidden" name="finding_q" value="{{ impact.filters.finding_search }}">
-                                    <input type="hidden" name="finding_severity" value="{{ impact.filters.finding_severity }}">
+                                    <input type="hidden"
+                                           name="finding_page"
+                                           value="{{ impact.finding_pagination.page }}">
+                                    <input type="hidden"
+                                           name="finding_per_page"
+                                           value="{{ impact.finding_pagination.per_page }}">
+                                    <input type="hidden"
+                                           name="finding_q"
+                                           value="{{ impact.filters.finding_search }}">
+                                    <input type="hidden"
+                                           name="finding_severity"
+                                           value="{{ impact.filters.finding_severity }}">
                                     <div class="min-w-0 flex-1">
                                         <label for="artifact-registry-cve-runtime-search"
                                                class="{{ table_ui.filter_label_classes() }}">Search Runtime</label>
                                         {{ table_ui.search_field('runtime_q',
-                                                            impact.filters.runtime_search,
-                                                            'Search cluster, workload, pod…',
-                                                            'artifact-registry-cve-runtime-search') }}
+                                                                                impact.filters.runtime_search,
+                                                                                'Search cluster, workload, pod…',
+                                                                                'artifact-registry-cve-runtime-search') }}
                                     </div>
                                     <label>
                                         <span class="{{ table_ui.filter_label_classes() }}">Correlation</span>
@@ -308,23 +325,22 @@
                                         </select>
                                     </label>
                                     {% if impact.filters.runtime_search or impact.filters.runtime_match %}
-                                        {{ registry.clear_filters_link(
-                                            'artifact_registry.security_cve_impact',
-                                            'artifact-registry-cve-runtime',
-                                            'artifact-registry-cve-runtime-loading',
-                                            impact.runtime_pagination.per_page,
-                                            table_ui.action_classes() ~ ' h-10 self-end',
-                                            query_params={
-                                            'cve_id': impact.cve_id,
-                                            'evidence_tab': 'runtime',
-                                            'finding_page': impact.finding_pagination.page,
-                                            'finding_per_page': impact.finding_pagination.per_page,
-                                            'finding_q': impact.filters.finding_search,
-                                            'finding_severity': impact.filters.finding_severity
-                                            },
-                                            page_param='runtime_page',
-                                            per_page_param='runtime_per_page',
-                                            lead=false) }}
+                                        {{ registry.clear_filters_link('artifact_registry.security_cve_impact',
+                                                                                'artifact-registry-cve-runtime',
+                                                                                'artifact-registry-cve-runtime-loading',
+                                                                                impact.runtime_pagination.per_page,
+                                                                                table_ui.action_classes() ~ ' h-10 self-end' ,
+                                        query_params={
+                                        'cve_id': impact.cve_id,
+                                        'evidence_tab': 'runtime',
+                                        'finding_page': impact.finding_pagination.page,
+                                        'finding_per_page': impact.finding_pagination.per_page,
+                                        'finding_q': impact.filters.finding_search,
+                                        'finding_severity': impact.filters.finding_severity
+                                        },
+                                        page_param='runtime_page',
+                                        per_page_param='runtime_per_page',
+                                        lead=false) }}
                                     {% endif %}
                                 {% endcall %}
                             </div>
@@ -342,7 +358,8 @@
                                             <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[30%]">Workload / Pod</th>
                                             <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Correlation</th>
                                             <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Observed</th>
-                                            <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[14%]">Details</th>
+                                            <th scope="col"
+                                                class="{{ table_ui.header_cell_classes(action=true) }} w-[14%]">Details</th>
                                         </tr>
                                     </thead>
                                     <tbody class="{{ table_ui.body_classes() }}">
@@ -394,24 +411,24 @@
                                 </table>
                             </div>
                             {{ registry.footer('artifact_registry.security_cve_impact',
-                                        'artifact-registry-cve-runtime',
-                                        'artifact-registry-cve-runtime-loading',
-                                        impact.runtime_pagination,
-                                        {
-                                        'cve_id': impact.cve_id,
-                                        'evidence_tab': 'runtime',
-                                        'finding_page': impact.finding_pagination.page,
-                                        'finding_per_page': impact.finding_pagination.per_page,
-                                        'finding_q': impact.filters.finding_search,
-                                        'finding_severity': impact.filters.finding_severity,
-                                        'runtime_q': impact.filters.runtime_search,
-                                        'runtime_match': impact.filters.runtime_match
-                                        },
-                                        [5, 10, 25, 50],
-                                        resource_label='Bindings',
-                                        control_name='artifact-registry-cve-runtime',
-                                        page_param='runtime_page',
-                                        per_page_param='runtime_per_page') }}
+                                                        'artifact-registry-cve-runtime',
+                                                        'artifact-registry-cve-runtime-loading',
+                                                        impact.runtime_pagination,
+                                                        {
+                                                        'cve_id': impact.cve_id,
+                                                        'evidence_tab': 'runtime',
+                                                        'finding_page': impact.finding_pagination.page,
+                                                        'finding_per_page': impact.finding_pagination.per_page,
+                                                        'finding_q': impact.filters.finding_search,
+                                                        'finding_severity': impact.filters.finding_severity,
+                                                        'runtime_q': impact.filters.runtime_search,
+                                                        'runtime_match': impact.filters.runtime_match
+                                                        },
+                                                        [5, 10, 25, 50],
+                                                        resource_label='Bindings',
+                                                        control_name='artifact-registry-cve-runtime',
+                                                        page_param='runtime_page',
+                                                        per_page_param='runtime_per_page') }}
                         </section>
                     {% endif %}
                 </div>
