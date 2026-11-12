@@ -9,6 +9,7 @@ from app import create_app
 from app.bootstrap import presentation as bootstrap_presentation
 from app.extensions import login as login_extension
 from app.extensions import login_manager
+from app.kubernetes.governance import routes as governance_routes
 from app.kubernetes.governance.tls_certificates import routes as tls_routes
 
 
@@ -143,3 +144,96 @@ def test_tls_sync_status_requires_sync_permission_before_cluster_probe(
     monkeypatch.setattr(tls_routes, 'has_registered_clusters', unexpected_cluster_probe)
     response = client.get('/governance/tls-certificates/sync/job-1/status', headers={'HX-Request': 'true'})
     assert response.status_code == 403
+
+
+def _committed_tls_snapshot() -> dict[str, str]:
+    return {
+        'source_label': 'Kubernetes TLS Secrets + Ingresses',
+        'status': 'Complete',
+        'tone': 'normal',
+        'description': 'Worker-generated certificate metadata and declared Ingress host relationships.',
+        'latest_collected': '12 Nov 2026 10:47 WIB',
+        'latest_supporting': 'Worker-generated snapshot',
+        'scope_label': 'All Clusters',
+        'scope_supporting': 'Fleet scope',
+        'coverage_label': '11 TLS Secrets',
+        'coverage_supporting': 'Collected certificate inventory',
+        'coverage_tone': 'normal',
+        'exceptions_label': 'No Exceptions',
+        'exceptions_supporting': 'No issues detected',
+        'exceptions_tone': 'normal',
+    }
+
+
+def test_governance_only_user_cannot_read_or_see_tls_snapshot(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _client_for_user(app, monkeypatch, GovernanceRouteUser({'governance.view'}))
+
+    def unexpected_tls_probe() -> None:
+        raise AssertionError('TLS snapshot read or cluster probe must not run without child permission')
+
+    monkeypatch.setattr(governance_routes, 'has_registered_clusters', unexpected_tls_probe)
+    monkeypatch.setattr(governance_routes, 'get_tls_collection_snapshot', unexpected_tls_probe)
+
+    response = client.get('/governance/')
+    assert response.status_code == 200
+    content = response.get_data(as_text=True)
+    assert 'View Permission Required' in content
+    assert 'TLS Collection Snapshot' not in content
+
+
+def test_governance_authorized_tls_view_reuses_actual_tls_snapshot_partial(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _client_for_user(
+        app,
+        monkeypatch,
+        GovernanceRouteUser({'governance.view', 'tls_certificates.view'}),
+    )
+    calls: list[str] = []
+
+    monkeypatch.setattr(governance_routes, 'has_registered_clusters', lambda: True)
+
+    def read_snapshot() -> dict[str, str]:
+        calls.append('read')
+        return _committed_tls_snapshot()
+
+    monkeypatch.setattr(governance_routes, 'get_tls_collection_snapshot', read_snapshot)
+    response = client.get('/governance/')
+
+    assert response.status_code == 200
+    assert calls == ['read']
+    content = response.get_data(as_text=True)
+    assert content.count('aria-label="TLS Collection Snapshot"') == 1
+    assert 'Kubernetes TLS Secrets + Ingresses' in content
+    assert '11 TLS Secrets' in content
+    assert 'Governance Control Context' not in content
+    assert 'Open TLS Certificates' in content
+
+
+def test_governance_clusterless_does_not_load_tls_snapshot_even_with_permission(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _client_for_user(
+        app,
+        monkeypatch,
+        GovernanceRouteUser({'governance.view', 'tls_certificates.view'}),
+    )
+    monkeypatch.setattr(bootstrap_presentation, 'build_cluster_onboarding_context', _clusterless_context)
+    monkeypatch.setattr(governance_routes, 'has_registered_clusters', lambda: False)
+
+    def unexpected_tls_query() -> None:
+        raise AssertionError('TLS snapshot must not be queried when cluster setup is blocked')
+
+    monkeypatch.setattr(governance_routes, 'get_tls_collection_snapshot', unexpected_tls_query)
+    response = client.get('/governance/')
+
+    assert response.status_code == 200
+    content = response.get_data(as_text=True)
+    assert 'Connect Your First Kubernetes Cluster' in content
+    assert 'TLS Collection Snapshot' not in content
+

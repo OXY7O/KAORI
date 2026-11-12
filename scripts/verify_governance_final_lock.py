@@ -58,7 +58,7 @@ def main() -> int:
 
     for token in (
         "@permission_required('governance.view')",
-        "can_view_tls=current_user.has_permission('tls_certificates.view')",
+        "can_view_tls = current_user.has_permission('tls_certificates.view')",
     ):
         require(
             token in governance_source,
@@ -159,7 +159,7 @@ def main() -> int:
         'Review Kubernetes governance controls, evidence, and ownership.',
         'Governance Capabilities',
         'Implemented governance controls are added as independent capability cards without changing the Overview structure.',
-        '[grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr))]',
+        'sm:grid-cols-2',
         "'title': 'TLS Certificates'",
         "'action': 'Open TLS Certificates' if can_view_tls else 'View Permission Required'",
         'Governance Operating Model',
@@ -169,41 +169,33 @@ def main() -> int:
         'Controlled Handoffs',
         'KAORI applies governance policy and authorization guardrails without cloning the provider control plane.',
         'View Permission Required',
-        'New governance capabilities join this catalog only after implementation and authorization',
-    ):
-        require(token in overview, f'Governance Overview domain-first composition is missing: {token}', errors)
-    for token in (
-        'components/snapshot_context_bar.html',
-        "title='Governance Control Context'",
-        "status='Read-only'",
-        "latest_label='Provider Authority'",
-        "coverage_metric_label='Implemented Capabilities'",
-        "exceptions_metric_label='Execution Handoff'",
-        "coverage_label=table_label.count_text(governance_capabilities|length, 'Capability')|trim",
         'header_badge=capability_badge',
         "info_tip.render('governance-operating-model-guide'",
         "variant='guide'",
         'header_badge=model_guide',
-        "body_classes='p-5'",
         'overflow-hidden rounded-xl border border-outline-subtle',
+        'workspace_card.render(',
+        'compact=true',
+        "kubernetes/governance/tls_certificates/partials/_snapshot_context.html",
+        "{% if can_view_tls and tls_snapshot is not none %}",
     ):
-        require(
-            token in overview,
-            f'Governance Overview domain context and Operations layout is missing: {token}',
-            errors,
-        )
-    context_position = overview.index("title='Governance Control Context'")
+        require(token in overview, f'Governance Overview composition is missing: {token}', errors)
+
+    for token in (
+        'Governance Control Context',
+        '[grid-template-columns:repeat(auto-fit',
+        'components/snapshot_context_bar.html',
+        'get_tls_certificate_page',
+        'tls_payload',
+        'New governance capabilities join this catalog only after implementation',
+    ):
+        require(token not in overview, f'Governance Overview contains retired pattern: {token}', errors)
+
+    context_position = overview.index('partials/_snapshot_context.html')
     scope_position = overview.index("section_intro.render('Governance Scope'")
     require(
         context_position < scope_position,
-        'Governance context must come after the Hero and before Governance Scope.',
-        errors,
-    )
-    require(
-        'get_tls_certificate_page' not in overview
-        and 'tls_payload' not in overview
-        and 'latest_collected=payload.snapshot.latest_collected' not in overview,
-        'Governance domain context must not load child TLS inventory or collection status.',
+        'Authorized TLS snapshot must follow Hero and precede Governance Scope.',
         errors,
     )
     require(
@@ -212,21 +204,26 @@ def main() -> int:
         'Governance Capabilities parent card must not own a TLS-specific action.',
         errors,
     )
-
-    for retired_tls_overview in (
-        'Committed Governance Posture',
-        'TLS Governance Snapshot',
-        'TLS Governance Posture',
-        "title='TLS Collection Snapshot'",
-        'tls_payload',
-        '{% if can_view_tls and tls_payload %}',
-        'TLS View Restricted',
+    for token in (
+        "can_view_tls = current_user.has_permission('tls_certificates.view')",
+        'if can_view_tls and has_registered_clusters() is True:',
+        'tls_snapshot = get_tls_collection_snapshot()',
     ):
         require(
-            retired_tls_overview not in overview,
-            f'Governance Overview must not be TLS-posture centric: {retired_tls_overview}',
+            token in governance_source,
+            f'Governance Overview must guard committed TLS evidence before reading it: {token}',
             errors,
         )
+
+    service = read('app/kubernetes/governance/tls_certificates/service.py')
+    for token in (
+        'def get_tls_collection_snapshot() -> dict[str, Any]:',
+        'check_tls_governance_schema_readiness()',
+        'return _collection_snapshot(',
+        "summary={'total': total}",
+    ):
+        require(token in service, f'TLS snapshot reuse must preserve committed read model: {token}', errors)
+
     require(
         'page_hero.context_card(' in hero,
         'TLS Governance Hero must use the canonical status-oriented context card.',

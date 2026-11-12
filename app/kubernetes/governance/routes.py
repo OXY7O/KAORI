@@ -4,6 +4,8 @@ from flask import Blueprint, render_template
 from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
+from app.kubernetes.cluster.onboarding import has_registered_clusters
+from app.kubernetes.governance.tls_certificates.service import get_tls_collection_snapshot
 from app.kubernetes.governance.tls_certificates.routes import (
     tls_certificates_detail,
     tls_certificates_index,
@@ -21,9 +23,16 @@ governance_bp = Blueprint(
 @governance_bp.route('/', methods=['GET'])
 @permission_required('governance.view')
 def overview():
+    can_view_tls = current_user.has_permission('tls_certificates.view')
+    tls_snapshot = None
+    # Gate TLS evidence behind child authorization and registered-cluster readiness.
+    if can_view_tls and has_registered_clusters() is True:
+        tls_snapshot = get_tls_collection_snapshot()
+
     return render_template(
         'kubernetes/governance/overview/index.html',
-        can_view_tls=current_user.has_permission('tls_certificates.view'),
+        can_view_tls=can_view_tls,
+        tls_snapshot=tls_snapshot,
     )
 
 

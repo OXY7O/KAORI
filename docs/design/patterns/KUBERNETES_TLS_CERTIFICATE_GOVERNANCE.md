@@ -6,53 +6,40 @@ TLS Certificate Governance is a read-oriented registry for certificate validity,
 
 ## Governance Overview landing contract
 
-Kubernetes Governance Overview is the **domain-first** landing page for Kubernetes governance as a whole. TLS Certificates is the first implemented child capability; it does not define the Hero, Hero context, primary posture, or information architecture of the Governance domain. Future implemented governance capabilities join the same catalog without redesigning Overview. Placeholder capability links are prohibited.
+Kubernetes Governance Overview remains **domain-first**: the Hero represents the entire Kubernetes governance domain, not TLS. The catalog lists only implemented, independently authorized governance capabilities; its operating model covers Provider Authority, Policy & Guardrails, Committed Evidence and Controlled Handoffs. The Hero action is **Open Cluster Integrations**. Provider-side Kubernetes operations remain authoritative, while KAORI owns committed evidence and governance context.
 
-`governance.view` authorizes the landing page. `tls_certificates.view` controls only whether the TLS Certificates child capability can be opened. Governance Overview does **not** load TLS certificate inventory, certificate counts, TLS snapshot posture, or other child-capability detail evidence solely to render the domain landing page.
+### 2026-11-12 Human UAT amendment — exact TLS snapshot reuse
 
-The ready-state Hero represents the generic Kubernetes governance boundary: Kubernetes is authoritative for live resource/enforcement state, KAORI owns normalized governance evidence and orchestration, and the canonical Hero action is **Open Cluster Integrations**. Overview itself remains read-only and issues no live Kubernetes request.
+The operator explicitly replaced the previously attempted fabricated **Governance Control Context** with the **existing TLS Collection Snapshot** panel, mounted *unchanged* from `kubernetes/governance/tls_certificates/partials/_snapshot_context.html`. This is an **authorized read-only child-capability evidence preview**, not a TLS-centric root or a new snapshot family. The earlier rule forbidding *any* TLS snapshot on Overview is superseded only for this precise single preview, with the following controls:
 
-Canonical Overview hierarchy (2026-11-12 visual UAT amendment):
+- `governance.view` authorizes the Overview; `tls_certificates.view` must be checked **before** any committed TLS snapshot read and before the TLS snapshot partial renders.
+- The shared cluster setup blocker runs before TLS collection evidence loads. No snapshot (and no misleading zero-valued TLS count) appears on clusterless Overview.
+- The data comes from the same **worker-committed TLS collection projection** used by the child TLS Certificates workspace; the lightweight `get_tls_collection_snapshot()` delegates to the existing `_collection_snapshot()` and never queries live Kubernetes providers or loads registry detail rows.
+- Schema/migration readiness remains authoritative: absent TLS schema is **Upgrade Required**, not a falsely complete snapshot.
+- No snapshot is rendered for an unauthorized viewer. The capability catalog can still identify TLS Certificates as Implemented while its action remains **View Permission Required**.
+- All detailed TLS validity, coverage, registry, rotation actions and per-secret evidence remain owned by the TLS Certificates child workspace; this Overview preview exposes only the same four sanctioned collection-summary fields.
+
+### Approved layout hierarchy
 
 ```text
 Hero — Kubernetes Governance / Overview
-→ Governance Control Context — domain-level presentation only (no TLS snapshot data)
+→ TLS Collection Snapshot — existing shared TLS partial (only if authorized and cluster ready)
 → Governance Scope — shared external Section Intro
-  └── Governance Capabilities — compact catalog + N Capabilities metadata label
-      └── TLS Certificates               # current implemented child capability
+  └── Governance Capabilities — N Capabilities Violet metadata badge
+      └── Two-column compact workspace-card grid (TLS Certificates first)
 → Governance Model — shared external Section Intro
-  └── Governance Operating Model — shared Guide + inset four-tile model
+  └── Governance Operating Model — interactive Guide + inset four-tile model
       ├── Provider Authority
       ├── Policy & Guardrails
       ├── Committed Evidence
       └── Controlled Handoffs
 ```
 
-The narrow post-Hero **Governance Control Context** reuses only the approved
-`snapshot_context_bar` presentation geometry from TLS Collection Snapshot.
-All metric labels are overridden to express truthful domain facts: provider
-authority, domain scope, number of implemented catalog capabilities, and the
-governed execution handoff. Its state is **Read-only**, not collection success,
-snapshot freshness or TLS coverage. The source is the KAORI capability
-definitions; no collection timestamp, TLS Secret count, snapshot exception,
-per-capability evidence, or request-time Kubernetes provider read is allowed.
-It renders only in the ready-state branch, never during cluster setup blocking.
+The catalog follows the approved Operations Overview `workspace_link_card.render(..., compact=true)` geometry for authorized capability links, with an explicit non-clickable restricted fallback. A single implemented capability occupies **one half-width desktop column**, not a stretched full-row catalog item. Additional implemented capabilities fill the second column and later rows. Shared compact cards may optionally specify semantic status tone, action text, and concise boundary-supporting text; defaults for existing Welcome and Operations cards are unaffected. There is no extra catalog footer and the parent section owns no TLS-specific action. The earlier **auto-fitting minimum-width grid** that stretched one TLS card to full width is retired by this human acceptance direction; the current catalog is a fixed, responsive two-column grid with natural one-column mobile reflow.
 
-The existing capability list supplies the count shown both in the compact
-context bar and the catalog's shared Violet metadata badge. Restricted
-capabilities may be identified as implemented, but their action remains
-permission-gated; the count is not an assertion of user authorization.
-The catalog uses the existing auto-fit equal-height grid and compact Violet
-navigation-card proportions, with each capability's own status and action.
-The model's existing four statements appear inside a rounded inset tile grid
-and gain the canonical title-adjacent interactive `Guide`, retaining the
-read-only, provider-authoritative governance boundary.
+The Overview Hero keeps its compact description **Review Kubernetes governance controls, evidence, and ownership.** The Governance Operating Model retains **KAORI applies governance policy and authorization guardrails without cloning the provider control plane.** Its existing Violet Guide explains why Kubernetes retains live authority and KAORI retains normalized committed evidence.
 
-Detailed TLS posture, validity, coverage, collection evidence, and rotation context remain owned by the TLS Certificates capability page.
-
-The Overview Hero uses the compact KAORI description **Review Kubernetes governance controls, evidence, and ownership.** The Governance Operating Model keeps policy copy compact: **KAORI applies governance policy and authorization guardrails without cloning the provider control plane.**
-
-Governance Capabilities is a scalable equal-height catalog. The parent section owns no TLS-specific action. Each implemented capability contributes one self-contained card with identity, status, purpose, boundary, permission state, and its own action. The catalog uses an auto-fitting minimum-width grid so one capability fills the available row, multiple capabilities distribute evenly, and adding another implemented governance capability does not require changing the surrounding Overview composition. Unimplemented capabilities are never rendered as placeholders.
+Governance Capabilities remains a **scalable equal-height catalog** of implemented child capabilities only; no unimplemented placeholder links are allowed. Counts in its metadata badge represent implemented capability definitions, not permissions granted to the current viewer. TLS collection details must not be mixed into that count.
 
 ## Canonical structure
 
