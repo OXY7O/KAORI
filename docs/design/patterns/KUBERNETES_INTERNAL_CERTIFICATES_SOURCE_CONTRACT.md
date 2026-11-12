@@ -32,6 +32,18 @@ A service-account Kubernetes API call **does not** expose kubeadm's full host-lo
 
 Reference: [Kubernetes kubeadm certificate management](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-certs/), [kubeadm check-expiration CLI](https://kubernetes.io/docs/reference/setup-tools/kubeadm/generated/kubeadm_certs/kubeadm_certs_check-expiration/), [kubelet rotation](https://kubernetes.io/docs/tasks/tls/certificate-rotation/).
 
+### Observed local pilot — Docker Desktop (2026-11-12)
+
+The user reports the local test environment is **Docker Desktop Kubernetes** and `sudo kubeadm` on workstation `X300` returned `command not found`. This is a **workstation result**, not a control-plane PKI expiry report. Docker Desktop can provision with **kubeadm** or **kind**; the exact local provisioner has not been confirmed and must not be guessed.
+
+| Docker Desktop mode | Current Internal PKI source decision | Renewal ownership |
+|---|---|---|
+| `kind` | **Unsupported by current kubeadm-only v1 metadata importer**; no host-local PKI source has been qualified. UI stays `Not Collected / Not Verified` | Docker Desktop / kind provider manages its own lifecycle; KAORI does not renew |
+| `kubeadm` | **Conditional, unverified**; kubeadm executable being absent on workstation is expected for a container-managed control plane. Obtain owner-approved source-local metadata evidence before any import | Docker Desktop manages its lifecycle; do not offer KAORI `kubeadm certs renew` |
+| Unknown Docker Desktop provisioning | **Not Verified**; inspect Docker Desktop Kubernetes Settings / Edit cluster first | No mutation action |
+
+Use non-mutating context checks and provider-owned configuration information described in [KUBERNETES_INTERNAL_CERTIFICATES_EVIDENCE_IMPORT.md](KUBERNETES_INTERNAL_CERTIFICATES_EVIDENCE_IMPORT.md). Never attempt to SSH into/exec arbitrary infrastructure containers, extract private keys, or fake `NotAfter` to populate the UI. Per-platform PKI collectors and renewal capabilities require **separate** child workstream/approval under #4442/#4443 and #4445 respectively.
+
 ## 4. Discovery checklist per actual registered cluster
 
 For every `Cluster.id` under its existing access scope, record only owner-confirmed, non-secret facts:
