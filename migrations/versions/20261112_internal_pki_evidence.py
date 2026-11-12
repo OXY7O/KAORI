@@ -27,6 +27,7 @@ def upgrade() -> None:
         sa.Column('source_kind', sa.String(50), nullable=False),
         sa.Column('source_version', sa.String(64), nullable=False),
         sa.Column('operator_reference', sa.String(120), nullable=False),
+        sa.Column('manifest_sha256', sa.String(64), nullable=False),
         sa.Column('coverage_state', sa.String(20), nullable=False),
         sa.Column('collected_at', sa.DateTime(timezone=True), nullable=False),
         sa.Column('imported_at', sa.DateTime(timezone=True), nullable=False),
