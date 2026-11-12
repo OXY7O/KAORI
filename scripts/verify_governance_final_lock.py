@@ -151,8 +151,7 @@ def main() -> int:
         errors,
     )
     require(
-        'Request Renewal' not in internal_page + pki_operations
-        and 'Rotate All' not in internal_page + pki_operations,
+        'Request Renewal' not in internal_page + pki_operations and 'Rotate All' not in internal_page + pki_operations,
         'Internal PKI source readiness must remain non-mutating.',
         errors,
     )
