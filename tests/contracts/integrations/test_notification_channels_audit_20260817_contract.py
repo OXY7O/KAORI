@@ -1220,7 +1220,7 @@ def test_channel_details_drawer_uses_compact_inspection_without_nested_outcome_c
     Environment().parse(drawer)
 
     assert 'data-kaori-channel-details-layout' in drawer
-    assert 'space-y-3' in drawer
+    assert 'flex min-h-full flex-col gap-3' in drawer
     assert drawer.count('side_drawer.section(') == 5
     assert "badge=table_label.status_label(channel.status, channel.tone, size='compact')" in drawer
 
@@ -1252,6 +1252,9 @@ def test_channel_details_drawer_uses_compact_inspection_without_nested_outcome_c
     assert 'channel.retired_by_user_id' in lifecycle
     assert 'channel.retirement_reason' in lifecycle
     assert "table_label.status_label('Archived'" not in lifecycle
+    assert 'data-kaori-channel-archived-boundary' in drawer
+    assert 'Archived channels are read-only; committed evidence remains available.' in drawer
+    assert 'mt-auto flex items-center gap-2 border-t' in drawer
     assert 'channel.report_schedule_names' in lifecycle
 
     assert "channel.lifecycle_state == 'active' and can_manage" in drawer
