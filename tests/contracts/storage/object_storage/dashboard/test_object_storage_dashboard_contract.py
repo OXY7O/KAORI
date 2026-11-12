@@ -236,8 +236,11 @@ def test_capacity_dashboard_matches_kubernetes_forecast_and_top_consumer_pattern
     assert "'Used'" in capacity and "'Free'" in capacity and "'Total'" in capacity
     assert 'grid gap-3 lg:grid-cols-3' in capacity
     assert 'components/progress_bar.html' in capacity
-    assert 'progress_bar.bar(percent,' in capacity
-    assert 'percentage unavailable' in capacity
+    assert 'components/operational_capacity_metric_card.html' in capacity
+    assert 'capacity_metric_card.render(label,' in capacity
+    shared_capacity = read('app/templates/components/operational_capacity_metric_card.html')
+    assert 'progress_bar.bar(percent,' in shared_capacity
+    assert 'percentage unavailable' in shared_capacity
     assert 'Capacity Utilization</h3>' not in capacity
     for token in (
         'components/operational_flow_steps.html',
@@ -940,18 +943,17 @@ def test_object_storage_reporting_and_capacity_labels_keep_compact_readable_hier
     assert 'Evidence Backed' in shared
     assert '{{ evidence_label }}' in shared
 
-    header = capacity.split(
-        '{% for label, value, color, percent, percent_meaning, helper in capacity_metrics %}', 1
-    )[1]
-    header = header.split('{% if percent is not none %}', 1)[0]
-    assert 'class="space-y-1.5"' in header
+    shared_capacity = read('app/templates/components/operational_capacity_metric_card.html')
+    header = shared_capacity.split('<div class="space-y-1.5">', 1)[1].split('{% if percent is not none %}', 1)[0]
     assert 'flex min-w-0 items-center gap-2' in header
-    assert 'block text-right text-xs font-semibold text-content-secondary' in header
+    assert 'block text-right text-xs font-semibold tabular-nums text-content-secondary' in header
     for label in ("'Used Capacity'", "'Free Capacity'", "'Usable Capacity'"):
         assert label in capacity
     assert 'grid gap-3 lg:grid-cols-3' in capacity
-    assert 'progress_bar.bar(percent,' in capacity
-    assert 'percentage unavailable' in capacity
+    assert 'components/operational_capacity_metric_card.html' in capacity
+    assert 'capacity_metric_card.render(label,' in capacity
+    assert 'progress_bar.bar(percent,' in shared_capacity
+    assert 'percentage unavailable' in shared_capacity
     assert 'whitespace-nowrap' not in header
     assert 'truncate' not in header
 
