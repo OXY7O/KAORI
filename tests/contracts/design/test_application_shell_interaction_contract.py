@@ -27,7 +27,11 @@ def test_navbar_uses_named_alpine_component_instead_of_inline_program() -> None:
 def test_desktop_sidebar_toggle_uses_state_aware_panel_icons() -> None:
     navbar = read('app/templates/components/navigation/navbar.html')
     layout = read('app/templates/layouts/app.html')
+    icons = read('app/static/vendor/lucide/lucide.min.js')
     trigger = navbar.split('@click="toggleSidebar()"', 1)[1].split('</button>', 1)[0]
+
+    assert 'PanelRightOpen:' in icons
+    assert 'PanelRightClose:' in icons
 
     assert trigger.count('data-lucide="panel-right-open"') == 1
     assert trigger.count('data-lucide="panel-right-close"') == 1
