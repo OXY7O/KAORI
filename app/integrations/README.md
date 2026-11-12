@@ -286,6 +286,12 @@ Metrics Source and Alertmanager are source-owned mutation workspaces. Their bind
 A saved binding starts in `Validation Required`. Selector changes clear stale binding evidence and return the record to `Validation Required`; only the explicit binding `Validate` action rebuilds consumer-specific evidence. Provider Full Validation is intentionally provider-core only and never revalidates consumer bindings implicitly. Object Storage binding validation additionally persists canonical metric-family, label-schema, and executable-query readiness so Analytics can distinguish contract gaps from current runtime reachability. Kubernetes and Object Storage inventory/lifecycle pages show the relationship read-only and link operators back to the source workspace for mutation.
 
 
+## Notification Channels — title guidance and provider setup (#4492)
+
+Notification Channels distinguishes **contextual Guide labels** from **provider setup workflows**. The Channel Registry header has one title-adjacent Violet Guide explaining committed configuration, validation and provider ownership. Its right-hand actions show the committed posture plus the canonical primary **Add Channel** action; the redundant general Setup Guide button is no longer necessary. Each provider card retains its own **Guide** button opening the real provider-specific native setup dialog, with guided prerequisites and governed configuration steps. The Channel Inventory Guide remains independently scoped to validation and audit evidence.
+
+Delivery Evidence Boundary also has one title-level Guide via the shared operational-section `header_badge` slot. The permanent **Provider Accepted ≠ Recipient Read** warning and independent Activity Audit boundary remain visible outside the Guide: transport acknowledgement does not prove human receipt. These changes do not change provider integration, credentials, automatic eligibility, committed delivery records or recovery policy.
+
 ## Notification Channels — durable delivery recovery (#1431)
 
 New outbound attempts commit their `notification_deliveries` journal row as

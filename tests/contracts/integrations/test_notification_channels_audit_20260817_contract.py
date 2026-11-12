@@ -123,9 +123,11 @@ def test_notification_overview_uses_one_card_below_shared_section_intro() -> Non
     assert 'sm:grid-cols-[minmax(0,1fr)_minmax(0,11rem)_auto]' in snapshot
     assert '{% if payload.overview.recent %}' in snapshot
     assert "table_ui.title_cell(delivery.event_label, delivery.channel_name, 'bell-ring')" in snapshot
-    shared_title_cell = read('app/templates/components/table_primitives.html').split(
-        '{% macro title_cell(', 1
-    )[1].split('{%- endmacro %}', 1)[0]
+    shared_title_cell = (
+        read('app/templates/components/table_primitives.html')
+        .split('{% macro title_cell(', 1)[1]
+        .split('{%- endmacro %}', 1)[0]
+    )
     assert 'title="{{ name }}"' in shared_title_cell
     assert 'title="{{ supporting_text }}"' in shared_title_cell
     assert 'delivery.created_at|user_datetime("Unknown time")' in snapshot
@@ -213,7 +215,7 @@ def test_notification_setup_summaries_and_ownership_remain_concise() -> None:
     assert 'Encrypt Telegram bot tokens as channel secrets' in providers
     assert 'STARTTLS, TLS/SMTPS, or an explicitly trusted relay policy.' in providers
     assert 'The Workflow trigger configured for Anyone authentication' in providers
-    assert ("'ownership': 'Consumers emit governed events; Notification Channels delivers.'") in service
+    assert "'ownership': 'Consumers emit; KAORI delivers.'" in service
 
 
 def test_notification_tab_macro_namespace_cannot_be_shadowed_by_local_assignment() -> None:
@@ -1111,12 +1113,8 @@ def test_review6_provider_guide_summaries_keep_security_coverage_and_copy_densit
 def test_recent_delivery_preview_uses_canonical_icon_and_subtle_info_footer() -> None:
     page = read('app/templates/integrations/delivery/notification_channels/index.html')
     service = read('app/integrations/delivery/notification_channels/service.py')
-    overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split(
-        "{% elif active_tab == 'channels' %}", 1
-    )[0]
-    preview = overview.split('aria-label="Recent committed delivery attempts"', 1)[1].split(
-        '{% else %}', 1
-    )[0]
+    overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split("{% elif active_tab == 'channels' %}", 1)[0]
+    preview = overview.split('aria-label="Recent committed delivery attempts"', 1)[1].split('{% else %}', 1)[0]
     footer = overview.split('Showing up to 5 committed records.', 1)[0].rsplit(
         '<div class="flex flex-wrap items-center justify-between', 1
     )[1]
@@ -1135,32 +1133,82 @@ def test_recent_delivery_preview_uses_canonical_icon_and_subtle_info_footer() ->
     assert 'Provider acceptance does not prove human receipt.' in overview
     assert 'whitespace-nowrap' not in preview
 
+
 def test_notification_delivery_overview_guide_and_compact_ownership_preserve_authority() -> None:
     page = read('app/templates/integrations/delivery/notification_channels/index.html')
     service = read('app/integrations/delivery/notification_channels/service.py')
     shared = read('app/templates/integrations/components/_workspace.html')
     Environment().parse(page)
 
-    overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split(
-        "{% elif active_tab == 'channels' %}", 1
-    )[0]
+    overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split("{% elif active_tab == 'channels' %}", 1)[0]
     section = page.split('{% macro notification_section(', 1)[1].split('{%- endmacro %}', 1)[0]
 
     assert '{% import "components/info_tip.html" as info_tip %}' in page
-    assert "title_extra=none" in section
-    assert "title_extra=title_extra" in section
-    assert "title_extra=delivery_overview_guide" in overview
+    assert 'title_extra=none' in section
+    assert 'title_extra=title_extra' in section
+    assert 'title_extra=delivery_overview_guide' in overview
     assert overview.count("info_tip.render('notification-delivery-overview-guide'") == 1
     assert "variant='guide'" in overview
     assert "placement='right'" in overview
-    assert "title_extra" in shared
-    assert "Read committed notification delivery posture, not live provider health." in overview
-    assert "Outcome totals cover all-time committed attempts" in overview
-    assert "provider acceptance, not confirmation" in overview
-    assert "Consumers own event meaning, destinations and delivery policy" in overview
+    assert 'title_extra' in shared
+    assert 'Read committed notification delivery posture, not live provider health.' in overview
+    assert 'Outcome totals cover all-time committed attempts' in overview
+    assert 'provider acceptance, not confirmation' in overview
+    assert 'Consumers own event meaning, destinations and delivery policy' in overview
     assert "('Ownership', payload.delivery_contract.ownership, 'waypoints')" in overview
     assert "'ownership': 'Consumers emit; KAORI delivers.'" in service
     assert len('Consumers emit; KAORI delivers.') <= 36
     assert "notification_section('Delivery Governance'" not in overview
-    assert "payload.delivery_contract.retry" in overview
-    assert "payload.delivery_contract.deduplication" in overview
+    assert 'payload.delivery_contract.retry' in overview
+    assert 'payload.delivery_contract.deduplication' in overview
+
+
+def test_channel_registry_guide_and_primary_action_follow_shared_kaori_contract() -> None:
+    source = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    modal = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+    shared = read('app/templates/components/action_button.html')
+    Environment().parse(source)
+    header = source.split('<header', 1)[1].split('</header>', 1)[0]
+
+    assert '{% import "components/action_button.html" as action_button %}' in source
+    assert header.count("info_tip.render('notification-channel-registry-guide'") == 1
+    assert header.index('>Channel Registry</h2>') < header.index(
+        "info_tip.render('notification-channel-registry-guide'"
+    )
+    assert "variant='guide'" in header
+    assert "placement='right'" in header
+    assert 'configured totals count saved channel instances' in header
+    assert 'Test Delivery' in header
+    assert 'table_label.status_label(payload.posture.label, payload.posture.tone' in header
+    assert "action_button.classes('primary')" in header
+    assert 'data-dialog-target="notification-channel-config-dialog"' in header
+    assert '@click="provider = ' in header
+    assert 'Setup Guide' not in header
+    assert 'data-dialog-target="notification-channel-guide-dialog"' not in header
+    assert "inline-flex h-10" in shared
+    assert "hover:bg-kaori-primary-hover active:bg-kaori-primary-dark" in shared
+    assert 'aria-label="Open {{ provider.label }} setup guide"' in source
+    assert 'data-dialog-target="notification-channel-guide-dialog"' in source
+    assert 'id="notification-channel-guide-dialog"' in modal
+    assert "table_label.metadata_label('Guided Setup', icon='book-open-check')" in modal
+
+
+def test_delivery_evidence_boundary_guide_retains_persistent_delivery_truth() -> None:
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    shared = read('app/templates/components/operational_section_card.html')
+    Environment().parse(page)
+    delivery = page.split("{% elif active_tab == 'delivery' %}", 1)[1]
+
+    assert delivery.count("info_tip.render('notification-delivery-evidence-boundary-guide'") == 1
+    assert "variant='guide'" in delivery
+    assert "placement='right'" in delivery
+    assert 'header_badge=delivery_evidence_boundary_guide' in delivery
+    assert delivery.index('delivery_evidence_boundary_guide') < delivery.index(
+        '{% call operational_section_card.render('
+    )
+    assert '{% if header_badge %}{{ header_badge }}{% endif %}' in shared
+    assert 'Provider Accepted ≠ Recipient Read' in delivery
+    assert 'not receipt or readership by a person.' in delivery
+    assert 'Independent Activity Audit' in delivery
+    assert 'sending a notification does not create an audit event.' in delivery
+    assert 'Hot delivery records and verified Data Lifecycle archive bundles' in delivery

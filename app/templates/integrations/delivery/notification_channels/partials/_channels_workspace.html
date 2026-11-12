@@ -5,6 +5,7 @@
 {% import "components/table.html" as table_block %}
 {% import "components/section_intro.html" as section_intro %}
 {% import "components/info_tip.html" as info_tip %}
+{% import "components/action_button.html" as action_button %}
 {% import "components/destructive_confirmation_modal.html" as destructive_confirmation_modal %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% macro channel_return_fields() -%}
@@ -39,28 +40,33 @@
                         <i data-lucide="send" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0">
-                        <h2 class="text-base font-semibold leading-6 text-content-primary">Channel Registry</h2>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="text-base font-semibold leading-6 text-content-primary">Channel Registry</h2>
+                            {{ info_tip.render('notification-channel-registry-guide',
+                                                    'Channel Registry',
+                                                    'Configure reusable notification destinations under committed KAORI governance.',
+                                                    items=[
+                                                    'Provider cards describe supported adapters; configured totals count saved channel instances, not live reachability.',
+                                                    'Open a provider-specific Guide for setup requirements; Configure or Add Channel opens the governed configuration workflow.',
+                                                    'A destination requires successful Test Delivery and eligible channel state before automatic delivery.',
+                                                    'Consumers select eligible channels; KAORI owns credentials, delivery policy enforcement and committed evidence.'
+                                                    ],
+                                                    placement='right',
+                                                    variant='guide') }}
+                        </div>
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">Configure reusable destinations, validate delivery, and control which KAORI capabilities may use each channel.</p>
                     </div>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 {{ table_label.status_label(payload.posture.label, payload.posture.tone, size='compact') }}
-                <button type="button"
-                        @click="guideProvider = provider || 'telegram'"
-                        data-kaori-dialog-open
-                        data-dialog-target="notification-channel-guide-dialog"
-                        class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary shadow-sm transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                    <i data-lucide="book-open" class="h-3.5 w-3.5"></i>
-                    Setup Guide
-                </button>
                 {% if can_manage %}
                     <button type="button"
                             @click="provider = ''"
                             data-kaori-dialog-open
                             data-dialog-target="notification-channel-config-dialog"
-                            class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                        <i data-lucide="plus" class="h-3.5 w-3.5"></i>
+                            class="{{ action_button.classes('primary') }}">
+                        <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
                         Add Channel
                     </button>
                 {% endif %}

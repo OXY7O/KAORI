@@ -86,16 +86,16 @@
             {% if active_tab == 'overview' %}
                 {% set delivery_overview_guide %}
                     {{ info_tip.render('notification-delivery-overview-guide',
-                                            'Delivery Overview',
-                                            'Read committed notification delivery posture, not live provider health.',
-                                            items=[
-                                            'Active and archived channels reflect committed lifecycle state; eligible channels are enabled and successfully tested.',
-                                            'Outcome totals cover all-time committed attempts; Recent Delivery previews only the latest five.',
-                                            'Delivered means provider acceptance, not confirmation that a person received or read the message.',
-                                            'Consumers own event meaning, destinations and delivery policy; KAORI governs channels, transport, retries and delivery evidence.'
-                                            ],
-                                            placement='right',
-                                            variant='guide') }}
+                                        'Delivery Overview',
+                                        'Read committed notification delivery posture, not live provider health.',
+                                        items=[
+                                        'Active and archived channels reflect committed lifecycle state; eligible channels are enabled and successfully tested.',
+                                        'Outcome totals cover all-time committed attempts; Recent Delivery previews only the latest five.',
+                                        'Delivered means provider acceptance, not confirmation that a person received or read the message.',
+                                        'Consumers own event meaning, destinations and delivery policy; KAORI governs channels, transport, retries and delivery evidence.'
+                                        ],
+                                        placement='right',
+                                        variant='guide') }}
                 {% endset %}
                 {% call notification_section(
                     'Delivery Overview',
@@ -282,10 +282,24 @@
             {% elif active_tab == 'channels' %}
                 {% include 'integrations/delivery/notification_channels/partials/_channels_workspace.html' %}
             {% elif active_tab == 'delivery' %}
+                {% set delivery_evidence_boundary_guide %}
+                    {{ info_tip.render('notification-delivery-evidence-boundary-guide',
+                                        'Delivery Evidence Boundary',
+                                        'Distinguish transport acceptance from recipient receipt and separate audit evidence.',
+                                        items=[
+                                        'Provider acceptance proves transport acknowledgement, not that a person received or read the message.',
+                                        'Notification Delivery Journal records committed attempts, provider results, retries and deduplication.',
+                                        'Activity Audit records governed actions separately; notification delivery alone does not create an audit event.',
+                                        'Hot delivery records and verified Data Lifecycle archive bundles have distinct evidence scopes.'
+                                        ],
+                                        placement='right',
+                                        variant='guide') }}
+                {% endset %}
                 {% call operational_section_card.render(
                     'Delivery Evidence Boundary',
                     'Interpret outbound notification outcomes against their authoritative evidence.',
                     'shield-check',
+                    header_badge=delivery_evidence_boundary_guide,
                     body_classes='p-5') %}
                     {{ integration_ui.interpretation_panel('Provider Accepted ≠ Recipient Read',
                                         'A provider acknowledgement confirms transport acceptance only—not receipt or readership by a person.',
