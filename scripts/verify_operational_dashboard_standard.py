@@ -427,9 +427,11 @@ def _verify_artifact_registry_dashboard(
             'Data Scope:</span> committed inventory for footprint',
             'bg-kaori-soft p-3 text-xs leading-5 text-content-secondary',
             'grid gap-3 lg:grid-cols-3',
-            'progress_bar.bar(item.progress_percent,',
+            'components/operational_capacity_metric_card.html',
+            'capacity_metric_card.render(item.label,',
+            'item.progress_percent',
             'item.progress_label',
-            'percentage not applicable',
+            "missing_label='Inventory' if item.progress_label == 'Inventory' else 'No Quota'",
             'Refresh evidence; verify headroom',
             'Registry project quota balance chart',
             'overview.capacity.metrics[1].progress_percent',
@@ -442,6 +444,38 @@ def _verify_artifact_registry_dashboard(
     )
     if "operational_callout.render('Data Scope'" in registry_capacity_snapshot:
         raise AssertionError('Registry Capacity must use the compact Kubernetes Data Scope strip')
+    capacity_metric_card = _read(
+        ROOT / 'app' / 'templates' / 'components' / 'operational_capacity_metric_card.html'
+    )
+    _require(
+        capacity_metric_card,
+        (
+            'components/progress_bar.html',
+            'rounded-lg border border-outline-subtle bg-surface-elevated p-4',
+            'min-w-0 break-words text-sm font-semibold text-content-primary',
+            'block text-right text-xs font-semibold tabular-nums',
+            'percent is not none',
+            'progress_bar.bar(percent,',
+            'percentage unavailable',
+            '{{ value }}',
+            '{{ description }}',
+        ),
+        'shared Capacity metric card with known/missing evidence and accessible percentage',
+    )
+    for owner, capacity_source in (
+        ('Kubernetes', _read(KUBERNETES_CAPACITY)),
+        ('Object Storage', _read(OBJECT_CAPACITY)),
+        ('Artifact Registry', registry_capacity_snapshot),
+    ):
+        _require(
+            capacity_source,
+            (
+                'components/operational_capacity_metric_card.html',
+                'capacity_metric_card.render(',
+                'grid gap-3 lg:grid-cols-3',
+            ),
+            owner + ' shared Capacity Snapshot presentation ownership',
+        )
     _require(
         presentation,
         (
