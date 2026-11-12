@@ -444,9 +444,7 @@ def _verify_artifact_registry_dashboard(
     )
     if "operational_callout.render('Data Scope'" in registry_capacity_snapshot:
         raise AssertionError('Registry Capacity must use the compact Kubernetes Data Scope strip')
-    capacity_metric_card = _read(
-        ROOT / 'app' / 'templates' / 'components' / 'operational_capacity_metric_card.html'
-    )
+    capacity_metric_card = _read(ROOT / 'app' / 'templates' / 'components' / 'operational_capacity_metric_card.html')
     _require(
         capacity_metric_card,
         (
