@@ -315,6 +315,14 @@ and the redacted evidence batch ID. Never attach raw kubeadm stdout or keys.
 
 ## 4. Read-only UI and expected states
 
+The approved Internal Certificates layout is **above-Hero capability tabs → Hero →
+PKI Evidence Boundaries card**, followed by the separate source/certificate
+registry sections. Do **not** render a standalone `Source Readiness`
+heading/description directly beneath Hero; relevant explanation belongs to
+the existing card/Guide. The current UI reads committed KAORI data only.
+
+
+
 After a successful import and refresh:
 - `Kubernetes → Governance → Internal Certificates` shows the committed **Internal Certificate Registry** with default 5/page, cluster/node/component, kind, issuer, source-reported `NotAfter`, externally managed flag, evidence reference/collection time, status and source coverage.
 - The status is one of **Expired**, **Critical Window** (within 7 days), **Renewal Window** (within 30 days), **Outside Window**, or **Stale Evidence** (metadata older than 30 days). These are **display classifications of operator-reported expiry**, not verified active health. Expiry windows are provisional display thresholds pending policy approval, not automation triggers.
