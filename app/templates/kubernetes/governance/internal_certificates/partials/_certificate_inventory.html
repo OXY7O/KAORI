@@ -12,27 +12,29 @@
             </p>
         </div>
     {% elif inventory %}
-        <section id="internal-pki-certificate-registry" class="{{ table_ui.block_classes() }}">
+        <section id="internal-pki-certificate-registry"
+                 class="{{ table_ui.block_classes() }}">
+            {% set certificate_clear_query = evidence_query.copy() %}
+            {% set _ = certificate_clear_query.update({
+                'evidence_tab': 'certificates',
+                'cert_search': '',
+                'cert_kind': '',
+                'cert_expiry': '',
+                'cert_coverage': '',
+                'cert_freshness': ''
+            }) %}
             {% set certificate_clear_action %}
-                    {% if inventory.search or inventory.filters.kind or inventory.filters.expiry or inventory.filters.coverage or inventory.filters.freshness %}
-                        {{ registry_ui.clear_filters_link('governance.internal_certificates',
-                            'internal-pki-evidence-workspace',
-                            'internal-pki-certificate-loading',
-                            inventory.pagination.per_page,
-                            table_ui.action_classes(),
-                            query_params={
-                            'evidence_tab': 'certificates',
-                            'cluster_id': inventory.cluster_id,
-                            'search': payload.search,
-                            'environment': payload.filters.environment,
-                            'platform': payload.filters.platform,
-                            'page': payload.pagination.page,
-                            'per_page': payload.pagination.per_page
-                            },
-                            page_param='cert_page',
-                            per_page_param='cert_per_page',
-                            lead=false) }}
-                    {% endif %}
+                {% if inventory.search or inventory.filters.kind or inventory.filters.expiry or inventory.filters.coverage or inventory.filters.freshness %}
+                    {{ registry_ui.clear_filters_link('governance.internal_certificates',
+                        'internal-pki-evidence-workspace',
+                        'internal-pki-certificate-loading',
+                        inventory.pagination.per_page,
+                        table_ui.action_classes(),
+                        query_params=certificate_clear_query,
+                        page_param='cert_page',
+                        per_page_param='cert_per_page',
+                        lead=false) }}
+                {% endif %}
             {% endset %}
             {% set certificate_badge = table_label.metadata_label(table_label.count_text(inventory.total, 'Certificate'), icon='file-badge') %}
             {{ table_ui.inventory_block_header('file-badge',
@@ -55,10 +57,14 @@
                     aria_label='Filter committed internal certificate evidence') %}
                     <input type="hidden" name="evidence_tab" value="certificates">
                     <input type="hidden" name="search" value="{{ payload.search }}">
-                    <input type="hidden" name="environment" value="{{ payload.filters.environment }}">
+                    <input type="hidden"
+                           name="environment"
+                           value="{{ payload.filters.environment }}">
                     <input type="hidden" name="platform" value="{{ payload.filters.platform }}">
                     <input type="hidden" name="page" value="{{ payload.pagination.page }}">
-                    <input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">
+                    <input type="hidden"
+                           name="per_page"
+                           value="{{ payload.pagination.per_page }}">
                     <label class="min-w-0 flex-1 text-xs font-semibold text-content-secondary"
                            for="internal-pki-certificate-search">
                         Search Certificate Evidence
@@ -80,7 +86,8 @@
                                 name="cert_kind"
                                 class="{{ table_ui.filter_select_classes() }}">
                             <option value="">All Types</option>
-                            <option value="leaf" {% if inventory.filters.kind == 'leaf' %}selected{% endif %}>Leaf</option>
+                            <option value="leaf"
+                                    {% if inventory.filters.kind == 'leaf' %}selected{% endif %}>Leaf</option>
                             <option value="ca" {% if inventory.filters.kind == 'ca' %}selected{% endif %}>CA</option>
                         </select>
                     </div>
@@ -97,7 +104,7 @@
                                 ('critical_window', 'Critical Window'),
                                 ('expired', 'Expired'),
                                 ('not_yet_valid', 'Not Yet Valid')
-                            ] %}
+                                ] %}
                                 <option value="{{ value }}"
                                         {% if inventory.filters.expiry == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
@@ -110,8 +117,10 @@
                                 name="cert_coverage"
                                 class="{{ table_ui.filter_select_classes() }}">
                             <option value="">All Coverage</option>
-                            <option value="partial" {% if inventory.filters.coverage == 'partial' %}selected{% endif %}>Partial</option>
-                            <option value="complete" {% if inventory.filters.coverage == 'complete' %}selected{% endif %}>Complete</option>
+                            <option value="partial"
+                                    {% if inventory.filters.coverage == 'partial' %}selected{% endif %}>Partial</option>
+                            <option value="complete"
+                                    {% if inventory.filters.coverage == 'complete' %}selected{% endif %}>Complete</option>
                         </select>
                     </div>
                     <div class="min-w-0 sm:w-36">
@@ -121,8 +130,10 @@
                                 name="cert_freshness"
                                 class="{{ table_ui.filter_select_classes() }}">
                             <option value="">All Freshness</option>
-                            <option value="recent" {% if inventory.filters.freshness == 'recent' %}selected{% endif %}>Recently Collected</option>
-                            <option value="stale" {% if inventory.filters.freshness == 'stale' %}selected{% endif %}>Stale Evidence</option>
+                            <option value="recent"
+                                    {% if inventory.filters.freshness == 'recent' %}selected{% endif %}>Recently Collected</option>
+                            <option value="stale"
+                                    {% if inventory.filters.freshness == 'stale' %}selected{% endif %}>Stale Evidence</option>
                         </select>
                     </div>
 
@@ -187,7 +198,8 @@
                                     <p class="font-medium text-content-primary">Operator Attested</p>
                                     <p class="mt-1 text-xs text-content-muted">{{ certificate.source_version }} · {{ certificate.coverage|title }} coverage</p>
                                     <p class="mt-1 text-xs text-content-muted">Collected {{ certificate.collected_at|user_date("Unknown") }}</p>
-                                    <p class="mt-1 break-all font-mono text-xs text-content-muted" title="{{ certificate.reference }}">Ref: {{ certificate.reference }}</p>
+                                    <p class="mt-1 break-all font-mono text-xs text-content-muted"
+                                       title="{{ certificate.reference }}">Ref: {{ certificate.reference }}</p>
                                 </td>
                             </tr>
                         {% else %}
