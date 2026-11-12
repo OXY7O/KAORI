@@ -136,7 +136,7 @@ def main() -> int:
         "active_tab == 'sources'",
         'registry_ui.clear_filters_action(',
         'header_actions=source_clear_action',
-        'url_for(\'governance.internal_certificates\', **source_clear_query)',
+        "url_for('governance.internal_certificates', **source_clear_query)",
         'table_ui.cluster_identity(record.name, record.environment)',
         'aria-label="View PKI Evidence for {{ record.name }}"',
         'name="environment"',
