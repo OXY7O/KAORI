@@ -115,19 +115,20 @@ def enrich_internal_pki_source_states(payload: dict[str, Any]) -> None:
     ids = [record['id'] for record in payload['records']]
     if not ids:
         return
-    source_rows = (
-        InternalPKIEvidenceBatch.query.filter(InternalPKIEvidenceBatch.cluster_id.in_(ids))
-        .order_by(InternalPKIEvidenceBatch.collected_at.desc())
-        .all()
-    )
-    latest = {}
-    for batch in source_rows:
-        latest.setdefault(batch.cluster_id, batch)
+    source_rows = db.session.execute(
+        select(
+            InternalPKIEvidenceBatch.cluster_id,
+            func.max(InternalPKIEvidenceBatch.collected_at),
+        )
+        .where(InternalPKIEvidenceBatch.cluster_id.in_(ids))
+        .group_by(InternalPKIEvidenceBatch.cluster_id)
+    ).all()
+    latest = {cluster_id: timestamp for cluster_id, timestamp in source_rows}
     for record in payload['records']:
-        batch = latest.get(record['id'])
-        if batch is None:
+        collected_at = latest.get(record['id'])
+        if collected_at is None:
             continue
-        stale = datetime.now(UTC) - _aware(batch.collected_at) > timedelta(days=30)
+        stale = datetime.now(UTC) - _aware(collected_at) > timedelta(days=30)
         record['collection_status'] = 'Stale Evidence' if stale else 'Operator Attested'
         record['collection_tone'] = 'warning' if stale else 'info'
         record['authority_status'] = 'Operator Supplied'
