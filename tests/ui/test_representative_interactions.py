@@ -248,7 +248,7 @@ def test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewp
         expect(access_card).to_contain_text(re.compile(r'identity providers', re.I))
         expect(access_card).to_contain_text('directory-projected external identities')
 
-        # UAT-WEL-001: compact desktop card copy must fit naturally without clipping.
+        # Operator-reviewed Welcome card copy must fit naturally without clipping.
         if viewport_name in {'large-desktop', 'laptop'}:
             for title, card in (
                 ('Secrets & PKI', secrets_card),
