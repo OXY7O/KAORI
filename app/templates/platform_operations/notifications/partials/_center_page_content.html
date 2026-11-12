@@ -5,6 +5,7 @@
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "platform_operations/notifications/components/_activity_center_items.html" as center_item %}
 {% set active_jobs = activity_center.get('active_jobs', []) %}
 {% set history_items = activity_center.get('history_items', []) %}
@@ -24,8 +25,22 @@
      hx-history="false">
     <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
         <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-                <h2 class="text-base font-semibold text-content-primary">Personal Operations Inbox</h2>
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-base font-semibold text-content-primary">Personal Operations Inbox</h2>
+                    {{ info_tip.render(
+                    'notification-center-personal-inbox-guide',
+                    'Personal Operations Inbox',
+                    'This workspace combines persisted account notifications and read-only active work.',
+                    [
+                    'Notifications are account-scoped committed outcomes; transient toasts are not inbox records.',
+                    'Active Work mirrors canonical Jobs & Executions state without initiating jobs.',
+                    'Activity Audit exposes separate permissioned, Notification-backed system-wide evidence.'
+                    ],
+                    placement='right',
+                    variant='guide'
+                    ) }}
+                </div>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Persistent account outcomes and canonical active work in one synchronized surface.</p>
             </div>
             <div class="flex flex-wrap gap-2 text-xs font-semibold text-content-muted">
@@ -120,7 +135,7 @@
                                    class="h-4 w-4 text-kaori-primary dark:text-kaori-accent"></i>
                                 <p class="text-xs font-semibold">Delivery Boundary</p>
                             </div>
-                            <p class="mt-2 text-xs leading-5 text-content-muted">Only persisted outcomes appear here. Transient toasts remain outside Data Lifecycle.</p>
+                            <p class="mt-2 text-xs leading-5 text-content-muted">Transient toasts remain outside Data Lifecycle.</p>
                         </div>
                         <div class="bg-surface-card p-4">
                             <div class="flex items-center gap-2 text-content-primary">
@@ -128,7 +143,7 @@
                                    class="h-4 w-4 text-kaori-primary dark:text-kaori-accent"></i>
                                 <p class="text-xs font-semibold">Administrative Evidence</p>
                             </div>
-                            <p class="mt-2 text-xs leading-5 text-content-muted">Activity Audit remains the system-wide evidence view for authorized administrators.</p>
+                            <p class="mt-2 text-xs leading-5 text-content-muted">Activity Audit shows authorized system-wide evidence.</p>
                         </div>
                     </div>
                 </section>
@@ -146,7 +161,21 @@
                             <div class="flex min-w-0 items-start gap-3">
                                 <span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="list-filter" class="h-5 w-5"></i></span>
                                 <div class="min-w-0">
-                                    <h3 class="{{ table_ui.block_title_classes() }}">Notification Register</h3>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="{{ table_ui.block_title_classes() }}">Notification Register</h3>
+                                        {{ info_tip.render(
+                                        'notification-center-register-guide',
+                                        'Notification Register',
+                                        'Search and filter persisted notifications for the current account.',
+                                        [
+                                        'Category, Status, State, and text filters apply to account-scoped outcomes.',
+                                        'The register defaults to five rows per page and retains filters during pagination.',
+                                        'Mark Read changes notification read state, not source outcomes or audit evidence.'
+                                        ],
+                                        placement='right',
+                                        variant='guide'
+                                        ) }}
+                                    </div>
                                     <p class="{{ table_ui.block_description_classes() }}">Filter persistent account outcomes by category, status, state, or text.</p>
                                 </div>
                             </div>
