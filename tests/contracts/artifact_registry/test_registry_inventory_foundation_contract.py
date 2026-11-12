@@ -390,6 +390,49 @@ def test_registry_detail_modals_reuse_kubernetes_compact_header_and_short_sectio
     assert "'label': artifact.provider_name" in artifact
 
 
+def test_registry_nested_provider_metadata_reuses_kubernetes_pretty_json_pattern() -> None:
+    import html
+    import json
+    import re
+
+    from jinja2 import Environment, FileSystemLoader
+
+    from app.common.presentation import pretty_structured_json
+
+    templates = ROOT / 'app/templates'
+    artifact = (templates / 'artifact_registry/partials/_inventory_artifact_detail.html').read_text()
+    node = (templates / 'kubernetes/inventory/nodes/partials/_node_detail_content.html').read_text()
+    metadata_source = (templates / 'components/technical_metadata_collection.html').read_text()
+    assert "metadata_collection.render('Provider Metadata'" in artifact
+    assert "metadata_collection.render('Node Labels'" in node
+    assert 'value|pretty_structured_json' in metadata_source
+    assert 'data-kaori-inventory-json-value' in metadata_source
+
+    env = Environment(loader=FileSystemLoader(str(templates)), autoescape=True)
+    env.filters['pretty_structured_json'] = pretty_structured_json
+    render = env.get_template('components/technical_metadata_collection.html').module.render
+
+    extra_attrs = {
+        'architecture': 'amd64',
+        'author': '',
+        'config': {'Cmd': ['redis-server'], 'Entrypoint': ['docker-entrypoint.sh']},
+        'ExposedPorts': {'6379/tcp': {}},
+        'html': '<script>alert(1)</script>',
+    }
+    evidence = {'manifest_media_type': 'application/vnd.oci.image.manifest.v1+json', 'extra_attrs': extra_attrs}
+    output = str(render('Provider Metadata', evidence, embedded=True))
+    assert output.count('data-kaori-inventory-json-value') == 1
+    assert '<script>' not in output
+    assert '&lt;script&gt;' in output
+    match = re.search(r'<pre[^>]*data-kaori-inventory-json-value[^>]*>(.*?)</pre>', output, re.DOTALL)
+    assert match is not None
+    assert json.loads(html.unescape(match.group(1))) == extra_attrs
+    assert 'manifest_media_type' in output
+    assert 'application/vnd.oci.image.manifest.v1+json' in output
+    assert 'whitespace-pre-wrap break-words' in output
+    assert 'data-kaori-copy-' not in output
+
+
 def test_registry_compact_catalog_cards_preserve_actions_and_counts() -> None:
     from jinja2 import Environment, FileSystemLoader
 
