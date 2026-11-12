@@ -59,9 +59,15 @@ misusing its object-count contract. The **N Workspaces** count reflects only
 the currently authorized ConfigMaps/Secrets entry points, not inventory
 objects, available provider targets, or permission to mutate.
 
-The Execution Model's small **Info** badge uses the existing
-`table_label.metadata_label` and describes the informational nature of the
-three-step explanation; it is not a readiness or audit-success status.
+The Execution Model uses the **existing interactive title-level Guide** from
+`components/info_tip.html`, passed through the owning section card's
+`header_badge` slot. Its popover explains target selection, permission/preflight
+validation, and provider-authoritative execution with KAORI audit evidence.
+The trigger is a real button with an information icon, the visible **Guide**
+label, keyboard focus and hover/click support, and a shared non-modal tooltip.
+It is not a static `Info` metadata status and does not claim readiness or
+audit success. Required workflow/authority guidance remains visible outside
+the tooltip; the controller already portals its popover to avoid card clipping.
 Existing operation-flow boundaries, missing-cluster blocker, Kubernetes
 provider authority, committed evidence, link permissions, and concise
 step descriptions are preserved. No live Kubernetes read is introduced into

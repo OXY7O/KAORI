@@ -3,6 +3,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_section_card.html" as section_card %}
 {% import "components/section_intro.html" as section_intro %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/workspace_link_card.html" as workspace_card %}
 {% import "components/operation_evidence_boundary.html" as evidence_boundary %}
 {% import "components/operational_callout.html" as operational_callout %}
@@ -63,10 +64,10 @@
         {{ evidence_boundary.render() }}
         <section class="space-y-4" aria-labelledby="operations-capabilities-heading">
             {{ section_intro.render('Operational Capabilities',
-                            'Open the Kubernetes operation workspaces available to your role.',
-                            'operations-capabilities-heading') }}
+                        'Open the Kubernetes operation workspaces available to your role.',
+                        'operations-capabilities-heading') }}
             {% set capability_badge %}
-                {{ table_label.metadata_label(available_capabilities ~ (' Workspace' if available_capabilities == 1 else ' Workspaces'), icon='layout-grid') }}
+                {{ table_label.metadata_label(available_capabilities ~ (' Workspace' if available_capabilities == 1 else ' Workspaces') , icon='layout-grid') }}
             {% endset %}
             {% call section_card.render(
                 'Operation Workspace Catalog',
@@ -104,16 +105,25 @@
         </section>
         <section class="space-y-4" aria-labelledby="operations-execution-heading">
             {{ section_intro.render('Execution Governance',
-                            'Review the required target validation and audit sequence.',
-                            'operations-execution-heading') }}
-            {% set evidence_info_badge %}
-                {{ table_label.metadata_label('Info', icon='info') }}
+                        'Review the required target validation and audit sequence.',
+                        'operations-execution-heading') }}
+            {% set execution_guide %}
+                {{ info_tip.render('operations-execution-evidence-guide',
+                                'Execution & Evidence Model Guide',
+                                'Each operation remains owned by its authorized Kubernetes workflow; this overview does not execute changes.',
+                                items=[
+                                'Select and verify a live Kubernetes target inside the authorized capability workspace.',
+                                'Enforce permission checks and operation-specific validation before attempting mutation.',
+                                'Kubernetes executes the operation; KAORI retains the resulting audit evidence.'
+                                ],
+                                placement='right',
+                                variant='guide') }}
             {% endset %}
             {% call section_card.render(
                 'Execution & Evidence Model',
                 'The overview is a navigation surface, not a live inventory or a provider control plane.',
                 'shield-check',
-                header_badge=evidence_info_badge,
+                header_badge=execution_guide,
                 body_classes='p-5'
                 ) %}
                 <div class="grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle md:grid-cols-3">

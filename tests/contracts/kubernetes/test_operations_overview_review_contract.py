@@ -53,8 +53,13 @@ def test_operations_overview_follows_inventory_section_hierarchy_with_metadata_b
     assert 'table_label.metadata_label(' in catalog
     assert 'header_badge=capability_badge' in page
     assert "available_capabilities ~ (' Workspace' if available_capabilities == 1 else ' Workspaces')" in page
-    assert "table_label.metadata_label('Info', icon='info')" in page
-    assert 'header_badge=evidence_info_badge' in page
+    assert 'components/info_tip.html' in page
+    assert "info_tip.render('operations-execution-evidence-guide'" in page
+    assert "'Execution & Evidence Model Guide'" in page
+    assert "variant='guide'" in page
+    assert "placement='right'" in page
+    assert "table_label.metadata_label('Info', icon='info')" not in page
+    assert 'header_badge=execution_guide' in page
 
     for heading, section_id in (
         ('Operational Capabilities', 'operations-capabilities-heading'),
@@ -76,7 +81,7 @@ def test_operations_cards_opt_into_compact_navigation_without_changing_defaults(
     assert 'macro render(workspace, compact=false)' in shared
     assert 'min-h-40' in shared
     assert 'min-h-56' in shared
-    assert "set body_classes = 'mt-4 min-w-0 flex-1'" in shared
+    assert 'set body_classes = "mt-4 min-w-0 flex-1"' in shared
     assert 'workspace.href' in shared
     assert 'workspace.search_text' in shared
     assert 'workspace.scope' in shared
@@ -89,6 +94,23 @@ def test_operations_cards_opt_into_compact_navigation_without_changing_defaults(
     assert "url_for('kubernetes_operations.secret_management')" in page
     assert '{% if can_configmaps %}' in page
     assert '{% if can_secrets %}' in page
+
+
+def test_execution_evidence_guide_uses_shared_hover_focus_accessible_popover() -> None:
+    overview = read('app/templates/kubernetes/operations/overview.html')
+    guide = read('app/templates/components/info_tip.html')
+
+    assert "info_tip.render('operations-execution-evidence-guide'" in overview
+    assert "'Select and verify a live Kubernetes target inside the authorized capability workspace.'" in overview
+    assert "'Enforce permission checks and operation-specific validation before attempting mutation.'" in overview
+    assert "'Kubernetes executes the operation; KAORI retains the resulting audit evidence.'" in overview
+    assert "variant='guide'" in overview
+    assert 'data-kaori-info-tip-variant=' in guide
+    assert 'data-kaori-info-tip-trigger' in guide
+    assert 'data-kaori-info-tip-preview' in guide
+    assert 'aria-expanded="false"' in guide
+    assert 'role="tooltip"' in guide
+    assert '<span>Guide</span>' in guide
 
 
 def test_both_delete_pages_use_shared_governed_confirmation() -> None:
