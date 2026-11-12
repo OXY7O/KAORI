@@ -568,7 +568,9 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
     assert filtered.status_code == 200
     filtered_html = filtered.get_data(as_text=True)
     assert 'Clear Filters' in filtered_html
-    assert filtered_html.index('data-kaori-clear-filters') < filtered_html.index('id="internal-pki-certificate-filter"')
+    assert filtered_html.index('data-kaori-clear-filters') < filtered_html.index(
+        'id="internal-pki-certificate-filter"'
+    )
     assert 'data-lucide="file-badge"' in filtered_html
     assert 'data-lucide="calendar-clock"' in filtered_html
     cluster_scope = client.get(
