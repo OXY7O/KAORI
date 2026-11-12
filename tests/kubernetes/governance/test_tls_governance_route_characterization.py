@@ -6,6 +6,7 @@ import pytest
 from flask_login import UserMixin
 
 from app import create_app
+from app.common.workspace_navigation import build_capability_navigation
 from app.bootstrap import presentation as bootstrap_presentation
 from app.extensions import login as login_extension
 from app.extensions import login_manager
@@ -471,3 +472,57 @@ def test_internal_pki_schema_not_ready_never_queries_certificate_rows(
     response = client.get('/governance/internal-certificates')
     assert response.status_code == 200
     assert 'Inventory Schema Upgrade Required' in response.get_data(as_text=True)
+
+
+def test_governance_above_hero_tabs_are_role_aware_and_preserve_cluster_context(app) -> None:
+    authorized = GovernanceRouteUser(
+        {'governance.view', 'clusters.view', 'tls_certificates.view', 'internal_certificates.view'}
+    )
+    with app.test_request_context('/governance/internal-certificates?cluster_id=cluster-01'):
+        navigation = build_capability_navigation(
+            'governance.internal_certificates',
+            authorized,
+            {'cluster_id': 'cluster-01'},
+        )
+        assert navigation is not None
+        assert navigation['active_key'] == 'internal_certificates'
+        assert [tab[1] for tab in navigation['tabs']] == [
+            'Overview',
+            'TLS Certificates',
+            'Internal Certificates',
+        ]
+        assert all('cluster_id=cluster-01' in tab[4] for tab in navigation['tabs'])
+
+        restricted = GovernanceRouteUser({'governance.view', 'tls_certificates.view'})
+        restricted_navigation = build_capability_navigation('governance.overview', restricted)
+        assert restricted_navigation is not None
+        assert [tab[1] for tab in restricted_navigation['tabs']] == ['Overview', 'TLS Certificates']
+
+        only_parent = GovernanceRouteUser({'governance.view'})
+        assert build_capability_navigation('governance.overview', only_parent) is None
+
+
+def test_governance_internal_pki_registered_cluster_links_preserve_inventory_scope(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _client_for_user(
+        app,
+        monkeypatch,
+        GovernanceRouteUser({'governance.view', 'clusters.view', 'internal_certificates.view'}),
+    )
+    monkeypatch.setattr(internal_pki_routes, 'has_registered_clusters', lambda: True)
+    monkeypatch.setattr(internal_pki_routes, 'get_internal_certificates_source_page', lambda _args: _internal_pki_source_page())
+    monkeypatch.setattr(
+        internal_pki_routes,
+        'check_internal_pki_schema_readiness',
+        lambda: SimpleNamespace(ready=False),
+    )
+    response = client.get('/governance/internal-certificates')
+    assert response.status_code == 200
+    content = response.get_data(as_text=True)
+    assert 'View PKI Evidence' in content
+    assert 'cluster_id=cluster-01' in content
+    assert 'Internal Certificate Registry' not in content
+    assert 'Inventory Schema Upgrade Required' in content
+
