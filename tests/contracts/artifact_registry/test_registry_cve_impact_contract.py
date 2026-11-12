@@ -82,6 +82,51 @@ def test_cve_impact_view_is_permissioned_and_uses_existing_registry_navigation()
     assert "url_for('artifact_registry.runtime', artifact_id=row.artifact_id)" in page
 
 
+def test_cve_impact_uses_shared_balanced_hero_and_short_snapshot_scope() -> None:
+    from app.common.navigation import build_navigation_breadcrumb
+
+    page = read('app/templates/artifact_registry/security_cve_impact.html')
+    Environment().parse(page)
+    hero = page.split('page_hero.shell_classes()', 1)[1].split(
+        'snapshot_context_bar.render(', 1
+    )[0]
+
+    assert 'page_hero.layout_classes()' in hero
+    assert 'page_hero.content_classes()' in hero
+    assert "page_hero.context_card('Committed CVE correlation'" in hero
+    assert 'impact.correlation.status' in hero
+    assert 'impact.correlation.tone' in hero
+    assert "'Affected Digests', impact.affected_artifacts" in hero
+    assert "'Runtime Bindings', impact.binding_count" in hero
+    assert "'Back to Vulnerabilities'" in hero
+    assert "url_for('artifact_registry.security', q=impact.cve_id)" in hero
+    assert "action_icon='arrow-left'" in hero
+    assert 'table_ui.action_classes()' not in hero
+
+    assert "scope_label='Registry × Kubernetes'" in page
+    assert "scope_supporting='Committed evidence'" in page
+    assert "coverage_supporting='Latest usable scans'" in page
+    assert "' source' if impact.source_count == 1 else ' sources'" in page
+    assert "' digest' if impact.affected_artifacts == 1 else ' digests'" in page
+    assert "'Not Qualified' if not impact.evidence_ready else 'Current'" in page
+    assert page.count('class="{{ table_ui.block_classes() }}"') == 2
+    assert page.count("table_ui.table_classes('min-w-[60rem]')") == 2
+    assert "page_param='finding_page'" in page
+    assert "page_param='runtime_page'" in page
+    assert 'Impact completeness is not verified' in page
+    assert 'Workload names are not canonical application or Team identities.' in page
+
+    assert build_navigation_breadcrumb('artifact_registry.security_cve_impact')[-1][
+        'label'
+    ] == 'CVE Impact'
+    assert build_navigation_breadcrumb('artifact_registry.security_overview')[-1][
+        'label'
+    ] == 'Security Overview'
+    assert build_navigation_breadcrumb('artifact_registry.security_supply_chain')[-1][
+        'label'
+    ] == 'Supply Chain'
+
+
 def test_cve_impact_footer_renders_required_path_identity_for_rows_and_pages() -> None:
     """Regression: #2606, a required cve_id previously caused HTTP 500."""
     app = Flask(__name__, template_folder=str(ROOT / 'app/templates'))
