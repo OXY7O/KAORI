@@ -84,10 +84,7 @@ def test_capsule_rbac_actions_emit_canonical_feedback_in_both_request_modes() ->
     toast = read('app/templates/components/operational_toast.html')
 
     flask_imports = [
-        item
-        for node in tree.body
-        if isinstance(node, ast.ImportFrom) and node.module == 'flask'
-        for item in node.names
+        item for node in tree.body if isinstance(node, ast.ImportFrom) and node.module == 'flask' for item in node.names
     ]
     assert not any(item.name == 'flash' for item in flask_imports)
     assert 'flash(' not in source

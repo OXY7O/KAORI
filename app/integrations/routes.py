@@ -374,11 +374,7 @@ def _capsule_rbac_feedback_response(
             )
         )
     feedback_status = (
-        'success'
-        if provider_status == 'ready'
-        else 'warning'
-        if provider_status == 'missing'
-        else 'error'
+        'success' if provider_status == 'ready' else 'warning' if provider_status == 'missing' else 'error'
     )
     destination = url_for('integrations.kubernetes_detail', cluster_id=cluster_id) + '#validation'
     is_htmx = is_htmx_request()
