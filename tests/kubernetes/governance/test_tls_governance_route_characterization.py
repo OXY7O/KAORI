@@ -610,7 +610,7 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
     assert 'Clear Cluster Scope' not in cleared_html
     assert 'All Coverage' in cleared_html
     assert 'name="cert_coverage"' in cleared_html
-    assert 'hx-disable' not in cleared_html or 'data-kaori-clear-filters' not in cleared_html
+    assert 'data-kaori-clear-filters' not in cleared_html
 
     # Even if an HTMX request re-injects stale form fields, clear intent wins.
     stale = client.get(
