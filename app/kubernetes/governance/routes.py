@@ -5,13 +5,13 @@ from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
 from app.kubernetes.cluster.onboarding import has_registered_clusters
-from app.kubernetes.governance.tls_certificates.service import get_tls_collection_snapshot
 from app.kubernetes.governance.tls_certificates.routes import (
     tls_certificates_detail,
     tls_certificates_index,
     tls_certificates_sync,
     tls_certificates_sync_status,
 )
+from app.kubernetes.governance.tls_certificates.service import get_tls_collection_snapshot
 
 governance_bp = Blueprint(
     'governance',
