@@ -10,16 +10,17 @@
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% call detail.workspace_header(
-            'Provider provenance, visibility, repository coverage, and committed collection context.',
-            'folder-kanban'
+            'Project visibility and provenance from the committed snapshot.',
+            'folder-kanban',
+            context_items=[{'label': project.provider_name, 'icon': 'boxes'}],
+            compact=true
             ) %}
             {% call detail.header_identity_row() %}
-                {{ detail.inventory_title(project.name) }}
-                {{ table_label.metadata_label(project.provider_name, 'boxes') }}
+                {{ detail.inventory_title(project.name, compact=true) }}
                 {{ table_label.status_indicator_label(project.visibility.label,
                                 project.visibility.tone,
                                 project.visibility.icon,
-                                'detail') }}
+                                size='detail') }}
             {% endcall %}
         {% endcall %}
         {{ detail.inspector_summary_strip([
@@ -36,7 +37,7 @@
                     project.visibility.label,
                     'status',
                     project.visibility.tone,
-                    description='Provider-neutral project identity and visibility.'
+                    description='Project identity and visibility.'
                     ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_technical_row('Project Name', project.name, class_name='lg:col-span-2') }}
@@ -49,7 +50,7 @@
                     'Registry Source',
                     'boxes',
                     project.provider_label,
-                    description='Registry integration and environment that supplied this committed project record.'
+                    description='Provider and environment.'
                     ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Source', project.provider_name, class_name='lg:col-span-2') }}
@@ -63,7 +64,7 @@
                     'Repository Coverage',
                     'package-open',
                     project.repository_count ~ (' Repository' if project.repository_count == 1 else ' Repositories'),
-                    description='Repositories retained under this project in the current committed Registry inventory.'
+                    description='Repositories in this snapshot.'
                     ) %}
                     {% if project.repository_preview %}
                         <div class="overflow-x-auto">
@@ -117,7 +118,7 @@
                     project.snapshot.label,
                     'status',
                     project.snapshot.tone,
-                    description='Committed snapshot freshness and evidence boundary.'
+                    description='Snapshot freshness and scope.'
                     ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_status_row('Snapshot State', project.snapshot.label, project.snapshot.tone) }}
