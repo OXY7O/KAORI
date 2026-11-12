@@ -220,6 +220,10 @@ def main(argv: list[str] | None = None) -> int:
                 raise UnverifiedZapReport('ZAP report changed during read')
         if len(raw) > MAX_REPORT_BYTES:
             raise UnverifiedZapReport('Report exceeds bounded input size')
+        # A short read with unchanged descriptor metadata is not a complete
+        # scan report. Do not publish a valid-looking JSON prefix as evidence.
+        if len(raw) != opened_stat.st_size:
+            raise UnverifiedZapReport('Incomplete ZAP report read')
         payload = json.loads(
             raw.decode('utf-8'),
             object_pairs_hook=_unique_keys,
