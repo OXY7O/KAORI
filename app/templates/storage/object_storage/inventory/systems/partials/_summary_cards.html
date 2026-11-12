@@ -1,15 +1,29 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/resource_posture_grid.html" as posture_grid %}
+{% import "components/info_tip.html" as info_tip %}
 {% set metrics = [
     ('server', 'Systems in Scope', inventory.total_systems, 'Systems matching active filters.', 'brand'),
     ('circle-check', 'Ready Systems', inventory.ready_systems, 'Provider-ready inventory systems.', 'normal' if inventory.total_systems and inventory.ready_systems == inventory.total_systems else ('unknown' if inventory.total_systems == 0 else 'warning')),
     ('database-backup', 'Inventoried Systems', inventory.inventoried_systems, 'Systems with committed snapshots.', 'normal' if inventory.total_systems and inventory.inventoried_systems == inventory.total_systems else ('unknown' if inventory.total_systems == 0 else 'warning')),
     ('triangle-alert', 'Blocked Systems', inventory.blocked_systems, 'Provider conditions require review.', 'critical' if inventory.blocked_systems else ('unknown' if inventory.total_systems == 0 else 'normal'))
 ] %}
+{% set posture_guide %}
+    {{ info_tip.render('object-storage-systems-posture-guide',
+        'System Inventory Posture Guide',
+        'These readings describe provider readiness and committed inventory coverage for systems in the active scope.',
+        items=[
+            'Ready Systems reflects provider readiness, not a live storage health check.',
+            'Inventoried Systems counts systems with committed inventory snapshots.',
+            'Blocked Systems identifies provider conditions requiring operator review.'
+        ],
+        placement='right',
+        variant='guide') }}
+{% endset %}
 {% call operational_section_card.render(
     'System Inventory Posture',
     'Provider readiness and committed inventory coverage for the active Object Storage Systems scope.',
     'server',
+    header_badge=posture_guide,
     body_classes='p-0'
     ) %}
     {{ posture_grid.render(metrics, columns=4) }}
