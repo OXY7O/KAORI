@@ -10,7 +10,7 @@
     ('triangle-alert', 'Critical Window', operational.critical_window if assessed else unknown, 'Source-reported expiry within 7 days.', 'critical' if assessed and operational.critical_window else ('info' if assessed else 'unknown')),
     ('circle-x', 'Expired', operational.expired if assessed else unknown, 'Source-reported NotAfter is in the past.', 'critical' if assessed and operational.expired else ('info' if assessed else 'unknown')),
     ('clock-alert', 'Stale Evidence', operational.stale if assessed else unknown, 'Committed source evidence older than 30 days.', 'warning' if assessed and operational.stale else ('info' if assessed else 'unknown')),
-    ('shield-alert', 'Partial Evidence', operational.partial_evidence if assessed else unknown, 'Records from a source with declared partial coverage; not full-cluster proof.', 'warning' if assessed and operational.partial_evidence else ('info' if assessed else 'unknown'))
+    ('shield-alert', 'Partial Evidence', operational.partial_evidence if assessed else unknown, 'Partial source coverage; full-cluster status unverified.', 'warning' if assessed and operational.partial_evidence else ('info' if assessed else 'unknown'))
 ] %}
 {% set posture_badge %}
     {{ table_label.metadata_label(metrics|length ~ ' Indicators', icon='layout-grid') }}
