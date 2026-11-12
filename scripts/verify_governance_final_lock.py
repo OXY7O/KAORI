@@ -90,6 +90,7 @@ def main() -> int:
         'app/templates/kubernetes/governance/internal_certificates/partials/_collection_operations.html'
     )
     pki_posture = read('app/templates/kubernetes/governance/internal_certificates/partials/_posture.html')
+    pki_inventory = read('app/templates/kubernetes/governance/internal_certificates/partials/_certificate_inventory.html')
     access_defaults = read('app/definitions/catalogs/access/rbac/access.yaml')
     governance_overview = read('app/templates/kubernetes/governance/overview/index.html')
     for guard in (
@@ -131,6 +132,10 @@ def main() -> int:
         'workspace_tabs.render_query_tabs(evidence_tabs',
         'hx-select="#internal-pki-evidence-workspace"',
         "active_tab == 'sources'",
+        "registry_ui.clear_filters_link('governance.internal_certificates'",
+        'name="environment"',
+        'name="platform"',
+        'table_ui.table_classes',
     ):
         require(item in internal_page, f'Internal PKI workspace is missing: {item}', errors)
     require(
@@ -144,6 +149,15 @@ def main() -> int:
         require(item in pki_operations, f'Internal PKI collection operations is missing: {item}', errors)
     for item in ('Source-Reported Certificate Posture', 'components/resource_posture_grid.html'):
         require(item in pki_posture, f'Internal PKI posture is missing: {item}', errors)
+    for item in (
+        "registry_ui.clear_filters_link('governance.internal_certificates'",
+        'name="cert_kind"',
+        'name="cert_expiry"',
+        'name="cert_coverage"',
+        'name="cert_freshness"',
+        'table_ui.table_classes',
+    ):
+        require(item in pki_inventory, f'Internal PKI certificate filter contract missing: {item}', errors)
     require(
         'hx-post' not in pki_operations and '<form' not in pki_operations,
         'Internal PKI Sync must not expose a mutation route while collection is unavailable.',
