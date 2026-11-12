@@ -15,8 +15,10 @@
         'Committed quota, protection, exposure, and optional usage evidence for bucket and container assets.',
         'database',
         header_badge=fleet_badge,
-        body_classes='p-0'
+        body_classes='p-5'
         ) %}
-        {{ posture_grid.render(overview.fleet_posture_metrics, columns=4) }}
+        <div class="overflow-hidden rounded-xl border border-outline-subtle">
+            {{ posture_grid.render(overview.fleet_posture_metrics, columns=4, compact=true) }}
+        </div>
     {% endcall %}
 </section>
