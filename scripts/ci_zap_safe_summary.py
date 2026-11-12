@@ -186,9 +186,12 @@ def main(argv: list[str] | None = None) -> int:
         # Open without following symlinks or blocking on a FIFO swapped in
         # after the initial path check. Validate the opened descriptor, not
         # only the pathname (which may change between stat and open).
-        flags = os.O_RDONLY | os.O_NONBLOCK
-        if hasattr(os, 'O_NOFOLLOW'):
-            flags |= os.O_NOFOLLOW
+        # Do not silently follow a swapped symlink on platforms without
+        # descriptor-level no-follow support. A pathname precheck alone races.
+        nofollow = getattr(os, 'O_NOFOLLOW', None)
+        if nofollow is None:
+            raise UnverifiedZapReport('No safe no-follow input open available')
+        flags = os.O_RDONLY | os.O_NONBLOCK | nofollow
         descriptor = os.open(args.input, flags)
         try:
             stream = os.fdopen(descriptor, 'rb')
