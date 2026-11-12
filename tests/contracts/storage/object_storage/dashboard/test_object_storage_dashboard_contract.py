@@ -952,7 +952,6 @@ def test_object_storage_reporting_and_capacity_labels_keep_compact_readable_hier
     assert 'grid gap-3 lg:grid-cols-3' in capacity
     assert 'components/operational_capacity_metric_card.html' in capacity
     assert 'capacity_metric_card.render(label,' in capacity
-    shared_capacity = read('app/templates/components/operational_capacity_metric_card.html')
     assert 'progress_bar.bar(percent,' in shared_capacity
     assert 'percentage unavailable' in shared_capacity
     assert 'whitespace-nowrap' not in header
