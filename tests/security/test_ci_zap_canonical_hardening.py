@@ -628,3 +628,26 @@ def test_bounded_finite_json_float_in_ignored_field_remains_compatible(tmp_path)
     report.write_text('{"site":[{"alerts":[]}],"ignored":1.25e2}', encoding='utf-8')
     assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 0
     assert 'Scanned site entries: **1**.' in output.read_text(encoding='utf-8')
+
+
+def test_report_path_replaced_after_read_fails_closed(tmp_path, monkeypatch, capsys):
+    report = tmp_path / 'zap.json'
+    report.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
+    output = tmp_path / 'summary.md'
+    output.write_text('stale evidence', encoding='utf-8')
+    replacement = tmp_path / 'new-zap.json'
+    replacement.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
+    original_render = zap.render_summary
+
+    def replace_report_path(payload, source_sha):
+        summary = original_render(payload, source_sha)
+        report.rename(tmp_path / 'old-zap.json')
+        replacement.rename(report)
+        return summary
+
+    monkeypatch.setattr(zap, 'render_summary', replace_report_path)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not output.exists()
+    assert (tmp_path / 'old-zap.json').exists()
+    assert report.exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
