@@ -98,7 +98,7 @@ def test_governance_overview_reuses_authorized_tls_snapshot_and_operations_compa
     assert 'get_tls_certificate_page' not in overview
     assert 'tls_payload' not in overview
     assert 'workspace.status_tone|default(none)' in shared_card
-    assert "workspace.action_label|default('Open Workspace')" in shared_card
+    assert "workspace.action_label|default('Open Workspace', true)" in shared_card
 
     assert 'Governance Overview landing contract' in standard
     assert 'domain-first' in standard
