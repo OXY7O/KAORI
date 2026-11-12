@@ -1,5 +1,6 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% set governance_sync_state = governance_sync_state if governance_sync_state is defined else governance.sync_state %}
 <div id="artifact-registry-governance-sync-live-state"
      class="min-w-0"
@@ -18,6 +19,15 @@
                 <h3 id="artifact-registry-governance-operations-heading"
                     class="text-sm font-semibold text-content-primary">Governance Evidence Operations</h3>
                 {{ table_label.status_label(governance_sync_state.label, governance_sync_state.tone, none, 'detail') }}
+                {{ info_tip.render('registry-governance-operations-guide',
+                                'Governance Evidence Operations Guide',
+                                'How to interpret committed Registry policy evidence and Governance Sync.',
+                                items=[
+                                'Governance displays committed provider-observed policies, retention, immutability, and replication; this view cannot change provider configuration.',
+                                'Inputs Changed means Registry inventory changed since the latest Governance Sync. Rerun Governance Sync to refresh committed evidence.',
+                                'Missing, stale, partial, unavailable, or superseded evidence requires review; absence is not proof of policy compliance.',
+                                'Sync Governance uses the registered JobExecution workflow. Configure Sync manages its schedule.'
+                                ], placement='right', variant='guide') }}
             </div>
             <p class="mt-1 text-xs leading-5 text-content-muted">{{ governance_sync_state.helper }}</p>
             <p class="mt-1 text-xs leading-5 text-content-muted">Read-only · provider retention, immutability, and replication remain externally authoritative.</p>

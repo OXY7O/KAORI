@@ -141,6 +141,32 @@ def test_tls_snapshot_copy_posture_badge_and_search_follow_shared_inventory_patt
     assert 'Search Secret name, namespace, subject, or issuer' not in filters
 
 
+def test_tls_inventory_operations_guide_reuses_canonical_info_tip_without_changing_sync_actions() -> None:
+    live_state = read('app/templates/kubernetes/governance/tls_certificates/partials/_sync_live_state.html')
+    panel = read('app/templates/kubernetes/governance/tls_certificates/partials/_sync_panel.html')
+    guide_component = read('app/templates/components/info_tip.html')
+
+    assert 'components/info_tip.html' in live_state
+    assert "info_tip.render('tls-inventory-operations-guide'" in live_state
+    assert "'TLS Inventory Operations Guide'" in live_state
+    assert "variant='guide'" in live_state
+    assert "placement='right'" in live_state
+    assert live_state.index("table_label.status_label(payload.sync_state.label") < live_state.index(
+        "info_tip.render('tls-inventory-operations-guide'"
+    )
+    assert 'does not renew or rotate certificates' in live_state
+    assert 'Configure Sync manages the existing automatic synchronization schedule.' in live_state
+    assert 'Bulk Rotation opens a separate permission-controlled workflow' in live_state
+    assert 'does not prove active client trust' in live_state
+    assert 'data-kaori-info-tip-trigger' in guide_component
+    assert 'aria-expanded="false"' in guide_component
+    assert "kubernetes/governance/tls_certificates/partials/_sync_live_state.html" in panel
+    assert "url_for('governance.tls_certificates_sync')" in panel
+    assert "url_for('jobs.configuration', job_key='governance.tls_certificates.sync')" in panel
+    assert "url_for('kubernetes_operations.tls_secret_bulk_rotation')" in panel
+
+
+
 def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace() -> None:
     routes = read('app/kubernetes/governance/routes.py')
     child = read('app/kubernetes/governance/internal_certificates/routes.py')

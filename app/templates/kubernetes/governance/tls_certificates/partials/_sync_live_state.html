@@ -1,5 +1,6 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 <div id="tls-sync-live-state"
      class="min-w-0"
      {% if payload.sync_state.is_active and payload.sync_state.active_job_public_id %} hx-get="{{ url_for('governance.tls_certificates_sync_status', public_id=payload.sync_state.active_job_public_id, cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, page=payload.filters.page|default(1) , per_page=payload.filters.per_page|default(5)) }}" hx-trigger="every 1s" hx-target="this" hx-swap="outerHTML swap:0ms settle:0ms" hx-indicator="#tls-sync-panel-poll-indicator" hx-sync="this:replace" {% endif %}>
@@ -17,6 +18,17 @@
                 <h3 id="tls-inventory-operations-heading"
                     class="text-sm font-semibold text-content-primary">TLS Inventory Operations</h3>
                 {{ table_label.status_label(payload.sync_state.label, payload.sync_state.tone, none, 'detail') }}
+                {{ info_tip.render('tls-inventory-operations-guide',
+                    'TLS Inventory Operations Guide',
+                    'Sync TLS collects TLS Secret and Ingress mapping evidence; it does not renew or rotate certificates.',
+                    items=[
+                    'Sync TLS refreshes committed evidence through the authorized background worker.',
+                    'Configure Sync manages the existing automatic synchronization schedule.',
+                    'Bulk Rotation opens a separate permission-controlled workflow; no rotation is triggered by Sync TLS.',
+                    'Collected expiry and host mapping evidence does not prove active client trust.'
+                    ],
+                    placement='right',
+                    variant='guide') }}
             </div>
             <p class="mt-1 text-xs leading-5 text-content-muted">
                 {{ payload.sync_state.progress_message or payload.sync_state.helper }}
