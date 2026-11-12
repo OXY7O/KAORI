@@ -176,8 +176,8 @@ def main() -> int:
         'overflow-hidden rounded-xl border border-outline-subtle',
         'workspace_card.render(',
         'compact=true',
-        "kubernetes/governance/tls_certificates/partials/_snapshot_context.html",
-        "{% if can_view_tls and tls_snapshot is not none %}",
+        'kubernetes/governance/tls_certificates/partials/_snapshot_context.html',
+        '{% if can_view_tls and tls_snapshot is not none %}',
     ):
         require(token in overview, f'Governance Overview composition is missing: {token}', errors)
 
