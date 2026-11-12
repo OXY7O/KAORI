@@ -590,3 +590,22 @@ def test_output_parent_replaced_by_regular_directory_during_parse_fails_closed(t
     assert not list(parent.glob('.zap-summary-*.tmp'))
     assert not (tmp_path / 'previous-evidence' / 'summary.md').exists()
     assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+@pytest.mark.parametrize('number', ['9' * 1000, '-' + '9' * 1000])
+def test_oversized_integer_in_ignored_json_field_fails_closed(tmp_path, capsys, number):
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text('{"site":[{"alerts":[]}],"ignored":' + number + '}', encoding='utf-8')
+    output.write_text('stale verified evidence', encoding='utf-8')
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not output.exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_normal_json_integer_remains_supported(tmp_path):
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text('{"site":[{"alerts":[{"riskcode":3,"instances":[]}]}]}', encoding='utf-8')
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 0
+    assert '| High | 1 |' in output.read_text(encoding='utf-8')
