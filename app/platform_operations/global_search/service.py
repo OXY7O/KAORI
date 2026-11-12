@@ -140,6 +140,38 @@ NAVIGATION_ENTRIES: tuple[NavigationEntry, ...] = (
     ),
     NavigationEntry('Rule Catalog', 'Intelligence', 'intelligence.catalog', 'list-checks', 'intelligence.view'),
     NavigationEntry('Reports', 'Generated and scheduled reports', 'reports.overview', 'file-bar-chart', 'reports.view'),
+    NavigationEntry(
+        'Notification Center',
+        'Personal Operations Inbox and active work',
+        'notifications.center',
+        'bell',
+        None,
+        ('notifications', 'personal inbox', 'active work'),
+    ),
+    NavigationEntry(
+        'CVE Impact',
+        'Artifact Registry security findings and runtime impact',
+        'artifact_registry.security_cve_impact',
+        'shield-alert',
+        'artifact_registry.view',
+        ('registry security', 'vulnerabilities'),
+    ),
+    NavigationEntry(
+        'Supply Chain',
+        'Artifact Registry committed supply-chain evidence',
+        'artifact_registry.security_supply_chain',
+        'shield-check',
+        'artifact_registry.view',
+        ('registry', 'security'),
+    ),
+    NavigationEntry(
+        'Runtime Topology',
+        'Artifact Registry runtime correlation',
+        'artifact_registry.runtime_topology',
+        'waypoints',
+        'artifact_registry.view',
+        ('registry', 'runtime'),
+    ),
 )
 
 # Quick Navigation selects implemented sidebar capabilities, never unapproved provider roots.
