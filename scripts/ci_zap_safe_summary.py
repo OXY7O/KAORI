@@ -232,6 +232,11 @@ def main(argv: list[str] | None = None) -> int:
         )
         summary = render_summary(payload, args.source_sha)
         args.output.parent.mkdir(parents=True, exist_ok=True)
+        # Revalidate the output directory after reading untrusted input. A
+        # workspace actor may have replaced an initially safe directory with
+        # a symlink while parsing; do not publish through that changed alias.
+        if args.output.parent.resolve() != args.output.parent.absolute():
+            raise UnverifiedZapReport('Unsafe evidence output directory')
         # Publish atomically: a symlink introduced after the initial alias check
         # must never redirect writes to the raw report or another sensitive file.
         # A failed write also must not expose a partial, verified-looking summary.
