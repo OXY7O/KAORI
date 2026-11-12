@@ -20,19 +20,28 @@ Compact Cluster Inventory Table
 
 Kubernetes remains the reference implementation for committed Inventory Overview semantics. Other inventory domains reuse the same hierarchy primitives without cloning Kubernetes data semantics.
 
-Where a domain has meaningful committed fleet-level posture beyond freshness, the approved extension is:
+Where a domain has meaningful committed fleet-level posture beyond freshness, retain both the shared Inventory Asset Catalog and fleet evidence sections. Domain-specific ordering and metric content may differ; the **Object Storage 2026-11-12 human UAT** requires the Kubernetes Operations Overview presentation sequence:
 
 ```text
 Canonical Hero
 Inventory Data Snapshot
-Fleet Inventory Posture
-<Domain> Asset Catalog
+Inventory Assets — Section Intro
+└── Object Storage Asset Catalog — operational_section_card
+    ├── 2 Asset Types — committed scope badge
+    └── Systems / Buckets & Containers — compact workspace_link_card navigation
+Fleet Inventory Posture — Section Intro
+└── Object Storage Fleet Evidence — operational_section_card
+    ├── 4 Indicators — committed metric count badge
+    └── inset bordered resource_posture_grid (4 committed readings)
 ```
 
-The overview uses `components/section_intro.html` for the outer section hierarchy.
-Following explicit human DevContainer review under #946, **Artifact Registry and Object Storage** both use the existing grouped-summary Fleet standard: `section_intro` → one `operational_section_card` → `resource_posture_grid`, without additional per-metric cards. Registry has three committed provider/snapshot/visibility metrics; Object Storage preserves all four committed quota/protection/exposure/optional-usage readings, in a responsive two/four-column grid. Each metric keeps its evidence tone and supporting text, and a fleet with no committed bucket/container evidence displays `No Evidence` instead of a fabricated zero/healthy posture. Both catalogs use `Inventory Assets` as the outer section intro and one intentional standard Asset Catalog container with a shared count badge and `inventory_asset_card` links. Object Storage has Systems and Buckets & Containers (two asset types); Registry has Projects, Repositories, and Artifacts (three). Navigation continues to read existing committed-state counts and routes. This current visual authority supersedes the earlier Object Storage flat-callout/flat-catalog instruction in #946; domain metrics are intentionally not forced to be identical. Kubernetes intentionally continues with Snapshot → Asset Catalog → Cluster Inventory Table because its fleet comparison is owned by the cluster table rather than a duplicate posture section.
+The **approved cross-domain grammar** is the shared `components/section_intro.html` heading, the owning `operational_section_card.html`, and compact content padding/borders. Under #4421 the Kubernetes Operations Overview is the exact visual reference: its **Operation Workspace Catalog** comes before **Execution & Evidence Model**, with 40px Violet destination icons and compact footer links; the second card places its three steps inside a padded, bordered grid. For Object Storage, the first section likewise displays the catalog before the evidence block. The Fleet card retains **four** provider-neutral, committed metrics (quota/protection/exposure/optional usage), now inside the shared posture grid's **opt-in `compact=true`** layout with a padded inset border, icons above the labels and committed values. It does **not** invent a Kubernetes mutation workflow or transform metric values into execution steps.
 
-**Object Storage Inventory visual UAT refinement (#4427, 2026-11-12):** The outside-box section intros and operational-section-card headings retain the accepted Kubernetes Operations Overview hierarchy. Object Storage's four **Fleet Evidence** readings remain a domain-specific committed metric grid rather than being converted into Kubernetes' three-step execution model; its card now displays the same static Violet `4 Indicators` metadata label as Kubernetes Node Resource Posture. The Systems and Namespace Posture cards also use `metrics|length ~ ' Indicators'` through `table_label.metadata_label`, **not** a Guide popover. For the two Object Storage Asset Catalog destination cards, opt into the shared `inventory_asset_card.render(..., compact_count=true)` count-badge presentation so icon/title/description/footer match the compact Kubernetes Operations Workspace Catalog visual grammar without discarding committed counts or changing navigation. Other Inventory consumers retain the shared default prominent count presentation. All count/badge values are derived from current in-memory committed projections, never static numbers or provider calls.
+The two Object Storage catalog destinations reuse the exact `components/workspace_link_card.html` **compact=true** navigation renderer already used by Kubernetes Operations. The existing committed asset catalog still supplies title, icon, description, exact endpoint and CTA; the top-right scope badge derives `N System(s)` or `N Asset(s)` from the committed counts rather than hiding them. Its footer keeps the domain action label (Browse Systems/Browse Buckets & Containers) through the optional `workspace.action_label` fallback; existing Kubernetes/Welcome workspace cards still render **Open Workspace** by default. This replaces the earlier `inventory_asset_card(..., compact_count=true)` Object Storage visual-only experiment, restoring the original shared inventory asset card defaults for other consumers.
+
+**Artifact Registry Inventory** retains its approved Fleet → Catalog ordering, grouped three-metric `resource_posture_grid` default and `inventory_asset_card` destinations under #946. Kubernetes Inventory retains Snapshot → Asset Catalog → Cluster Inventory Table. Provider-neutral counts, no-evidence/unknown conditions, source-of-truth semantics and actual inventory routes remain unchanged. On the separate Object Storage Systems/Namespaces pages, the existing static metadata badges remain `metrics|length ~ ' Indicators'` (four each), **never Guide popovers**.
+
+The Object Storage visual correction is bounded to section order, shared compact navigation and metric layout. No provider request, data model, worker, API, authorization, mutation, pagination, freshness classification or new CSS/JS style family is introduced. Responsive wrapping and light/dark contrast follow shared Violet components.
 
 Consistency applies to reading order and shared primitives, not to forcing identical metrics or equal card counts across domains.
 
