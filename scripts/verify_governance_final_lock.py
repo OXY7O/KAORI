@@ -192,8 +192,10 @@ def main() -> int:
             f'Governance Overview domain context and Operations layout is missing: {token}',
             errors,
         )
+    context_position = overview.index("title='Governance Control Context'")
+    scope_position = overview.index("section_intro.render('Governance Scope'")
     require(
-        overview.index("title='Governance Control Context'") < overview.index("section_intro.render('Governance Scope'"),
+        context_position < scope_position,
         'Governance context must come after the Hero and before Governance Scope.',
         errors,
     )
