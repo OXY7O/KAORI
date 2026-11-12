@@ -737,3 +737,30 @@ def test_swapped_temporary_symlink_never_becomes_published_evidence(tmp_path, mo
     assert private.read_text(encoding='utf-8') == 'private raw content'
     assert not list(tmp_path.glob('.zap-summary-*.tmp'))
     assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_ignored_json_arrays_exceeding_cumulative_budget_fail_closed(tmp_path, monkeypatch, capsys):
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text(
+        '{"site":[{"alerts":[]}],"ignored":[[1,2],[3,4]]}',
+        encoding='utf-8',
+    )
+    output.write_text('stale verified-looking evidence', encoding='utf-8')
+    monkeypatch.setattr(zap, 'MAX_JSON_ARRAY_ITEMS', 6)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not output.exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_json_array_budget_accepts_exact_boundary(tmp_path, monkeypatch):
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text(
+        '{"site":[{"alerts":[]}],"ignored":[[1,2],[3,4]]}',
+        encoding='utf-8',
+    )
+    # site (1) + alerts (0) + ignored (2) + two nested arrays (4) = 7.
+    monkeypatch.setattr(zap, 'MAX_JSON_ARRAY_ITEMS', 7)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 0
+    assert 'Scanned site entries: **1**.' in output.read_text(encoding='utf-8')
