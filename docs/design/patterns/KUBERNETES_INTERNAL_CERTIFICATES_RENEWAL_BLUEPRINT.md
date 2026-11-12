@@ -172,6 +172,17 @@ Only after separate implementation/admission may there be a **Request Renewal** 
 
 **Release:** separate implementation child issue and PR; stage through `kaori/review/staging-uat` → official admission → `kaori/staging` UAT → human acceptance → `main` promotion, release/tag if required. Deployment and infrastructure mutation remain blocked until security and operations approval.
 
+## Read-model extension (operator-attested evidence)
+
+The interim #4461 metadata-only import provides source-qualified committed
+certificate records prior to Ansible execution integration. Operator attestation
+is not an eligible renewal capability decision. Its `InternalPKICertificateInventory`
+values are **not proof** of installed/running certificates; future #4445
+preflight must revalidate the authoritative source through the approved
+Ansible/provider engine and compare control-plane/etcd health. A valid
+operator-supplied expiry must never enable a Renew action automatically.
+See [Evidence Import Runbook](KUBERNETES_INTERNAL_CERTIFICATES_EVIDENCE_IMPORT.md).
+
 ## 11. Deferred dependency and restart checklist
 
 **Hold point:** no suitable admitted Ansible orchestration execution binding + approved Git playbook and credential references for this Kubernetes PKI scope have been evidenced. #4445 is therefore **design/feasibility only**. Do not schedule background renewal, create buttons, grant sudo or rotate certificates while held.
