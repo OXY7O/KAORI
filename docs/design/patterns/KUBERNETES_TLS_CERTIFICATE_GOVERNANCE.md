@@ -237,6 +237,8 @@ Collection Snapshot
 
 `TLS Inventory Operations` owns Sync TLS, Configure Sync, Bulk Rotation handoff, worker progress, automatic policy state, last successful collection, and next scheduled execution. It must not be nested inside certificate validity metrics.
 
+The title/status row also owns one canonical Violet **Guide** directly following the live sync-status badge (for example, `TLS Inventory Operations · Current · Guide`). The shared `info_tip.render(..., variant='guide')` explains that Sync TLS refreshes committed worker-collected TLS Secret/Ingress mapping evidence, **not** certificate renewal or rotation; Configure Sync changes the existing schedule, and Bulk Rotation is an independent permission-controlled workflow. Collected validity/host mapping metadata does not prove active client trust. Keep this guidance in the existing `_sync_live_state.html` status row so it remains in sync with HTMX status updates, uses accessible shared popover behavior and does not add an independent card or custom JS.
+
 Certificate validity remains a separate evidence block under the shared `Certificate Posture` section intro. `Certificate Inventory` is the outer section context for `TLS Certificate Registry`; the outer and inner titles intentionally express different hierarchy levels.
 
 Accepted background sync dispatch remains inline and does not create a queued/completion toast or unread Notification Deck item. Terminal worker evidence persists the Notification Deck result and triggers navigation refresh without a full-page reload.
