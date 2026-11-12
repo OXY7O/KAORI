@@ -565,3 +565,28 @@ def test_missing_nonblocking_support_fails_closed_before_raw_report_open(tmp_pat
     assert not output.exists()
     assert report.exists()
     assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_output_parent_replaced_by_regular_directory_during_parse_fails_closed(tmp_path, monkeypatch, capsys):
+    report = tmp_path / 'zap.json'
+    report.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
+    parent = tmp_path / 'evidence'
+    parent.mkdir()
+    output = parent / 'summary.md'
+    output.write_text('stale evidence', encoding='utf-8')
+    replacement = tmp_path / 'replacement'
+    replacement.mkdir()
+    original_render = zap.render_summary
+
+    def replace_parent_during_parse(payload, source_sha):
+        summary = original_render(payload, source_sha)
+        parent.rename(tmp_path / 'previous-evidence')
+        replacement.rename(parent)
+        return summary
+
+    monkeypatch.setattr(zap, 'render_summary', replace_parent_during_parse)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not output.exists()
+    assert not list(parent.glob('.zap-summary-*.tmp'))
+    assert not (tmp_path / 'previous-evidence' / 'summary.md').exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
