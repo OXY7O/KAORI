@@ -285,11 +285,9 @@ def test_cve_impact_query_tabs_show_one_canonical_evidence_table_at_a_time() -> 
     assert "per_page_param='runtime_per_page'" in page
 
     finding = page.split('id="artifact-registry-cve-findings"', 1)[1].split(
-        "{% else %}\n", 1
+        'id="artifact-registry-cve-runtime"', 1
     )[0]
-    runtime = page.split('id="artifact-registry-cve-runtime"', 1)[1].split(
-        '{% endif %}\n', 1
-    )[0]
+    runtime = page.split('id="artifact-registry-cve-runtime"', 1)[1]
     for section in (finding, runtime):
         assert 'registry.filter_form(' in section
         assert 'registry.footer(' in section
