@@ -24,6 +24,27 @@ The Kubernetes CLI output format is **version-dependent**. Do not pipeline arbit
 
 If no approved source identity is available, stop at **Not Collected / Not Verified**. Do not scrape `/etc/kubernetes/pki` recursively, read CA private keys, or run root shell from a KAORI web request.
 
+### Docker Desktop Kubernetes — local pilot source qualification
+
+Docker Desktop Kubernetes may use **kubeadm** (single-node) or **kind** (multi-node). The host workstation shell and the Dev Container shell are **not** the Kubernetes control-plane node. Therefore `sudo: kubeadm: command not found` on a host such as an X300 is **not** evidence that the cluster lacks a kubeadm-based provisioner, nor evidence that its host-local PKI can be collected. The Kubernetes distribution/provider identity remains unverified until the user checks Docker Desktop **Kubernetes → Edit cluster** and records the actual provisioner.
+
+Non-mutating discovery on the **workstation with the intended kubectl context**:
+
+```bash
+kubectl config current-context
+kubectl config get-contexts
+kubectl --context docker-desktop get nodes -o wide
+kubectl --context docker-desktop get pods -n kube-system -o wide
+```
+
+Run the context-specific commands **only if** the intended test context is `docker-desktop`. If the context is different, do not silently switch or probe an unrelated cluster. These API results establish cluster identity/nodes, **not** active apiserver, etcd or kubelet certificate `NotAfter` values. Never infer source authority just from a pod name or image.
+
+- **Docker Desktop / kind**: treat Kubernetes PKI as **Docker Desktop / kind-managed**. The current `kaori.internal-pki-evidence.v1` importer explicitly accepts **only verified kubeadm check-expiration metadata** and is **not supported** for generic kind output. Mark **Not Collected / Not Verified** rather than fabricating an import or using a kubeadm manifest schema.
+- **Docker Desktop / kubeadm**: native provisioning may use kubeadm under Docker Desktop's managed control plane, but `kubeadm` is not expected to run on the workstation. An owner-approved control-plane-local, version-qualified, **read-only** source is still required before constructing the strict kubeadm manifest. Do not `docker exec` into infrastructure containers or mount control-plane paths just to bypass permission controls.
+- Docker Desktop manages its own Kubernetes lifecycle. **Never attempt to renew, overwrite or rotate its control-plane/etcd PKI from KAORI**, and do not use `kubeadm certs renew` as a Docker Desktop operational playbook. For a disposable local cluster, lifecycle/reset actions remain under Docker Desktop ownership and need separate human approval because reset may discard local workloads/resources.
+
+Reference: [Docker Desktop Kubernetes provider/provisioner documentation](https://docs.docker.com/desktop/use-desktop/kubernetes/). The `#4442` source support matrix and deferred `#4445` renewal blueprint must carry the provider-specific decision; the current view is source readiness, not verified PKI expiry.
+
 ## 2. Strict, metadata-only manifest
 
 The following is a **schema example, not production evidence**. Replace every sample value from a verified source; UTC timestamps must be timezone-aware and the `cluster_id` must match an actual UUID registered in KAORI. `reference` identifies the approved change/evidence ticket and must not contain credentials.
@@ -62,6 +83,34 @@ The following is a **schema example, not production evidence**. Replace every sa
 Supported components are intentionally restricted to kubeadm's known control-plane/etcd leaf certificates and CA names, such as `apiserver`, `apiserver-kubelet-client`, `apiserver-etcd-client`, `etcd-server`, `etcd-peer`, `etcd-healthcheck-client`, `front-proxy-client`, `controller-manager.conf`, `scheduler.conf`, `admin.conf`, `ca`, `etcd-ca` and `front-proxy-ca`. Kubelet active client/serving certificate validity **cannot** be asserted with this kubeadm input. Preserve `externally_managed: null` when not verified.
 
 The validator rejects unknown keys, invalid UTC timestamps, duplicate components, inconsistent CA/leaf classification, unknown types, oversized source files and mismatched cluster identities. A `complete` manifest replaces the complete known inventory for the exact cluster+node+source; use `partial` until completeness has been verified. A failed validation commits nothing. A repeated normalized manifest is idempotent; older evidence cannot overwrite a newer committed snapshot.
+
+### PostgreSQL migration permission failure — `permission denied for schema public`
+
+Observed Dev Container sequence: `flask db current` returned `20261025_bot_protection`, `flask db heads` returned `20261112_internal_pki`, and `flask db upgrade` failed when creating `internal_pki_evidence_batches` because the connected database role lacked **CREATE on schema public**. The separately executed `flask seed-rbac` reported **5 roles / 68 permissions**; that does **not** repair the failed schema migration. Keep the inventory state **Inventory Schema Upgrade Required**, not Empty/Healthy.
+
+**Before retrying DDL**, confirm the exact Dev Container database/role and backup plan. Using a SQL session connected to the **same intended database and role**, run read-only diagnostics:
+
+```sql
+SELECT current_database(), current_user, current_schema();
+SELECT has_schema_privilege(current_user, 'public', 'USAGE') AS can_use_public,
+       has_schema_privilege(current_user, 'public', 'CREATE') AS can_create_public;
+SELECT version_num FROM public.alembic_version;
+SELECT to_regclass('public.internal_pki_evidence_batches') AS evidence_table,
+       to_regclass('public.internal_pki_certificate_inventory') AS inventory_table;
+```
+
+The role issuing migrations must have the required DDL rights on `public` **and** suitable ownership/REFERENCES privileges for existing objects (including the `clusters` foreign key). A PostgreSQL administrator should prefer the **existing approved migration/DDL identity** rather than granting schema-create privileges to the long-running KAORI application role. If needed on the **UAT database only**, the DBA can grant the specific migration role (not `PUBLIC`) the scoped privilege, after checking existing grants:
+
+```sql
+-- DBA action; replace this identifier with the approved *migration* role.
+GRANT USAGE, CREATE ON SCHEMA public TO approved_kaori_migration_role;
+```
+
+Then connect Flask migration tooling using that approved DDL identity and run `flask db upgrade`. Where a separate migration role owns new tables, grant the KAORI application/import roles only the **specific table/sequence read-write privileges** needed by the existing access model. Revoke temporary elevated privileges only when confirmed safe for the next migration and consistent with the existing database governance (do not blindly change schema ownership). Never issue `GRANT ALL ... TO PUBLIC`, `ALTER ROLE ... SUPERUSER`, `flask db stamp`, or drop/recreate the schema to bypass this failure.
+
+Finally confirm `flask db current` reports `20261112_internal_pki`, both required tables exist, and rerun the approved tests/schema readiness. PostgreSQL transactional DDL normally rolls back a failed migration, but **verify** both the Alembic revision and tables rather than assuming that. Until the schema upgrade completes, no metadata manifest may be imported and no real certificate records can appear.
+
+Reference: [PostgreSQL schema privileges](https://www.postgresql.org/docs/current/ddl-schemas.html).
 
 ## 3. Controlled Dev Container import
 

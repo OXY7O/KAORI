@@ -6,8 +6,8 @@ import pytest
 from flask_login import UserMixin
 
 from app import create_app
-from app.common.workspace_navigation import build_capability_navigation
 from app.bootstrap import presentation as bootstrap_presentation
+from app.common.workspace_navigation import build_capability_navigation
 from app.extensions import login as login_extension
 from app.extensions import login_manager
 from app.kubernetes.governance import routes as governance_routes
@@ -512,7 +512,9 @@ def test_governance_internal_pki_registered_cluster_links_preserve_inventory_sco
         GovernanceRouteUser({'governance.view', 'clusters.view', 'internal_certificates.view'}),
     )
     monkeypatch.setattr(internal_pki_routes, 'has_registered_clusters', lambda: True)
-    monkeypatch.setattr(internal_pki_routes, 'get_internal_certificates_source_page', lambda _args: _internal_pki_source_page())
+    monkeypatch.setattr(
+        internal_pki_routes, 'get_internal_certificates_source_page', lambda _args: _internal_pki_source_page()
+    )
     monkeypatch.setattr(
         internal_pki_routes,
         'check_internal_pki_schema_readiness',
@@ -525,4 +527,3 @@ def test_governance_internal_pki_registered_cluster_links_preserve_inventory_sco
     assert 'cluster_id=cluster-01' in content
     assert 'Internal Certificate Registry' not in content
     assert 'Inventory Schema Upgrade Required' in content
-

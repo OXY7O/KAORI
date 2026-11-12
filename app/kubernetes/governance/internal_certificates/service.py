@@ -8,8 +8,8 @@ from sqlalchemy import func, or_, select
 
 from app.extensions.db import db
 from app.models.cluster import Cluster
-from app.models.kubernetes import KubernetesConnection
 from app.models.internal_certificates import InternalPKICertificateInventory, InternalPKIEvidenceBatch
+from app.models.kubernetes import KubernetesConnection
 
 _DEFAULT_PER_PAGE = 5
 _PER_PAGE_OPTIONS = (5, 10, 25, 50)
