@@ -77,6 +77,12 @@ Tab Style 1 — Integrated Workspace Tabs
 
 Kubernetes maps the health table to clusters and Object Storage maps it to registered systems. Future dashboards may substitute a domain-specific health register, but page hierarchy and peer relationships stay the same.
 
+### Object Storage Operations Overview section hierarchy (#4427)
+
+In the Object Storage **Operations Overview** tab, the shared `section_intro.render` owns two plain, accessible section titles above existing content cards: **Operational Health** above **System Health Summary**, and **Committed Evidence** above the Inventory Snapshot / Data Freshness peer grid. The inner cards retain their evidence, status, navigation, loading, and bounded HTMX ownership. This is the approved Kubernetes Operations Overview section-intro/section-card grammar applied only to the Object Storage dashboard's Overview section, not a new dashboard family, live provider query or additional navigation tab.
+
+Object Storage Reporting passes concise **Committed snapshots** as its domain-owned Evidence Backed guardrail copy to the existing shared Reporting Workflow renderer; Kubernetes and Registry retain their independent scope/source wording. The three Capacity Snapshot metric cards preserve their full Used/Free/Usable labels and semantic percentages. At narrower card widths the title occupies its own line above the right-aligned percentage, allowing natural wrapping on mobile without `whitespace-nowrap`, truncation or reducing type. Inventory System and Namespace Posture titles use the shared Violet interactive `Guide` slot with distinct IDs and explicit committed-evidence explanations; their resource values and statuses remain unchanged.
+
 ## Visual contract
 
 - Use `components/page_hero.html` and the `operational_dashboard(...)` profile renderer for the Hero.
