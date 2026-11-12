@@ -135,10 +135,10 @@ def test_cve_impact_evidence_tables_use_canonical_registry_patterns() -> None:
     assert page.count('class="{{ table_ui.row_classes() }}"') == 2
     assert page.count('components/states/_empty_state.html') == 2
     assert page.count('aria-label="View runtime usage for ') == 2
-    assert "title_extra=findings_badge" in page
-    assert "title_extra=runtime_badge" in page
-    assert "impact.finding_count ~ (' Finding'" in page
-    assert "impact.binding_count ~ (' Binding'" in page
+    assert 'title_extra=findings_badge' in page
+    assert 'title_extra=runtime_badge' in page
+    assert "impact.finding_pagination.total_items ~ (' Finding'" in page
+    assert "impact.runtime_pagination.total_items ~ (' Binding'" in page
     assert 'table_label.metadata_label(' in page
     assert 'macro inventory_block_header(' in shared_table
 
@@ -149,8 +149,8 @@ def test_cve_impact_evidence_tables_use_canonical_registry_patterns() -> None:
     assert 'binding_items, runtime_pagination = paginate_query(' in read_model
     assert "page_param='finding_page'" in page
     assert "page_param='runtime_page'" in page
-    assert "impact.runtime_pagination.page" in page
-    assert "impact.finding_pagination.page" in page
+    assert 'impact.runtime_pagination.page' in page
+    assert 'impact.finding_pagination.page' in page
     assert page.count('[5, 10, 25, 50]') == 2
 
     # Identity, timestamps, qualified match confidence and source actions survive.
@@ -182,9 +182,110 @@ def test_cve_impact_evidence_tables_use_canonical_registry_patterns() -> None:
     assert 'This does not prove the application fleet is unaffected' in page
     assert "url_for('artifact_registry.runtime', artifact_id=row.artifact_id)" in page
     assert page.count('colspan="5"') == 2
-    assert 'data-kaori-empty-state' in read(
-        'app/templates/components/states/_empty_state.html'
+    assert 'data-kaori-empty-state' in read('app/templates/components/states/_empty_state.html')
+
+
+def test_cve_impact_section_intros_and_filters_use_shared_kaori_contracts() -> None:
+    from app.artifact_registry.security.cve_impact import _literal_contains
+
+    page = read('app/templates/artifact_registry/security_cve_impact.html')
+    route = read('app/artifact_registry/routes.py')
+    read_model = read('app/artifact_registry/security/cve_impact.py')
+    canonical = read('app/templates/components/table_registry.html')
+    Environment().parse(page)
+
+    assert 'components/section_intro.html' in page
+    assert page.count('section_intro.render(') == 2
+    assert "section_intro.render('Affected Artifacts'" in page
+    assert "section_intro.render('Runtime Exposure'" in page
+    assert page.count('registry.filter_form(') == 2
+    assert page.count('registry.clear_filters_link(') == 2
+    assert page.count('table_ui.inventory_filter_bar_classes()') == 2
+    assert "path_params={'cve_id': impact.cve_id}" in page
+    for name in (
+        'finding_q',
+        'finding_severity',
+        'runtime_q',
+        'runtime_match',
+        'finding_page',
+        'runtime_page',
+        'finding_per_page',
+        'runtime_per_page',
+    ):
+        assert f'name="{name}"' in page or f"'{name}'" in page
+        assert name in route
+
+    assert "page_param='finding_page'" in page
+    assert "page_param='runtime_page'" in page
+    assert "per_page_param='finding_per_page'" in page
+    assert "per_page_param='runtime_per_page'" in page
+    assert "impact.finding_pagination.total_items ~ (' Finding'" in page
+    assert "impact.runtime_pagination.total_items ~ (' Binding'" in page
+    assert "hx-sync=" in canonical
+    assert 'path_params=none' in canonical
+    assert 'url_for(endpoint, **(path_params or {})' in canonical
+    assert 'data-kaori-canonical-registry-filter' in canonical
+    assert "visible_findings = findings" in read_model
+    assert "visible_bindings = bindings" in read_model
+    assert "visible_findings.options(" in read_model
+    assert "visible_bindings.order_by(" in read_model
+    assert "RegistryProject.integration_instance_id.in_(source_ids)" in read_model
+    assert "func.upper(RegistryVulnerability.vulnerability_id) == canonical_cve" in read_model
+    assert "matching_sources" in read_model
+    assert "matching_clusters" in read_model
+    assert "RegistryWorkloadBinding.match_type == 'digest'" in read_model
+    assert "RegistryWorkloadBinding.match_type != 'digest'" in read_model
+    assert "per_page=finding_per_page if finding_per_page is not None else per_page" in read_model
+    assert "per_page=runtime_per_page if runtime_per_page is not None else per_page" in read_model
+    assert "'finding_search': finding_search" in read_model
+    assert "'runtime_search': runtime_search" in read_model
+
+    assert _literal_contains('redis') == '%redis%'
+    assert _literal_contains(r'red%_\\') == r'%red\\%\\_\\\\%'
+    assert 'HarborClient' not in read_model
+
+
+def test_cve_impact_canonical_filter_form_handles_required_identity_and_htmx() -> None:
+    app = Flask(__name__, template_folder=str(ROOT / 'app/templates'))
+    app.add_url_rule(
+        '/artifact-registry/security/cve/<string:cve_id>/impact',
+        endpoint='artifact_registry.security_cve_impact',
+        view_func=lambda cve_id: cve_id,
     )
+    with app.test_request_context('/artifact-registry/security/cve/CVE-2022-1586/impact'):
+        rendered = render_template_string(
+            """{% import "components/table_registry.html" as registry %}
+{% call registry.filter_form(
+    'artifact_registry.security_cve_impact',
+    'artifact-registry-cve-findings',
+    'finding-loading', 5,
+    page_param='finding_page',
+    per_page_param='finding_per_page',
+    path_params={'cve_id': 'CVE-2022-1586'}
+) %}
+<input type="hidden" name="runtime_page" value="3">
+{% endcall %}
+{{ registry.clear_filters_link(
+    'artifact_registry.security_cve_impact',
+    'artifact-registry-cve-findings',
+    'finding-loading', 5, 'action',
+    query_params={'cve_id': 'CVE-2022-1586', 'runtime_page': 3, 'runtime_q': 'nginx'},
+    page_param='finding_page',
+    per_page_param='finding_per_page'
+) }}"""
+        )
+    assert 'action="/artifact-registry/security/cve/CVE-2022-1586/impact"' in rendered
+    assert 'hx-get="/artifact-registry/security/cve/CVE-2022-1586/impact"' in rendered
+    assert 'hx-target="#artifact-registry-cve-findings"' in rendered
+    assert 'hx-select="#artifact-registry-cve-findings"' in rendered
+    assert 'hx-sync="closest section:replace"' in rendered
+    assert 'name="finding_page" value="1"' in rendered
+    assert 'name="finding_per_page" value="5"' in rendered
+    assert 'name="runtime_page" value="3"' in rendered
+    assert 'runtime_q=nginx' in rendered
+    assert 'runtime_page=3' in rendered
+    assert 'finding_page=1' in rendered
+    assert 'finding_per_page=5' in rendered
 
 
 def test_cve_impact_footer_renders_required_path_identity_for_rows_and_pages() -> None:
