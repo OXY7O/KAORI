@@ -86,7 +86,7 @@
                 ) %}
                 <div class="grid gap-4 sm:grid-cols-2">
                     {{ workspace_card.render({
-                            'href': url_for('artifact_registry.security', source_id=request.args.get('source_id')),
+                            'href': url_for('artifact_registry.security', source_id=security.source_id),
                             'title': 'Vulnerabilities',
                             'label': 'Committed Security',
                             'description': 'Review committed findings and correlated runtime exposure.',
