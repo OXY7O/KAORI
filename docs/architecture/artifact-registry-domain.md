@@ -625,6 +625,8 @@ two-column responsive cards for **Runtime Usage** (committed binding count) and
 **Topology** (correlated artifact count), with an explicit **2 Workspaces**
 metadata badge and existing scope-preserving destination URLs.
 
+The Ready snapshot uses one-line copy (`Committed runtime correlation is ready.`), while stale, failed, input-change and refresh-blocked statuses retain their own explicit evidence descriptions. The compact **Correlated Artifacts** and **Security Exposed** metrics use short evidence-qualified explanations so their values and descriptions stay on one line at the reviewed desktop viewport; do not force `whitespace-nowrap` or hide detail at mobile widths.
+
 The **Registry Runtime Evidence** section keeps the four authoritative committed
 metrics (Correlated Artifacts, Digest Matched, Tag Matched, Security Exposed)
 with the shared `resource_posture_grid.render(..., columns=4, compact=true)`
