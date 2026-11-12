@@ -156,6 +156,16 @@ def test_object_storage_inventory_matches_registry_grouped_visual_hierarchy() ->
     assert "body_classes='p-5'" in fleet
     assert "table_label.metadata_label(overview.fleet_posture_metrics|length ~ ' Indicators'" in fleet
     assert 'header_badge=fleet_badge' in fleet
+    assert 'overflow-hidden rounded-xl border border-outline-subtle' not in fleet
+    assert 'overflow-hidden rounded-xl border border-outline-subtle' in metrics
+    assert "if compact else ''" in metrics
+    assert 'md:grid-cols-4' in metrics
+    assert 'bg-kaori-soft text-kaori-primary' in metrics
+    assert '<span class="font-semibold {{ value_tone }}">{{ value }}</span>' in metrics
+    assert '<span>· {{ description }}</span>' in metrics
+    assert 'text-status-warning-text' in metrics
+    assert 'text-status-critical-text' in metrics
+    assert 'text-status-unknown-text' in metrics
     assert "body_classes='p-5'" in catalog
     assert 'components/workspace_link_card.html' in catalog
     assert 'workspace_card.render(' in catalog
@@ -207,6 +217,15 @@ def test_object_storage_inventory_matches_registry_grouped_visual_hierarchy() ->
     )
     assert '4 Indicators' in html_fleet
     assert html_fleet.count('>Quota Assessed</h3>') == 1
+    assert html_fleet.count('<article class="min-w-0 bg-surface-card p-4">') == 4
+    assert html_fleet.count('class="mt-1 text-xs leading-5 text-content-secondary"') == 4
+    assert html_fleet.count('bg-kaori-soft text-kaori-primary') >= 4
+    assert 'text-xl font-semibold leading-7 text-content-primary' not in html_fleet
+    assert 'md:grid-cols-4' in html_fleet
+    assert '<span class="font-semibold text-status-warning-text">3</span>' in html_fleet
+    assert '<span>· Review protection.</span>' in html_fleet
+    assert '<span class="font-semibold text-content-primary">3/3</span>' in html_fleet
+    assert 'rounded-xl border border-outline-subtle' in html_fleet
     assert 'Protection Attention' in html_fleet
     assert 'Public Exposure' in html_fleet
     assert 'Usage Collected' in html_fleet
@@ -252,3 +271,36 @@ def test_object_storage_navigation_reuses_kubernetes_compact_workspace_cards() -
     assert 'href="/systems"' in custom
     assert 'focus-visible:ring-outline-focus' in custom
     assert 'data-lucide="arrow-up-right"' in custom
+
+def test_resource_posture_compact_governance_mode_preserves_default_and_unknown_evidence() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
+    render = env.get_template('components/resource_posture_grid.html').module.render
+    metrics = [
+        ('gauge', 'Quota Assessed', '3/3', 'Quota observed.', 'normal'),
+        ('shield-check', 'Protection Attention', '3', 'Review protection.', 'warning'),
+        ('key-round', 'Public Exposure', 'No Evidence', 'Exposure not assessed.', 'unknown'),
+        ('chart-no-axes-column', 'Usage Collected', '3/3', 'Optional usage.', 'info'),
+    ]
+    compact = render(metrics, columns=4, compact=True)
+    original = render(metrics, columns=4)
+
+    assert compact.count('<article') == 4
+    assert compact.count('bg-kaori-soft text-kaori-primary') == 4
+    assert compact.count('class="mt-1 text-xs leading-5 text-content-secondary"') == 4
+    assert 'md:grid-cols-4' in compact
+    assert 'rounded-xl border border-outline-subtle' in compact
+    assert 'text-status-warning-text' in compact
+    assert 'text-status-unknown-text' in compact
+    assert 'No Evidence' in compact
+    assert 'Exposure not assessed.' in compact
+    assert 'text-xl font-semibold leading-7 text-content-primary' not in compact
+    assert 'min-h-32 items-start justify-between gap-4' not in compact
+
+    assert original.count('<article') == 4
+    assert 'min-h-32 items-start justify-between gap-4' in original
+    assert 'text-xl font-semibold leading-7 text-content-primary' in original
+    assert 'overflow-hidden rounded-xl border border-outline-subtle' not in original
+    assert 'bg-status-warning-soft text-status-warning-text' in original
+
