@@ -32,6 +32,42 @@ This document defines reusable structures. It does not define domain-specific fi
 
 For the **Kubernetes Operations Overview**, the Hero supporting line and each of the three Execution & Evidence Model step descriptions are compact, single-line desktop guidance. Keep their responsibilities distinguishable: select/verify the live target in its capability workspace, enforce operation-specific permission/preflight checks, and retain auditable feedback from provider-authoritative execution. Use concise copy (roughly 50 characters) with normal responsive wrapping; never force `whitespace-nowrap`, truncation, smaller typography, or page-local width overrides to achieve the desktop result.
 
+### Kubernetes Operations Overview — Inventory-style section composition
+
+The Operations Overview reuses the accepted **Inventory Overview** hierarchy for
+its two navigation/education sections without turning workflows into inventory:
+
+```text
+Shared Kubernetes Operations Hero / authoritative readiness context
+→ Permission-scoped operation/evidence context
+→ Operational Capabilities — Section Intro (plain title + short description)
+  └── Operation Workspace Catalog — operational_section_card
+      ├── permission-derived N Workspaces Violet metadata badge
+      └── ConfigMaps / Secrets → compact workspace_link_card navigation
+→ Execution Governance — Section Intro (plain title + short description)
+  └── Execution & Evidence Model — operational_section_card + Info metadata label
+      └── Select Live Target → Validate Before Mutation → Commit Auditable Outcome
+```
+
+The two external headings use shared `section_intro.render`, while the
+inside-card titles name their actual surfaces, avoiding duplicated headings.
+The compact `workspace_link_card.render(workspace, compact=true)` is an
+**opt-in presentation variant** that retains destination, permission guarding,
+scope metadata, accessible name, search data, and default behavior elsewhere.
+It follows the Inventory Asset Card's compact proportions and footer without
+misusing its object-count contract. The **N Workspaces** count reflects only
+the currently authorized ConfigMaps/Secrets entry points, not inventory
+objects, available provider targets, or permission to mutate.
+
+The Execution Model's small **Info** badge uses the existing
+`table_label.metadata_label` and describes the informational nature of the
+three-step explanation; it is not a readiness or audit-success status.
+Existing operation-flow boundaries, missing-cluster blocker, Kubernetes
+provider authority, committed evidence, link permissions, and concise
+step descriptions are preserved. No live Kubernetes read is introduced into
+the Overview request. Mobile wrapping, light/dark, focus visibility and
+shared Violet styling remain authoritative.
+
 ## Selector pattern
 
 - Labels use sentence case.
