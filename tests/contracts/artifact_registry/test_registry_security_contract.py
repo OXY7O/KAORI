@@ -680,7 +680,8 @@ def test_vulnerability_registry_table_uses_shared_dense_evidence_groups() -> Non
     assert 'supporting_content=severity_badge)' in table
     assert 'table_ui.title_cell(row.repository,' in table
     assert "'Project: ' ~ row.project" in table
-    assert "table_ui.title_cell(row.package, 'Installed: ' ~ row.installed_version)" in table
+    assert 'table_ui.title_cell(row.package,' in table
+    assert "'Installed: ' ~ row.installed_version" in table
     assert 'table_ui.title_cell(row.source_name,' in table
     assert 'supporting_content=freshness_badge)' in table
     assert 'status_indicator_label(row.severity_label, severity_tone)' in table
