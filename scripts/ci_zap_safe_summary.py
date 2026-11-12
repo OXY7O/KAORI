@@ -257,6 +257,17 @@ def main(argv: list[str] | None = None) -> int:
             parse_int=_bounded_int,
         )
         summary = render_summary(payload, args.source_sha)
+        # The descriptor can remain stable even when its pathname is replaced
+        # after open. Reject a different on-disk report before publication.
+        current_input = args.input.stat(follow_symlinks=False)
+        if (
+            not stat.S_ISREG(current_input.st_mode)
+            or any(
+                getattr(current_input, field) != getattr(final_stat, field)
+                for field in ('st_dev', 'st_ino', 'st_mode', 'st_size', 'st_mtime_ns', 'st_ctime_ns')
+            )
+        ):
+            raise UnverifiedZapReport('ZAP report path changed during parse')
         args.output.parent.mkdir(parents=True, exist_ok=True)
         # Revalidate the output directory after reading untrusted input. A
         # workspace actor may have replaced an initially safe directory with
