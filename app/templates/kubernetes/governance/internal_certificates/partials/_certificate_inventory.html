@@ -16,6 +16,7 @@
                  class="{{ table_ui.block_classes() }}">
             {% set certificate_clear_query = {
                 'evidence_tab': 'certificates',
+                'clear_filters': 'certificates',
                 'cert_per_page': inventory.pagination.per_page,
                 'search': payload.search,
                 'environment': payload.filters.environment,
@@ -25,11 +26,13 @@
             } %}
             {% set certificate_clear_action %}
                 {% if inventory.search or inventory.filters.kind or inventory.filters.expiry or inventory.filters.coverage or inventory.filters.freshness or inventory.cluster_id %}
-                    {{ registry_ui.clear_filters_action(
+                    <span class="inline-flex" hx-boost="false" hx-disable>
+                        {{ registry_ui.clear_filters_action(
                         url_for('governance.internal_certificates', **certificate_clear_query),
                         table_ui.action_classes(),
                         marker='internal-pki-evidence-workspace',
                         lead=false) }}
+                    </span>
                 {% endif %}
             {% endset %}
             {% set certificate_badge = table_label.metadata_label(table_label.count_text(inventory.total, 'Certificate'), icon='file-badge') %}
