@@ -53,8 +53,7 @@
                                 'title': 'TLS Certificates',
                                 'status': 'Implemented',
                                 'tone': 'normal',
-                                'description': 'Manage certificate lifecycle, Ingress coverage, and governed TLS rotation.',
-                                'boundary': 'Detailed TLS evidence stays in this workspace.',
+                                'description': 'Review TLS lifecycle, Ingress coverage, and governed rotation.',
                                 'href': url_for('governance.tls_certificates') if can_view_tls else none,
                                 'action': 'Open TLS Certificates' if can_view_tls else 'View Permission Required',
                                 'action_icon': 'arrow-right' if can_view_tls else 'lock',
@@ -89,7 +88,6 @@
                                                                 'title': capability.title,
                                                                 'label': 'Governance Capability',
                                                                 'description': capability.description,
-                                                                'supporting': capability.boundary,
                                                                 'icon': capability.icon,
                                                                 'scope': capability.status,
                                                                 'status_tone': capability.tone,
@@ -108,7 +106,6 @@
                                     </div>
                                     <h3 class="mt-4 text-base font-semibold text-content-primary">{{ capability.title }}</h3>
                                     <p class="mt-1 text-xs leading-5 text-content-muted">{{ capability.description }}</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ capability.boundary }}</p>
                                     <div class="mt-auto border-t border-outline-subtle pt-3">
                                         {{ table_label.metadata_label(capability.action, icon=capability.action_icon) }}
                                     </div>
