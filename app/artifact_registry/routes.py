@@ -44,7 +44,7 @@ from app.artifact_registry.security.job_adapter import (
     get_registry_security_sync_job,
 )
 from app.artifact_registry.security.presentation import _providers as _eligible_security_sources
-from app.artifact_registry.security.presentation import build_security
+from app.artifact_registry.security.presentation import build_security, build_security_overview
 from app.artifact_registry.sync_jobs import NoEligibleRegistryTargets, enqueue_all_registry_inventory_sync
 from app.artifact_registry.webhooks import RegistryWebhookAuthError, ingest_webhook
 from app.dashboards.common.operational import (
@@ -220,6 +220,18 @@ def _security_response(kind: str) -> ResponseReturnValue:
 
 
 @artifact_registry_bp.get('/security')
+@permission_required('artifact_registry.view')
+def security_overview() -> ResponseReturnValue:
+    context = build_security_overview(source_id=_security_source_id())
+    template = (
+        'artifact_registry/partials/_security_overview.html'
+        if is_htmx_request(request.headers)
+        else 'artifact_registry/security_overview.html'
+    )
+    return render_template(template, security=context)
+
+
+@artifact_registry_bp.get('/security/vulnerabilities')
 @permission_required('artifact_registry.view')
 def security() -> ResponseReturnValue:
     return _security_response('vulnerabilities')
