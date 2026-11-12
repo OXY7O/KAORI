@@ -312,6 +312,18 @@ def test_internal_pki_source_workspace_shows_committed_registry_with_unknown_pki
         return _internal_pki_source_page()
 
     monkeypatch.setattr(internal_pki_routes, 'get_internal_certificates_source_page', read_committed)
+    # This route characterization mocks the source, not a migrated database.
+    # The schema blocker must run without querying committed certificate rows.
+    monkeypatch.setattr(
+        internal_pki_routes,
+        'check_internal_pki_schema_readiness',
+        lambda: SimpleNamespace(ready=False),
+    )
+
+    def must_not_read_inventory(_args) -> None:
+        raise AssertionError('The certificate read model must not run when the schema is absent')
+
+    monkeypatch.setattr(internal_pki_routes, 'get_internal_certificate_inventory_page', must_not_read_inventory)
     response = client.get('/governance/internal-certificates')
     assert response.status_code == 200
     assert calls == ['read']
