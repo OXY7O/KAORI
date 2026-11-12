@@ -38,7 +38,7 @@
             {% endif %}
         </div>
         <div class="flex items-center justify-between gap-3 border-t border-outline-subtle {{ footer_classes }}">
-            <span class="{{ '' if compact else 'text-sm font-semibold text-kaori-primary' }}">Open Workspace</span>
+            <span class="{{ '' if compact else 'text-sm font-semibold text-kaori-primary' }}">{{ workspace.action_label|default('Open Workspace', true) }}</span>
             {% if compact %}
                 <i data-lucide="arrow-up-right"
                    class="h-4 w-4 transition-transform group-hover:translate-x-0.5"
