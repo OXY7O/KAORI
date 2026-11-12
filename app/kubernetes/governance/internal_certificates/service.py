@@ -79,6 +79,10 @@ def get_internal_certificates_source_page(args: Any) -> dict[str, Any]:
         .distinct()
         .order_by(KubernetesConnection.detected_platform)
     ).all()
+    # Cluster scope must not be limited by the source table's current search or page.
+    # Read only registered identity columns; never access Kubernetes credentials.
+    cluster_choices = db.session.execute(select(Cluster.id, Cluster.name).order_by(Cluster.name, Cluster.id)).all()
+    clusters = [{'id': row.id, 'name': row.name} for row in cluster_choices]
     total_items = db.session.scalar(count_stmt) or 0
     total_pages = max(ceil(total_items / per_page), 1)
     page = min(page, total_pages)
@@ -105,7 +109,7 @@ def get_internal_certificates_source_page(args: Any) -> dict[str, Any]:
         'selected_cluster_id': selected_cluster_id,
         'search': search,
         'filters': {'environment': environment, 'platform': platform},
-        'filter_options': {'environments': environments, 'platforms': platforms},
+        'filter_options': {'environments': environments, 'platforms': platforms, 'clusters': clusters},
         'registered_total': db.session.scalar(select(func.count(Cluster.id))) or 0,
         'pagination': {
             'page': page,
