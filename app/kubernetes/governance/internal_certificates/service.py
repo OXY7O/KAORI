@@ -317,7 +317,7 @@ def get_internal_certificate_inventory_page(args: Any) -> dict[str, Any]:
         .all()
     )
     records = []
-    for certificate, cluster_name, version, coverage, reference in source_rows:
+    for certificate, cluster_name, version, source_coverage, reference in source_rows:
         status, tone = _expiry_presentation(certificate.not_before, certificate.not_after)
         stale = datetime.now(UTC) - _aware(certificate.collected_at) > timedelta(days=30)
         records.append(
@@ -333,7 +333,7 @@ def get_internal_certificate_inventory_page(args: Any) -> dict[str, Any]:
                 'collected_at': certificate.collected_at,
                 'source_kind': certificate.source_kind,
                 'source_version': version,
-                'coverage': coverage,
+                'coverage': source_coverage,
                 'reference': reference,
                 'status': status,
                 'tone': tone,

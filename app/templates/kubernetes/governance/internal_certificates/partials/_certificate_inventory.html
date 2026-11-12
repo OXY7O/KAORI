@@ -15,15 +15,15 @@
         <section id="internal-pki-certificate-registry"
                  class="{{ table_ui.block_classes() }}">
             {% set certificate_clear_query = {
-                                'evidence_tab': 'certificates',
-                                'clear_filters': 'certificates',
-                                'cert_per_page': inventory.pagination.per_page,
-                                'search': payload.search,
-                                'environment': payload.filters.environment,
-                                'platform': payload.filters.platform,
-                                'page': payload.pagination.page,
-                                'per_page': payload.pagination.per_page
-                            } %}
+                            'evidence_tab': 'certificates',
+                            'clear_filters': 'certificates',
+                            'cert_per_page': inventory.pagination.per_page,
+                            'search': payload.search,
+                            'environment': payload.filters.environment,
+                            'platform': payload.filters.platform,
+                            'page': payload.pagination.page,
+                            'per_page': payload.pagination.per_page
+                        } %}
             {% set certificate_clear_action %}
                 {% if inventory.search or inventory.filters.kind or inventory.filters.expiry or inventory.filters.coverage or inventory.filters.freshness or inventory.cluster_id %}
                     <span class="inline-flex" hx-boost="false" hx-disable>

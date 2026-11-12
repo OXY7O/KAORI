@@ -463,6 +463,7 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
     user = GovernanceRouteUser({'governance.view', 'clusters.view', 'internal_certificates.view'})
     client = _client_for_user(app, monkeypatch, user)
     monkeypatch.setattr(internal_pki_routes, 'has_registered_clusters', lambda: True)
+
     def read_source(args) -> dict[str, object]:
         page = _internal_pki_source_page()
         page['search'] = str(args.get('search') or '')
