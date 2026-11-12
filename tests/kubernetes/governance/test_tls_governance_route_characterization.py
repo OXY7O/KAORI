@@ -392,6 +392,15 @@ def test_internal_pki_source_workspace_shows_committed_registry_with_unknown_pki
     assert 'data-kaori-clear-filters' in filtered_html
     assert filtered_html.index('data-kaori-clear-filters') < filtered_html.index('id="internal-pki-source-filter"')
     assert 'View PKI Evidence for Pilot Cluster' in filtered_html
+    view = re.search(r'<a href="([^"]+)"[^>]*aria-label="View PKI Evidence for Pilot Cluster"', filtered_html)
+    assert view is not None
+    view_href = unescape(view.group(1))
+    view_query = parse_qs(urlsplit(view_href).query)
+    assert view_query['evidence_tab'] == ['certificates']
+    assert view_query['cluster_id'] == ['cluster-01']
+    view_result = client.get(view_href)
+    assert view_result.status_code == 200
+    assert 'Inventory Schema Upgrade Required' in view_result.get_data(as_text=True)
     assert 'Clear Cluster Scope' not in filtered_html
     assert '<th scope="col"' in filtered_html
     assert 'Actions</th>' in filtered_html
