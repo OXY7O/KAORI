@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
 from flask import Flask
 
+from app.commands.internal_pki import prepare_internal_pki
 from app.extensions.db import db
 from app.kubernetes.governance.internal_certificates.evidence_import import (
     PKIEvidenceValidationError,
@@ -278,4 +280,43 @@ def test_prepared_kubeadm_1364_manifest_commits_14_source_qualified_rows(
         assert inventory['pagination']['per_page'] == 5
         assert inventory['pagination']['total_pages'] == 3
         assert all(row['source_kind'] == 'kubeadm_check_expiration' for row in inventory['records'])
+
+
+def test_prepare_cli_writes_private_metadata_without_committing_database(pki_repository_app, tmp_path) -> None:
+    pki_repository_app.cli.add_command(prepare_internal_pki)
+    source = tmp_path / 'kubeadm-source.json'
+    output = tmp_path / 'manifest.json'
+    source.write_text(json.dumps(_kubeadm_1364_report()), encoding='utf-8')
+    cluster_id = str(uuid4())
+    args = [
+        'prepare-internal-pki',
+        '--input-file',
+        str(source),
+        '--output-file',
+        str(output),
+        '--cluster-id',
+        cluster_id,
+        '--node-name',
+        'desktop-control-plane',
+        '--source-version',
+        'v1.36.4',
+        '--collected-at',
+        datetime.now(UTC).isoformat(),
+        '--reference',
+        'UAT-PKI-REPORT-001',
+    ]
+    result = pki_repository_app.test_cli_runner().invoke(args=args)
+    assert result.exit_code == 0, result.output
+    assert output.exists()
+    assert output.stat().st_mode & 0o777 == 0o600
+    prepared = json.loads(output.read_text(encoding='utf-8'))
+    assert prepared['cluster_id'] == cluster_id
+    assert len(prepared['certificates']) == 14
+    assert 'residualTime' not in output.read_text(encoding='utf-8')
+    with pki_repository_app.app_context():
+        assert InternalPKIEvidenceBatch.query.count() == 0
+        assert InternalPKICertificateInventory.query.count() == 0
+    repeated = pki_repository_app.test_cli_runner().invoke(args=args)
+    assert repeated.exit_code != 0
+    assert 'Cannot read the source or create the private metadata manifest.' in repeated.output
 
