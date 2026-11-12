@@ -137,6 +137,14 @@ def test_runtime_summary_reuses_shared_section_intro_and_grouped_metrics() -> No
     assert "'Runtime Evidence Summary'" in summary
     assert "body_classes='p-0'" in summary
     assert 'posture_grid.render(runtime_metrics, columns=4)' in summary
+    assert '{% set summary_badge %}' in summary
+    assert "table_label.metadata_label(runtime_metrics|length ~ ' Indicators', icon='layout-grid')" in summary
+    assert 'header_badge=summary_badge' in summary
+    assert "'Committed Registry–Kubernetes bindings.'" in summary
+    assert "'Bindings with Critical/High findings.'" in summary
+    assert 'Committed Registry artifact to Kubernetes runtime bindings.' not in summary
+    assert 'Runtime bindings associated with artifacts reporting Critical or High findings.' not in summary
+    assert 'whitespace-nowrap' not in summary
     for name in ('Runtime Bindings', 'Digest Matched', 'Tag Matched', 'Security Exposed'):
         assert name in summary
     assert "'warning' if runtime.tag_matches else 'info'" in summary
