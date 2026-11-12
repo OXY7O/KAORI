@@ -150,11 +150,18 @@ def test_object_storage_inventory_matches_registry_grouped_visual_hierarchy() ->
     assert 'posture_grid.render(overview.fleet_posture_metrics, columns=4)' in fleet
     assert 'posture_grid.render(inventory.fleet_posture_metrics, columns=3)' in registry
     assert "body_classes='p-0'" in fleet
-    assert "table_label.metadata_label(overview.fleet_posture_metrics|length ~ ' Indicators'" in fleet
+    assert (
+        "table_label.metadata_label(overview.fleet_posture_metrics|length ~ ' Indicators'"
+        in fleet
+    )
     assert 'header_badge=fleet_badge' in fleet
     assert "body_classes='p-5'" in catalog
     assert 'compact_count=true' in catalog
-    assert "macro render(title, count, description, href, icon, action_label='Open Inventory', compact_count=false)" in cards
+    assert (
+        "macro render(title, count, description, href, icon, "
+        "action_label='Open Inventory', compact_count=false)"
+        in cards
+    )
     assert "table_label.metadata_label(count, icon='layers-3')" in cards
     assert 'sm:grid-cols-2' in catalog
     assert "'action_label': 'Browse Systems'" in presentation
