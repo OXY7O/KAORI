@@ -44,6 +44,14 @@ def _reject_constant(_value: str) -> None:
     raise UnverifiedZapReport('Non-finite JSON number')
 
 
+def _bounded_int(value: str) -> int:
+    # A JSON number outside this bound cannot represent an approved aggregate.
+    # Reject it before allocating a very large Python integer.
+    if len(value.lstrip('-')) > 20:
+        raise UnverifiedZapReport('Excessive JSON integer')
+    return int(value)
+
+
 def _finite_float(value: str) -> float:
     parsed = float(value)
     if not math.isfinite(parsed):
@@ -242,6 +250,7 @@ def main(argv: list[str] | None = None) -> int:
             object_pairs_hook=_unique_keys,
             parse_constant=_reject_constant,
             parse_float=_finite_float,
+            parse_int=_bounded_int,
         )
         summary = render_summary(payload, args.source_sha)
         args.output.parent.mkdir(parents=True, exist_ok=True)
