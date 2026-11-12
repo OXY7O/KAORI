@@ -87,9 +87,7 @@ def test_cve_impact_uses_shared_balanced_hero_and_short_snapshot_scope() -> None
 
     page = read('app/templates/artifact_registry/security_cve_impact.html')
     Environment().parse(page)
-    hero = page.split('page_hero.shell_classes()', 1)[1].split(
-        'snapshot_context_bar.render(', 1
-    )[0]
+    hero = page.split('page_hero.shell_classes()', 1)[1].split('snapshot_context_bar.render(', 1)[0]
 
     assert 'page_hero.layout_classes()' in hero
     assert 'page_hero.content_classes()' in hero
@@ -116,15 +114,9 @@ def test_cve_impact_uses_shared_balanced_hero_and_short_snapshot_scope() -> None
     assert 'Impact completeness is not verified' in page
     assert 'Workload names are not canonical application or Team identities.' in page
 
-    assert build_navigation_breadcrumb('artifact_registry.security_cve_impact')[-1][
-        'label'
-    ] == 'CVE Impact'
-    assert build_navigation_breadcrumb('artifact_registry.security_overview')[-1][
-        'label'
-    ] == 'Security Overview'
-    assert build_navigation_breadcrumb('artifact_registry.security_supply_chain')[-1][
-        'label'
-    ] == 'Supply Chain'
+    assert build_navigation_breadcrumb('artifact_registry.security_cve_impact')[-1]['label'] == 'CVE Impact'
+    assert build_navigation_breadcrumb('artifact_registry.security_overview')[-1]['label'] == 'Security Overview'
+    assert build_navigation_breadcrumb('artifact_registry.security_supply_chain')[-1]['label'] == 'Supply Chain'
 
 
 def test_cve_impact_footer_renders_required_path_identity_for_rows_and_pages() -> None:
