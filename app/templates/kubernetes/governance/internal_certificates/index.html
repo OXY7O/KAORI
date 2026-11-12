@@ -19,7 +19,7 @@
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('database', 'Committed Cluster Registry') }}
                             {{ page_hero.meta_label('file-badge', inventory.committed_total ~ ' Source-Reported Certificates') if inventory and inventory.committed_total else page_hero.meta_label('shield-alert', 'PKI Not Collected') }}
-                            {{ page_hero.meta_label('workflow', 'Renewal Deferred') }}
+                            {{ page_hero.meta_label('workflow', 'Native Renewal') }}
                         </div>
                     {% endcall %}
                 </div>
@@ -65,20 +65,20 @@
                                         items=[
                                         'Control-plane and etcd expiry require approved host-local or provider-owned evidence.',
                                         'Kubelet CSR metadata is not proof of an installed certificate or its expiration.',
-                                        'Renewal remains disabled until a separately approved Ansible or provider workflow exists.'
+                                        'Certificate renewal is managed by the native Kubernetes platform or PKI provider, outside KAORI.'
                                         ],
                                         placement='right',
                                         variant='guide') }}
                 {% endset %}
                 {% call section_card.render(
                     'PKI Evidence Boundaries',
-                    'Source qualification comes before certificate health, renewal readiness, or mutation.',
+                    'Source qualification comes before expiry posture; renewal stays with the platform or PKI owner.',
                     'shield-alert',
                     header_badge=source_guide,
                     body_classes='p-4',
                     aria_label='Internal certificate source evidence boundaries'
                     ) %}
-                    {% set metrics = [('database', 'Internal PKI Evidence', inventory.committed_total ~ ' Reported' if inventory and inventory.committed_total else 'Not Collected', 'Operator-attested metadata; installed status unverified', 'info' if inventory and inventory.committed_total else 'unknown'), ('shield-help', 'PKI Authority', 'Operator Supplied' if inventory and inventory.committed_total else 'Not Verified', 'Owner and source verification required', 'info' if inventory and inventory.committed_total else 'unknown'), ('workflow', 'Renewal', 'Deferred', 'Ansible and security approval required', 'info')] %}
+                    {% set metrics = [('database', 'Internal PKI Evidence', inventory.committed_total ~ ' Reported' if inventory and inventory.committed_total else 'Not Collected', 'Operator-attested metadata; installed status unverified', 'info' if inventory and inventory.committed_total else 'unknown'), ('shield-help', 'PKI Authority', 'Operator Supplied' if inventory and inventory.committed_total else 'Not Verified', 'Owner and source verification required', 'info' if inventory and inventory.committed_total else 'unknown'), ('workflow', 'Renewal', 'Provider Owned', 'Use native platform or external PKI procedures', 'info')] %}
                     {{ posture_grid.render(metrics, columns=3, compact=true) }}
                 {% endcall %}
             </section>
@@ -192,7 +192,7 @@
             <section class="rounded-xl border border-outline-default bg-surface-card p-5"
                      aria-label="Internal certificate collection next step">
                 <h2 class="text-sm font-semibold text-content-primary">{{ 'Automated PKI Collection Pending' if inventory and inventory.committed_total else 'Collection source not configured' }}</h2>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Operator-attested metadata can be imported for an approved cluster and node. Confirm distribution, PKI authority, and source identity before automatic collection. Renewal remains unavailable until Ansible orchestration is admitted.</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Operator-attested metadata can be imported for an approved cluster and node. Confirm distribution, PKI authority, and source identity before automatic collection. Once an approved Ansible collection integration is available, it can populate this inventory automatically. Renewal stays with the platform or PKI provider.</p>
             </section>
         {% endif %}
     </div>
