@@ -614,6 +614,28 @@ must keep the committed evidence visible and surface **Refresh Unavailable** onl
 status/description; it must not render a second blocking banner above readable data. Full-page prerequisite
 blocking is reserved for the pre-materialization state where no committed Runtime Correlation snapshot exists.
 
+### Runtime Overview presentation parity (Human Visual UAT #4529)
+
+The capability-level **Runtime Overview** reuses the same approved KAORI
+information hierarchy as **Security Overview**: **Committed Correlation Snapshot
+→ Runtime Workspaces → Runtime Evidence Posture**. The workspace catalog precedes
+metrics so operators first choose a destination before inspecting summary risk
+signals. Reuse the existing `workspace_link_card.render(..., compact=true)`
+two-column responsive cards for **Runtime Usage** (committed binding count) and
+**Topology** (correlated artifact count), with an explicit **2 Workspaces**
+metadata badge and existing scope-preserving destination URLs.
+
+The **Registry Runtime Evidence** section keeps the four authoritative committed
+metrics (Correlated Artifacts, Digest Matched, Tag Matched, Security Exposed)
+with the shared `resource_posture_grid.render(..., columns=4, compact=true)`
+and source-derived **4 Indicators** badge. Tag matches remain weaker than
+immutable digest matches; critical/high exposure remains a runtime-binding
+count, **not** a distinct CVE count or live workload health check. Do not introduce
+new provider calls or reclassify evidence freshness/readiness. Existing setup
+prerequisite gating, Hero, navigation, empty state, RBAC and snapshot semantics
+remain unchanged. Test mobile/light-dark, keyboard/card links and filtered
+destination URLs as part of Visual UAT before official staging admission.
+
 ## Registry Alert Analytics Contract
 
 Artifact Registry alert analytics extends the same Alert Source architecture already used by Kubernetes and
