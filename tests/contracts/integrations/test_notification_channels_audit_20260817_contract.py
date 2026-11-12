@@ -122,8 +122,12 @@ def test_notification_overview_uses_one_card_below_shared_section_intro() -> Non
     assert 'grid-cols-[minmax(0,1fr)_auto]' in snapshot
     assert 'sm:grid-cols-[minmax(0,1fr)_minmax(0,11rem)_auto]' in snapshot
     assert '{% if payload.overview.recent %}' in snapshot
-    assert 'title="{{ delivery.event_label }}"' in snapshot
-    assert 'title="{{ delivery.channel_name }}"' in snapshot
+    assert "table_ui.title_cell(delivery.event_label, delivery.channel_name, 'bell-ring')" in snapshot
+    shared_title_cell = read('app/templates/components/table_primitives.html').split(
+        '{% macro title_cell(', 1
+    )[1].split('{%- endmacro %}', 1)[0]
+    assert 'title="{{ name }}"' in shared_title_cell
+    assert 'title="{{ supporting_text }}"' in shared_title_cell
     assert 'delivery.created_at|user_datetime("Unknown time")' in snapshot
     assert 'Delivery outcome:' in snapshot
     assert 'table_label.status_label(delivery.status_label, delivery.status_tone' in snapshot
@@ -1102,3 +1106,31 @@ def test_review6_provider_guide_summaries_keep_security_coverage_and_copy_densit
     assert 'Anyone' in ' '.join(found['microsoft_teams'][2])
     for value in found.values():
         assert any(term in value[1] for term in ('read', 'recipient', 'receipt'))
+
+
+def test_recent_delivery_preview_uses_canonical_icon_and_subtle_info_footer() -> None:
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split(
+        "{% elif active_tab == 'channels' %}", 1
+    )[0]
+    preview = overview.split('aria-label="Recent committed delivery attempts"', 1)[1].split(
+        '{% else %}', 1
+    )[0]
+    footer = overview.split('Showing up to 5 committed records.', 1)[0].rsplit(
+        '<div class="flex flex-wrap items-center justify-between', 1
+    )[1]
+
+    assert "table_ui.title_cell(delivery.event_label, delivery.channel_name, 'bell-ring')" in preview
+    assert 'grid-cols-[minmax(0,1fr)_auto]' in preview
+    assert 'delivery.created_at|user_datetime("Unknown time")' in preview
+    assert "table_label.status_label(delivery.status_label, delivery.status_tone, size='compact')" in preview
+    assert 'data-lucide="info"' in footer
+    assert 'border-outline-subtle bg-surface-hover' in footer
+    assert 'aria-hidden="true"' in footer
+    assert 'Showing up to 5 committed records.' in overview
+    assert '.limit(5)' in service
+    assert "tab='delivery'" in overview
+    assert 'hx-target="#notification-channels-workspace"' in overview
+    assert 'Provider acceptance does not prove human receipt.' in overview
+    assert 'whitespace-nowrap' not in preview

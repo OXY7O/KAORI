@@ -194,12 +194,7 @@
                                         aria-label="Recent committed delivery attempts">
                                         {% for delivery in payload.overview.recent %}
                                             <li class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,11rem)_auto] sm:px-5">
-                                                <div class="min-w-0">
-                                                    <p class="truncate text-sm font-semibold leading-5 text-content-primary"
-                                                       title="{{ delivery.event_label }}">{{ delivery.event_label }}</p>
-                                                    <p class="mt-0.5 truncate text-xs leading-4 text-content-muted"
-                                                       title="{{ delivery.channel_name }}">{{ delivery.channel_name }}</p>
-                                                </div>
+                                                {{ table_ui.title_cell(delivery.event_label, delivery.channel_name, 'bell-ring') }}
                                                 <p class="col-start-1 row-start-2 min-w-0 text-xs leading-4 text-content-muted sm:col-auto sm:row-auto sm:truncate">
                                                     {{ delivery.created_at|user_datetime("Unknown time") }}
                                                 </p>
@@ -220,7 +215,12 @@
                                     </div>
                                 {% endif %}
                                 <div class="flex flex-wrap items-center justify-between gap-2 border-t border-outline-subtle bg-surface-card px-4 py-2.5 sm:px-5">
-                                    <span class="text-xs text-content-muted">Showing up to 5 committed records.</span>
+                                    <span class="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-outline-subtle bg-surface-hover px-2.5 py-1.5 text-xs text-content-muted">
+                                        <i data-lucide="info"
+                                           class="h-3.5 w-3.5 shrink-0 text-kaori-primary"
+                                           aria-hidden="true"></i>
+                                        <span>Showing up to 5 committed records.</span>
+                                    </span>
                                     <a href="{{ url_for('notification_channels.index', tab='delivery') }}"
                                        hx-get="{{ url_for('notification_channels.index', tab='delivery') }}"
                                        hx-target="#notification-channels-workspace"
