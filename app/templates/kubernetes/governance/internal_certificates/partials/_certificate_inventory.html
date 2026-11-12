@@ -33,6 +33,8 @@
                     aria_label='Filter committed internal certificate evidence') %}
                     <input type="hidden" name="evidence_tab" value="certificates">
                     <input type="hidden" name="search" value="{{ payload.search }}">
+                    <input type="hidden" name="environment" value="{{ payload.filters.environment }}">
+                    <input type="hidden" name="platform" value="{{ payload.filters.platform }}">
                     <input type="hidden" name="page" value="{{ payload.pagination.page }}">
                     <input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">
                     <label class="min-w-0 flex-1 text-xs font-semibold text-content-secondary"
@@ -48,6 +50,77 @@
                     </label>
                     {% if inventory.cluster_id %}
                         <input type="hidden" name="cluster_id" value="{{ inventory.cluster_id }}">
+                    {% endif %}
+                    <div class="min-w-0 sm:w-36">
+                        <label for="internal-pki-kind-filter"
+                               class="{{ table_ui.filter_label_classes() }}">Certificate Type</label>
+                        <select id="internal-pki-kind-filter"
+                                name="cert_kind"
+                                class="{{ table_ui.filter_select_classes() }}">
+                            <option value="">All Types</option>
+                            <option value="leaf" {% if inventory.filters.kind == 'leaf' %}selected{% endif %}>Leaf</option>
+                            <option value="ca" {% if inventory.filters.kind == 'ca' %}selected{% endif %}>CA</option>
+                        </select>
+                    </div>
+                    <div class="min-w-0 sm:w-40">
+                        <label for="internal-pki-expiry-filter"
+                               class="{{ table_ui.filter_label_classes() }}">Reported Expiry</label>
+                        <select id="internal-pki-expiry-filter"
+                                name="cert_expiry"
+                                class="{{ table_ui.filter_select_classes() }}">
+                            {% for value, label in [
+                                ('', 'All Expiry States'),
+                                ('outside_window', 'Outside Window'),
+                                ('renewal_window', 'Renewal Window'),
+                                ('critical_window', 'Critical Window'),
+                                ('expired', 'Expired'),
+                                ('not_yet_valid', 'Not Yet Valid')
+                            ] %}
+                                <option value="{{ value }}"
+                                        {% if inventory.filters.expiry == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="min-w-0 sm:w-32">
+                        <label for="internal-pki-coverage-filter"
+                               class="{{ table_ui.filter_label_classes() }}">Coverage</label>
+                        <select id="internal-pki-coverage-filter"
+                                name="cert_coverage"
+                                class="{{ table_ui.filter_select_classes() }}">
+                            <option value="">All Coverage</option>
+                            <option value="partial" {% if inventory.filters.coverage == 'partial' %}selected{% endif %}>Partial</option>
+                            <option value="complete" {% if inventory.filters.coverage == 'complete' %}selected{% endif %}>Complete</option>
+                        </select>
+                    </div>
+                    <div class="min-w-0 sm:w-36">
+                        <label for="internal-pki-freshness-filter"
+                               class="{{ table_ui.filter_label_classes() }}">Freshness</label>
+                        <select id="internal-pki-freshness-filter"
+                                name="cert_freshness"
+                                class="{{ table_ui.filter_select_classes() }}">
+                            <option value="">All Freshness</option>
+                            <option value="recent" {% if inventory.filters.freshness == 'recent' %}selected{% endif %}>Recently Collected</option>
+                            <option value="stale" {% if inventory.filters.freshness == 'stale' %}selected{% endif %}>Stale Evidence</option>
+                        </select>
+                    </div>
+                    {% if inventory.search or inventory.filters.kind or inventory.filters.expiry or inventory.filters.coverage or inventory.filters.freshness %}
+                        {{ registry_ui.clear_filters_link('governance.internal_certificates',
+                            'internal-pki-certificate-registry',
+                            'internal-pki-certificate-loading',
+                            inventory.pagination.per_page,
+                            table_ui.action_classes(),
+                            query_params={
+                            'evidence_tab': 'certificates',
+                            'cluster_id': inventory.cluster_id,
+                            'search': payload.search,
+                            'environment': payload.filters.environment,
+                            'platform': payload.filters.platform,
+                            'page': payload.pagination.page,
+                            'per_page': payload.pagination.per_page
+                            },
+                            page_param='cert_page',
+                            per_page_param='cert_per_page',
+                            lead=false) }}
                     {% endif %}
                 {% endcall %}
             </div>
@@ -121,7 +194,7 @@
                 'internal-pki-certificate-registry',
                 'internal-pki-certificate-loading',
                 inventory.pagination,
-                {'cert_search': inventory.search, 'cluster_id': inventory.cluster_id, 'evidence_tab': 'certificates', 'search': payload.search, 'page': payload.pagination.page, 'per_page': payload.pagination.per_page},
+                {'cert_search': inventory.search, 'cert_kind': inventory.filters.kind, 'cert_expiry': inventory.filters.expiry, 'cert_coverage': inventory.filters.coverage, 'cert_freshness': inventory.filters.freshness, 'cluster_id': inventory.cluster_id, 'evidence_tab': 'certificates', 'search': payload.search, 'environment': payload.filters.environment, 'platform': payload.filters.platform, 'page': payload.pagination.page, 'per_page': payload.pagination.per_page},
                 inventory.pagination.allowed_per_page,
                 resource_label='Certificates',
                 rows_aria_label='Certificates per page',
