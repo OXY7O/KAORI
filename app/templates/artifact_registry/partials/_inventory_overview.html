@@ -76,7 +76,7 @@
                         {% set asset_unit = 'Project' if asset.title == 'Projects' else ('Repository' if asset.title == 'Repositories' else 'Artifact') %}
                         {% set asset_scope = asset.count ~ ' ' ~ (asset.title if asset.count != 1 else asset_unit) %}
                         {{ workspace_card.render({
-                                        'href': url_for(asset.endpoint) ,
+                                                'href': url_for(asset.endpoint) ,
                         'title': asset.title,
                         'label': 'Committed Inventory',
                         'description': asset.description,
