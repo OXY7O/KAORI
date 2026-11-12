@@ -172,8 +172,11 @@ def test_runtime_overview_reuses_security_catalog_and_compact_posture() -> None:
         assert f'{name}=runtime.filters.' in runtime
     assert "'href': usage_url" in runtime
     assert "'href': topology_url" in runtime
-    assert "'scope': runtime.total ~ ' Bindings'" in runtime
-    assert "'scope': runtime.artifact_count ~ ' Artifacts'" in runtime
+    assert "'scope': runtime.total ~ (' Binding' if runtime.total == 1 else ' Bindings')" in runtime
+    assert (
+        "'scope': runtime.artifact_count ~ "
+        "(' Artifact' if runtime.artifact_count == 1 else ' Artifacts')"
+    ) in runtime
     for value in (
         'runtime.artifact_count',
         'runtime.digest_matches',
