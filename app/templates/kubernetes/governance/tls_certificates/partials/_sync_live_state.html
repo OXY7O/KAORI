@@ -19,16 +19,16 @@
                     class="text-sm font-semibold text-content-primary">TLS Inventory Operations</h3>
                 {{ table_label.status_label(payload.sync_state.label, payload.sync_state.tone, none, 'detail') }}
                 {{ info_tip.render('tls-inventory-operations-guide',
-                    'TLS Inventory Operations Guide',
-                    'Sync TLS collects TLS Secret and Ingress mapping evidence; it does not renew or rotate certificates.',
-                    items=[
-                    'Sync TLS refreshes committed evidence through the authorized background worker.',
-                    'Configure Sync manages the existing automatic synchronization schedule.',
-                    'Bulk Rotation opens a separate permission-controlled workflow; no rotation is triggered by Sync TLS.',
-                    'Collected expiry and host mapping evidence does not prove active client trust.'
-                    ],
-                    placement='right',
-                    variant='guide') }}
+                                'TLS Inventory Operations Guide',
+                                'Sync TLS collects TLS Secret and Ingress mapping evidence; it does not renew or rotate certificates.',
+                                items=[
+                                'Sync TLS refreshes committed evidence through the authorized background worker.',
+                                'Configure Sync manages the existing automatic synchronization schedule.',
+                                'Bulk Rotation opens a separate permission-controlled workflow; no rotation is triggered by Sync TLS.',
+                                'Collected expiry and host mapping evidence does not prove active client trust.'
+                                ],
+                                placement='right',
+                                variant='guide') }}
             </div>
             <p class="mt-1 text-xs leading-5 text-content-muted">
                 {{ payload.sync_state.progress_message or payload.sync_state.helper }}

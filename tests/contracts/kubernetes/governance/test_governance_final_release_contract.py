@@ -151,7 +151,7 @@ def test_tls_inventory_operations_guide_reuses_canonical_info_tip_without_changi
     assert "'TLS Inventory Operations Guide'" in live_state
     assert "variant='guide'" in live_state
     assert "placement='right'" in live_state
-    assert live_state.index("table_label.status_label(payload.sync_state.label") < live_state.index(
+    assert live_state.index('table_label.status_label(payload.sync_state.label') < live_state.index(
         "info_tip.render('tls-inventory-operations-guide'"
     )
     assert 'does not renew or rotate certificates' in live_state
@@ -160,11 +160,10 @@ def test_tls_inventory_operations_guide_reuses_canonical_info_tip_without_changi
     assert 'does not prove active client trust' in live_state
     assert 'data-kaori-info-tip-trigger' in guide_component
     assert 'aria-expanded="false"' in guide_component
-    assert "kubernetes/governance/tls_certificates/partials/_sync_live_state.html" in panel
+    assert 'kubernetes/governance/tls_certificates/partials/_sync_live_state.html' in panel
     assert "url_for('governance.tls_certificates_sync')" in panel
     assert "url_for('jobs.configuration', job_key='governance.tls_certificates.sync')" in panel
     assert "url_for('kubernetes_operations.tls_secret_bulk_rotation')" in panel
-
 
 
 def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace() -> None:
