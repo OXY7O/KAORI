@@ -683,7 +683,7 @@ def test_vulnerability_registry_table_uses_shared_dense_evidence_groups() -> Non
     table = template[start:end]
 
     assert 'table_ui.table_classes(' in table
-    assert "table_ui.header_cell_classes(action=true)" in table
+    assert 'table_ui.header_cell_classes(action=true)' in table
     assert table.count('<th scope="col"') == 6
     assert 'table_ui.body_classes()' in table
     assert 'table_ui.row_classes()' in table
@@ -709,14 +709,14 @@ def test_vulnerability_registry_table_uses_shared_dense_evidence_groups() -> Non
 
     assert 'macro title_cell(' in shared
     assert 'supporting_content=None)' in shared
-    assert "macro action_grid_classes(columns=2)" in shared
-    assert "macro row_classes()" in shared
+    assert 'macro action_grid_classes(columns=2)' in shared
+    assert 'macro row_classes()' in shared
 
     # Both focused views retain the canonical HTMX filter/pagination owner.
-    assert "registry.filter_form(" in template
-    assert "registry.footer(" in template
+    assert 'registry.filter_form(' in template
+    assert 'registry.footer(' in template
     assert 'security.pagination.per_page' in template
-    assert "security.filters.search" in template
+    assert 'security.filters.search' in template
     assert 'min-w-[68rem]' in template
 
 
