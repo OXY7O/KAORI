@@ -85,6 +85,21 @@ def test_notification_center_uses_canonical_title_guides_and_concise_evidence_co
     assert 'Activity Audit remains the system-wide evidence view for authorized administrators.' not in content
 
 
+def test_notification_register_filter_actions_keep_title_and_guide_first() -> None:
+    content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
+
+    title = content.index('>Notification Register</h3>')
+    guide = content.index("'notification-center-register-guide'", title)
+    clear_action = content.index('registry_ui.clear_filters_action(', guide)
+    clear_options = content[clear_action : content.index(') }}', clear_action)]
+    assert title < guide < clear_action
+    assert 'lead=false' in clear_options
+    assert "push_url='true'" in clear_options
+    assert "target='#activity-notification-page'" in clear_options
+    assert '{% if filter_active %}' in content[guide:clear_action]
+
+
+
 def test_notification_center_uses_quiet_kaori_surfaces() -> None:
     content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
     items = read('app/templates/platform_operations/notifications/components/_activity_center_items.html')
