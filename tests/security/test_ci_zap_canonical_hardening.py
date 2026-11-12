@@ -651,3 +651,39 @@ def test_report_path_replaced_after_read_fails_closed(tmp_path, monkeypatch, cap
     assert (tmp_path / 'old-zap.json').exists()
     assert report.exists()
     assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+
+@pytest.mark.parametrize('swap_target', ['input', 'output_parent'])
+def test_swap_during_temporary_evidence_write_fails_closed(
+    tmp_path, monkeypatch, capsys, swap_target
+):
+    """The final publication boundary must reject late path replacement."""
+    report = tmp_path / 'zap.json'
+    report.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
+    parent = tmp_path / 'evidence'
+    parent.mkdir()
+    output = parent / 'summary.md'
+    output.write_text('stale evidence', encoding='utf-8')
+    replacement = tmp_path / 'replacement'
+    if swap_target == 'input':
+        replacement.write_text('{"site":[{"alerts":[]}]}', encoding='utf-8')
+    else:
+        replacement.mkdir()
+
+    original_temporary = zap.tempfile.NamedTemporaryFile
+
+    def swap_after_temporary_created(*args, **kwargs):
+        stream = original_temporary(*args, **kwargs)
+        if swap_target == 'input':
+            report.rename(tmp_path / 'old-zap.json')
+            replacement.rename(report)
+        else:
+            parent.rename(tmp_path / 'old-evidence')
+            replacement.rename(parent)
+        return stream
+
+    monkeypatch.setattr(zap.tempfile, 'NamedTemporaryFile', swap_after_temporary_created)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not output.exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
