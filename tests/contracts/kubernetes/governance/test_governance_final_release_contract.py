@@ -219,6 +219,13 @@ def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace
     assert 'Internal PKI Source Registry' in workspace
     assert "registry_ui.filter_form('governance.internal_certificates'" in workspace
     assert "registry_ui.clear_filters_link('governance.internal_certificates'" in workspace
+    assert 'header_actions=source_clear_action' in workspace
+    assert 'table_ui.cluster_identity(record.name, record.environment)' in workspace
+    assert 'table_ui.header_cell_classes(true)' in workspace
+    assert 'table_ui.cell_classes(true)' in workspace
+    assert 'aria-label="View PKI Evidence for {{ record.name }}"' in workspace
+    assert workspace.index('{% set source_clear_action %}') < workspace.index('inventory_block_header(')
+    assert workspace.index("registry_ui.clear_filters_link('governance.internal_certificates'") < workspace.index("registry_ui.filter_form('governance.internal_certificates'")
     assert 'name="environment"' in workspace
     assert 'name="platform"' in workspace
     assert 'payload.filter_options.environments' in workspace
@@ -274,12 +281,12 @@ def test_internal_pki_certificate_registry_uses_committed_attested_evidence_only
     assert 'statement = statement.where(inventory.cluster_id == cluster_id)' in service
     assert "'committed_total': operational['total']" in service
     assert 'InternalPKICertificateInventory.query' in service
-    assert "Cluster.environment == environment" in service
-    assert "KubernetesConnection.detected_platform == platform" in service
-    assert "certificate.kind == kind" in service
-    assert "InternalPKIEvidenceBatch.coverage_state == coverage" in service
-    assert "certificate.not_after <= now" in service
-    assert "certificate.collected_at < now - timedelta(days=30)" in service
+    assert 'Cluster.environment == environment' in service
+    assert 'KubernetesConnection.detected_platform == platform' in service
+    assert 'certificate.kind == kind' in service
+    assert 'InternalPKIEvidenceBatch.coverage_state == coverage' in service
+    assert 'certificate.not_after <= now' in service
+    assert 'certificate.collected_at < now - timedelta(days=30)' in service
     assert 'InternalPKIEvidenceBatch' in service
     assert 'source_rows = db.session.execute(' in service
     assert 'func.max(InternalPKIEvidenceBatch.collected_at)' in service
@@ -326,6 +333,12 @@ def test_internal_pki_certificate_registry_uses_committed_attested_evidence_only
     assert "registry_ui.filter_form('governance.internal_certificates'" in partial
     assert "registry_ui.footer('governance.internal_certificates'" in partial
     assert "registry_ui.clear_filters_link('governance.internal_certificates'" in partial
+    assert 'header_actions=certificate_clear_action' in partial
+    assert "table_ui.title_cell(certificate.component" in partial
+    assert "'key-round' if certificate.kind == 'ca' else 'file-badge'" in partial
+    assert 'data-lucide="calendar-clock"' in partial
+    assert partial.index('{% set certificate_clear_action %}') < partial.index('inventory_block_header(')
+    assert partial.index("registry_ui.clear_filters_link('governance.internal_certificates'") < partial.index("registry_ui.filter_form('governance.internal_certificates'")
     assert 'name="cert_kind"' in partial
     assert 'name="cert_expiry"' in partial
     assert 'name="cert_coverage"' in partial

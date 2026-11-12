@@ -325,9 +325,11 @@ each tab's independent search/page/rows parameters. Filtering and pagination
 refresh the **entire tab workspace**, so tab URLs and inactive-tab parameters
 remain synchronized without a new JavaScript controller. Both registry forms
 use the existing `table_registry.clear_filters_link` only when a tab has active
-filters; clearing a tab resets that tab's page and search/facets while keeping
-the selected cluster, the opposite tab's filter/page/rows, and the current
-Rows setting.
+filters. The Clear Filters action belongs to the existing
+`table_ui.inventory_block_header(header_actions=...)` group next to Open
+Cluster Integrations, **not** to the filter input row. Clearing a tab resets
+that tab's page and search/facets while keeping the selected cluster, the
+opposite tab's filter/page/rows, and the current Rows setting.
 
 Registered Source Coverage supports committed **Cluster Search, Environment,
 Detected Platform** filters; the option lists are derived only from committed
@@ -338,7 +340,12 @@ Not Yet Valid), source-declared Coverage (Partial/Complete), and Evidence
 Freshness (Recently Collected/Stale)**. All facets operate server-side before
 count/pagination, with default 5 rows. Source tables and certificates use the
 canonical KAORI table/header/cell hierarchy and a truthful source-qualified
-empty state. Filtered expiry is **not** independently verified installed health.
+empty state. Registered sources use the shared icon-bearing
+`table_ui.cluster_identity` cell, while `View PKI Evidence` is an
+independent, view-only button in a right-aligned Actions column that opens
+the cluster-scoped certificate tab. The certificate registry uses the shared
+icon-bearing `table_ui.title_cell` for leaf/CA component identity and
+lightweight node, issuer, and expiry icons; no icon asserts installed health. Filtered expiry is **not** independently verified installed health.
 
 It reuses canonical
 `snapshot_context_bar`, `action_button`, `operational_section_card`, and

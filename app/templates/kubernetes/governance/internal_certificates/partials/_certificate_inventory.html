@@ -12,16 +12,40 @@
             </p>
         </div>
     {% elif inventory %}
-        <section id="internal-pki-certificate-registry" class="{{ table_ui.block_classes() }}">
+        <section id="internal-pki-certificate-registry"
+                 class="{{ table_ui.block_classes() }}">
+            {% set certificate_clear_query = evidence_query.copy() %}
+            {% set _ = certificate_clear_query.update({
+                'evidence_tab': 'certificates',
+                'cert_search': '',
+                'cert_kind': '',
+                'cert_expiry': '',
+                'cert_coverage': '',
+                'cert_freshness': ''
+            }) %}
+            {% set certificate_clear_action %}
+                {% if inventory.search or inventory.filters.kind or inventory.filters.expiry or inventory.filters.coverage or inventory.filters.freshness %}
+                    {{ registry_ui.clear_filters_link('governance.internal_certificates',
+                        'internal-pki-evidence-workspace',
+                        'internal-pki-certificate-loading',
+                        inventory.pagination.per_page,
+                        table_ui.action_classes(),
+                        query_params=certificate_clear_query,
+                        page_param='cert_page',
+                        per_page_param='cert_per_page',
+                        lead=false) }}
+                {% endif %}
+            {% endset %}
             {% set certificate_badge = table_label.metadata_label(table_label.count_text(inventory.total, 'Certificate'), icon='file-badge') %}
             {{ table_ui.inventory_block_header('file-badge',
-                'Internal Certificate Registry',
-                'Operator-attested kubeadm metadata; installation and active-use status are not verified.',
-                'internal-pki-certificate-loading',
-                'Refreshing Internal Certificate Registry',
-                url_for('integrations.kubernetes') ,
+                        'Internal Certificate Registry',
+                        'Operator-attested kubeadm metadata; installation and active-use status are not verified.',
+                        'internal-pki-certificate-loading',
+                        'Refreshing Internal Certificate Registry',
+                        url_for('integrations.kubernetes') ,
                 'Open Cluster Integrations',
-                title_extra=certificate_badge) }}
+                title_extra=certificate_badge,
+                header_actions=certificate_clear_action) }}
             <div class="{{ table_ui.inventory_filter_bar_classes() }}">
                 {% call registry_ui.filter_form('governance.internal_certificates',
                     'internal-pki-evidence-workspace',
@@ -33,10 +57,14 @@
                     aria_label='Filter committed internal certificate evidence') %}
                     <input type="hidden" name="evidence_tab" value="certificates">
                     <input type="hidden" name="search" value="{{ payload.search }}">
-                    <input type="hidden" name="environment" value="{{ payload.filters.environment }}">
+                    <input type="hidden"
+                           name="environment"
+                           value="{{ payload.filters.environment }}">
                     <input type="hidden" name="platform" value="{{ payload.filters.platform }}">
                     <input type="hidden" name="page" value="{{ payload.pagination.page }}">
-                    <input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">
+                    <input type="hidden"
+                           name="per_page"
+                           value="{{ payload.pagination.per_page }}">
                     <label class="min-w-0 flex-1 text-xs font-semibold text-content-secondary"
                            for="internal-pki-certificate-search">
                         Search Certificate Evidence
@@ -58,7 +86,8 @@
                                 name="cert_kind"
                                 class="{{ table_ui.filter_select_classes() }}">
                             <option value="">All Types</option>
-                            <option value="leaf" {% if inventory.filters.kind == 'leaf' %}selected{% endif %}>Leaf</option>
+                            <option value="leaf"
+                                    {% if inventory.filters.kind == 'leaf' %}selected{% endif %}>Leaf</option>
                             <option value="ca" {% if inventory.filters.kind == 'ca' %}selected{% endif %}>CA</option>
                         </select>
                     </div>
@@ -75,7 +104,7 @@
                                 ('critical_window', 'Critical Window'),
                                 ('expired', 'Expired'),
                                 ('not_yet_valid', 'Not Yet Valid')
-                            ] %}
+                                ] %}
                                 <option value="{{ value }}"
                                         {% if inventory.filters.expiry == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
@@ -88,8 +117,10 @@
                                 name="cert_coverage"
                                 class="{{ table_ui.filter_select_classes() }}">
                             <option value="">All Coverage</option>
-                            <option value="partial" {% if inventory.filters.coverage == 'partial' %}selected{% endif %}>Partial</option>
-                            <option value="complete" {% if inventory.filters.coverage == 'complete' %}selected{% endif %}>Complete</option>
+                            <option value="partial"
+                                    {% if inventory.filters.coverage == 'partial' %}selected{% endif %}>Partial</option>
+                            <option value="complete"
+                                    {% if inventory.filters.coverage == 'complete' %}selected{% endif %}>Complete</option>
                         </select>
                     </div>
                     <div class="min-w-0 sm:w-36">
@@ -99,29 +130,13 @@
                                 name="cert_freshness"
                                 class="{{ table_ui.filter_select_classes() }}">
                             <option value="">All Freshness</option>
-                            <option value="recent" {% if inventory.filters.freshness == 'recent' %}selected{% endif %}>Recently Collected</option>
-                            <option value="stale" {% if inventory.filters.freshness == 'stale' %}selected{% endif %}>Stale Evidence</option>
+                            <option value="recent"
+                                    {% if inventory.filters.freshness == 'recent' %}selected{% endif %}>Recently Collected</option>
+                            <option value="stale"
+                                    {% if inventory.filters.freshness == 'stale' %}selected{% endif %}>Stale Evidence</option>
                         </select>
                     </div>
-                    {% if inventory.search or inventory.filters.kind or inventory.filters.expiry or inventory.filters.coverage or inventory.filters.freshness %}
-                        {{ registry_ui.clear_filters_link('governance.internal_certificates',
-                            'internal-pki-evidence-workspace',
-                            'internal-pki-certificate-loading',
-                            inventory.pagination.per_page,
-                            table_ui.action_classes(),
-                            query_params={
-                            'evidence_tab': 'certificates',
-                            'cluster_id': inventory.cluster_id,
-                            'search': payload.search,
-                            'environment': payload.filters.environment,
-                            'platform': payload.filters.platform,
-                            'page': payload.pagination.page,
-                            'per_page': payload.pagination.per_page
-                            },
-                            page_param='cert_page',
-                            per_page_param='cert_per_page',
-                            lead=false) }}
-                    {% endif %}
+
                 {% endcall %}
             </div>
             <div class="w-full overflow-x-auto">
@@ -141,15 +156,22 @@
                         {% for certificate in inventory.records %}
                             <tr class="{{ table_ui.row_classes() }}">
                                 <td class="{{ table_ui.cell_classes() }} align-top">
-                                    <p class="font-semibold text-content-primary">{{ certificate.component }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">{{ 'Certificate Authority' if certificate.kind == 'ca' else 'Leaf Certificate' }}</p>
+                                    {{ table_ui.title_cell(certificate.component,
+                                        'Certificate Authority' if certificate.kind == 'ca' else 'Leaf Certificate',
+                                        'key-round' if certificate.kind == 'ca' else 'file-badge') }}
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }} align-top">
                                     <p class="font-medium text-content-primary">{{ certificate.cluster_name }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">{{ certificate.node_name }}</p>
+                                    <p class="mt-1 inline-flex items-center gap-1 text-xs text-content-muted">
+                                        <i data-lucide="server" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></i>
+                                        {{ certificate.node_name }}
+                                    </p>
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }} align-top">
-                                    <p class="font-medium text-content-primary">{{ certificate.issuer or 'Not Reported' }}</p>
+                                    <p class="inline-flex items-center gap-1.5 font-medium text-content-primary">
+                                        <i data-lucide="key-round" class="h-3.5 w-3.5 shrink-0 text-content-muted" aria-hidden="true"></i>
+                                        {{ certificate.issuer or 'Not Reported' }}
+                                    </p>
                                     <p class="mt-1 text-xs text-content-muted">
                                         {% if certificate.externally_managed is sameas true %}
                                             External authority
@@ -161,7 +183,10 @@
                                     </p>
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }} align-top">
-                                    <p class="whitespace-nowrap font-semibold text-content-primary">{{ certificate.not_after|user_date("Unknown") }}</p>
+                                    <p class="inline-flex items-center gap-1.5 whitespace-nowrap font-semibold text-content-primary">
+                                        <i data-lucide="calendar-clock" class="h-3.5 w-3.5 shrink-0 text-content-muted" aria-hidden="true"></i>
+                                        {{ certificate.not_after|user_date("Unknown") }}
+                                    </p>
                                     <p class="mt-1 text-xs text-content-muted">Source-reported NotAfter</p>
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }} align-top">
@@ -173,7 +198,8 @@
                                     <p class="font-medium text-content-primary">Operator Attested</p>
                                     <p class="mt-1 text-xs text-content-muted">{{ certificate.source_version }} · {{ certificate.coverage|title }} coverage</p>
                                     <p class="mt-1 text-xs text-content-muted">Collected {{ certificate.collected_at|user_date("Unknown") }}</p>
-                                    <p class="mt-1 break-all font-mono text-xs text-content-muted" title="{{ certificate.reference }}">Ref: {{ certificate.reference }}</p>
+                                    <p class="mt-1 break-all font-mono text-xs text-content-muted"
+                                       title="{{ certificate.reference }}">Ref: {{ certificate.reference }}</p>
                                 </td>
                             </tr>
                         {% else %}
@@ -190,16 +216,16 @@
                   class="htmx-indicator sr-only"
                   role="status">Loading committed certificate evidence</span>
             {{ registry_ui.footer('governance.internal_certificates',
-                'internal-pki-evidence-workspace',
-                'internal-pki-certificate-loading',
-                inventory.pagination,
+                        'internal-pki-evidence-workspace',
+                        'internal-pki-certificate-loading',
+                        inventory.pagination,
                 {'cert_search': inventory.search, 'cert_kind': inventory.filters.kind, 'cert_expiry': inventory.filters.expiry, 'cert_coverage': inventory.filters.coverage, 'cert_freshness': inventory.filters.freshness, 'cluster_id': inventory.cluster_id, 'evidence_tab': 'certificates', 'search': payload.search, 'environment': payload.filters.environment, 'platform': payload.filters.platform, 'page': payload.pagination.page, 'per_page': payload.pagination.per_page},
-                inventory.pagination.allowed_per_page,
-                resource_label='Certificates',
-                rows_aria_label='Certificates per page',
-                control_name='internal-pki-certificate',
-                page_param='cert_page',
-                per_page_param='cert_per_page') }}
+                        inventory.pagination.allowed_per_page,
+                        resource_label='Certificates',
+                        rows_aria_label='Certificates per page',
+                        control_name='internal-pki-certificate',
+                        page_param='cert_page',
+                        per_page_param='cert_per_page') }}
         </section>
     {% endif %}
 </section>
