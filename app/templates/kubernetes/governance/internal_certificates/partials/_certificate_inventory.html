@@ -15,20 +15,19 @@
         <section id="internal-pki-certificate-registry"
                  class="{{ table_ui.block_classes() }}">
             {% set certificate_clear_query = {
-                'evidence_tab': 'certificates',
-                'clear_filters': 'certificates',
-                'cert_per_page': inventory.pagination.per_page,
-                'search': payload.search,
-                'environment': payload.filters.environment,
-                'platform': payload.filters.platform,
-                'page': payload.pagination.page,
-                'per_page': payload.pagination.per_page
-            } %}
+                                'evidence_tab': 'certificates',
+                                'clear_filters': 'certificates',
+                                'cert_per_page': inventory.pagination.per_page,
+                                'search': payload.search,
+                                'environment': payload.filters.environment,
+                                'platform': payload.filters.platform,
+                                'page': payload.pagination.page,
+                                'per_page': payload.pagination.per_page
+                            } %}
             {% set certificate_clear_action %}
                 {% if inventory.search or inventory.filters.kind or inventory.filters.expiry or inventory.filters.coverage or inventory.filters.freshness or inventory.cluster_id %}
                     <span class="inline-flex" hx-boost="false" hx-disable>
-                        {{ registry_ui.clear_filters_action(
-                        url_for('governance.internal_certificates', **certificate_clear_query),
+                        {{ registry_ui.clear_filters_action(url_for('governance.internal_certificates', **certificate_clear_query) ,
                         table_ui.action_classes(),
                         marker='internal-pki-evidence-workspace',
                         lead=false) }}
@@ -49,9 +48,9 @@
                         'internal-pki-certificate-loading',
                         'Refreshing Internal Certificate Registry',
                         url_for('integrations.kubernetes') ,
-                'Open Cluster Integrations',
-                title_extra=certificate_scope_badge,
-                header_actions=certificate_clear_action) }}
+            'Open Cluster Integrations',
+            title_extra=certificate_scope_badge,
+            header_actions=certificate_clear_action) }}
             <div class="{{ table_ui.inventory_filter_bar_classes() }}">
                 {% call registry_ui.filter_form('governance.internal_certificates',
                     'internal-pki-evidence-workspace',
@@ -142,7 +141,6 @@
                                     {% if inventory.filters.freshness == 'stale' %}selected{% endif %}>Stale Evidence</option>
                         </select>
                     </div>
-
                 {% endcall %}
             </div>
             <div class="w-full overflow-x-auto">
@@ -163,8 +161,8 @@
                             <tr class="{{ table_ui.row_classes() }}">
                                 <td class="{{ table_ui.cell_classes() }} align-top">
                                     {{ table_ui.title_cell(certificate.component,
-                                        'Certificate Authority' if certificate.kind == 'ca' else 'Leaf Certificate',
-                                        'key-round' if certificate.kind == 'ca' else 'file-badge') }}
+                                                                        'Certificate Authority' if certificate.kind == 'ca' else 'Leaf Certificate',
+                                                                        'key-round' if certificate.kind == 'ca' else 'file-badge') }}
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }} align-top">
                                     <p class="font-medium text-content-primary">{{ certificate.cluster_name }}</p>
@@ -175,7 +173,9 @@
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }} align-top">
                                     <p class="inline-flex items-center gap-1.5 font-medium text-content-primary">
-                                        <i data-lucide="key-round" class="h-3.5 w-3.5 shrink-0 text-content-muted" aria-hidden="true"></i>
+                                        <i data-lucide="key-round"
+                                           class="h-3.5 w-3.5 shrink-0 text-content-muted"
+                                           aria-hidden="true"></i>
                                         {{ certificate.issuer or 'Not Reported' }}
                                     </p>
                                     <p class="mt-1 text-xs text-content-muted">
@@ -190,7 +190,9 @@
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }} align-top">
                                     <p class="inline-flex items-center gap-1.5 whitespace-nowrap font-semibold text-content-primary">
-                                        <i data-lucide="calendar-clock" class="h-3.5 w-3.5 shrink-0 text-content-muted" aria-hidden="true"></i>
+                                        <i data-lucide="calendar-clock"
+                                           class="h-3.5 w-3.5 shrink-0 text-content-muted"
+                                           aria-hidden="true"></i>
                                         {{ certificate.not_after|user_date("Unknown") }}
                                     </p>
                                     <p class="mt-1 text-xs text-content-muted">Source-reported NotAfter</p>
@@ -225,7 +227,7 @@
                         'internal-pki-evidence-workspace',
                         'internal-pki-certificate-loading',
                         inventory.pagination,
-                {'cert_search': inventory.search, 'cert_kind': inventory.filters.kind, 'cert_expiry': inventory.filters.expiry, 'cert_coverage': inventory.filters.coverage, 'cert_freshness': inventory.filters.freshness, 'cluster_id': inventory.cluster_id, 'evidence_tab': 'certificates', 'search': payload.search, 'environment': payload.filters.environment, 'platform': payload.filters.platform, 'page': payload.pagination.page, 'per_page': payload.pagination.per_page},
+                        {'cert_search': inventory.search, 'cert_kind': inventory.filters.kind, 'cert_expiry': inventory.filters.expiry, 'cert_coverage': inventory.filters.coverage, 'cert_freshness': inventory.filters.freshness, 'cluster_id': inventory.cluster_id, 'evidence_tab': 'certificates', 'search': payload.search, 'environment': payload.filters.environment, 'platform': payload.filters.platform, 'page': payload.pagination.page, 'per_page': payload.pagination.per_page},
                         inventory.pagination.allowed_per_page,
                         resource_label='Certificates',
                         rows_aria_label='Certificates per page',
