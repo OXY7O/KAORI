@@ -119,6 +119,74 @@ def test_cve_impact_uses_shared_balanced_hero_and_short_snapshot_scope() -> None
     assert build_navigation_breadcrumb('artifact_registry.security_supply_chain')[-1]['label'] == 'Supply Chain'
 
 
+def test_cve_impact_evidence_tables_use_canonical_registry_patterns() -> None:
+    """Exact CVE can match multiple findings and independent runtime bindings."""
+    page = read('app/templates/artifact_registry/security_cve_impact.html')
+    read_model = read('app/artifact_registry/security/cve_impact.py')
+    shared_table = read('app/templates/components/table.html')
+    Environment().parse(page)
+
+    assert page.count('class="{{ table_ui.block_classes() }}"') == 2
+    assert page.count('table_ui.inventory_block_header(') == 2
+    assert page.count('class="overflow-x-auto"') == 2
+    assert page.count("table_ui.table_classes('min-w-[60rem]')") == 2
+    assert page.count('class="{{ table_ui.head_classes() }}"') == 2
+    assert page.count('class="{{ table_ui.body_classes() }}"') == 2
+    assert page.count('class="{{ table_ui.row_classes() }}"') == 2
+    assert page.count('components/states/_empty_state.html') == 2
+    assert page.count('aria-label="View runtime usage for ') == 2
+    assert "title_extra=findings_badge" in page
+    assert "title_extra=runtime_badge" in page
+    assert "impact.finding_count ~ (' Finding'" in page
+    assert "impact.binding_count ~ (' Binding'" in page
+    assert 'table_label.metadata_label(' in page
+    assert 'macro inventory_block_header(' in shared_table
+
+    # Both lists are one-to-many even though the screenshot shows one row.
+    assert 'for row in impact.finding_rows' in page
+    assert 'for row in impact.runtime_rows' in page
+    assert 'finding_items, finding_pagination = paginate_query(' in read_model
+    assert 'runtime_items, runtime_pagination = paginate_query(' in read_model
+    assert "page_param='finding_page'" in page
+    assert "page_param='runtime_page'" in page
+    assert "impact.runtime_pagination.page" in page
+    assert "impact.finding_pagination.page" in page
+    assert page.count('[5, 10, 25, 50]') == 2
+
+    # Identity, timestamps, qualified match confidence and source actions survive.
+    for field in (
+        'row.repository',
+        'row.project',
+        'row.source',
+        'row.digest',
+        'row.package',
+        'row.installed_version',
+        'row.fixed_version',
+        'row.severity',
+        'row.freshness.label',
+        'row.observed_at|user_datetime',
+        'row.cluster',
+        'row.namespace',
+        'row.workload',
+        'row.pod',
+        'row.container',
+        'row.match.label',
+        'row.match.description',
+        'row.artifact_id',
+    ):
+        assert field in page
+
+    assert 'Digest matches are stronger than mutable tag references.' in page
+    assert 'Workload names are not canonical application or Team identities.' in page
+    assert 'Correlation is not current; absence is unverified.' in page
+    assert 'This does not prove the application fleet is unaffected' in page
+    assert "url_for('artifact_registry.runtime', artifact_id=row.artifact_id)" in page
+    assert page.count('colspan="5"') == 2
+    assert 'data-kaori-empty-state' in read(
+        'app/templates/components/states/_empty_state.html'
+    )
+
+
 def test_cve_impact_footer_renders_required_path_identity_for_rows_and_pages() -> None:
     """Regression: #2606, a required cve_id previously caused HTTP 500."""
     app = Flask(__name__, template_folder=str(ROOT / 'app/templates'))
