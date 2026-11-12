@@ -293,7 +293,7 @@ def test_cve_impact_query_tabs_show_one_canonical_evidence_table_at_a_time() -> 
 
     # Operator-facing metadata stays complete and readable.
     for marker in (
-        '<dt class="font-semibold text-content-secondary">Digest</dt>',
+        '<dt class="shrink-0 font-semibold text-content-secondary">Digest</dt>',
         'row.digest',
         'row.project',
         'row.source',
@@ -310,11 +310,11 @@ def test_cve_impact_query_tabs_show_one_canonical_evidence_table_at_a_time() -> 
         assert marker in page
 
     # The shared header owns Clear Filters; filters remain two full-width peers.
-    assert page.count("header_actions=findings_header_actions") == 1
-    assert page.count("header_actions=runtime_header_actions") == 1
-    assert page.count("registry.clear_filters_link(") == 2
+    assert page.count('header_actions=findings_header_actions') == 1
+    assert page.count('header_actions=runtime_header_actions') == 1
+    assert page.count('registry.clear_filters_link(') == 2
     assert page.count("'artifact-registry-cve-evidence-workspace',") == 6
-    assert page.count("lead=false") == 0
+    assert page.count('lead=false') == 0
     assert page.count('<dl class="mt-2 grid min-w-0') == 1
     assert 'grid-cols-[4.5rem_minmax(0,1fr)]' in page
 
@@ -329,16 +329,26 @@ def test_cve_impact_snapshot_and_detail_cells_follow_compact_kaori_style() -> No
     assert len(summary) <= 48
     assert 'description=impact.correlation.description' not in page
 
-    # Compact digest preview is disclosed without losing the immutable value.
+    # A compact preview and shared clipboard action keep multi-record rows short.
     assert page.count('<dl class="mt-2 grid min-w-0') == 1
     assert page.count('</dl>') == 2
-    assert '<details class="min-w-0">' in page
-    assert '<summary class="flex min-w-0 cursor-pointer' in page
-    assert "row.digest[:23] ~ '…' ~ row.digest[-12:]" in page
-    assert '>{{ row.digest }}</code>' in page
-    assert 'aria-label="Show full digest for {{ row.repository }}"' in page
+    assert '<details' not in page
+    assert '<summary' not in page
+    assert '<dl data-kaori-copy-root' in page
+    assert page.count('data-kaori-copy-button') == 1
+    assert page.count('data-kaori-copy-source') == 1
+    assert 'data-copy-label="Copy Digest"' in page
+    assert 'data-copied-label="Copied"' in page
+    assert 'aria-label="Copy full digest for {{ row.repository }}"' in page
+    assert "row.digest[:18] ~ '…' ~ row.digest[-8:]" in page
+    assert '<span data-kaori-copy-source hidden>{{ row.digest }}</span>' in page
+    assert 'title="{{ row.digest }}"' in page
+    clipboard = read('app/static/js/clipboard.js')
+    assert "closest('[data-kaori-copy-root]')" in clipboard
+    assert "querySelector('[data-kaori-copy-source]')" in clipboard
+    assert "querySelector('[data-kaori-copy-label]')" in clipboard
+    assert '<dt class="shrink-0 font-semibold text-content-secondary">Digest</dt>' in page
     for key, value in (
-        ('Digest', 'row.digest'),
         ('Pod', 'row.pod'),
         ('Container', 'row.container'),
     ):
@@ -349,7 +359,7 @@ def test_cve_impact_snapshot_and_detail_cells_follow_compact_kaori_style() -> No
     assert 'font-mono text-content-muted' in page
 
     # Header actions use the shared registry reset, not a third filter control.
-    assert page.count('table_ui.action_classes(),') == 2
+    assert page.count('table_ui.action_classes() ,') == 2
     assert page.count('registry.clear_filters_link(') == 2
     assert page.count('registry.filter_form(') == 2
     for tab in ('findings', 'runtime'):
