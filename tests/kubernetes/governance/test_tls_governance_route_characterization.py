@@ -311,9 +311,15 @@ def test_internal_pki_source_workspace_shows_committed_registry_with_unknown_pki
     monkeypatch.setattr(internal_pki_routes, 'has_registered_clusters', lambda: True)
     calls: list[str] = []
 
-    def read_committed(_args) -> dict[str, object]:
+    def read_committed(args) -> dict[str, object]:
         calls.append('read')
-        return _internal_pki_source_page()
+        page = _internal_pki_source_page()
+        page['search'] = str(args.get('search') or '')
+        page['filters'] = {
+            'environment': str(args.get('environment') or ''),
+            'platform': str(args.get('platform') or ''),
+        }
+        return page
 
     monkeypatch.setattr(internal_pki_routes, 'get_internal_certificates_source_page', read_committed)
     # This route characterization mocks the source, not a migrated database.
@@ -367,6 +373,12 @@ def test_internal_pki_source_workspace_shows_committed_registry_with_unknown_pki
     assert 'name="platform"' in retained_html
     assert 'All Environments' in retained_html
     assert 'All Platforms' in retained_html
+    filtered = client.get('/governance/internal-certificates?search=Kub&environment=non-production')
+    assert filtered.status_code == 200
+    filtered_html = filtered.get_data(as_text=True)
+    assert 'Clear Filters' in filtered_html
+    assert 'name="environment"' in filtered_html
+    assert 'Registered Source Coverage' in filtered_html
 
 
 def test_internal_pki_source_clusterless_blocks_registry_query(
@@ -418,12 +430,17 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
     observed = datetime.now(UTC)
     calls: list[str] = []
 
-    def committed_certificate_page(_args) -> dict:
+    def committed_certificate_page(args) -> dict:
         calls.append('read')
         return {
             'total': 1,
             'committed_total': 1,
-            'filters': {'kind': '', 'expiry': '', 'coverage': '', 'freshness': ''},
+            'filters': {
+                'kind': str(args.get('cert_kind') or ''),
+                'expiry': str(args.get('cert_expiry') or ''),
+                'coverage': str(args.get('cert_coverage') or ''),
+                'freshness': str(args.get('cert_freshness') or ''),
+            },
             'operational': {
                 'total': 1,
                 'outside_window': 1,
@@ -460,7 +477,7 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
                     'freshness_tone': 'info',
                 }
             ],
-            'search': '',
+            'search': str(args.get('cert_search') or ''),
             'cluster_id': '',
             'pagination': {
                 'page': 1,
@@ -495,6 +512,13 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
     assert 'No Worker Runs' in content
     assert 'Not Scheduled' in content
     assert 'name="evidence_tab" value="certificates"' in content
+    assert 'All Types' in content
+    assert 'All Expiry States' in content
+    assert 'All Coverage' in content
+    assert 'All Freshness' in content
+    filtered = client.get('/governance/internal-certificates?evidence_tab=certificates&cert_search=ca&cert_kind=ca')
+    assert filtered.status_code == 200
+    assert 'Clear Filters' in filtered.get_data(as_text=True)
     assert 'Request Renewal' not in content
     assert content.index('data-kaori-capability-navigation') < content.index('Internal Certificates</h1>')
 
