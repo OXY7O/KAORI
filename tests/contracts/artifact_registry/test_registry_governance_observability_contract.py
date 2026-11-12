@@ -77,6 +77,52 @@ def test_governance_workspace_keeps_independent_readiness_planes_out_of_posture(
     assert 'Registry reconciliation' not in template
 
 
+def test_governance_sync_guide_and_compact_snapshot_copy_follow_kaori() -> None:
+    from jinja2 import Environment
+
+    partial = (ROOT / 'app/templates/artifact_registry/partials/_governance_sync_live_state.html').read_text()
+    workspace = (ROOT / 'app/templates/artifact_registry/partials/_governance_workspace.html').read_text()
+    presenter = (ROOT / 'app/artifact_registry/presentation_governance.py').read_text()
+    info_tip = (ROOT / 'app/templates/components/info_tip.html').read_text()
+
+    for template in (partial, workspace):
+        Environment().parse(template)
+    assert '{% import "components/info_tip.html" as info_tip %}' in partial
+    assert partial.index('table_label.status_label(') < partial.index('info_tip.render(')
+    assert "info_tip.render('registry-governance-operations-guide'," in partial
+    assert "variant='guide'" in partial
+    assert "items=[" in partial
+    assert 'data-kaori-info-tip-trigger' in info_tip
+    assert "data-kaori-info-tip-variant" in info_tip
+    assert 'Governance displays committed provider-observed policies' in partial
+    assert 'Missing, stale, partial, unavailable, or superseded evidence requires review' in partial
+
+    # Only the operator-facing supporting copy is shortened. Full committed
+    # snapshot identity, status logic and evidence metrics retain their owners.
+    assert "'Registry inventory changed; rerun Governance Sync.'" in presenter
+    assert "'Committed provider evidence.'" in presenter
+    assert "'Review evidence exceptions.'" in presenter
+    assert "'Retention and immutability evidence.'" in presenter
+    assert "latest_supporting='Last committed evidence.'" in workspace
+    for old_text in (
+        'Committed Registry Inventory changed since Governance Sync; refresh Governance evidence.',
+        'Latest committed Governance evidence.',
+        'Provider-neutral Governance snapshots.',
+        'Missing, stale, partial, unavailable, or superseded Governance collection.',
+        'Committed project retention and immutability evidence.',
+    ):
+        assert old_text not in presenter + workspace
+    assert "if status == 'Inputs Changed'" in presenter
+    assert "'status': status" in presenter
+    assert "'latest_collected_at': summary['latest_committed_at']" in presenter
+    assert "'exception_count': exception_count" in presenter
+    assert "f'{ready_count}/{provider_count} Providers Committed'" in presenter
+    assert (
+        'resource_posture_grid.render(coverage_metrics, columns=4, status_labels=coverage_status_labels)'
+        in workspace
+    )
+
+
 def test_governance_sync_uses_registered_jobexecution_boundary() -> None:
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     adapter = (ROOT / 'app/artifact_registry/governance_job_adapter.py').read_text()

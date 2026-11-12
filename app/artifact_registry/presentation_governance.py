@@ -246,14 +246,14 @@ def _governance_snapshot_context(summary: dict[str, Any]) -> dict[str, Any]:
         'status': status,
         'tone': 'normal' if status == 'Current' else ('unknown' if status == 'Not Collected' else 'warning'),
         'description': (
-            'Committed Registry Inventory changed since Governance Sync; refresh Governance evidence.'
+            'Registry inventory changed; rerun Governance Sync.'
             if status == 'Inputs Changed'
             else 'Retention, immutability, and replication evidence committed from Registry providers.'
         ),
         'latest_collected_at': summary['latest_committed_at'],
         'scope_label': f'{provider_count} Registry Provider' + ('' if provider_count == 1 else 's'),
         'coverage_label': f'{ready_count}/{provider_count} Providers Committed',
-        'coverage_supporting': 'Provider-neutral Governance snapshots.',
+        'coverage_supporting': 'Committed provider evidence.',
         'coverage_tone': (
             'normal' if provider_count and ready_count == provider_count and not exception_count else 'warning'
         ),
@@ -266,7 +266,7 @@ def _governance_snapshot_context(summary: dict[str, Any]) -> dict[str, Any]:
             else 'Not Collected'
         ),
         'exceptions_supporting': (
-            'Missing, stale, partial, unavailable, or superseded Governance collection.'
+            'Review evidence exceptions.'
             if exception_count
             else 'No freshness or collection exceptions.'
             if provider_count
@@ -313,7 +313,7 @@ def _governance_posture_cards(
                 if summary['policy_rows']
                 else 'unknown'
             ),
-            'detail': 'Committed project retention and immutability evidence.',
+            'detail': 'Retention and immutability evidence.',
         },
         {
             'label': 'Retention Coverage',
