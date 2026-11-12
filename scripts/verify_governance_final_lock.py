@@ -227,7 +227,7 @@ def main() -> int:
     for token in (
         'Review Kubernetes governance controls, evidence, and ownership.',
         'Governance Capabilities',
-        'Implemented governance controls are added as independent capability cards without changing the Overview structure.',
+        'Open independent governance workspaces with explicit evidence and source-readiness status.',
         'sm:grid-cols-2',
         "'title': 'TLS Certificates'",
         "'action': 'Open TLS Certificates' if can_view_tls else 'View Permission Required'",
