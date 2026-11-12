@@ -17,8 +17,6 @@
         header_badge=fleet_badge,
         body_classes='p-5'
         ) %}
-        <div class="overflow-hidden rounded-xl border border-outline-subtle">
-            {{ posture_grid.render(overview.fleet_posture_metrics, columns=4, compact=true) }}
-        </div>
+        {{ posture_grid.render(overview.fleet_posture_metrics, columns=4, compact=true) }}
     {% endcall %}
 </section>
