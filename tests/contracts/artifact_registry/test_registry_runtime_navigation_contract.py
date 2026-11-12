@@ -188,7 +188,7 @@ def test_runtime_overview_reuses_security_catalog_and_compact_posture() -> None:
     assert '{% if runtime.setup.is_blocked %}' in runtime
     assert 'components/states/_blocked_state.html' in runtime
     assert 'Committed correlation counts are not live runtime health checks' in runtime
-    assert "'Correlated artifact identities in scope.'" in runtime
+    assert "'Correlated artifacts in scope.'" in runtime
     assert "'Bindings with Critical/High findings.'" in runtime
     assert 'Distinct committed artifact identities in the selected scope.' not in runtime
     assert 'Bindings associated with Critical or High artifact findings.' not in runtime
