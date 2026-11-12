@@ -7,6 +7,29 @@ core a small, stable API while provider implementation remains isolated.
 Route → Domain Service → Integration Registry → Adapter → External System
 ```
 
+## Capsule Cluster RBAC — canonical operational feedback (#4569)
+
+**Kubernetes Integration → Validation & Capabilities → Capsule Cluster RBAC Bootstrap**
+uses the canonical Operational Action Feedback contract for both **Check RBAC**
+and explicitly authorized **Bootstrap Missing Roles**. The prior Flask flash
+banner above the hero is not used. Each normal browser action sends scoped
+HTMX POST, preserves CSRF and role permissions, and refreshes only the committed
+Capsule RBAC section. The response includes the shared out-of-band
+`operational_toast.html` in `#operational-toast-stack`, with success, warning,
+and error feedback differentiated by the provider operation outcome.
+
+KAORI commits the role check/bootstrap evidence through the original Tenant
+Capsule `AuditEvent` authority and separately records normalized operational
+Activity Audit feedback. The toast is a presentation of the outcome, **not**
+a proof of access to a Capsule controller or namespaced RoleBinding. Ready
+means four canonical ClusterRoles have exact permission equivalence; Missing,
+Conflict and Failed do **not** imply readiness, and Check RBAC never mutates
+ClusterRoles. Bootstrap still requires `clusters.manage` and
+`integrations.manage`, CSRF, a fresh approved check, and explicit operator
+acknowledgement; the provider service continues to fail closed on conflicting
+or foreign role policies. A non-HTMX client falls back to a normal redirect
+to the Validation tab with a queued canonical toast instead of `flash()`.
+
 ## Integrations Runtime Overview — evidence inspection and actions (#4526)
 
 The Runtime Overview uses the existing KAORI shared record-detail dialog to inspect committed observations. Below its four-item persisted metric strip, the overview detail now composes one bordered evidence context instead of five peer cards: a two-column runtime/capability gate, full-width diagnostic evidence, and a quieter paired Evidence Boundary / Recommended Action interpretation. Long capability profiles and diagnostic messages wrap naturally. Runtime health and Full Validation readiness remain separate persisted signals; healthy alone does not imply validation or human delivery.

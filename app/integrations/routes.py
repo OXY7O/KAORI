@@ -1,4 +1,4 @@
-from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
@@ -50,6 +50,7 @@ from app.integrations.validation.web import (
     validate_snapshot_access,
     validation_poll_response,
 )
+from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 from app.platform_operations.notifications.service import (
     get_navigation_notification_context,
     record_operational_activity,
@@ -333,6 +334,94 @@ def kubernetes_detail(cluster_id: str) -> ResponseReturnValue:
     )
 
 
+def _capsule_rbac_feedback_response(
+    cluster_id: str,
+    result: dict[str, object],
+    *,
+    operation: str,
+) -> ResponseReturnValue:
+    """Present committed Capsule RBAC evidence using the canonical KAORI feedback channel."""
+    provider_status = str(result.get('status') or 'failed')
+    if operation == 'check':
+        summary = {
+            'ready': (
+                'Capsule RBAC check complete',
+                'All four canonical ClusterRoles match their approved Access Profiles.',
+            ),
+            'missing': (
+                'Capsule RBAC prerequisites missing',
+                'One or more canonical ClusterRoles are missing; review the evidence before approved bootstrap.',
+            ),
+            'conflict': (
+                'Capsule RBAC role conflict',
+                'Existing ClusterRoles conflict with the approved profiles; no roles were changed.',
+            ),
+        }
+        title, message = summary.get(
+            provider_status,
+            ('Capsule RBAC check failed', 'ClusterRole inspection did not complete; review the committed evidence.'),
+        )
+    else:
+        title, message = (
+            (
+                'Capsule ClusterRole bootstrap verified',
+                'Missing canonical ClusterRoles were created and verified.',
+            )
+            if provider_status == 'ready'
+            else (
+                'Capsule ClusterRole bootstrap needs attention',
+                'ClusterRole bootstrap did not verify as Ready; inspect committed evidence before retrying.',
+            )
+        )
+    feedback_status = (
+        'success'
+        if provider_status == 'ready'
+        else 'warning'
+        if provider_status == 'missing'
+        else 'error'
+    )
+    destination = url_for('integrations.kubernetes_detail', cluster_id=cluster_id) + '#validation'
+    is_htmx = is_htmx_request()
+    feedback = record_operational_activity(
+        user_id=int(current_user.id),
+        event_type=f'kubernetes_capsule_rbac_{operation}',
+        status=feedback_status,
+        title=title,
+        message=message,
+        detail=(
+            'ClusterRole inspection and bootstrap evidence is committed separately. '
+            'Capsule controller bindings and effective Access Grants remain independent.'
+        ),
+        action_url=destination,
+        action_label='Review Capsule RBAC evidence',
+        action_icon='shield-check',
+        metadata={
+            'cluster_id': cluster_id,
+            'operation': operation,
+            'provider_status': provider_status,
+            'ready': result.get('ready'),
+            'missing': result.get('missing'),
+            'conflict': result.get('conflict'),
+            'source': 'capsule_cluster_rbac',
+        },
+        queue_feedback=not is_htmx,
+        delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
+    )
+    if is_htmx:
+        context = _kubernetes_detail_context(cluster_id)
+        context.update(
+            {
+                'operation_feedback': feedback,
+                'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
+            }
+        )
+        return render_template(
+            'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capsule_rbac_bootstrap.html',
+            **context,
+        )
+    return redirect(destination)
+
+
 @integrations_bp.post('/kubernetes/<string:cluster_id>/capsule-rbac/check')
 @permission_required('clusters.sync')
 def kubernetes_capsule_rbac_check(cluster_id: str) -> ResponseReturnValue:
@@ -343,16 +432,7 @@ def kubernetes_capsule_rbac_check(cluster_id: str) -> ResponseReturnValue:
     except ValidationError:
         abort(400)
     result = capsule_rbac_operation('check_capsule_role_bootstrap')(cluster_id, int(current_user.id))
-    flash(
-        'Capsule RBAC check: '
-        + (
-            'all canonical roles match.'
-            if result['status'] == 'ready'
-            else 'review missing or conflicting role prerequisites in the cluster panel.'
-        ),
-        'success' if result['status'] == 'ready' else 'warning',
-    )
-    return redirect(url_for('integrations.kubernetes_detail', cluster_id=cluster_id, tab='validation'))
+    return _capsule_rbac_feedback_response(cluster_id, result, operation='check')
 
 
 @integrations_bp.post('/kubernetes/<string:cluster_id>/capsule-rbac/bootstrap')
@@ -368,16 +448,7 @@ def kubernetes_capsule_rbac_bootstrap(cluster_id: str) -> ResponseReturnValue:
     if request.form.get('confirm_cluster_rbac') != 'approved':
         abort(400)
     result = capsule_rbac_operation('bootstrap_missing_capsule_roles')(cluster_id, int(current_user.id), approved=True)
-    flash(
-        'Capsule ClusterRole bootstrap '
-        + (
-            'completed and verified.'
-            if result['status'] == 'ready'
-            else 'requires operator attention; no conflicting roles were overwritten.'
-        ),
-        'success' if result['status'] == 'ready' else 'warning',
-    )
-    return redirect(url_for('integrations.kubernetes_detail', cluster_id=cluster_id, tab='validation'))
+    return _capsule_rbac_feedback_response(cluster_id, result, operation='bootstrap')
 
 
 @integrations_bp.get('/kubernetes/<string:cluster_id>/capabilities/registry')

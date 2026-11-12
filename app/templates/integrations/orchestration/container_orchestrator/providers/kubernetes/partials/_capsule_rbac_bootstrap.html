@@ -51,7 +51,11 @@
         </div>
         {% if current_user.has_permission('clusters.sync') %}
             <form method="post"
-                  action="{{ url_for('integrations.kubernetes_capsule_rbac_check', cluster_id=cluster.id) }}">
+                  action="{{ url_for('integrations.kubernetes_capsule_rbac_check', cluster_id=cluster.id) }}"
+                  hx-post="{{ url_for('integrations.kubernetes_capsule_rbac_check', cluster_id=cluster.id) }}"
+                  hx-target="closest [data-capsule-rbac-bootstrap]"
+                  hx-swap="outerHTML"
+                  hx-disabled-elt="button">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit"
                         class="{{ action_button.classes('secondary') }} w-full shrink-0 whitespace-nowrap sm:w-auto">
@@ -261,6 +265,10 @@
         <footer class="border-t border-outline-subtle bg-surface-hover px-4 py-4 sm:px-6">
             <form method="post"
                   action="{{ url_for('integrations.kubernetes_capsule_rbac_bootstrap', cluster_id=cluster.id) }}"
+                  hx-post="{{ url_for('integrations.kubernetes_capsule_rbac_bootstrap', cluster_id=cluster.id) }}"
+                  hx-target="closest [data-capsule-rbac-bootstrap]"
+                  hx-swap="outerHTML"
+                  hx-disabled-elt="button"
                   class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <label class="flex min-w-0 items-start gap-3 text-xs leading-5 text-content-secondary">
@@ -291,3 +299,4 @@
         </footer>
     {% endif %}
 </section>
+{% include 'components/operation_feedback_oob.html' %}
