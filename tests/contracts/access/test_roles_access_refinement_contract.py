@@ -268,3 +268,24 @@ def test_permission_matrix_has_descriptive_copy_for_every_canonical_permission()
     assert 'min-h-10' in role_form
     assert 'line-clamp-2' not in role_form
     assert 'permission.description' in role_form  # DB-only registry entries retain their fallback
+
+
+def test_role_registry_overview_has_single_shared_guide() -> None:
+    from jinja2 import Environment
+
+    source = read('app/templates/access/roles/index.html')
+    Environment().parse(source)
+    assert '{% import "components/info_tip.html" as info_tip %}' in source
+    assert source.count("info_tip.render('role-registry-overview-guide'") == 1
+    assert source.index('>Role Registry Overview</h2>') < source.index(
+        "info_tip.render('role-registry-overview-guide'"
+    )
+    assert "variant='guide'" in source
+    for meaning in (
+        'code-owned protected defaults',
+        'inactive roles fail closed',
+        'effective access',
+        'baseline drift requires explicit review',
+    ):
+        assert meaning in source
+    assert 'whitespace-nowrap' not in source

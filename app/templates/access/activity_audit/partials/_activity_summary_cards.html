@@ -1,4 +1,5 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
     <header class="border-b border-outline-subtle px-5 py-4 lg:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -8,7 +9,21 @@
                     <i data-lucide="scroll-text" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">Audit Evidence Overview</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Audit Evidence Overview</h2>
+                        {{ info_tip.render('activity-audit-overview-guide',
+                                                'Audit Evidence Overview',
+                                                'Read committed activity evidence with separate source, actor, and retention boundaries.',
+                                                items=[
+                                                'Activity Register shows hot Notification-backed activity with actor identity snapshotted at commit.',
+                                                'Administrative Source Evidence shows authorized hot AuditEvent records; actor references are foreign keys, not immutable snapshots.',
+                                                'Automatic Jobs and Tenant Inventory Sync remain source-owned; they do not merge with Activity Register counts.',
+                                                'Register filters and totals do not cover administrative sources or archived records.',
+                                                'Older verified evidence belongs to Data Lifecycle; browsing archive bundles does not prove a specific job match.'
+                                                ],
+                                                placement='right',
+                                                variant='guide') }}
+                    </div>
                     <p class="mt-0.5 text-xs leading-5 text-content-muted">Recent evidence volume, immutable actor scope, and hot-versus-archive lifecycle boundaries.</p>
                 </div>
             </div>

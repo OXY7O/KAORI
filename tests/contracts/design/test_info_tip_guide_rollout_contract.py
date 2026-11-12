@@ -26,11 +26,12 @@ TITLE_GUIDE_TEMPLATES = (
     'storage/object_storage/inventory/systems/partials/_table_card.html',
     'storage/object_storage/inventory/buckets/partials/_table_card.html',
     'artifact_registry/partials/_inventory_workspace.html',
-    'access/activity_audit/partials/_activity_table_card.html',
-    'access/activity_audit/partials/_administrative_evidence.html',
+    'access/activity_audit/partials/_activity_summary_cards.html',
+    'access/permissions/index.html',
+    'access/roles/index.html',
+    'access/users/partials/_summary_cards.html',
     'access/identity_providers/form.html',
-    'access/identity_providers/partials/_registry.html',
-    'access/identity_providers/partials/_directory_provisioning_strip.html',
+    'access/identity_providers/partials/_overview.html',
     'access/identity_providers/partials/_sso_configuration.html',
     'access/identity_providers/partials/_ldap_configuration.html',
     'artifact_registry/partials/_security_workspace.html',
@@ -72,6 +73,15 @@ def test_title_level_guides_use_canonical_variant_and_preserve_scope() -> None:
         # Data Lifecycle uses the approved top placement to avoid its header edge.
         expected_placement = 'top' if template == 'platform_operations/data_lifecycle/index.html' else 'right'
         assert f"placement='{expected_placement}'" in source, template
+
+    # Overview owns one Guide per capability, not duplicate Guides in its registries.
+    for template in (
+        'access/activity_audit/partials/_activity_table_card.html',
+        'access/activity_audit/partials/_administrative_evidence.html',
+        'access/identity_providers/partials/_registry.html',
+        'access/identity_providers/partials/_directory_provisioning_strip.html',
+    ):
+        assert 'info_tip.render(' not in _read(template), template
 
     artifact = _read('artifact_registry/partials/_inventory_workspace.html')
     assert artifact.count("variant='guide'") == 3

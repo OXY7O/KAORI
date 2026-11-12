@@ -170,7 +170,7 @@ Below the persistent overview, a single **Identity Provider Records** workspace 
 
 The HTMX boundary is intentionally split: tab navigation targets **`#identity-provider-workspace`**, returning its full tab wrapper, while canonical Provider Registry filters/Rows/pagination target **`#identity-provider-registry`** and return only registry content **with `embedded=True`**. The parent workspace alone owns the border, rounded corners and shadow, including after filtering, clearing filters, changing Rows or paginating; a standalone registry render retains its normal shared table frame. Both preserve normal GET links, browser history, canonical loading/empty/error behavior and permission-gated expandable details. No new JavaScript, provider request, secrets, RBAC policy, JIT logic, directory projection or external authority is introduced. DevContainer browser QA and explicit human acceptance remain pending; CI/CD and admission gates remain HOLD.
 
-Provider Registry and Directory Provisioning now each have a **title-adjacent Violet Guide** through the existing shared `components/info_tip.html` with `variant='guide'`. The Provider Registry guide distinguishes configured adapter contracts from a verified connection and explains authentication enablement, committed links and KAORI authorization. The Directory Provisioning guide distinguishes committed summary evidence from the separately permission-gated projection workflow and clarifies external credential ownership. The registry result badge, conditional Clear Filters, directory Read Only indicator and authorized Open Directory Provisioning action remain outside guidance; field-level help still uses the default icon variant. Both Guides are subject to DevContainer visual/keyboard/HTMX review; they do not constitute provider test evidence.
+The **2026-11-12 Access overview Guide consolidation (#4482)** places one title-adjacent shared Violet `info_tip.render(..., variant='guide')` on **Authentication Source Posture**, instead of separate Guides inside Provider Registry and Directory Provisioning. Its context preserves stored configuration versus live connectivity, external identity and credential authority, enabled authentication eligibility, committed identity links, delegated directory admission and KAORI-owned authorization. Both registry tabs retain their title/result-count, Read Only, permissioned Open Directory Provisioning, HTMX, filters, and detail interactions without duplicate Guides. Provider detail section badges use existing `row.configuration` and `row.state` labels/tones; neither means live provider readiness.
 
 ## Identity Providers canonical registry interaction
 
@@ -371,33 +371,13 @@ minimum grants, transactional audit tests, security/DevContainer UAT,
 Full Admission and human acceptance. Rolling back an unpublished sensitive
 route must not make it an unscoped read.
 
-## Activity Audit register source hover info (#2885, 2026-10-23)
+## Activity Audit overview guidance (#4482, 2026-11-12)
 
-The approved title-level standard is `docs/design/components/INFO_TIP.md`
-and `docs/design/components/TABLE_AND_LABEL.md`, reaffirmed in design
-audit #2416. Before implementing header hover guidance, compare the
-current standard *and at least one merged title-level consumer*; require
-the existing `tests/contracts/design/test_info_tip_guide_rollout_contract.py`
-to include this title-level consumer. Do not infer the correct variant
-from the shared macro's default or a single local precedent.
+The latest operator review supersedes the prior per-table placement from #2885/#2888, while preserving the global title-adjacent Violet Guide standard in `docs/design/components/INFO_TIP.md`. One shared `info_tip.render(..., variant='guide')` now belongs beside **Audit Evidence Overview**. The Activity Register and Administrative Source Evidence table headers retain their independent source-scoped `table_label.result_count`, filtering, no-JS/HTMX, permission gates and read-only evidence, without duplicate Guides.
 
-Functional **Access → Activity Audit UAT is operator-approved**; the
-follow-up enhances only the two register headers. Activity Register and
-Administrative Source Evidence each use the existing title-level
-`components/info_tip.html::render(..., variant='guide')` Violet Guide
-directly next to the owning title, before the result-count badge.
-An icon-only question-mark is reserved for genuinely field/row-level help. One tooltip describes Notification-backed hot
-activity with immutable actor snapshots and separately owned Data
-Lifecycle archive artifacts; the other describes source-permissioned hot
-`AuditEvent` records from Automatic Jobs/Tenant Inventory Sync, actor FK
-limitations, and Job Archive **bundle-level only** navigation.
+Consolidated guidance distinguishes hot Notification-backed activity with committed immutable actor snapshots from separate allowlisted hot `AuditEvent` records with actor foreign-key references; Automatic Jobs and Tenant Inventory Sync stay source-owned. Activity Register totals never include administrative sources, and Data Lifecycle bundle browsing does not prove per-job archived evidence. The Guide is an explanation, not a merged data source or readiness claim.
 
-The two sources and their counts remain independent; no storage union,
-cross-source permission, archive record resolver, mutation, loading,
-pagination, HTMX behavior or existing modal is changed. Shared Info Tip
-owns keyboard/pointer/touch activation and viewport positioning.
-Human hover/mobile/light-dark acceptance is pending separately from the
-accepted overall Activity Audit functionality.
+The same screenshot review adds a title-level Guide beside Permission Registry Overview, Role Registry Overview, and Account & Identity Posture; state-derived labels in Provider & Connection and Identity & Access retain real stored status. No permission, credentials, lifecycle, provider verification or authentication rule changes. Developer Check, browser keyboard/touch/mobile/light/dark and explicit human acceptance remain independent gates.
 
 ## Administrative AuditEvent Data Lifecycle boundary (#2889/#2890)
 

@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/operational_section_card.html" as operational_section %}
 {% import "components/section_intro.html" as section_intro %}
 {% import "components/operational_point_flow.html" as point_flow %}
@@ -44,7 +45,20 @@
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
                               aria-hidden="true"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
                         <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
                             <h2 class="text-base font-semibold text-content-primary">Role Registry Overview</h2>
+                            {{ info_tip.render('role-registry-overview-guide',
+                                                    'Role Registry Overview',
+                                                    'Review protected role defaults, effective authorization, and controlled delegation.',
+                                                    items=[
+                                                    'System roles are code-owned protected defaults; custom roles support governed administrator changes.',
+                                                    'Assigned roles grant access only when role, user, and provider admission gates permit; inactive roles fail closed.',
+                                                    'Delegation cannot exceed the actor\'s effective access; Local Database Super Admin remains a separate break-glass authority.',
+                                                    'Permission dependencies derive from the code-owned catalog; baseline drift requires explicit review.'
+                                                    ],
+                                                    placement='right',
+                                                    variant='guide') }}
+                        </div>
                             <p class="mt-0.5 text-xs leading-5 text-content-muted">Current role population, assignment posture, and authorization ownership boundaries.</p>
                         </div>
                     </div>

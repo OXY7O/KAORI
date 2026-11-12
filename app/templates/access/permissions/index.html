@@ -2,6 +2,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/section_intro.html" as section_intro %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 {% block title %}Permission Catalog{% endblock title %}
 {% block dashboard_content %}
@@ -43,7 +44,20 @@
                             <i data-lucide="book-key" class="h-5 w-5"></i>
                         </span>
                         <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
                             <h2 class="text-base font-semibold text-content-primary">Permission Registry Overview</h2>
+                            {{ info_tip.render('permission-registry-overview-guide',
+                                                    'Permission Registry Overview',
+                                                    'Understand code-owned permission contracts, registry alignment, dependencies, and role consumption.',
+                                                    items=[
+                                                    'Application code defines permission contracts and dependency closure; registry metadata is checked against this source.',
+                                                    'Role coverage shows committed mappings; unassigned contracts are not automatically errors.',
+                                                    'Drift requires review and a governed seed-rbac deployment, never a mutation during HTTP GET.',
+                                                    'Access Administration delegation requires Local Database Super Admin; server checks enforce effective permission bounds.'
+                                                    ],
+                                                    placement='right',
+                                                    variant='guide') }}
+                        </div>
                             <p class="mt-0.5 text-xs leading-5 text-content-muted">Current code-owned contracts, registry alignment, and role consumption.</p>
                         </div>
                     </div>

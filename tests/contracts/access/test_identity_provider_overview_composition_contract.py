@@ -159,34 +159,37 @@ def test_directory_tab_is_read_only_summary_with_scoped_workflow_launch() -> Non
     assert 'summary.directory' in directory
     assert 'summary.directory_identity_links' in directory
     assert 'KAORI Roles' in directory
-    assert 'provider-owned' in directory
+    assert 'Directory owns identity; KAORI owns access.' in directory
     assert 'credentials remain external' in directory.lower()
     assert '<form ' not in directory
 
 
-def test_identity_provider_workspace_guides_own_title_context_only() -> None:
+def test_identity_provider_overview_owns_one_guide_without_duplicate_registry_guides() -> None:
+    overview = read('app/templates/access/identity_providers/partials/_overview.html')
     registry = read('app/templates/access/identity_providers/partials/_registry.html')
     directory = read('app/templates/access/identity_providers/partials/_directory_provisioning_strip.html')
 
-    for template in (registry, directory):
+    for template in (overview, registry, directory):
         Environment().parse(template)
-        assert '{% import "components/info_tip.html" as info_tip %}' in template
-        assert "placement='right'" in template
-        assert "variant='guide'" in template
-
+    assert '{% import "components/info_tip.html" as info_tip %}' in overview
+    assert overview.count('info_tip.render(') == 1
+    assert overview.count("variant='guide'") == 1
     assert (
-        registry.index('>Provider Registry</h2>')
-        < registry.index("info_tip.render('identity-provider-registry-guide'")
-        < registry.index('table_label.result_count(summary.matching)')
+        overview.index('>Authentication Source Posture</h2>')
+        < overview.index("info_tip.render('identity-provider-posture-guide'")
+        < overview.index('Committed provider configuration')
+    )
+    assert 'Configured means stored adapter setup is complete' in overview
+    assert 'Enabled controls authentication eligibility' in overview
+    assert 'External providers retain identity and credentials' in overview
+    assert 'Directory provisioning requires delegated permission' in overview
+    for partial in (registry, directory):
+        assert 'info_tip.render(' not in partial
+    assert registry.index('>Provider Registry</h2>') < registry.index(
+        'table_label.result_count(summary.matching)'
     )
     assert 'registry_ui.clear_filters_link(' in registry
     assert 'registry_ui.footer(' in registry
-
-    assert (
-        directory.index('>Directory Provisioning</h2>')
-        < directory.index("info_tip.render('identity-provider-directory-provisioning-guide'")
-        < directory.index('Review directory projection evidence')
-    )
     assert "current_user.has_permission('identity_providers.provision')" in directory
     assert "table_label.status_indicator_label('Read Only', 'unknown')" in directory
     assert 'data-kaori-idp-directory-launch' in directory

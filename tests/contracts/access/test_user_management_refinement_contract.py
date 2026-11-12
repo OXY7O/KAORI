@@ -498,3 +498,23 @@ def test_access_user_and_reset_password_fields_keep_explicit_labels() -> None:
     assert 'form.hidden_tag()' in reset_form
     assert 'data-operation-submit' in user_form
     assert 'data-operation-submit' in reset_form
+
+
+def test_account_identity_overview_guide_preserves_credential_and_lifecycle_authority() -> None:
+    from jinja2 import Environment
+
+    source = read('app/templates/access/users/partials/_summary_cards.html')
+    Environment().parse(source)
+    assert '{% import "components/info_tip.html" as info_tip %}' in source
+    assert source.count("info_tip.render('account-identity-posture-guide'") == 1
+    assert source.index('>Account &amp; Identity Posture</h2>') < source.index(
+        "info_tip.render('account-identity-posture-guide'"
+    )
+    assert "variant='guide'" in source
+    for meaning in (
+        'Directory and SSO providers own upstream credentials',
+        'last active Super Admin is protected',
+        'restore as inactive',
+    ):
+        assert meaning in source
+    assert 'whitespace-nowrap' not in source

@@ -1,4 +1,5 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
     <header class="border-b border-outline-subtle px-5 py-4 lg:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -7,7 +8,20 @@
                     <i data-lucide="users-round" class="h-5 w-5" aria-hidden="true"></i>
                 </span>
                 <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">Account &amp; Identity Posture</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="text-base font-semibold text-content-primary">Account &amp; Identity Posture</h2>
+                            {{ info_tip.render('account-identity-posture-guide',
+                                                    'Account & Identity Posture',
+                                                    'Review local accounts, external identities, role eligibility, and protected recovery boundaries.',
+                                                    items=[
+                                                    'KAORI owns account lifecycle, local roles, and Local Database credentials; RBAC and admission gates still apply.',
+                                                    'Directory and SSO providers own upstream credentials; KAORI retains local authorization and account state.',
+                                                    'Super Admin is Local Database-only break-glass authority; the last active Super Admin is protected.',
+                                                    'Deleted accounts restore as inactive and require an explicit activation decision.'
+                                                    ],
+                                                    placement='right',
+                                                    variant='guide') }}
+                        </div>
                     <p class="mt-0.5 text-xs leading-5 text-content-muted">Current account lifecycle, privileged access, and identity-source ownership.</p>
                 </div>
             </div>
