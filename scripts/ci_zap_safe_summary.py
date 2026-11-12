@@ -217,7 +217,10 @@ def main(argv: list[str] | None = None) -> int:
             # apparently verified evidence. Compare metadata on this descriptor.
             final_stat = os.fstat(stream.fileno())
             if (
-                opened_stat.st_size != final_stat.st_size
+                opened_stat.st_dev != final_stat.st_dev
+                or opened_stat.st_ino != final_stat.st_ino
+                or opened_stat.st_mode != final_stat.st_mode
+                or opened_stat.st_size != final_stat.st_size
                 or opened_stat.st_mtime_ns != final_stat.st_mtime_ns
                 or opened_stat.st_ctime_ns != final_stat.st_ctime_ns
             ):
