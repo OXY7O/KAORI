@@ -12,8 +12,26 @@ This pattern applies to:
 ```text
 Compact Hero
 Live Mutation Evidence Boundary
-Operational Workflow Catalog
+External Section Intro — plain title + concise purpose
+  └── Operational Workflow Catalog — concrete workspace title + one Violet Guide
+      └── Permission-scoped operation cards and their validation/authority/actions
 ```
+
+The ConfigMap Management landing uses the outside heading **ConfigMap Workflows**
+and its short live-configuration purpose statement above the existing
+**Choose a ConfigMap Operation** catalog. Secret Management similarly uses
+**Secret Workflows** above **Choose a Secret Operation**, without claiming
+that protected Secret values are displayed. Both external headings reuse
+`components/section_intro.html` with an `aria-labelledby` association and
+preserve the existing `configmap-workflows` / `secret-workflows` anchors.
+
+Inside each catalog, the **single existing title-adjacent Violet Guide**
+continues to come from `operational_workflow_catalog.html` /
+`components/info_tip.html` (`variant='guide'`). Do not duplicate that Guide
+beside the external heading or replace it with a static `Info` label.
+This follows the accepted Inventory/Operations Overview section hierarchy;
+the plain outer title names the operator's workstream while the inner title
+names the specific operation selector.
 
 The landing page is an operations catalog, not a marketing-card grid. Workflow cards use natural height and separate permission state from operation classification. The Hero context action uses the canonical **Open Cluster Integrations** label and links to the Kubernetes integration registry; the retired **Manage Clusters** wording must not return.
 
