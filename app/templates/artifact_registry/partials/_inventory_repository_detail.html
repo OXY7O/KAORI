@@ -31,7 +31,7 @@
                     'Repository Identity',
                     'badge-info',
                     repository.artifact_count ~ (' Artifact' if repository.artifact_count == 1 else ' Artifacts'),
-                    description='Repository identity and counts.'
+                    description='Repository identity.'
                     ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_technical_row('Repository Name', repository.name, class_name='lg:col-span-2') }}
@@ -60,7 +60,7 @@
                     'Artifact Coverage',
                     'fingerprint',
                     repository.artifact_count ~ (' Artifact' if repository.artifact_count == 1 else ' Artifacts'),
-                    description='Artifacts in this snapshot.'
+                    description='Committed artifacts.'
                     ) %}
                     {% if repository.artifact_preview %}
                         <div class="overflow-x-auto">
@@ -142,7 +142,7 @@
                     repository.snapshot.label,
                     'status',
                     repository.snapshot.tone,
-                    description='Snapshot freshness and scope.'
+                    description='Snapshot freshness.'
                     ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_status_row('Snapshot State', repository.snapshot.label, repository.snapshot.tone) }}
