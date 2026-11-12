@@ -35,17 +35,18 @@ def test_governance_overview_reuses_authorized_tls_snapshot_and_operations_compa
 
     assert "@permission_required('governance.view')\ndef overview" in routes
     assert "can_view_tls = current_user.has_permission('tls_certificates.view')" in routes
-    assert "if can_view_tls and has_registered_clusters() is True:" in routes
+    assert 'if can_view_tls and has_registered_clusters() is True:' in routes
     assert 'tls_snapshot = get_tls_collection_snapshot()' in routes
     assert 'get_tls_certificate_page' not in routes
-    assert routes.index("can_view_tls = current_user.has_permission(") < routes.index(
-        'if can_view_tls and has_registered_clusters() is True:'
-    ) < routes.index('tls_snapshot = get_tls_collection_snapshot()')
+    permission_position = routes.index("can_view_tls = current_user.has_permission(")
+    readiness_position = routes.index('if can_view_tls and has_registered_clusters() is True:')
+    snapshot_position = routes.index('tls_snapshot = get_tls_collection_snapshot()')
+    assert permission_position < readiness_position < snapshot_position
 
     assert 'def get_tls_collection_snapshot() -> dict[str, Any]:' in service
     assert 'check_tls_governance_schema_readiness()' in service
     assert 'return _collection_snapshot(' in service
-    assert 'selected_cluster_id=\'\',' in service
+    assert "selected_cluster_id=''," in service
     assert "summary={'total': total}" in service
     assert 'TLSCertificateInventory.id' in service
     assert 'get_tls_certificate_page({})' not in routes
@@ -80,8 +81,8 @@ def test_governance_overview_reuses_authorized_tls_snapshot_and_operations_compa
     ):
         assert token in overview
 
-    assert "{% if can_view_tls and tls_snapshot is not none %}" in overview
-    assert """{% with payload={'snapshot': tls_snapshot} %}""" in overview
+    assert '{% if can_view_tls and tls_snapshot is not none %}' in overview
+    assert "{% with payload={'snapshot': tls_snapshot} %}" in overview
     assert 'kubernetes/governance/tls_certificates/partials/_snapshot_context.html' in overview
     assert overview.index('partials/_snapshot_context.html') < overview.index("section_intro.render('Governance Scope'")
     assert overview.index("section_intro.render('Governance Scope'") < overview.index(
@@ -107,7 +108,6 @@ def test_governance_overview_reuses_authorized_tls_snapshot_and_operations_compa
     assert 'scalable equal-height catalog' in standard
     assert 'parent section owns no TLS-specific action' in standard
     assert 'two-column grid' in standard
-
 
 
 def test_governance_dead_job_presentation_helper_is_retired() -> None:
