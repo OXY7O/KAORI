@@ -895,3 +895,54 @@ def test_object_storage_dashboard_sql_bucket_summary_preserves_selected_scope(mo
         assert health[0]['usage_source'] == 'Inventory'
         assert health[0]['stored_display'] == '10 B'
     engine.dispose()
+
+def test_object_storage_overview_matches_canonical_section_intro_hierarchy() -> None:
+    overview = read('app/templates/storage/object_storage/dashboard/partials/_overview.html')
+    content = read('app/templates/storage/object_storage/dashboard/partials/_content.html')
+    kubernetes_reference = read('app/templates/kubernetes/operations/overview.html')
+
+    assert 'components/section_intro.html' in kubernetes_reference
+    assert 'components/section_intro.html' in overview
+    assert 'components/operational_section_card.html' in overview
+    for intro, inner, section_id in (
+        ('Operational Health', 'System Health Summary', 'object-storage-operations-health-heading'),
+        ('Committed Evidence', 'Inventory Snapshot', 'object-storage-operations-evidence-heading'),
+    ):
+        assert f"section_intro.render('{intro}'" in overview
+        assert f'aria-labelledby="{section_id}"' in overview
+        assert overview.index(f"section_intro.render('{intro}'") < overview.index(inner)
+
+    assert overview.index('System Health Summary') < overview.index('Inventory Snapshot')
+    assert 'Data Freshness' in overview
+    assert 'peer_content_grid.layout_classes()' in overview
+    assert 'storage/object_storage/dashboard/partials/_system_health.html' in overview
+    assert "dashboard_workspace.standard_tabs" in content
+    assert 'hx-trigger="revealed"' in content
+
+
+def test_object_storage_reporting_and_capacity_labels_keep_compact_readable_hierarchy() -> None:
+    guidance = read('app/templates/storage/object_storage/dashboard/partials/_reporting_guidance.html')
+    shared = read('app/templates/components/reporting_dashboard_workspace.html')
+    capacity = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
+    kubernetes = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
+
+    assert "'Committed snapshots'" in guidance
+    assert "'Committed storage evidence'" not in guidance
+    assert 'reporting_workspace.guidance(' in guidance
+    assert 'reporting_workspace.guidance(' in kubernetes
+    assert 'Evidence Backed' in shared
+    assert '{{ evidence_label }}' in shared
+
+    header = capacity.split('{% for label, value, color, percent, percent_meaning, helper in capacity_metrics %}', 1)[1]
+    header = header.split('{% if percent is not none %}', 1)[0]
+    assert 'class="space-y-1.5"' in header
+    assert 'flex min-w-0 items-center gap-2' in header
+    assert 'block text-right text-xs font-semibold text-content-secondary' in header
+    for label in ("'Used Capacity'", "'Free Capacity'", "'Usable Capacity'"):
+        assert label in capacity
+    assert 'grid gap-3 lg:grid-cols-3' in capacity
+    assert 'progress_bar.bar(percent,' in capacity
+    assert 'percentage unavailable' in capacity
+    assert 'whitespace-nowrap' not in header
+    assert 'truncate' not in header
+
