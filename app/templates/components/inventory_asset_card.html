@@ -1,6 +1,5 @@
-{# Canonical inventory destination; optional count badge matches compact workspace navigation. #}
-{% import "components/table_label.html" as table_label %}
-{% macro render(title, count, description, href, icon, action_label='Open Inventory', compact_count=false) -%}
+{# Canonical destination card for one Kubernetes inventory asset type. #}
+{% macro render(title, count, description, href, icon, action_label='Open Inventory') -%}
     <a href="{{ href }}"
        class="group flex h-full min-h-40 flex-col rounded-xl border border-outline-default bg-surface-card p-4 transition hover:border-kaori-primary/30 hover:bg-kaori-mist hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
         <div class="flex items-start justify-between gap-3">
@@ -10,11 +9,7 @@
                   aria-hidden="true">
                 <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
             </span>
-            {% if compact_count %}
-                {{ table_label.metadata_label(count, icon='layers-3') }}
-            {% else %}
-                <span class="text-2xl font-semibold leading-none text-content-primary">{{ count }}</span>
-            {% endif %}
+            <span class="text-2xl font-semibold leading-none text-content-primary">{{ count }}</span>
         </div>
         <div class="mt-4 min-w-0 flex-1">
             <h3 class="text-base font-semibold text-content-primary">{{ title }}</h3>
