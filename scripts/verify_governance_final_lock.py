@@ -134,8 +134,9 @@ def main() -> int:
         'workspace_tabs.render_query_tabs(evidence_tabs',
         'hx-select="#internal-pki-evidence-workspace"',
         "active_tab == 'sources'",
-        "registry_ui.clear_filters_link('governance.internal_certificates'",
+        'registry_ui.clear_filters_action(',
         'header_actions=source_clear_action',
+        'url_for(\'governance.internal_certificates\', **source_clear_query)',
         'table_ui.cluster_identity(record.name, record.environment)',
         'aria-label="View PKI Evidence for {{ record.name }}"',
         'name="environment"',
@@ -155,8 +156,9 @@ def main() -> int:
     for item in ('Source-Reported Certificate Posture', 'components/resource_posture_grid.html'):
         require(item in pki_posture, f'Internal PKI posture is missing: {item}', errors)
     for item in (
-        "registry_ui.clear_filters_link('governance.internal_certificates'",
+        'registry_ui.clear_filters_action(',
         'header_actions=certificate_clear_action',
+        'certificate_scope_badge',
         'table_ui.title_cell(certificate.component',
         'name="cert_kind"',
         'name="cert_expiry"',
@@ -165,6 +167,21 @@ def main() -> int:
         'table_ui.table_classes',
     ):
         require(item in pki_inventory, f'Internal PKI certificate filter contract missing: {item}', errors)
+    require(
+        'Clear Cluster Scope' not in internal_page,
+        'Internal PKI must not duplicate the cluster scope reset outside Clear Filters.',
+        errors,
+    )
+    require(
+        'hx-get=' not in internal_page.split('source_clear_action %}', 1)[1].split('{% endset %}', 1)[0],
+        'Internal PKI Clear Filters must use the reliable GET-navigation fallback.',
+        errors,
+    )
+    require(
+        'hx-get=' not in pki_inventory.split('certificate_clear_action %}', 1)[1].split('{% endset %}', 1)[0],
+        'Certificate Clear Filters must use the reliable GET-navigation fallback.',
+        errors,
+    )
     require(
         'hx-post' not in pki_operations and '<form' not in pki_operations,
         'Internal PKI Sync must not expose a mutation route while collection is unavailable.',

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import re
+from html import unescape
 from types import SimpleNamespace
+from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from flask_login import UserMixin
@@ -14,6 +17,14 @@ from app.extensions import login_manager
 from app.kubernetes.governance import routes as governance_routes
 from app.kubernetes.governance.internal_certificates import routes as internal_pki_routes
 from app.kubernetes.governance.tls_certificates import routes as tls_routes
+
+
+def _rendered_clear_href(html: str) -> str:
+    """Follow the actual canonical Clear link, including its non-HTMX fallback."""
+    anchor = re.search(r'<a href="([^"]+)"\s+data-kaori-clear-filters([^>]*)>', html)
+    assert anchor is not None
+    assert 'hx-get=' not in anchor.group(2)
+    return unescape(anchor.group(1))
 
 
 class GovernanceRouteUser(UserMixin):
@@ -319,6 +330,7 @@ def test_internal_pki_source_workspace_shows_committed_registry_with_unknown_pki
             'environment': str(args.get('environment') or ''),
             'platform': str(args.get('platform') or ''),
         }
+        page['selected_cluster_id'] = str(args.get('cluster_id') or '')
         return page
 
     monkeypatch.setattr(internal_pki_routes, 'get_internal_certificates_source_page', read_committed)
@@ -380,10 +392,41 @@ def test_internal_pki_source_workspace_shows_committed_registry_with_unknown_pki
     assert 'data-kaori-clear-filters' in filtered_html
     assert filtered_html.index('data-kaori-clear-filters') < filtered_html.index('id="internal-pki-source-filter"')
     assert 'View PKI Evidence for Pilot Cluster' in filtered_html
+    view = re.search(r'<a href="([^"]+)"[^>]*aria-label="View PKI Evidence for Pilot Cluster"', filtered_html)
+    assert view is not None
+    view_href = unescape(view.group(1))
+    view_query = parse_qs(urlsplit(view_href).query)
+    assert view_query['evidence_tab'] == ['certificates']
+    assert view_query['cluster_id'] == ['cluster-01']
+    view_result = client.get(view_href)
+    assert view_result.status_code == 200
+    assert 'Inventory Schema Upgrade Required' in view_result.get_data(as_text=True)
+    assert 'Clear Cluster Scope' not in filtered_html
     assert '<th scope="col"' in filtered_html
     assert 'Actions</th>' in filtered_html
     assert 'name="environment"' in filtered_html
     assert 'Registered Source Coverage' in filtered_html
+    scoped = client.get(
+        '/governance/internal-certificates?search=Kub&environment=non-production'
+        '&cluster_id=cluster-01&cert_search=apiserver&cert_page=2&cert_per_page=10'
+    )
+    assert scoped.status_code == 200
+    scoped_html = scoped.get_data(as_text=True)
+    assert 'Clear Cluster Scope' not in scoped_html
+    source_clear_href = _rendered_clear_href(scoped_html)
+    source_clear_query = parse_qs(urlsplit(source_clear_href).query)
+    assert source_clear_query['evidence_tab'] == ['sources']
+    assert source_clear_query['cert_search'] == ['apiserver']
+    assert source_clear_query['cert_page'] == ['2']
+    assert source_clear_query['cert_per_page'] == ['10']
+    assert 'cluster_id' not in source_clear_query
+    assert 'search' not in source_clear_query
+    assert 'environment' not in source_clear_query
+    assert 'platform' not in source_clear_query
+    source_cleared = client.get(source_clear_href)
+    assert source_cleared.status_code == 200
+    assert 'Clear Filters' not in source_cleared.get_data(as_text=True)
+    assert 'Clear Cluster Scope' not in source_cleared.get_data(as_text=True)
 
 
 def test_internal_pki_source_clusterless_blocks_registry_query(
@@ -483,7 +526,7 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
                 }
             ],
             'search': str(args.get('cert_search') or ''),
-            'cluster_id': '',
+            'cluster_id': str(args.get('cluster_id') or ''),
             'pagination': {
                 'page': 1,
                 'per_page': 5,
@@ -525,9 +568,34 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
     assert filtered.status_code == 200
     filtered_html = filtered.get_data(as_text=True)
     assert 'Clear Filters' in filtered_html
-    assert filtered_html.index('data-kaori-clear-filters') < filtered_html.index('id="internal-pki-certificate-filter"')
+    assert filtered_html.index('data-kaori-clear-filters') < filtered_html.index(
+        'id="internal-pki-certificate-filter"'
+    )
     assert 'data-lucide="file-badge"' in filtered_html
     assert 'data-lucide="calendar-clock"' in filtered_html
+    cluster_scope = client.get(
+        '/governance/internal-certificates?evidence_tab=certificates'
+        '&cluster_id=cluster-01&cert_coverage=partial&search=Pilot&per_page=10'
+    )
+    assert cluster_scope.status_code == 200
+    cluster_html = cluster_scope.get_data(as_text=True)
+    assert 'Clear Cluster Scope' not in cluster_html
+    assert 'Selected Cluster' in cluster_html or 'Pilot Cluster' in cluster_html
+    certificate_clear_href = _rendered_clear_href(cluster_html)
+    certificate_clear_query = parse_qs(urlsplit(certificate_clear_href).query)
+    assert certificate_clear_query['evidence_tab'] == ['certificates']
+    assert certificate_clear_query['search'] == ['Pilot']
+    assert certificate_clear_query['per_page'] == ['5']  # Fixture uses a five-row source page.
+    assert 'cluster_id' not in certificate_clear_query
+    assert 'cert_coverage' not in certificate_clear_query
+    assert 'cert_kind' not in certificate_clear_query
+    assert 'cert_search' not in certificate_clear_query
+    cleared = client.get(certificate_clear_href)
+    assert cleared.status_code == 200
+    cleared_html = cleared.get_data(as_text=True)
+    assert 'Internal Certificate Registry' in cleared_html
+    assert 'Clear Filters' not in cleared_html
+    assert 'Clear Cluster Scope' not in cleared_html
     assert 'Request Renewal' not in content
     assert content.index('data-kaori-capability-navigation') < content.index('Internal Certificates</h1>')
 

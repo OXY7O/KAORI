@@ -296,11 +296,15 @@ production. It is **not** invoked by an HTTP GET. Verify the user has
 Internal Certificates; `tls_certificates.view` controls the TLS tab separately.
 Custom roles must be reviewed and updated through existing Access workflows.
 
-In **Internal PKI Source Registry**, select a registered cluster using **View PKI
-Evidence**. The URL retains `cluster_id` for this page's committed certificate
-inventory; **Clear Cluster Scope** returns to all clusters. Search and default
-five-row pagination remain scoped to the selected cluster, and the total committed
-source-reported certificate count must not display another cluster's count.
+In **Internal PKI Source Registry**, select a registered cluster using **View
+Evidence** (accessible name `View PKI Evidence for <cluster>`). The URL explicitly
+sets `evidence_tab=certificates&cluster_id=<clicked cluster>`, so the certificate
+registry filters to that committed cluster, not to a live provider API. A
+source-qualified scoped-cluster badge appears beside the certificate count.
+**Clear Filters** in either registry header returns the active tab to the
+**All Clusters** scope; a redundant `Clear Cluster Scope` toolbar is not
+rendered. Search and default five-row pagination remain scoped until cleared,
+and the committed certificate count must not include a different cluster.
 
 If `flask db current` shows an unapplied internal PKI schema revision, apply the
 approved migration before import; `Inventory Schema Upgrade Required` is distinct
@@ -324,12 +328,16 @@ certificate tab scoped to the selected cluster, and browser navigation retains
 each tab's independent search/page/rows parameters. Filtering and pagination
 refresh the **entire tab workspace**, so tab URLs and inactive-tab parameters
 remain synchronized without a new JavaScript controller. Both registry forms
-use the existing `table_registry.clear_filters_link` only when a tab has active
-filters. The Clear Filters action belongs to the existing
-`table_ui.inventory_block_header(header_actions=...)` group next to Open
-Cluster Integrations, **not** to the filter input row. Clearing a tab resets
-that tab's page and search/facets while keeping the selected cluster, the
-opposite tab's filter/page/rows, and the current Rows setting.
+use the existing shared `table_registry.clear_filters_action`, conditional
+on the active tab's search/facets or selected cluster scope. The Clear Filters
+action belongs to `table_ui.inventory_block_header(header_actions=...)`, next
+to Open Cluster Integrations, **not** the filter input row. Unlike normal
+HTMX search/page/tab requests, PKI Clear Filters follows the canonical
+**full-page GET href fallback** to avoid a stuck nested-workspace HTMX
+clear interaction. This resets the active tab's search/facets/page and
+`cluster_id` to All Clusters; it preserves the current Rows setting and
+the opposite tab's search/page/Rows. It never executes a provider request,
+certificate renewal, or any database mutation.
 
 Registered Source Coverage supports committed **Cluster Search, Environment,
 Detected Platform** filters; the option lists are derived only from committed
