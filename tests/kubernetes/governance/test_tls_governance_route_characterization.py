@@ -7,6 +7,7 @@ from flask_login import UserMixin
 
 from app import create_app
 from app.bootstrap import presentation as bootstrap_presentation
+from app.common.navigation import build_navigation_breadcrumb
 from app.common.workspace_navigation import build_capability_navigation
 from app.extensions import login as login_extension
 from app.extensions import login_manager
@@ -527,3 +528,18 @@ def test_governance_internal_pki_registered_cluster_links_preserve_inventory_sco
     assert 'cluster_id=cluster-01' in content
     assert 'Internal Certificate Registry' not in content
     assert 'Inventory Schema Upgrade Required' in content
+
+
+def test_governance_breadcrumb_reflects_active_internal_certificate_view() -> None:
+    """The global navbar must not fall back to TLS for Internal Certificates."""
+    cases = (
+        ('governance.overview', 'Overview'),
+        ('governance.tls_certificates', 'TLS Certificates'),
+        ('governance.internal_certificates', 'Internal Certificates'),
+    )
+    for endpoint, view in cases:
+        crumbs = build_navigation_breadcrumb(endpoint, '/governance/internal-certificates')
+        assert [item['label'] for item in crumbs] == ['Kubernetes', 'Governance', view]
+
+    unknown = build_navigation_breadcrumb('governance.unknown_view')
+    assert unknown[-1]['label'] == 'Overview'

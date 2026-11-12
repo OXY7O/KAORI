@@ -120,12 +120,18 @@ def main() -> int:
         "registry_ui.footer('governance.internal_certificates'",
         'Not Collected',
         'Not Verified',
-        'Renewal Deferred',
+        'Provider-Owned Renewal',
+        "'Renewal', 'Provider Owned',"
     ):
         require(item in internal_page, f'Internal PKI workspace is missing: {item}', errors)
     require(
         "section_intro.render('Source Readiness'" not in internal_page,
         'Internal PKI must not render a standalone Source Readiness intro directly after Hero.',
+        errors,
+    )
+    require(
+        'Renewal Deferred' not in internal_page,
+        'Internal PKI renewal ownership must not be presented as deferred KAORI execution.',
         errors,
     )
     require(

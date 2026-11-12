@@ -210,7 +210,10 @@ def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace
     assert 'components/info_tip.html' in workspace
     assert 'Not Collected' in workspace
     assert 'Not Verified' in workspace
-    assert 'Renewal Deferred' in workspace
+    assert 'Provider-Owned Renewal' in workspace
+    assert "'Renewal', 'Provider Owned'" in workspace
+    assert 'Renewal stays with the platform or PKI provider.' in workspace
+    assert 'Renewal Deferred' not in workspace
     assert 'Collection source not configured' in workspace
     assert 'Automated PKI Collection Pending' in workspace
     assert 'Request Renewal' not in workspace
