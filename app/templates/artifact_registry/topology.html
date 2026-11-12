@@ -69,6 +69,9 @@
             {{ section_intro.render('Artifact Dependency Mapping',
                         'Inspect one bounded committed relationship graph at a time; explore the same slice in Resource List.',
                         'registry-topology-section-title') }}
+            {% set registry_topology_relationship_badge %}
+                {{ table_label.metadata_label('Loading Relationships', icon='git-fork', text_id='registry-topology-relationship-badge-count') }}
+            {% endset %}
             {% set registry_topology_filters_active = runtime.filters.source_id or runtime.filters.cluster_id or
                             runtime.filters.namespace or runtime.filters.match_type or
                             runtime.filters.exposure or runtime.filters.artifact_id or
@@ -91,6 +94,7 @@
                 action_icon='refresh-cw',
                 loading_id='registry-topology-loading',
                 header_actions=registry_topology_header_actions,
+                header_badge=registry_topology_relationship_badge,
                 action_classes=table_ui.action_classes()
                 ) %}
                 <form id="registry-topology-filters"
