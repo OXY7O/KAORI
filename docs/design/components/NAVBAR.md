@@ -104,3 +104,33 @@ The main scroll owner must preserve the same top scroll-padding as the page-cont
 This protects fragment navigation, `scrollIntoView()`, HTMX/history-driven focus targets, and other programmatic scroll alignment from colliding with the top edge of the application content viewport.
 
 Do not compensate with page-local `mt-*`, inline offsets, or domain-specific spacer elements. The shared shell owns this boundary.
+
+
+## Global Search capability discovery
+
+The authenticated **Search KAORI** overlay uses the existing
+\`components/navigation/_global_search.html\` dialog and \`kaoriNavbar\` controller.
+Its read-only \`/search/global\` response has two deliberately separate sources:
+
+- **Navigation and Quick Navigation:** authorized two-level workspace/capability
+  destinations from \`app/common/workspace_navigation.py::build_sidebar_navigation\`.
+  This is the same server-side source as the current sidebar; Source Control's
+  local-administrator eligibility and each capability's permission filtering
+  must be applied **before** results are assembled. Empty-query Quick Navigation
+  is a bounded curated subset of these actual visible destinations. Legacy
+  deep-page aliases may supplement typed queries, but duplicate URLs are removed.
+  Providers and registered instances remain within their owning capabilities.
+- **Resources:** the existing committed Kubernetes Cluster/Inventory and
+  Object Storage System/Bucket records only, with permission checks, minimum
+  two-character query, bounded results and no live external provider query.
+  New feature navigation does **not** imply its underlying records are indexed.
+
+Keep keyboard search/arrow/Enter/Escape, focus trapping and return, 180 ms
+debounce, abortable reads, no-store, source-bound empty/loading/error states,
+accessibility, Violet and responsive geometry unchanged. Updating an implemented
+sidebar capability should make that capability discoverable through Search
+without adding another hard-coded list of navigation routes.
+
+Broader cross-domain committed-resource indexing requires separate authorization,
+evidence/read-model ownership and tests; do not treat a provider's live search API
+as KAORI's normal operational index.
