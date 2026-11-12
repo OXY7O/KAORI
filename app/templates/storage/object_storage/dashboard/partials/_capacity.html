@@ -41,12 +41,12 @@
                             <div class="grid gap-3 lg:grid-cols-3">
                                 {% for label, value, color, percent, percent_meaning, helper in capacity_metrics %}
                                     {{ capacity_metric_card.render(label,
-                                                                                value,
-                                                                                helper,
-                                                                                percent,
-                                                                                percent_meaning,
-                                                                                color,
-                                                                                aria_label=label ~ ' ' ~ percent_meaning|lower ~ ' percentage') }}
+                                                                        value,
+                                                                        helper,
+                                                                        percent,
+                                                                        percent_meaning,
+                                                                        color,
+                                                                        aria_label=label ~ ' ' ~ percent_meaning|lower ~ ' percentage') }}
                                 {% endfor %}
                             </div>
                             {% set capacity_tone = dashboard.capacity.posture.tone|default('unknown') %}
