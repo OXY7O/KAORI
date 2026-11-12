@@ -67,9 +67,7 @@ def test_registry_topology_header_badge_tracks_committed_relationship_edges() ->
     kubernetes = K8S.read_text(encoding='utf-8')
     renderer = RUNTIME_JS.read_text(encoding='utf-8')
     projection = (ROOT / 'app/artifact_registry/presentation_topology.py').read_text(encoding='utf-8')
-    shared = (ROOT / 'app/templates/components/visualization_workspace.html').read_text(
-        encoding='utf-8'
-    )
+    shared = (ROOT / 'app/templates/components/visualization_workspace.html').read_text(encoding='utf-8')
     Environment().parse(registry)
 
     # Same shared Violet title-adjacent metadata badge used by Kubernetes Topology.
@@ -96,9 +94,7 @@ def test_registry_topology_header_badge_tracks_committed_relationship_edges() ->
     assert "relationshipBadge.textContent = 'Relationships Unavailable'" in renderer
     reload_source = renderer.split('const reload = async () =>', 1)[1]
     assert reload_source.index('setRelationshipBadge(payload.edges)') < reload_source.index('renderList()')
-    assert reload_source.index('setRelationshipBadge(payload.edges)') < reload_source.index(
-        'await renderGraph()'
-    )
+    assert reload_source.index('setRelationshipBadge(payload.edges)') < reload_source.index('await renderGraph()')
 
 
 def test_registry_renderer_adopts_kubernetes_graph_semantics() -> None:
