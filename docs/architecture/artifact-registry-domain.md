@@ -245,6 +245,28 @@ responses, light/dark mode and mobile widths. Full Admission, CI/CD,
 staging/UAT deployment and main promotion remain **HOLD** until explicit
 authorization.
 
+### Governance Guide and compact evidence copy (Human Visual UAT #4570)
+
+In **Governance Evidence Operations**, the active, HTMX-refreshable status row
+uses the existing `info_tip.render(..., variant='guide')` immediately next to
+the status badge. The Guide explains externally authoritative, read-only
+Registry policy, retention, immutability and replication evidence; `Inputs
+Changed` and when to run Governance Sync; and why missing, stale, partial,
+unavailable or superseded evidence is not a positive compliance result. The
+Guide is informational and never replaces confirmation, JobExecution status,
+source-specific error details or Sync Governance authorization.
+
+The **Governance Data Snapshot** and grouped **Policy Coverage** supporting
+copy should remain succinct at standard desktop widths: changed inventory
+prompts an explicit Governance Sync refresh, latest committed evidence and
+committed provider coverage remain plainly labeled, and exception text stays
+a review cue rather than asserting zero risk. Use short source-backed
+descriptions without forced `whitespace-nowrap` or hidden text on mobile.
+The existing status, tone, committed timestamps, provider/project counts,
+per-capability details and complete Governance records remain authoritative.
+Changing display copy does not alter materialization freshness or replication
+and retention interpretation.
+
 ### Registry UI Consistency Audit — active workspace family (#1087)
 
 **Scope:** Artifact Registry Overview, Inventory, Security, Runtime Usage,
