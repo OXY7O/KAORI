@@ -80,12 +80,10 @@ def test_notification_page_size_uses_one_change_request_and_preserves_filters() 
     ):
         assert token in rows
     assert 'data-kaori-auto-submit' not in rows
-    assert "control.form.requestSubmit()" in pagination  # Existing shared fallback stays unchanged.
+    assert 'control.form.requestSubmit()' in pagination  # Existing shared fallback stays unchanged.
     assert 'hx-sync="this:drop"' in content
     assert "per_page=_request_int('per_page', 5)" in routes
-    assert 'ACTIVITY_PER_PAGE_OPTIONS = (5, 10, 25, 50)' in read(
-        'app/platform_operations/notifications/constants.py'
-    )
+    assert 'ACTIVITY_PER_PAGE_OPTIONS = (5, 10, 25, 50)' in read('app/platform_operations/notifications/constants.py')
     assert 'per_page=normalized_per_page' in queries
     assert 'per_page=pager.per_page' in content
     assert 'option == pager.per_page' in content
