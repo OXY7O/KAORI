@@ -335,7 +335,8 @@ def test_internal_pki_source_workspace_shows_committed_registry_with_unknown_pki
     assert 'Not Collected' in content
     assert 'Not Verified' in content
     assert 'Unknown' in content
-    assert 'Renewal Deferred' in content
+    assert 'Provider-Owned Renewal' in content
+    assert 'Renewal Deferred' not in content
     assert 'Request Renewal' not in content
     assert 'Rotate All' not in content
 
@@ -442,6 +443,8 @@ def test_internal_pki_committed_inventory_renders_after_readiness_without_live_p
     assert 'Operator Attested' in content
     assert 'Installed status unverified' in content
     assert 'Request Renewal' not in content
+    assert 'Rotate All' not in content
+    assert 'Provider-Owned Renewal' in content
     assert content.index('data-kaori-capability-navigation') < content.index('Internal Certificates</h1>')
 
 
