@@ -211,6 +211,64 @@ def test_internal_pki_source_readiness_is_a_real_authorized_navigation_workspace
     assert 'Rotate All' not in workspace
 
 
+
+def test_internal_pki_certificate_registry_uses_committed_attested_evidence_only() -> None:
+    route = read('app/kubernetes/governance/internal_certificates/routes.py')
+    service = read('app/kubernetes/governance/internal_certificates/service.py')
+    readiness = read('app/kubernetes/governance/internal_certificates/readiness.py')
+    importer = read('app/kubernetes/governance/internal_certificates/evidence_import.py')
+    commands = read('app/commands/__init__.py')
+    cli = read('app/commands/internal_pki.py')
+    model = read('app/models/internal_certificates.py')
+    migration = read('migrations/versions/20261112_internal_pki_evidence.py')
+    template = read('app/templates/kubernetes/governance/internal_certificates/index.html')
+    partial = read('app/templates/kubernetes/governance/internal_certificates/partials/_certificate_inventory.html')
+
+    assert "get_internal_certificate_inventory_page(request.args)" in route
+    assert "check_internal_pki_schema_readiness()" in route
+    assert "schema_readiness.ready" in route
+    assert "get_internal_certificate_inventory_page" in service
+    assert "InternalPKICertificateInventory.query" in service
+    assert "InternalPKIEvidenceBatch" in service
+    assert "source_rows = db.session.execute(" in service
+    assert "func.max(InternalPKIEvidenceBatch.collected_at)" in service
+    assert "source_label': 'Operator Attested'" in service
+    assert "def _expiry_presentation(" in service
+    assert "_DEFAULT_PER_PAGE = 5" in service
+    assert "INTERNAL_PKI_REVISION = '20261112_internal_pki'" in readiness
+    assert "inspect(db.engine).get_table_names()" in readiness
+
+    assert "SCHEMA_VERSION = 'kaori.internal-pki-evidence.v1'" in importer
+    assert "MAX_MANIFEST_BYTES = 128 * 1024" in importer
+    assert "MAX_RECORDS = 100" in importer
+    assert "manifest_sha256" in importer
+    assert "db.session.commit()" in importer
+    assert "AuditEvent(" in importer
+    assert "kubeadm_check_expiration" in importer
+    assert "db.session.get(Cluster," in importer
+    assert "import_internal_pki" in commands
+    assert "import-internal-pki" in cli
+    assert "MAX_MANIFEST_BYTES + 1" in cli
+    assert "InternalPKICertificateInventory" in model
+    assert "InternalPKIEvidenceBatch" in model
+    assert "op.create_table(" in migration
+    assert "op.drop_table(" in migration
+
+    assert "partials/_certificate_inventory.html" in template
+    assert "inventory.total" in template
+    assert "Internal Certificate Registry" in partial
+    assert "registry_ui.filter_form('governance.internal_certificates'" in partial
+    assert "registry_ui.footer('governance.internal_certificates'" in partial
+    assert "page_param='cert_page'" in partial
+    assert "cert_per_page" in partial
+    assert "Operator Attested" in partial
+    assert "Installed status unverified" in partial
+    assert "Request Renewal" not in partial
+    assert "Rotate All" not in partial
+    for forbidden in ("core_api(", "list_certificate_signing_request(", "subprocess.", "paramiko", "ssh "):
+        assert forbidden not in importer
+        assert forbidden not in service
+
 def test_governance_dead_job_presentation_helper_is_retired() -> None:
     source = read('app/kubernetes/governance/tls_certificates/job_presentation.py')
     assert 'def get_active_tls_sync_job(' not in source
