@@ -191,7 +191,11 @@ def main(argv: list[str] | None = None) -> int:
         nofollow = getattr(os, 'O_NOFOLLOW', None)
         if nofollow is None:
             raise UnverifiedZapReport('No safe no-follow input open available')
-        flags = os.O_RDONLY | os.O_NONBLOCK | nofollow
+        # Nonblocking open is mandatory: a swapped FIFO must never hang CI.
+        nonblock = getattr(os, 'O_NONBLOCK', None)
+        if nonblock is None:
+            raise UnverifiedZapReport('No safe nonblocking input open available')
+        flags = os.O_RDONLY | nonblock | nofollow
         descriptor = os.open(args.input, flags)
         try:
             stream = os.fdopen(descriptor, 'rb')
