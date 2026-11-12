@@ -62,10 +62,14 @@
             {{ section_intro.render('Operational Posture',
                         inventory.resource_posture_intro,
                         'registry-resource-posture-heading') }}
+            {% set posture_badge %}
+                {{ table_label.metadata_label(inventory.resource_posture_metrics|length ~ ' Indicators', icon='layout-grid') }}
+            {% endset %}
             {% call operational_section_card.render(
                 inventory.resource_posture_title,
                 inventory.resource_posture_description,
                 inventory.resource_icon,
+                header_badge=posture_badge,
                 body_classes='p-0'
                 ) %}
                 {{ posture_grid.render(inventory.resource_posture_metrics, columns=4) }}
