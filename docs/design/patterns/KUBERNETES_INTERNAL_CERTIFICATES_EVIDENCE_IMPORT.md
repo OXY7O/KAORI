@@ -332,7 +332,7 @@ Rows setting.
 Registered Source Coverage supports committed **Cluster Search, Environment,
 Detected Platform** filters; the option lists are derived only from committed
 non-secret registration metadata, including when PKI migration readiness is
-blocked. Certificate Inventory supports **Component/Node/Issuer Search,
+blocked. Certificate Inventory supports **Component/Node/Cluster Search,
 Certificate Type (Leaf/CA), Reported Expiry (Outside/Renewal/Critical/Expired/
 Not Yet Valid), source-declared Coverage (Partial/Complete), and Evidence
 Freshness (Recently Collected/Stale)**. All facets operate server-side before
