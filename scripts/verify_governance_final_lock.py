@@ -135,6 +135,9 @@ def main() -> int:
         'hx-select="#internal-pki-evidence-workspace"',
         "active_tab == 'sources'",
         "registry_ui.clear_filters_link('governance.internal_certificates'",
+        'header_actions=source_clear_action',
+        'table_ui.cluster_identity(record.name, record.environment)',
+        'aria-label="View PKI Evidence for {{ record.name }}"',
         'name="environment"',
         'name="platform"',
         'table_ui.table_classes',
@@ -153,6 +156,8 @@ def main() -> int:
         require(item in pki_posture, f'Internal PKI posture is missing: {item}', errors)
     for item in (
         "registry_ui.clear_filters_link('governance.internal_certificates'",
+        'header_actions=certificate_clear_action',
+        'table_ui.title_cell(certificate.component',
         'name="cert_kind"',
         'name="cert_expiry"',
         'name="cert_coverage"',
