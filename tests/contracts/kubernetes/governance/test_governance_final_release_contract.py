@@ -60,11 +60,32 @@ def test_governance_overview_is_domain_first_and_child_capability_evidence_stays
         'Committed Governance Posture',
         'TLS Governance Snapshot',
         'TLS Governance Posture',
-        'components/snapshot_context_bar.html',
+        "title='TLS Collection Snapshot'",
+        'tls_payload',
         '{% if can_view_tls and tls_payload %}',
         'TLS View Restricted',
     ):
         assert retired_tls_overview not in overview
+
+    # The TLS snapshot component may lend its compact *presentation* shell to
+    # domain metadata, but Governance Overview must not claim collection evidence.
+    assert 'components/snapshot_context_bar.html' in overview
+    assert "title='Governance Control Context'" in overview
+    assert "status='Read-only'" in overview
+    assert "latest_label='Provider Authority'" in overview
+    assert "coverage_metric_label='Implemented Capabilities'" in overview
+    assert "exceptions_metric_label='Execution Handoff'" in overview
+    assert "coverage_label=table_label.count_text(governance_capabilities|length, 'Capability')|trim" in overview
+    assert "header_badge=capability_badge" in overview
+    assert "info_tip.render('governance-operating-model-guide'" in overview
+    assert "variant='guide'" in overview
+    assert 'header_badge=model_guide' in overview
+    assert "body_classes='p-5'" in overview
+    assert 'overflow-hidden rounded-xl border border-outline-subtle' in overview
+    assert overview.index("title='Governance Control Context'") < overview.index("section_intro.render('Governance Scope'")
+    assert overview.index("section_intro.render('Governance Scope'") < overview.index("section_intro.render('Governance Model'")
+    assert 'get_tls_certificate_page' not in overview
+    assert "latest_collected=payload.snapshot.latest_collected" not in overview
 
     assert 'Governance Overview landing contract' in standard
     assert 'domain-first' in standard
