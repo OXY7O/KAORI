@@ -114,6 +114,16 @@ No certificate renewal, CA rotation, CSR approval, static-Pod restart or host mu
 
 The implementation-ready **design-only** renewal workflow, policy, safe Ansible/provider boundary, preflight, recovery and testing matrix is retained in [KUBERNETES_INTERNAL_CERTIFICATES_RENEWAL_BLUEPRINT.md](KUBERNETES_INTERNAL_CERTIFICATES_RENEWAL_BLUEPRINT.md) (#4445). It is not an approved mutation implementation or permission to add a Renew button before Ansible execution and security gates are admitted.
 
+## 2026-11-12 UI delivery amendment — implemented source-readiness stage (#4453)
+
+The operator explicitly requested a **visible and usable** Internal Certificates workspace before control-plane PKI collection is available. Issue #4453 authorizes a narrow first-stage exception to the earlier “no card before #4443” instruction: show **Internal Certificates — Source Pending** beside TLS Certificates, with a real read-only route and the existing committed cluster registry as its source. This is **not** a certificate inventory, PKI readiness verification, or collection success.
+
+The first-stage page reads only registered `Cluster` and associated `KubernetesConnection` metadata. It shows the connection-detected platform/version as a **non-authoritative hint**, never as proof of a kubeadm installation or supported PKI execution identity. For each registered cluster, the internal PKI states remain **Not Collected**, **Not Verified**, and **Unknown** until a qualified #4443 collector commits actual PKI certificate records. All normal requests avoid provider/API calls; no fabricated `not_after` date, empty Healthy count, CA material, or renewal action appears.
+
+The route has separate `internal_certificates.view` plus `governance.view` and `clusters.view` guards. Existing KAORI RBAC role scope is global, **not per-cluster**; finer source-specific access must be defined and tested before a future PKI certificate detail implementation. Default roles receive the new read-only permission after governed `flask seed-rbac`, not as a read-path side effect.
+
+**Milestone distinction:** #4453 closes only after exact-SHA QA and Human Acceptance of the **source-readiness** page. #4443 remains blocked on verified PKI source/identity; full #4444 committed certificate inventory/expiry posture remains OPEN and must not be marked complete from this UI-only phase. #4445 renewal remains deferred until approved Ansible orchestration.
+
 ## 7. Next evidence needed
 
 For one **non-production pilot** cluster: approved distribution/version confirmation, control-plane/etcd topology, owning team, source tool/version, permitted read-only execution identity, redacted field inventory and permission outcome, actual collection window and full/partial coverage assessment. Then update this matrix and #4442 before #4443 collector work begins.
