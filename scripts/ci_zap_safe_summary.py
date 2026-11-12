@@ -274,8 +274,8 @@ def main(argv: list[str] | None = None) -> int:
         # a symlink while parsing; do not publish through that changed alias.
         if args.output.parent.resolve() != args.output.parent.absolute():
             raise UnverifiedZapReport('Unsafe evidence output directory')
+        current_output_parent = args.output.parent.stat()
         if original_output_parent is not None:
-            current_output_parent = args.output.parent.stat()
             if (
                 current_output_parent.st_dev != original_output_parent.st_dev
                 or current_output_parent.st_ino != original_output_parent.st_ino
@@ -296,6 +296,22 @@ def main(argv: list[str] | None = None) -> int:
             ) as stream:
                 temporary = Path(stream.name)
                 stream.write(summary)
+            # A workspace actor can replace the input or output directory while
+            # the temporary summary is being written. Recheck both identities
+            # immediately before the atomic publication boundary.
+            publish_input = args.input.stat(follow_symlinks=False)
+            if not stat.S_ISREG(publish_input.st_mode) or any(
+                getattr(publish_input, field) != getattr(final_stat, field)
+                for field in ('st_dev', 'st_ino', 'st_mode', 'st_size', 'st_mtime_ns', 'st_ctime_ns')
+            ):
+                raise UnverifiedZapReport('ZAP report changed before publication')
+            publish_parent = args.output.parent.stat()
+            if (
+                args.output.parent.resolve() != args.output.parent.absolute()
+                or publish_parent.st_dev != current_output_parent.st_dev
+                or publish_parent.st_ino != current_output_parent.st_ino
+            ):
+                raise UnverifiedZapReport('Evidence output directory changed before publication')
             os.replace(temporary, args.output)
             temporary = None
         finally:
