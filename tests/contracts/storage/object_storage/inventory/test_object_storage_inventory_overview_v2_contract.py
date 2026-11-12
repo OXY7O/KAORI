@@ -272,6 +272,7 @@ def test_object_storage_navigation_reuses_kubernetes_compact_workspace_cards() -
     assert 'focus-visible:ring-outline-focus' in custom
     assert 'data-lucide="arrow-up-right"' in custom
 
+
 def test_resource_posture_compact_governance_mode_preserves_default_and_unknown_evidence() -> None:
     from jinja2 import Environment, FileSystemLoader
 
@@ -303,4 +304,3 @@ def test_resource_posture_compact_governance_mode_preserves_default_and_unknown_
     assert 'text-xl font-semibold leading-7 text-content-primary' in original
     assert 'overflow-hidden rounded-xl border border-outline-subtle' not in original
     assert 'bg-status-warning-soft text-status-warning-text' in original
-
