@@ -10,13 +10,14 @@
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% call detail.workspace_header(
-            'Immutable digest identity, Registry location, tag references, provider provenance, and committed collection context.',
-            'fingerprint'
+            'Digest, tags, and provider evidence from the committed snapshot.',
+            'fingerprint',
+            context_items=[{'label': artifact.repository_name, 'icon': 'package-open'}, {'label': artifact.provider_name, 'icon': 'boxes'}],
+            compact=true
             ) %}
             {% call detail.header_identity_row() %}
-                {{ detail.inventory_title(artifact.digest_short) }}
-                {{ table_label.metadata_label(artifact.repository_name, 'package-open') }}
-                {{ table_label.metadata_label(artifact.provider_name, 'boxes') }}
+                {{ detail.inventory_title(artifact.digest_short, compact=true) }}
+                
             {% endcall %}
         {% endcall %}
         {{ detail.inspector_summary_strip([
@@ -31,7 +32,7 @@
                     'Artifact Identity',
                     'fingerprint',
                     artifact.type,
-                    description='Immutable digest-oriented artifact identity.'
+                    description='Digest identity and format.'
                     ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_technical_row('Digest', artifact.digest, copyable=true, class_name='lg:col-span-2') }}
@@ -47,7 +48,7 @@
                     'Registry Location',
                     'package-open',
                     artifact.repository_name,
-                    description='Project and repository scope that own this committed artifact identity.'
+                    description='Project and repository scope.'
                     ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Project', artifact.project_name) }}
@@ -60,7 +61,7 @@
                     'Tag References',
                     'tags',
                     artifact.tag_count ~ (' Tag' if artifact.tag_count == 1 else ' Tags'),
-                    description='Mutable tags attached to this immutable digest.'
+                    description='Tags linked to this digest.'
                     ) %}
                     {% if artifact.tag_preview %}
                         <div class="overflow-x-auto">
@@ -109,7 +110,7 @@
                     'Artifact Timing',
                     'clock-3',
                     artifact.observed_at|user_datetime,
-                    description='Provider-observed push, pull, and Inventory observation timestamps.'
+                    description='Provider and observed times.'
                     ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Push Time', artifact.push_time|user_datetime if artifact.push_time else 'Not Collected', nowrap=true) }}
@@ -121,7 +122,7 @@
                     'Registry Source',
                     'boxes',
                     artifact.provider_label,
-                    description='Registry integration and environment that supplied this committed artifact record.'
+                    description='Provider and environment.'
                     ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Source', artifact.provider_name, class_name='lg:col-span-2') }}
@@ -143,7 +144,7 @@
                     artifact.snapshot.label,
                     'status',
                     artifact.snapshot.tone,
-                    description='Committed snapshot freshness and evidence boundary.'
+                    description='Snapshot freshness and scope.'
                     ) %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_status_row('Snapshot State', artifact.snapshot.label, artifact.snapshot.tone) }}
