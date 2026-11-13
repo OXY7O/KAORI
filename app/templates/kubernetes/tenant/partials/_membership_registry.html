@@ -108,17 +108,17 @@
         {% endcall %}
     </div>
     <div class="w-full min-w-0 max-w-full overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[800px] table-fixed xl:min-w-0') }}">
+        <table class="{{ table_ui.table_classes('min-w-[960px] table-fixed xl:min-w-0') }}">
             <caption class="sr-only">Tenant membership registry.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[23%]">Principal</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Tenant</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[25%]">Principal</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Tenant</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Type</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Status</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Updated</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Status</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Updated</th>
                     <th scope="col"
-                        class="{{ table_ui.header_cell_classes(action=true) }} w-[15%]">Action</th>
+                        class="{{ table_ui.header_cell_classes(action=true) }} w-[14%]">Action</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
