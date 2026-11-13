@@ -3,6 +3,8 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/resource_posture_grid.html" as resource_posture_grid %}
 {% import "components/section_intro.html" as section_intro %}
+{% import "components/info_tip.html" as info_tip %}
+{% import "components/table_label.html" as table_label %}
 {% block tenant_content %}
     {% set can_manage = current_user.has_permission('tenant.manage') %}
     {% set namespace_total = namespace_options|length %}
@@ -22,9 +24,9 @@
             ('shared-allocation', 'Shared Allocation', 'layers-3', url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='shared-allocation'))
         ] %}
     {% set namespace_metrics = [
-            ('folder-tree', 'Namespace Records', namespace_total, 'Committed managed/adopted Namespace records in KAORI', 'info'),
+            ('folder-tree', 'Namespace Records', namespace_total, 'Committed managed/adopted records', 'info'),
             ('circle-check', 'Ready', namespace_ready, 'Provider reconciliation currently verified', 'normal'),
-            ('triangle-alert', 'Drifted', namespace_drifted, 'Committed intent differs from provider observation', 'warning' if namespace_drifted else 'normal'),
+            ('triangle-alert', 'Drifted', namespace_drifted, 'Intent differs from provider state', 'warning' if namespace_drifted else 'normal'),
             ('activity', 'Needs Attention', namespace_attention, 'Pending, drifted, failed, or teardown states', 'warning' if namespace_attention else 'normal')
         ] %}
     <section class="space-y-4" aria-labelledby="namespace-snapshot-heading">
@@ -35,6 +37,7 @@
             'Namespace Estate',
             'Review managed Namespace state before provisioning or changing allocation.',
             'folder-tree',
+            header_badge=table_label.result_count(namespace_total),
             body_classes='p-0',
             aria_label='Namespace provisioning summary'
             ) %}
@@ -49,6 +52,15 @@
             'Namespace Administration',
             'Tenant ownership, Resource Profile intent, capacity admission, and provider reconciliation remain explicit at every step.',
             'panels-top-left',
+            header_badge=info_tip.render('namespace-administration-guide',
+            'Namespace Administration Guide',
+            'Navigate admitted Namespace creation, allocation, and governance workflows without conflating intent with provider state.',
+            items=[
+            'Tenant Environment and a pinned Resource Profile define the committed allocation boundary.',
+            'Capacity admission fails closed when authority or fresh committed evidence is incomplete.',
+            'Native Kubernetes or Capsule executes and remains authoritative; KAORI records verified reconciliation.'
+            ],
+            placement='right', variant='guide'),
             id='namespace-provisioning-workspace',
             loading_bar_id='namespace-provisioning-workspace-loading',
             loading_bar_label='Loading Namespace Provisioning Workspace',
