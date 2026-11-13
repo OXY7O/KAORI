@@ -207,7 +207,8 @@ def _accumulate_metrics(
             aggregate[aggregate_key] += float(raw_value)
 
     pull_activity = metrics.get('project_pull_count')
-    if isinstance(pull_activity, dict):
+    if metrics_ready and isinstance(pull_activity, dict):
+        # Only a ready committed Metrics Source may contribute observed pull counts.
         # Counters cannot be negative or boolean. Exclude invalid evidence rather
         # than reporting fabricated pull activity in the Usage projection.
         for project_name, raw_value in pull_activity.items():
