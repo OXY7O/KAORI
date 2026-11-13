@@ -560,7 +560,8 @@ def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons
     assert "eyebrow='Analytics Overview' if analytics.active_tab == 'overview'" in registry
     assert "'Registry'" in registry
     assert "'Time Range'" in registry
-    assert 'All Registries' in registry
+    assert 'All Registries' not in registry
+    assert "empty_label='No Registries Available' if not analytics.provider_options else none" in registry
     assert 'analytics.time_range_options' in registry
     assert "'time_range_options': get_allowed_time_ranges()" in presenter
     assert "legacy_label='Current (Instant)'" in registry
@@ -719,7 +720,16 @@ def test_registry_analytics_scope_and_committed_measured_range_are_real_filters(
     assert _registry_analytics_scope(9, identities) == 9
     with pytest.raises(NotFound):
         _registry_analytics_scope(999, identities)
-    assert _registry_analytics_scope(None, identities) is None
+    assert _registry_analytics_scope(None, identities) == 4
+    assert _registry_analytics_scope(None, []) is None
+    ready_first = [
+        SimpleNamespace(id=4, readiness_status='blocked'),
+        SimpleNamespace(id=9, readiness_status='ready'),
+    ]
+    assert _registry_analytics_scope(None, ready_first) == 9
+    assert _registry_analytics_scope(4, ready_first) == 4
+    with pytest.raises(NotFound):
+        _registry_analytics_scope(999, ready_first)
 
     assert normalize_registry_analytics_window('bogus') == '24h'
     assert normalize_registry_analytics_window('current') == 'current'
@@ -732,6 +742,76 @@ def test_registry_analytics_scope_and_committed_measured_range_are_real_filters(
     readiness_source = (ROOT / 'app/artifact_registry/analytics_job_adapter.py').read_text()
     assert 'Historical Materialization Required' in readiness_source
     assert 'RegistryAnalyticsSnapshot.time_range == normalized_window' in readiness_source
+
+
+def test_registry_analytics_selector_renders_only_explicit_registry_sources() -> None:
+    from types import SimpleNamespace
+
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    env.filters['user_datetime'] = lambda value, default='Unavailable': str(value or default)
+    env.globals['url_for'] = lambda endpoint, **kwargs: f'/{endpoint.replace(".", "/")}'
+    source_options = [
+        SimpleNamespace(id=4, name='Harbor X300'),
+        SimpleNamespace(id=9, name='Harbor X400'),
+    ]
+    page = {
+        'active_tab': 'overview',
+        'provider_options': source_options,
+        'selected_provider_id': 9,
+        'snapshot_window': '24h',
+        'alert_filters': {},
+        'data_readiness': {
+            'eligible_count': 1,
+            'registered_count': 1,
+            'covered_count': 1,
+            'current_count': 1,
+            'label': 'Current Snapshot',
+            'tone': 'normal',
+            'latest_generated_at': None,
+            'latest_expiry_at': None,
+            'last_attempt_label': 'Never',
+            'helper': 'Current evidence.',
+            'is_active': False,
+            'execution_tone': 'normal',
+            'collection_warning': None,
+        },
+    }
+    html = env.get_template('artifact_registry/partials/_analytics_controls_readiness.html').render(
+        analytics=page
+    )
+    assert 'All Registries' not in html
+    assert 'Harbor X300' in html and 'Harbor X400' in html
+    selector = html.split('id="artifact-registry-analytics-provider"', 1)[1].split('</select>', 1)[0]
+    assert selector.count('<option') == 2
+    assert '<option value=""' not in selector
+    assert 'value="9"' in selector and 'selected' in selector
+
+    # Without registered sources, the control declares unavailability, not
+    # an implicit All Registries or a widened committed query.
+    page['provider_options'] = []
+    page['selected_provider_id'] = None
+    empty = env.get_template('artifact_registry/partials/_analytics_controls_readiness.html').render(
+        analytics=page
+    )
+    assert 'No Registries Available' in empty
+    assert 'All Registries' not in empty
+
+
+def test_registry_analytics_risk_copy_stays_compact_without_changing_risk_semantics() -> None:
+    from app.artifact_registry.presentation_analytics import _analytics_summary_cards
+
+    aggregate = {'total_size_bytes': 1024, 'artifacts': 3, 'running_artifacts': 1}
+    growth = {'size_per_day': 0, 'artifacts_per_day': 0, 'runtime_usage_percent': 33.3}
+    cards = _analytics_summary_cards(
+        aggregate, growth_rows=[], growth=growth, risk_candidate_count=1
+    )
+    risk = next(card for card in cards if card['label'] == 'Risk Candidates')
+    assert risk['value'] == '1'
+    assert risk['tone'] == 'warning'
+    assert risk['detail'] == 'Cross-domain signals may overlap.'
+    assert len(risk['detail']) <= 36
 
 
 def test_registry_analytics_selector_preserves_scope_through_routes_and_alerts() -> None:
