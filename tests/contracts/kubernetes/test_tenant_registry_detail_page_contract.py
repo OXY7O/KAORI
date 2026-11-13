@@ -1036,13 +1036,14 @@ def test_governance_scope_reuses_approved_tenant_estate_posture_pattern():
     fleet = read('app/templates/kubernetes/tenant/overview.html')
     card = read('app/templates/components/operational_section_card.html')
     posture = read('app/templates/components/resource_posture_grid.html')
-    assert 'Governance Scope' in detail
+    assert 'aria-label="Tenant governance posture"' in detail
+    assert "section_intro.render('Governance Scope'" not in detail
     assert 'section_intro.render(' in detail
     assert 'operational_section_card.render(' in detail
     assert 'resource_posture_grid.render(tenant_governance_metrics, columns=4)' in detail
     assert 'header_badge=table_label.metadata_label((tenant_governance_metrics|length)' in detail
     assert "~ ' Indicators', icon='layout-grid')" in detail
-    assert "section_intro.render('Governance Scope',\n                ''," in detail
+    assert 'tenant-governance-scope-title' not in detail
     assert 'Committed Namespace, environment, authority and lifecycle posture for this Tenant.' not in detail
     assert "'Tenant Governance'" in detail
     assert "'layout-grid'" in detail
