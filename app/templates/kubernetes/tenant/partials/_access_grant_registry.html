@@ -1,4 +1,5 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
@@ -36,6 +37,17 @@
             Go to Grant Form
         </button>
     {% endset %}
+    {% set title_info %}
+        {{ info_tip.render('tenant-access-grant-registry-guide',
+                'Access Grant Registry Guide',
+                'Review committed authorization intent separately from Kubernetes provider execution.',
+                [
+                'Membership and versioned access profiles define explicit Tenant scope and authorization intent.',
+                'Reconciliation evidence records whether effective Kubernetes RBAC matches the committed grant.',
+                'Revocation and provider cleanup remain governed operations; inspect evidence before action.'
+                ],
+                placement='right', variant='guide') }}
+    {% endset %}
     {{ table_ui.inventory_block_header('shield-check',
         'Access Grant Registry',
         'Committed authorization intent with effective Kubernetes RBAC reconciliation state.',
@@ -44,7 +56,8 @@
         none,
         none,
         header_actions=header_actions,
-        result_count=access_grant_pagination.total_items) }}
+        result_count=access_grant_pagination.total_items,
+        title_extra=title_info) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
             'tenant.tenants',

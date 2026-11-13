@@ -1,4 +1,3 @@
-{% import "components/info_tip.html" as info_tip %}
 <div class="space-y-5">
     <section class="overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
              aria-labelledby="namespace-access-model-heading">
@@ -9,19 +8,8 @@
                     <i data-lucide="route" class="h-5 w-5"></i>
                 </span>
                 <div>
-                    <span class="inline-flex min-h-6 items-center gap-1.5">
-                        <h3 id="namespace-access-model-heading"
-                            class="text-base font-semibold text-content-primary">Effective Namespace Access</h3>
-                        {{ info_tip.render('namespace-access-tip',
-                                                'Effective access evidence',
-                                                'This view explains who or what can access each governed namespace without exposing credentials.',
-                                                [
-                                                'Access is derived from committed Tenant Access Grants and credential lifecycle state.',
-                                                'Kubernetes remains authoritative for effective RBAC evidence.',
-                                                'Token, kubeconfig, private key, certificate, and Secret material are never rendered.'
-                                                ],
-                                                placement='right', variant='guide') }}
-                    </span>
+                    <h3 id="namespace-access-model-heading"
+                        class="text-base font-semibold text-content-primary">Effective Namespace Access</h3>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">
                         Correlate committed grants and credential lifecycle into one non-secret operator view.
                     </p>
