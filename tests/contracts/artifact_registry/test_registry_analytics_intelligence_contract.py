@@ -643,18 +643,16 @@ def test_governance_aggregation_rejects_malformed_committed_counters() -> None:
         node for node in tree.body
         if isinstance(node, ast.FunctionDef) and node.name == '_accumulate_domain_counts'
     )
+    initializer = next(
+        node for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == '_analytics_aggregate'
+    )
     namespace = {'Any': Any}
-    exec(compile(ast.Module(body=[function], type_ignores=[]), '<governance-aggregation>', 'exec'), namespace)
+    exec(compile(ast.Module(body=[initializer, function], type_ignores=[]), '<governance-aggregation>', 'exec'), namespace)
     accumulate = namespace['_accumulate_domain_counts']
 
     for invalid in (True, -1, 1.5, '3', None):
-        aggregate = {
-            'governance_projects_assessed': 0,
-            'retention_configured': 0,
-            'immutability_configured': 0,
-            'retention_not_configured': 0,
-            'immutability_not_configured': 0,
-        }
+        aggregate = namespace['_analytics_aggregate']()
         sections = {
             'inventory': {}, 'security': {}, 'runtime': {},
             'governance': {
