@@ -218,7 +218,7 @@ def test_membership_registries_use_settings_query_tabs_without_desktop_overflow(
         assert 'registry_ui.footer' in registry
         assert 'registry_ui.clear_filters_link' in registry
 
-    assert "table_ui.table_classes('min-w-[840px] table-fixed xl:min-w-0')" in groups
+    assert "table_ui.table_classes('min-w-[960px] table-fixed xl:min-w-0')" in groups
     assert "table_ui.table_classes('min-w-[800px] table-fixed xl:min-w-0')" in membership
     assert 'min-w-[1250px]' not in groups
     assert 'min-w-[1100px]' not in membership
@@ -440,7 +440,7 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     assert 'human-credential-tip' in workspace
     assert 'deployer-credential-tip' in workspace
     assert workspace.count('hx-target="#tenant-admin-workspace"') >= 2
-    assert "table_ui.table_classes('min-w-[760px] table-fixed lg:min-w-0')" in registry
+    assert "table_ui.table_classes('min-w-[900px] table-fixed lg:min-w-0')" in registry
     assert 'min-w-[1180px]' not in registry
     assert 'table_ui.action_grid_classes(2)' not in registry
     assert 'detail_row.toggle_button(' in registry
@@ -1259,7 +1259,8 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'Current effective values become the initial committed KAORI contract.' in preflight
     assert 'Managed cutover performs admitted provider writes and verifies equivalent read-back.' in preflight
     assert 'Capsule-generated values stay provider-mirrored and sync into KAORI without false drift.' in preflight
-    assert 'Adopt with governed provider cutover and equivalent allocation values.' in preflight
+    assert 'Adopted / Managed · Governed provider cutover.' in preflight
+    assert 'Exact provider reason' in preflight
     assert 'Attach to the existing Capsule Tenant; keep provider constraints mirrored.' in preflight
     assert 'Adopt as Observed' not in preflight
     assert 'Observed · Read Only' not in preflight
