@@ -268,6 +268,34 @@ def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons
     assert 'artifactRegistryAnalyticsMaterializationFinished from:body' in page
 
 
+def test_registry_analytics_guide_explains_committed_source_and_history_boundaries() -> None:
+    from jinja2 import Environment
+
+    controls = (ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html').read_text()
+    shared = (ROOT / 'app/templates/analytics/components/_controls_readiness.html').read_text()
+    guide = (ROOT / 'app/templates/components/info_tip.html').read_text()
+    Environment().parse(controls)
+
+    assert '{% import "components/info_tip.html" as info_tip %}' in controls
+    assert "info_tip.render('registry-analytics-controls-guide'," in controls
+    assert "variant='guide'" in controls
+    assert 'title_accessory=analytics_controls_guide' in controls
+    assert "macro frame(title, description, icon, indicator_id," in shared
+    assert "title_accessory=''" in shared
+    assert 'data-kaori-info-tip-trigger' in guide
+    assert "Time Range selects a qualified analytics snapshot." in controls
+    assert "Current (Instant) is not historical telemetry." in controls
+    assert "Stale committed evidence remains readable but is not current." in controls
+    assert "registered Analytics JobExecution workflow" in controls
+    assert "Normal page reads use committed KAORI state" in controls
+
+    # Guide is read-only: never add an independent collection control or
+    # substitute for the registered worker materialization boundary.
+    assert 'hx-post=' not in controls
+    assert 'Collect Analytics Data' not in controls
+    assert 'Configure Collection' not in controls
+
+
 def test_kubernetes_and_registry_render_shared_readiness_without_duplicate_shells() -> None:
     from jinja2 import Environment, FileSystemLoader
 
@@ -327,6 +355,9 @@ def test_kubernetes_and_registry_render_shared_readiness_without_duplicate_shell
     registry_source = (ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html').read_text()
     assert "eyebrow='Analytics Overview' if analytics.active_tab == 'overview'" in registry_source
     assert 'Analytics Overview' in registry
+    assert 'data-kaori-info-tip-variant="guide"' in registry
+    assert 'registry-analytics-controls-guide-tooltip' in registry
+    assert 'Registry Analytics Controls Guide' in registry
     assert 'Collect Analytics Data' not in registry
     assert 'Configure Collection' not in registry
 
