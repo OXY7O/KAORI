@@ -208,11 +208,15 @@ def _accumulate_metrics(
 
     pull_activity = metrics.get('project_pull_count')
     if isinstance(pull_activity, dict):
-        aggregate['pull_activity'] += sum(
-            float(value) for value in pull_activity.values() if isinstance(value, (int, float))
-        )
+        # Counters cannot be negative or boolean. Exclude invalid evidence rather
+        # than reporting fabricated pull activity in the Usage projection.
         for project_name, raw_value in pull_activity.items():
-            if isinstance(raw_value, (int, float)):
+            if (
+                isinstance(raw_value, (int, float))
+                and not isinstance(raw_value, bool)
+                and 0 <= raw_value < float('inf')
+            ):
+                aggregate['pull_activity'] += float(raw_value)
                 activity_rows.append(
                     {
                         'registry_name': identity.name,
