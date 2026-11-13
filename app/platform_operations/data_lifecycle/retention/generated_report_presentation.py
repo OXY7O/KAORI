@@ -5,12 +5,12 @@ GENERATED_REPORT_COVERAGE = (
     {
         'icon': 'table-2',
         'label': 'Generated Registry',
-        'description': 'Ready, Failed, and Archived reports past their status-specific hot retention.',
+        'description': 'Ready, Failed and Archived after hot retention.',
     },
     {
         'icon': 'file-check-2',
         'label': 'Artifact Evidence',
-        'description': 'Ready/Archived PDF/XLSX/CSV files are copied and checksum-verified before cleanup.',
+        'description': 'PDF/XLSX/CSV checksum-verified before cleanup.',
     },
     {
         'icon': 'hard-drive-download',
@@ -22,6 +22,5 @@ GENERATED_REPORT_COVERAGE_NOTE = (
     'Ready reports use hot retention; Failed and Archived use dedicated windows. Artifacts archive before cleanup.'
 )
 GENERATED_REPORT_EXCLUSION_NOTE = (
-    'Requested, Queued, Generating, active regeneration jobs, and terminal records without a safe artifact reference '
-    'are protected from cleanup.'
+    'Pending or unsafe-artifact reports are protected.'
 )
