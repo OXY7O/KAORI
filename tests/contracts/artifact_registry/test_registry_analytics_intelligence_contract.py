@@ -670,3 +670,11 @@ def test_governance_aggregation_rejects_malformed_committed_counters() -> None:
         accumulate(aggregate, sections)
         assert aggregate['governance_projects_assessed'] is None
         assert aggregate['retention_configured'] == 4
+
+
+def test_stale_registry_snapshots_cannot_supply_current_governance_coverage() -> None:
+    presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    collection = presentation.split('def _collect_analytics_rows(', 1)[1].split('\ndef _analytics_recommendations(', 1)[0]
+    assert "if not view.get('is_current'):" in collection
+    assert "sections = {**sections, 'governance': {}}" in collection
+    assert collection.index("sections = {**sections, 'governance': {}}") < collection.index('_accumulate_domain_counts(')
