@@ -191,11 +191,17 @@ def _accumulate_metrics(
     aggregate['metrics_ready'] += int(metrics_ready)
     provider_health_value = metrics.get('provider_health_value')
     aggregate['healthy_providers'] += int(
-        metrics_ready and isinstance(provider_health_value, (int, float)) and float(provider_health_value) > 0
+        metrics_ready
+        and isinstance(provider_health_value, (int, float))
+        and not isinstance(provider_health_value, bool)
+        and 0 < provider_health_value < float('inf')
     )
     component_up_value = metrics.get('component_up_value')
     aggregate['component_up_providers'] += int(
-        metrics_ready and isinstance(component_up_value, (int, float)) and float(component_up_value) > 0
+        metrics_ready
+        and isinstance(component_up_value, (int, float))
+        and not isinstance(component_up_value, bool)
+        and 0 < component_up_value < float('inf')
     )
     for aggregate_key, metric_key in (
         ('request_rate_per_second', 'request_rate_per_second'),
@@ -204,16 +210,30 @@ def _accumulate_metrics(
         ('task_queue_size', 'task_queue_size'),
     ):
         raw_value = metrics.get(metric_key)
-        if isinstance(raw_value, (int, float)):
+        if (
+            metrics_ready
+            and isinstance(raw_value, (int, float))
+            and not isinstance(raw_value, bool)
+            and 0 <= raw_value < float('inf')
+        ):
             aggregate[aggregate_key] += float(raw_value)
 
     pull_activity = metrics.get('project_pull_count')
-    if isinstance(pull_activity, dict):
-        aggregate['pull_activity'] += sum(
-            float(value) for value in pull_activity.values() if isinstance(value, (int, float))
-        )
+    if metrics_ready and isinstance(pull_activity, dict):
+        # Only a ready committed Metrics Source may contribute observed pull counts.
+        # Counters cannot be negative or boolean. Exclude invalid evidence rather
+        # than reporting fabricated pull activity in the Usage projection.
         for project_name, raw_value in pull_activity.items():
-            if isinstance(raw_value, (int, float)):
+            # A missing or blank project identity cannot be attributed to a
+            # Registry project and must not become a synthetic activity row.
+            if not isinstance(project_name, str) or not project_name.strip() or project_name != project_name.strip():
+                continue
+            if (
+                isinstance(raw_value, (int, float))
+                and not isinstance(raw_value, bool)
+                and 0 < raw_value < float('inf')
+            ):
+                aggregate['pull_activity'] += float(raw_value)
                 activity_rows.append(
                     {
                         'registry_name': identity.name,
@@ -319,12 +339,15 @@ def _collect_analytics_rows(identities: list[Any], *, snapshot_window: str = '24
         # surfaced in posture and cannot produce a clean Evidence Ready.
         sections = _analytics_sections(snapshot.payload_json)
         _accumulate_domain_counts(bundle['aggregate'], sections)
-        _accumulate_metrics(
-            bundle['aggregate'],
-            sections['metrics'],
-            identity=identity,
-            activity_rows=bundle['activity_rows'],
-        )
+        # Stale materializations remain visible for historical inspection, but
+        # must not contribute current Usage counters or ready-source coverage.
+        if view.get('is_current'):
+            _accumulate_metrics(
+                bundle['aggregate'],
+                sections['metrics'],
+                identity=identity,
+                activity_rows=bundle['activity_rows'],
+            )
         _accumulate_alerts(
             bundle['aggregate'],
             sections['alerts'],
