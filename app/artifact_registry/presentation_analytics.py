@@ -175,6 +175,23 @@ def _accumulate_domain_counts(aggregate: dict[str, Any], sections: dict[str, dic
         'retention_not_configured': (governance, 'retention_not_configured'),
         'immutability_not_configured': (governance, 'immutability_not_configured'),
     }
+    # Reject inconsistent evidence per provider before cross-provider totals
+    # can conceal an overcount behind another provider's unobserved projects.
+    assessed = governance.get('projects_assessed')
+    for family in ('retention', 'immutability'):
+        configured = governance.get(f'{family}_configured')
+        missing = governance.get(f'{family}_not_configured')
+        if (
+            type(assessed) is int
+            and assessed >= 0
+            and type(configured) is int
+            and configured >= 0
+            and type(missing) is int
+            and missing >= 0
+            and configured + missing > assessed
+        ):
+            mappings[f'{family}_configured'] = ({}, f'{family}_configured')
+            mappings[f'{family}_not_configured'] = ({}, f'{family}_not_configured')
     for aggregate_key, (source, source_key) in mappings.items():
         raw_value = source.get(source_key)
         if aggregate_key.startswith(('governance_', 'retention_', 'immutability_')):
