@@ -1,11 +1,23 @@
 {% import "analytics/components/_controls_readiness.html" as shared_readiness %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% set readiness = analytics.data_readiness %}
 {% set page_endpoint = 'artifact_registry.analytics' if analytics.active_tab == 'overview' else 'artifact_registry.analytics_' ~ analytics.active_tab %}
 {% set worker_status %}
     {% if readiness.is_active %}
         {% include "artifact_registry/partials/_analytics_collect_live_state.html" %}
     {% endif %}
+{% endset %}
+{% set analytics_controls_guide %}
+    {{ info_tip.render('registry-analytics-controls-guide',
+                    'Registry Analytics Controls Guide',
+                    'How to interpret selected Registry scope, measured history, and committed snapshot readiness.',
+                    items=[
+                    'Registry selects all eligible sources or one Registry provider. Selection filters committed Analytics evidence; it does not change provider configuration.',
+                    'Time Range selects a qualified analytics snapshot. Measured history requires a supported Metrics Source range and retention; Current (Instant) is not historical telemetry.',
+                    'Registry Source Status reports eligibility and snapshot coverage, not live Metrics Source health. Stale committed evidence remains readable but is not current.',
+                    'Collection runs through the registered Analytics JobExecution workflow. Normal page reads use committed KAORI state; unavailable history is never invented.'
+                    ], placement='right', variant='guide') }}
 {% endset %}
 <div id="artifact-registry-analytics-controls-readiness">
     {% call shared_readiness.frame(
@@ -15,7 +27,8 @@
         'artifact-registry-analytics-refresh-indicator',
         eyebrow='Analytics Overview' if analytics.active_tab == 'overview' else analytics.page_title,
         loading=readiness.is_active,
-        header_content=worker_status if readiness.is_active else ''
+        header_content=worker_status if readiness.is_active else '',
+        title_accessory=analytics_controls_guide
         ) %}
         <form id="artifact-registry-analytics-filter"
               method="get"
