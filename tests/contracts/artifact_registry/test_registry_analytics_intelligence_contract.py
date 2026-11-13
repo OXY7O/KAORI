@@ -184,9 +184,7 @@ def test_registry_analytics_overview_uses_shared_tabs_and_bounded_committed_pane
     common = (ROOT / 'app/templates/components/content_tabs.html').read_text()
     js = (ROOT / 'app/static/js/analytics/controls.js').read_text()
     k8 = (ROOT / 'app/templates/kubernetes/analytics/overview/index.html').read_text()
-    storage = (
-        ROOT / 'app/templates/storage/object_storage/analytics/partials/_overview_workspace.html'
-    ).read_text()
+    storage = (ROOT / 'app/templates/storage/object_storage/analytics/partials/_overview_workspace.html').read_text()
 
     for template in (shell, tabs, panel):
         Environment().parse(template)
@@ -202,11 +200,11 @@ def test_registry_analytics_overview_uses_shared_tabs_and_bounded_committed_pane
     assert "content_tabs.render_buttons('artifact-registry-overview-content'," in tabs
     assert "content_tabs.render_buttons('overview-content'," in k8
     assert "content_tabs.render_buttons('object-storage-overview-content'," in storage
-    assert "data-analytics-tabset-id=\"artifact-registry-overview-content\"" in tabs
+    assert 'data-analytics-tabset-id="artifact-registry-overview-content"' in tabs
     assert 'data-analytics-update-query="false"' in tabs
     assert 'data-default-tab="growth"' in tabs
-    assert "hx-trigger=\"kaori:analytics-tab-activated once\"" in tabs
-    assert "data-overview-lazy-section=\"true\"" in tabs
+    assert 'hx-trigger="kaori:analytics-tab-activated once"' in tabs
+    assert 'data-overview-lazy-section="true"' in tabs
     assert "hx_sync=" not in tabs
     assert 'hx-sync="this:replace"' in tabs
     assert "overview_panel='1'" in tabs
@@ -274,7 +272,7 @@ def test_registry_analytics_overview_panels_preserve_missing_data_and_evidence_a
     assert "aggregate.governance_projects_assessed > 0" in panel
     assert "if alerts_ready else unknown" in panel
     assert "if has_snapshot else unknown" in panel
-    assert "'Committed Source Coverage'" in panel or 'Committed Source Coverage' in panel
+    assert 'Committed Source Coverage' in panel
     assert 'analytics.latest_rows[:5]' in panel
     assert "readiness.current_count" in panel
     assert 'readiness.execution_label' in panel
