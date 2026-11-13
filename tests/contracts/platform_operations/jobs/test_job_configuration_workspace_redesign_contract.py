@@ -284,7 +284,7 @@ def test_guarded_recovery_guide_is_adjacent_to_title_and_mutation_stays_guarded(
         helper = source.index('Verify intentional')
         assert title < guide < helper, name
         assert 'mt-1 flex min-w-0 flex-wrap items-center gap-2' in source
-        assert 'border-b border-kaori-primary/15 bg-kaori-soft' in source
+        assert 'border-b border-outline-subtle bg-surface-card' in source
         assert 'bg-status-warning-soft text-status-warning-text shadow-sm' in source
         assert 'mt-1 text-xs leading-5 text-content-muted' in source
         assert source.count('Guarded Recovery Boundary') == 1
