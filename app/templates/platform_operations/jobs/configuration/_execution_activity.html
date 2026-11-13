@@ -30,7 +30,7 @@
     </header>
     <div class="border-b border-outline-subtle px-5 py-5 sm:px-6">
         <div class="overflow-hidden rounded-xl border border-kaori-primary/15 bg-kaori-soft/40">
-            <div class="grid min-w-0 gap-4 px-4 py-4 sm:px-5 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.95fr)] xl:items-center">
+            <div class="grid min-w-0 gap-4 px-4 py-4 sm:px-5 {{ 'xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.95fr)] xl:items-center' if active_job else 'lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center' }}">
                 <div class="flex min-w-0 items-start gap-3">
                     <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-card text-kaori-primary shadow-sm ring-1 ring-kaori-primary/10">
                         <i data-lucide="{{ 'loader-circle' if active_job else 'circle-check' }}"
@@ -57,14 +57,11 @@
                                 </dd>
                             </dl>
                         {% else %}
-                            <p class="mt-2 text-sm font-semibold leading-6 text-content-primary">{{ selected_job.execution_state.description }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">
-                                {% if selected_job.execution_disabled %}
-                                    No active execution. Manual dispatch is blocked until an eligible target is available.
-                                {% else %}
-                                    No active execution. The job is ready for its next scheduled or manual run.
-                                {% endif %}
-                            </p>
+                            {% set idle_execution_helper = 'No active execution. Manual dispatch is blocked until an eligible target is available.' if selected_job.execution_disabled else 'No active execution. The job is ready for its next scheduled or manual run.' %}
+                            <p class="mt-2 min-w-0 text-sm font-semibold leading-6 text-content-primary lg:truncate"
+                               title="{{ selected_job.execution_state.description }}">{{ selected_job.execution_state.description }}</p>
+                            <p class="mt-1 min-w-0 text-xs leading-5 text-content-muted lg:truncate"
+                               title="{{ idle_execution_helper }}">{{ idle_execution_helper }}</p>
                         {% endif %}
                     </div>
                 </div>
@@ -73,7 +70,7 @@
                         {{ progress_bar.job_progress(active_job, label=definition.name ~ ' execution progress') }}
                     </div>
                 {% else %}
-                    <div class="self-start lg:self-center">{{ table_label.status_indicator_label('Ready for Execution', 'normal') }}</div>
+                    <div class="self-start justify-self-start lg:self-center lg:justify-self-end">{{ table_label.status_indicator_label('Ready for Execution', 'normal') }}</div>
                 {% endif %}
             </div>
             <div class="grid border-t border-kaori-primary/10 bg-surface-card/70 sm:grid-cols-2 lg:grid-cols-4">
