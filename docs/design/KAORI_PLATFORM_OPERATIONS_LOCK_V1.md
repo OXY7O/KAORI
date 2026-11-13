@@ -51,6 +51,7 @@ The lock freezes presentation and interaction contracts. Backend behavior may ev
 - Top-level `Executions` and `Job Configuration` use shared Framed Workspace Tabs.
 - `Active Work`, `Registry`, and `Queues` use shared Integrated Workspace Tabs.
 - Live job counts may update out-of-band without replacing local tab geometry.
+- **Execution Overview** owns the single canonical title-adjacent **Guide** for Active Work, Registry and Queues, positioned immediately after the live `Work Active / Queues Clear` posture label. Per-tab content headers retain visible titles and source-backed badges but do not duplicate Guides. The Guide is a sibling of `#execution-overview-posture`, never a child: HTMX OOB status refresh replaces only that status span and must not remove the Guide. Each tab's original guidance remains discoverable from the consolidated Guide, including cancellation permission, committed execution evidence and demand-loaded Celery readiness limits.
 - Registry filters submit through HTMX change events and keep URL state.
 - Manual and scheduled execution use the same canonical JobExecution lifecycle and queue ownership.
 
