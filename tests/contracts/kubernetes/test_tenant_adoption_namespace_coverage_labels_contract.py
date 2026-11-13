@@ -113,7 +113,11 @@ def test_capsule_preflight_blocks_unadmitted_quota_without_offering_submit() -> 
     # presented as eligible for provider-authoritative managed cutover.
     assert 'data-capsule-adoption-authority-blocked' in source
     assert 'Managed Adoption Blocked' in source
+    assert 'Capsule quota authority not admitted; managed adoption blocked.' in source
+    assert '<details class="group mt-1 min-w-0">' in source
+    assert 'Exact provider reason' in source
     assert 'row.adoption_management_blocker' in source
+    assert '<p class="mt-1 break-words text-xs leading-5 text-content-secondary">{{ row.adoption_management_blocker }}</p>' in source
     assert "row.provider_key == 'capsule' and row.adoption_management_blocker" in source
     assert 'aria-label="Managed adoption blocked by unadmitted Capsule quota authority"' in source
     assert 'disabled' in source
