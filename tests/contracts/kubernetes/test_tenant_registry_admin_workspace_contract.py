@@ -53,6 +53,9 @@ def test_tenants_page_keeps_summary_above_the_tabbed_workspace() -> None:
     assert "'Multi-Cluster Posture'" in page
     assert "'Tenant Estate'" in page
     assert 'tenant_summary_metrics' in page
+    assert 'components/table_label.html' in page
+    assert "header_badge=table_label.metadata_label((tenant_summary_metrics|length)" in page
+    assert "~ ' Indicators', icon='layout-grid')" in page
     assert "'Governed Administration'" in page
     assert page.index("'Multi-Cluster Posture'") < page.index("'Governed Administration'")
     assert page.index("'Governed Administration'") < page.index('partials/_tenant_admin_workspace.html')
@@ -1458,6 +1461,18 @@ def test_adoption_modal_uses_wide_review_geometry_and_compact_live_copy() -> Non
     live = read('app/kubernetes/tenant/live_connection.py')
 
     assert 'max-w-5xl' in preflight
+    assert 'Tenant Discovery</p>' in preflight
+    assert 'Live Provider Preflight</p>' in preflight
+    assert 'data-tenant-adoption-close' in preflight
+    assert 'bg-surface-card px-5 py-4 sm:px-6' in preflight
+    assert 'min-h-0 flex flex-1 flex-col' in preflight
+    assert 'overflow-x-hidden overflow-y-auto overscroll-contain' in preflight
+    assert 'flex shrink-0 flex-col gap-3 border-t border-outline-subtle bg-surface-card' in preflight
+    assert 'Control Unavailable. No adoption committed.' in preflight
+    assert 'data-tenant-adoption-create-copy' in preflight
+    assert 'data-tenant-adoption-attach-copy' in preflight
+    assert "action_button.classes('secondary')" in preflight
+    assert "action_button.classes('primary')" in preflight
     assert 'lg:grid-cols-2' in preflight
     assert 'grid grid-cols-3 gap-px border-t border-outline-subtle bg-outline-subtle' in preflight
     assert "description = 'Live Kubernetes API is reachable.'" in live

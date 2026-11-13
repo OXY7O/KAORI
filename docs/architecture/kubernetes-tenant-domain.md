@@ -260,8 +260,13 @@ remain HOLD pending separate authorization.
 
 Human visual reference: the existing **Kubernetes Tenant Overview → Governance
 Scope → Tenant Estate** section. Reuse exactly its approved **shared KAORI
-components**, not manual cards: `section_intro.render`, `operational_section_card.render`
-with `body_classes='p-0'`, and `resource_posture_grid.render(columns=4)`.
+components**, not manual cards: `operational_section_card.render` with
+`body_classes='p-0'`, and `resource_posture_grid.render(columns=4)`. The
+single-Tenant detail view no longer duplicates the plain **Governance Scope**
+heading above its **Tenant Governance · 4 Indicators** card. The enclosing
+section remains explicitly accessible with `aria-label`; its card title and
+description own the visible heading and context. The fleet overview still has
+its own major Governance Scope heading.
 The card owns the header icon, title, description, spacing and border, while
 the posture grid owns vertical separators, compact metric icons, responsive
 grid layout, tone treatment and light/dark compatibility. The shared
@@ -270,9 +275,9 @@ grid layout, tone treatment and light/dark compatibility. The shared
 governance header: **5 Indicators** for Tenant Estate and **4 Indicators**
 for one Tenant's Governance Scope. These count displayed committed posture
 dimensions, **not** live provider resources or certificate validity.
-The Tenant Details **Governance Scope** intro keeps its heading and accessible
-anchor but removes the repeated long subtitle; the card's concise
-Tenant-specific description is retained.
+The Tenant Details card keeps the concise Tenant-specific description;
+the redundant plain section heading and previously redundant subtitle are
+removed without changing four committed metrics or lifecycle authority.
 
 A single Tenant is **not the entire fleet**: use four committed values
 already available in Tenant Details — **Active Namespaces, Environments,
@@ -282,6 +287,22 @@ is titled **Tenant Governance** with a concise Tenant-specific description.
 Do not fabricate fleet-wide or live provider results, or duplicate the earlier
 two separate Resource Coverage/Governance Authority cards. Preserve the
 independent **Authority Boundary** info note and the governed Release wizard.
+
+Multi-Cluster Posture on `kubernetes/tenant/tenants.html` is a separate
+workspace from Tenant Overview. Its five-metric `Tenant Estate` card reuses
+the same `header_badge=table_label.metadata_label(tenant_summary_metrics|length)`
+pattern to display **5 Indicators** without claiming five live resources.
+
+**Adoption Preflight modal presentation (#4607):** the existing governed
+mutation-sensitive modal follows the inventory detail modal's context eyebrow,
+icon/title/helper, accessible close button, fixed footer, left-side outcome
+and right-aligned Cancel/submit actions. The form owns a bounded scrollable
+body; the footer stays visible when long live provider evidence is reviewed.
+The blocked Capsule warning uses a concise provider-qualified sentence;
+`Exact provider reason` discloses `row.adoption_management_blocker` without
+truncating committed/live evidence. A blocked candidate still has the original
+disabled submit, fail-closed authority check and no committed adoption. No
+provider quota policy is changed by these UI-only updates.
 
 This supersedes only the four-metric **presentation** in #1077, not its
 source-of-truth, permission, audit or workflow standards. Browser desktop/

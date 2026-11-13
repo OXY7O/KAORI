@@ -83,10 +83,7 @@
             'normal' if tenant.lifecycle_status == 'ready' else
             ('warning' if tenant.lifecycle_status == 'decommissioning' else 'info'))
         ] %}
-    <section class="space-y-4" aria-labelledby="tenant-governance-scope-title">
-        {{ section_intro.render('Governance Scope',
-                '',
-                'tenant-governance-scope-title') }}
+    <section class="space-y-4" aria-label="Tenant governance posture">
         {% call operational_section_card.render(
             'Tenant Governance',
             'Committed resource scope and governance state for this Tenant.',
@@ -305,8 +302,8 @@
             and current_user.has_permission('clusters.manage')
             and tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready' %}
             {{ section_intro.render('Release Workflow',
-                'Review committed scope, independent approval, and provider handoff before releasing Tenant governance.',
-                'tenant-release-workflow-heading') }}
+                        'Review committed scope, independent approval, and provider handoff before releasing Tenant governance.',
+                        'tenant-release-workflow-heading') }}
             <section id="tenant-release-governance"
                      class="min-w-0 scroll-mt-24 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
                      aria-label="Release Governance">
