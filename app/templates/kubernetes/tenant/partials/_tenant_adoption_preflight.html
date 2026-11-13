@@ -27,7 +27,7 @@
              aria-labelledby="tenant-adoption-preflight-title"
              tabindex="-1"
              class="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-2xl">
-        <header class="shrink-0 border-b border-outline-subtle px-4 py-3.5 sm:px-5">
+        <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
             <div class="flex items-start justify-between gap-4">
                 <div class="flex min-w-0 items-start gap-3">
                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
@@ -35,8 +35,13 @@
                         <i data-lucide="radar" class="h-5 w-5"></i>
                     </span>
                     <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <p class="text-xs font-semibold leading-5 text-kaori-primary">Tenant Discovery</p>
+                            <span class="h-1 w-1 rounded-full bg-outline-strong" aria-hidden="true"></span>
+                            <p class="text-xs font-medium leading-5 text-content-muted">Live Provider Preflight</p>
+                        </div>
                         <h2 id="tenant-adoption-preflight-title"
-                            class="text-lg font-semibold text-content-primary">
+                            class="mt-1 text-lg font-semibold leading-7 text-content-primary">
                             {{ 'Capsule Namespace Attachment Preflight' if tenant_adoption_attachment_only else 'Adoption Preflight' }}
                         </h2>
                         <p class="mt-1 text-sm leading-6 text-content-secondary">
@@ -46,7 +51,7 @@
                 </div>
                 <button type="button"
                         data-tenant-adoption-close
-                        class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary"
+                        class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
                         aria-label="Close Adoption Preflight">
                     <i data-lucide="x" class="h-4 w-4"></i>
                 </button>
@@ -60,7 +65,7 @@
               hx-swap="outerHTML show:none focus-scroll:false"
               hx-indicator="#tenant-admin-loading"
               hx-disabled-elt="find button"
-              class="min-h-0 flex-1 overflow-y-auto">
+              class="min-h-0 flex flex-1 flex-col">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="cluster_id" value="{{ row.cluster_id }}">
             <input type="hidden" name="provider_key" value="{{ row.provider_key }}">
@@ -76,7 +81,7 @@
                        name="capsule_tenant_name"
                        value="{{ row.capsule_tenant_name }}">
             {% endif %}
-            <div class="space-y-3.5 p-4">
+            <div class="min-h-0 flex-1 space-y-3.5 overflow-x-hidden overflow-y-auto overscroll-contain bg-surface-page p-4 sm:p-5">
                 {% set allocation = row.allocation_preflight or {} %}
                 <section>
                     <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Adoption Decision</p>
@@ -154,7 +159,16 @@
                                aria-hidden="true"></i>
                             <p class="text-sm font-semibold">Managed Adoption Blocked</p>
                         </div>
-                        <p class="mt-1 text-xs leading-5 text-status-warning-text">{{ row.adoption_management_blocker }}</p>
+                        <p class="mt-1 text-xs leading-5 text-status-warning-text">Capsule quota authority not admitted; managed adoption blocked.</p>
+                        <details class="group mt-1 min-w-0">
+                            <summary class="inline-flex min-h-7 cursor-pointer list-none items-center gap-1 text-xs font-medium text-status-warning-text underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
+                                Exact provider reason
+                                <i data-lucide="chevron-down"
+                                   class="h-3.5 w-3.5 transition-transform group-open:rotate-180"
+                                   aria-hidden="true"></i>
+                            </summary>
+                            <p class="mt-1 break-words text-xs leading-5 text-content-secondary">{{ row.adoption_management_blocker }}</p>
+                        </details>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">
                             Review Allocation Overview and Technical Evidence before another attempt.
                             Unsupported Capsule quota cannot be taken over through Native Namespace controls.
