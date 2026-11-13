@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_validation_poller.html" as validation_poller %}
@@ -29,6 +30,16 @@
         loading_id="minio-validation-loading",
         loading_active=validation_job and validation_job.is_active,
         loading_label="Running MinIO Full Validation",
+        title_extra=info_tip.render(
+            "minio-full-validation-detail-guide",
+            "MinIO Full Validation",
+            "Verify MinIO identity, compatibility and required S3 API capabilities.",
+            [
+                "MinIO stays authoritative for buckets, objects and storage policy.",
+                "Inventory Sync and runtime health are assessed separately."
+            ],
+            placement="right", variant="guide"
+        )
         ) %}
         <form method="post"
               action="{{ url_for('minio.validate_instance', instance_id=instance.id) }}"

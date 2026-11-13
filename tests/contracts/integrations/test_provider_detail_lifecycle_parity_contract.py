@@ -234,3 +234,105 @@ def test_shared_posture_emits_oob_state_only_for_htmx_requests() -> None:
     assert 'Degraded' in refreshed
     assert 'Attention' in refreshed
     assert '4 Validated Capabilities' in refreshed
+
+
+def test_provider_detail_primary_titles_use_one_canonical_guide_across_seven_providers() -> None:
+    """All seven Integration detail workspaces reuse the title-level Guide."""
+
+    shared = read('app/templates/integrations/components/_provider_configuration_contract.html')
+    assert 'components/info_tip.html' in shared
+    assert shared.count('info_tip.render(') == 1
+    assert 'variant="guide"' in shared
+    assert 'provider_label|lower|replace(" ", "-") ~ "-connection-contract-detail-guide"' in shared
+
+    root = 'app/templates/integrations/'
+    per_provider = {
+        'kubernetes': (
+            'orchestration/container_orchestrator/providers/kubernetes/partials/_connection_contract.html',
+            'orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html',
+            'orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html',
+            'orchestration/container_orchestrator/providers/kubernetes/partials/_inventory_lifecycle.html',
+        ),
+        'metrics_source': (
+            'components/_provider_configuration_contract.html',
+            'observability/metrics_source/partials/_detail_validation_content.html',
+            'observability/metrics_source/partials/_runtime_panel.html',
+            'observability/metrics_source/partials/_detail_scope.html',
+        ),
+        'alertmanager': (
+            'components/_provider_configuration_contract.html',
+            'observability/alert_source/providers/alertmanager/partials/_detail_validation_content.html',
+            'observability/alert_source/providers/alertmanager/partials/_runtime_panel.html',
+            'observability/alert_source/providers/alertmanager/partials/_detail_scope.html',
+        ),
+        'minio': (
+            'components/_provider_configuration_contract.html',
+            'storage/object_storage/providers/minio/partials/_detail_validation.html',
+            'storage/object_storage/providers/minio/partials/_detail_runtime.html',
+            'storage/object_storage/providers/minio/partials/_detail_scope.html',
+        ),
+        'harbor': (
+            'components/_provider_configuration_contract.html',
+            'registry/providers/harbor/partials/_detail_validation.html',
+            'registry/providers/harbor/partials/_detail_runtime.html',
+            'registry/providers/harbor/partials/_detail_scope.html',
+        ),
+        'vault': (
+            'components/_provider_configuration_contract.html',
+            'secrets_management/vault/partials/_detail_validation.html',
+            'secrets_management/vault/partials/_detail_runtime.html',
+            'secrets_management/vault/partials/_detail_inventory.html',
+        ),
+        'github': (
+            'source_control/github/uat_detail.html',
+            'source_control/github/partials/_detail_validation.html',
+            'source_control/github/partials/_detail_runtime.html',
+            'source_control/github/partials/_detail_inventory.html',
+        ),
+    }
+    for provider, sections in per_provider.items():
+        assert len(sections) == 4, provider
+        for section, path in zip(('configuration', 'validation', 'runtime', 'fourth'), sections, strict=True):
+            template = read(root + path)
+            assert 'info_tip.render(' in template, (provider, section)
+            assert "variant='guide'" in template or 'variant="guide"' in template, (provider, section)
+            if section in ('validation', 'runtime'):
+                assert 'title_extra=info_tip.render(' in template, (provider, section)
+
+    capsule = read(
+        root + 'orchestration/container_orchestrator/providers/kubernetes/partials/_capsule_rbac_bootstrap.html'
+    )
+    assert capsule.count('kubernetes-capsule-rbac-bootstrap-guide') == 1
+    assert 'variant="guide"' in capsule
+    assert 'Capsule Cluster RBAC Bootstrap' in capsule
+
+    # #4544 explicitly removed the duplicate Guide in the lower
+    # Integration Workspace, while retaining the provider Overview Guide.
+    overview = read(root + 'components/_provider_frontpage.html')
+    tabs = read('app/templates/components/integration_workspace_tabs.html')
+    assert overview.count('info_tip.render(') == 1
+    assert 'info_tip.render(' not in tabs
+
+
+def test_provider_detail_guide_uses_canonical_accessible_jinja_macro() -> None:
+    """Render the existing Guide macro, not a decorative or new control."""
+
+    env = Environment(loader=FileSystemLoader(ROOT / 'app' / 'templates'), autoescape=True)
+    html = str(
+        env.get_template('components/info_tip.html').module.render(
+            'provider-detail-contract-guide',
+            'Connection Contract',
+            'Provider authority remains external.',
+            variant='guide',
+        )
+    )
+    for token in (
+        'data-kaori-info-tip-variant="guide"',
+        'data-kaori-info-tip-trigger',
+        'data-kaori-info-tip-preview',
+        'data-lucide="info"',
+        '<span>Guide</span>',
+        'aria-expanded="false"',
+        'role="tooltip"',
+    ):
+        assert token in html

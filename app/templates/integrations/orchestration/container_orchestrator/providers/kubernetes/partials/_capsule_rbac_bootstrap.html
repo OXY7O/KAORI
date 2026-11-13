@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/operational_callout.html" as operational_callout %}
@@ -18,10 +19,22 @@
             </span>
             <div class="min-w-0 space-y-2">
                 <div>
-                    <h3 id="capsule-rbac-bootstrap-heading"
-                        class="text-base font-semibold leading-6 text-content-primary">
-                        Capsule Cluster RBAC Bootstrap
-                    </h3>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 id="capsule-rbac-bootstrap-heading"
+                            class="text-base font-semibold leading-6 text-content-primary">
+                            Capsule Cluster RBAC Bootstrap
+                        </h3>
+                        {{ info_tip.render(
+                            "kubernetes-capsule-rbac-bootstrap-guide",
+                            "Capsule Cluster RBAC Bootstrap",
+                            "Review committed access-profile checks before requesting or modifying Capsule ClusterRoles.",
+                            [
+                                "Four versioned access profiles define the governed ClusterRole baseline.",
+                                "Checking readiness does not grant permissions; RBAC changes require authorization."
+                            ],
+                            placement="right", variant="guide"
+                        ) }}
+                    </div>
                     <p class="mt-1 max-w-2xl text-xs leading-5 text-content-secondary">
                         Reusable ClusterRoles for governed Capsule Access Grants.
                     </p>

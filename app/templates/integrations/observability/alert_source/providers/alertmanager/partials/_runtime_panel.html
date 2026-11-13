@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
@@ -56,7 +57,17 @@
         icon='activity',
         loading_id='alertmanager-runtime-loading',
         loading_active=runtime_refresh_job and runtime_refresh_job.is_active,
-        loading_label='Refreshing Alertmanager runtime health'
+        loading_label='Refreshing Alertmanager runtime health',
+        title_extra=info_tip.render(
+            "alertmanager-runtime-health-detail-guide",
+            "Alertmanager Runtime Health & Diagnostics",
+            "Review persisted Alertmanager runtime status, diagnostics and next operational action.",
+            [
+                "Provider core readiness is separate from runtime observation.",
+                "Consumer binding eligibility is validated independently."
+            ],
+            placement="right", variant="guide"
+        )
         ) %}
         <button type="button"
                 hx-post="{{ url_for('alertmanager.refresh_runtime', instance_id=instance.id) }}"

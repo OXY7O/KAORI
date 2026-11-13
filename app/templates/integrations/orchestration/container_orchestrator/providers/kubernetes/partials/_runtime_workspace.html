@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
@@ -53,7 +54,17 @@
         icon='activity',
         loading_id='kubernetes-runtime-validation-loading',
         loading_active=validation_job and validation_job.is_active,
-        loading_label='Refreshing Kubernetes runtime health'
+        loading_label='Refreshing Kubernetes runtime health',
+        title_extra=info_tip.render(
+            "kubernetes-runtime-health-detail-guide",
+            "Kubernetes Runtime Health & Diagnostics",
+            "Runtime Refresh observes current API health independently of provider Full Validation.",
+            [
+                "Review committed runtime findings and the next controlled action.",
+                "Ready capability evidence does not guarantee current runtime health."
+            ],
+            placement="right", variant="guide"
+        )
         ) %}
         {% if current_user.has_permission('clusters.sync') %}
             <form method="post"

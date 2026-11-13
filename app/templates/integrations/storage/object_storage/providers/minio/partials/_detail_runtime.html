@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
@@ -55,7 +56,17 @@
         icon="activity",
         loading_id="minio-runtime-loading",
         loading_active=runtime_refresh_job and runtime_refresh_job.is_active,
-        loading_label="Refreshing MinIO runtime health"
+        loading_label="Refreshing MinIO runtime health",
+        title_extra=info_tip.render(
+            "minio-runtime-health-detail-guide",
+            "MinIO Runtime Health & Diagnostics",
+            "Review committed MinIO endpoint health without rediscovering inventory or changing capabilities.",
+            [
+                "Runtime Refresh is independent of Full Validation.",
+                "Use retained diagnostic observations to investigate health findings."
+            ],
+            placement="right", variant="guide"
+        )
         ) %}
         <button type="button"
                 hx-post="{{ url_for('minio.refresh_runtime', instance_id=instance.id) }}"

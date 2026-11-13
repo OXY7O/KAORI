@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "components/table.html" as table_ui %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
@@ -66,7 +67,17 @@
         icon='activity',
         loading_id='metrics-source-runtime-loading',
         loading_active=runtime_refresh_job and runtime_refresh_job.is_active,
-        loading_label='Refreshing metrics-source runtime health'
+        loading_label='Refreshing metrics-source runtime health',
+        title_extra=info_tip.render(
+            "metrics-source-runtime-health-detail-guide",
+            "Metrics Source Runtime Health & Diagnostics",
+            "Read committed metrics endpoint health, diagnostics and runtime observations.",
+            [
+                "Provider readiness and per-consumer binding validation remain independent.",
+                "Refresh runtime evidence when current endpoint health needs confirmation."
+            ],
+            placement="right", variant="guide"
+        )
         ) %}
         <button type="button"
                 hx-post="{{ runtime_state.refresh_url }}"

@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
@@ -54,6 +55,16 @@
         loading_id='metrics-source-validation-loading',
         loading_active=validation_job and validation_job.is_active,
         loading_label='Running Metrics Source Full Validation',
+        title_extra=info_tip.render(
+            "metrics-source-full-validation-detail-guide",
+            "Metrics Source Full Validation",
+            "Validate the metrics provider core API and query compatibility without assuming consumer coverage.",
+            [
+                "Metric labels, horizons and selectors are validated per binding.",
+                "Runtime Refresh reports endpoint health separately."
+            ],
+            placement="right", variant="guide"
+        )
         ) %}
         <form method="post"
               action="{{ url_for('metrics.instance_validate', instance_id=instance.id) }}"

@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "integrations/components/_provider_operational_context.html" as operational_context %}
@@ -21,7 +22,16 @@
                     <div class="flex min-w-0 items-start gap-3">
                         {{ integration_ui.palette_icon("file-key-2", "brand", size="lg", rounded="xl") }}
                         <div class="min-w-0">
-                            <h2 class="text-base font-semibold text-content-primary">Connection Contract</h2>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="text-base font-semibold text-content-primary">Connection Contract</h2>
+                                {{ info_tip.render(provider_label|lower|replace(" ", "-") ~ "-connection-contract-detail-guide",
+                                                    provider_label ~ " Connection Contract",
+                                                    "Review registered identity, endpoint trust and authorization boundaries for this provider connection.",
+                                                    [
+                                                    "The external provider remains authoritative for live resources and effective grants.",
+                                                    "Full Validation and runtime observations are independent evidence stages."
+                                                    ], placement="right", variant="guide") }}
+                            </div>
                             <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Canonical identity, endpoint trust, access boundaries, and operational ownership for this {{ provider_label }} connection.</p>
                         </div>
                     </div>

@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
@@ -36,6 +37,16 @@
         loading_id="alertmanager-validation-loading",
         loading_active=validation_job and validation_job.is_active,
         loading_label="Running Alertmanager Full Validation",
+        title_extra=info_tip.render(
+            "alertmanager-full-validation-detail-guide",
+            "Alertmanager Full Validation",
+            "Qualify Alertmanager core APIs independently of consumer alert contracts.",
+            [
+                "Consumer routing and alert evidence are validated per binding.",
+                "Runtime Refresh observes health without rerunning Full Validation."
+            ],
+            placement="right", variant="guide"
+        )
         ) %}
         <form method="post"
               action="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"

@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_validation_poller.html" as validation_poller %}
@@ -53,7 +54,17 @@
         icon="scan-search",
         loading_id="harbor-validation-loading",
         loading_active=validation_job and validation_job.is_active,
-        loading_label="Running Harbor Full Validation"
+        loading_label="Running Harbor Full Validation",
+        title_extra=info_tip.render(
+            "harbor-full-validation-detail-guide",
+            "Harbor Full Validation",
+            "Verify Harbor API compatibility, identity and required read-only capabilities.",
+            [
+                "Harbor stays authoritative for registry data and policy.",
+                "Artifact inventory collection and runtime observation are separate workflows."
+            ],
+            placement="right", variant="guide"
+        )
         ) %}
         <form method="post"
               action="{{ url_for('harbor.validate_instance', instance_id=instance.id) }}"

@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_provider_operational_context.html" as operational_context %}
@@ -15,7 +16,19 @@
                         <i data-lucide="file-key-2" class="h-5 w-5"></i>
                     </span>
                     <div class="min-w-0">
-                        <h2 class="text-base font-semibold text-content-primary">Connection Contract</h2>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="text-base font-semibold text-content-primary">Connection Contract</h2>
+                            {{ info_tip.render(
+                                "kubernetes-connection-contract-guide",
+                                "Kubernetes Connection Contract",
+                                "Review the registered Kubernetes identity, endpoint trust and access contract used by KAORI.",
+                                [
+                                    "The Kubernetes API remains authoritative for cluster state and effective permissions.",
+                                    "Connection registration does not replace Full Validation or current runtime evidence."
+                                ],
+                                placement="right", variant="guide"
+                            ) }}
+                        </div>
                         <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Canonical identity, endpoint trust, access boundaries, and operational ownership for this Kubernetes connection.</p>
                     </div>
                 </div>

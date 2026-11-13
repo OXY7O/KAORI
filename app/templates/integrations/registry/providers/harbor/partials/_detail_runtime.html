@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
@@ -56,7 +57,17 @@
         icon="activity",
         loading_id="harbor-runtime-loading",
         loading_active=runtime_refresh_job and runtime_refresh_job.is_active,
-        loading_label="Refreshing Harbor runtime health"
+        loading_label="Refreshing Harbor runtime health",
+        title_extra=info_tip.render(
+            "harbor-runtime-health-detail-guide",
+            "Harbor Runtime Health & Diagnostics",
+            "Review persisted Harbor endpoint health without repeating provider capability checks.",
+            [
+                "Runtime observation does not replace Full Validation.",
+                "Detailed Registry inventory and governance remain in Artifact Registry."
+            ],
+            placement="right", variant="guide"
+        )
         ) %}
         <button type="button"
                 hx-post="{{ url_for('harbor.refresh_runtime', instance_id=instance.id) }}"

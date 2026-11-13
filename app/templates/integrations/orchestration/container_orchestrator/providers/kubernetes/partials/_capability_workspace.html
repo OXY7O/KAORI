@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_validation_poller.html" as validation_poller %}
@@ -77,6 +78,16 @@
         loading_id='kubernetes-validation-loading',
         loading_active=validation_job and validation_job.is_active,
         loading_label='Running Kubernetes Full Validation',
+        title_extra=info_tip.render(
+            "kubernetes-full-validation-detail-guide",
+            "Kubernetes Full Validation",
+            "Full Validation checks Kubernetes APIs, compatibility and effective RBAC; it does not refresh runtime health.",
+            [
+                "Capability results are committed provider evidence.",
+                "Consumer binding checks and inventory synchronization are separate operations."
+            ],
+            placement="right", variant="guide"
+        )
         ) %}
         {% if current_user.has_permission('clusters.sync') %}
             <form method="post"
