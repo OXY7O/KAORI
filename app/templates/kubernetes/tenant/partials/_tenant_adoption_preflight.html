@@ -787,8 +787,7 @@
                             Capsule Namespace attachment commits <span class="font-semibold">Adopted / Provider Mirrored</span>
                             evidence only. Provider objects and RBAC remain unchanged.
                         {% elif row.provider_key == 'capsule' and row.adoption_management_blocker %}
-                            Managed adoption is blocked until the Capsule quota authority is admitted.
-                            Do not retry a provider mutation without fresh authoritative evidence.
+                            Managed adoption blocked until Capsule quota authority is admitted; revalidate before retry.
                         {% else %}
                             {% if row.provider_key == 'native_kubernetes' and tenant_adoption_existing_environments %}
                                 <span data-tenant-adoption-create-copy>
