@@ -32,13 +32,13 @@
                                     {{ 'Manage Resource Profile' if editable else 'Resource Profile Details' }}
                                 </h2>
                                 {{ table_label.status_label('Editable' if editable else 'Versioned Controls',
-                                                            'info' if editable else 'maintenance') }}
+                                                                'info' if editable else 'maintenance') }}
                             </div>
                             <p class="mt-1 text-sm leading-6 text-content-muted">
                                 {{ 'Update reusable intent; Namespace snapshots stay pinned.' if editable
                                 else 'Fixed preset values; approved control changes create a new version.' }}
                             </p>
-                            </div>
+                        </div>
                     </div>
                     <button type="button"
                             data-kaori-dialog-close
