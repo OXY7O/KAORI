@@ -175,14 +175,14 @@
                      hx-select="#artifact-registry-governance-registry"
                      class="{{ section_card.shell_classes() }}">
                 {% set governance_evidence_tabs = [
-                    ('policies', 'Policies', 'shield-check', url_for('artifact_registry.governance', tab='policies', page=1, per_page=governance.pagination.per_page)),
-                    ('replication', 'Replication', 'git-compare-arrows', url_for('artifact_registry.governance', tab='replication', page=1, per_page=governance.pagination.per_page))
-                ] %}
+                                    ('policies', 'Policies', 'shield-check', url_for('artifact_registry.governance', tab='policies', page=1, per_page=governance.pagination.per_page)),
+                                    ('replication', 'Replication', 'git-compare-arrows', url_for('artifact_registry.governance', tab='replication', page=1, per_page=governance.pagination.per_page))
+                                ] %}
                 {{ workspace_tabs.render_query_tabs(governance_evidence_tabs,
-                                    governance.active_tab,
-                                    aria_label='Registry Governance evidence types',
-                                    hx_target='#artifact-registry-governance-registry',
-                                    hx_sync='#artifact-registry-governance-registry:replace') }}
+                                governance.active_tab,
+                                aria_label='Registry Governance evidence types',
+                                hx_target='#artifact-registry-governance-registry',
+                                hx_sync='#artifact-registry-governance-registry:replace') }}
                 <div class="min-w-0 p-4 sm:p-5">
                     <section class="{{ table_ui.block_classes() }}">
                         {% set governance_result_badge %}
@@ -191,22 +191,22 @@
                         {% set governance_header_actions %}
                             {% if governance.has_filters %}
                                 {{ registry.clear_filters_link('artifact_registry.governance',
-                                                        'artifact-registry-governance-registry',
-                                                        'artifact-registry-governance-loading',
-                                                        governance.pagination.per_page,
-                                                        table_ui.action_classes() ,
+                                                                'artifact-registry-governance-registry',
+                                                                'artifact-registry-governance-loading',
+                                                                governance.pagination.per_page,
+                                                                table_ui.action_classes() ,
                                 query_params={'tab': governance.active_tab}) }}
                             {% endif %}
                         {% endset %}
                         {{ table_ui.inventory_block_header('shield-check' if governance.active_tab == 'policies' else 'git-compare-arrows',
-                                        'Project Policy Registry' if governance.active_tab == 'policies' else 'Replication Policy Registry',
-                                        'Committed retention and immutability evidence from Registry providers.' if governance.active_tab == 'policies' else 'Committed replication policies and provider-observed destinations.',
-                                        'artifact-registry-governance-loading',
-                                        'Refreshing Governance Evidence',
-                                        none,
-                                        none,
-                                        header_actions=governance_header_actions,
-                                        title_extra=governance_result_badge) }}
+                                                'Project Policy Registry' if governance.active_tab == 'policies' else 'Replication Policy Registry',
+                                                'Committed retention and immutability evidence from Registry providers.' if governance.active_tab == 'policies' else 'Committed replication policies and provider-observed destinations.',
+                                                'artifact-registry-governance-loading',
+                                                'Refreshing Governance Evidence',
+                                                none,
+                                                none,
+                                                header_actions=governance_header_actions,
+                                                title_extra=governance_result_badge) }}
                         <div class="{{ table_ui.inventory_filter_bar_classes() }}">
                             {% call registry.filter_form('artifact_registry.governance',
                                 'artifact-registry-governance-registry',
@@ -217,9 +217,9 @@
                                     <label for="artifact-registry-governance-search"
                                            class="{{ table_ui.filter_label_classes() }}">Search</label>
                                     {{ table_ui.search_field('q',
-                                                                governance.filters.search,
-                                                                'Search project or provider…' if governance.active_tab == 'policies' else 'Search policy, provider, source or destination…',
-                                                                'artifact-registry-governance-search') }}
+                                                                        governance.filters.search,
+                                                                        'Search project or provider…' if governance.active_tab == 'policies' else 'Search policy, provider, source or destination…',
+                                                                        'artifact-registry-governance-search') }}
                                 </div>
                                 <label>
                                     <span class="{{ table_ui.filter_label_classes() }}">Provider</span>
@@ -306,13 +306,13 @@
                                 </table>
                             </div>
                             {{ registry.footer('artifact_registry.governance',
-                                                'artifact-registry-governance-registry',
-                                                'artifact-registry-governance-loading',
-                                                governance.pagination,
-                                                governance.filter_query,
-                                                [5, 10, 25, 50],
-                                                resource_label='Projects',
-                                                control_name='artifact-registry-governance-policies') }}
+                                                        'artifact-registry-governance-registry',
+                                                        'artifact-registry-governance-loading',
+                                                        governance.pagination,
+                                                        governance.filter_query,
+                                                        [5, 10, 25, 50],
+                                                        resource_label='Projects',
+                                                        control_name='artifact-registry-governance-policies') }}
                         {% else %}
                             <div class="overflow-x-auto">
                                 <table class="{{ table_ui.table_classes('min-w-[76rem]') }}">
@@ -360,13 +360,13 @@
                                 </table>
                             </div>
                             {{ registry.footer('artifact_registry.governance',
-                                                'artifact-registry-governance-registry',
-                                                'artifact-registry-governance-loading',
-                                                governance.pagination,
-                                                governance.filter_query,
-                                                [5, 10, 25, 50],
-                                                resource_label='Replication Policies',
-                                                control_name='artifact-registry-governance-replication') }}
+                                                        'artifact-registry-governance-registry',
+                                                        'artifact-registry-governance-loading',
+                                                        governance.pagination,
+                                                        governance.filter_query,
+                                                        [5, 10, 25, 50],
+                                                        resource_label='Replication Policies',
+                                                        control_name='artifact-registry-governance-replication') }}
                         {% endif %}
                     </section>
                 </div>
