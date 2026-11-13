@@ -55,6 +55,26 @@ Operational management belongs to **Kubernetes → Tenant**. Settings does not r
 
 Tenant Overview keeps the existing **Tenant Collection Snapshot → Tenant Inventory Operations → Governance Scope** hierarchy. The Inventory Operations status row displays a canonical title-adjacent **Guide**, reusing the shared `info_tip.render(..., variant='guide')` popover. It explains that **Sync Tenant** refreshes committed Tenant ownership and namespace-inventory correlation via the existing background worker; it does not provision, reconcile, or mutate Kubernetes resources. **Configure Sync** remains the registered schedule handoff. The five-column Tenant Estate retains all counts and signal tones; compact supporting text reads **Committed tenant records** and **Ready / registered clusters** at desktop widths, with natural wrapping permitted on narrow screens (no ellipsis or forced nowrap).
 
+## Tenant Registry and Discovery responsive precision (#4589)
+
+Tenant Discovery uses the canonical `table_ui.inventory_block_header` count label
+for the current **live provider-object filtered result count**, matching Tenant
+Registry's committed result-count treatment. The independent Live Check count
+keeps the source and scope explicit; the title Guide still describes live,
+read-only provider discovery and governed adoption. Do not conflate discovered
+provider objects with committed KAORI Tenants.
+
+Membership, Group, Access Grant, Credential Lifecycle, and Namespace Access
+registries retain their approved `table_ui` fixed-column primitives and
+per-registry proportions tuned to actual identity, status, date and action
+content. The responsive contract permits **table-local scroll only on smaller
+widths**; normal desktop should keep row actions visible without overflow.
+Long subjects, tenant slugs and credential identities remain readable through
+existing title/detail controls; no semantic values, filters, Rows, pagination,
+permission checks, mutation actions or mobile Namespace Access cards change.
+Shared table primitives stay authoritative for cell padding and vertical
+alignment; no page-local geometry framework is introduced.
+
 ## Full-cycle acceptance target
 
 The completed feature must prove create → provider selection → profile/namespace provisioning → access/credential governance → managed resources/policy → reconciliation → effective-state verification → audit/governance evidence → update/revoke → governed decommission. Native Kubernetes baseline UAT is mandatory; Capsule-backed UAT is required when the approved compatible Capsule test cluster is available.
