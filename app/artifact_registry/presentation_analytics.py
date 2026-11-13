@@ -176,8 +176,34 @@ def _accumulate_domain_counts(aggregate: dict[str, Any], sections: dict[str, dic
         'retention_not_configured': (governance, 'retention_not_configured'),
         'immutability_not_configured': (governance, 'immutability_not_configured'),
     }
+    # Reject inconsistent evidence per provider before cross-provider totals
+    # can conceal an overcount behind another provider's unobserved projects.
+    assessed = governance.get('projects_assessed')
+    for family in ('retention', 'immutability'):
+        configured = governance.get(f'{family}_configured')
+        missing = governance.get(f'{family}_not_configured')
+        if (
+            type(assessed) is int
+            and assessed >= 0
+            and type(configured) is int
+            and configured >= 0
+            and type(missing) is int
+            and missing >= 0
+            and configured + missing > assessed
+        ):
+            mappings[f'{family}_configured'] = ({}, f'{family}_configured')
+            mappings[f'{family}_not_configured'] = ({}, f'{family}_not_configured')
     for aggregate_key, (source, source_key) in mappings.items():
-        aggregate[aggregate_key] += int(source.get(source_key) or 0)
+        raw_value = source.get(source_key)
+        if aggregate_key.startswith(('governance_', 'retention_', 'immutability_')):
+            # Unknown or malformed governance evidence must never become a
+            # fabricated assessed/configured project count.
+            if type(raw_value) is not int or raw_value < 0:
+                aggregate[aggregate_key] = None
+                continue
+            if aggregate[aggregate_key] is None:
+                continue
+        aggregate[aggregate_key] += int(raw_value or 0)
 
 
 def _accumulate_metrics(
@@ -318,6 +344,10 @@ def _collect_analytics_rows(identities: list[Any], *, snapshot_window: str = '24
         # Stale snapshots remain readable, but their classification is
         # surfaced in posture and cannot produce a clean Evidence Ready.
         sections = _analytics_sections(snapshot.payload_json)
+        if not view.get('is_current'):
+            # Historical snapshots remain visible for investigation, but their
+            # governance policy counts cannot establish current coverage.
+            sections = {**sections, 'governance': {}}
         _accumulate_domain_counts(bundle['aggregate'], sections)
         _accumulate_metrics(
             bundle['aggregate'],
@@ -461,17 +491,36 @@ def _analytics_recommendations(active_tab: str) -> list[dict[str, str]]:
     ]
 
 
+def _governance_policy_coverage(aggregate: dict[str, Any], policy: str) -> float | None:
+    """Use only explicitly classified policy evidence, never the inventory total.
+
+    Unknown/unobserved projects must not be counted as not configured or
+    silently converted to a clean governance posture.
+    """
+    # Only supported, source-backed policy families may produce coverage.
+    # An arbitrary aggregate key must not be interpreted as governance evidence.
+    if policy not in ('retention', 'immutability'):
+        return None
+    configured = aggregate.get(f'{policy}_configured')
+    not_configured = aggregate.get(f'{policy}_not_configured')
+    assessed = aggregate.get('governance_projects_assessed')
+    counters = (configured, not_configured, assessed)
+    if any(type(value) is not int or value < 0 for value in counters):
+        return None
+    observed = configured + not_configured
+    if not assessed or not observed or observed > assessed:
+        return None
+    return configured / observed * 100.0
+
+
 def _analytics_coverage(aggregate: dict[str, Any]) -> dict[str, float | None]:
     artifact_total = max(int(aggregate['artifacts']), 0)
-    project_total = max(int(aggregate['projects']), 0)
     return {
         'scan': float(aggregate['scanned_artifacts']) / artifact_total * 100.0 if artifact_total else None,
         'signature': float(aggregate['signed_artifacts']) / artifact_total * 100.0 if artifact_total else None,
         'sbom': float(aggregate['sbom_artifacts']) / artifact_total * 100.0 if artifact_total else None,
-        'retention': float(aggregate['retention_configured']) / project_total * 100.0 if project_total else None,
-        'immutability': (
-            float(aggregate['immutability_configured']) / project_total * 100.0 if project_total else None
-        ),
+        'retention': _governance_policy_coverage(aggregate, 'retention'),
+        'immutability': _governance_policy_coverage(aggregate, 'immutability'),
     }
 
 

@@ -974,3 +974,50 @@ def test_registry_capacity_outlook_table_reuses_canonical_primitives() -> None:
     assert 'No qualified project quota forecast is available.' in capacity
     assert 'analytics.capacity_outlook.nearest_quota_days' in capacity
     assert 'analytics.capacity_outlook.quota_headroom_display' in capacity
+
+
+def test_governance_aggregation_rejects_malformed_committed_counters() -> None:
+    import ast
+    from typing import Any
+
+    source = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    tree = ast.parse(source)
+    function = next(
+        node for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == '_accumulate_domain_counts'
+    )
+    initializer = next(
+        node for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == '_analytics_aggregate'
+    )
+    namespace = {'Any': Any}
+    exec(compile(ast.Module(body=[initializer, function], type_ignores=[]), '<governance-aggregation>', 'exec'), namespace)
+    accumulate = namespace['_accumulate_domain_counts']
+
+    for invalid in (True, -1, 1.5, '3', None):
+        aggregate = namespace['_analytics_aggregate']()
+        sections = {
+            'inventory': {}, 'security': {}, 'runtime': {},
+            'governance': {
+                'projects_assessed': invalid,
+                'retention_configured': 2,
+                'immutability_configured': 1,
+                'retention_not_configured': 0,
+                'immutability_not_configured': 0,
+            },
+        }
+        accumulate(aggregate, sections)
+        assert aggregate['governance_projects_assessed'] is None
+        assert aggregate['retention_configured'] == 2
+        sections['governance']['projects_assessed'] = 5
+        accumulate(aggregate, sections)
+        assert aggregate['governance_projects_assessed'] is None
+        assert aggregate['retention_configured'] == 4
+
+
+def test_stale_registry_snapshots_cannot_supply_current_governance_coverage() -> None:
+    presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    collection = presentation.split('def _collect_analytics_rows(', 1)[1].split('\ndef _analytics_recommendations(', 1)[0]
+    assert "if not view.get('is_current'):" in collection
+    assert "sections = {**sections, 'governance': {}}" in collection
+    assert collection.index("sections = {**sections, 'governance': {}}") < collection.index('_accumulate_domain_counts(')

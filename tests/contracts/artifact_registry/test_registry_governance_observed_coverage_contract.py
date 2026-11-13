@@ -1,0 +1,75 @@
+"""Regression coverage for observed-only Registry governance policy ratios (#4619)."""
+
+from app.artifact_registry.presentation_analytics import _governance_policy_coverage
+
+
+def _aggregate(*, assessed=0, retention=0, retention_missing=0, immutability=0, immutability_missing=0):
+    return {
+        'governance_projects_assessed': assessed,
+        'retention_configured': retention,
+        'retention_not_configured': retention_missing,
+        'immutability_configured': immutability,
+        'immutability_not_configured': immutability_missing,
+    }
+
+
+def test_governance_coverage_requires_observed_policy_evidence():
+    assert _governance_policy_coverage(_aggregate(), 'retention') is None
+    assert _governance_policy_coverage(_aggregate(assessed=5), 'retention') is None
+
+
+def test_governance_coverage_excludes_unobserved_projects_from_denominator():
+    evidence = _aggregate(assessed=10, retention=2, retention_missing=2)
+    assert _governance_policy_coverage(evidence, 'retention') == 50.0
+    assert _governance_policy_coverage(evidence, 'immutability') is None
+
+
+def test_governance_coverage_rejects_inconsistent_committed_counters():
+    evidence = _aggregate(assessed=2, retention=3, retention_missing=1)
+    assert _governance_policy_coverage(evidence, 'retention') is None
+
+
+def test_governance_coverage_keeps_explicit_not_configured_distinct():
+    evidence = _aggregate(assessed=3, immutability=0, immutability_missing=3)
+    assert _governance_policy_coverage(evidence, 'immutability') == 0.0
+
+
+def test_governance_coverage_rejects_invalid_counter_types_and_negative_values():
+    for invalid in (-1, True, 1.5, '2', None):
+        evidence = _aggregate(assessed=4, retention=2, retention_missing=2)
+        evidence['retention_configured'] = invalid
+        assert _governance_policy_coverage(evidence, 'retention') is None
+
+    evidence = _aggregate(assessed=-1, retention=1)
+    assert _governance_policy_coverage(evidence, 'retention') is None
+    evidence = _aggregate(assessed=2, retention=1, retention_missing=-1)
+    assert _governance_policy_coverage(evidence, 'retention') is None
+
+
+def test_governance_coverage_rejects_unrecognized_policy_even_with_matching_keys():
+    evidence = _aggregate(assessed=4, retention=2, retention_missing=2)
+    evidence['replication_configured'] = 4
+    evidence['replication_not_configured'] = 0
+    assert _governance_policy_coverage(evidence, 'replication') is None
+    assert _governance_policy_coverage(evidence, 'retention') == 50.0
+
+
+def test_cross_provider_governance_overcount_cannot_be_masked():
+    from app.artifact_registry.presentation_analytics import _accumulate_domain_counts, _analytics_aggregate
+
+    aggregate = _analytics_aggregate()
+    for assessed, retention, missing in ((2, 3, 1), (10, 1, 1)):
+        _accumulate_domain_counts(aggregate, {
+            'inventory': {}, 'security': {}, 'runtime': {},
+            'governance': {
+                'projects_assessed': assessed,
+                'retention_configured': retention,
+                'retention_not_configured': missing,
+                'immutability_configured': 1,
+                'immutability_not_configured': 1,
+            },
+        })
+    assert aggregate['governance_projects_assessed'] == 12
+    assert aggregate['retention_configured'] is None
+    assert aggregate['retention_not_configured'] is None
+    assert aggregate['immutability_configured'] == 2
