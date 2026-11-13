@@ -382,9 +382,12 @@ def _governance_policy_coverage(aggregate: dict[str, Any], policy: str) -> float
     Unknown/unobserved projects must not be counted as not configured or
     silently converted to a clean governance posture.
     """
-    configured = max(int(aggregate[f'{policy}_configured']), 0)
-    not_configured = max(int(aggregate[f'{policy}_not_configured']), 0)
-    assessed = max(int(aggregate['governance_projects_assessed']), 0)
+    configured = aggregate.get(f'{policy}_configured')
+    not_configured = aggregate.get(f'{policy}_not_configured')
+    assessed = aggregate.get('governance_projects_assessed')
+    counters = (configured, not_configured, assessed)
+    if any(type(value) is not int or value < 0 for value in counters):
+        return None
     observed = configured + not_configured
     if not assessed or not observed or observed > assessed:
         return None
