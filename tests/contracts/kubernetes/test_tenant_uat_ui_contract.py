@@ -324,7 +324,7 @@ def test_capsule_authority_copy_and_blocker_rows_retain_complete_evidence() -> N
         'name="csrf_token"',
         'data-tenant-capsule-apply-button',
         'not can_manage or not capsule_shared_cutover_supported or not profiles',
-        "url_for('tenant.cutover_shared_allocation_route')",
+        "url_for('tenant.cutover_capsule_shared_allocation_route')",
         "coverage_comparison.capsule_sections('capsule_global_resource_quota'",
     ):
         assert marker in shared, marker
