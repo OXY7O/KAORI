@@ -506,7 +506,7 @@ def test_access_grant_registry_actions_fit_desktop_and_use_accessible_expanded_d
     assert "table_ui.table_classes('min-w-[1040px] table-fixed xl:min-w-0')" in registry
     assert 'overflow-x-auto xl:overflow-visible' in registry
     assert "table_ui.table_classes('min-w-[1300px] !table-fixed')" not in registry
-    assert 'w-[20%]">Actions' in registry
+    assert 'w-[22%]">Actions' in registry
     assert 'min-w-[15rem] flex-wrap' not in registry
     assert 'flex items-center justify-end gap-1.5 whitespace-nowrap' in registry
     assert 'aria-label="Access Grant actions"' in registry
