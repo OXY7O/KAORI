@@ -21,24 +21,24 @@
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
                               aria-hidden="true"><i data-lucide="layers-3" class="h-5 w-5"></i></span>
                         <div class="min-w-0">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <p class="text-xs font-semibold leading-5 text-kaori-primary">{{ 'Custom Resource Profile' if editable else 'KAORI Built-in Preset' }}</p>
-                            <span class="h-1 w-1 rounded-full bg-outline-strong" aria-hidden="true"></span>
-                            <p class="text-xs font-medium leading-5 text-content-muted">Committed Profile Contract</p>
-                        </div>
-                        <div class="mt-1 flex flex-wrap items-center gap-2">
-                            <h2 id="resource-profile-manage-{{ profile.id }}-title"
-                                class="text-xl font-semibold leading-7 text-content-primary">
-                                {{ 'Manage Resource Profile' if editable else 'Resource Profile Details' }}
-                            </h2>
-                            {{ table_label.status_label('Editable' if editable else 'Versioned Controls',
-                                                        'info' if editable else 'maintenance') }}
-                        </div>
-                        <p class="mt-1 text-sm leading-6 text-content-muted">
-                            {{ 'Update reusable intent; Namespace snapshots stay pinned.' if editable
-                            else 'Fixed preset values; approved control changes create a new version.' }}
-                        </p>
-                        </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="text-xs font-semibold leading-5 text-kaori-primary">{{ 'Custom Resource Profile' if editable else 'KAORI Built-in Preset' }}</p>
+                                <span class="h-1 w-1 rounded-full bg-outline-strong" aria-hidden="true"></span>
+                                <p class="text-xs font-medium leading-5 text-content-muted">Committed Profile Contract</p>
+                            </div>
+                            <div class="mt-1 flex flex-wrap items-center gap-2">
+                                <h2 id="resource-profile-manage-{{ profile.id }}-title"
+                                    class="text-xl font-semibold leading-7 text-content-primary">
+                                    {{ 'Manage Resource Profile' if editable else 'Resource Profile Details' }}
+                                </h2>
+                                {{ table_label.status_label('Editable' if editable else 'Versioned Controls',
+                                                            'info' if editable else 'maintenance') }}
+                            </div>
+                            <p class="mt-1 text-sm leading-6 text-content-muted">
+                                {{ 'Update reusable intent; Namespace snapshots stay pinned.' if editable
+                                else 'Fixed preset values; approved control changes create a new version.' }}
+                            </p>
+                            </div>
                     </div>
                     <button type="button"
                             data-kaori-dialog-close
@@ -639,28 +639,28 @@
                                 Unused Custom profiles only; Namespace and Capacity Decision references must both be zero.
                             </p>
                         </div>
-                    <form method="post"
-                          action="{{ url_for('tenant.delete_resource_profile_route', profile_id=profile.id) }}"
-                          class="shrink-0">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button id="resource-profile-delete-submit-{{ profile.id }}"
-                                type="submit"
-                                class="hidden"
-                                aria-hidden="true"
-                                tabindex="-1">Delete Resource Profile</button>
-                        <button type="button"
-                                data-destructive-modal-open
-                                data-destructive-modal-id="resource-profile-delete-modal"
-                                data-destructive-submit-button-id="resource-profile-delete-submit-{{ profile.id }}"
-                                data-destructive-target="{{ profile.name }}"
-                                data-destructive-scope="Custom · v{{ profile.version }}"
-                                {% if not can_manage or usage.total %}disabled aria-disabled="true"{% endif %}
-                                title="{{ 'Release all Namespace and Capacity Decision references before Delete.' if usage.total else 'Delete unused Custom Resource Profile' }}"
-                                class="{{ action_button.classes('secondary') }} text-status-critical-text">
-                            <i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>
-                            Delete
-                        </button>
-                    </form>
+                        <form method="post"
+                              action="{{ url_for('tenant.delete_resource_profile_route', profile_id=profile.id) }}"
+                              class="shrink-0">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button id="resource-profile-delete-submit-{{ profile.id }}"
+                                    type="submit"
+                                    class="hidden"
+                                    aria-hidden="true"
+                                    tabindex="-1">Delete Resource Profile</button>
+                            <button type="button"
+                                    data-destructive-modal-open
+                                    data-destructive-modal-id="resource-profile-delete-modal"
+                                    data-destructive-submit-button-id="resource-profile-delete-submit-{{ profile.id }}"
+                                    data-destructive-target="{{ profile.name }}"
+                                    data-destructive-scope="Custom · v{{ profile.version }}"
+                                    {% if not can_manage or usage.total %}disabled aria-disabled="true"{% endif %}
+                                    title="{{ 'Release all Namespace and Capacity Decision references before Delete.' if usage.total else 'Delete unused Custom Resource Profile' }}"
+                                    class="{{ action_button.classes('secondary') }} text-status-critical-text">
+                                <i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>
+                                Delete
+                            </button>
+                        </form>
                     </section>
                 {% endif %}
             </div>
@@ -671,18 +671,18 @@
                     <p class="min-w-0">Versioned intent · Existing Namespace snapshots remain pinned.</p>
                 </div>
                 <div class="flex shrink-0 flex-col-reverse gap-2 sm:flex-row">
-                <button type="button"
-                        data-kaori-dialog-close
-                        class="{{ action_button.classes('secondary') }}">Close</button>
-                <button type="submit"
-                        form="resource-profile-update-form-{{ profile.id }}"
-                        {% if not can_manage %}disabled aria-disabled="true"{% endif %}
-                        class="{{ action_button.classes('primary') }}">
-                    <i data-lucide="{{ 'save' if editable else 'history' }}"
-                       class="h-4 w-4"
-                       aria-hidden="true"></i>
-                    {{ 'Save Changes' if editable else 'Save New Version' }}
-                </button>
+                    <button type="button"
+                            data-kaori-dialog-close
+                            class="{{ action_button.classes('secondary') }}">Close</button>
+                    <button type="submit"
+                            form="resource-profile-update-form-{{ profile.id }}"
+                            {% if not can_manage %}disabled aria-disabled="true"{% endif %}
+                            class="{{ action_button.classes('primary') }}">
+                        <i data-lucide="{{ 'save' if editable else 'history' }}"
+                           class="h-4 w-4"
+                           aria-hidden="true"></i>
+                        {{ 'Save Changes' if editable else 'Save New Version' }}
+                    </button>
                 </div>
             </footer>
         </section>
