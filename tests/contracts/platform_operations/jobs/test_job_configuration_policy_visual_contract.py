@@ -42,3 +42,53 @@ def test_materialization_ranges_are_compact_and_not_nested_fieldsets():
     assert 'Precomputed History Windows' in forecast
     assert 'sm:grid-cols-2 lg:grid-cols-4' in analytics
     assert 'sm:grid-cols-3' in forecast
+
+
+def test_registered_job_configuration_headers_use_neutral_shared_surfaces() -> None:
+    overview = (DEFINITIONS.parent / '_job_overview.html').read_text(encoding='utf-8')
+    policy = (DEFINITIONS.parent / '_schedule_policy.html').read_text(encoding='utf-8')
+    catalog = (ROOT / 'app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml').read_text(
+        encoding='utf-8'
+    )
+
+    neutral_header = 'header class="border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6"'
+    assert overview.count(neutral_header) == 1
+    assert policy.count(neutral_header) == 2  # Scheduled and Manual Only.
+    assert 'border-b border-outline-subtle bg-surface-hover px-5 py-4' not in overview
+    assert 'border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4' not in policy
+    assert policy.count('rounded-lg bg-kaori-soft text-kaori-primary shadow-sm') == 2
+    assert 'status_indicator_label(' in policy
+    assert 'policy_form.enabled(' in policy
+    assert 'policy_form.interval_minutes(' in policy
+
+    templates = {
+        line.split(':', 1)[1].strip()
+        for line in catalog.splitlines()
+        if line.strip().startswith('configuration_template:')
+    }
+    assert len(templates) >= 15
+
+    for template_path in templates:
+        assert template_path.startswith('platform_operations/jobs/configuration/definitions/')
+        source = (ROOT / 'app/templates' / template_path).read_text(encoding='utf-8')
+        if '_materialization_job.html' in source:
+            # Analytics and forecast jobs inherit the shared overview and policy.
+            materialization = (DEFINITIONS / '_materialization_job.html').read_text(encoding='utf-8')
+            assert '_job_overview.html' in materialization
+            assert 'schedule_policy.header(' in materialization
+        else:
+            assert '_job_overview.html' in source, template_path
+
+    for filename in ('object_storage_inventory_sync.html', 'artifact_registry_inventory_sync.html'):
+        source = _read(filename)
+        assert neutral_header in source
+        assert 'border-b border-kaori-primary/15 bg-kaori-soft' not in source
+        assert 'bg-status-warning-soft text-status-warning-text shadow-sm' in source
+        assert 'Guarded Recovery Boundary' in source
+        assert 'manual_form.hidden_tag()' in source
+        assert 'confirmation_phrase' in source
+
+    # Preserve the different colored functional controls and state on white headers.
+    assert 'border border-kaori-primary/20 bg-kaori-soft' in policy
+    assert 'peer-checked:bg-kaori-primary' in policy
+    assert 'text-status-warning-text' in _read('object_storage_inventory_sync.html')
