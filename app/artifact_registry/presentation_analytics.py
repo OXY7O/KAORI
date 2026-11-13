@@ -326,6 +326,10 @@ def _collect_analytics_rows(identities: list[Any], *, snapshot_window: str = '24
         # Stale snapshots remain readable, but their classification is
         # surfaced in posture and cannot produce a clean Evidence Ready.
         sections = _analytics_sections(snapshot.payload_json)
+        if not view.get('is_current'):
+            # Historical snapshots remain visible for investigation, but their
+            # governance policy counts cannot establish current coverage.
+            sections = {**sections, 'governance': {}}
         _accumulate_domain_counts(bundle['aggregate'], sections)
         _accumulate_metrics(
             bundle['aggregate'],
