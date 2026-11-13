@@ -134,6 +134,8 @@ def test_registry_historical_snapshots_use_measured_source_range_and_scope() -> 
 def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> None:
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
     section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
+    overview_tabs = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_workspace.html').read_text()
+    overview_panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
     presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
 
@@ -154,8 +156,9 @@ def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> 
         assert title in section
 
     for tab in ('growth', 'capacity', 'usage', 'risk', 'governance', 'alerts', 'insights'):
-        assert f"'artifact_registry.analytics_{tab}'" in shell
+        assert f"('{tab}'," in overview_tabs
         assert f"'{tab}'" in presentation
+    assert "url_for('artifact_registry.analytics_' ~ overview_domain" in overview_panel
 
     assert "return _render_registry_analytics_page('overview')" in routes
     assert "legacy_tab = request.args.get('tab', '', type=str)" in routes
@@ -169,6 +172,124 @@ def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> 
 
     assert "aggregate['inflight_requests'] > 100" not in presentation
     assert "aggregate['task_queue_size'] > 0" not in presentation
+
+
+def test_registry_analytics_overview_uses_shared_tabs_and_bounded_committed_panels() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    tabs = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_workspace.html').read_text()
+    panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    common = (ROOT / 'app/templates/components/content_tabs.html').read_text()
+    js = (ROOT / 'app/static/js/analytics/controls.js').read_text()
+    k8 = (ROOT / 'app/templates/kubernetes/analytics/overview/index.html').read_text()
+    storage = (
+        ROOT / 'app/templates/storage/object_storage/analytics/partials/_overview_workspace.html'
+    ).read_text()
+
+    for template in (shell, tabs, panel):
+        Environment().parse(template)
+    assert 'artifact_registry/partials/_analytics_overview_workspace.html' in shell
+    assert "section='summary'" in shell
+    assert "'Analytical Evidence Summary'" in (
+        ROOT / 'app/templates/artifact_registry/partials/_analytics_summary.html'
+    ).read_text()
+    assert 'analytics_domains =' not in shell
+    assert 'Analytics Domains' not in shell
+
+    assert '{% import "components/content_tabs.html" as content_tabs %}' in tabs
+    assert "content_tabs.render_buttons('artifact-registry-overview-content'," in tabs
+    assert "content_tabs.render_buttons('overview-content'," in k8
+    assert "content_tabs.render_buttons('object-storage-overview-content'," in storage
+    assert "data-analytics-tabset-id=\"artifact-registry-overview-content\"" in tabs
+    assert 'data-analytics-update-query="false"' in tabs
+    assert 'data-default-tab="growth"' in tabs
+    assert "hx-trigger=\"kaori:analytics-tab-activated once\"" in tabs
+    assert "data-overview-lazy-section=\"true\"" in tabs
+    assert "hx_sync=" not in tabs
+    assert 'hx-sync="this:replace"' in tabs
+    assert "overview_panel='1'" in tabs
+    assert 'provider_id=analytics.selected_provider_id' in tabs
+    assert 'snapshot_window=analytics.snapshot_window' in tabs
+    assert 'render_buttons(' in common
+    assert "tabset.dataset.analyticsUpdateQuery !== 'false'" in js
+
+    for key, label in (
+        ('growth', 'Growth'),
+        ('capacity', 'Capacity'),
+        ('usage', 'Usage'),
+        ('risk', 'Risk'),
+        ('governance', 'Governance'),
+        ('alerts', 'Alerts'),
+        ('insights', 'Insights'),
+        ('evidence', 'Data & Evidence'),
+    ):
+        assert f"('{key}', '{label}'," in tabs
+
+    # Test the actual shared tab geometry and unique panel identity after Jinja rendering.
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    env.globals['url_for'] = lambda endpoint, **kwargs: f'/{endpoint.replace(".", "/")}'
+    rendered = env.get_template(
+        'artifact_registry/partials/_analytics_overview_workspace.html'
+    ).render(
+        analytics={
+            'snapshot_count': 1,
+            'provider_count': 1,
+            'snapshot_window': '24h',
+            'selected_provider_id': 5,
+        }
+    )
+    assert rendered.count('data-analytics-tab-button=') == 8
+    assert rendered.count('data-analytics-tab-panel=') == 8
+    assert rendered.count('data-overview-lazy-section="true"') == 8
+    assert rendered.count('hx-trigger="kaori:analytics-tab-activated once"') == 8
+    assert rendered.count('data-kaori-tab-variant="content-tabs"') == 1
+    assert 'data-kaori-info-tip-variant="guide"' in rendered
+
+    # The Overview-only variant cannot expose Data & Evidence as a detail route.
+    assert "overview_panel = request.args.get('overview_panel', '', type=str) == '1'" in routes
+    assert "overview_panel and section == 'evidence'" in routes
+    assert "overview_panel and section == 'summary'" in routes
+    assert "context['data_readiness'] = build_registry_analytics_readiness(" in routes
+    assert "'artifact_registry/partials/_analytics_overview_panel.html'" in routes
+    assert "return render_template(template, analytics=context)" in routes
+    assert "@permission_required('artifact_registry.view')" in routes
+    assert 'dispatch_registered_job(' not in routes.split('def analytics_section(', 1)[1].split(
+        'def analytics_alerts_table(', 1
+    )[0]
+    assert 'MetricsConsumer' not in routes
+
+
+def test_registry_analytics_overview_panels_preserve_missing_data_and_evidence_authority() -> None:
+    from jinja2 import Environment
+
+    panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
+    Environment().parse(panel)
+
+    assert "analytics.snapshot_count > 0" in panel
+    assert "if analytics.activity_rows else unknown" in panel
+    assert "if analytics.capacity_outlook.highest_utilization is not none else unknown" in panel
+    assert "if analytics.capacity_outlook.nearest_quota_days is not none else 'No forecast'" in panel
+    assert "aggregate.governance_projects_assessed > 0" in panel
+    assert "if alerts_ready else unknown" in panel
+    assert "if has_snapshot else unknown" in panel
+    assert "'Committed Source Coverage'" in panel or 'Committed Source Coverage' in panel
+    assert 'analytics.latest_rows[:5]' in panel
+    assert "readiness.current_count" in panel
+    assert 'readiness.execution_label' in panel
+    assert "row.status_label, row.tone" in panel
+    assert 'No committed snapshots for the selected Registry and Time Range.' in panel
+    assert "analytics.growth_rows[:3]" in panel
+    assert "analytics.forecast_rows[:3]" in panel
+    assert "analytics.activity_rows[:3]" in panel
+    assert "analytics.insights[:3]" in panel
+    assert "analytics.alert_source_rows[:3]" in panel
+    assert 'no automatic cleanup' in panel
+    assert 'Missing pull metrics do not imply zero demand.' in panel
+    assert 'not interchangeable' in panel
+    assert 'Not Configured differs from Not Collected' in panel
+    assert 'Intelligence owns Recommendations' in panel
 
 
 def test_registry_analytics_uses_fast_shell_and_bounded_fragments() -> None:
