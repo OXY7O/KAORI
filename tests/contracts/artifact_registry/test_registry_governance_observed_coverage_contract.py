@@ -44,3 +44,11 @@ def test_governance_coverage_rejects_invalid_counter_types_and_negative_values()
     assert _governance_policy_coverage(evidence, 'retention') is None
     evidence = _aggregate(assessed=2, retention=1, retention_missing=-1)
     assert _governance_policy_coverage(evidence, 'retention') is None
+
+
+def test_governance_coverage_rejects_unrecognized_policy_even_with_matching_keys():
+    evidence = _aggregate(assessed=4, retention=2, retention_missing=2)
+    evidence['replication_configured'] = 4
+    evidence['replication_not_configured'] = 0
+    assert _governance_policy_coverage(evidence, 'replication') is None
+    assert _governance_policy_coverage(evidence, 'retention') == 50.0
