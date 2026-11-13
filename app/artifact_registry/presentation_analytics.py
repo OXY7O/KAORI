@@ -223,6 +223,10 @@ def _accumulate_metrics(
         # Counters cannot be negative or boolean. Exclude invalid evidence rather
         # than reporting fabricated pull activity in the Usage projection.
         for project_name, raw_value in pull_activity.items():
+            # A missing or blank project identity cannot be attributed to a
+            # Registry project and must not become a synthetic activity row.
+            if not isinstance(project_name, str) or not project_name.strip():
+                continue
             if (
                 isinstance(raw_value, (int, float))
                 and not isinstance(raw_value, bool)
