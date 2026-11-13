@@ -234,8 +234,8 @@
                             {% for icon, title, description in [
                                 ('eye', 'Secret Get Only', 'Require get permission on the selected Secret.'),
                                 ('shield-ban', 'Avoid List and Watch', 'Avoid Secret list/watch unless explicitly required.'),
-                                ('box', 'Namespace Scope', 'Prefer namespace Role and RoleBinding where practical.'),
-                                ('refresh-cw', 'Credential Scope', 'Review kubeconfig access when responsibilities change.')
+                                ('box', 'Namespace Scope', 'Use namespace Role and RoleBinding.'),
+                                ('refresh-cw', 'Credential Scope', 'Review kubeconfig scope as roles change.')
                                 ] %}
                                 <li class="flex min-w-0 items-start gap-2.5">
                                     <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-hover text-kaori-primary"
