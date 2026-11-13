@@ -19,8 +19,19 @@
                 <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                       aria-hidden="true"><i data-lucide="chart-no-axes-combined" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
-                    <h2 id="tenant-allocation-overview-heading"
-                        class="text-base font-semibold text-content-primary">Tenant Allocation Overview</h2>
+                    <div class="flex min-h-6 flex-wrap items-center gap-1.5">
+                        <h2 id="tenant-allocation-overview-heading"
+                            class="text-base font-semibold text-content-primary">Tenant Allocation Overview</h2>
+                        {{ info_tip.render('tenant-allocation-overview-guide',
+                                'Tenant Allocation Overview Guide',
+                                'Review committed request commitments separately from provider capacity and workload utilization.',
+                                [
+                                'CPU, memory, and pod commitments represent governed requests, not actual workload usage or physical reservations.',
+                                'Stale or unknown committed capacity evidence cannot establish available headroom or allocation approval.',
+                                'Kubernetes remains authoritative for execution; KAORI records admission and reconciliation evidence.'
+                                ],
+                                placement='right', variant='guide') }}
+                    </div>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">
                         Governed request commitments, not actual workload utilization or physical reservations.
                     </p>

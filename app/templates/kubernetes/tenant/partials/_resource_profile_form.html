@@ -16,8 +16,19 @@
                   aria-hidden="true">
                 <i data-lucide="layers-3" class="h-5 w-5"></i>
             </span>
-            <div>
-                <h2 class="text-base font-semibold text-content-primary">Create Resource Profile</h2>
+            <div class="min-w-0">
+                <div class="flex min-h-6 flex-wrap items-center gap-1.5">
+                    <h2 class="text-base font-semibold text-content-primary">Create Resource Profile</h2>
+                    {{ info_tip.render('resource-profile-create-guide',
+                            'Create Resource Profile Guide',
+                            'Create one reusable versioned allocation contract before selecting its governance scope.',
+                            [
+                            'Built-in presets remain fixed; Custom profiles allow explicit reusable intent.',
+                            'ResourceQuota and Container LimitRange settings are separate governed dimensions.',
+                            'Existing Namespace allocations stay pinned until an explicit admitted rollout.'
+                            ],
+                            placement='right', variant='guide') }}
+                </div>
                 <p class="mt-1 text-sm text-content-secondary">Define one reusable quota and Container LimitRange contract.</p>
             </div>
         </div>

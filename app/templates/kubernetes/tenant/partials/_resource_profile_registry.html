@@ -1,4 +1,5 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% set registry_id = "resource-profile-registry-card" %}
@@ -24,6 +25,17 @@
             ) }}
         {% endif %}
     {% endset %}
+    {% set title_info %}
+        {{ info_tip.render('resource-profile-registry-guide',
+                'Resource Profile Registry Guide',
+                'Review committed reusable profile versions and their Namespace allocation dependencies.',
+                [
+                'Profiles define intent; Namespace allocations retain their pinned profile version until explicitly changed.',
+                'Built-in presets are fixed; Custom contracts support versioned operator changes.',
+                'Inspect Manage for full controls and dependencies before modifying a profile.'
+                ],
+                placement='right', variant='guide') }}
+    {% endset %}
     {{ table_ui.inventory_block_header('library-big',
         'Resource Profile Registry',
         'Reusable allocation profiles. Open Manage for full contract details.',
@@ -32,7 +44,8 @@
         none,
         none,
         header_actions=header_actions,
-        result_count=profile_pagination.total_items) }}
+        result_count=profile_pagination.total_items,
+        title_extra=title_info) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
             'tenant.resource_profiles',

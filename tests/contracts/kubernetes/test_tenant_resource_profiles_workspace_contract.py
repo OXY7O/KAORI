@@ -66,6 +66,61 @@ def test_resource_profiles_use_server_owned_kaori_content_tabs_and_snapshot_stat
     assert 'destructive_confirmation_modal.js' in page
 
 
+def test_resource_profile_namespace_titles_use_canonical_guides_and_committed_metadata() -> None:
+    profile_form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
+    profile_registry = read('app/templates/kubernetes/tenant/partials/_resource_profile_registry.html')
+    allocation = read('app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html')
+    namespace = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
+    namespace_registry = read('app/templates/kubernetes/tenant/partials/_namespace_registry.html')
+
+    for source, title, guide_id in (
+        (profile_form, 'Create Resource Profile', 'resource-profile-create-guide'),
+        (allocation, 'Tenant Allocation Overview', 'tenant-allocation-overview-guide'),
+    ):
+        header = source.split('</header>', 1)[0]
+        assert header.index(title) < header.index(guide_id)
+        assert header.count(f"'{guide_id}'") == 1
+        assert "variant='guide'" in header
+        assert 'items-center gap-1.5' in header
+
+    for source, title, guide_id, count in (
+        (
+            profile_registry,
+            'Resource Profile Registry',
+            'resource-profile-registry-guide',
+            'profile_pagination.total_items',
+        ),
+        (
+            namespace_registry,
+            'Namespace Provisioning Registry',
+            'namespace-provisioning-registry-guide',
+            'namespace_pagination.total_items',
+        ),
+    ):
+        assert f"'{title}'" in source
+        assert source.count(f"'{guide_id}'") == 1
+        assert 'title_extra=title_info' in source
+        assert f'result_count={count}' in source
+        assert 'registry_ui.filter_form(' in source
+
+    assert "header_badge=table_label.result_count(namespace_total)" in namespace
+    assert "('folder-tree', 'Namespace Records', namespace_total" in namespace
+    assert "'Committed managed/adopted records'" in namespace
+    assert "'Intent differs from provider state'" in namespace
+    assert 'Committed managed/adopted Namespace records in KAORI' not in namespace
+    assert 'Committed intent differs from provider observation' not in namespace
+    assert "info_tip.render('namespace-administration-guide'" in namespace
+    assert namespace.count("'namespace-administration-guide'") == 1
+    assert "placement='right', variant='guide'" in namespace
+    assert 'resource_posture_grid.render(namespace_metrics, columns=4)' in namespace
+    assert "hx_target='#namespace-provisioning-workspace'" in namespace
+
+    assert "info_tip.render('resource-profile-identity-tip'" in profile_form
+    assert "info_tip.render('namespace-provisioning-contract-tip'" in read(
+        'app/templates/kubernetes/tenant/partials/_namespace_form.html'
+    )
+
+
 def test_resource_profile_summary_guides_and_modal_chrome_match_inventory_pattern() -> None:
     page = read('app/templates/kubernetes/tenant/resource_profiles.html')
     workflow = read('app/templates/kubernetes/tenant/partials/_resource_profile_workflow.html')

@@ -26,6 +26,9 @@ TITLE_GUIDES = {
     '_external_capsule_access_inventory.html': ('tenant-capsule-external-access-inventory-guide',),
     '_native_namespace_rbac_inventory.html': ('tenant-native-namespace-rbac-inventory-guide',),
     '_namespace_form.html': ('namespace-provisioning-contract-tip',),
+    '_namespace_registry.html': ('namespace-provisioning-registry-guide',),
+    '_resource_profile_registry.html': ('resource-profile-registry-guide',),
+    '_tenant_allocation_overview.html': ('tenant-allocation-overview-guide',),
     '_capacity_governance.html': (
         'tenant-capacity-policy-tip',
         'tenant-capacity-compute-pod-tip',
@@ -39,6 +42,7 @@ TITLE_GUIDES = {
     '_capsule_tenant_quota_cutover.html': ('capsule-tenant-quota-tip',),
     '_capsule_shared_allocation_cutover.html': ('capsule-shared-cutover-tip',),
     '_resource_profile_form.html': (
+        'resource-profile-create-guide',
         'resource-profile-identity-tip',
         'resource-profile-compute-tip',
         'resource-profile-storage-tip',
