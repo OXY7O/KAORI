@@ -85,13 +85,14 @@
         ] %}
     <section class="space-y-4" aria-labelledby="tenant-governance-scope-title">
         {{ section_intro.render('Governance Scope',
-                'Committed Namespace, environment, authority and lifecycle posture for this Tenant.',
+                '',
                 'tenant-governance-scope-title') }}
         {% call operational_section_card.render(
             'Tenant Governance',
             'Committed resource scope and governance state for this Tenant.',
             'layout-grid',
             id='tenant-governance-scope-card',
+            header_badge=table_label.metadata_label((tenant_governance_metrics|length) ~ ' Indicators', icon='layout-grid'),
             body_classes='p-0',
             aria_label='Tenant governance summary'
             ) %}
@@ -303,6 +304,9 @@
         {% if can_manage and current_user.has_permission('integrations.manage')
             and current_user.has_permission('clusters.manage')
             and tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready' %}
+            {{ section_intro.render('Release Workflow',
+                'Review committed scope, independent approval, and provider handoff before releasing Tenant governance.',
+                'tenant-release-workflow-heading') }}
             <section id="tenant-release-governance"
                      class="min-w-0 scroll-mt-24 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
                      aria-label="Release Governance">
