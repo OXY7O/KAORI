@@ -461,7 +461,7 @@ def build_sidebar_navigation(
         )
         if (
             workspace.key == 'integrations'
-            and resolved_endpoint == 'integrations.choose_integration_provider'
+            and active_workspace == workspace.key
             and active_capability_override in {capability.key for capability in visible_capabilities}
         ):
             active_capability = active_capability_override

@@ -234,3 +234,65 @@ def test_breadcrumbs_insert_domain_between_integrations_and_provider() -> None:
     assert "'integrations.storage': 'Storage'" in navigation
     assert "'integrations.registry': 'Registry'" in navigation
     assert "'domain_label': module.domain.label" in integration_navigation
+
+
+def test_provider_sidebar_uses_registry_owner_not_default_overview(monkeypatch) -> None:
+    """Breadcrumb and sidebar must agree for provider and instance endpoints."""
+
+    from types import SimpleNamespace
+
+    from app.common import workspace_navigation as sidebar
+    from app.integrations.navigation import integration_endpoint_owner
+
+    monkeypatch.setattr(sidebar, 'url_for', lambda endpoint, **_kwargs: f'/{endpoint}')
+    monkeypatch.setattr(sidebar, 'local_super_admin', lambda _user: False)
+    user = SimpleNamespace(
+        is_authenticated=True,
+        has_permission=lambda permission: permission == 'integrations.manage',
+    )
+
+    def active_keys(endpoint: str, override: str | None = None) -> list[str]:
+        sections = sidebar.build_sidebar_navigation(endpoint, user, active_capability_override=override)
+        workspace = next(
+            item for section in sections for item in section['items'] if item['key'] == 'integrations'
+        )
+        assert workspace['active']
+        return [child['key'] for child in workspace['children'] if child['active']]
+
+    provider_routes = {
+        'integrations.metrics_sources': 'observability',
+        'integrations.alertmanager': 'observability',
+        'metrics.instance_detail': 'observability',
+        'alertmanager.instance_detail': 'observability',
+        'integrations.kubernetes': 'orchestration',
+        'minio.index': 'storage',
+        'harbor.index': 'registry',
+        'vault.index': 'secrets_management',
+        'github_source.index': 'source_control',
+    }
+    for endpoint, expected in provider_routes.items():
+        owner = integration_endpoint_owner(endpoint)
+        assert owner is not None, endpoint
+        assert owner['domain_key'] == expected, endpoint
+        assert active_keys(endpoint, owner['domain_key']) == [expected], endpoint
+
+    assert active_keys('integrations.overview') == ['overview']
+    assert active_keys('integrations.observability') == ['observability']
+    assert active_keys('integrations.choose_integration_provider', 'observability') == ['observability']
+
+    # Unknown selector ownership must not arbitrarily activate an unavailable capability.
+    assert active_keys('integrations.choose_integration_provider', 'invalid-domain') == ['overview']
+
+
+def test_presentation_reuses_provider_owner_for_sidebar_and_breadcrumb() -> None:
+    presentation = read('app/bootstrap/presentation.py')
+    sidebar = read('app/common/workspace_navigation.py')
+
+    assert 'integration_owner = integration_endpoint_owner(request.endpoint)' in presentation
+    assert "active_integration_domain_key = integration_owner['domain_key'] if integration_owner else None" in presentation
+    assert "active_integration_domain_key = selector_domain['key']" in presentation
+    assert 'active_capability_override=active_integration_domain_key' in presentation
+    assert 'integration_owner=integration_owner' in presentation
+    assert "workspace.key == 'integrations'" in sidebar
+    assert 'active_workspace == workspace.key' in sidebar
+    assert 'active_capability_override in {capability.key for capability in visible_capabilities}' in sidebar

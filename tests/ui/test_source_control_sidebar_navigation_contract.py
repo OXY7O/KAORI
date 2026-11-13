@@ -80,7 +80,8 @@ def test_chooser_route_uses_canonical_sidebar_and_breadcrumb_ownership() -> None
     assert "request.endpoint == 'integrations.choose_integration_provider'" in presentation
     assert 'active_capability_override=' in presentation
     assert 'integration_selector_label=' in presentation
-    assert "resolved_endpoint == 'integrations.choose_integration_provider'" in sidebar_model
+    assert "active_workspace == workspace.key" in sidebar_model
+    assert 'active_capability_override in {capability.key for capability in visible_capabilities}' in sidebar_model
     assert (
         "endpoint in {'integrations.choose_integration_provider', 'integrations.select_metrics_source_provider'}"
         in breadcrumb
