@@ -121,12 +121,12 @@ def _domain_coverage(name: str) -> tuple[dict[str, str], ...]:
             {
                 'icon': 'chart-spline',
                 'label': 'Analytics Materialization',
-                'description': 'Capacity, utilization, storage, workload, top-consumer, and alert datasets.',
+                'description': 'Capacity, utilization, storage, workload and alert data.',
             },
             {
                 'icon': 'line-chart',
                 'label': 'Forecast History',
-                'description': 'Reusable forecast snapshots stored in the shared analytics snapshot table.',
+                'description': 'Forecast snapshots in shared analytics storage.',
             },
             {
                 'icon': 'layout-dashboard',
