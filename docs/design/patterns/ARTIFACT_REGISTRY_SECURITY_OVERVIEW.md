@@ -34,6 +34,30 @@ When providers are unregistered or committed inventory is not ready, retain the 
 
 On focused Vulnerabilities and Supply Chain pages, `_security_sync_live_state.html` displays a **single concise line** combining a source-qualified queued/syncing/failed/not-collected/ready state with **read-only; no provider scans**. It must wrap naturally on narrow viewports; never truncate or use `nowrap`. Progress, polling, disable-duplicate execution, Jobs & Executions authority, and the canonical `artifact_registry.security.sync` job remain intact.
 
+### Security Sync Guide and Supply Chain detail readability (Human Visual UAT #4590)
+
+In **Security Evidence Operations**, the HTMX-refreshable live-state header
+renders the existing `info_tip.render(..., variant='guide')` immediately after
+the status indicator, matching the approved Governance Evidence Operations
+pattern. The accessible Guide explains read-only committed scanner/supply-chain
+and runtime correlation evidence, provider authority, the eligible-source
+`JobExecution` sync boundary versus page-local filters, and the need to review
+missing/stale/partial/unavailable/unsupported evidence. Opening a read-only
+workspace or modal never triggers live provider reads or scans; the explicit
+Security Sync action retains its existing authorization and execution semantics.
+Preserve status polling, active progress, `compact_helper`, and natural wrapping.
+
+The **Provider Capability** and **Artifact Evidence** View More modals keep their
+existing evidence cards and `operational_callout` components. The descriptions
+for **Committed Security Capability Scope**, **Provider Evidence Boundary**, and
+**Evidence Interpretation** use concise one-line desktop microcopy without
+`whitespace-nowrap` or information truncation on mobile. The provider remains
+authoritative for capability detection, signatures and SBOM availability.
+Provider observations do not constitute KAORI trust-policy verification;
+capability states must not be inferred or fabricated. The modal is read-only,
+while full immutable digests, capability/scan states and timestamps remain in
+their normal evidence fields.
+
 ## Security Evidence Summary and finding-table consistency (Human Visual UAT #4468)
 
 Both focused Security tabs, **Vulnerabilities** and **Supply Chain**, retain their four
