@@ -176,7 +176,16 @@ def _accumulate_domain_counts(aggregate: dict[str, Any], sections: dict[str, dic
         'immutability_not_configured': (governance, 'immutability_not_configured'),
     }
     for aggregate_key, (source, source_key) in mappings.items():
-        aggregate[aggregate_key] += int(source.get(source_key) or 0)
+        raw_value = source.get(source_key)
+        if aggregate_key.startswith(('governance_', 'retention_', 'immutability_')):
+            # Unknown or malformed governance evidence must never become a
+            # fabricated assessed/configured project count.
+            if type(raw_value) is not int or raw_value < 0:
+                aggregate[aggregate_key] = None
+                continue
+            if aggregate[aggregate_key] is None:
+                continue
+        aggregate[aggregate_key] += int(raw_value or 0)
 
 
 def _accumulate_metrics(
