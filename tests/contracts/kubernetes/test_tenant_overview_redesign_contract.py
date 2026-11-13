@@ -170,7 +170,7 @@ def test_tenant_estate_descriptions_fit_compact_desktop_tiles_without_truncation
     assert "'Ready / registered Kubernetes clusters'" not in overview
     assert "('building-2', 'Tenants', tenant_count" in overview
     assert "('server', 'Managed Clusters', (ready_clusters|length)" in overview
-    assert "resource_posture_grid.render(estate_metrics, columns=5)" in overview
+    assert 'resource_posture_grid.render(estate_metrics, columns=5)' in overview
     assert 'break-words' in shared_grid
     assert 'whitespace-nowrap' not in shared_grid
     assert len('Committed tenant records') <= 28
