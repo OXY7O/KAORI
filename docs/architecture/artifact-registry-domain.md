@@ -840,6 +840,27 @@ The Guide is read-only; it does not enqueue work, bypass permissions, replace
 the canonical worker or imply every eligible provider has query-ready telemetry.
 Its accessible trigger and responsive popover reuse the shared Info Tip.
 
+### Registry Analytics selected-source UX refinement (#4632)
+
+The Registry Analytics Overview and seven domain pages intentionally show
+**one Registry source at a time**. The shared source selector does **not**
+offer an `All Registries` aggregation option. For an omitted or legacy
+blank `provider_id`, the read-side presentation selects the first active
+**Ready** Registry ordered by the existing source catalog, falling back to
+the first enabled/active Registry when none is Ready. If no active Registry
+exists, the selector reports `No Registries Available` and preserves the
+existing blocked/empty-state behavior. An explicitly unknown, disabled or
+retired source still fails closed with HTTP 404; it never broadens the query.
+
+Initial shell, HTMX sections, analytics source readiness and the Overview
+Growth charts use the same selected-provider ID and Time Range. The worker's
+canonical registered Analytics JobExecution remains **fleet-scoped** (all
+eligible sources), independently of which provider's committed evidence the
+operator is viewing. This change affects presentation scope, not collection
+or external provider authority. The four-indicator Risk Candidates helper
+is concise (`Cross-domain signals may overlap.`) to remain on one line in
+the existing responsive Inventory/Posture grid without custom sizing.
+
 ## Analytics Fast-Shell Contract
 
 Artifact Registry Analytics uses the same bounded delivery principle as the canonical operational dashboard:
