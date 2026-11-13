@@ -14,8 +14,8 @@ REGISTRIES = {
     '_tenant_registry': (1040, (20, 19, 12, 9, 15, 13, 12)),
     '_namespace_registry': (1080, (25, 18, 32, 15, 10)),
     # Settings-style Memberships tables fit desktop with narrow-only table-local scrolling.
-    '_group_registry': (960, (21, 17, 19, 11, 13, 19)),
-    '_membership_registry': (960, (25, 22, 14, 12, 13, 14)),
+    '_group_registry': (960, (20, 16, 18, 11, 13, 22)),
+    '_membership_registry': (960, (25, 21, 13, 11, 14, 16)),
     '_operations_drift_registry': (1420, (17, 16, 19, 28, 20)),
     '_operations_provider_registry': (980, (23, 28, 31, 18)),
     '_operations_namespace_registry': (1100, (23, 20, 27, 15, 15)),
@@ -98,7 +98,7 @@ def test_namespace_access_registry_uses_responsive_five_column_evidence_table() 
     assert 'overflow-x-auto' not in registry
     assert 'min-w-[1400px] !table-fixed' not in registry
     assert "table_ui.table_classes('!table-fixed')" in registry
-    assert _header_widths(registry) == (24, 22, 29, 12, 13)
+    assert _header_widths(registry) == (23, 21, 28, 13, 15)
     assert 'Tenant / Scope' in registry
     assert 'access.get("environment")' in registry
     assert "|default('Not assigned', true)|title" in registry
