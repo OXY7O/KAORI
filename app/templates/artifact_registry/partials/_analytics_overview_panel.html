@@ -1,0 +1,218 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/table_label.html" as table_label %}
+{% set aggregate = analytics.aggregate %}
+{% set has_snapshot = analytics.snapshot_count > 0 %}
+{% set unknown = 'N/A' %}
+{% if overview_domain == 'growth' %}
+    {% set domain_title = 'Artifact & Storage Growth' %}
+    {% set domain_description = 'Committed inventory deltas and qualified source-level growth evidence.' %}
+    {% set domain_icon = 'trending-up' %}
+    {% set boundary = 'Growth requires qualified measured history or comparable materializations. Missing history is not a zero growth rate.' %}
+    {% set overview_metrics = [
+        ('database', 'Storage Footprint', analytics.summary_cards[0].value if has_snapshot else unknown, 'Committed artifact storage in scope', 'info'),
+        ('trending-up', 'Artifact Velocity', analytics.summary_cards[1].value if has_snapshot else unknown, 'Materialized artifacts per day, when qualified', 'info'),
+        ('package', 'Artifact Identities', aggregate.artifacts if has_snapshot else unknown, 'Committed immutable artifact identities', 'normal'),
+        ('archive', 'Stale Candidates', aggregate.stale_candidates if has_snapshot else unknown, 'Review candidates only; no automatic cleanup', 'warning')
+    ] %}
+{% elif overview_domain == 'capacity' %}
+    {% set domain_title = 'Quota & Capacity Posture' %}
+    {% set domain_description = 'Project quota utilization, qualified headroom, and forecast horizons.' %}
+    {% set domain_icon = 'gauge' %}
+    {% set boundary = 'Forecast requires an observed quota and qualified positive growth history. Missing quotas or history remain unavailable.' %}
+    {% set overview_metrics = [
+        ('gauge', 'Highest Utilization', ('%.1f%%'|format(analytics.capacity_outlook.highest_utilization)) if analytics.capacity_outlook.highest_utilization is not none else unknown, 'Highest observed project quota pressure', 'info'),
+        ('calendar-clock', 'Nearest Exhaustion', ('%.1f days'|format(analytics.capacity_outlook.nearest_quota_days)) if analytics.capacity_outlook.nearest_quota_days is not none else 'No forecast', 'Earliest qualified project forecast', 'warning'),
+        ('database', 'Quota Headroom', analytics.capacity_outlook.quota_headroom_display, 'Committed quota headroom with valid denominator', 'normal'),
+        ('trending-up', 'Growth Velocity', analytics.capacity_outlook.growth_display, 'Qualified materialized storage growth', 'info')
+    ] %}
+{% elif overview_domain == 'usage' %}
+    {% set domain_title = 'Runtime & Demand Evidence' %}
+    {% set domain_description = 'Registry usage correlated with committed Kubernetes runtime and pull evidence.' %}
+    {% set domain_icon = 'activity' %}
+    {% set boundary = 'Runtime bindings, distinct artifacts, and provider pull counters are different quantities. Missing pull metrics do not imply zero demand.' %}
+    {% set overview_metrics = [
+        ('boxes', 'Runtime-used Artifacts', aggregate.running_artifacts if has_snapshot else unknown, 'Distinct artifact identities in runtime', 'normal'),
+        ('git-fork', 'Runtime Bindings', aggregate.runtime_bindings if has_snapshot else unknown, 'Committed artifact-to-workload relationships', 'info'),
+        ('activity', 'Observed Pull Activity', ('%.0f'|format(aggregate.pull_activity)) if analytics.activity_rows else unknown, 'Qualified provider pull-counter evidence', 'info'),
+        ('tags', 'Tag-only Bindings', aggregate.tag_only_bindings if has_snapshot else unknown, 'Mutable references; lower match confidence', 'warning')
+    ] %}
+{% elif overview_domain == 'risk' %}
+    {% set domain_title = 'Security × Runtime Exposure' %}
+    {% set domain_description = 'Committed findings and correlated workload impact, not live scanner health.' %}
+    {% set domain_icon = 'shield-alert' %}
+    {% set boundary = 'Finding counts, affected artifacts, and workload bindings are not interchangeable. Digest matches are stronger than mutable tags; absent scan evidence is not clean.' %}
+    {% set overview_metrics = [
+        ('shield-alert', 'Critical Findings', aggregate.critical_findings if has_snapshot else unknown, 'Committed scanner findings, not distinct CVEs', 'critical'),
+        ('boxes', 'Critical Runtime Artifacts', aggregate.critical_runtime_artifacts if has_snapshot else unknown, 'Running artifacts with critical evidence', 'critical'),
+        ('scan-search', 'Runtime Scan Gaps', aggregate.runtime_scan_gaps if has_snapshot else unknown, 'Missing normalized successful scan evidence', 'warning'),
+        ('tags', 'Tag-only Bindings', aggregate.tag_only_bindings if has_snapshot else unknown, 'Mutable reference correlation', 'warning')
+    ] %}
+{% elif overview_domain == 'governance' %}
+    {% set domain_title = 'Policy Coverage & Replication' %}
+    {% set domain_description = 'Provider-observed retention and immutability posture across committed projects.' %}
+    {% set domain_icon = 'scale' %}
+    {% set boundary = 'Not Configured differs from Not Collected, Unsupported, or Unavailable. Replication detail remains authoritative in the Governance workspace.' %}
+    {% set governance_ready = aggregate.governance_projects_assessed > 0 %}
+    {% set overview_metrics = [
+        ('folders', 'Projects Assessed', aggregate.governance_projects_assessed if governance_ready else unknown, 'Projects with qualified policy evidence', 'info'),
+        ('clock-3', 'Retention Configured', aggregate.retention_configured if governance_ready else unknown, 'Observed project retention policies', 'normal'),
+        ('lock-keyhole', 'Immutability Configured', aggregate.immutability_configured if governance_ready else unknown, 'Observed immutable project policies', 'normal'),
+        ('circle-alert', 'Retention Not Configured', aggregate.retention_not_configured if governance_ready else unknown, 'Explicit provider-reported not-configured state', 'warning')
+    ] %}
+{% elif overview_domain == 'alerts' %}
+    {% set domain_title = 'Alerts & Anomalies Evidence' %}
+    {% set domain_description = 'Committed alert lifecycle, source availability, and bounded fallback.' %}
+    {% set domain_icon = 'triangle-alert' %}
+    {% set boundary = 'Alertmanager remains the lifecycle authority; Metrics Source fallback has narrower semantics. Unavailable source evidence is not zero alerts.' %}
+    {% set alerts_ready = aggregate.alert_sources_ready > 0 %}
+    {% set overview_metrics = [
+        ('bell-ring', 'Active Alert Records', aggregate.active_alerts if alerts_ready else unknown, 'Committed source-reported alert records', 'warning'),
+        ('shield-alert', 'Critical Alerts', aggregate.critical_alerts if alerts_ready else unknown, 'Committed critical-severity records', 'critical'),
+        ('shield-off', 'Suppressed Alerts', aggregate.suppressed_alerts if alerts_ready else unknown, 'Silenced or inhibited source reports', 'info'),
+        ('git-compare-arrows', 'Fallback Sources', aggregate.alert_source_fallbacks if analytics.alert_source_rows else unknown, 'Committed alert-source fallback selection', 'warning')
+    ] %}
+{% elif overview_domain == 'insights' %}
+    {% set domain_title = 'Derived Insights & Intelligence' %}
+    {% set domain_description = 'Cross-domain review facts with central Intelligence as recommendation authority.' %}
+    {% set domain_icon = 'sparkles' %}
+    {% set boundary = 'Analytics produces factual review signals. Intelligence owns Recommendations, Accepted Risk, escalation, and automation decisions.' %}
+    {% set overview_metrics = [
+        ('lightbulb', 'Review Signals', analytics.active_signal_count if has_snapshot else unknown, 'Signals can overlap and require evidence review', 'warning'),
+        ('triangle-alert', 'Risk Candidates', analytics.summary_cards[3].value if has_snapshot else unknown, 'Not a distinct-asset or finding count', 'warning'),
+        ('brain-circuit', 'Active Recommendations', analytics.recommendation_count if has_snapshot else unknown, 'Central Intelligence, not a Registry-local queue', 'info'),
+        ('shield-check', 'Committed Posture', analytics.posture.label, 'Qualified by committed generation and source coverage', 'info')
+    ] %}
+{% else %}
+    {% set overview_domain = 'evidence' %}
+    {% set domain_title = 'Data & Evidence Readiness' %}
+    {% set domain_description = 'Source eligibility, snapshot freshness, and the registered worker collection boundary.' %}
+    {% set domain_icon = 'list-checks' %}
+    {% set boundary = 'Eligible is not Current. A stale committed snapshot remains readable but is not current, and failed collection never proves provider health.' %}
+    {% set readiness = analytics.data_readiness %}
+    {% set overview_metrics = [
+        ('server', 'Eligible Sources', readiness.eligible_count, 'Registered sources qualified for collection', 'info'),
+        ('database-backup', 'Materialized Sources', readiness.covered_count, 'Committed selected-window snapshots', 'info'),
+        ('circle-check', 'Current Sources', readiness.current_count, 'Current, usable committed snapshots', 'normal'),
+        ('clock-3', 'Last Worker Attempt', readiness.last_attempt_label, readiness.execution_label, readiness.execution_tone)
+    ] %}
+{% endif %}
+<section data-registry-analytics-overview-domain="{{ overview_domain }}"
+         class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="{{ analysis_surface.snapshot_header_classes() }}">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}" aria-hidden="true">
+                <i data-lucide="{{ domain_icon }}" class="h-5 w-5"></i>
+            </span>
+            <div class="min-w-0">
+                <h3 class="{{ analysis_surface.section_title_classes() }}">{{ domain_title }}</h3>
+                <p class="{{ analysis_surface.section_description_classes() }}">{{ domain_description }}</p>
+            </div>
+        </div>
+        {{ table_label.status_label(readiness.label if overview_domain == 'evidence' else analytics.posture.label, readiness.tone if overview_domain == 'evidence' else analytics.posture.tone, size='compact') }}
+    </header>
+    <div class="{{ analysis_surface.metric_grid_classes(4) }}">
+        {% for icon, label, value, detail, tone in overview_metrics %}
+            <article class="{{ analysis_surface.metric_cell_classes() }}">
+                <div class="flex items-center gap-2">
+                    <span class="{{ analysis_surface.metric_icon_classes('compact', role='status', tone=tone) }}" aria-hidden="true">
+                        <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+                    </span>
+                    <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                </div>
+                <p class="mt-3 break-words text-xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">{{ detail }}</p>
+            </article>
+        {% endfor %}
+    </div>
+    {% if overview_domain == 'growth' and analytics.growth_rows %}
+        <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
+            <h4 class="text-sm font-semibold text-content-primary">Source Growth Evidence</h4>
+            <div class="mt-3 divide-y divide-outline-subtle">
+                {% for row in analytics.growth_rows[:3] %}
+                    <div class="flex flex-wrap items-center justify-between gap-3 py-2 text-xs">
+                        <span class="font-semibold text-content-primary">{{ row.registry_name }}</span>
+                        <span class="text-content-secondary">{{ row.artifact_growth_display }} artifacts · {{ row.size_growth_display }} storage</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% elif overview_domain == 'capacity' and analytics.forecast_rows %}
+        <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
+            <h4 class="text-sm font-semibold text-content-primary">Qualified Project Outlook</h4>
+            <div class="mt-3 divide-y divide-outline-subtle">
+                {% for row in analytics.forecast_rows[:3] %}
+                    <div class="flex flex-wrap items-center justify-between gap-3 py-2 text-xs">
+                        <span class="font-semibold text-content-primary">{{ row.project_name }} · {{ row.registry_name }}</span>
+                        <span class="text-content-secondary">{{ row.utilization_display }} used · {{ row.days_to_quota_display }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% elif overview_domain == 'usage' and analytics.activity_rows %}
+        <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
+            <h4 class="text-sm font-semibold text-content-primary">Observed Pull Activity by Project</h4>
+            <div class="mt-3 divide-y divide-outline-subtle">
+                {% for row in analytics.activity_rows[:3] %}
+                    <div class="flex flex-wrap items-center justify-between gap-3 py-2 text-xs">
+                        <span class="font-semibold text-content-primary">{{ row.project_name }} · {{ row.registry_name }}</span>
+                        <span class="text-content-secondary">{{ '%.0f'|format(row.pull_count) }} observed pulls</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% elif overview_domain == 'alerts' and analytics.alert_source_rows %}
+        <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
+            <h4 class="text-sm font-semibold text-content-primary">Committed Alert Sources</h4>
+            <div class="mt-3 divide-y divide-outline-subtle">
+                {% for source in analytics.alert_source_rows[:3] %}
+                    <div class="flex flex-wrap items-center justify-between gap-3 py-2 text-xs">
+                        <span class="font-semibold text-content-primary">{{ source.registry_name }}</span>
+                        <span class="text-content-secondary">{{ source.source_label }}{% if source.fallback_used %} · Fallback{% endif %}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% elif overview_domain == 'insights' and has_snapshot %}
+        <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
+            <h4 class="text-sm font-semibold text-content-primary">Derived Review Signals</h4>
+            <div class="mt-3 divide-y divide-outline-subtle">
+                {% for insight in analytics.insights[:3] %}
+                    <div class="py-2">
+                        <p class="text-xs font-semibold text-content-primary">{{ insight.title }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ insight.detail }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% elif overview_domain == 'evidence' %}
+        <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h4 class="text-sm font-semibold text-content-primary">Committed Source Coverage</h4>
+                {{ table_label.status_label(readiness.execution_label, readiness.execution_tone, size='compact') }}
+            </div>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ readiness.helper }}</p>
+            <div class="mt-3 divide-y divide-outline-subtle">
+                {% for row in analytics.latest_rows[:5] %}
+                    <div class="flex flex-wrap items-center justify-between gap-3 py-2 text-xs">
+                        <span class="font-semibold text-content-primary">{{ row.identity.name }}</span>
+                        {{ table_label.status_label(row.status_label, row.tone, size='compact') }}
+                    </div>
+                {% else %}
+                    <p class="py-3 text-xs text-content-muted">No committed snapshots for the selected Registry and Time Range.</p>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+    <footer class="flex flex-col gap-3 border-t border-outline-subtle px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <p class="text-xs leading-5 text-content-secondary">{{ boundary }}</p>
+        {% if overview_domain == 'evidence' %}
+            <span class="shrink-0 text-xs font-semibold text-content-muted">Committed evidence only</span>
+        {% else %}
+            <a href="{{ url_for('artifact_registry.analytics_' ~ overview_domain, provider_id=analytics.selected_provider_id, snapshot_window=analytics.snapshot_window) }}"
+               class="inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                Open {{ 'Alerts & Anomalies' if overview_domain == 'alerts' else overview_domain|title }} Analysis
+                <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+            </a>
+        {% endif %}
+    </footer>
+</section>
