@@ -815,6 +815,24 @@ Queue/preflight errors are displayed as warnings, never as successful refresh.
 Manual execution remains available through existing Platform Operations Jobs
 rather than a second domain-specific collection button.
 
+### Registry Analytics Controls Guide (Human Visual UAT #4614)
+
+The Registry-specific `_analytics_controls_readiness.html` adapter supplies
+a canonical `info_tip.render(..., variant='guide')` into the existing shared
+Analytics readiness `frame(title_accessory=...)` slot. The Guide appears beside
+**Analytics Controls & Data Readiness** on Overview and focused Registry
+Analytics routes; no separate overlay, custom CSS or shared component fork is
+needed. It explains the selected Registry scope and default time range,
+measured-history qualification and the legacy **Current (Instant)** view,
+source eligibility versus **current committed snapshot** coverage, and stale
+last-good evidence. Normal page reads use committed KAORI state; only the
+registered Analytics JobExecution worker collects metrics and historical
+datasets, subject to Metrics Source range capability and retention. Missing
+history is unavailable evidence, never inferred growth or zero-risk health.
+The Guide is read-only; it does not enqueue work, bypass permissions, replace
+the canonical worker or imply every eligible provider has query-ready telemetry.
+Its accessible trigger and responsive popover reuse the shared Info Tip.
+
 ## Analytics Fast-Shell Contract
 
 Artifact Registry Analytics uses the same bounded delivery principle as the canonical operational dashboard:
