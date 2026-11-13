@@ -1375,7 +1375,8 @@ light/dark UAT is required before acceptance.
 ### Capsule Governance authority-scoped sub-navigation (#3001)
 
 The top-level **Capsule Governance** tab now owns a second, deliberately
-bounded `content_tabs.render_links` navigation with three URL-backed,
+bounded `framed_workspace_tabs.render_navigation` navigation (the same shared
+framed/raised workspace tab treatment as Jobs & Executions) with three URL-backed,
 mutually exclusive subviews:
 
 - `?view=capsule-governance&capsule_tab=overview` (default) — two
@@ -1397,9 +1398,23 @@ capability fail-closed, provider admission and read-back remain unchanged.
 Tenant CR writes redirect back to `tenant-quota`; GRQ cutover redirects
 back to `shared-allocation`, including handled failure outcomes.
 Navigation reuses the shared HTMX `namespace-provisioning-workspace`
-replacement, history push and keyboard-friendly content-links pattern.
-The source is committed KAORI state; no live provider calls are added to
-ordinary navigation.
+replacement and response selection, history push, inherited loading indicator
+and synchronized swaps, normal-link fallback, and keyboard-friendly framed
+navigation. The framed tabs and selected subview are one integrated surface;
+no extra page-local tab implementation is permitted. The source is committed
+KAORI state; no live provider calls are added to ordinary navigation.
+
+**Authority panel visual refinement (#4652):** The Overview separates the
+decision caption from the Namespace ResourceQuota provider-effect disclaimer
+without changing committed count sources or Capsule ownership. Actual applicable
+but blocked GlobalResourceQuota scopes render a warning summary and one
+per-Tenant row with the **complete provider reason**, committed GRQ source
+count, and observed API. Different committed authorities remain a distinct
+neutral list, not a provider health or readiness failure. A Tenant CR authority
+navigates to the URL-owned Tenant Quota workflow through the existing
+HTMX target/select/swap/push flow; it is not a non-rendered in-page anchor.
+`applicable`, `supported`, provider capability, CSRF, read-back and disabled
+submission remain authoritative and unchanged.
 
 This user-visible information architecture change requires desktop/mobile,
 light/dark and keyboard Visual QA plus human UAT, separately from official

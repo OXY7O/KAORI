@@ -151,18 +151,29 @@
             {% set other_authorities = capsule_shared_cutover_state.values()
                         |rejectattr('applicable')|list %}
             {% if blocked_grq %}
-                <section class="rounded-lg border {{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft px-4 py-3 text-status-warning-text"
+                <section class="rounded-xl border {{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft p-4"
                          aria-label="GlobalResourceQuota governance blockers">
-                    <h3 class="text-xs font-semibold">GlobalResourceQuota · Control Unavailable</h3>
-                    <ul class="mt-2 space-y-2">
+                    <div class="flex min-w-0 items-start gap-3 text-status-warning-text">
+                        <i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true"></i>
+                        <div class="min-w-0">
+                            <h3 class="text-sm font-semibold">GlobalResourceQuota · Control Unavailable</h3>
+                            <p class="mt-1 text-xs leading-5">Review the committed provider blocker for each Tenant before cutover.</p>
+                        </div>
+                    </div>
+                    <ul class="mt-3 divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
                         {% for tenant in capsule_shared_tenants %}
                             {% set state = capsule_shared_cutover_state.get(tenant.id) or {} %}
                             {% if state.get('applicable') and not state.get('supported') %}
-                                <li class="min-w-0 text-xs leading-5">
-                                    <span class="font-semibold">{{ tenant.name }}</span>
-                                    <span class="block break-words">{{ state.get("reason") }}</span>
-                                    <span class="block">Committed GRQ sources: {{ state.get('source_count', 0) }}
-                                    · Observed API: {{ state.get("provider_api_version") or 'Not observed' }}</span>
+                                <li class="min-w-0 px-3 py-3 sm:px-4">
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <p class="break-words text-sm font-semibold text-content-primary">{{ tenant.name }}</p>
+                                        {{ table_label.special_label('Blocked', 'warning', 'triangle-alert') }}
+                                    </div>
+                                    <p class="mt-1 break-words text-xs leading-5 text-content-secondary">{{ state.get("reason") }}</p>
+                                    <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 border-t border-outline-subtle pt-2 text-xs text-content-muted">
+                                        <span>Committed GRQ sources: <strong class="font-semibold text-content-primary">{{ state.get('source_count', 0) }}</strong></span>
+                                        <span>Observed API: <strong class="font-semibold text-content-primary">{{ state.get("provider_api_version") or 'Not observed' }}</strong></span>
+                                    </div>
                                 </li>
                             {% endif %}
                         {% endfor %}
@@ -170,62 +181,74 @@
                 </section>
             {% endif %}
             {% if other_authorities %}
-                <section class="rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3"
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
                          aria-label="Other Capsule allocation authorities">
-                    <h3 class="text-xs font-semibold text-content-primary">Other allocation authorities</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">
-                        These Tenants are not eligible for GlobalResourceQuota cutover based on committed allocation evidence.
-                        This is a workflow mismatch, not proof that the Tenant or provider is unhealthy.
-                    </p>
-                    <ul class="mt-3 divide-y divide-outline-subtle">
+                    <header class="border-b border-outline-subtle px-4 py-3 sm:px-5">
+                        <h3 class="text-sm font-semibold text-content-primary">Other allocation authorities</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                            These Tenants have a different committed authority. This is a workflow mismatch, not an unhealthy provider.
+                        </p>
+                    </header>
+                    <ul class="divide-y divide-outline-subtle">
                         {% for tenant in capsule_shared_tenants %}
                             {% set state = capsule_shared_cutover_state.get(tenant.id) or {} %}
                             {% if not state.get('applicable') %}
-                                <li class="min-w-0 py-2.5 first:pt-0 last:pb-0">
+                                <li class="min-w-0 space-y-2 px-4 py-3 sm:px-5">
                                     <div class="flex min-w-0 flex-wrap items-center gap-2">
-                                        <span class="break-words text-sm font-semibold text-content-primary">{{ tenant.name }}</span>
+                                        <h4 class="break-words text-sm font-semibold text-content-primary">{{ tenant.name }}</h4>
                                         {% if state.get('no_tenant_quota_configured') %}
                                             {{ table_label.special_label('No Tenant Quota Configured', 'info', 'info') }}
                                         {% else %}
                                             {{ table_label.special_label('Not applicable here', 'info', 'info') }}
                                         {% endif %}
                                     </div>
-                                    <p class="mt-1 break-words text-xs leading-5 text-content-secondary">
-                                        <span class="font-medium text-content-primary">Detected authority:</span>
-                                        {{ state.get("detected_authority") }}
-                                        <span aria-hidden="true">·</span>
-                                        GRQ sources: {{ state.get('source_count', 0) }}
-                                    </p>
+                                    <dl class="flex flex-wrap gap-x-5 gap-y-1 text-xs leading-5">
+                                        <div class="flex min-w-0 flex-wrap gap-1">
+                                            <dt class="font-medium text-content-muted">Detected authority:</dt>
+                                            <dd class="break-words font-semibold text-content-primary">{{ state.get("detected_authority") }}</dd>
+                                        </div>
+                                        <div class="flex gap-1">
+                                            <dt class="text-content-muted">GRQ sources:</dt>
+                                            <dd class="font-semibold text-content-primary">{{ state.get('source_count', 0) }}</dd>
+                                        </div>
+                                    </dl>
                                     {% if state.get('authority') == 'capsule_tenant_resource_quotas' %}
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">
-                                            Review eligibility under Capsule Tenant Quota Governance; cutover still requires its own capability and provider checks.
-                                        </p>
-                                        <a href="#capsule-tenant-quota-heading"
-                                           class="mt-1 inline-flex min-h-8 items-center gap-1 rounded-md text-xs font-semibold text-kaori-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                                            Open Tenant Quota Governance
-                                            <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        </a>
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                            <p class="min-w-0 text-xs leading-5 text-content-secondary">
+                                                Tenant Quota Governance has a separate capability and provider eligibility check.
+                                            </p>
+                                            <a href="{{ url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='tenant-quota') }}"
+                                               hx-get="{{ url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='tenant-quota') }}"
+                                               hx-target="#namespace-provisioning-workspace"
+                                               hx-select="#namespace-provisioning-workspace"
+                                               hx-swap="outerHTML show:none focus-scroll:false"
+                                               hx-push-url="true"
+                                               class="inline-flex min-h-8 shrink-0 items-center gap-1.5 text-xs font-semibold text-kaori-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                Open Tenant Quota Governance
+                                                <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                            </a>
+                                        </div>
                                     {% elif state.get('authority') == 'none_observed' %}
                                         {% if state.get('no_tenant_quota_configured') %}
-                                            <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                            <p class="text-xs leading-5 text-content-secondary">
                                                 Latest committed observation has no Tenant-level quota contract.
                                                 A Capsule Tenant can be Active without one; this is not a failed deployment.
                                                 Initial quota configuration is a separate governed workflow, not an observed-quota cutover.
                                             </p>
-                                            <p class="mt-1 text-xs leading-5 text-content-muted">
+                                            <p class="text-xs leading-5 text-content-muted">
                                                 Review Tenant Sync evidence before planning any initial allocation.
                                             </p>
                                         {% else %}
-                                            <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                            <p class="text-xs leading-5 text-content-secondary">
                                                 No Tenant-level quota authority is recorded. Review Tenant Sync and provider observation before choosing any governance path.
                                             </p>
                                         {% endif %}
                                     {% elif state.get('authority') == 'native_namespaced' %}
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                        <p class="text-xs leading-5 text-content-secondary">
                                             Namespace-level allocation is observed. Review its owner and capability evidence; do not substitute a Native write for Capsule authority.
                                         </p>
                                     {% else %}
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                        <p class="text-xs leading-5 text-content-secondary">
                                             Review committed source identity and authority conflicts in Tenant Registry before choosing a governance workflow.
                                         </p>
                                     {% endif %}
