@@ -190,11 +190,17 @@ def _accumulate_metrics(
     aggregate['metrics_ready'] += int(metrics_ready)
     provider_health_value = metrics.get('provider_health_value')
     aggregate['healthy_providers'] += int(
-        metrics_ready and isinstance(provider_health_value, (int, float)) and float(provider_health_value) > 0
+        metrics_ready
+        and isinstance(provider_health_value, (int, float))
+        and not isinstance(provider_health_value, bool)
+        and 0 < provider_health_value < float('inf')
     )
     component_up_value = metrics.get('component_up_value')
     aggregate['component_up_providers'] += int(
-        metrics_ready and isinstance(component_up_value, (int, float)) and float(component_up_value) > 0
+        metrics_ready
+        and isinstance(component_up_value, (int, float))
+        and not isinstance(component_up_value, bool)
+        and 0 < component_up_value < float('inf')
     )
     for aggregate_key, metric_key in (
         ('request_rate_per_second', 'request_rate_per_second'),
