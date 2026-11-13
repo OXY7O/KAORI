@@ -45,3 +45,16 @@ def test_missing_pull_series_does_not_create_project_rows():
     )
     assert rows == []
     assert aggregate["pull_activity"] == 0
+
+def test_unavailable_metrics_with_cached_pull_values_do_not_claim_observed_usage():
+    aggregate = _analytics_aggregate()
+    rows = []
+    _accumulate_metrics(
+        aggregate,
+        {"status": "unavailable", "project_pull_count": {"cached-project": 42}},
+        identity=SimpleNamespace(name="harbor-a", provider_key="harbor"),
+        activity_rows=rows,
+    )
+    assert aggregate["metrics_ready"] == 0
+    assert aggregate["pull_activity"] == 0
+    assert rows == []
