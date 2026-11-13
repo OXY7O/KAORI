@@ -1,5 +1,6 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% set security_sync_state = security_sync_state if security_sync_state is defined else security.sync_state %}
 <div id="artifact-registry-security-sync-live-state"
      class="min-w-0"
@@ -18,6 +19,15 @@
                 <h3 id="artifact-registry-security-operations-heading"
                     class="text-sm font-semibold text-content-primary">Security Evidence Operations</h3>
                 {{ table_label.status_label(security_sync_state.label, security_sync_state.tone, none, 'detail') }}
+                {{ info_tip.render('registry-security-operations-guide',
+                                'Security Evidence Operations Guide',
+                                'How to interpret committed Registry scanner evidence and Security Sync.',
+                                items=[
+                                'Security shows committed scanner findings, supply-chain observations, and correlated runtime exposure; providers remain authoritative.',
+                                'Sync Security Evidence collects eligible Registry sources through the canonical JobExecution workflow. Page filters only change displayed evidence.',
+                                'Missing, stale, partial, unavailable, or unsupported evidence needs review; absent evidence does not prove safety or compliance.',
+                                'Browsing evidence does not perform live provider reads or launch provider-side scans. Configure Sync manages the registered schedule.'
+                                ], placement='right', variant='guide') }}
             </div>
             <p class="mt-1 text-xs leading-5 text-content-muted">{{ security_sync_state.compact_helper }} · Read-only; no provider scans.</p>
             {% if security_sync_state.active_job %}
