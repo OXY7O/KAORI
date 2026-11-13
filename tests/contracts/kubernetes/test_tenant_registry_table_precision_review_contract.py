@@ -191,7 +191,7 @@ def test_tenant_discovery_desktop_fit_with_bounded_narrow_table_overflow() -> No
     assert 'result_count=tenant_discovery_total' in discovery
     assert 'title_extra=title_info' in discovery
     assert discovery.index('title_extra=title_info') < discovery.index('result_count=tenant_discovery_total')
-    assert "result_count=tenant_pagination.total_items" in _template('_tenant_registry')
+    assert 'result_count=tenant_pagination.total_items' in _template('_tenant_registry')
     assert '{{ tenant_discovery_total }} provider object' in discovery
     assert "registry_ui.footer('tenant.tenants'" in discovery
 
