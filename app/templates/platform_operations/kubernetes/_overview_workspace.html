@@ -1,5 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_section_card.html" as operational_section %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/section_intro.html" as section_intro %}
 <section class="min-w-0 space-y-6"
          aria-label="Kubernetes Administration Overview">
@@ -8,6 +9,16 @@
              aria-label="Kubernetes Administration Coverage Summary">
         {% set overview_posture %}
             <span id="kubernetes-admin-overview-status">{{ table_label.status_indicator_label(administration_status_label, administration_status_tone) }}</span>
+            {{ info_tip.render('kubernetes-administration-coverage-guide',
+                'Administration Coverage',
+                'Read committed Kubernetes Administration configuration without implying live access.',
+                [
+                'Registered clusters and protected Namespaces represent committed KAORI inventory and policy scope.',
+                'Configured prerequisites record cluster readiness, not a live provider authorization result.',
+                'Runtime Secret access is rechecked against Namespace policy, user permissions and Kubernetes RBAC.'
+                ],
+                placement='right',
+                variant='guide') }}
         {% endset %}
         {% call operational_section.render(
             'Administration Coverage',
