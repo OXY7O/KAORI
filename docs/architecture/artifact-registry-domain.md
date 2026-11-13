@@ -781,15 +781,19 @@ and Last 60 Days. The default is **Last 24 Hours** like K8s; an additional
 **Latest Snapshot (Any Age)** choice retains explicit compatibility with
 legacy `snapshot_window=current` bookmarks. The existing HTMX filter and
 loading convention applies to all committed analytical summaries and
-domain sections before aggregation/pagination. K8s time ranges describe
-materialized provider metrics, but Registry currently keeps only the most
-recent materialized snapshot per provider: here Time Range filters its
-`generated_at` timestamp, **not historical provider telemetry**. No
-unsupported historical trend is invented. When snapshots exist outside the selected lookback,
-readiness reports **No Snapshots in Window** rather than incorrectly claiming
-Registry analytics were never collected. Alerts source and record filters
-preserve the selected provider/window through pagination and browser history.
-Neither domain introduces a false Metrics Source readiness claim for Registry.
+domain sections before aggregation/pagination. K8s time ranges describe measured provider metrics. Registry's validated
+`1h, 6h, 12h, 24h, 7d, 30d, 60d` windows now select committed
+`RegistryAnalyticsSnapshot.time_range` datasets collected through bounded
+worker-owned Metrics Source `query_range` (§1108); the legacy `current`
+window remains a separate instant snapshot. A successful Analytics worker
+implementation does **not** prove that a particular provider/source has usable
+history: unsupported range capability, insufficient retention, malformed
+series and missing coverage must report unavailable/partial evidence, never
+synthetic growth or a fabricated trend. No snapshots for a selected window
+is distinct from "Analytics was never collected." Alerts source and record
+filters preserve the selected provider/window through pagination and browser
+history. Registry source eligibility is not live Metrics Source query
+readiness.
 
 The Registry panel **does not contain manual Collect/Configure buttons**.
 As in K8s Analytics, a bounded HTMX GET to
@@ -814,6 +818,24 @@ committed scoped snapshots; a later failed job retains old evidence.
 Queue/preflight errors are displayed as warnings, never as successful refresh.
 Manual execution remains available through existing Platform Operations Jobs
 rather than a second domain-specific collection button.
+
+### Registry Analytics Controls Guide (Human Visual UAT #4614)
+
+The Registry-specific `_analytics_controls_readiness.html` adapter supplies
+a canonical `info_tip.render(..., variant='guide')` into the existing shared
+Analytics readiness `frame(title_accessory=...)` slot. The Guide appears beside
+**Analytics Controls & Data Readiness** on Overview and focused Registry
+Analytics routes; no separate overlay, custom CSS or shared component fork is
+needed. It explains the selected Registry scope and default time range,
+measured-history qualification and the legacy **Current (Instant)** view,
+source eligibility versus **current committed snapshot** coverage, and stale
+last-good evidence. Normal page reads use committed KAORI state; only the
+registered Analytics JobExecution worker collects metrics and historical
+datasets, subject to Metrics Source range capability and retention. Missing
+history is unavailable evidence, never inferred growth or zero-risk health.
+The Guide is read-only; it does not enqueue work, bypass permissions, replace
+the canonical worker or imply every eligible provider has query-ready telemetry.
+Its accessible trigger and responsive popover reuse the shared Info Tip.
 
 ## Analytics Fast-Shell Contract
 
@@ -850,11 +872,18 @@ and paired source/snapshot card geometry. It no longer imports
 Normal selectable ranges are projected from
 `app/common/analytics/params.py::get_allowed_time_ranges()`; the
 `snapshot_window=current` legacy URL explicitly renders its own special
-option only while selected. **Range selection still filters the age of
-the latest committed Registry snapshot until #1108 delivers qualified
-Metrics Source history**; sharing UI does not change this authority.
+option only while selected. **Range selection now selects a worker-materialized measured `time_range`
+dataset where Metrics Source history was qualified** (§1108); `current` keeps
+legacy instant semantics. Source capability/retention and valid current snapshot
+readiness remain separate gates, not guaranteed by sharing the UI.
 Provider adapters must supply normalized evidence while future Registry
 instances reuse the same controls without forking markup.
+
+The current source-level seven-domain evidence and UX gap assessment is
+recorded in [Artifact Registry Analytics Evidence and UX Gap Analysis]
+(artifact-registry-analytics-evidence-ux-gap-analysis.md) under #4615. It
+separates existing materialized capabilities from source readiness and UI
+drilldown maturity; substantive domain work remains in bounded issues.
 
 ## Shared Analytics Section Loading (#1106)
 
