@@ -264,7 +264,15 @@ components**, not manual cards: `section_intro.render`, `operational_section_car
 with `body_classes='p-0'`, and `resource_posture_grid.render(columns=4)`.
 The card owns the header icon, title, description, spacing and border, while
 the posture grid owns vertical separators, compact metric icons, responsive
-grid layout, tone treatment and light/dark compatibility.
+grid layout, tone treatment and light/dark compatibility. The shared
+`operational_section_card.render(header_badge=...)` and
+`table_label.metadata_label` show the source-list indicator count in each
+governance header: **5 Indicators** for Tenant Estate and **4 Indicators**
+for one Tenant's Governance Scope. These count displayed committed posture
+dimensions, **not** live provider resources or certificate validity.
+The Tenant Details **Governance Scope** intro keeps its heading and accessible
+anchor but removes the repeated long subtitle; the card's concise
+Tenant-specific description is retained.
 
 A single Tenant is **not the entire fleet**: use four committed values
 already available in Tenant Details — **Active Namespaces, Environments,
@@ -1221,7 +1229,11 @@ original historical Namespace lineage note preserved separately.
 
 **Release Governance** is now a regular always-visible section, using
 the established icon treatment instead of the numeric badge and eliminating
-the outer `details/summary` wrapper. All four numbered URL-addressable
+the outer `details/summary` wrapper. An approved standalone
+`section_intro.render('Release Workflow', ...)` precedes the existing
+permission-scoped wizard card; the intro remains outside the
+`#tenant-release-governance` HTMX swap target so four-step navigation does
+not duplicate headings, change approval state, or replace unrelated sections. All four numbered URL-addressable
 wizard steps and 11 original Release form authorities remain. Other
 provider-specific governance sections retain their permission-scoped,
 keyboard-accessible expandables. Step navigation preserves normal
