@@ -119,8 +119,7 @@ def test_capsule_preflight_blocks_unadmitted_quota_without_offering_submit() -> 
     assert 'row.adoption_management_blocker' in source
     assert (
         '<p class="mt-1 break-words text-xs leading-5 text-content-secondary">'
-        '{{ row.adoption_management_blocker }}</p>'
-        in source
+        '{{ row.adoption_management_blocker }}</p>' in source
     )
     assert "row.provider_key == 'capsule' and row.adoption_management_blocker" in source
     assert 'aria-label="Managed adoption blocked by unadmitted Capsule quota authority"' in source
