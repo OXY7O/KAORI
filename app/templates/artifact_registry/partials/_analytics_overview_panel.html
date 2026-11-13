@@ -125,18 +125,8 @@
             </article>
         {% endfor %}
     </div>
-    {% if overview_domain == 'growth' and analytics.growth_rows %}
-        <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
-            <h4 class="text-sm font-semibold text-content-primary">Source Growth Evidence</h4>
-            <div class="mt-3 divide-y divide-outline-subtle">
-                {% for row in analytics.growth_rows[:3] %}
-                    <div class="flex flex-wrap items-center justify-between gap-3 py-2 text-xs">
-                        <span class="font-semibold text-content-primary">{{ row.registry_name }}</span>
-                        <span class="text-content-secondary">{{ row.artifact_growth_display }} artifacts · {{ row.size_growth_display }} storage</span>
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
+    {% if overview_domain == 'growth' %}
+        {% include "artifact_registry/partials/_analytics_growth_charts.html" %}
     {% elif overview_domain == 'capacity' and analytics.forecast_rows %}
         <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
             <h4 class="text-sm font-semibold text-content-primary">Qualified Project Outlook</h4>
