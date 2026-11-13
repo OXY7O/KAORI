@@ -377,18 +377,25 @@ def _analytics_recommendations(active_tab: str) -> list[dict[str, str]]:
 
 
 def _analytics_coverage(aggregate: dict[str, Any]) -> dict[str, float | None]:
+    """Bound observed coverage to the committed estate without inventing readiness."""
     artifact_total = max(int(aggregate['artifacts']), 0)
     project_total = max(int(aggregate['projects']), 0)
-    return {
-        'scan': float(aggregate['scanned_artifacts']) / artifact_total * 100.0 if artifact_total else None,
-        'signature': float(aggregate['signed_artifacts']) / artifact_total * 100.0 if artifact_total else None,
-        'sbom': float(aggregate['sbom_artifacts']) / artifact_total * 100.0 if artifact_total else None,
-        'retention': float(aggregate['retention_configured']) / project_total * 100.0 if project_total else None,
-        'immutability': (
-            float(aggregate['immutability_configured']) / project_total * 100.0 if project_total else None
-        ),
-    }
 
+    def percent(observed: Any, total: int) -> float | None:
+        if total <= 0:
+            return None
+        # Provider counters may be inconsistent across snapshot generations.
+        # Never display negative or >100% coverage as a security assertion.
+        count = max(int(observed or 0), 0)
+        return min(count, total) / total * 100.0
+
+    return {
+        'scan': percent(aggregate['scanned_artifacts'], artifact_total),
+        'signature': percent(aggregate['signed_artifacts'], artifact_total),
+        'sbom': percent(aggregate['sbom_artifacts'], artifact_total),
+        'retention': percent(aggregate['retention_configured'], project_total),
+        'immutability': percent(aggregate['immutability_configured'], project_total),
+    }
 
 def _analytics_signal_summary(
     aggregate: dict[str, Any],
