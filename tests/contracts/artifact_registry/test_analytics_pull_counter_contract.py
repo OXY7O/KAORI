@@ -58,3 +58,26 @@ def test_unavailable_metrics_with_cached_pull_values_do_not_claim_observed_usage
     assert aggregate["metrics_ready"] == 0
     assert aggregate["pull_activity"] == 0
     assert rows == []
+
+def test_pull_activity_excludes_missing_project_identity_without_losing_valid_counts():
+    aggregate = _analytics_aggregate()
+    rows = []
+    _accumulate_metrics(
+        aggregate,
+        {
+            "status": "ready",
+            "project_pull_count": {
+                "": 100,
+                "  ": 200,
+                None: 300,
+                42: 400,
+                "observed-project": 7,
+            },
+        },
+        identity=SimpleNamespace(name="harbor-a", provider_key="harbor"),
+        activity_rows=rows,
+    )
+    assert aggregate["pull_activity"] == 7
+    assert [(row["project_name"], row["pull_count"]) for row in rows] == [
+        ("observed-project", 7.0),
+    ]
