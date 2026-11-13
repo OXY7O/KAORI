@@ -338,3 +338,20 @@ def test_capsule_rbac_summary_is_positioned_before_long_capability_registry() ->
     assert 'group-open:inline' in capsule
     assert 'focus-visible:ring-outline-focus' in capsule
     assert 'hx-target="closest [data-capsule-rbac-bootstrap]"' in capsule
+
+
+def test_capsule_rbac_disclosure_stays_open_for_inconsistent_ready_evidence() -> None:
+    roles = [
+        _role('ready', name=f'kaori-tenant-{profile}-v1')
+        for profile in ('viewer', 'operator', 'tenant-admin', 'deployer')
+    ]
+    mismatched_count = _snapshot('ready', roles)
+    mismatched_count['ready'] = 3
+    mismatched_role = _snapshot('ready', roles)
+    mismatched_role['roles'][0] = _role('failed')
+
+    for snapshot in (mismatched_count, mismatched_role):
+        html = _render_capsule_rbac_panel(snapshot)
+        assert ' open' in _disclosure_opening_tag(html)
+        assert 'Cluster RBAC prerequisites ready' not in html
+        assert 'Bootstrap Missing Roles' not in html
