@@ -52,3 +52,24 @@ def test_governance_coverage_rejects_unrecognized_policy_even_with_matching_keys
     evidence['replication_not_configured'] = 0
     assert _governance_policy_coverage(evidence, 'replication') is None
     assert _governance_policy_coverage(evidence, 'retention') == 50.0
+
+
+def test_cross_provider_governance_overcount_cannot_be_masked():
+    from app.artifact_registry.presentation_analytics import _accumulate_domain_counts, _analytics_aggregate
+
+    aggregate = _analytics_aggregate()
+    for assessed, retention, missing in ((2, 3, 1), (10, 1, 1)):
+        _accumulate_domain_counts(aggregate, {
+            'inventory': {}, 'security': {}, 'runtime': {},
+            'governance': {
+                'projects_assessed': assessed,
+                'retention_configured': retention,
+                'retention_not_configured': missing,
+                'immutability_configured': 1,
+                'immutability_not_configured': 1,
+            },
+        })
+    assert aggregate['governance_projects_assessed'] == 12
+    assert aggregate['retention_configured'] is None
+    assert aggregate['retention_not_configured'] is None
+    assert aggregate['immutability_configured'] == 2
