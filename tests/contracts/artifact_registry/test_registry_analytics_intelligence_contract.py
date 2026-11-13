@@ -476,14 +476,14 @@ def test_registry_analytics_guide_explains_committed_source_and_history_boundari
     assert "info_tip.render('registry-analytics-controls-guide'," in controls
     assert "variant='guide'" in controls
     assert 'title_accessory=analytics_controls_guide' in controls
-    assert "macro frame(title, description, icon, indicator_id," in shared
+    assert 'macro frame(title, description, icon, indicator_id,' in shared
     assert "title_accessory=''" in shared
     assert 'data-kaori-info-tip-trigger' in guide
-    assert "Time Range selects a qualified analytics snapshot." in controls
-    assert "Current (Instant) is not historical telemetry." in controls
-    assert "Stale committed evidence remains readable but is not current." in controls
-    assert "registered Analytics JobExecution workflow" in controls
-    assert "Normal page reads use committed KAORI state" in controls
+    assert 'Time Range selects a qualified analytics snapshot.' in controls
+    assert 'Current (Instant) is not historical telemetry.' in controls
+    assert 'Stale committed evidence remains readable but is not current.' in controls
+    assert 'registered Analytics JobExecution workflow' in controls
+    assert 'Normal page reads use committed KAORI state' in controls
 
     # Guide is read-only: never add an independent collection control or
     # substitute for the registered worker materialization boundary.
