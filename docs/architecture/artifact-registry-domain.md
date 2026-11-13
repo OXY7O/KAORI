@@ -889,6 +889,47 @@ updates push its canonical page URL. No additional materialization models,
 provider read paths, RBAC definitions, alert collection or central Intelligence
 recommendation lifecycle are introduced.
 
+### Registry Analytics Overview Growth visual UAT refinement (#4632)
+
+The **Analytical Evidence Summary** header uses the same shared
+`table_label.metadata_label(<indicator count>, icon='layout-grid')`
+accessory as Registry Inventory Posture; there is no page-local badge style.
+The Overview **Growth** tab replaces its former single-line
+`Source Growth Evidence` row with **two measured Chart.js panels**:
+Artifact Count (identities) and Storage Usage (bytes), following the existing
+Object Storage Analytics trend chart surface and HTMX/Chart.js lifecycle.
+The standard Registry/time-window controls and seven level-3 detail links
+remain authoritative.
+
+The worker-owned Metrics Source `query_range` already validates monotonic
+timestamps, finite values, bounded project series, and measured-window
+coverage. From subsequent collections, the same validated matrices commit
+at most **48 actual downsampled samples per metric and Registry source**
+into `history.chart_series`. Aggregation is allowed only when project series
+have exactly aligned sample timestamps and nonnegative values. It never
+interpolates, zero-fills absent projects, merges different provider timestamps,
+or creates a forecast. Legacy committed snapshots retain
+`history.series` with only start/end and sample-count evidence; they can
+display **two observed checkpoints only** with dashed straight segment and
+explicit *endpoint-only* wording. This does not reconstruct intermediate
+history. Missing, unqualified, Instant, or unsupported measured data display
+a dedicated **Historical Chart Not Available** empty state instead of a
+fabricated flat trend. Chart extraction is limited to **three source
+series per metric**; separate metrics cannot share one Y axis because
+their units differ. The renderer uses the canonical bundled Chart.js
+vendor build, theme semantic CSS tokens, lazy HTMX swap cleanup and keyboard-
+accessible tab switching; no provider calls occur in the browser.
+
+The operator's first DevContainer Developer Check for the eight-tab Overview
+reported 69 passing / 2 failing contracts: the first failure matched the
+literal `requests.` in a newly added read-only comment, and the second
+expected the removed seven-card launcher to retain a literal Alerts URL.
+Both assertions have been reconciled with the current read-only route and
+shared Overview domain-link design, without reinstating the obsolete
+launcher. Original djLint/Ruff formatting differences were addressed in
+the bounded follow-up branch. New exact-HEAD Developer Check and human
+Visual QA are still required before official staging promotion.
+
 ## Registry Analytics reusable presentation ownership (#1122)
 
 Registry Analytics now uses `analytics/components/_controls_readiness.html`
