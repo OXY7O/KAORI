@@ -319,8 +319,10 @@ same nested-card geometry for every domain.
   unrelated Registry pages. The Overview dashboard continues using the
   canonical Operational Dashboard composition.
 - **Navigation follows interaction scope**, not cosmetic uniformity. The
-  two-view Governance and closely related Supply Chain content use
-  `content_tabs.render_links`. Artifact Registry Analytics now follows
+  two-view Governance Evidence now uses PKI-aligned
+  `workspace_tabs.render_query_tabs` for URL/HTMX-owned navigation (Human Visual
+  UAT #4601); the closely related Supply Chain content keeps its approved
+  `content_tabs.render_links` implementation. Artifact Registry Analytics now follows
   Kubernetes Analytics' server-owned **page-level Integrated Workspace Tabs**
   with Overview plus seven analytical domains (#1097), removing its previous
   in-card `framed_workspace_tabs` and retaining individual lazy bounded HTMX
@@ -368,8 +370,14 @@ card shells** provide operator context:
   unchanged. This grouped archetype is purpose-specific, not a global rule
   for Registry Security, Runtime or Analytics.
 - **Governance Evidence** — Policies/Replication remain in one canonical
-  section card with `content_tabs.render_links` (embedded, server/URL-owned
-  mode), matching Security Supply Chain. Tab labels remain **without counts**.
+  evidence workspace with the **same top-integrated query-backed tab strip as
+  Kubernetes Internal PKI Evidence** (`workspace_tabs.render_query_tabs`,
+  Human Visual UAT #4601). Tabs remain server/URL/HTMX-owned and **without
+  counts**; the card shell contains a padded inner shared
+  `table_ui.block_classes()` table workspace. The existing
+  `#artifact-registry-governance-registry` replacement/selection boundary,
+  `tab=policies|replication`, page reset to 1, per-page selection, normal
+  navigation fallback, `hx-push-url` and `hx-sync` remain authoritative.
   Following explicit human clarification, each tab owns the **complete canonical
   KAORI table workspace**, not an isolated bare table: shared
   `table_ui.inventory_block_header` with Policy/Replication title, evidence
