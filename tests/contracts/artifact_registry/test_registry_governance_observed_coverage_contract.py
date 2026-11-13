@@ -32,3 +32,15 @@ def test_governance_coverage_rejects_inconsistent_committed_counters():
 def test_governance_coverage_keeps_explicit_not_configured_distinct():
     evidence = _aggregate(assessed=3, immutability=0, immutability_missing=3)
     assert _governance_policy_coverage(evidence, 'immutability') == 0.0
+
+
+def test_governance_coverage_rejects_invalid_counter_types_and_negative_values():
+    for invalid in (-1, True, 1.5, '2', None):
+        evidence = _aggregate(assessed=4, retention=2, retention_missing=2)
+        evidence['retention_configured'] = invalid
+        assert _governance_policy_coverage(evidence, 'retention') is None
+
+    evidence = _aggregate(assessed=-1, retention=1)
+    assert _governance_policy_coverage(evidence, 'retention') is None
+    evidence = _aggregate(assessed=2, retention=1, retention_missing=-1)
+    assert _governance_policy_coverage(evidence, 'retention') is None
