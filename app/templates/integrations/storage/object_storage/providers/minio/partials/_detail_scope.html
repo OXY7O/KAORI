@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
@@ -12,8 +13,20 @@
                 <div class="flex min-w-0 flex-1 items-start gap-3">
                     {{ integration_ui.palette_icon("database", "brand", size="lg", rounded="xl") }}
                     <div class="min-w-0">
-                        <h2 id="minio-inventory-operational-use-title"
-                            class="text-base font-semibold text-content-primary">Inventory &amp; Lifecycle</h2>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 id="minio-inventory-operational-use-title"
+                                class="text-base font-semibold text-content-primary">Inventory &amp; Lifecycle</h2>
+                            {{ info_tip.render(
+                                "minio-inventory-lifecycle-detail-guide",
+                                "MinIO Inventory & Lifecycle",
+                                "Review committed storage inventory, consumers, source bindings and deletion safeguards.",
+                                [
+                                    "MinIO owns live S3 resources; KAORI correlates committed evidence.",
+                                    "Retained audit evidence is separate from connection deletion."
+                                ],
+                                placement="right", variant="guide"
+                            ) }}
+                        </div>
                         <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review inventory, consumers, observability bindings, evidence boundaries, and connection lifecycle.</p>
                     </div>
                 </div>
