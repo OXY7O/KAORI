@@ -230,7 +230,7 @@ def _accumulate_metrics(
             if (
                 isinstance(raw_value, (int, float))
                 and not isinstance(raw_value, bool)
-                and 0 <= raw_value < float('inf')
+                and 0 < raw_value < float('inf')
             ):
                 aggregate['pull_activity'] += float(raw_value)
                 activity_rows.append(
