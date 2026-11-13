@@ -37,6 +37,28 @@
                                                         ],
                                                         placement='right',
                                                         variant='guide') }}
+                        {% elif selected.name == 'analytics_snapshot' %}
+                            {{ info_tip.render('data-lifecycle-analytics-snapshots-policy-guide',
+                                                        'Analytics Snapshots Policy',
+                                                        'Govern committed analytics materializations and forecast snapshots.',
+                                                        items=[
+                                                        'Coverage includes capacity, utilization, storage, workloads, top consumers, alerts and forecast history.',
+                                                        'Snapshots remain protected until both stale-serve grace and hot-retention boundaries have elapsed.',
+                                                        'Only verified archives can precede cleanup; pending or still-serveable snapshots are excluded.'
+                                                        ],
+                                                        placement='right',
+                                                        variant='guide') }}
+                        {% elif selected.name == 'generated_report' %}
+                            {{ info_tip.render('data-lifecycle-generated-reports-policy-guide',
+                                                        'Generated Reports Policy',
+                                                        'Govern report metadata and retained PDF, XLSX or CSV artifacts.',
+                                                        items=[
+                                                        'Ready, Failed and Archived reports use status-specific hot-retention windows.',
+                                                        'Ready/Archived PDF, XLSX and CSV files are copied and checksum-verified before cleanup.',
+                                                        'Requested, Queued, Generating, active regeneration jobs and terminal reports without safe artifact references remain protected.'
+                                                        ],
+                                                        placement='right',
+                                                        variant='guide') }}
                         {% endif %}
                     </div>
                     <p class="{{ table_ui.block_description_classes() }}">{{ selected.description }}</p>
@@ -340,7 +362,10 @@
                         {% if selected.name in ('notification_delivery', 'audit_event') %}
                             <p class="mt-1 text-xs leading-5 text-content-muted">Manual Archive Only. Enable and save the policy before starting a job.</p>
                         {% else %}
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Requires Policy enabled + Scheduled execution. {{ lifecycle.next_schedule_label or 'No scheduled run.' }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">
+                                <span class="block">Policy + schedule required.</span>
+                                <span class="block">{{ lifecycle.next_schedule_label or 'No scheduled run.' }}</span>
+                            </p>
                         {% endif %}
                     </div>
                     <div>
