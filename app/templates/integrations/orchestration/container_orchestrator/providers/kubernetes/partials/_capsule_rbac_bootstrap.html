@@ -64,7 +64,27 @@
             </form>
         {% endif %}
     </header>
-    <div class="space-y-5 p-4 sm:p-6">
+    <details class="group"
+             data-capsule-rbac-disclosure
+             {% if not is_ready %}open{% endif %}>
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus sm:px-6">
+            <span class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
+                <span class="text-xs font-semibold text-content-primary">Canonical Access Profiles</span>
+                {% if roles %}
+                    <span class="text-xs tabular-nums text-content-muted">{{ snapshot.ready }} Ready · {{ snapshot.missing }} Missing · {{ snapshot.conflict }} Conflicts</span>
+                {% else %}
+                    <span class="text-xs text-content-muted">Four governed ClusterRole profiles</span>
+                {% endif %}
+            </span>
+            <span class="inline-flex shrink-0 items-center gap-2 text-xs font-semibold text-kaori-primary">
+                <span class="group-open:hidden">Show Details</span>
+                <span class="hidden group-open:inline">Hide Details</span>
+                <i data-lucide="chevron-down"
+                   class="h-4 w-4 transition-transform group-open:rotate-180"
+                   aria-hidden="true"></i>
+            </span>
+        </summary>
+        <div class="space-y-5 border-t border-outline-subtle p-4 sm:p-6">
         {% if roles %}
             <dl class="grid grid-cols-3 gap-2 sm:gap-3"
                 aria-label="ClusterRole readiness summary">
@@ -297,5 +317,6 @@
             An authorized cluster operator must approve and bootstrap the missing roles.
         </footer>
     {% endif %}
+    </details>
 </section>
 {% include 'components/operation_feedback_oob.html' %}

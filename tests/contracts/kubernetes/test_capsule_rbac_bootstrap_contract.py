@@ -264,3 +264,77 @@ def test_capsule_rbac_incomplete_role_evidence_never_claims_ready_or_offers_boot
     missing_incomplete = _render_capsule_rbac_panel(_snapshot('missing', [_role('missing')]))
     assert 'Bootstrap Missing Roles' not in missing_incomplete
     assert 'name="confirm_cluster_rbac"' not in missing_incomplete
+
+
+def _disclosure_opening_tag(html: str) -> str:
+    marker = html.index('data-capsule-rbac-disclosure')
+    start = html.rfind('<details', 0, marker)
+    return html[start : html.index('>', marker) + 1]
+
+
+def test_capsule_rbac_disclosure_is_compact_when_ready_and_open_when_attention_is_required() -> None:
+    ready_roles = [
+        _role('ready', name=f'kaori-tenant-{profile}-v1')
+        for profile in ('viewer', 'operator', 'tenant-admin', 'deployer')
+    ]
+    ready_html = _render_capsule_rbac_panel(_snapshot('ready', ready_roles))
+
+    assert ' open' not in _disclosure_opening_tag(ready_html)
+    assert 'Show Details' in ready_html
+    assert 'Hide Details' in ready_html
+    assert '4 Ready · 0 Missing · 0 Conflicts' in ready_html
+    assert ready_html.count('<details') == 5
+    assert 'Cluster RBAC prerequisites ready' in ready_html
+    assert 'Review Access Grants' in ready_html
+    assert 'Check RBAC' in ready_html
+    assert ready_html.index('Check RBAC') < ready_html.index('data-capsule-rbac-disclosure')
+    assert 'hx-target="closest [data-capsule-rbac-bootstrap]"' in ready_html
+    assert "{% include 'components/operation_feedback_oob.html' %}" in read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/'
+        '_capsule_rbac_bootstrap.html'
+    )
+
+    missing_roles = ready_roles.copy()
+    missing_roles[0] = _role('missing')
+    conflict_roles = ready_roles.copy()
+    conflict_roles[0] = _role('conflict', reason='Permissions differ')
+    for snapshot in (
+        None,
+        _snapshot('missing', missing_roles),
+        _snapshot('conflict', conflict_roles),
+        _snapshot('failed', [_role('missing')]),
+        _snapshot('ready', [_role('ready')]),
+    ):
+        html = _render_capsule_rbac_panel(snapshot)
+        assert ' open' in _disclosure_opening_tag(html)
+        assert 'Show Details' in html
+        assert 'Hide Details' in html
+
+    missing_html = _render_capsule_rbac_panel(_snapshot('missing', missing_roles))
+    assert 'Bootstrap Missing Roles' in missing_html
+    assert 'name="confirm_cluster_rbac"' in missing_html
+    assert 'required' in missing_html
+    conflict_html = _render_capsule_rbac_panel(_snapshot('conflict', conflict_roles))
+    assert 'Bootstrap blocked by a role conflict' in conflict_html
+    assert 'Bootstrap Missing Roles' not in conflict_html
+
+
+def test_capsule_rbac_summary_is_positioned_before_long_capability_registry() -> None:
+    detail = read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html')
+    validation = detail.split('id="kubernetes-panel-validation"', 1)[1].split('id="kubernetes-panel-runtime"', 1)[0]
+    assert validation.count('_capsule_rbac_bootstrap.html') == 1
+    assert validation.count('_capability_workspace.html') == 1
+    assert validation.index('_capsule_rbac_bootstrap.html') < validation.index('_capability_workspace.html')
+    assert 'class="mt-5"' in validation
+
+    capsule = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/'
+        '_capsule_rbac_bootstrap.html'
+    )
+    assert 'data-capsule-rbac-disclosure' in capsule
+    assert '{% if not is_ready %}open{% endif %}' in capsule
+    assert '<summary class="flex cursor-pointer list-none' in capsule
+    assert 'group-open:hidden' in capsule
+    assert 'group-open:inline' in capsule
+    assert 'focus-visible:ring-outline-focus' in capsule
+    assert 'hx-target="closest [data-capsule-rbac-bootstrap]"' in capsule
