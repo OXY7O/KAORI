@@ -254,8 +254,8 @@ def test_governance_evidence_tabs_are_badgeless_full_kaori_tables() -> None:
     workspace = (ROOT / 'app/templates/artifact_registry/partials/_governance_workspace.html').read_text()
     Environment().parse(workspace)
 
-    start = workspace.index("content_tabs.render_links('registry-governance',")
-    end = workspace.index('{% endif %}', start)
+    start = workspace.index('{% set governance_evidence_tabs = [')
+    end = workspace.index('{% set governance_result_badge %}', start)
     evidence = workspace[start:end]
     # Tabs must reset to page 1 while preserving Rows; Jinja whitespace is cosmetic.
     for tab in ('policies', 'replication'):
@@ -266,9 +266,10 @@ def test_governance_evidence_tabs_are_badgeless_full_kaori_tables() -> None:
         )
     assert 'governance.project_count)' not in evidence
     assert 'governance.replication_count)' not in evidence
+    assert "workspace_tabs.render_query_tabs(governance_evidence_tabs," in evidence
     assert "hx_target='#artifact-registry-governance-registry'" in evidence
-    assert "hx_select='#artifact-registry-governance-registry'" in evidence
-    assert "hx_push_url='true'" in evidence
+    assert "hx_sync='#artifact-registry-governance-registry:replace'" in evidence
+    assert 'hx-select="#artifact-registry-governance-registry"' in workspace
 
     assert 'components/table.html' in workspace
     assert workspace.count("table_ui.table_classes('min-w-[") == 2
@@ -307,7 +308,7 @@ def test_governance_evidence_reuses_entire_canonical_table_workspace() -> None:
     presentation = (ROOT / 'app/artifact_registry/presentation_governance.py').read_text()
     Environment().parse(workspace)
 
-    evidence = workspace.split("content_tabs.render_links('registry-governance',", 1)[1]
+    evidence = workspace.split('workspace_tabs.render_query_tabs(governance_evidence_tabs,', 1)[1]
     assert 'table_ui.inventory_block_header(' in evidence
     assert "'Project Policy Registry'" in evidence
     assert "'Replication Policy Registry'" in evidence
@@ -401,7 +402,8 @@ def test_governance_coverage_and_evidence_follow_canonical_section_layout() -> N
     from jinja2 import Environment
 
     workspace = (ROOT / 'app/templates/artifact_registry/partials/_governance_workspace.html').read_text()
-    tabs = (ROOT / 'app/templates/components/content_tabs.html').read_text()
+    tabs = (ROOT / 'app/templates/components/workspace_tabs.html').read_text()
+    pki = (ROOT / 'app/templates/kubernetes/governance/internal_certificates/index.html').read_text()
     intro = (ROOT / 'app/templates/components/section_intro.html').read_text()
 
     Environment().parse(workspace)
@@ -443,19 +445,26 @@ def test_governance_coverage_and_evidence_follow_canonical_section_layout() -> N
     assert 'resource_posture_grid.render(estate_metrics, columns=5)' in tenant
     assert 'status_labels=' not in tenant
 
-    # URL/HTMX-owned tabs reuse the shared content-tabs contract rather than
-    # framed workspace tabs or bespoke client-side tab state.
-    assert '{% import "components/content_tabs.html" as content_tabs %}' in workspace
+    # Match Internal PKI's canonical query-backed, top-integrated tablist.
+    # Server/URL authority, progressive navigation and HTMX selection survive.
+    assert '{% import "components/workspace_tabs.html" as workspace_tabs %}' in workspace
+    assert 'content_tabs.render_links(' not in workspace
     assert 'framed_workspace_tabs' not in workspace
-    assert "content_tabs.render_links('registry-governance'," in workspace
-    assert 'embedded=true' in workspace
+    assert "workspace_tabs.render_query_tabs(governance_evidence_tabs," in workspace
+    assert "workspace_tabs.render_query_tabs(evidence_tabs," in pki
+    assert 'data-kaori-tab-variant="query-backed-htmx"' in tabs
+    assert 'macro render_query_tabs(' in tabs
+    assert 'hx-push-url="true"' in tabs
+    assert 'hx-swap="outerHTML"' in tabs
+    assert 'id="artifact-registry-governance-registry"' in workspace
+    assert 'hx-select="#artifact-registry-governance-registry"' in workspace
     assert "hx_target='#artifact-registry-governance-registry'" in workspace
-    assert "hx_select='#artifact-registry-governance-registry'" in workspace
-    assert "hx_push_url='true'" in workspace
-    assert "hx_target='#artifact-registry-governance-registry'" in workspace
+    assert "hx_sync='#artifact-registry-governance-registry:replace'" in workspace
+    assert 'class="{{ section_card.shell_classes() }}"' in workspace
+    assert '<div class="min-w-0 p-4 sm:p-5">' in workspace
+    assert '<section class="{{ table_ui.block_classes() }}">' in workspace
     assert "url_for('artifact_registry.governance', tab='policies', page=1" in workspace
     assert "url_for('artifact_registry.governance', tab='replication', page=1" in workspace
-    assert 'macro render_links(' in tabs
     assert 'macro render(' in intro
 
     # Existing committed policy/replication views, active row page sizes and
