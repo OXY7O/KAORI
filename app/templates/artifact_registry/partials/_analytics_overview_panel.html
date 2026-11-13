@@ -41,10 +41,11 @@
     {% set domain_description = 'Committed findings and correlated workload impact, not live scanner health.' %}
     {% set domain_icon = 'shield-alert' %}
     {% set boundary = 'Finding counts, affected artifacts, and workload bindings are not interchangeable. Digest matches are stronger than mutable tags; absent scan evidence is not clean.' %}
+    {% set scanner_observed = has_snapshot and aggregate.scanned_artifacts > 0 %}
     {% set overview_metrics = [
-        ('shield-alert', 'Critical Findings', aggregate.critical_findings if has_snapshot else unknown, 'Committed scanner findings, not distinct CVEs', 'critical'),
-        ('boxes', 'Critical Runtime Artifacts', aggregate.critical_runtime_artifacts if has_snapshot else unknown, 'Running artifacts with critical evidence', 'critical'),
-        ('scan-search', 'Runtime Scan Gaps', aggregate.runtime_scan_gaps if has_snapshot else unknown, 'Missing normalized successful scan evidence', 'warning'),
+        ('shield-alert', 'Critical Findings', aggregate.critical_findings if scanner_observed else unknown, 'Committed scanner findings, not distinct CVEs', 'critical'),
+        ('boxes', 'Critical Runtime Artifacts', aggregate.critical_runtime_artifacts if scanner_observed else unknown, 'Running artifacts with critical evidence', 'critical'),
+        ('scan-search', 'Runtime Scan Gaps', aggregate.runtime_scan_gaps if has_snapshot and aggregate.running_artifacts > 0 else unknown, 'Missing normalized successful scan evidence', 'warning'),
         ('tags', 'Tag-only Bindings', aggregate.tag_only_bindings if has_snapshot else unknown, 'Mutable reference correlation', 'warning')
     ] %}
 {% elif overview_domain == 'governance' %}
@@ -64,7 +65,7 @@
     {% set domain_description = 'Committed alert lifecycle, source availability, and bounded fallback.' %}
     {% set domain_icon = 'triangle-alert' %}
     {% set boundary = 'Alertmanager remains the lifecycle authority; Metrics Source fallback has narrower semantics. Unavailable source evidence is not zero alerts.' %}
-    {% set alerts_ready = aggregate.alert_sources_ready > 0 %}
+    {% set alerts_ready = analytics.provider_count > 0 and aggregate.alert_sources_ready == analytics.provider_count %}
     {% set overview_metrics = [
         ('bell-ring', 'Active Alert Records', aggregate.active_alerts if alerts_ready else unknown, 'Committed source-reported alert records', 'warning'),
         ('shield-alert', 'Critical Alerts', aggregate.critical_alerts if alerts_ready else unknown, 'Committed critical-severity records', 'critical'),
