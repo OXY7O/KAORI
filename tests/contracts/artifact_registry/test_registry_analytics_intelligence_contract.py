@@ -290,6 +290,83 @@ def test_registry_analytics_overview_panels_preserve_missing_data_and_evidence_a
     assert 'not interchangeable' in panel
     assert 'Not Configured differs from Not Collected' in panel
     assert 'Intelligence owns Recommendations' in panel
+    assert 'scanner_observed = has_snapshot and aggregate.scanned_artifacts > 0' in panel
+    assert 'aggregate.alert_sources_ready == analytics.provider_count' in panel
+
+
+def test_registry_overview_panels_render_unknown_without_fabricating_evidence() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    env.globals['url_for'] = lambda endpoint, **kwargs: f'/{endpoint.replace(".", "/")}'
+    aggregate_keys = (
+        'artifacts',
+        'stale_candidates',
+        'running_artifacts',
+        'runtime_bindings',
+        'tag_only_bindings',
+        'scanned_artifacts',
+        'critical_findings',
+        'critical_runtime_artifacts',
+        'runtime_scan_gaps',
+        'governance_projects_assessed',
+        'retention_configured',
+        'immutability_configured',
+        'retention_not_configured',
+        'alert_sources_ready',
+        'active_alerts',
+        'critical_alerts',
+        'suppressed_alerts',
+        'alert_source_fallbacks',
+        'pull_activity',
+    )
+    context = {
+        'aggregate': dict.fromkeys(aggregate_keys, 0),
+        'snapshot_count': 0,
+        'provider_count': 1,
+        'summary_cards': [{'value': 'N/A'} for _ in range(4)],
+        'capacity_outlook': {
+            'highest_utilization': None,
+            'nearest_quota_days': None,
+            'quota_headroom_display': 'N/A',
+            'growth_display': 'N/A',
+        },
+        'growth_rows': [],
+        'forecast_rows': [],
+        'activity_rows': [],
+        'alert_source_rows': [],
+        'insights': [],
+        'latest_rows': [],
+        'recommendation_count': 0,
+        'active_signal_count': 0,
+        'posture': {'label': 'Materialization Required', 'tone': 'warning'},
+        'selected_provider_id': None,
+        'snapshot_window': '24h',
+        'data_readiness': {
+            'label': 'Historical Materialization Required',
+            'tone': 'warning',
+            'eligible_count': 1,
+            'covered_count': 0,
+            'current_count': 0,
+            'last_attempt_label': 'Never',
+            'execution_label': 'Not Collected',
+            'execution_tone': 'warning',
+            'helper': 'Historical range evidence unavailable.',
+        },
+    }
+    template = env.get_template('artifact_registry/partials/_analytics_overview_panel.html')
+    domains = ('growth', 'capacity', 'usage', 'risk', 'governance', 'alerts', 'insights', 'evidence')
+    for domain in domains:
+        rendered = template.render(analytics=context, overview_domain=domain)
+        assert f'data-registry-analytics-overview-domain="{domain}"' in rendered
+        assert 'Provider Health' not in rendered
+        if domain != 'evidence':
+            assert 'Materialization Required' in rendered
+            assert 'N/A' in rendered
+            assert f'/artifact_registry/analytics_{domain}' in rendered
+        else:
+            assert 'Historical Materialization Required' in rendered
+            assert 'No committed snapshots for the selected Registry and Time Range.' in rendered
 
 
 def test_registry_analytics_uses_fast_shell_and_bounded_fragments() -> None:
