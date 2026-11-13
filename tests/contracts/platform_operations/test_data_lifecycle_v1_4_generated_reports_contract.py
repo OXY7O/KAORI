@@ -163,8 +163,8 @@ def test_all_seven_lifecycle_copy_refinements_preserve_evidence_and_status_terms
     assert 'Source-owned AuditEvent evidence; manual Archive Only.' in presentation
     assert 'Closed alert cases, operator evidence, delivery, and postmortems.' in presentation
     assert 'Report metadata and retained PDF, XLSX, or CSV evidence.' in generated
-    assert 'Ready, Failed, and Archived reports past their status-specific hot retention.' in generated
-    assert 'Ready/Archived PDF/XLSX/CSV files are copied and checksum-verified before cleanup.' in generated
+    assert 'Ready, Failed and Archived after hot retention.' in generated
+    assert 'PDF/XLSX/CSV checksum-verified before cleanup.' in generated
     assert 'Source files stay intact until archive and supplements pass verification.' in generated
     assert (
         'Ready and manually Archived reports copy PDF, XLSX, or CSV files to archive storage, '

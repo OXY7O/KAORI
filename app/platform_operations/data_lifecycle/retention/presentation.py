@@ -430,8 +430,8 @@ def _domain_exclusion_note(name: str) -> str | None:
         'tenant_audit_evidence': 'Raw Kubernetes audit logs and provider request/response bodies stay external.',
         'notification_delivery': 'Queued and failed/retry-eligible records, payload content, credential replay envelope and per-record archive search are excluded.',
         'audit_event': (
-            'Raw metadata, IP/user agent, actor reconstruction, bundle downloads, '
-            'scheduling, cleanup and individual historical lookup are not admitted.'
+            'Raw metadata, IP/UA, actor reconstruction, bundle downloads, schedules, cleanup and record lookup '
+            'are excluded.'
         ),
     }.get(name)
 

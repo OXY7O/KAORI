@@ -60,6 +60,38 @@ The ownership migration renames the former `settings.*_data_lifecycle` permissio
 8. Archive History pagination follows KAORI table standards with Title Case resource naming, visible `Rows`, and default 5 rows.
 9. Dark mode is semantic-surface based. No `bg-white`, raw palette utility, raw hex, or page-local inline styling is accepted.
 
+## Compact Policy Guidance and Source-Owned Coverage
+
+The Retention Policies selected-domain header uses the canonical
+`components/info_tip.html` title-level Guide (`variant='guide'`) where
+source-specific policy details would otherwise make the workspace dense.
+Analytics Snapshots and Generated Reports retain distinct contextual Guides
+alongside the existing Alert Incidents and Administrative Audit Events Guides.
+
+- **Analytics Snapshots:** compact coverage cards identify materializations
+  and reusable forecasts; the Guide retains capacity, utilization, storage,
+  workloads, top-consumer and alert scope and the stale-serve/hot-retention
+  cleanup safety boundary.
+- **Generated Reports:** compact cards describe terminal report retention and
+  verified report artifacts; the Guide retains Ready/Failed/Archived policy
+  distinctions and explicit protection for Requested/Queued/Generating,
+  active regeneration, and missing-safe-artifact cases. The Excluded footer
+  gives a one-line summary while the complete boundary remains accessible.
+- **Administrative Audit Events:** a compact Excluded statement preserves
+  non-admission of raw metadata, actor reconstruction, downloads, scheduling,
+  cleanup, and record-level lookup. The existing Guide remains the full
+  operator explanation; actual archive execution remains manual and
+  non-destructive.
+- **Automatic Run:** show compact policy/schedule prerequisite text and the
+  genuine `lifecycle.next_schedule_label` as separate read-only lines.
+  This date/time remains source-backed, including the configured timezone;
+  no fallback may imply an executed or queued job.
+
+Natural responsive wrapping is permitted; avoid forcibly clipped
+`whitespace-nowrap`, static dates or hiding security-critical exclusions.
+Copy updates do not alter archive-first safety, RBAC, underlying eligibility,
+scheduled dispatcher interval, provider authority, or audit/evidence semantics.
+
 ## Safety Invariants
 
 - Cleanup never starts before the archive data and manifest checksums are verified.
