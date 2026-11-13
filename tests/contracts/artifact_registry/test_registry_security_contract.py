@@ -254,6 +254,31 @@ def test_security_operations_guidance_is_one_line_and_keeps_execution_status() -
     assert "'helper': helper" in jobs
 
 
+def test_security_sync_guide_reuses_governance_live_status_pattern() -> None:
+    from jinja2 import Environment
+
+    security = read('app/templates/artifact_registry/partials/_security_sync_live_state.html')
+    governance = read('app/templates/artifact_registry/partials/_governance_sync_live_state.html')
+    guide = read('app/templates/components/info_tip.html')
+    for template in (security, governance):
+        Environment().parse(template)
+
+    assert '{% import "components/info_tip.html" as info_tip %}' in security
+    assert security.index('table_label.status_label(') < security.index('info_tip.render(')
+    assert "info_tip.render('registry-security-operations-guide'," in security
+    assert "variant='guide'" in security
+    assert "placement='right'" in security
+    assert "info_tip.render('registry-governance-operations-guide'," in governance
+    assert "data-kaori-info-tip-trigger" in guide
+    assert "data-kaori-info-tip-variant" in guide
+    assert 'Page filters only change displayed evidence.' in security
+    assert 'Browsing evidence does not perform live provider reads' in security
+    assert 'Missing, stale, partial, unavailable, or unsupported evidence needs review' in security
+    assert 'hx-trigger="every 1s"' in security
+    assert 'progress_bar.job_progress(' in security
+    assert 'security_sync_state.compact_helper' in security
+
+
 def test_security_overview_retains_unknown_evidence_and_fails_closed(monkeypatch) -> None:
     from types import SimpleNamespace
 
@@ -420,6 +445,33 @@ def test_supply_chain_tables_use_standard_view_more_native_dialogs() -> None:
     assert 'Observed presence is not a KAORI trust-policy decision.' in modals
     assert 'No live provider request.' in modals
     assert 'Evidence Scope' not in modals
+
+
+def test_supply_chain_modal_explanations_remain_compact_and_provider_authoritative() -> None:
+    from jinja2 import Environment
+
+    modals = read('app/templates/artifact_registry/partials/_security_supply_chain_detail_modals.html')
+    Environment().parse(modals)
+    phrases = (
+        'Committed capability evidence; providers remain authoritative.',
+        'Providers remain authoritative; KAORI neither invents support nor runs scans.',
+        'Signature/SBOM are provider observations, not KAORI trust checks; no live requests.',
+    )
+    for phrase in phrases:
+        assert phrase in modals
+        assert len(phrase) <= 85
+
+    assert "operational_callout.render('Provider Evidence Boundary'," in modals
+    assert "operational_callout.render('Evidence Interpretation'," in modals
+    assert 'data-artifact-registry-provider-capability-detail-v2' in modals
+    assert 'data-artifact-registry-artifact-evidence-detail-v2' in modals
+    assert '{{ row.digest }}' in modals
+    assert 'row.vulnerability' in modals
+    assert 'row.signature' in modals
+    assert 'row.sbom' in modals
+    assert 'row.trust' in modals
+    assert 'No live provider request.' in modals
+    assert 'whitespace-nowrap' not in modals
 
 
 def test_harbor_security_refresh_is_repository_resilient_without_overriding_provider_timeout() -> None:
