@@ -91,15 +91,22 @@ It reuses the approved Violet `palette_icon` with the canonical managed-asset
 title, then displays the stable asset key (domain registry) or consumer profile
 (provider binding registry) as secondary context. An asset type identical to the
 title is omitted **only from the second line** (case/whitespace-insensitive).
-When an asset is custom-named, the distinct type remains visible alongside
-its key/profile. Type-specific icons follow the existing Integrations icon
+For **domain key-based rows**, custom names follow the same compact two-line
+identity hierarchy as Orchestration: the asset name and the full correlation
+key, without a distinct taxonomy label prepended to the key. The distinct type
+remains available in the title tooltip and screen-reader context. For
+**provider-owned profile-based rows**, a distinct type remains visible alongside
+the profile; this preserves provider-specific consumer context without altering
+binding identity. Type-specific icons follow the existing Integrations icon
 vocabulary for Kubernetes, Object Storage, Vault, and default managed assets.
 Long keys wrap naturally and remain available in full; do not use a duplicated
 type prefix, truncated UUID, a page-local second icon system, or additional
-provider lookups to decorate a binding. This presentation rule applies to all
-domain landing pages through their existing shared workspace template and to
-the two provider-owned source binding registries; it does not change source
-authority, validation, filters, pagination, row navigation or binding identity.
+provider lookups to decorate a binding. Repeated instances of one consumer
+remain separate binding rows when they represent different bindings. This
+presentation rule applies to all domain landing pages through their existing
+shared workspace template and to the two provider-owned source binding
+registries; it does not change source authority, validation, filters,
+pagination, row navigation or binding identity.
 
 Provider Core Validation and Binding Validation remain separate evidence boundaries on the domain page. Provider Registry readiness reflects provider Core Validation; the Bindings tab shows the selected consumer profile, selector, and binding validation status.
 

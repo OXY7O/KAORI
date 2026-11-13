@@ -356,6 +356,8 @@ def test_consumer_asset_identity_is_shared_and_omits_duplicate_taxonomy_label() 
     )
     assert "palette_icon(asset_icon, 'brand', size='sm')" in shared
     assert 'type_label|trim|lower != label|trim|lower' in shared
+    assert 'show_type_inline = distinct_type and not metadata_is_key' in shared
+    assert '<span class="sr-only">Asset type: {{ type_label }}</span>' in shared
     assert 'data-kaori-consumer-asset-identity' in shared
     assert 'integrations/partials/_domain_workspace.html' in domain_page
     assert "'asset_type': binding.asset_type" in domain_service
@@ -398,12 +400,37 @@ def test_consumer_asset_identity_is_shared_and_omits_duplicate_taxonomy_label() 
     assert '<span class="font-mono">storage-456</span>' in storage
     assert '<span class="text-content-secondary">Object Storage System</span>' not in storage
 
+    # Custom-named domain consumers keep the same compact title + key hierarchy
+    # as Orchestration. The distinct taxonomy remains available to assistive tech.
     custom_name = str(macro('Kubernetes X300', 'kubernetes_cluster', 'cluster-789', 'Kubernetes Cluster', True))
-    assert 'title="Kubernetes X300">Kubernetes X300</p>' in custom_name
-    assert '<span class="text-content-secondary">Kubernetes Cluster</span>' in custom_name
-    assert 'cluster-789' in custom_name
+    assert 'title="Kubernetes X300 · Kubernetes Cluster">Kubernetes X300</p>' in custom_name
+    assert '<span class="sr-only">Asset type: Kubernetes Cluster</span>' in custom_name
+    assert '<span class="text-content-secondary">Kubernetes Cluster</span>' not in custom_name
+    assert '<span class="font-mono">cluster-789</span>' in custom_name
+
+    minio = str(
+        macro(
+            'MinIO X300',
+            'object_storage_system',
+            '5a42bc37-4301-4dc1-85f5-f26a0d64aa06',
+            'Object Storage System',
+            True,
+        )
+    )
+    assert 'data-lucide="database"' in minio
+    assert 'title="MinIO X300 · Object Storage System">MinIO X300</p>' in minio
+    assert '<span class="sr-only">Asset type: Object Storage System</span>' in minio
+    assert '<span class="font-mono">5a42bc37-4301-4dc1-85f5-f26a0d64aa06</span>' in minio
+    assert '<span class="text-content-secondary">Object Storage System</span>' not in minio
+    assert 'Object Storage System · 5a42' not in minio
 
     provider_scope = str(macro('Kubernetes Cluster', 'kubernetes_cluster', 'Production Profile', 'Kubernetes Cluster'))
     assert 'Production Profile' in provider_scope
     assert '<span class="text-content-secondary">Kubernetes Cluster</span>' not in provider_scope
     assert '<span class="font-mono">' not in provider_scope
+
+    # Provider-owned profile registries still display distinct taxonomy context.
+    provider_custom = str(macro('MinIO X300', 'object_storage_system', 'Production Profile', 'Object Storage System'))
+    assert '<span class="text-content-secondary">Object Storage System</span>' in provider_custom
+    assert 'Production Profile' in provider_custom
+    assert '<span class="sr-only">Asset type: Object Storage System</span>' not in provider_custom
