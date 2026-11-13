@@ -81,7 +81,7 @@
                 <section class="space-y-3"
                          aria-labelledby="artifact-registry-analytics-domains-heading">
                     {{ section_intro.render('Explore Analytics',
-                                        'Switch between committed analytical snapshots, then open the owning domain for complete evidence.',
+                                        'Normal navigation reads committed KAORI evidence and never waits on live Harbor, Alertmanager, Prometheus, or Thanos requests.',
                                         'artifact-registry-analytics-domains-heading') }}
                     {% include "artifact_registry/partials/_analytics_overview_workspace.html" %}
                 </section>
