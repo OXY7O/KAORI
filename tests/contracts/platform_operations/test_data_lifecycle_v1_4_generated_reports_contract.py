@@ -105,7 +105,10 @@ def test_data_lifecycle_ui_explains_generated_report_evidence_and_status_windows
     assert 'failed_retention_days' in workspace
     assert 'archived_retention_days' in workspace
     assert 'max="{{ 2500 if selected.name == \'generated_report\' else 25000 }}"' in workspace
-    assert 'verifying SHA-256 before source-file or row cleanup' in workspace
+    assert 'Ready/Archived PDF/XLSX/CSV are SHA-256-verified before cleanup;' in workspace
+    assert 'pending or regenerating reports remain protected.' in workspace
+    assert 'Ready/Archived PDF, XLSX and CSV files are copied and checksum-verified before cleanup.' in workspace
+    assert 'Requested, Queued, Generating, active regeneration jobs' in workspace
     assert 'generated_report_ui.GENERATED_REPORT_COVERAGE_NOTE' in presentation
 
 
