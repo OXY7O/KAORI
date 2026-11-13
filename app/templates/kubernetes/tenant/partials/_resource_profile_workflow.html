@@ -1,9 +1,19 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/info_tip.html" as info_tip %}
 <section class="space-y-5" aria-label="Resource Profile workflow guide">
     {% call operational_section_card.render(
         'Governed Allocation Lifecycle',
         'Follow one explicit contract path from reusable profile intent to verified provider evidence.',
         'route',
+        header_badge=info_tip.render('resource-profile-lifecycle-guide',
+            'Governed Allocation Lifecycle Guide',
+            'KAORI commits contract intent, validates admission, and verifies provider reconciliation evidence.',
+            items=[
+                'Profile contract selection freezes versioned intent into a Namespace allocation snapshot.',
+                'Capacity admission uses committed capacity evidence and fails safely when authority is incomplete.',
+                'Kubernetes or Capsule remains authoritative for execution and read-back; KAORI records results.'
+            ],
+            placement='right', variant='guide'),
         action_href=url_for('tenant.namespace_provisioning'),
         action_label='Open Namespace Provisioning',
         action_icon='arrow-right',
