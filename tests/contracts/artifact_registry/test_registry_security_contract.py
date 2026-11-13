@@ -269,8 +269,8 @@ def test_security_sync_guide_reuses_governance_live_status_pattern() -> None:
     assert "variant='guide'" in security
     assert "placement='right'" in security
     assert "info_tip.render('registry-governance-operations-guide'," in governance
-    assert "data-kaori-info-tip-trigger" in guide
-    assert "data-kaori-info-tip-variant" in guide
+    assert 'data-kaori-info-tip-trigger' in guide
+    assert 'data-kaori-info-tip-variant' in guide
     assert 'Page filters only change displayed evidence.' in security
     assert 'Browsing evidence does not perform live provider reads' in security
     assert 'Missing, stale, partial, unavailable, or unsupported evidence needs review' in security
