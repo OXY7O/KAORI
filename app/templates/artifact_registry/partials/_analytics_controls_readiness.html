@@ -13,7 +13,7 @@
         'Registry Analytics Controls Guide',
         'How to interpret selected Registry scope, measured history, and committed snapshot readiness.',
         items=[
-        'Registry selects all eligible sources or one Registry provider. Selection filters committed Analytics evidence; it does not change provider configuration.',
+        'Registry selects one active Registry source. If no source is specified, a Ready source is chosen by default. Canonical Analytics JobExecution collection remains fleet-scoped.',
         'Time Range selects a qualified analytics snapshot. Measured history requires a supported Metrics Source range and retention; Current (Instant) is not historical telemetry.',
         'Registry Source Status reports eligibility and snapshot coverage, not live Metrics Source health. Stale committed evidence remains readable but is not current.',
         'Collection runs through the registered Analytics JobExecution workflow. Normal page reads use committed KAORI state; unavailable history is never invented.'
@@ -67,7 +67,7 @@
                                 'Registry',
                                 analytics.provider_options,
                                 analytics.selected_provider_id,
-                                empty_label='All Registries') }}
+                                empty_label='No Registries Available' if not analytics.provider_options else none) }}
                 {{ shared_readiness.selector('artifact-registry-analytics-window',
                                 'snapshot_window',
                                 'Time Range',

@@ -51,7 +51,14 @@ def _registry_analytics_scope(
     identities: list[Any],
 ) -> int | None:
     if provider_id is None:
-        return None
+        if not identities:
+            return None
+        # Analytics presents one Registry source at a time. Prefer a Ready
+        # active source; keep the existing deterministic name ordering.
+        return next(
+            (int(row.id) for row in identities if getattr(row, 'readiness_status', None) == 'ready'),
+            int(identities[0].id),
+        )
     if not any(int(row.id) == provider_id for row in identities):
         raise NotFound('The selected Registry instance is not active or is unavailable.')
     return provider_id
@@ -617,7 +624,7 @@ def _analytics_summary_cards(
             'icon': 'triangle-alert',
             'label': 'Risk Candidates',
             'value': str(risk_candidate_count),
-            'detail': 'Cross-domain review signals; candidates may overlap',
+            'detail': 'Cross-domain signals may overlap.',
             'tone': 'warning' if risk_candidate_count else 'normal',
         },
     ]
