@@ -211,7 +211,7 @@ def test_governance_sync_matches_security_htmx_workspace_contract() -> None:
     assert 'hx-trigger="every 1s"' in live
     assert 'progress_bar.job_progress' in live
     assert 'registry.footer(' in governance
-    assert 'hx_select' in governance
+    assert 'hx-select="#artifact-registry-governance-registry"' in governance
 
     # Like Security, the sync operations panel contains only JobExecution
     # state/scheduling facts; Governance coverage cards are a separate section.
@@ -266,7 +266,7 @@ def test_governance_evidence_tabs_are_badgeless_full_kaori_tables() -> None:
         )
     assert 'governance.project_count)' not in evidence
     assert 'governance.replication_count)' not in evidence
-    assert "workspace_tabs.render_query_tabs(governance_evidence_tabs," in evidence
+    assert 'workspace_tabs.render_query_tabs(governance_evidence_tabs,' in evidence
     assert "hx_target='#artifact-registry-governance-registry'" in evidence
     assert "hx_sync='#artifact-registry-governance-registry:replace'" in evidence
     assert 'hx-select="#artifact-registry-governance-registry"' in workspace
@@ -450,8 +450,8 @@ def test_governance_coverage_and_evidence_follow_canonical_section_layout() -> N
     assert '{% import "components/workspace_tabs.html" as workspace_tabs %}' in workspace
     assert 'content_tabs.render_links(' not in workspace
     assert 'framed_workspace_tabs' not in workspace
-    assert "workspace_tabs.render_query_tabs(governance_evidence_tabs," in workspace
-    assert "workspace_tabs.render_query_tabs(evidence_tabs," in pki
+    assert 'workspace_tabs.render_query_tabs(governance_evidence_tabs,' in workspace
+    assert 'workspace_tabs.render_query_tabs(evidence_tabs,' in pki
     assert 'data-kaori-tab-variant="query-backed-htmx"' in tabs
     assert 'macro render_query_tabs(' in tabs
     assert 'hx-push-url="true"' in tabs
