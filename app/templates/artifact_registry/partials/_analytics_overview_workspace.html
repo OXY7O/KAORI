@@ -3,16 +3,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_section_loading.html" as section_loading %}
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
-{% set overview_tabs = [
-    ('growth', 'Growth', 'trending-up'),
-    ('capacity', 'Capacity', 'gauge'),
-    ('usage', 'Usage', 'activity'),
-    ('risk', 'Risk', 'shield-alert'),
-    ('governance', 'Governance', 'scale'),
-    ('alerts', 'Alerts', 'triangle-alert'),
-    ('insights', 'Insights', 'sparkles'),
-    ('evidence', 'Data & Evidence', 'list-checks')
-] %}
+{% set overview_tabs = [('growth', 'Growth', 'trending-up'), ('capacity', 'Capacity', 'gauge'), ('usage', 'Usage', 'activity'), ('risk', 'Risk', 'shield-alert'), ('governance', 'Governance', 'scale'), ('alerts', 'Alerts', 'triangle-alert'), ('insights', 'Insights', 'sparkles'), ('evidence', 'Data & Evidence', 'list-checks')] %}
 <section id="artifact-registry-analytics-overview-workspace"
          data-analytics-tabset
          data-analytics-tabset-id="artifact-registry-overview-content"
@@ -22,7 +13,8 @@
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}" aria-hidden="true">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"
+                      aria-hidden="true">
                     <i data-lucide="layout-dashboard" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
@@ -66,8 +58,8 @@
                      hx-swap="innerHTML"
                      hx-sync="this:replace">
                     {{ section_loading.section(tab[1] ~ ' Snapshot',
-                                                'Reading committed Registry analytical evidence.',
-                                                tab[2]) }}
+                                        'Reading committed Registry analytical evidence.',
+                                        tab[2]) }}
                 </div>
             </div>
         {% endfor %}

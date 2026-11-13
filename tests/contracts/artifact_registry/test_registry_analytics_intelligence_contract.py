@@ -131,6 +131,147 @@ def test_registry_historical_snapshots_use_measured_source_range_and_scope() -> 
     assert 'size_growth_bytes_per_day' in history
 
 
+def test_registry_growth_history_chart_points_are_bounded_measured_and_aligned() -> None:
+    from datetime import UTC, datetime, timedelta
+
+    from app.artifact_registry.analytics_history import (
+        MAX_HISTORY_CHART_POINTS,
+        _bounded_matrix,
+    )
+    from app.artifact_registry.presentation_analytics import _committed_growth_chart_points
+
+    start = datetime(2026, 11, 13, tzinfo=UTC)
+    end = start + timedelta(minutes=99)
+    origin = start.timestamp()
+
+    def samples(baseline: float, factor: float, offset: int = 0) -> list[list[str]]:
+        return [[str(origin + i * 60 + offset), str(baseline + i * factor)] for i in range(100)]
+
+    aligned = {
+        'status': 'success',
+        'data': {
+            'resultType': 'matrix',
+            'result': [
+                {'metric': {'project_name': 'alpha'}, 'values': samples(10, 1)},
+                {'metric': {'project_name': 'beta'}, 'values': samples(5, 2)},
+            ],
+        },
+    }
+    chart: list[dict[str, float]] = []
+    summary = _bounded_matrix(
+        aligned,
+        project_scoped=True,
+        start_at=start,
+        end_at=end,
+        step_seconds=60,
+        chart_points=chart,
+    )
+    assert MAX_HISTORY_CHART_POINTS == 48
+    assert len(chart) == MAX_HISTORY_CHART_POINTS
+    assert chart[0] == {'timestamp': origin, 'value': 15.0}
+    assert chart[-1] == {'timestamp': origin + 99 * 60, 'value': 312.0}
+    assert summary['alpha']['samples'] == 100
+    assert all(chart[i]['timestamp'] < chart[i + 1]['timestamp'] for i in range(len(chart) - 1))
+    points, mode, count = _committed_growth_chart_points(
+        {'chart_series': {'project_artifacts': chart}}, 'project_artifacts'
+    )
+    assert points == chart and mode == 'measured' and count == 48
+
+    unaligned = {
+        'status': 'success',
+        'data': {
+            'resultType': 'matrix',
+            'result': [
+                {'metric': {'project_name': 'alpha'}, 'values': samples(10, 1)},
+                {'metric': {'project_name': 'beta'}, 'values': samples(5, 2, offset=60)},
+            ],
+        },
+    }
+    chart = []
+    _bounded_matrix(
+        unaligned,
+        project_scoped=True,
+        start_at=start,
+        end_at=end,
+        step_seconds=60,
+        chart_points=chart,
+    )
+    assert chart == []  # No timestamp mixing or interpolated filler.
+
+
+def test_registry_growth_chart_legacy_uses_only_committed_endpoints() -> None:
+    from types import SimpleNamespace
+
+    from app.artifact_registry.presentation_analytics import (
+        _committed_growth_chart_points,
+        _registry_growth_charts,
+    )
+
+    legacy = {
+        'source': 'metrics_source_query_range',
+        'status': 'ready',
+        'time_range': '24h',
+        'series': {
+            'project_artifacts': {
+                'demo': {'start_time': 10, 'end_time': 20, 'first': 3, 'last': 5, 'samples': 100},
+            },
+        },
+    }
+    points, mode, count = _committed_growth_chart_points(legacy, 'project_artifacts')
+    assert mode == 'checkpoints' and count == 2
+    assert points == [{'timestamp': 10.0, 'value': 3.0}, {'timestamp': 20.0, 'value': 5.0}]
+    view = {
+        'identity': SimpleNamespace(name='Harbor X300'),
+        'snapshot': SimpleNamespace(payload_json={'history': legacy}),
+    }
+    result = _registry_growth_charts([view], snapshot_window='24h')
+    assert len(result['artifacts']) == 1
+    assert result['artifacts'][0]['mode'] == 'checkpoints'
+    assert result['storage'] == []
+    assert _registry_growth_charts([view], snapshot_window='current') == {
+        'artifacts': [],
+        'storage': [],
+    }
+    assert _registry_growth_charts([view], snapshot_window='7d')['artifacts'] == []
+    legacy['series']['project_artifacts']['demo']['last'] = float('nan')
+    assert _committed_growth_chart_points(legacy, 'project_artifacts')[0] == []
+
+
+def test_registry_growth_overview_charts_and_summary_reuse_canonical_patterns() -> None:
+    from jinja2 import Environment
+
+    summary = (ROOT / 'app/templates/artifact_registry/partials/_analytics_summary.html').read_text()
+    growth = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_charts.html').read_text()
+    panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
+    page = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    script = (ROOT / 'app/static/js/artifact_registry/analytics_growth_chart.js').read_text()
+    worker = (ROOT / 'app/artifact_registry/analytics_history.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    inventory = (ROOT / 'app/templates/artifact_registry/partials/_inventory_workspace.html').read_text()
+    for template in (summary, growth, panel):
+        Environment().parse(template)
+
+    assert 'header_badge=posture_badge' in summary
+    assert "table_label.metadata_label(analytical_metrics|length" in summary
+    assert 'header_badge=posture_badge' in inventory
+    assert "artifact_registry/partials/_analytics_growth_charts.html" in panel
+    assert 'data-registry-growth-chart-panel' in growth
+    assert 'data-registry-growth-chart-series' in growth
+    assert 'data-registry-growth-chart' in growth
+    assert 'Historical Chart Not Available' in growth
+    assert 'Source Growth Trend Guide' in growth
+    assert 'chart.umd.min.js' in page
+    assert 'js/artifact_registry/analytics_growth_chart.js' in page
+    assert 'new Chart(' in script
+    assert "document.body.addEventListener('htmx:afterSwap'" in script
+    assert 'data-registry-growth-chart-series' in growth
+    assert 'MAX_HISTORY_CHART_POINTS = 48' in worker
+    assert "'chart_series': chart_series" in worker
+    assert "_registry_growth_charts(bundle['latest_rows'], snapshot_window=selected_window)" in presentation
+    assert 'MetricsConsumer' not in presentation
+    assert 'consumer.query_range(' in worker
+
+
 def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> None:
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
     section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
@@ -190,9 +331,10 @@ def test_registry_analytics_overview_uses_shared_tabs_and_bounded_committed_pane
         Environment().parse(template)
     assert 'artifact_registry/partials/_analytics_overview_workspace.html' in shell
     assert "section='summary'" in shell
-    assert "'Analytical Evidence Summary'" in (
-        ROOT / 'app/templates/artifact_registry/partials/_analytics_summary.html'
-    ).read_text()
+    assert (
+        "'Analytical Evidence Summary'"
+        in (ROOT / 'app/templates/artifact_registry/partials/_analytics_summary.html').read_text()
+    )
     assert 'analytics_domains =' not in shell
     assert 'Analytics Domains' not in shell
 
@@ -205,7 +347,7 @@ def test_registry_analytics_overview_uses_shared_tabs_and_bounded_committed_pane
     assert 'data-default-tab="growth"' in tabs
     assert 'hx-trigger="kaori:analytics-tab-activated once"' in tabs
     assert 'data-overview-lazy-section="true"' in tabs
-    assert "hx_sync=" not in tabs
+    assert 'hx_sync=' not in tabs
     assert 'hx-sync="this:replace"' in tabs
     assert "overview_panel='1'" in tabs
     assert 'provider_id=analytics.selected_provider_id' in tabs
@@ -228,9 +370,7 @@ def test_registry_analytics_overview_uses_shared_tabs_and_bounded_committed_pane
     # Test the actual shared tab geometry and unique panel identity after Jinja rendering.
     env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
     env.globals['url_for'] = lambda endpoint, **kwargs: f'/{endpoint.replace(".", "/")}'
-    rendered = env.get_template(
-        'artifact_registry/partials/_analytics_overview_workspace.html'
-    ).render(
+    rendered = env.get_template('artifact_registry/partials/_analytics_overview_workspace.html').render(
         analytics={
             'snapshot_count': 1,
             'provider_count': 1,
@@ -251,11 +391,12 @@ def test_registry_analytics_overview_uses_shared_tabs_and_bounded_committed_pane
     assert "overview_panel and section == 'summary'" in routes
     assert "context['data_readiness'] = build_registry_analytics_readiness(" in routes
     assert "'artifact_registry/partials/_analytics_overview_panel.html'" in routes
-    assert "return render_template(template, analytics=context)" in routes
+    assert 'return render_template(template, analytics=context)' in routes
     assert "@permission_required('artifact_registry.view')" in routes
-    assert 'dispatch_registered_job(' not in routes.split('def analytics_section(', 1)[1].split(
-        'def analytics_alerts_table(', 1
-    )[0]
+    assert (
+        'dispatch_registered_job('
+        not in routes.split('def analytics_section(', 1)[1].split('def analytics_alerts_table(', 1)[0]
+    )
     assert 'MetricsConsumer' not in routes
 
 
@@ -265,24 +406,26 @@ def test_registry_analytics_overview_panels_preserve_missing_data_and_evidence_a
     panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
     Environment().parse(panel)
 
-    assert "analytics.snapshot_count > 0" in panel
-    assert "if analytics.activity_rows else unknown" in panel
-    assert "if analytics.capacity_outlook.highest_utilization is not none else unknown" in panel
+    assert 'analytics.snapshot_count > 0' in panel
+    assert 'if analytics.activity_rows else unknown' in panel
+    assert 'if analytics.capacity_outlook.highest_utilization is not none else unknown' in panel
     assert "if analytics.capacity_outlook.nearest_quota_days is not none else 'No forecast'" in panel
-    assert "aggregate.governance_projects_assessed > 0" in panel
-    assert "if alerts_ready else unknown" in panel
-    assert "if has_snapshot else unknown" in panel
+    assert 'aggregate.governance_projects_assessed > 0' in panel
+    assert 'if alerts_ready else unknown' in panel
+    assert 'if has_snapshot else unknown' in panel
     assert 'Committed Source Coverage' in panel
     assert 'analytics.latest_rows[:5]' in panel
-    assert "readiness.current_count" in panel
+    assert 'readiness.current_count' in panel
     assert 'readiness.execution_label' in panel
-    assert "row.status_label, row.tone" in panel
+    assert 'row.status_label, row.tone' in panel
     assert 'No committed snapshots for the selected Registry and Time Range.' in panel
-    assert "analytics.growth_rows[:3]" in panel
-    assert "analytics.forecast_rows[:3]" in panel
-    assert "analytics.activity_rows[:3]" in panel
-    assert "analytics.insights[:3]" in panel
-    assert "analytics.alert_source_rows[:3]" in panel
+    charts = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_charts.html').read_text()
+    assert "artifact_registry/partials/_analytics_growth_charts.html" in panel
+    assert 'data-registry-growth-chart-panel' in charts
+    assert 'analytics.forecast_rows[:3]' in panel
+    assert 'analytics.activity_rows[:3]' in panel
+    assert 'analytics.insights[:3]' in panel
+    assert 'analytics.alert_source_rows[:3]' in panel
     assert 'no automatic cleanup' in panel
     assert 'Missing pull metrics do not imply zero demand.' in panel
     assert 'not interchangeable' in panel
@@ -330,6 +473,7 @@ def test_registry_overview_panels_render_unknown_without_fabricating_evidence() 
             'growth_display': 'N/A',
         },
         'growth_rows': [],
+        'growth_charts': {'artifacts': [], 'storage': []},
         'forecast_rows': [],
         'activity_rows': [],
         'alert_source_rows': [],
@@ -769,7 +913,10 @@ def test_registry_alert_workspace_reuses_committed_alert_evidence_contract() -> 
     template = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
 
-    assert "'artifact_registry.analytics_alerts'" in shell
+    overview_tabs = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_workspace.html').read_text()
+    overview_panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
+    assert "('alerts', 'Alerts', 'triangle-alert')" in overview_tabs
+    assert "url_for('artifact_registry.analytics_' ~ overview_domain" in overview_panel
     assert 'Alertmanager is primary. Metrics Source is fallback evidence.' in template
     assert 'committed Analytics materialization' in template
     assert 'alert_per_page' in template

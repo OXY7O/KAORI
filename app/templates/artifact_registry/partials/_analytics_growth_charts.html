@@ -1,0 +1,72 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
+{% set growth_charts = analytics.growth_charts %}
+<section class="border-t border-outline-subtle"
+         data-registry-growth-charts>
+    <header class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+        <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+                <h4 class="text-sm font-semibold text-content-primary">Source Growth Trend</h4>
+                {{ info_tip.render('registry-analytics-growth-chart-guide',
+                                'Source Growth Trend Guide',
+                                'Charts only use measured Registry Metrics Source range evidence committed by the Analytics worker.',
+                                items=[
+                                'Each plotted source is a Registry provider; fleet views do not merge independent sources with different timestamps.',
+                                'New snapshots retain up to 48 measured points per chart. Older snapshots expose two actual start/end checkpoints, not an interpolated history.',
+                                'Artifact Count and Storage Usage use separate units. The selected Registry and Time Range control both charts.',
+                                'Missing, partial, or inconsistent historical series are not converted to a flat zero line.'
+                                ], placement='right', variant='guide') }}
+            </div>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">Worker-committed measured samples for the selected Registry and Time Range.</p>
+        </div>
+        {{ table_label.metadata_label(analytics.snapshot_window|upper ~ ' History', 'calendar-range', size='compact') }}
+    </header>
+    <div class="grid gap-4 p-4 lg:grid-cols-2 sm:p-5">
+        {% set growth_chart_metrics = [('artifacts', 'Artifact Count', 'Observed Registry artifact identities per source.'), ('storage', 'Storage Usage', 'Observed project storage usage in bytes per source.')] %}
+        {% for key, title, description in growth_chart_metrics %}
+            {% set series = growth_charts[key] %}
+            <article class="min-w-0 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card p-4"
+                     data-registry-growth-chart-panel="{{ key }}"
+                     data-registry-growth-chart-series="{{ series|tojson|forceescape }}">
+                <div class="flex flex-wrap items-start justify-between gap-2">
+                    <div class="min-w-0">
+                        <h5 class="text-sm font-semibold text-content-primary">{{ title }}</h5>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                    </div>
+                    {{ table_label.metadata_label(series|length ~ ' Sources', 'database', size='compact') }}
+                </div>
+                {% if series %}
+                    <div class="relative mt-4 h-64 rounded-lg border border-outline-subtle bg-surface-card p-3">
+                        <canvas data-registry-growth-chart
+                                width="720"
+                                height="280"
+                                role="img"
+                                aria-label="{{ title }} observed source history chart"></canvas>
+                    </div>
+                    <dl class="sr-only" aria-label="{{ title }} measured source values">
+                        {% for source in series %}
+                            <dt>{{ source.label }} ({{ source.mode }})</dt>
+                            <dd>Start {{ source.points[0].value }} at {{ source.points[0].timestamp }} Unix seconds; end {{ source.points[-1].value }} at {{ source.points[-1].timestamp }} Unix seconds.</dd>
+                        {% endfor %}
+                    </dl>
+                    {% set has_endpoint_only = series|selectattr('mode', 'equalto', 'checkpoints')|list|length > 0 %}
+                    <p class="mt-3 text-xs leading-5 text-content-muted">
+                        {% if has_endpoint_only %}
+                            Dashed checkpoint series show only committed start/end observations; intermediate samples were not retained.
+                        {% else %}
+                            Solid lines connect qualified measured samples; no projection or extrapolation is shown.
+                        {% endif %}
+                    </p>
+                {% else %}
+                    <div class="mt-4 flex min-h-52 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-outline-subtle bg-surface-hover px-5 text-center">
+                        <i data-lucide="chart-no-axes-column-increasing"
+                           class="h-5 w-5 text-content-muted"
+                           aria-hidden="true"></i>
+                        <p class="text-sm font-semibold text-content-primary">Historical Chart Not Available</p>
+                        <p class="max-w-md text-xs leading-5 text-content-secondary">At least two qualified measured checkpoints are required for the selected Registry and Time Range.</p>
+                    </div>
+                {% endif %}
+            </article>
+        {% endfor %}
+    </div>
+</section>

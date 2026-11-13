@@ -667,7 +667,7 @@ def analytics_collect_status(public_id: str) -> ResponseReturnValue:
 @permission_required('artifact_registry.view')
 def analytics_section(section: str) -> ResponseReturnValue:
     # Overview tab content reuses the authorized committed section projection,
-    # without loading full detail workspaces or triggering provider requests.
+    # without loading full detail workspaces or triggering provider reads.
     overview_panel = request.args.get('overview_panel', '', type=str) == '1'
     allowed = {'summary', 'growth', 'capacity', 'usage', 'risk', 'governance', 'alerts', 'insights'}
     if section not in allowed and not (overview_panel and section == 'evidence'):

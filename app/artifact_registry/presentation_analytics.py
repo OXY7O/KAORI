@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from math import isfinite
 from typing import Any
 
 from werkzeug.exceptions import NotFound
@@ -353,6 +354,90 @@ def _collect_analytics_rows(identities: list[Any], *, snapshot_window: str = '24
                     {'registry_name': identity.name, 'provider_key': identity.provider_key, **forecast}
                 )
     return bundle
+
+
+def _committed_growth_chart_points(
+    history: dict[str, Any], metric: str
+) -> tuple[list[dict[str, float]], str, int]:
+    """Use worker-measured samples, or explicit legacy start/end checkpoints."""
+    plotted = history.get('chart_series')
+    series = plotted.get(metric) if isinstance(plotted, dict) else None
+    if isinstance(series, list) and 2 <= len(series) <= 48:
+        points: list[dict[str, float]] = []
+        for sample in series:
+            if not isinstance(sample, dict):
+                return [], 'unavailable', 0
+            timestamp, value = sample.get('timestamp'), sample.get('value')
+            if not all(isinstance(number, (int, float)) and isfinite(number) for number in (timestamp, value)):
+                return [], 'unavailable', 0
+            if value < 0 or (points and timestamp <= points[-1]['timestamp']):
+                return [], 'unavailable', 0
+            points.append({'timestamp': float(timestamp), 'value': float(value)})
+        return points, 'measured', len(points)
+
+    # Older committed worker snapshots retain only first/last, not the intervening
+    # samples. Chart two observed checkpoints, never interpolate missing history.
+    legacy = history.get('series')
+    projects = legacy.get(metric) if isinstance(legacy, dict) else None
+    if not isinstance(projects, dict) or not projects:
+        return [], 'unavailable', 0
+    first_times: set[float] = set()
+    last_times: set[float] = set()
+    first_total = last_total = 0.0
+    for pair in projects.values():
+        if not isinstance(pair, dict):
+            return [], 'unavailable', 0
+        numbers = (pair.get('start_time'), pair.get('end_time'), pair.get('first'), pair.get('last'))
+        if not all(isinstance(value, (int, float)) and isfinite(value) for value in numbers):
+            return [], 'unavailable', 0
+        start, end, first, last = numbers
+        if start >= end or first < 0 or last < 0:
+            return [], 'unavailable', 0
+        first_times.add(float(start))
+        last_times.add(float(end))
+        first_total += float(first)
+        last_total += float(last)
+    if len(first_times) != 1 or len(last_times) != 1:
+        return [], 'unavailable', 0
+    return [
+        {'timestamp': next(iter(first_times)), 'value': first_total},
+        {'timestamp': next(iter(last_times)), 'value': last_total},
+    ], 'checkpoints', 2
+
+
+def _registry_growth_charts(
+    latest_rows: list[dict[str, Any]], *, snapshot_window: str
+) -> dict[str, list[dict[str, Any]]]:
+    """At most three per-provider plots from matching, committed measured ranges."""
+    result: dict[str, list[dict[str, Any]]] = {'artifacts': [], 'storage': []}
+    if snapshot_window == 'current':
+        return result
+    for view in latest_rows:
+        snapshot = view.get('snapshot')
+        if snapshot is None or not isinstance(snapshot.payload_json, dict):
+            continue
+        history = snapshot.payload_json.get('history')
+        if (
+            not isinstance(history, dict)
+            or history.get('source') != 'metrics_source_query_range'
+            or history.get('time_range') != snapshot_window
+            or history.get('status') not in {'ready', 'partial'}
+        ):
+            continue
+        for label, metric in (('artifacts', 'project_artifacts'), ('storage', 'project_usage_bytes')):
+            if len(result[label]) >= 3:
+                continue
+            points, mode, count = _committed_growth_chart_points(history, metric)
+            if points:
+                result[label].append({
+                    'label': str(view['identity'].name),
+                    'points': points,
+                    'mode': mode,
+                    'sample_count': count,
+                })
+        if all(len(series) >= 3 for series in result.values()):
+            break
+    return result
 
 
 def _analytics_recommendations(active_tab: str) -> list[dict[str, str]]:
@@ -771,6 +856,7 @@ def build_analytics(
             bundle['activity_rows'],
             key=lambda row: (-float(row['pull_count']), row['project_name'].casefold()),
         )[:5],
+        'growth_charts': _registry_growth_charts(bundle['latest_rows'], snapshot_window=selected_window),
         'growth_rows': sorted(
             growth_rows,
             key=lambda row: (
