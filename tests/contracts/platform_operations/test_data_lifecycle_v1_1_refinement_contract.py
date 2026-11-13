@@ -46,7 +46,9 @@ def test_retention_policy_explains_schedule_failure_and_worker_semantics() -> No
     config = read('app/config/default.py')
 
     assert 'Retention changes eligibility only; no job runs immediately.' in policy
-    assert 'Requires Policy enabled + Scheduled execution.' in policy
+    assert 'Policy + schedule required.' in policy
+    assert "{{ lifecycle.next_schedule_label or 'No scheduled run.' }}" in policy
+    assert 'The dispatcher checks due policies every 15 minutes.' in policy
     assert 'Cleanup blocked; transient failures retry once, then need manual retry.' in policy
     assert 'Queue {{ lifecycle.queue_name }} · {{ lifecycle.worker.label }}' in policy
     assert "crontab(minute='*/15')" in config
