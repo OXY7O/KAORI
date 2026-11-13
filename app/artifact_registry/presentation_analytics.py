@@ -203,7 +203,12 @@ def _accumulate_metrics(
         ('task_queue_size', 'task_queue_size'),
     ):
         raw_value = metrics.get(metric_key)
-        if isinstance(raw_value, (int, float)):
+        if (
+            metrics_ready
+            and isinstance(raw_value, (int, float))
+            and not isinstance(raw_value, bool)
+            and 0 <= raw_value < float('inf')
+        ):
             aggregate[aggregate_key] += float(raw_value)
 
     pull_activity = metrics.get('project_pull_count')
