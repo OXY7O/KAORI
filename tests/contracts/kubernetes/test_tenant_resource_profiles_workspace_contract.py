@@ -66,6 +66,46 @@ def test_resource_profiles_use_server_owned_kaori_content_tabs_and_snapshot_stat
     assert 'destructive_confirmation_modal.js' in page
 
 
+def test_resource_profile_summary_guides_and_modal_chrome_match_inventory_pattern() -> None:
+    page = read('app/templates/kubernetes/tenant/resource_profiles.html')
+    workflow = read('app/templates/kubernetes/tenant/partials/_resource_profile_workflow.html')
+    manage = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
+    allocation = read('app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html')
+    adoption = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
+
+    assert 'components/info_tip.html' in page
+    assert 'components/table_label.html' in page
+    assert "header_badge=table_label.metadata_label((profile_metrics|length)" in page
+    assert "info_tip.render('resource-profile-administration-guide'" in page
+    assert "variant='guide'" in page
+    assert "info_tip.render('resource-profile-lifecycle-guide'" in workflow
+    assert "variant='guide'" in workflow
+    assert "action_href=url_for('tenant.namespace_provisioning')" in workflow
+
+    assert 'Committed Profile Contract' in manage
+    assert 'data-kaori-dialog-close' in manage
+    assert 'aria-label="Resource Profile destructive action"' in manage
+    assert manage.index('aria-label="Resource Profile destructive action"') < manage.index('<footer')
+    assert "url_for('tenant.delete_resource_profile_route', profile_id=profile.id)" in manage
+    assert manage.count('data-destructive-modal-open') == 1
+    assert 'data-destructive-submit-button-id="resource-profile-delete-submit-{{ profile.id }}"' in manage
+    assert '{% if not can_manage or usage.total %}disabled aria-disabled="true"{% endif %}' in manage
+    assert 'form="resource-profile-update-form-{{ profile.id }}"' in manage
+    assert 'Versioned intent · Existing Namespace snapshots remain pinned.' in manage
+    assert 'class="kaori-native-dialog' in manage
+
+    budget_modal = allocation.split('<dialog id="{{ budget_guide_dialog_id }}"', 1)[1]
+    budget_modal = budget_modal.split('</dialog>', 1)[0]
+    assert 'max-w-3xl' in budget_modal
+    assert 'max-w-2xl' not in budget_modal
+    assert 'Ready-worker allocatable' in budget_modal
+    assert 'unmanaged commitment' in budget_modal
+    assert 'Human confirmation.' in adoption
+    assert 'Managed adoption blocked until Capsule quota authority is admitted; revalidate before retry.' in adoption
+    assert 'Exact provider reason' in adoption
+    assert 'row.adoption_management_blocker' in adoption
+
+
 def test_capacity_decisions_registry_is_compact_and_exposes_read_only_evidence() -> None:
     template = read('app/templates/kubernetes/tenant/partials/_capacity_decisions.html')
     model = read('app/models/tenant.py')
