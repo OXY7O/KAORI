@@ -784,7 +784,7 @@ loading convention applies to all committed analytical summaries and
 domain sections before aggregation/pagination. K8s time ranges describe measured provider metrics. Registry's validated
 `1h, 6h, 12h, 24h, 7d, 30d, 60d` windows now select committed
 `RegistryAnalyticsSnapshot.time_range` datasets collected through bounded
-worker-owned Metrics Source `query_range` (§1108); the legacy `current`
+worker-owned Metrics Source `query_range` (#1108); the legacy `current`
 window remains a separate instant snapshot. A successful Analytics worker
 implementation does **not** prove that a particular provider/source has usable
 history: unsupported range capability, insufficient retention, malformed
@@ -873,15 +873,14 @@ Normal selectable ranges are projected from
 `app/common/analytics/params.py::get_allowed_time_ranges()`; the
 `snapshot_window=current` legacy URL explicitly renders its own special
 option only while selected. **Range selection now selects a worker-materialized measured `time_range`
-dataset where Metrics Source history was qualified** (§1108); `current` keeps
+dataset where Metrics Source history was qualified** (#1108); `current` keeps
 legacy instant semantics. Source capability/retention and valid current snapshot
 readiness remain separate gates, not guaranteed by sharing the UI.
 Provider adapters must supply normalized evidence while future Registry
 instances reuse the same controls without forking markup.
 
 The current source-level seven-domain evidence and UX gap assessment is
-recorded in [Artifact Registry Analytics Evidence and UX Gap Analysis]
-(artifact-registry-analytics-evidence-ux-gap-analysis.md) under #4615. It
+recorded in [Artifact Registry Analytics Evidence and UX Gap Analysis](artifact-registry-analytics-evidence-ux-gap-analysis.md) under #4615. It
 separates existing materialized capabilities from source readiness and UI
 drilldown maturity; substantive domain work remains in bounded issues.
 
