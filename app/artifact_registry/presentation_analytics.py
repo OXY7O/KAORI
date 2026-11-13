@@ -391,6 +391,10 @@ def _governance_policy_coverage(aggregate: dict[str, Any], policy: str) -> float
     Unknown/unobserved projects must not be counted as not configured or
     silently converted to a clean governance posture.
     """
+    # Only supported, source-backed policy families may produce coverage.
+    # An arbitrary aggregate key must not be interpreted as governance evidence.
+    if policy not in ('retention', 'immutability'):
+        return None
     configured = aggregate.get(f'{policy}_configured')
     not_configured = aggregate.get(f'{policy}_not_configured')
     assessed = aggregate.get('governance_projects_assessed')
