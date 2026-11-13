@@ -20,7 +20,11 @@ TITLE_GUIDES = {
     ),
     '_tenant_access_grants_workspace.html': ('access-grant-form-tip',),
     '_tenant_credentials_workspace.html': ('human-credential-tip', 'deployer-credential-tip'),
-    '_tenant_namespace_access_workspace.html': ('namespace-access-tip',),
+    '_namespace_access_registry.html': ('tenant-namespace-access-registry-guide',),
+    '_credential_registry.html': ('tenant-credential-lifecycle-registry-guide',),
+    '_access_grant_registry.html': ('tenant-access-grant-registry-guide',),
+    '_external_capsule_access_inventory.html': ('tenant-capsule-external-access-inventory-guide',),
+    '_native_namespace_rbac_inventory.html': ('tenant-native-namespace-rbac-inventory-guide',),
     '_namespace_form.html': ('namespace-provisioning-contract-tip',),
     '_capacity_governance.html': (
         'tenant-capacity-policy-tip',
@@ -63,6 +67,42 @@ def test_every_approved_tenant_title_guide_uses_shared_variant() -> None:
     advanced = _tip_expressions(_read('_resource_profile_advanced_controls.html'))
     assert len(advanced) == 2
     assert all("variant='guide'" in expression for expression in advanced)
+
+
+def test_access_inventory_guides_belong_to_five_titles_without_overview_duplicate() -> None:
+    registry_titles = {
+        '_namespace_access_registry.html': 'Namespace Access Registry',
+        '_credential_registry.html': 'Credential Lifecycle',
+        '_access_grant_registry.html': 'Access Grant Registry',
+    }
+    for filename, title in registry_titles.items():
+        source = _read(filename)
+        guide_id = TITLE_GUIDES[filename][0]
+        assert f"'{title}'" in source
+        assert source.count(f"'{guide_id}'") == 1
+        assert 'title_extra=title_info' in source
+        assert source.index(guide_id) < source.index(f"'{title}'")
+        assert 'result_count=' in source
+
+    provider_titles = {
+        '_external_capsule_access_inventory.html': 'External Capsule Access Inventory',
+        '_native_namespace_rbac_inventory.html': 'Native Namespace RBAC Inventory',
+    }
+    for filename, title in provider_titles.items():
+        source = _read(filename)
+        header = source.split('</header>', 1)[0]
+        guide_id = TITLE_GUIDES[filename][0]
+        assert header.index(title) < header.index(guide_id)
+        assert header.count(f"'{guide_id}'") == 1
+        assert "variant='guide'" in header
+        assert 'Authority' in header
+        assert 'aria-labelledby=' in source
+
+    overview = _read('_tenant_namespace_access_workspace.html')
+    assert 'Effective Namespace Access' in overview
+    assert 'Security Boundary' in overview
+    assert 'namespace-access-tip' not in overview
+    assert 'info_tip.render' not in overview
 
 
 def test_capsule_initial_owner_uses_one_shared_section_guide() -> None:

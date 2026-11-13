@@ -75,7 +75,7 @@ def test_resource_profile_summary_guides_and_modal_chrome_match_inventory_patter
 
     assert 'components/info_tip.html' in page
     assert 'components/table_label.html' in page
-    assert "header_badge=table_label.metadata_label((profile_metrics|length)" in page
+    assert 'header_badge=table_label.metadata_label((profile_metrics|length)' in page
     assert "info_tip.render('resource-profile-administration-guide'" in page
     assert "variant='guide'" in page
     assert "info_tip.render('resource-profile-lifecycle-guide'" in workflow
@@ -1333,7 +1333,7 @@ def test_resource_profile_copy_is_compact_and_version_intent_remains_clear() -> 
     assert 'Adopted / Managed · Governed provider cutover.' in adoption
     assert 'Exact provider reason' in adoption
     assert 'Provider Mirrored · No provider writes.' in adoption
-    assert 'Adopted / Managed.' in adoption
+    assert 'Adopted / Managed · Governed provider cutover.' in adoption
     assert 'Namespace Attached · Managed Allocation.' in adoption
     assert 'Adopted / Provider Mirrored' in adoption
 

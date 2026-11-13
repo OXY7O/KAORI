@@ -3,6 +3,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/info_tip.html" as info_tip %}
 <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
          aria-labelledby="external-capsule-access-heading">
     <header class="flex min-w-0 flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-5 py-4">
@@ -12,8 +13,19 @@
                 <i data-lucide="shield-question" class="h-5 w-5"></i>
             </span>
             <div class="min-w-0">
-                <h3 id="external-capsule-access-heading"
-                    class="text-base font-semibold text-content-primary">External Capsule Access Inventory</h3>
+                <div class="flex min-h-6 flex-wrap items-center gap-1.5">
+                    <h3 id="external-capsule-access-heading"
+                        class="text-base font-semibold text-content-primary">External Capsule Access Inventory</h3>
+                    {{ info_tip.render('tenant-capsule-external-access-inventory-guide',
+                            'External Capsule Access Inventory Guide',
+                            'Inspect committed observation evidence for Capsule-owned external access without changing provider grants.',
+                            [
+                            'Capsule remains authoritative for Tenant ownership and external access; KAORI records inspection evidence.',
+                            'Inspection is an explicit read-only provider observation, not a membership import or RBAC mutation.',
+                            'Not inspected stays visible until a committed inspection event exists.'
+                            ],
+                            placement='right', variant='guide') }}
+                </div>
                 <p class="mt-1 max-w-3xl text-xs leading-5 text-content-secondary">
                     Read-only observation of Capsule owners and external grants. Capsule remains authoritative.
                 </p>

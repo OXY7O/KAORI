@@ -486,8 +486,8 @@ def test_namespace_access_is_a_paginated_non_secret_registry() -> None:
 
     assert 'Effective Namespace Access' in workspace
     assert 'Security Boundary' in workspace
-    assert 'components/info_tip.html' in workspace
-    assert 'namespace-access-tip' in workspace
+    assert 'components/info_tip.html' not in workspace
+    assert 'namespace-access-tip' not in workspace
     assert 'Derived Evidence' in workspace
     assert 'Credential Context' in workspace
     assert '_namespace_access_registry.html' in workspace
@@ -518,7 +518,6 @@ def test_tenant_card_guidance_is_title_adjacent_and_hover_overflow_is_visible() 
         ('Apply Access Grant', 'access-grant-form-tip', grants),
         ('Human Access Credential', 'human-credential-tip', credentials),
         ('Workload Deployment Credential', 'deployer-credential-tip', credentials),
-        ('Effective Namespace Access', 'namespace-access-tip', namespace_access),
     ):
         title_index = source.index(title)
         tip_index = source.index(tip_id)
@@ -529,6 +528,8 @@ def test_tenant_card_guidance_is_title_adjacent_and_hover_overflow_is_visible() 
     assert 'flex h-full flex-col overflow-visible' in grants
     assert credentials.count('flex h-full flex-col overflow-visible') >= 2
     assert 'overflow-visible rounded-xl' in namespace_access
+    assert 'Effective Namespace Access' in namespace_access
+    assert 'namespace-access-tip' not in namespace_access
 
     # Capsule ownership has one section-owned Guide; distinct field helpers remain.
     assert "'capsule-initial-owner-guide-tip'" in tenant_form
