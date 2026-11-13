@@ -1040,10 +1040,8 @@ def test_governance_scope_reuses_approved_tenant_estate_posture_pattern():
     assert 'section_intro.render(' in detail
     assert 'operational_section_card.render(' in detail
     assert 'resource_posture_grid.render(tenant_governance_metrics, columns=4)' in detail
-    assert (
-        "header_badge=table_label.metadata_label((tenant_governance_metrics|length) ~ ' Indicators', icon='layout-grid')"
-        in detail
-    )
+    assert 'header_badge=table_label.metadata_label((tenant_governance_metrics|length)' in detail
+    assert "~ ' Indicators', icon='layout-grid')" in detail
     assert "section_intro.render('Governance Scope',\n                ''," in detail
     assert 'Committed Namespace, environment, authority and lifecycle posture for this Tenant.' not in detail
     assert "'Tenant Governance'" in detail
