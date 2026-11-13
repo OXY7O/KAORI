@@ -225,7 +225,7 @@ def _accumulate_metrics(
         for project_name, raw_value in pull_activity.items():
             # A missing or blank project identity cannot be attributed to a
             # Registry project and must not become a synthetic activity row.
-            if not isinstance(project_name, str) or not project_name.strip():
+            if not isinstance(project_name, str) or not project_name.strip() or project_name != project_name.strip():
                 continue
             if (
                 isinstance(raw_value, (int, float))
