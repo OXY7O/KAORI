@@ -83,6 +83,24 @@ Performance ownership is bounded: Provider Registry reads only lightweight bindi
 
 Managed asset ownership is declared by Integration taxonomy capability metadata (`asset_types`). Domain landing services remain provider-neutral and must not query `KubernetesConnection`, `MetricsSource`, `AlertmanagerInstance`, `MinioInstance`, or future provider-specific models directly.
 
+
+The Consumer Asset cell has **one shared visual identity** across domain
+Consumer Bindings and the provider-owned Metrics Source / Alertmanager Consumer
+Binding registries: `integrations/components/_workspace.html::consumer_asset_identity`.
+It reuses the approved Violet `palette_icon` with the canonical managed-asset
+title, then displays the stable asset key (domain registry) or consumer profile
+(provider binding registry) as secondary context. An asset type identical to the
+title is omitted **only from the second line** (case/whitespace-insensitive).
+When an asset is custom-named, the distinct type remains visible alongside
+its key/profile. Type-specific icons follow the existing Integrations icon
+vocabulary for Kubernetes, Object Storage, Vault, and default managed assets.
+Long keys wrap naturally and remain available in full; do not use a duplicated
+type prefix, truncated UUID, a page-local second icon system, or additional
+provider lookups to decorate a binding. This presentation rule applies to all
+domain landing pages through their existing shared workspace template and to
+the two provider-owned source binding registries; it does not change source
+authority, validation, filters, pagination, row navigation or binding identity.
+
 Provider Core Validation and Binding Validation remain separate evidence boundaries on the domain page. Provider Registry readiness reflects provider Core Validation; the Bindings tab shows the selected consumer profile, selector, and binding validation status.
 
 

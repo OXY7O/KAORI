@@ -36,6 +36,34 @@
            class="{{ icon_class or ('h-5 w-5' if size in ['lg', 'xl'] else ('h-3.5 w-3.5' if size in ['sm', 'xs'] else 'h-4 w-4')) }}"></i>
     </span>
 {%- endmacro %}
+{% macro consumer_asset_identity(label, asset_type, metadata=none, type_label=none, metadata_is_key=false) -%}
+    {% set asset_icon = 'boxes' %}
+    {% if asset_type == 'object_storage_system' %}
+        {% set asset_icon = 'database' %}
+    {% elif asset_type == 'vault_instance' %}
+        {% set asset_icon = 'key-round' %}
+    {% elif asset_type == 'artifact_registry' %}
+        {% set asset_icon = 'package' %}
+    {% endif %}
+    {% set distinct_type = type_label and type_label|trim|lower != label|trim|lower %}
+    <div class="flex min-w-0 items-start gap-2.5" data-kaori-consumer-asset-identity>
+        {{ palette_icon(asset_icon, 'brand', size='sm') }}
+        <div class="min-w-0">
+            <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]"
+               title="{{ label }}">{{ label }}</p>
+            {% if distinct_type or metadata %}
+                <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]"
+                   title="{{ metadata or type_label or label }}">
+                    {% if distinct_type %}<span class="text-content-secondary">{{ type_label }}</span>{% endif %}
+                    {% if distinct_type and metadata %}<span aria-hidden="true"> · </span>{% endif %}
+                    {% if metadata %}
+                        <span class="{{ 'font-mono' if metadata_is_key else '' }}">{{ metadata }}</span>
+                    {% endif %}
+                </p>
+            {% endif %}
+        </div>
+    </div>
+{%- endmacro %}
 {% macro section_header(icon, title, description, eyebrow=None, action_html=None, tone='brand', title_extra=None) -%}
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

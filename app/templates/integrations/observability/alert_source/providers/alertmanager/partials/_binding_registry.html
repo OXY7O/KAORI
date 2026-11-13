@@ -46,18 +46,10 @@
                 {% for row in binding_registry_rows %}
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }}">
-                            <div class="flex min-w-0 items-start gap-3">
-                                {{ integration_ui.palette_icon("database" if row.binding.asset_type == "object_storage_system" else "boxes", "brand", size="sm") }}
-                                <div class="min-w-0">
-                                    <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]"
-                                       title="{{ row.scope_label }}">{{ row.scope_label }}</p>
-                                    <div class="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-content-muted">
-                                        <span class="font-medium text-content-secondary">{{ row.scope_type_label }}</span>
-                                        <span aria-hidden="true">·</span>
-                                        <span class="truncate" title="{{ row.consumer_profile_label }}">{{ row.consumer_profile_label }}</span>
-                                    </div>
-                                </div>
-                            </div>
+                            {{ integration_ui.consumer_asset_identity(row.scope_label,
+                                                                        row.binding.asset_type,
+                                                                        metadata=row.consumer_profile_label,
+                                                                        type_label=row.scope_type_label) }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             <div class="{{ binding_registry_layout.state_cell_classes() }}"

@@ -401,10 +401,11 @@
                             {% for row in binding_registry_rows %}
                                 <tr class="{{ table_ui.row_classes() }}">
                                     <td class="{{ table_ui.cell_classes() }}">
-                                        <p class="text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]"
-                                           title="{{ row.consumer_label }}">{{ row.consumer_label }}</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted [overflow-wrap:anywhere]"
-                                           title="{{ row.asset_key }}">{{ row.asset_type_label }} · {{ row.asset_key }}</p>
+                                        {{ integration_ui.consumer_asset_identity(row.consumer_label,
+                                                                                    row.asset_type,
+                                                                                    metadata=row.asset_key,
+                                                                                    type_label=row.asset_type_label,
+                                                                                    metadata_is_key=true) }}
                                     </td>
                                     <td class="{{ table_ui.cell_classes() }}">
                                         <div class="flex min-w-0 items-start gap-2.5">

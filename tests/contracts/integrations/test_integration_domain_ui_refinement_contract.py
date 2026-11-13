@@ -335,3 +335,72 @@ def test_provider_cards_preserve_section_guide_without_field_question_icons() ->
     assert 'portal.appendChild(preview)' in controller
     assert '<style' not in selector
     assert '<script' not in selector
+
+
+def test_consumer_asset_identity_is_shared_and_omits_duplicate_taxonomy_label() -> None:
+    from jinja2 import DictLoader, Environment
+
+    shared_path = 'app/templates/integrations/components/_workspace.html'
+    shared = read(shared_path)
+    domain = read('app/templates/integrations/partials/_domain_workspace.html')
+    domain_page = read('app/templates/integrations/domain.html')
+    providers = (
+        'app/templates/integrations/observability/metrics_source/partials/_binding_registry.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html',
+    )
+
+    assert (
+        'macro consumer_asset_identity(label, asset_type, metadata=none, type_label=none, metadata_is_key=false)'
+        in shared
+    )
+    assert "palette_icon(asset_icon, 'brand', size='sm')" in shared
+    assert 'type_label|trim|lower != label|trim|lower' in shared
+    assert 'data-kaori-consumer-asset-identity' in shared
+    assert 'integrations/partials/_domain_workspace.html' in domain_page
+    assert 'integration_ui.consumer_asset_identity(row.consumer_label,' in domain
+    assert 'metadata=row.asset_key' in domain
+    assert 'type_label=row.asset_type_label' in domain
+    assert 'metadata_is_key=true' in domain
+    assert '{{ row.asset_type_label }} · {{ row.asset_key }}' not in domain
+    assert 'row.source_name' in domain
+    assert 'binding_registry_pagination.allowed_per_page' in domain
+
+    for path in providers:
+        provider = read(path)
+        assert 'integration_ui.consumer_asset_identity(row.scope_label,' in provider
+        assert 'row.binding.asset_type' in provider
+        assert 'metadata=row.consumer_profile_label' in provider
+        assert 'type_label=row.scope_type_label' in provider
+        assert 'data-kaori-binding-registry-table' in provider
+        assert 'data-kaori-binding-view-more' in provider
+
+    templates = {
+        'integrations/components/_workspace.html': shared,
+        'components/loading_bar.html': '',
+    }
+    env = Environment(loader=DictLoader(templates), autoescape=True)
+    macro = env.get_template('integrations/components/_workspace.html').module.consumer_asset_identity
+
+    kubernetes = str(macro('Kubernetes Cluster', 'kubernetes_cluster', 'cluster-123', 'Kubernetes Cluster', True))
+    assert 'data-lucide="boxes"' in kubernetes
+    assert 'title="Kubernetes Cluster">Kubernetes Cluster</p>' in kubernetes
+    assert 'title="cluster-123"' in kubernetes
+    assert '<span class="font-mono">cluster-123</span>' in kubernetes
+    assert '<span class="text-content-secondary">Kubernetes Cluster</span>' not in kubernetes
+
+    storage = str(
+        macro('Object Storage System', 'object_storage_system', 'storage-456', 'Object Storage System', True)
+    )
+    assert 'data-lucide="database"' in storage
+    assert '<span class="font-mono">storage-456</span>' in storage
+    assert '<span class="text-content-secondary">Object Storage System</span>' not in storage
+
+    custom_name = str(macro('Kubernetes X300', 'kubernetes_cluster', 'cluster-789', 'Kubernetes Cluster', True))
+    assert 'title="Kubernetes X300">Kubernetes X300</p>' in custom_name
+    assert '<span class="text-content-secondary">Kubernetes Cluster</span>' in custom_name
+    assert 'cluster-789' in custom_name
+
+    provider_scope = str(macro('Kubernetes Cluster', 'kubernetes_cluster', 'Production Profile', 'Kubernetes Cluster'))
+    assert 'Production Profile' in provider_scope
+    assert '<span class="text-content-secondary">Kubernetes Cluster</span>' not in provider_scope
+    assert '<span class="font-mono">' not in provider_scope
