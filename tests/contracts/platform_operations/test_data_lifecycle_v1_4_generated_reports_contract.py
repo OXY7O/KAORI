@@ -166,8 +166,6 @@ def test_all_seven_lifecycle_copy_refinements_preserve_evidence_and_status_terms
     assert 'Ready, Failed and Archived after hot retention.' in generated
     assert 'PDF/XLSX/CSV checksum-verified before cleanup.' in generated
     assert 'Source files stay intact until archive and supplements pass verification.' in generated
-    assert (
-        'Ready and manually Archived reports copy PDF, XLSX, or CSV files to archive storage, '
-        'verifying SHA-256 before source-file or row cleanup.'
-    ) in workspace
-    assert 'Requested, Queued, Generating, and active regeneration remain protected.' in workspace
+    assert 'Ready/Archived PDF/XLSX/CSV are SHA-256-verified before cleanup;' in workspace
+    assert 'pending or regenerating reports remain protected.' in workspace
+    assert 'Requested, Queued, Generating, active regeneration jobs' in workspace
