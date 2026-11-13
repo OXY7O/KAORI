@@ -43,8 +43,8 @@ def test_desktop_sidebar_toggle_uses_state_aware_panel_icons() -> None:
     collapsed = trigger.index('x-show="!sidebarExpanded"')
     expand_icon = trigger.index('data-lucide="panel-right-close"')
     assert expanded < collapse_icon < collapsed < expand_icon
-    assert ':title="sidebarExpanded ? \'Collapse navigation\' : \'Expand navigation\'"' in trigger
-    assert ':aria-label="sidebarExpanded ? \'Collapse navigation\' : \'Expand navigation\'"' in trigger
+    assert ":title=\"sidebarExpanded ? 'Collapse navigation' : 'Expand navigation'\"" in trigger
+    assert ":aria-label=\"sidebarExpanded ? 'Collapse navigation' : 'Expand navigation'\"" in trigger
     assert ':aria-expanded="sidebarExpanded.toString()"' in trigger
     assert 'aria-controls="app-sidebar"' in trigger
     assert 'lg:inline-flex' in trigger
