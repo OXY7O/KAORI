@@ -96,17 +96,17 @@
         {% endcall %}
     </div>
     <div class="w-full min-w-0 max-w-full overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[840px] table-fixed xl:min-w-0') }}">
+        <table class="{{ table_ui.table_classes('min-w-[960px] table-fixed xl:min-w-0') }}">
             <caption class="sr-only">Tenant group registry.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Group</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Tenant</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Kubernetes Subject</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">State</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Updated</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Group</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Tenant</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Kubernetes Subject</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[11%]">State</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Updated</th>
                     <th scope="col"
-                        class="{{ table_ui.header_cell_classes(action=true) }} w-[26%]">Actions</th>
+                        class="{{ table_ui.header_cell_classes(action=true) }} w-[22%]">Actions</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">

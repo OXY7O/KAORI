@@ -14,8 +14,8 @@ REGISTRIES = {
     '_tenant_registry': (1040, (20, 19, 12, 9, 15, 13, 12)),
     '_namespace_registry': (1080, (25, 18, 32, 15, 10)),
     # Settings-style Memberships tables fit desktop with narrow-only table-local scrolling.
-    '_group_registry': (840, (18, 15, 17, 12, 12, 26)),
-    '_membership_registry': (800, (23, 20, 14, 13, 15, 15)),
+    '_group_registry': (960, (20, 16, 18, 11, 13, 22)),
+    '_membership_registry': (960, (25, 21, 13, 11, 14, 16)),
     '_operations_drift_registry': (1420, (17, 16, 19, 28, 20)),
     '_operations_provider_registry': (980, (23, 28, 31, 18)),
     '_operations_namespace_registry': (1100, (23, 20, 27, 15, 15)),
@@ -98,7 +98,7 @@ def test_namespace_access_registry_uses_responsive_five_column_evidence_table() 
     assert 'overflow-x-auto' not in registry
     assert 'min-w-[1400px] !table-fixed' not in registry
     assert "table_ui.table_classes('!table-fixed')" in registry
-    assert _header_widths(registry) == (25, 20, 25, 15, 15)
+    assert _header_widths(registry) == (23, 21, 28, 13, 15)
     assert 'Tenant / Scope' in registry
     assert 'access.get("environment")' in registry
     assert "|default('Not assigned', true)|title" in registry
@@ -155,7 +155,7 @@ def test_access_grant_registry_uses_the_approved_responsive_fixed_table() -> Non
     # This registry intentionally fits the desktop viewport and keeps a compact
     # 1040px minimum on narrow screens, unlike the overflow-first registries.
     template = _template('_access_grant_registry')
-    widths = (19, 14, 13, 17, 17, 20)
+    widths = (22, 16, 13, 15, 12, 22)
     assert "table_ui.table_classes('min-w-[1040px] table-fixed xl:min-w-0')" in template
     assert _header_widths(template) == widths
     assert sum(widths) == 100
@@ -188,6 +188,11 @@ def test_tenant_discovery_desktop_fit_with_bounded_narrow_table_overflow() -> No
     assert 'Review Adoption' in discovery and 'Review Attachment' in discovery
     assert 'hx-target="#tenant-adoption-preflight-slot"' in discovery
     assert 'colspan="7"' in discovery
+    assert 'result_count=tenant_discovery_total' in discovery
+    assert 'title_extra=title_info' in discovery
+    assert discovery.index('title_extra=title_info') < discovery.index('result_count=tenant_discovery_total')
+    assert 'result_count=tenant_pagination.total_items' in _template('_tenant_registry')
+    assert '{{ tenant_discovery_total }} provider object' in discovery
     assert "registry_ui.footer('tenant.tenants'" in discovery
 
 
@@ -219,10 +224,14 @@ def test_destructive_and_multi_action_cells_have_reserved_width() -> None:
         assert 'truncate' not in template.split('cell_classes(action=true)', 1)[1].split('">', 1)[0], name
 
 
-def test_existing_canonical_fixed_tables_are_not_unnecessarily_modified() -> None:
+def test_credential_column_balance_preserves_existing_shared_table_and_detail_actions() -> None:
     credential = _template('_credential_registry')
     decisions = _template('_capacity_decisions')
-    assert "table_ui.table_classes('min-w-[760px] table-fixed lg:min-w-0')" in credential
+    assert "table_ui.table_classes('min-w-[900px] table-fixed lg:min-w-0')" in credential
+    assert _header_widths(credential) == (24, 17, 17, 11, 15, 16)
+    assert sum(_header_widths(credential)) == 100
+    assert 'overflow-x-auto lg:overflow-visible' in credential
+    assert "detail_row.toggle_button('tenant-credentials'" in credential
     # Capacity decisions have an approved wider bounded record shape, with an
     # explicit action column and shared horizontal overflow on compact screens.
     assert "table_ui.table_classes('min-w-[1060px] !table-fixed')" in decisions
