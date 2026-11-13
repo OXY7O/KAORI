@@ -76,10 +76,8 @@ def test_short_domain_labels_preserve_provider_and_retention_safety_truth() -> N
     presentation = read(PRESENTATION)
     assert 'Kubernetes, Object Storage, Metrics Source and Alertmanager evidence.' in presentation
     assert 'Provider-neutral delivery evidence; manual Archive Only.' in presentation
-    assert (
-        'Manual Archive Only; paused by default. Hot records retain deduplication, '
-        'channel dependencies and lifetime counts; scheduling and cleanup blocked.'
-    ) in presentation
+    assert 'Manual Archive Only; scheduling and cleanup blocked.' in presentation
+    assert 'Hot delivery records retain deduplication, retries, dependencies and lifetime counts.' in read(UI)
     assert 'per-record archive search are excluded' in presentation
 
     adapter = read('app/platform_operations/data_lifecycle/retention/domains/notification_delivery.py')

@@ -16,7 +16,7 @@ def test_analytics_and_generated_report_policies_reuse_title_level_guides() -> N
     component = read('app/templates/components/info_tip.html')
 
     Environment().parse(template)
-    assert template.count("variant='guide'") == 4
+    assert template.count("variant='guide'") == 9
     assert "selected.name == 'analytics_snapshot'" in template
     assert "selected.name == 'generated_report'" in template
     assert "info_tip.render('data-lifecycle-analytics-snapshots-policy-guide'" in template
@@ -31,6 +31,23 @@ def test_analytics_and_generated_report_policies_reuse_title_level_guides() -> N
     assert 'data-kaori-info-tip-trigger' in component
     assert "selected.name == 'audit_event'" in template
     assert "selected.name == 'alert_incident'" in template
+    for guide_id in (
+        'data-lifecycle-job-executions-policy-guide',
+        'data-lifecycle-notification-delivery-policy-guide',
+        'data-lifecycle-activity-audit-policy-guide',
+        'data-lifecycle-runtime-observations-policy-guide',
+        'data-lifecycle-tenant-audit-evidence-policy-guide',
+    ):
+        assert template.count(guide_id) == 1
+
+    for contract in (
+        'Terminal execution records, subscribers, results and worker metadata',
+        'Automatic scheduling and cleanup are blocked',
+        'persisted Notification table shared by the user inbox and Activity Audit',
+        'not full provider configuration or credentials',
+        'Kubernetes remains authoritative for raw audit logs',
+    ):
+        assert contract in template
 
 
 def test_automatic_run_keeps_source_derived_schedule_and_two_short_lines() -> None:
@@ -38,11 +55,11 @@ def test_automatic_run_keeps_source_derived_schedule_and_two_short_lines() -> No
     schedule = read('app/platform_operations/data_lifecycle/retention/presentation.py')
 
     assert '<span class="block">Policy + schedule required.</span>' in template
-    assert "<span class=\"block\">{{ lifecycle.next_schedule_label or 'No scheduled run.' }}</span>" in template
+    assert '<span class="block">{{ lifecycle.next_schedule_label or \'No scheduled run.\' }}</span>' in template
     assert 'Requires Policy enabled + Scheduled execution.' not in template
     assert "selected.name in ('notification_delivery', 'audit_event')" in template
     assert "candidate.strftime('%d %b %Y %H:%M %Z')" in schedule
-    assert "The dispatcher checks due policies every 15 minutes." in template
+    assert 'The dispatcher checks due policies every 15 minutes.' in template
     assert 'whitespace-nowrap' not in template
 
 
@@ -58,7 +75,7 @@ def test_analytics_and_generated_coverage_copy_keeps_source_ownership() -> None:
     assert 'Ready, Failed and Archived after hot retention.' in generated
     assert 'PDF/XLSX/CSV checksum-verified before cleanup.' in generated
     assert 'Source files stay intact until archive and supplements pass verification.' in generated
-    assert "GENERATED_REPORT_COVERAGE_NOTE = (" in generated
+    assert 'GENERATED_REPORT_COVERAGE_NOTE = (' in generated
 
 
 def test_audit_exclusion_and_generated_exclusion_are_compact_but_protected() -> None:
@@ -73,6 +90,27 @@ def test_audit_exclusion_and_generated_exclusion_are_compact_but_protected() -> 
     assert 'Pending or unsafe-artifact reports are protected.' in generated
     assert 'Generated Reports Policy' in template
     assert 'Request' in template and 'safe artifact references remain protected.' in template
-    assert "GENERATED_REPORT_EXCLUSION_NOTE" in presentation
+    assert 'GENERATED_REPORT_EXCLUSION_NOTE' in presentation
     assert 'cleanup_supported = False' in audit
     assert 'retention and access restricted.' in presentation
+
+
+def test_compact_policy_notices_preserve_archive_and_evidence_safety() -> None:
+    template = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
+    source = read('app/platform_operations/data_lifecycle/retention/presentation.py')
+    verifier = read('scripts/verify_data_lifecycle_final_lock.py')
+
+    assert 'Ready/Archived PDF/XLSX/CSV are SHA-256-verified before cleanup;' in template
+    assert 'pending or regenerating reports remain protected.' in template
+    assert 'Manual Archive Only; scheduling and cleanup blocked.' in source
+    assert 'One policy covers persisted notifications shared by Activity Audit and the user inbox.' in source
+    assert 'Transient toasts are not persisted, so they remain outside retention and archive management.' in source
+    assert 'Hot delivery records retain deduplication, retries, channel dependencies and lifetime counts.' in template
+    assert 'Only execution metadata and result references enter this archive' in template
+    assert 'raw request and response bodies stay external.' in template
+
+    # The final-lock check must validate the new wording AND a live source-derived schedule.
+    assert "'Policy + schedule required.'" in verifier
+    assert 'lifecycle.next_schedule_label' in verifier
+    assert 'Requires Policy enabled + Scheduled execution.' not in verifier
+    assert 'Transient toasts are not persisted, so they remain outside retention and archive management.' in verifier

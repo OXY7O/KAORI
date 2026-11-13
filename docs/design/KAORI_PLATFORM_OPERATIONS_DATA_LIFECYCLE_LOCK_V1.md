@@ -65,8 +65,9 @@ The ownership migration renames the former `settings.*_data_lifecycle` permissio
 The Retention Policies selected-domain header uses the canonical
 `components/info_tip.html` title-level Guide (`variant='guide'`) where
 source-specific policy details would otherwise make the workspace dense.
-Analytics Snapshots and Generated Reports retain distinct contextual Guides
-alongside the existing Alert Incidents and Administrative Audit Events Guides.
+Every registered Retention Policy has a distinct, permission-safe title Guide
+using the shared Info Tip pattern. Guides expand detailed source and safety
+semantics while the visible policy summary and exclusions remain truthful.
 
 - **Analytics Snapshots:** compact coverage cards identify materializations
   and reusable forecasts; the Guide retains capacity, utilization, storage,
@@ -82,6 +83,24 @@ alongside the existing Alert Incidents and Administrative Audit Events Guides.
   cleanup, and record-level lookup. The existing Guide remains the full
   operator explanation; actual archive execution remains manual and
   non-destructive.
+
+- **Job Executions:** archive committed terminal execution metadata and result
+  references; the referenced domain-owned result datasets are not deleted by
+  Job Executions retention.
+- **Notification Delivery:** provider-neutral Manual Archive Only. Hot records
+  retain deduplication, retries and channel dependencies; automatic scheduling
+  and cleanup are disabled and queued/failed/retry-eligible records remain
+  protected.
+- **Activity Audit:** one persisted notifications table serves both the
+  account-scoped Notification Center and permissioned Activity Audit; transient
+  toasts are neither persisted nor lifecycle-managed. Authentication audit
+  remains a distinct audit stream within the approved coverage.
+- **Runtime Observations:** committed normalized Kubernetes, Object Storage,
+  Metrics Source and Alertmanager observations are provider-neutral evidence,
+  not a copy of provider configuration, credentials or live source authority.
+- **Tenant Audit Evidence:** committed normalized Tenant correlations and
+  identity/outcome references are governed while Kubernetes remains
+  authoritative for raw audit logs and provider request/response bodies.
 - **Automatic Run:** show compact policy/schedule prerequisite text and the
   genuine `lifecycle.next_schedule_label` as separate read-only lines.
   This date/time remains source-backed, including the configured timezone;
@@ -91,6 +110,18 @@ Natural responsive wrapping is permitted; avoid forcibly clipped
 `whitespace-nowrap`, static dates or hiding security-critical exclusions.
 Copy updates do not alter archive-first safety, RBAC, underlying eligibility,
 scheduled dispatcher interval, provider authority, or audit/evidence semantics.
+
+The **Generated Report Evidence Protection** notice uses a compact one-line
+desktop summary retaining SHA-256 verified archives before cleanup and protection
+for pending/regenerating work; fuller status conditions remain in its Guide.
+The **Notification Delivery** Coverage summary remains one-line on the reference
+desktop card, while **Activity Audit** Coverage and Excluded summaries target two
+lines. Normal responsive wrapping is allowed and must be visually checked.
+
+The mandatory Data Lifecycle Final Lock verifier must enforce the current
+`Policy + schedule required.` message **and** the source-derived
+`lifecycle.next_schedule_label` binding. Historical literal-copy checks must
+not disable the actual schedule safety contract.
 
 ## Safety Invariants
 
