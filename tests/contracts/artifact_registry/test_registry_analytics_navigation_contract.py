@@ -47,6 +47,7 @@ def test_registry_analytics_has_eight_authorized_page_level_views() -> None:
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
     overview_panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
+    overview_tabs = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_workspace.html').read_text()
 
     views = catalog.split("'artifact_registry_analytics': (", 1)[1].split("    'artifact_registry_security': (", 1)[0]
     expected = (
@@ -68,7 +69,7 @@ def test_registry_analytics_has_eight_authorized_page_level_views() -> None:
             assert f"'artifact_registry.analytics_{key}': '{key}'" in navigation
             assert f'def analytics_{key}() -> ResponseReturnValue:' in routes
             assert f"return _render_registry_analytics_page('{key}')" in routes
-            assert f"'{key}'" in overview_panel or f"'{key}'" in shell
+            assert f"('{key}'," in overview_tabs
 
     assert "if endpoint.startswith('artifact_registry.analytics'):" in navigation
     assert "return 'artifact_registry_analytics'" in navigation
