@@ -631,3 +631,44 @@ def test_registry_capacity_outlook_table_reuses_canonical_primitives() -> None:
     assert 'No qualified project quota forecast is available.' in capacity
     assert 'analytics.capacity_outlook.nearest_quota_days' in capacity
     assert 'analytics.capacity_outlook.quota_headroom_display' in capacity
+
+
+def test_governance_aggregation_rejects_malformed_committed_counters() -> None:
+    import ast
+    from typing import Any
+
+    source = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    tree = ast.parse(source)
+    function = next(
+        node for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == '_accumulate_domain_counts'
+    )
+    namespace = {'Any': Any}
+    exec(compile(ast.Module(body=[function], type_ignores=[]), '<governance-aggregation>', 'exec'), namespace)
+    accumulate = namespace['_accumulate_domain_counts']
+
+    for invalid in (True, -1, 1.5, '3', None):
+        aggregate = {
+            'governance_projects_assessed': 0,
+            'retention_configured': 0,
+            'immutability_configured': 0,
+            'retention_not_configured': 0,
+            'immutability_not_configured': 0,
+        }
+        sections = {
+            'inventory': {}, 'security': {}, 'runtime': {},
+            'governance': {
+                'projects_assessed': invalid,
+                'retention_configured': 2,
+                'immutability_configured': 1,
+                'retention_not_configured': 0,
+                'immutability_not_configured': 0,
+            },
+        }
+        accumulate(aggregate, sections)
+        assert aggregate['governance_projects_assessed'] is None
+        assert aggregate['retention_configured'] == 2
+        sections['governance']['projects_assessed'] = 5
+        accumulate(aggregate, sections)
+        assert aggregate['governance_projects_assessed'] is None
+        assert aggregate['retention_configured'] == 4
