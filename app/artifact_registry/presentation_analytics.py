@@ -334,12 +334,15 @@ def _collect_analytics_rows(identities: list[Any], *, snapshot_window: str = '24
         # surfaced in posture and cannot produce a clean Evidence Ready.
         sections = _analytics_sections(snapshot.payload_json)
         _accumulate_domain_counts(bundle['aggregate'], sections)
-        _accumulate_metrics(
-            bundle['aggregate'],
-            sections['metrics'],
-            identity=identity,
-            activity_rows=bundle['activity_rows'],
-        )
+        # Stale materializations remain visible for historical inspection, but
+        # must not contribute current Usage counters or ready-source coverage.
+        if view.get('is_current'):
+            _accumulate_metrics(
+                bundle['aggregate'],
+                sections['metrics'],
+                identity=identity,
+                activity_rows=bundle['activity_rows'],
+            )
         _accumulate_alerts(
             bundle['aggregate'],
             sections['alerts'],
