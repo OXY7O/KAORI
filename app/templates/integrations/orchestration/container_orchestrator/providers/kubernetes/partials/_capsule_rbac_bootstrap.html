@@ -4,7 +4,7 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% set snapshot = capsule_rbac_bootstrap %}
 {% set roles = snapshot.roles if snapshot and snapshot.roles else [] %}
-{% set is_ready = snapshot and snapshot.status == 'ready' and roles|length == 4 and not snapshot.missing and not snapshot.conflict %}
+{% set is_ready = snapshot and snapshot.status == 'ready' and roles|length == 4 and snapshot.ready == 4 and not snapshot.missing and not snapshot.conflict and roles|selectattr('status', 'equalto', 'ready')|list|length == 4 %}
 {% set can_bootstrap = snapshot and snapshot.status == 'missing' and roles|length == 4 and snapshot.missing and not snapshot.conflict %}
 {% set can_manage = current_user.has_permission('clusters.manage') and current_user.has_permission('integrations.manage') %}
 <section class="{{ operational_section_card.shell_classes('mt-5') }}"
