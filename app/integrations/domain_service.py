@@ -319,6 +319,7 @@ def _binding_registry_rows(
             {
                 'id': binding.id,
                 'consumer_label': asset_labels.get(asset_identity) or _humanize(binding.asset_type),
+                'asset_type': binding.asset_type,
                 'asset_type_label': _humanize(binding.asset_type),
                 'asset_key': str(binding.asset_key),
                 'source_name': instance.name,

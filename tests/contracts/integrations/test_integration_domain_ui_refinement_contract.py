@@ -343,6 +343,7 @@ def test_consumer_asset_identity_is_shared_and_omits_duplicate_taxonomy_label() 
     shared_path = 'app/templates/integrations/components/_workspace.html'
     shared = read(shared_path)
     domain = read('app/templates/integrations/partials/_domain_workspace.html')
+    domain_service = read('app/integrations/domain_service.py')
     domain_page = read('app/templates/integrations/domain.html')
     providers = (
         'app/templates/integrations/observability/metrics_source/partials/_binding_registry.html',
@@ -357,7 +358,9 @@ def test_consumer_asset_identity_is_shared_and_omits_duplicate_taxonomy_label() 
     assert 'type_label|trim|lower != label|trim|lower' in shared
     assert 'data-kaori-consumer-asset-identity' in shared
     assert 'integrations/partials/_domain_workspace.html' in domain_page
+    assert "'asset_type': binding.asset_type" in domain_service
     assert 'integration_ui.consumer_asset_identity(row.consumer_label,' in domain
+    assert 'row.asset_type,' in domain
     assert 'metadata=row.asset_key' in domain
     assert 'type_label=row.asset_type_label' in domain
     assert 'metadata_is_key=true' in domain
