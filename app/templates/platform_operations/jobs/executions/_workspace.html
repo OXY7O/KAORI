@@ -2,6 +2,7 @@
 {% import "components/content_tabs.html" as content_tabs %}
 {% import "components/operational_section_card.html" as operational_section %}
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/info_tip.html" as info_tip %}
 {% set execution_tabs = [
     ('active', 'Active Work', 'activity', url_for('jobs.executions', execution_tab='active')),
     ('registry', 'Registry', 'list-checks', url_for('jobs.executions', execution_tab='registry')),
@@ -24,6 +25,16 @@
                             <span id="execution-overview-posture">
                                 {{ table_label.status_indicator_label('Work Active' if job_stats.active else 'Queues Clear', 'pending' if job_stats.active else 'normal') }}
                             </span>
+                            {{ info_tip.render('jobs-execution-overview-guide',
+                                                'Execution Overview',
+                                                'Explore canonical Jobs & Executions evidence across three views.',
+                                                items=[
+                                                'Active Work shows queued, running or retrying execution records; cancellation requires eligible state and operator permission.',
+                                                'Registry provides committed execution ownership, progress and terminal outcomes with canonical JobExecution details.',
+                                                'Queues compares committed execution demand and attention with demand-loaded Celery worker readiness; worker readiness does not guarantee domain execution.'
+                                                ],
+                                                placement='right',
+                                                variant='guide') }}
                         </div>
                         <p class="mt-1 text-sm leading-6 text-content-secondary">Current execution demand, completion posture, and worker queue activity recorded by KAORI.</p>
                     </div>
