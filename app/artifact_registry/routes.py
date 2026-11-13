@@ -591,6 +591,9 @@ def analytics_materialization_resolve() -> ResponseReturnValue:
     analytics = build_analytics_shell(
         active_tab=section, provider_id=provider_id, snapshot_window=window, **alert_params
     )
+    # Resolve omitted provider scope consistently with the default Registry
+    # selector; the canonical materialization job remains fleet-scoped.
+    provider_id = analytics['selected_provider_id']
     # Collect the selected source-history interval in the canonical worker;
     # the request handler never calls Prometheus/Thanos or Harbor directly.
     if should_request_registry_analytics_materialization(
