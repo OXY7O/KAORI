@@ -103,6 +103,32 @@ URL-backed state, HTMX/Alpine behavior, default five-row pagination, counts,
 and connection authorization remain unchanged. No new script or page-local
 Guide may be added to compensate for the removed duplicate.
 
+## Provider detail heading Guides — cross-provider parity
+
+The four primary connection-detail titles under Configuration,
+Validation & Capabilities, Runtime & History, and the authority-specific
+fourth domain each carry one canonical title-adjacent Violet `Guide` across
+**Kubernetes, Metrics Source, Alertmanager, MinIO, Harbor, Vault and GitHub**.
+Kubernetes **Capsule Cluster RBAC Bootstrap** has a fifth, dedicated Guide
+because its governed access-profile check is a separate operator task.
+
+The shared `integrations/components/_provider_configuration_contract.html`
+owns Connection Contract Guide for its five provider consumers. Kubernetes
+uses its owned connection contract partial, while GitHub already uses
+`integrations/components/_workspace.html::section_header(title_extra=...)`.
+Validation and runtime headers reuse
+`components/connection_validation_header.html::render(title_extra=...)`;
+provider-owned fourth-domain titles use the same
+`components/info_tip.html::render(..., variant='guide')` adjacent to the title.
+GitHub and Vault existing Guides remain singular and unchanged.
+
+Guide content explains provider authority, committed evidence boundaries and
+operational scope; readiness, error, deletion blockers and executable actions
+remain visible without hovering. Do not add Guide to each subordinate metric
+card or to the inner Integration Workspace header, whose duplicate Guide was
+explicitly removed in #4544. Reuse the existing popover controller for
+hover/focus/touch/Escape and viewport handling in light/dark mode.
+
 ## Provider detail heading Guides — GitHub UAT reference
 
 Canonical GitHub connection detail sections use the **same title-adjacent

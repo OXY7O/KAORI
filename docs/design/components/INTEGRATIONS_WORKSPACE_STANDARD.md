@@ -51,6 +51,19 @@ Responsibilities:
 
 Provider templates supply factual labels, icons, endpoint data, compatibility evidence, and actions. They do not copy shared geometry or semantic colors.
 
+All seven Integration provider connection-detail workspaces place the canonical
+title-adjacent Violet `components/info_tip.html::render(..., variant='guide')`
+beside their **four primary tab section titles**: Connection Contract,
+Full Validation, Runtime Health & Diagnostics, and the provider-owned
+Inventory & Lifecycle or Bindings & Consumers. Kubernetes also guides the
+separately governed Capsule Cluster RBAC Bootstrap header. The shared
+`_provider_configuration_contract.html` owns the five-provider Configuration
+Guide; validation/runtime call the existing
+`connection_validation_header.html::render(title_extra=...)`; hand-owned
+headers retain the same adjacent title layout. Do not duplicate the
+provider Overview Guide in the inner Integration Workspace header (#4544),
+change evidence ownership, or hide operational status/actions in a Guide.
+
 ## Domain Landing Workspace Contract
 
 `Orchestration`, `Observability`, `Storage`, and `Registry` use one shared domain landing pattern. Domain pages do not invent provider-specific cards or a Storage-only composition.
