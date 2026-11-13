@@ -1332,7 +1332,7 @@ def test_resource_profile_copy_is_compact_and_version_intent_remains_clear() -> 
     assert 'Managed takeover where authority exists; provider-owned constraints stay mirrored.' not in adoption
     assert 'Adopted / Managed · Governed provider cutover.' in adoption
     assert 'Exact provider reason' in adoption
-    assert 'Attach to the existing Capsule Tenant; keep provider constraints mirrored.' in adoption
+    assert 'Provider Mirrored · No provider writes.' in adoption
     assert 'Adopted / Managed.' in adoption
     assert 'Namespace Attached · Managed Allocation.' in adoption
     assert 'Adopted / Provider Mirrored' in adoption
