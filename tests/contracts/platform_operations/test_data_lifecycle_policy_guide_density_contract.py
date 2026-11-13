@@ -67,9 +67,8 @@ def test_audit_exclusion_and_generated_exclusion_are_compact_but_protected() -> 
     template = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
     audit = read('app/platform_operations/data_lifecycle/retention/domains/audit_event.py')
 
-    assert 'Raw metadata, IP/UA, actor reconstruction, bundle downloads, schedules, cleanup and record lookup ' in (
-        presentation
-    )
+    assert 'Raw metadata, IP/UA, actor reconstruction, bundle downloads' in presentation
+    assert 'schedules, cleanup and record lookup' in presentation
     assert "'are excluded.'" in presentation
     assert 'Pending or unsafe-artifact reports are protected.' in generated
     assert 'Generated Reports Policy' in template
