@@ -22,6 +22,7 @@
             'Committed governance scope across the Kubernetes fleet.',
             'layout-grid',
             body_classes='p-0',
+            header_badge=table_label.metadata_label(estate_metrics|length ~ ' Indicators'),
             aria_label='Tenant estate summary'
             ) %}
             {{ resource_posture_grid.render(estate_metrics, columns=5) }}
