@@ -22,10 +22,8 @@
         {{ table_label.metadata_label(analytics.snapshot_window|upper ~ ' History', 'calendar-range', size='compact') }}
     </header>
     <div class="grid gap-4 p-4 lg:grid-cols-2 sm:p-5">
-        {% for key, title, description in [
-            ('artifacts', 'Artifact Count', 'Observed Registry artifact identities per source.'),
-            ('storage', 'Storage Usage', 'Observed project storage usage in bytes per source.')
-            ] %}
+        {% set growth_chart_metrics = [('artifacts', 'Artifact Count', 'Observed Registry artifact identities per source.'), ('storage', 'Storage Usage', 'Observed project storage usage in bytes per source.')] %}
+        {% for key, title, description in growth_chart_metrics %}
             {% set series = growth_charts[key] %}
             <article class="min-w-0 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card p-4"
                      data-registry-growth-chart-panel="{{ key }}"
@@ -45,6 +43,12 @@
                                 role="img"
                                 aria-label="{{ title }} observed source history chart"></canvas>
                     </div>
+                    <dl class="sr-only" aria-label="{{ title }} measured source values">
+                        {% for source in series %}
+                            <dt>{{ source.label }} ({{ source.mode }})</dt>
+                            <dd>Start {{ source.points[0].value }} at {{ source.points[0].timestamp }} Unix seconds; end {{ source.points[-1].value }} at {{ source.points[-1].timestamp }} Unix seconds.</dd>
+                        {% endfor %}
+                    </dl>
                     {% set has_endpoint_only = series|selectattr('mode', 'equalto', 'checkpoints')|list|length > 0 %}
                     <p class="mt-3 text-xs leading-5 text-content-muted">
                         {% if has_endpoint_only %}
