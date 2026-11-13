@@ -496,6 +496,23 @@ versioned Resource Profile, except for the explicit `adopted_baseline`
 selection that reads the current frozen contract. All six ResourceQuota
 values and PVC min/max remain visible together, including on narrow screens.
 
+**Native allocation/cutover density follow-up (#4650):** The existing
+Governance Gates cards keep their three-step Capacity Admission → Provider
+Reconcile → Read-back & Commit order but use concise desktop helper copy;
+narrow-screen text wraps naturally, not through forced no-wrap or clipping.
+The legacy-only Adopted Native Governance Cutover header keeps one
+title-adjacent Guide and Explicit Takeover authority badge. Its visible
+description distinguishes legacy Adopted / Observed from already Managed-on-Adopt,
+while the Guide retains provider, ownership, capacity and UID/resourceVersion
+preconditions. The two-stage Observed Provider Baseline → Proposed KAORI Managed
+Contract uses equal semantic icon/heading/caption rows; it represents a proposed
+transition, never a completed write. The Control Unavailable block separates
+each Namespace, authority and full untruncated provider reason into readable
+responsive rows. Existing disabled options, action permission gate, CSRF, all
+frozen-vs-proposed metric bindings, provider-authoritative mutation/read-back
+and audit evidence remain unchanged. Visual fit at actual desktop/mobile widths
+and light/dark must be accepted by a human after exact-head executable QA.
+
 **Section heading consistency (#1664):** Allocation Change uses the
 existing KAORI Violet semantic 9x9 icon surface on the page's peer
 **Change Target**, **Managed Contract Comparison**, **Technical Details**

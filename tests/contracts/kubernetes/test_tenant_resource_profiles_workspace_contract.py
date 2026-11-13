@@ -1644,6 +1644,73 @@ def test_adoption_and_legacy_cutover_guidance_match_approved_current_authority()
     assert 'Adopted Native Governance Cutover' in operator
 
 
+def test_native_cutover_visual_density_keeps_admission_and_provider_blockers_visible() -> None:
+    from jinja2 import Environment
+
+    change = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    cutover = read('app/templates/kubernetes/tenant/partials/_allocation_cutover.html')
+    Environment(autoescape=True).parse(change)
+    Environment(autoescape=True).parse(cutover)
+
+    # Copy is short enough for one desktop line without no-wrap clipping.
+    for copy in (
+        'CPU, memory, Pods and storage must fit budget.',
+        'Provider read-back must match before commit.',
+    ):
+        assert copy in change
+        assert len(copy) < 55
+    assert 'whitespace-nowrap' not in change.split('allocation-change-gates-heading', 1)[1].split('</ol>', 1)[0]
+    assert 'Governance Gates' in change
+    assert 'Capacity Admission' in change
+    assert 'Provider Reconcile' in change
+    assert 'Read-back & Commit' in change
+
+    header = cutover.split('<header', 1)[1].split('</header>', 1)[0]
+    guide_id = 'allocation-cutover-tip'
+    assert header.index('Adopted Native Governance Cutover') < header.index(guide_id)
+    assert header.index(guide_id) < header.index('Explicit Takeover')
+    assert header.count(guide_id) == 1
+    assert 'For legacy Adopted / Observed allocation only:' in header
+    assert 'Managed-on-Adopt needs no repeat.' in header
+    assert 'capacity admission, provider authority, ownership' in header
+    assert "variant='guide'" in header
+    assert 'whitespace-nowrap' not in header
+
+    journey = cutover.split('data-tenant-native-cutover-journey', 1)[1].split('</div>\n            <div', 1)[0]
+    assert 'Observed to governed Native allocation transition' in journey
+    assert 'Observed Provider Baseline' in cutover
+    assert 'Proposed KAORI Managed Contract' in cutover
+    assert 'Only committed after admitted provider read-back.' in cutover
+    assert 'md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]' in cutover
+    assert 'md:hidden' in cutover
+    assert 'md:block' in cutover
+
+    blocker = cutover.split('aria-label="Unavailable Native cutover targets"', 1)[1]
+    assert 'Control Unavailable' in blocker
+    assert 'review each provider reason before any cutover' in blocker
+    assert '<ul class=' in blocker
+    assert 'md:grid-cols-3' in blocker
+    assert 'md:col-span-2' in blocker
+    assert 'break-words' in blocker
+    assert 'cutover.get("authority")' in blocker
+    assert 'cutover.get("reason")' in blocker
+    assert "if not cutover.get('supported')" in blocker
+    assert "namespace_cutover_state.values()|rejectattr('supported')|list" in cutover
+
+    # Read-only comparison and provider-mutation guard stay unchanged.
+    for critical in (
+        'data-tenant-allocation-change-form',
+        'name="csrf_token"',
+        'data-tenant-allocation-change-namespace',
+        'data-tenant-allocation-change-profile',
+        'data-tenant-allocation-metric-side="{{ side }}"',
+        'coverage_comparison.native_sections(resource_profile_advanced_controls)',
+        "url_for('tenant.cutover_namespace_allocation_route')",
+        'not can_manage or not namespace_cutover_supported or not profiles',
+    ):
+        assert critical in cutover
+
+
 def test_adopted_native_cutover_reuses_committed_allocation_comparison() -> None:
     from jinja2 import Environment
 
