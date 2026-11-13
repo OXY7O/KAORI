@@ -81,3 +81,25 @@ def test_pull_activity_excludes_missing_project_identity_without_losing_valid_co
     assert [(row["project_name"], row["pull_count"]) for row in rows] == [
         ("observed-project", 7.0),
     ]
+
+
+def test_pull_activity_rejects_padded_project_names_without_misattribution():
+    aggregate = _analytics_aggregate()
+    rows = []
+    _accumulate_metrics(
+        aggregate,
+        {
+            "status": "ready",
+            "project_pull_count": {
+                " production": 50,
+                "production ": 60,
+                "production": 7,
+            },
+        },
+        identity=SimpleNamespace(name="harbor-a", provider_key="harbor"),
+        activity_rows=rows,
+    )
+    assert aggregate["pull_activity"] == 7
+    assert [(row["project_name"], row["pull_count"]) for row in rows] == [
+        ("production", 7.0),
+    ]
