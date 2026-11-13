@@ -59,6 +59,61 @@
                                                         ],
                                                         placement='right',
                                                         variant='guide') }}
+                        {% elif selected.name == 'job_execution' %}
+                            {{ info_tip.render('data-lifecycle-job-executions-policy-guide',
+                                                        'Job Executions Policy',
+                                                        'Govern canonical queue, execution results and worker evidence.',
+                                                        items=[
+                                                        'Terminal execution records, subscribers, results and worker metadata form committed execution evidence.',
+                                                        'Only execution metadata and result references enter this archive; referenced domain datasets remain domain-owned.',
+                                                        'Archive verification precedes eligible cleanup; worker execution and retries remain owned by Jobs & Executions.'
+                                                        ],
+                                                        placement='right',
+                                                        variant='guide') }}
+                        {% elif selected.name == 'notification_delivery' %}
+                            {{ info_tip.render('data-lifecycle-notification-delivery-policy-guide',
+                                                        'Notification Delivery Policy',
+                                                        'Manual Archive Only for provider-neutral delivery evidence.',
+                                                        items=[
+                                                        'Hot delivery records retain deduplication, retries, channel dependencies and lifetime counts.',
+                                                        'Automatic scheduling and cleanup are blocked; only governed manual archive is supported.',
+                                                        'Queued, failed and retry-eligible records remain protected; payload content and credential replay are excluded.'
+                                                        ],
+                                                        placement='right',
+                                                        variant='guide') }}
+                        {% elif selected.name == 'operational_activity' %}
+                            {{ info_tip.render('data-lifecycle-activity-audit-policy-guide',
+                                                        'Activity Audit Policy',
+                                                        'Govern persisted Notification Center and Activity Audit evidence.',
+                                                        items=[
+                                                        'One retention policy covers the persisted Notification table shared by the user inbox and Activity Audit.',
+                                                        'These are permissioned views of the same committed records; authentication audit follows its own audit stream.',
+                                                        'Transient UI toasts are not persisted and remain outside lifecycle retention or archive.'
+                                                        ],
+                                                        placement='right',
+                                                        variant='guide') }}
+                        {% elif selected.name == 'runtime_observation' %}
+                            {{ info_tip.render('data-lifecycle-runtime-observations-policy-guide',
+                                                        'Runtime Observations Policy',
+                                                        'Archive normalized provider-neutral runtime observations.',
+                                                        items=[
+                                                        'Coverage includes Kubernetes, Object Storage, Metrics Source, Alertmanager and future registered runtime integrations.',
+                                                        'KAORI archives committed normalized observations, not full provider configuration or credentials.',
+                                                        'External providers remain authoritative for live state; retention does not change provider-managed resources.'
+                                                        ],
+                                                        placement='right',
+                                                        variant='guide') }}
+                        {% elif selected.name == 'tenant_audit_evidence' %}
+                            {{ info_tip.render('data-lifecycle-tenant-audit-evidence-policy-guide',
+                                                        'Tenant Audit Evidence Policy',
+                                                        'Govern committed Tenant audit correlation and identity outcomes.',
+                                                        items=[
+                                                        'Normalized Kubernetes audit observations are correlated with managed Tenants and recorded outcomes.',
+                                                        'Committed identity classification, resource, verb and correlation references form KAORI evidence.',
+                                                        'Kubernetes remains authoritative for raw audit logs; raw request and response bodies stay external.'
+                                                        ],
+                                                        placement='right',
+                                                        variant='guide') }}
                         {% endif %}
                     </div>
                     <p class="{{ table_ui.block_description_classes() }}">{{ selected.description }}</p>
@@ -251,7 +306,7 @@
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary dark:text-kaori-accent"><i data-lucide="file-check-2" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">Generated Report Evidence Protection</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Ready and manually Archived reports copy PDF, XLSX, or CSV files to archive storage, verifying SHA-256 before source-file or row cleanup. Requested, Queued, Generating, and active regeneration remain protected.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Ready/Archived PDF/XLSX/CSV are SHA-256-verified before cleanup; pending or regenerating reports remain protected.</p>
                             </div>
                         </div>
                         <div class="mt-4 grid gap-3 sm:grid-cols-2">
