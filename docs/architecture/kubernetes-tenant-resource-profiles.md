@@ -11,6 +11,14 @@ Issue #113 owns the first managed Tenant mutation slice: administrator-driven na
 - #654 owns Tenant Allocation Budget arithmetic, aggregate commitment, capacity state, and allocation allow/block decisions.
 - The original #113 baseline remains Native Kubernetes. Later bounded authorities #771 and #773 extend the same allocation lifecycle to admitted Capsule GlobalResourceQuota and legacy Tenant.spec.resourceQuotas paths without changing #113 ownership.
 
+## Resource Profile operational UI parity (#4630)
+
+- **Profile Estate** displays a canonical metadata badge derived from its four committed indicator dimensions, not a count of live Kubernetes resources.
+- **Profile Administration** and **Governed Allocation Lifecycle** use the approved shared title-adjacent `info_tip.render(..., variant='guide')` to distinguish versioned contract intent, committed capacity admission, and provider-executed reconciliation.
+- **Manage Resource Profile** retains the existing native modal and independent save/delete forms. Its header and footer follow inventory-modal context, icon, close and summary patterns. **Delete Profile** is moved from the persistent footer to an explicitly scoped destructive action area inside the scrollable body; the existing confirmation, RBAC, dependency guard, CSRF, and immutable Namespace snapshot boundaries remain authoritative.
+- The read-only **How allocation budgets work** guide dialog uses `max-w-3xl` desktop width without changing budget formula semantics or mobile bounds.
+- Blocked Capsule Adoption Preflight displays a concise **Human confirmation** line. Exact provider reasons stay under **Exact provider reason** and technical evidence; wording does not relax any fail-closed adoption check or authorize provider mutation.
+
 ## Resource Profile contract
 
 KAORI exposes five operator-facing Resource Profile classes:
