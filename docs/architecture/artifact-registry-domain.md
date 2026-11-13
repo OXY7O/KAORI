@@ -326,8 +326,11 @@ same nested-card geometry for every domain.
   Kubernetes Analytics' server-owned **page-level Integrated Workspace Tabs**
   with Overview plus seven analytical domains (#1097), removing its previous
   in-card `framed_workspace_tabs` and retaining individual lazy bounded HTMX
-  analytics projections. These are distinct from subordinate content tabs and
-  preserve capability-level sidebar and keyboard/navigation semantics.
+  analytics projections. On the Registry **Analytics Overview** only, the approved
+  Kubernetes/Object Storage client-owned `content_tabs.render_buttons` pattern
+  now supplies eight subordinate **analytical snapshot tabs** (#4632);
+  these do not replace the eight page-level Integrated Workspace destinations.
+  Preserve capability-level sidebar, keyboard and navigation semantics.
 - Use shared Hero, loading/empty/error, filters, tables, labels and default
   five-row paginated footer in each owning workspace; never replace provider
   semantics with generic optimistic states. Icons and badges convey meaning,
@@ -849,11 +852,34 @@ GET /artifact-registry/analytics
 ```
 
 Overview is the canonical `/artifact-registry/analytics` landing route and
-presents the existing lazy materialized analytical summary, followed by seven
-bounded navigation destinations. Page-level Integrated Workspace Tabs use the
-existing `artifact_registry_analytics` capability-view catalog and same layout
-owner as Kubernetes Analytics. Each of Growth, Capacity, Usage, Risk, Governance,
-Alerts & Anomalies and Insights has a dedicated canonical
+presents the existing lazy **Registry Analytical Posture** four-indicator
+summary followed by the shared **Analytics Overview Workspace** (#4632).
+That inner workspace adopts the existing Kubernetes/Object Storage
+`content_tabs.render_buttons(..., data_namespace='analytics')` pattern with
+**eight client-owned evidence tabs**: Growth, Capacity, Usage, Risk,
+Governance, Alerts, Insights and **Data & Evidence**. Each panel is fetched
+through the existing permission-owned `analytics_section` endpoint only on
+first activation, using `overview_panel=1` and the selected
+`provider_id`/`snapshot_window` filter. Panel content is a bounded
+committed-state snapshot (≤3 source previews, ≤5 evidence sources), not a
+copy of the detailed domain table. No new JS controller, CSS, Metrics Source
+request or separate materialization job is introduced.
+
+The Overview tabset intentionally sets
+`data-analytics-update-query="false"`: legacy `?tab=<domain>` URLs still
+**redirect to the dedicated level-3 route**, and must not be overwritten by
+local Overview tab selection. The shared Analytics controller stores tab
+selection per path/tabset and restores it following HTMX/full-page refresh.
+`Data & Evidence` is Overview-only; `/analytics/section/evidence` is
+unavailable unless the explicit, read-only Overview panel variant is requested.
+It distinguishes eligible, materialized, current, stale and collection failure
+using existing Registry snapshot and JobExecution readiness. Missing metrics,
+quotas or history remain `N/A`/`No forecast`; zero values are not invented.
+
+Page-level Integrated Workspace Tabs still use the
+`artifact_registry_analytics` capability-view catalog and the same layout
+owner as Kubernetes Analytics. Each of Growth, Capacity, Usage, Risk,
+Governance, Alerts & Anomalies and Insights retains its canonical
 `/artifact-registry/analytics/<domain>` route. Each deep route shares the fast
 shell and lazy loads only its active committed analytical section; it does not
 repeat the Overview estate summary. The legacy `?tab=<domain>` bookmark shape
@@ -889,8 +915,9 @@ drilldown maturity; substantive domain work remains in bounded issues.
 Artifact Registry Overview and its seven dedicated analytical routes reuse
 the exact K8s `analytics/components/_section_load_tracker.html` geometry and
 the shared `js/analytics/section_load_tracker.js` runtime. Overview tracks
-its actual lazy committed Summary fragment; a focused route tracks only its
-active evidence fragment. Each fragment owns its loaded/failed state across
+its lazy committed Summary fragment and only the **activated Overview evidence
+tab**; inactive panels do not fetch their projections. A focused level-3
+route tracks only its active evidence fragment. Each fragment owns its loaded/failed state across
 outerHTML swaps. The tracker is shown after Hero and counts **requested
 HTMX sections**, not invisible routes or Celery work items. The shared
 controls header continues to show the independent filter loading bar and

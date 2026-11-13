@@ -666,11 +666,16 @@ def analytics_collect_status(public_id: str) -> ResponseReturnValue:
 @artifact_registry_bp.get('/analytics/section/<string:section>')
 @permission_required('artifact_registry.view')
 def analytics_section(section: str) -> ResponseReturnValue:
+    # Overview tab content reuses the authorized committed section projection,
+    # without loading full detail workspaces or triggering provider requests.
+    overview_panel = request.args.get('overview_panel', '', type=str) == '1'
     allowed = {'summary', 'growth', 'capacity', 'usage', 'risk', 'governance', 'alerts', 'insights'}
-    if section not in allowed:
+    if section not in allowed and not (overview_panel and section == 'evidence'):
+        abort(404)
+    if overview_panel and section == 'summary':
         abort(404)
     context = build_analytics(
-        active_tab='growth' if section == 'summary' else section,
+        active_tab='growth' if section in {'summary', 'evidence'} else section,
         provider_id=_analytics_provider_id(),
         snapshot_window=request.args.get('snapshot_window', '24h', type=str),
         alert_search=request.args.get('alert_q', '', type=str),
@@ -680,6 +685,17 @@ def analytics_section(section: str) -> ResponseReturnValue:
         alert_page=request.args.get('alert_page', 1, type=int) or 1,
         alert_per_page=request.args.get('alert_per_page', 5, type=int) or 5,
     )
+    if overview_panel:
+        if section == 'evidence':
+            context['data_readiness'] = build_registry_analytics_readiness(
+                provider_id=context['selected_provider_id'],
+                snapshot_window=context['snapshot_window'],
+            )
+        return render_template(
+            'artifact_registry/partials/_analytics_overview_panel.html',
+            analytics=context,
+            overview_domain=section,
+        )
     template = (
         'artifact_registry/partials/_analytics_summary.html'
         if section == 'summary'
