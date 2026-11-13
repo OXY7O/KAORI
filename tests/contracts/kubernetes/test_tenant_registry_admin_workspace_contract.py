@@ -54,7 +54,7 @@ def test_tenants_page_keeps_summary_above_the_tabbed_workspace() -> None:
     assert "'Tenant Estate'" in page
     assert 'tenant_summary_metrics' in page
     assert 'components/table_label.html' in page
-    assert "header_badge=table_label.metadata_label((tenant_summary_metrics|length)" in page
+    assert 'header_badge=table_label.metadata_label((tenant_summary_metrics|length)' in page
     assert "~ ' Indicators', icon='layout-grid')" in page
     assert "'Governed Administration'" in page
     assert page.index("'Multi-Cluster Posture'") < page.index("'Governed Administration'")
@@ -219,7 +219,7 @@ def test_membership_registries_use_settings_query_tabs_without_desktop_overflow(
         assert 'registry_ui.clear_filters_link' in registry
 
     assert "table_ui.table_classes('min-w-[960px] table-fixed xl:min-w-0')" in groups
-    assert "table_ui.table_classes('min-w-[800px] table-fixed xl:min-w-0')" in membership
+    assert "table_ui.table_classes('min-w-[960px] table-fixed xl:min-w-0')" in membership
     assert 'min-w-[1250px]' not in groups
     assert 'min-w-[1100px]' not in membership
     assert 'title="{{ group.subject_name }}"' in groups
@@ -1261,7 +1261,7 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'Capsule-generated values stay provider-mirrored and sync into KAORI without false drift.' in preflight
     assert 'Adopted / Managed · Governed provider cutover.' in preflight
     assert 'Exact provider reason' in preflight
-    assert 'Attach to the existing Capsule Tenant; keep provider constraints mirrored.' in preflight
+    assert 'Provider Mirrored · No provider writes.' in preflight
     assert 'Adopt as Observed' not in preflight
     assert 'Observed · Read Only' not in preflight
     assert 'No provider mutation.' not in preflight
