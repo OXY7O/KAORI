@@ -224,9 +224,9 @@
             </div>
             <ol class="grid gap-px bg-outline-subtle md:grid-cols-3">
                 {% for number, icon, title, detail in [
-                    ('01', 'gauge', 'Capacity Admission', 'CPU, memory, Pods, and logical storage must fit the governed cluster budget.'),
+                    ('01', 'gauge', 'Capacity Admission', 'CPU, memory, Pods and storage must fit budget.'),
                     ('02', 'waypoints', 'Provider Reconcile', 'KAORI writes only through the admitted authoritative provider path.'),
-                    ('03', 'badge-check', 'Read-back & Commit', 'Observed provider state must match before the new profile version is committed.')
+                    ('03', 'badge-check', 'Read-back & Commit', 'Provider read-back must match before commit.')
                     ] %}
                     <li class="bg-surface-card p-4">
                         <div class="flex items-center justify-between gap-3">
