@@ -30,7 +30,6 @@ def test_pull_activity_rejects_invalid_counter_values():
     assert aggregate["pull_activity"] == 12
     assert [(row["project_name"], row["pull_count"]) for row in rows] == [
         ("valid", 12.0),
-        ("zero", 0.0),
     ]
 
 
@@ -102,4 +101,19 @@ def test_pull_activity_rejects_padded_project_names_without_misattribution():
     assert aggregate["pull_activity"] == 7
     assert [(row["project_name"], row["pull_count"]) for row in rows] == [
         ("production", 7.0),
+    ]
+
+
+def test_zero_pull_count_is_not_reported_as_project_activity():
+    aggregate = _analytics_aggregate()
+    rows = []
+    _accumulate_metrics(
+        aggregate,
+        {"status": "ready", "project_pull_count": {"idle-project": 0, "active-project": 3}},
+        identity=SimpleNamespace(name="harbor-a", provider_key="harbor"),
+        activity_rows=rows,
+    )
+    assert aggregate["pull_activity"] == 3
+    assert [(row["project_name"], row["pull_count"]) for row in rows] == [
+        ("active-project", 3.0),
     ]
