@@ -376,17 +376,29 @@ def _analytics_recommendations(active_tab: str) -> list[dict[str, str]]:
     ]
 
 
+def _governance_policy_coverage(aggregate: dict[str, Any], policy: str) -> float | None:
+    """Use only explicitly classified policy evidence, never the inventory total.
+
+    Unknown/unobserved projects must not be counted as not configured or
+    silently converted to a clean governance posture.
+    """
+    configured = max(int(aggregate[f'{policy}_configured']), 0)
+    not_configured = max(int(aggregate[f'{policy}_not_configured']), 0)
+    assessed = max(int(aggregate['governance_projects_assessed']), 0)
+    observed = configured + not_configured
+    if not assessed or not observed or observed > assessed:
+        return None
+    return configured / observed * 100.0
+
+
 def _analytics_coverage(aggregate: dict[str, Any]) -> dict[str, float | None]:
     artifact_total = max(int(aggregate['artifacts']), 0)
-    project_total = max(int(aggregate['projects']), 0)
     return {
         'scan': float(aggregate['scanned_artifacts']) / artifact_total * 100.0 if artifact_total else None,
         'signature': float(aggregate['signed_artifacts']) / artifact_total * 100.0 if artifact_total else None,
         'sbom': float(aggregate['sbom_artifacts']) / artifact_total * 100.0 if artifact_total else None,
-        'retention': float(aggregate['retention_configured']) / project_total * 100.0 if project_total else None,
-        'immutability': (
-            float(aggregate['immutability_configured']) / project_total * 100.0 if project_total else None
-        ),
+        'retention': _governance_policy_coverage(aggregate, 'retention'),
+        'immutability': _governance_policy_coverage(aggregate, 'immutability'),
     }
 
 
