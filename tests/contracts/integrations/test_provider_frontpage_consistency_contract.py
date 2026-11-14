@@ -426,8 +426,13 @@ def test_tabular_provider_coverage_headers_share_filtered_result_counts() -> Non
         template = read(path)
         assert 'provider_registry.registry_header(' in template, path
         assert 'result_count=coverage_pagination.total_items' in template, path
-        assert 'provider_registry.pagination_footer(coverage_pagination,' in template, path
         assert 'result_count=coverage_rows|length' not in template, path
+
+    # MinIO owns pagination in the separately refreshed table-body partial.
+    minio_content = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_coverage_content.html')
+    assert 'provider_registry.pagination_footer(coverage_pagination,' in minio_content
+    for path in (direct_coverage[0], direct_coverage[2], direct_coverage[3]):
+        assert 'provider_registry.pagination_footer(coverage_pagination,' in read(path), path
 
     shared = read('app/templates/components/integration_coverage.html')
     assert 'provider_registry.registry_header(' in shared
