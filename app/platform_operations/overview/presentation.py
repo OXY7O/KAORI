@@ -68,7 +68,7 @@ def build_platform_operations_overview_context(
                 'boundary_label': 'Canonical execution evidence',
                 'boundary_title': 'Execution Evidence',
                 'boundary_description': (
-                    'Jobs & Executions owns queues, retries, cancellation, results, and worker evidence.'
+                    'Jobs owns queues, retries and execution evidence.'
                 ),
             }
         )
@@ -109,7 +109,7 @@ def build_platform_operations_overview_context(
                 'boundary_label': 'Archive-first governance',
                 'boundary_title': 'Lifecycle Governance',
                 'boundary_description': (
-                    'Data Lifecycle owns retention intent, verified archives, and safe cleanup boundaries.'
+                    'Data Lifecycle owns retention and verified archives.'
                 ),
             }
         )
@@ -142,8 +142,7 @@ def build_platform_operations_overview_context(
                 'boundary_label': 'Protected control boundary',
                 'boundary_title': 'Protected Administration',
                 'boundary_description': (
-                    'Kubernetes Administration owns readiness and reveal policy; live secret values remain in '
-                    'Secret Management.'
+                    'Kubernetes governs readiness and reveal access.'
                 ),
             }
         )
