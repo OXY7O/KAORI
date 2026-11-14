@@ -363,9 +363,7 @@ def _collect_analytics_rows(identities: list[Any], *, snapshot_window: str = '24
     return bundle
 
 
-def _committed_growth_chart_points(
-    history: dict[str, Any], metric: str
-) -> tuple[list[dict[str, float]], str, int]:
+def _committed_growth_chart_points(history: dict[str, Any], metric: str) -> tuple[list[dict[str, float]], str, int]:
     """Use worker-measured samples, or explicit legacy start/end checkpoints."""
     plotted = history.get('chart_series')
     series = plotted.get(metric) if isinstance(plotted, dict) else None
@@ -406,10 +404,14 @@ def _committed_growth_chart_points(
         last_total += float(last)
     if len(first_times) != 1 or len(last_times) != 1:
         return [], 'unavailable', 0
-    return [
-        {'timestamp': next(iter(first_times)), 'value': first_total},
-        {'timestamp': next(iter(last_times)), 'value': last_total},
-    ], 'checkpoints', 2
+    return (
+        [
+            {'timestamp': next(iter(first_times)), 'value': first_total},
+            {'timestamp': next(iter(last_times)), 'value': last_total},
+        ],
+        'checkpoints',
+        2,
+    )
 
 
 def _registry_growth_charts(
@@ -436,12 +438,14 @@ def _registry_growth_charts(
                 continue
             points, mode, count = _committed_growth_chart_points(history, metric)
             if points:
-                result[label].append({
-                    'label': str(view['identity'].name),
-                    'points': points,
-                    'mode': mode,
-                    'sample_count': count,
-                })
+                result[label].append(
+                    {
+                        'label': str(view['identity'].name),
+                        'points': points,
+                        'mode': mode,
+                        'sample_count': count,
+                    }
+                )
         if all(len(series) >= 3 for series in result.values()):
             break
     return result
