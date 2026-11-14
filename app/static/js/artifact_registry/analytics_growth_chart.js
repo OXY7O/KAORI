@@ -25,6 +25,11 @@
             minute: '2-digit',
         }).format(new Date(Number(unix) * 1000))
 
+    function pointRadiusForSeries(source) {
+        if (source.mode === 'checkpoints') return 4
+        return source.points.length <= 6 ? 3 : 0
+    }
+
     function destroyRemovedCharts(target) {
         for (const [canvas, chart] of charts.entries()) {
             if (!canvas.isConnected || (target && (target === canvas || target.contains?.(canvas)))) {
@@ -36,7 +41,9 @@
 
     function render(root = document) {
         if (typeof Chart === 'undefined') return
-        const candidates = root.matches?.(panelSelector) ? [root] : Array.from(root.querySelectorAll?.(panelSelector) || [])
+        const candidates = root.matches?.(panelSelector)
+            ? [root]
+            : Array.from(root.querySelectorAll?.(panelSelector) || [])
 
         candidates.forEach((panel) => {
             const canvas = panel.querySelector('[data-registry-growth-chart]')
@@ -68,7 +75,7 @@
                 backgroundColor: palette[index],
                 borderWidth: 2.5,
                 borderDash: source.mode === 'checkpoints' ? [6, 4] : [],
-                pointRadius: source.mode === 'checkpoints' ? 4 : source.points.length <= 6 ? 3 : 0,
+                pointRadius: pointRadiusForSeries(source),
                 pointHoverRadius: 5,
                 fill: false,
                 spanGaps: false,
