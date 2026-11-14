@@ -28,9 +28,7 @@
 
     function render(root = document) {
         if (typeof Chart === 'undefined') return
-        const panels = root.matches?.(panelSelector)
-            ? [root]
-            : Array.from(root.querySelectorAll?.(panelSelector) || [])
+        const panels = root.matches?.(panelSelector) ? [root] : Array.from(root.querySelectorAll?.(panelSelector) || [])
 
         panels.forEach((panel) => {
             const canvas = panel.querySelector('[data-registry-capacity-quota-chart]')
@@ -50,13 +48,23 @@
             const normalColor = cssVariable('--kaori-brand-primary', 'CanvasText')
             const warningColor = cssVariable('--kaori-status-warning', normalColor)
             const values = data.map((row) => Number(row.utilization_percent))
-            const axisMax = Math.max(100, Math.ceil(Math.max(...values) / 25) * 25)
+            const maxObserved = Math.max(...values)
+            let axisMax = 100
+            if (maxObserved <= 1) axisMax = 1
+            else if (maxObserved <= 5) axisMax = 5
+            else if (maxObserved <= 25) axisMax = 25
+            else if (maxObserved > 100) axisMax = Math.ceil(maxObserved / 25) * 25
+
+            const axisNote = panel.querySelector('[data-registry-capacity-axis-note]')
+            if (axisNote) {
+                axisNote.textContent = `0–${axisMax}% axis${axisMax < 100 ? ' · zoomed for readability' : ''}`
+            }
 
             const chart = new Chart(canvas.getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: data.map((row) =>
-                        row.project_name.length > 19 ? `${row.project_name.slice(0, 18)}…` : row.project_name,
+                        row.project_name.length > 19 ? `${row.project_name.slice(0, 18)}…` : row.project_name
                     ),
                     datasets: [
                         {
