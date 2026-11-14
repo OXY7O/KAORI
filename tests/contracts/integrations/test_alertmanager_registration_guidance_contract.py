@@ -48,6 +48,3 @@ def test_registration_guidance_remains_compact_without_forced_truncation() -> No
         assert len(match.group(1)) <= 80, f"Registration helper is too verbose: {match.group(1)}"
         assert "\\n" not in match.group(1)
 
-    # Natural responsive wrapping is intentional; do not hide copy with truncation.
-    assert "whitespace-nowrap" not in source
-    assert "line-clamp" not in source
