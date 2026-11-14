@@ -102,28 +102,51 @@ def test_operations_evidence_and_drift_guides_keep_results_filters_and_ownership
     assert 'explicit recovery decision' in drift
 
 
-def test_activity_cards_use_equal_height_shared_handoffs_and_aligned_action_footers() -> None:
+def test_activity_destination_cards_have_distinct_canonical_handoffs() -> None:
     from jinja2 import Environment
 
     page = read('app/templates/kubernetes/tenant/operations.html')
     Environment(autoescape=True).parse(page)
-    activity = page.split('<div class="grid items-stretch gap-4 lg:grid-cols-2">', 1)[1].split(
+    assert 'data-tenant-activity-destinations' in page
+    activity = page.split('data-tenant-activity-destinations', 1)[1].split(
         '                {% endif %}', 1
     )[0]
-    assert activity.count('class="{{ table_ui.block_classes() }} flex min-w-0 flex-col"') == 2
-    assert activity.count('class="flex flex-1 items-start gap-3 p-4 sm:p-5"') == 2
-    assert activity.count('class="mt-auto flex flex-wrap items-center gap-2 border-t') == 2
-    assert activity.count("action_button.classes('secondary')") == 3
-    assert 'Review Tenant mutation history in the canonical Activity Audit workspace.' in activity
-    assert 'Open recommendations and reports in their canonical KAORI workspaces.' in activity
-    for canonical_route in (
-        "url_for('access.activity_audit.index')",
-        "url_for('intelligence.recommendations')",
-        "url_for('reports.generate_report')",
+    assert 'grid items-stretch gap-4 lg:grid-cols-3' in page
+    assert activity.count('class="{{ table_ui.block_classes() }} flex min-w-0 flex-col"') == 3
+    assert activity.count('border-b border-outline-subtle bg-surface-hover px-5 py-4') == 3
+    assert activity.count('h-12 w-12 shrink-0 items-center justify-center') == 3
+    assert activity.count('table_label.metadata_label(') == 3
+    assert activity.count('mt-auto border-t border-outline-subtle px-5 py-3') == 3
+    assert activity.count("action_button.classes('soft')") == 3
+    assert activity.count('w-full') == 3
+    assert activity.count('aria-labelledby=') == 3
+    assert activity.count('class="{{ table_ui.block_title_classes() }}"') == 3
+    assert activity.count('class="{{ table_ui.block_description_classes() }}"') == 3
+
+    for title, detail, route in (
+        (
+            'Activity Audit',
+            'Trace Tenant mutations and their outcomes in the canonical audit history.',
+            "url_for('access.activity_audit.index')",
+        ),
+        (
+            'Intelligence',
+            'Review operational findings and recommendations in KAORI Intelligence.',
+            "url_for('intelligence.recommendations')",
+        ),
+        (
+            'Reports',
+            'Build and review published evidence through the canonical Reports workflow.',
+            "url_for('reports.generate_report')",
+        ),
     ):
-        assert canonical_route in activity
-    assert activity.count('aria-label=') == 2
-    assert 'bg-kaori-soft' not in activity
+        assert title in activity
+        assert detail in activity
+        assert activity.count(route) == 1
+
+    assert 'Governance &amp; Reports</h3>' not in activity
+    assert 'hx-post' not in activity
+    assert 'hx-delete' not in activity
 
 
 def test_existing_drift_urls_still_map_to_primary_tabs() -> None:

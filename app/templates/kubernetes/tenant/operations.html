@@ -187,42 +187,72 @@
                         </details>
                     </div>
                 {% else %}
-                    <div class="grid items-stretch gap-4 lg:grid-cols-2">
+                    <div class="grid items-stretch gap-4 lg:grid-cols-3"
+                         data-tenant-activity-destinations>
                         <section class="{{ table_ui.block_classes() }} flex min-w-0 flex-col"
+                                 aria-labelledby="tenant-activity-audit-destination"
                                  aria-label="Activity Audit handoff">
-                            <div class="flex flex-1 items-start gap-3 p-4 sm:p-5">
-                                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
-                                    <i data-lucide="activity" class="h-5 w-5"></i>
+                            <div class="flex items-center justify-between gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
+                                <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary-dark dark:text-kaori-accent"
+                                      aria-hidden="true">
+                                    <i data-lucide="activity" class="h-6 w-6"></i>
                                 </span>
-                                <div class="min-w-0 flex-1">
-                                    <h3 class="{{ table_ui.block_title_classes() }}">Activity Audit</h3>
-                                    <p class="mt-1 text-sm leading-6 text-content-secondary">Review Tenant mutation history in the canonical Activity Audit workspace.</p>
-                                </div>
+                                {{ table_label.metadata_label('Audit History', icon='shield-check') }}
                             </div>
-                            <div class="mt-auto flex flex-wrap items-center gap-2 border-t border-outline-subtle px-4 py-3 sm:px-5">
+                            <div class="min-w-0 flex-1 px-5 py-5">
+                                <h3 id="tenant-activity-audit-destination" class="{{ table_ui.block_title_classes() }}">Activity Audit</h3>
+                                <p class="{{ table_ui.block_description_classes() }}">Trace Tenant mutations and their outcomes in the canonical audit history.</p>
+                            </div>
+                            <div class="mt-auto border-t border-outline-subtle px-5 py-3">
                                 <a href="{{ url_for('access.activity_audit.index') }}"
-                                   class="{{ action_button.classes('secondary') }}">
+                                   class="{{ action_button.classes('soft') }} w-full">
                                     Open Activity Audit
-                                    <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
+                                    <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
                                 </a>
                             </div>
                         </section>
                         <section class="{{ table_ui.block_classes() }} flex min-w-0 flex-col"
-                                 aria-label="Governance and Reports handoff">
-                            <div class="flex flex-1 items-start gap-3 p-4 sm:p-5">
-                                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
-                                    <i data-lucide="brain-circuit" class="h-5 w-5"></i>
+                                 aria-labelledby="tenant-intelligence-destination"
+                                 aria-label="Intelligence handoff">
+                            <div class="flex items-center justify-between gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
+                                <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary-dark dark:text-kaori-accent"
+                                      aria-hidden="true">
+                                    <i data-lucide="brain-circuit" class="h-6 w-6"></i>
                                 </span>
-                                <div class="min-w-0 flex-1">
-                                    <h3 class="{{ table_ui.block_title_classes() }}">Governance &amp; Reports</h3>
-                                    <p class="mt-1 text-sm leading-6 text-content-secondary">Open recommendations and reports in their canonical KAORI workspaces.</p>
-                                </div>
+                                {{ table_label.metadata_label('Recommendations', icon='sparkles') }}
                             </div>
-                            <div class="mt-auto flex flex-wrap items-center gap-2 border-t border-outline-subtle px-4 py-3 sm:px-5">
+                            <div class="min-w-0 flex-1 px-5 py-5">
+                                <h3 id="tenant-intelligence-destination" class="{{ table_ui.block_title_classes() }}">Intelligence</h3>
+                                <p class="{{ table_ui.block_description_classes() }}">Review operational findings and recommendations in KAORI Intelligence.</p>
+                            </div>
+                            <div class="mt-auto border-t border-outline-subtle px-5 py-3">
                                 <a href="{{ url_for('intelligence.recommendations') }}"
-                                   class="{{ action_button.classes('secondary') }}">Intelligence</a>
+                                   class="{{ action_button.classes('soft') }} w-full">
+                                    Open Intelligence
+                                    <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                        </section>
+                        <section class="{{ table_ui.block_classes() }} flex min-w-0 flex-col"
+                                 aria-labelledby="tenant-reports-destination"
+                                 aria-label="Reports handoff">
+                            <div class="flex items-center justify-between gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
+                                <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary-dark dark:text-kaori-accent"
+                                      aria-hidden="true">
+                                    <i data-lucide="file-chart-column-increasing" class="h-6 w-6"></i>
+                                </span>
+                                {{ table_label.metadata_label('Governed Reports', icon='file-check-2') }}
+                            </div>
+                            <div class="min-w-0 flex-1 px-5 py-5">
+                                <h3 id="tenant-reports-destination" class="{{ table_ui.block_title_classes() }}">Reports</h3>
+                                <p class="{{ table_ui.block_description_classes() }}">Build and review published evidence through the canonical Reports workflow.</p>
+                            </div>
+                            <div class="mt-auto border-t border-outline-subtle px-5 py-3">
                                 <a href="{{ url_for('reports.generate_report') }}"
-                                   class="{{ action_button.classes('secondary') }}">Reports</a>
+                                   class="{{ action_button.classes('soft') }} w-full">
+                                    Open Reports
+                                    <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
+                                </a>
                             </div>
                         </section>
                     </div>
