@@ -132,10 +132,16 @@ required on the integrated review UAT SHA.
 The five primary `content_tabs.render_links` keys remain **Provisioning,
 Runs & Evidence, Allocation Drift, Operational Reconcile, Activity**. The
 operator's new human design review supersedes #960's earlier rejection of a
-second row *only inside the two multi-registry tabs*: each now shows a compact,
-informative authority/scope introduction and committed per-registry record
-counts **before** a shared `workspace_tabs.render_navigation` strip. The inner
-navigation is URL/HTMX-owned, not a duplicated JS tab controller.
+second row *only inside the two multi-registry tabs*. The operator's
+subsequent screenshot correction requires exact **Membership Registry /
+Tenant Group Registry** geometry rather than a stacked introduction card
+and separated underline navigation. A brief, unboxed authority explanation
+now precedes **one integrated rounded registry shell**, where the approved
+`workspace_tabs.render_query_tabs` tab strip attaches directly to the
+selected registry beneath it. Each focused registry retains its own Guide,
+Results, filters and pagination. The introductory scope/count grid and
+detached navigation/card shell were removed, not simply restyled. The
+inner navigation is URL/HTMX-owned, not a duplicated JS tab controller.
 
 - `tab=allocation-drift`: **Tenant Quota** (`ops_view=tenant-quota`) or
   **Shared Allocation** (`ops_view=shared-allocation`). The introduction
@@ -154,9 +160,10 @@ navigation is URL/HTMX-owned, not a duplicated JS tab controller.
   `drift_view=operations` legacy primary-tab alias remains accepted. New
   links never emit obsolete `drift_view`.
 - Each registry's filter, clear-filter, and paginated URLs retain both
-  `tab` and `ops_view`. The shared navigation replaces the original
-  `#tenant-operations-workspace` HTMX boundary with matching `hx-select`,
-  and supports full navigation, Back/Forward and per-registry Rows 5.
+  `tab` and `ops_view`. The shared query tabs inherit `hx-select="#tenant-operations-workspace"`
+  from their integrated registry shell and replace that exact HTMX boundary,
+  with `hx-sync` set to the existing workspace selector. Full navigation,
+  Back/Forward and per-registry Rows 5 are retained.
   Only the selected registry renders; committed evidence sourcing, separate
   recovery actions, permission enforcement, and historical provider authority
   stay unchanged.
