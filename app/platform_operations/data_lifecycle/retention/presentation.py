@@ -411,7 +411,10 @@ def _domain_coverage_note(name: str) -> str | None:
         'generated_report': generated_report_ui.GENERATED_REPORT_COVERAGE_NOTE,
         'alert_incident': 'Only Closed cases are archive-eligible. KAORI preserves the case index in PostgreSQL for History search after evidence compaction.',
         'tenant_audit_evidence': 'Committed Tenant audit correlation; Kubernetes remains authoritative for raw logs.',
-        'notification_delivery': 'Manual Archive Only; scheduling and cleanup blocked.',
+        'notification_delivery': (
+            'Manual Archive Only; scheduling and cleanup blocked. '
+            'Eligible delivery records require a manual archive request.'
+        ),
         'audit_event': (
             'Manual Archive Only. Separate from Activity Register, Jobs and Tenant Audit Evidence; '
             'retention and access restricted.'
