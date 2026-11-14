@@ -910,6 +910,30 @@ updates push its canonical page URL. No additional materialization models,
 provider read paths, RBAC definitions, alert collection or central Intelligence
 recommendation lifecycle are introduced.
 
+### Registry Analytics Overview Capacity visual UAT refinement (#4632)
+
+The **Capacity** tab retains its committed four-indicator quota/forecast
+posture and adds an evidence-backed **Project Quota Utilization** bar chart
+rather than presenting a loose `Qualified Project Outlook` text list.
+A compact project evidence panel is aligned beside the horizontal bars on
+desktop and stacks below them on mobile, preserving the shared Violet
+design system and light/dark state. The chart uses the same locally bundled
+Chart.js runtime as Registry Growth and Object Storage Analytics, with
+the existing HTMX activation/swap lifecycle.
+
+Each bar is an **observed point-in-time utilization ratio**
+(`usage_bytes / quota_bytes × 100`) from a committed Registry Analytics
+project forecast row, **not a time-series growth curve or exhaustion forecast**.
+Only finite, nonnegative usage and finite, positive quota observations with
+project and Registry identity are eligible. Real zero usage is retained,
+over-quota values above 100% are displayed without truncation, and invalid
+or unavailable evidence is omitted rather than silently rendered as zero.
+At most five qualified projects are plotted, ordered by utilization.
+The visible companion panel preserves the full project name, Registry
+source, actual usage and quota, and independently qualified forecast label.
+Missing all eligible quotas produces a dedicated unavailable state. The
+existing detailed Capacity table and worker/provider ownership are unchanged.
+
 ### Registry Analytics Overview Growth visual UAT refinement (#4632)
 
 The **Analytical Evidence Summary** header uses the same shared
