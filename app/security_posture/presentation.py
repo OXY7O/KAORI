@@ -139,6 +139,7 @@ def build_security_posture(
             },
             'has_complete_security_evidence': False,
             'severity_distribution': [],
+            'runtime_binding_summary': {'digest': 0, 'reference': 0},
         }
     sources = _providers()
     source_ids = [int(source.id) for source in sources]
@@ -195,6 +196,7 @@ def build_security_posture(
     )
     rows = _security_finding_rows(page_rows)
     severity_distribution: list[dict[str, Any]] = []
+    runtime_binding_summary = {'digest': 0, 'reference': 0}
     if include_overview_summary and source_ids:
         # Count distinct grouped CVEs at their highest qualified severity.
         # A preview page or raw finding-row count cannot represent the scope.
@@ -205,6 +207,28 @@ def build_security_posture(
             ).all()
         )
         severity_distribution = _security_severity_distribution(severity_counts)
+        # Count unique container-level bindings across all scoped CVE evidence.
+        # Never sum per-CVE binding counts: one workload can carry many CVEs.
+        binding_totals = cve_findings.outerjoin(
+            RegistryWorkloadBinding,
+            RegistryWorkloadBinding.artifact_id == RegistryScanSnapshot.artifact_id,
+        ).with_entities(
+            func.count(
+                func.distinct(
+                    case((RegistryWorkloadBinding.match_type == 'digest', RegistryWorkloadBinding.id), else_=None)
+                )
+            ).label('digest'),
+            func.count(
+                func.distinct(
+                    case((RegistryWorkloadBinding.match_type != 'digest', RegistryWorkloadBinding.id), else_=None)
+                )
+            ).label('reference'),
+        ).first()
+        if binding_totals:
+            runtime_binding_summary = {
+                'digest': int(binding_totals.digest or 0),
+                'reference': int(binding_totals.reference or 0),
+            }
     scanned_artifacts = 0
     artifacts_total = 0
     last_scan = None
@@ -265,6 +289,7 @@ def build_security_posture(
         'scan_status': scan_status,
         'runtime_status': correlation,
         'severity_distribution': severity_distribution,
+        'runtime_binding_summary': runtime_binding_summary,
         'has_complete_security_evidence': bool(
             source_ids
             and last_scan
