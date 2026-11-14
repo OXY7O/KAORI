@@ -91,17 +91,16 @@ Guide via the shared table header `title_extra`, without replacing the
 filtered **Results** count or the Provision Namespace CTA.
 
 Its fixed five-column table remains at `min-w-[1100px]` with narrow-viewport
-horizontal scroll. Following the operator's next Visual QA iteration (#4670),
-column percentages are **27/19/16/16/22** (Namespace, Tenant/Environment,
-Resource Profile, Provider, State). Shared title-cell primitives, middle
-alignment, source identity tooltips, filter/pagination and hover remain intact.
-For stable Ready/Released records, State shows a compact first-sentence preview
-from the **actual committed reconciliation message**, rather than a tall
-multi-clause paragraph; when evidence is not stable, it retains a bounded
-two-line reason. The complete original message remains exposed through native
-`title` and screen-reader-only text; the compact visual preview is marked
-`aria-hidden` to avoid duplicate announcement. It is never replaced by a
-fabricated provider summary. No status calculation, provider authority, workflow,
+horizontal scroll. The latest operator review (#4718) sets column widths to
+**25/18/15/16/26** (Namespace, Tenant/Environment, Resource Profile, Provider,
+State); it preserves shared identity/status components, middle alignment,
+source identity tooltips and filter/pagination. Where the actual committed
+reconciliation text explicitly contains a known conclusion, a concise
+source-qualified preview is shown: **Matches committed intent**, **Provider-mirrored
+policy**, or **Verified successor handoff**. Unknown/attention/failure reasons
+are never mapped to success and retain up to two lines of source text.
+The original complete evidence stays in the native `title` and screen-reader
+text; the display preview is `aria-hidden` to avoid duplicate announcements. No status calculation, provider authority, workflow,
 permission, backend or data source changes. Screenshot/browser QA on
 desktop/mobile, light/dark and long failure messages remains pending.
 
@@ -128,36 +127,44 @@ provider mutation, permission bypass, backend query or status logic is
 introduced. Desktop/mobile light/dark Visual QA and Human Acceptance remain
 required on the integrated review UAT SHA.
 
-## Tenant Operations — primary Allocation / Operational reconcile tabs (#960)
+## Tenant Operations — contextual drift subviews (#4718; supersedes #960 placement)
 
-Tenant → Operations uses **one shared primary Content Tabs row** rather than a
-nested `Drift & Reconcile` subtab hierarchy. Its five primary tabs are
-**Provisioning**, **Runs & Evidence**, **Allocation Drift**,
-**Operational Reconcile**, and **Activity**.
+The five primary `content_tabs.render_links` keys remain **Provisioning,
+Runs & Evidence, Allocation Drift, Operational Reconcile, Activity**. The
+operator's new human design review supersedes #960's earlier rejection of a
+second row *only inside the two multi-registry tabs*: each now shows a compact,
+informative authority/scope introduction and committed per-registry record
+counts **before** a shared `workspace_tabs.render_navigation` strip. The inner
+navigation is URL/HTMX-owned, not a duplicated JS tab controller.
 
-- `tab=allocation-drift` displays the **Capsule Tenant Quota Drift** and
-  **Capsule Shared Allocation Drift** paginated registries.
-- `tab=operational-reconcile` displays **Namespace & Allocation Drift** and
-  **Access Reconciliation** as primary paginated registries. The additional
-  **Provider Authority** registry remains available in a native
-  `View Provider Authority` disclosure collapsed by default; it is not copied
-  or removed.
-- Prior bookmarked `tab=drift-reconcile` links are accepted as backward
-  compatibility aliases: `drift_view=operations` opens Operational Reconcile,
-  otherwise Allocation Drift. Newly generated navigation, filters, and pagers
-  use **only** the primary tab values, not nested `drift_view` state.
+- `tab=allocation-drift`: **Tenant Quota** (`ops_view=tenant-quota`) or
+  **Shared Allocation** (`ops_view=shared-allocation`). The introduction
+  distinguishes Capsule Tenant.spec.resourceQuotas vs GlobalResourceQuota
+  authority. The default is Tenant Quota.
+- `tab=operational-reconcile`: **Namespace Drift**
+  (`ops_view=namespace-drift`), **Access Reconciliation**
+  (`ops_view=access-reconciliation`), or **Provider Authority**
+  (`ops_view=provider-authority`). The third is a *read-only Tenant ownership
+  reference*, not a drift finding; it replaces the earlier collapsed
+  `View Provider Authority` disclosure without adding another registry.
+  Default is Namespace Drift.
+- A bounded `_operations_active_view()` whitelist rejects unknown inner
+  selections and preserves older deep links that include a table-specific
+  filter/page but no `ops_view`. The original `tab=drift-reconcile` +
+  `drift_view=operations` legacy primary-tab alias remains accepted. New
+  links never emit obsolete `drift_view`.
+- Each registry's filter, clear-filter, and paginated URLs retain both
+  `tab` and `ops_view`. The shared navigation replaces the original
+  `#tenant-operations-workspace` HTMX boundary with matching `hx-select`,
+  and supports full navigation, Back/Forward and per-registry Rows 5.
+  Only the selected registry renders; committed evidence sourcing, separate
+  recovery actions, permission enforcement, and historical provider authority
+  stay unchanged.
 
-The five original registries retain independent Rows/page/filter query
-parameters, canonical empty-state pagination, source-authoritative committed
-evidence, and explicit human reconciliation actions. The shared
-`content_tabs.render_links` component continues to own URL and HTMX
-navigation without a second tab controller, third-level sidebar item, or
-provider-side mutation.
-
-Local human acceptance must exercise all five primary tabs, both drift
-workflows with empty and populated datasets, browser refresh/back/forward,
-per-registry filters/Rows/HTMX, light/dark and mobile views. This is not
-staging UAT or production acceptance evidence.
+Developer Check and browser UAT must cover desktop/mobile light/dark,
+empty/populated child views, all five original registries, filter/search,
+clear, pagination, bookmarked URLs, keyboard navigation and selected-tab
+readability. Passing static checks is not UAT or official staging acceptance.
 
 ## Tenant Overview — integrated authority & lifecycle (#1081 follow-up; latest detail presentation authority)
 

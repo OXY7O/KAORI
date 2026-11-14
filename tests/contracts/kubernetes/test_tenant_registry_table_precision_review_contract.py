@@ -18,7 +18,7 @@ REGISTRIES = {
     '_membership_registry': (960, (25, 21, 13, 11, 14, 16)),
     '_operations_drift_registry': (1420, (17, 16, 19, 28, 20)),
     '_operations_provider_registry': (980, (23, 28, 31, 18)),
-    '_operations_namespace_registry': (1100, (27, 19, 16, 16, 22)),
+    '_operations_namespace_registry': (1100, (25, 18, 15, 16, 26)),
     '_operations_access_reconciliation_registry': (1100, (22, 20, 25, 12, 21)),
     '_capsule_shared_allocation_drift': (840, (24, 21, 13, 27, 15)),
     '_capsule_tenant_quota_drift': (840, (24, 21, 13, 27, 15)),
@@ -58,16 +58,23 @@ def test_tenant_registry_tables_use_bounded_existing_table_primitives() -> None:
 
 def test_operations_namespace_rows_balance_identity_provider_and_reconciliation() -> None:
     registry = _template('_operations_namespace_registry')
-    assert _header_widths(registry) == (27, 19, 16, 16, 22)
+    assert _header_widths(registry) == (25, 18, 15, 16, 26)
     assert "table_ui.table_classes('min-w-[1100px] !table-fixed')" in registry
     assert "table_ui.title_cell(item.namespace," in registry
     assert "table_ui.cell_classes()" in registry  # shared middle-aligned cells
     assert registry.count('text-sm font-semibold leading-5 text-content-primary') == 3
     assert registry.count('mt-0.5 text-xs leading-5 text-content-muted') == 3
     assert "reconciliation_evidence = item.provisioning_message or" in registry
-    assert "stable_state = item.provisioning_status in ('ready', 'released')" in registry
-    assert "reconciliation_evidence.split('. ', 1)[0]" in registry
-    assert "'truncate' if stable_state else 'line-clamp-2 break-words'" in registry
+    assert "evidence_lower = reconciliation_evidence|lower" in registry
+    assert "compact_summary = false" in registry
+    for phrase, summary in (
+        ('match committed intent', 'Matches committed intent'),
+        ('provider mirrored policy', 'Provider-mirrored policy'),
+        ('verified native successor', 'Verified successor handoff'),
+    ):
+        assert phrase in registry
+        assert summary in registry
+    assert "'truncate' if compact_summary else 'line-clamp-2 break-words'" in registry
     assert 'title="{{ reconciliation_evidence }}"' in registry
     assert '<span class="sr-only">{{ reconciliation_evidence }}</span>' in registry
     assert '<span aria-hidden="true">{{ reconciliation_summary }}</span>' in registry

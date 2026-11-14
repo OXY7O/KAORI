@@ -10,7 +10,7 @@ def read(path: str) -> str:
     return (ROOT / path).read_text(encoding='utf-8')
 
 
-def test_drift_workflows_use_canonical_primary_tabs_not_nested_tabs() -> None:
+def test_drift_workflows_keep_five_primary_tabs_and_use_server_owned_child_views() -> None:
     operations = read('app/templates/kubernetes/tenant/operations.html')
     routes = read('app/kubernetes/tenant/routes.py')
     tab_helper = read('app/kubernetes/tenant/route_common.py')
@@ -26,12 +26,17 @@ def test_drift_workflows_use_canonical_primary_tabs_not_nested_tabs() -> None:
 
     assert operations.count('content_tabs.render_links(') == 1
     assert "'tenant-operations'" in operations
-    assert "hx_target='#tenant-operations-workspace'" in operations
+    assert operations.count('workspace_tabs.render_navigation(') == 2
+    assert 'components/workspace_tabs.html' in operations
+    assert operations.count("hx_target='#tenant-operations-workspace'") == 3
+    assert operations.count("hx_select='#tenant-operations-workspace'") == 2
     assert "hx_push_url='true'" in operations
     assert "'tenant-drift-views'" not in operations
     assert 'data-tenant-drift-view' not in operations
     assert 'drift_view=drift_view' not in routes
     assert "active_tab in {'allocation-drift', 'operational-reconcile'}" in routes
+    assert 'active_view = _operations_active_view(active_tab)' in routes
+    assert 'active_view=active_view' in routes
 
 
 def test_operations_titles_follow_shared_indicator_and_guide_contract() -> None:
@@ -159,40 +164,83 @@ def test_existing_drift_urls_still_map_to_primary_tabs() -> None:
     assert "else 'allocation-drift'" in route_common
 
 
-def test_each_primary_tab_has_two_tables_with_provider_details_preserved() -> None:
+def test_drift_sections_have_context_before_child_tabs_and_one_active_registry() -> None:
+    from jinja2 import Environment
+
     operations = read('app/templates/kubernetes/tenant/operations.html')
+    Environment(autoescape=True).parse(operations)
     allocation = operations.split("{% elif active_tab == 'allocation-drift' %}", 1)[1].split(
         "{% elif active_tab == 'operational-reconcile' %}", 1
     )[0]
-    operational = operations.split("{% elif active_tab == 'operational-reconcile' %}", 1)[1].split('{% else %}', 1)[0]
+    operational = operations.split("{% elif active_tab == 'operational-reconcile' %}", 1)[1].split(
+        '{% else %}\n                    <section', 1
+    )[0]
 
-    assert allocation.count('{% include "kubernetes/tenant/partials/') == 2
-    for name in ('_capsule_tenant_quota_drift.html', '_capsule_shared_allocation_drift.html'):
-        assert name in allocation
-    assert operational.count('{% include "kubernetes/tenant/partials/') == 3
+    for source, section, expected_count in (
+        (allocation, 'allocation', 2),
+        (operational, 'operational', 3),
+    ):
+        assert 'data-tenant-operations-review-intro' in source
+        assert source.index('data-tenant-operations-review-intro') < source.index(
+            'workspace_tabs.render_navigation('
+        )
+        assert source.index('workspace_tabs.render_navigation(') < source.index(
+            '{% include "kubernetes/tenant/partials/'
+        )
+        assert source.count("{% include \"kubernetes/tenant/partials/") == expected_count
+        assert "prefix='tenant-" + section + "-registry'" in source
+        assert "hx_select='#tenant-operations-workspace'" in source
+        assert 'active_view,' in source
+        assert "sm:grid-cols-" + str(expected_count) in source
+
+    assert "ops_view='tenant-quota'" in allocation
+    assert "ops_view='shared-allocation'" in allocation
+    assert "active_view == 'shared-allocation'" in allocation
+    assert '_capsule_tenant_quota_drift.html' in allocation
+    assert '_capsule_shared_allocation_drift.html' in allocation
+    assert "ops_view='namespace-drift'" in operational
+    assert "ops_view='access-reconciliation'" in operational
+    assert "ops_view='provider-authority'" in operational
+    assert "active_view == 'access-reconciliation'" in operational
+    assert "active_view == 'provider-authority'" in operational
     assert '_operations_drift_registry.html' in operational
     assert '_operations_access_reconciliation_registry.html' in operational
-    assert '<details class="group' in operational
-    assert 'data-tenant-provider-authority-disclosure' in operational
     assert '_operations_provider_registry.html' in operational
+    assert 'data-tenant-provider-authority-disclosure' not in operational
+    assert '{% set provider_authority_embedded = true %}' not in operational
+    assert "Ownership reference, not drift" in operational
 
 
-def test_each_registry_keeps_primary_tab_through_pagination_filter_and_clear() -> None:
-    for name, tab in (
-        ('_capsule_tenant_quota_drift.html', 'allocation-drift'),
-        ('_capsule_shared_allocation_drift.html', 'allocation-drift'),
-        ('_operations_drift_registry.html', 'operational-reconcile'),
-        ('_operations_access_reconciliation_registry.html', 'operational-reconcile'),
-        ('_operations_provider_registry.html', 'operational-reconcile'),
-    ):
+def test_each_registry_retains_child_view_during_filter_clear_and_pagination() -> None:
+    specs = (
+        ('_capsule_tenant_quota_drift.html', 'allocation-drift', 'tenant-quota'),
+        ('_capsule_shared_allocation_drift.html', 'allocation-drift', 'shared-allocation'),
+        ('_operations_drift_registry.html', 'operational-reconcile', 'namespace-drift'),
+        ('_operations_access_reconciliation_registry.html', 'operational-reconcile', 'access-reconciliation'),
+        ('_operations_provider_registry.html', 'operational-reconcile', 'provider-authority'),
+    )
+    for name, tab, view in specs:
         source = (PARTIALS / name).read_text(encoding='utf-8')
-        assert "'tab': '" + tab + "'" in source, name
-        assert 'registry_ui.footer(' in source, name
+        assert f"'tab': '{tab}'" in source, name
+        assert f"'ops_view': '{view}'" in source, name
+        assert f'name="tab" value="{tab}"' in source
+        assert f'name="ops_view" value="{view}"' in source
+        assert f"query_params={{'tab': '{tab}', 'ops_view': '{view}'}}" in source
+        assert 'registry_ui.clear_filters_link(' in source
+        assert 'registry_ui.footer(' in source
         assert '.total_items > 0' not in source, name
         assert "'drift_view':" not in source, name
-        if tab == 'operational-reconcile':
-            assert f'name="tab" value="{tab}"' in source
-            assert f"query_params={{'tab': '{tab}'}}" in source
+
+    common = read('app/kubernetes/tenant/route_common.py')
+    assert "def _operations_active_view(active_tab: str)" in common
+    assert "requested = str(request.args.get('ops_view') or '').strip()" in common
+    for view in ('tenant-quota', 'shared-allocation', 'namespace-drift', 'access-reconciliation', 'provider-authority'):
+        assert f"'{view}'" in common
+    assert "'ops_capsule_shared_page'" in common
+    assert "'ops_access_page'" in common
+    assert "'ops_provider_page'" in common
+    assert "return 'tenant-quota'" in common
+    assert "return 'namespace-drift'" in common
 
 
 def test_both_capsule_drift_registries_use_full_kaori_table_contract() -> None:
@@ -327,39 +375,33 @@ def test_capsule_drift_provider_lineage_jinja_compiles_and_renders() -> None:
         assert expected in result
 
 
-def test_capsule_allocation_scope_guide_between_registries_and_wide_modals() -> None:
-    """#2931 DevContainer UX follow-up: contextual bridge and readable evidence modal."""
+def test_capsule_allocation_scope_intro_precedes_child_tabs_and_wide_modals() -> None:
+    """#4718: authority context first, then one selected registry at a time."""
     from jinja2 import Environment
 
     page = read('app/templates/kubernetes/tenant/operations.html')
+    allocation = page.split("{% elif active_tab == 'allocation-drift' %}", 1)[1].split(
+        "{% elif active_tab == 'operational-reconcile' %}", 1
+    )[0]
     primary = '{% include "kubernetes/tenant/partials/_capsule_tenant_quota_drift.html" %}'
     shared = '{% include "kubernetes/tenant/partials/_capsule_shared_allocation_drift.html" %}'
-    assert primary in page and shared in page
-    scope = page.split(primary, 1)[1].split(shared, 1)[0]
-    assert 'data-capsule-allocation-scope-guide' in scope
-    assert '{{ table_ui.block_classes() }}' in scope
-    assert 'Capsule Allocation Authority' in scope
-    assert 'Two distinct quota scopes, one provider authority.' in scope
-    assert 'Sync observes drift; recovery requires a decision.' in scope
-    assert 'Tenant Resource Quotas' in scope
-    assert 'Shared Allocation' in scope
-    assert 'Tenant CR' in scope
-    assert 'Namespace ResourceQuota' in scope
-    assert 'GlobalResourceQuota' in scope
-    assert 'Shared Tenant allocation' in scope
-    assert 'Capsule reconciles generated Namespace ResourceQuota' in scope
-    assert 'GlobalResourceQuota governs shared Tenant allocation' in scope
-    # The scopes use two equal peer cards, not the rejected flat 3-column text strip.
-    assert scope.count('<article class="min-w-0 rounded-lg border border-brand-outline bg-kaori-soft') == 2
-    assert scope.count('bg-surface-card px-3 py-2 text-xs') == 2
-    assert scope.count('data-lucide="arrow-right"') == 2
-    assert 'grid gap-3 p-3 sm:grid-cols-2 sm:p-4' in scope
-    assert 'lg:grid-cols-3' not in scope
-    assert 'aria-labelledby="capsule-allocation-scope-guide-title"' in scope
-    # Read-only guidance is not a third reconciliation registry.
-    assert '<table' not in scope
-    assert 'method="post"' not in scope
-    assert 'data-kaori-native-dialog' not in scope
+    assert primary in allocation and shared in allocation
+    assert allocation.index('data-capsule-allocation-scope-guide') < allocation.index(
+        'workspace_tabs.render_navigation('
+    )
+    assert allocation.index('workspace_tabs.render_navigation(') < allocation.index(primary)
+    assert '{{ table_ui.block_classes() }}' in allocation
+    assert 'Capsule Allocation Review' in allocation
+    assert 'Capsule authoritative' in allocation
+    assert 'Tenant Resource Quotas' in allocation
+    assert 'Shared Allocation' in allocation
+    assert 'Tenant.spec.resourceQuotas' in allocation
+    assert 'GlobalResourceQuota' in allocation
+    assert 'capsule_tenant_quota_drift_pagination.total_items' in allocation
+    assert 'capsule_shared_drift_pagination.total_items' in allocation
+    assert "sm:grid-cols-2" in allocation
+    assert 'data-kaori-native-dialog' not in allocation
+    assert '<form method="post"' not in allocation
     Environment(autoescape=True).parse(page)
 
     for name in ('_capsule_tenant_quota_drift.html', '_capsule_shared_allocation_drift.html'):

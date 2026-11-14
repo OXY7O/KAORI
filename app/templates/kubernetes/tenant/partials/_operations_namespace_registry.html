@@ -114,19 +114,30 @@
             <caption class="sr-only">Tenant Namespace provisioning evidence.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[27%]">Namespace</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Tenant / Environment</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Resource Profile</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[25%]">Namespace</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Tenant / Environment</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Resource Profile</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Provider</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">State</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[26%]">State</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for item in operations_namespace_rows %}
                     {% set state_tone = 'normal' if item.provisioning_status == 'ready' else ('critical' if item.provisioning_status == 'failed' else 'warning') %}
                     {% set reconciliation_evidence = item.provisioning_message or 'Awaiting reconciliation evidence.' %}
-                    {% set stable_state = item.provisioning_status in ('ready', 'released') %}
-                    {% set reconciliation_summary = reconciliation_evidence.split('. ', 1)[0] if stable_state and '. ' in reconciliation_evidence else reconciliation_evidence %}
+                    {% set evidence_lower = reconciliation_evidence|lower %}
+                    {% set compact_summary = false %}
+                    {% set reconciliation_summary = reconciliation_evidence %}
+                    {% if item.provisioning_status == 'ready' and 'match committed intent' in evidence_lower %}
+                        {% set reconciliation_summary = 'Matches committed intent' %}
+                        {% set compact_summary = true %}
+                    {% elif item.provisioning_status == 'ready' and 'provider mirrored policy' in evidence_lower %}
+                        {% set reconciliation_summary = 'Provider-mirrored policy' %}
+                        {% set compact_summary = true %}
+                    {% elif item.provisioning_status == 'released' and 'verified native successor' in evidence_lower %}
+                        {% set reconciliation_summary = 'Verified successor handoff' %}
+                        {% set compact_summary = true %}
+                    {% endif %}
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_ui.title_cell(item.namespace, item.ownership_status|replace('_', ' ') |title ~ ' ownership', 'folder-tree') }}</td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
@@ -150,7 +161,7 @@
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
                             <div class="flex min-w-0 flex-col justify-center gap-1">
                                 <div>{{ table_label.status_label(item.provisioning_status|replace('_', ' ') |title, state_tone) }}</div>
-                                <p class="{{ 'truncate' if stable_state else 'line-clamp-2 break-words' }} min-w-0 text-xs leading-5 text-content-muted"
+                                <p class="{{ 'truncate' if compact_summary else 'line-clamp-2 break-words' }} min-w-0 text-xs leading-5 text-content-muted"
                                    title="{{ reconciliation_evidence }}">
                                     <span class="sr-only">{{ reconciliation_evidence }}</span>
                                     <span aria-hidden="true">{{ reconciliation_summary }}</span>

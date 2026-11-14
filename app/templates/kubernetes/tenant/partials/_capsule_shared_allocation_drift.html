@@ -6,6 +6,7 @@
 {% set loading_id = "capsule-shared-allocation-drift-loading" %}
 {% set query_params = {
     'tab': 'allocation-drift',
+    'ops_view': 'shared-allocation',
     'ops_capsule_shared_tenant_id': capsule_shared_drift_filters.tenant_id,
     'ops_capsule_shared_search': capsule_shared_drift_filters.search
 } %}
@@ -19,7 +20,7 @@
                         loading_id,
                         capsule_shared_drift_pagination.per_page,
                         table_ui.action_classes() ,
-            query_params={'tab': 'allocation-drift'},
+            query_params={'tab': 'allocation-drift', 'ops_view': 'shared-allocation'},
             page_param='ops_capsule_shared_page',
             per_page_param='ops_capsule_shared_per_page'
             ) }}
@@ -53,6 +54,7 @@
             per_page_param='ops_capsule_shared_per_page',
             aria_label='Filter Capsule Shared Allocation Drift') %}
             <input type="hidden" name="tab" value="allocation-drift">
+            <input type="hidden" name="ops_view" value="shared-allocation">
             <div>
                 <label for="capsule-shared-allocation-drift-tenant"
                        class="{{ table_ui.filter_label_classes() }}">Tenant</label>
