@@ -92,6 +92,9 @@ def _normalize_resource(resource: str, item: dict[str, Any]) -> dict[str, Any]:
         )
     )
     scheduling_resource = bool(item.get('scheduling_resource', resource != 'storage'))
+    scope_label = str(item.get('scope_label') or _default_scope_label(resource))
+    if resource == 'storage' and scope_label == 'Operational node-filesystem reference; not Kubernetes allocatable capacity':
+        scope_label = _default_scope_label(resource)
 
     normalized_headroom = (
         round(max(min(headroom, 100.0), 0.0), 1) if evidence_available and headroom is not None else None
@@ -107,7 +110,7 @@ def _normalize_resource(resource: str, item: dict[str, Any]) -> dict[str, Any]:
             'usage_evidence_available': usage_available,
             'evidence_available': evidence_available,
             'scheduling_resource': scheduling_resource,
-            'scope_label': str(item.get('scope_label') or _default_scope_label(resource)),
+            'scope_label': scope_label,
             'capacity': (round(capacity, 2) if capacity_available and capacity is not None else None),
             'used': round(used, 2) if usage_available and used is not None else None,
             'available': (round(remaining, 2) if evidence_available and remaining is not None else None),
@@ -122,7 +125,7 @@ def _normalize_resource(resource: str, item: dict[str, Any]) -> dict[str, Any]:
 
 def _default_scope_label(resource: str) -> str:
     if resource == 'storage':
-        return 'Operational node-filesystem reference; not Kubernetes allocatable capacity'
+        return 'Filesystem: not Kubernetes allocatable.'
     return 'Ready worker allocatable capacity'
 
 
