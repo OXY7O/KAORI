@@ -18,6 +18,10 @@ security_posture_bp = Blueprint('security_posture', __name__, url_prefix='/secur
 def overview() -> ResponseReturnValue:
     posture = build_security_posture(
         can_view_registry=current_user.has_permission('artifact_registry.view'),
+        search=request.args.get('q', '', type=str),
+        severity=request.args.get('severity', '', type=str),
+        page=request.args.get('page', 1, type=int) or 1,
+        per_page=request.args.get('per_page', 5, type=int) or 5,
         include_overview_summary=True,
     )
     return render_template(
