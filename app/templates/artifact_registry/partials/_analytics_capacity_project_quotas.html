@@ -1,9 +1,13 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
-{% set qualified_projects = analytics.capacity_chart_rows|default([], true) %}
-<section class="{{ analysis_surface.evidence_shell_classes() }}"
-         aria-labelledby="registry-capacity-projects-title">
+{% import "components/pagination.html" as pager %}
+{% set qualified_projects = analytics.capacity_project_rows|default(analytics.capacity_chart_rows|default([], true)) %}
+{% set page_window = analytics.capacity_pagination|default(none) %}
+<section id="registry-capacity-projects-table"
+         class="{{ analysis_surface.evidence_shell_classes() }}"
+         aria-labelledby="registry-capacity-projects-title"
+         data-registry-capacity-project-table>
     <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
         <div class="flex min-w-0 items-start gap-3">
             <span class="{{ analysis_surface.role_icon_classes('brand', size='compact') }}"
@@ -14,34 +18,39 @@
                 <h4 id="registry-capacity-projects-title"
                     class="text-sm font-semibold text-content-primary">Qualified Quota Comparison</h4>
                 <p class="mt-1 text-xs leading-5 text-content-secondary">
-                    Source-scoped committed usage, quota, exact utilization, growth and forecast.
+                    Committed project quotas with exact utilization, materialized growth, and qualified forecast status.
                 </p>
             </div>
         </div>
-        {{ table_label.metadata_label(qualified_projects|length ~ ' Projects', 'database', size='compact') }}
+        {{ table_label.metadata_label((page_window.total_items if page_window else qualified_projects|length) ~ ' Projects', 'database', size='compact') }}
     </header>
     {% if qualified_projects %}
         <div class="overflow-x-auto">
-            <table class="{{ table_ui.table_classes('min-w-[760px]') }}">
+            <table class="{{ table_ui.table_classes('min-w-[960px]') }}">
+                <caption class="sr-only">
+                    Qualified Registry project quota evidence for the selected Registry and Time Range.
+                </caption>
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Project / Registry</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Usage / Quota</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Used</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Quota</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Utilization</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Growth</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Forecast</th>
                     </tr>
                 </thead>
                 <tbody class="{{ table_ui.body_classes() }}">
-                    {% for row in qualified_projects[:5] %}
+                    {% for row in qualified_projects %}
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }}">
                                 {{ table_ui.title_cell(row.project_name, row.registry_name, icon='package') }}
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                <span class="whitespace-nowrap font-medium tabular-nums text-content-primary">
-                                    {{ row.usage_display }} / {{ row.quota_display }}
-                                </span>
+                                <span class="whitespace-nowrap font-medium tabular-nums text-content-primary">{{ row.usage_display }}</span>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <span class="whitespace-nowrap tabular-nums text-content-secondary">{{ row.quota_display }}</span>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 <div class="flex min-w-24 flex-col gap-1.5">
@@ -76,6 +85,50 @@
                 </p>
             </div>
         </div>
+    {% endif %}
+    {% if page_window %}
+        <footer class="{{ pager.footer_classes() }}">
+            <div class="{{ pager.summary_group_classes() }}">
+                <p class="tabular-nums">
+                    Showing {{ page_window.start_item }}–{{ page_window.end_item }} of {{ page_window.total_items }} qualified projects
+                </p>
+                <form method="get"
+                      action="{{ url_for('artifact_registry.analytics_capacity') }}"
+                      hx-get="{{ url_for('artifact_registry.analytics_capacity_table') }}"
+                      hx-target="#registry-capacity-projects-table"
+                      hx-swap="outerHTML"
+                      class="{{ pager.rows_group_classes() }}">
+                    {% if analytics.selected_provider_id is not none %}
+                        <input type="hidden" name="provider_id" value="{{ analytics.selected_provider_id }}" />
+                    {% endif %}
+                    <input type="hidden" name="snapshot_window" value="{{ analytics.snapshot_window }}" />
+                    <input type="hidden" name="capacity_page" value="1" />
+                    <label for="registry-capacity-project-page-size">Rows</label>
+                    <select id="registry-capacity-project-page-size"
+                            name="capacity_per_page"
+                            class="{{ pager.page_size_classes() }}">
+                        {% for size in page_window.allowed_per_page %}
+                            <option value="{{ size }}"
+                                    {% if page_window.per_page == size %}selected{% endif %}>{{ size }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="{{ pager.navigation_classes() }}">Apply</button>
+                </form>
+            </div>
+            {% if page_window.total_pages > 1 %}
+                <nav class="{{ pager.navigation_group_classes() }}"
+                     aria-label="Project quota pages">
+                    {{ pager.numeric_pages(page_window.page,
+                                            page_window.total_pages,
+                                            page_param='capacity_page',
+                                            hx_target='#registry-capacity-projects-table',
+                                            endpoint='artifact_registry.analytics_capacity_table',
+                                            href_endpoint='artifact_registry.analytics_capacity',
+                                            query_params={'provider_id': analytics.selected_provider_id, 'snapshot_window': analytics.snapshot_window, 'capacity_per_page': page_window.per_page},
+                                            hx_swap='outerHTML') }}
+                </nav>
+            {% endif %}
+        </footer>
     {% endif %}
     <p class="border-t border-outline-subtle px-4 py-3 text-xs leading-5 text-content-muted">
         Utilization measures observed quota pressure; it is not a forecast. The full numeric percentage is retained above 100%.
