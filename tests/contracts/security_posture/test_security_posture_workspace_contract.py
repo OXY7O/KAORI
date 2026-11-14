@@ -267,6 +267,19 @@ def test_security_assurance_hero_omits_oversized_registry_cta_but_preserves_cont
     shared_hero = read('app/templates/components/page_hero.html')
     assert '{% if action_label and action_href %}' in shared_hero
     assert 'context_single_action_classes()' in shared_hero
+    assert 'context_extension' not in shared_hero
+    assert "context_header('Dashboard Context', 'Operational Signal Scope', 'scan-search')" in shared_hero
+
+
+def test_security_overview_blocks_do_not_touch_and_analysis_has_one_outer_card() -> None:
+    html = _render_workspace_page('overview', _renderable_posture())
+    assert 'data-security-overview-layout' in html
+    assert 'data-security-overview-tabs' in html
+    assert 'Exposure &amp; Runtime Evidence' in html
+    assert html.count('data-security-posture-insights') == 1
+    assert 'lg:border-t-0 lg:border-l' in html
+    assert html.index('data-security-snapshot-grid') < html.index('data-security-posture-insights')
+    assert html.index('data-security-posture-insights') < html.index('data-security-overview-tabs')
 
 
 def test_security_snapshot_renders_unavailable_evidence_without_global_all_clear() -> None:
@@ -298,7 +311,7 @@ def test_security_snapshot_replaces_four_independent_kpi_cards() -> None:
     assert html.index('data-security-snapshot-grid') < html.index('data-security-posture-insights')
 
     snapshot = read('app/templates/security_posture/overview.html')
-    assert 'posture_grid.render([' in snapshot
+    assert 'posture_grid.render(snapshot_metrics, columns=4)' in snapshot
     assert 'columns=4' in snapshot
     assert 'metric_card.render(' not in snapshot
     assert 'components/resource_posture_grid.html' in snapshot
