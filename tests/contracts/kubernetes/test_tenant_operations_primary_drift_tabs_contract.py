@@ -26,11 +26,17 @@ def test_drift_workflows_keep_five_primary_tabs_and_use_server_owned_child_views
 
     assert operations.count('content_tabs.render_links(') == 1
     assert "'tenant-operations'" in operations
-    assert operations.count('workspace_tabs.render_navigation(') == 2
+    assert operations.count('workspace_tabs.render_query_tabs(') == 2
     assert 'components/workspace_tabs.html' in operations
     assert operations.count("hx_target='#tenant-operations-workspace'") == 3
-    assert operations.count("hx_select='#tenant-operations-workspace'") == 2
+    assert operations.count('hx-select="#tenant-operations-workspace"') == 2
+    assert operations.count("hx_sync='#tenant-operations-workspace:replace'") == 2
     assert "hx_push_url='true'" in operations
+    # Keep the same attached tab/header/table surface as Membership Registry.
+    membership = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
+    assert 'workspace_tabs.render_query_tabs(' in membership
+    assert 'min-w-0 overflow-hidden rounded-2xl border border-outline-default' in membership
+    assert 'hx-select="#tenant-admin-workspace"' in membership
     assert "'tenant-drift-views'" not in operations
     assert 'data-tenant-drift-view' not in operations
     assert 'drift_view=drift_view' not in routes
@@ -178,20 +184,32 @@ def test_drift_sections_have_context_before_child_tabs_and_one_active_registry()
 
     for source, section, expected_count in (
         (allocation, 'allocation', 2),
-        (operational, 'operational', 3),
+        (operational, 'operations', 3),
     ):
         assert 'data-tenant-operations-review-intro' in source
         assert source.index('data-tenant-operations-review-intro') < source.index(
-            'workspace_tabs.render_navigation('
+            f'id="tenant-drift-{section}-registry"'
         )
-        assert source.index('workspace_tabs.render_navigation(') < source.index(
+        assert source.index(f'id="tenant-drift-{section}-registry"') < source.index(
+            'workspace_tabs.render_query_tabs('
+        )
+        assert source.index('workspace_tabs.render_query_tabs(') < source.index(
             '{% include "kubernetes/tenant/partials/'
         )
-        assert source.count("{% include \"kubernetes/tenant/partials/") == expected_count
-        assert "prefix='tenant-" + section + "-registry'" in source
-        assert "hx_select='#tenant-operations-workspace'" in source
+        assert source.count('{% include "kubernetes/tenant/partials/') == expected_count
+        assert source.count(
+            'class="min-w-0 overflow-hidden rounded-2xl border border-outline-default '
+            'bg-surface-card shadow-sm"'
+        ) == 1
+        assert source.count('class="min-w-0 p-4 sm:p-5"') == 1
+        assert 'hx-select="#tenant-operations-workspace"' in source
+        assert "hx_sync='#tenant-operations-workspace:replace'" in source
         assert 'active_view,' in source
-        assert "sm:grid-cols-" + str(expected_count) in source
+        assert 'workspace_tabs.render_navigation(' not in source
+        assert 'sm:grid-cols-' not in source
+        # The introductory copy is not its own large nested card.
+        if section == 'allocation':
+            assert 'data-capsule-allocation-scope-guide' in source
 
     assert "ops_view='tenant-quota'" in allocation
     assert "ops_view='shared-allocation'" in allocation
@@ -208,7 +226,28 @@ def test_drift_sections_have_context_before_child_tabs_and_one_active_registry()
     assert '_operations_provider_registry.html' in operational
     assert 'data-tenant-provider-authority-disclosure' not in operational
     assert '{% set provider_authority_embedded = true %}' not in operational
-    assert "Ownership reference, not drift" in operational
+    assert 'read-only ownership context, not a drift finding' in operational
+
+
+def test_integrated_child_registry_tab_shell_matches_membership_reference() -> None:
+    from jinja2 import Environment
+
+    operations = read('app/templates/kubernetes/tenant/operations.html')
+    membership = read('app/templates/kubernetes/tenant/partials/_tenant_memberships_workspace.html')
+    tabs = read('app/templates/components/workspace_tabs.html')
+    for source in (operations, membership, tabs):
+        Environment(autoescape=True).parse(source)
+    for source in (operations, membership):
+        assert 'workspace_tabs.render_query_tabs(' in source
+        assert 'hx-select="#tenant-' in source
+        assert 'min-w-0 overflow-hidden rounded-2xl border border-outline-default' in source
+    assert 'data-kaori-tab-variant="query-backed-htmx"' in tabs
+    assert 'rounded-t-xl border px-4 py-2.5' in tabs
+    assert 'workspace_tabs.render_navigation(' not in operations
+    assert operations.count('workspace_tabs.render_query_tabs(') == 2
+    assert operations.count('class="min-w-0 p-4 sm:p-5"') == 2
+    assert operations.count('data-tenant-operations-review-intro') == 2
+    assert operations.count('data-capsule-allocation-scope-guide') == 1
 
 
 def test_each_registry_retains_child_view_during_filter_clear_and_pagination() -> None:
@@ -375,8 +414,8 @@ def test_capsule_drift_provider_lineage_jinja_compiles_and_renders() -> None:
         assert expected in result
 
 
-def test_capsule_allocation_scope_intro_precedes_child_tabs_and_wide_modals() -> None:
-    """#4718: authority context first, then one selected registry at a time."""
+def test_capsule_allocation_scope_intro_precedes_attached_tabs_and_wide_modals() -> None:
+    """#4718 correction: match the existing Membership Registry tab surface."""
     from jinja2 import Environment
 
     page = read('app/templates/kubernetes/tenant/operations.html')
@@ -387,19 +426,17 @@ def test_capsule_allocation_scope_intro_precedes_child_tabs_and_wide_modals() ->
     shared = '{% include "kubernetes/tenant/partials/_capsule_shared_allocation_drift.html" %}'
     assert primary in allocation and shared in allocation
     assert allocation.index('data-capsule-allocation-scope-guide') < allocation.index(
-        'workspace_tabs.render_navigation('
+        'workspace_tabs.render_query_tabs('
     )
-    assert allocation.index('workspace_tabs.render_navigation(') < allocation.index(primary)
-    assert '{{ table_ui.block_classes() }}' in allocation
-    assert 'Capsule Allocation Review' in allocation
+    assert allocation.index('workspace_tabs.render_query_tabs(') < allocation.index(primary)
+    assert 'Capsule Allocation Authority' in allocation
     assert 'Capsule authoritative' in allocation
-    assert 'Tenant Resource Quotas' in allocation
-    assert 'Shared Allocation' in allocation
-    assert 'Tenant.spec.resourceQuotas' in allocation
-    assert 'GlobalResourceQuota' in allocation
-    assert 'capsule_tenant_quota_drift_pagination.total_items' in allocation
-    assert 'capsule_shared_drift_pagination.total_items' in allocation
-    assert "sm:grid-cols-2" in allocation
+    assert 'Tenant.spec.resourceQuotas governs Namespace quotas' in allocation
+    assert 'GlobalResourceQuota governs shared allocation' in allocation
+    assert 'Sync observes drift; recovery requires an explicit decision.' in allocation
+    assert 'hx-select="#tenant-operations-workspace"' in allocation
+    assert 'min-w-0 overflow-hidden rounded-2xl border border-outline-default' in allocation
+    assert 'workspace_tabs.render_navigation(' not in allocation
     assert 'data-kaori-native-dialog' not in allocation
     assert '<form method="post"' not in allocation
     Environment(autoescape=True).parse(page)
