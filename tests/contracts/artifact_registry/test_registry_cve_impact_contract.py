@@ -82,6 +82,25 @@ def test_cve_impact_view_is_permissioned_and_uses_existing_registry_navigation()
     assert "url_for('artifact_registry.runtime', artifact_id=row.artifact_id)" in page
 
 
+def test_cve_impact_correlation_advisory_reuses_shared_kaori_callout() -> None:
+    page = read('app/templates/artifact_registry/security_cve_impact.html')
+    Environment().parse(page)
+    assert 'components/operational_callout.html' in page
+    advisory = page.split('{% if not impact.evidence_ready %}', 1)[1].split('{% endif %}', 1)[0]
+    assert 'data-kaori-cve-correlation-advisory' in advisory
+    assert 'role="status"' in advisory
+    assert 'aria-live="polite"' in advisory
+    assert "operational_callout.render(" in advisory
+    assert "'Impact completeness is not verified'" in advisory
+    assert 'tone=impact.correlation.tone' in advisory
+    assert "variant='neutral'" in advisory
+    assert 'table_label.status_indicator_label(impact.correlation.status' in advisory
+    assert 'Missing bindings do not establish that no applications are affected.' in advisory
+    assert 'Review Runtime Usage readiness and refresh committed correlation when eligible.' in advisory
+    assert 'Source: Committed Registry × Kubernetes' in advisory
+    assert 'HarborClient' not in advisory
+
+
 def test_cve_impact_uses_shared_balanced_hero_and_short_snapshot_scope() -> None:
     from app.common.navigation import build_navigation_breadcrumb
 
