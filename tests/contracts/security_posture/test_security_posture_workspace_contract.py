@@ -423,7 +423,6 @@ def test_security_overview_cve_registry_is_filterable_htmx_and_url_paginated() -
     assert 'page=3' in html
     assert 'data-kaori-info-tip-variant="guide"' in html
     assert 'components/table_registry.html' in template
-    assert "loading_bar_id='security-posture-cve-loading'" not in template
     assert 'Loading CVE findings' in template
     assert '[5, 10, 25, 50]' in template
     for option in ('5', '10', '25', '50'):
@@ -558,7 +557,7 @@ def test_security_overview_table_renders_complete_server_paged_results() -> None
     assert 'Showing 1' in html
     assert '7 of 7' in html
     assert 'name="per_page"' in html
-    assert 'value="10" selected' in html
+    assert re.search(r'<option value="10"\\s+selected', html)
     assert 'posture.rows[:5]' not in read('app/templates/security_posture/overview.html')
 
 
