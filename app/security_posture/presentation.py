@@ -85,6 +85,44 @@ def _scanner_findings(source_ids: list[int]) -> Any:
     )
 
 
+def _security_cve_severity_rank() -> Any:
+    """Map scanner severity to stable presentation rank."""
+    return case(
+        *[(func.lower(RegistryVulnerability.severity) == key, index) for key, index in _SEVERITY_RANK.items()],
+        else_=5,
+    )
+
+
+def _grouped_security_cves(cve_findings: Any) -> Any:
+    """Group only source-qualified committed CVEs into distinct finding rows."""
+    all_cve_ids = func.upper(RegistryVulnerability.vulnerability_id)
+    return (
+        cve_findings.outerjoin(
+            RegistryWorkloadBinding,
+            RegistryWorkloadBinding.artifact_id == RegistryScanSnapshot.artifact_id,
+        )
+        .with_entities(
+            all_cve_ids.label('cve_id'),
+            func.min(_security_cve_severity_rank()).label('severity_rank'),
+            func.count(func.distinct(RegistryVulnerability.id)).label('finding_count'),
+            func.count(func.distinct(RegistryScanSnapshot.artifact_id)).label('artifact_count'),
+            func.count(func.distinct(RegistryWorkloadBinding.id)).label('binding_count'),
+            func.count(
+                func.distinct(
+                    case((RegistryWorkloadBinding.match_type == 'digest', RegistryWorkloadBinding.id), else_=None)
+                )
+            ).label('digest_binding_count'),
+            func.count(
+                func.distinct(
+                    case((RegistryWorkloadBinding.match_type != 'digest', RegistryWorkloadBinding.id), else_=None)
+                )
+            ).label('reference_binding_count'),
+            func.max(RegistryScanSnapshot.observed_at).label('observed_at'),
+        )
+        .group_by(all_cve_ids)
+    )
+
+
 def _security_finding_rows(page_rows: Any) -> list[dict[str, Any]]:
     """Present ranked, scoped registry findings without changing their ordering."""
     rows = [
@@ -153,44 +191,21 @@ def build_security_posture(
         scoped_findings.with_entities(func.count(func.distinct(RegistryScanSnapshot.artifact_id))).scalar() or 0
     )
     all_cve_ids = func.upper(RegistryVulnerability.vulnerability_id)
-    cve_findings = scoped_findings.filter(all_cve_ids.like('CVE-%'))
+    scoped_cve_findings = scoped_findings.filter(all_cve_ids.like('CVE-%'))
+    grouped = _grouped_security_cves(scoped_cve_findings)
+
+    # Filters constrain only the interactive table; source-wide exposure
+    # metrics remain unchanged when operators search or change pages.
+    filtered_findings = scoped_cve_findings
     if q:
         literal = q.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
-        cve_findings = cve_findings.filter(all_cve_ids.like(f'%{literal}%', escape='\\'))
+        filtered_findings = filtered_findings.filter(all_cve_ids.like(f'%{literal}%', escape='\\'))
     if severity_value:
-        cve_findings = cve_findings.filter(func.lower(RegistryVulnerability.severity) == severity_value)
+        filtered_findings = filtered_findings.filter(func.lower(RegistryVulnerability.severity) == severity_value)
+    filtered_grouped = _grouped_security_cves(filtered_findings) if q or severity_value else grouped
 
-    rank = case(
-        *[(func.lower(RegistryVulnerability.severity) == key, index) for key, index in _SEVERITY_RANK.items()],
-        else_=5,
-    )
-    grouped = (
-        cve_findings.outerjoin(
-            RegistryWorkloadBinding,
-            RegistryWorkloadBinding.artifact_id == RegistryScanSnapshot.artifact_id,
-        )
-        .with_entities(
-            all_cve_ids.label('cve_id'),
-            func.min(rank).label('severity_rank'),
-            func.count(func.distinct(RegistryVulnerability.id)).label('finding_count'),
-            func.count(func.distinct(RegistryScanSnapshot.artifact_id)).label('artifact_count'),
-            func.count(func.distinct(RegistryWorkloadBinding.id)).label('binding_count'),
-            func.count(
-                func.distinct(
-                    case((RegistryWorkloadBinding.match_type == 'digest', RegistryWorkloadBinding.id), else_=None)
-                )
-            ).label('digest_binding_count'),
-            func.count(
-                func.distinct(
-                    case((RegistryWorkloadBinding.match_type != 'digest', RegistryWorkloadBinding.id), else_=None)
-                )
-            ).label('reference_binding_count'),
-            func.max(RegistryScanSnapshot.observed_at).label('observed_at'),
-        )
-        .group_by(all_cve_ids)
-    )
     page_rows, pagination = paginate_query(
-        grouped.order_by(func.min(rank).asc(), all_cve_ids.asc()),
+        filtered_grouped.order_by(func.min(_security_cve_severity_rank()).asc(), all_cve_ids.asc()),
         page=positive_int(page),
         per_page=per_page,
     )
@@ -209,7 +224,7 @@ def build_security_posture(
         severity_distribution = _security_severity_distribution(severity_counts)
         # Count unique container-level bindings across all scoped CVE evidence.
         # Never sum per-CVE binding counts: one workload can carry many CVEs.
-        binding_totals = cve_findings.outerjoin(
+        binding_totals = scoped_cve_findings.outerjoin(
             RegistryWorkloadBinding,
             RegistryWorkloadBinding.artifact_id == RegistryScanSnapshot.artifact_id,
         ).with_entities(
