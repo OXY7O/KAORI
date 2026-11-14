@@ -63,7 +63,7 @@
                   hx-swap="outerHTML"
                   hx-disabled-elt="button[type='submit']"
                   class="xl:col-span-8"
-                  x-data="{ authType: '{{ current_auth_type }}', connectionVerified: {{ 'true' if registration_proof is defined and registration_proof else 'false' }}, invalidateConnectionTest(event) { const fieldName = event.target?.name || ''; if (['csrf_token', 'connection_test_proof'].includes(fieldName)) return; this.connectionVerified = false; this.$refs.connectionProof.value = ''; }, applyConnectionTest(event) { this.connectionVerified = event.detail?.connected === true; this.$refs.connectionProof.value = event.detail?.proof || ''; } }"
+                  x-data="{ authType: '{{ current_auth_type }}', connectionVerified: {{ 'true' if registration_proof is defined and registration_proof else 'false' }}, invalidateConnectionTest(event) { const fieldName = event.target?.name || ''; if (['csrf_token', 'connection_test_proof'].includes(fieldName)) return; this.connectionVerified = false; this.$refs.connectionProof.value = ''; }, applyConnectionTest(event) { const proof = event.detail?.connected === true && typeof event.detail?.proof === 'string' ? event.detail.proof : ''; this.connectionVerified = proof.length > 0; this.$refs.connectionProof.value = proof; } }"
                   x-on:input.capture="invalidateConnectionTest($event)"
                   x-on:change.capture="invalidateConnectionTest($event)"
                   x-on:alertmanager-connection-tested.window="applyConnectionTest($event)">
