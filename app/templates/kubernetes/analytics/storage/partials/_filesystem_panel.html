@@ -16,9 +16,12 @@
                 <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="server" class="h-5 w-5"></i></span>
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
-                    <h3 class="text-lg font-semibold text-content-primary">Node Filesystem Usage</h3>
-                    {{ info_tip.render('kubernetes-analytics-storage-filesystem-panel-guide', 'Node Filesystem Usage Guide', 'Node filesystem measurements require selected node scope; missing mountpoint metrics remain Unknown.', placement='right', variant='guide') }}
-                </div>
+                        <h3 class="text-lg font-semibold text-content-primary">Node Filesystem Usage</h3>
+                        {{ info_tip.render('kubernetes-analytics-storage-filesystem-panel-guide',
+                            'Node Filesystem Usage Guide',
+                            'Node filesystem measurements require selected node scope; missing mountpoint metrics remain Unknown.',
+                            placement='right', variant='guide') }}
+                    </div>
                     <p class="mt-1 text-sm leading-6 text-content-muted">Review node and mount-level filesystem capacity, utilization, remaining space, and semantic pressure.</p>
                 </div>
             </div>

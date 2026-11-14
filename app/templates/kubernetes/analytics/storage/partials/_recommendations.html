@@ -10,7 +10,10 @@
             <div>
                 <div class="flex flex-wrap items-center gap-2">
                     <h3 class="text-lg font-semibold text-content-primary">Storage Recommendations</h3>
-                    {{ info_tip.render('kubernetes-analytics-storage-recommendations-guide', 'Storage Recommendations Guide', 'Use evidence and Namespace ownership to plan expansion, reclamation, and storage recovery explicitly.', placement='right', variant='guide') }}
+                    {{ info_tip.render('kubernetes-analytics-storage-recommendations-guide',
+                        'Storage Recommendations Guide',
+                        'Use evidence and Namespace ownership to plan expansion, reclamation, and storage recovery explicitly.',
+                        placement='right', variant='guide') }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-muted">Prioritized actions derived from filesystem, PersistentVolume, and PersistentVolumeClaim risk signals.</p>
             </div>

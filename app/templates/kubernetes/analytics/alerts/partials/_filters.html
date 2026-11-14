@@ -27,7 +27,10 @@
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h2 class="text-base font-semibold text-content-primary">Alert Controls &amp; Source Readiness</h2>
-                    {{ info_tip.render('kubernetes-analytics-alerts-filters-guide', 'Alert Controls & Source Readiness Guide', 'Source selection and readiness are separate from local severity, Namespace and search filters in each signal table.', placement='right', variant='guide') }}
+                    {{ info_tip.render('kubernetes-analytics-alerts-filters-guide',
+                        'Alert Controls & Source Readiness Guide',
+                        'Source selection and readiness are separate from local severity, Namespace and search filters in each signal table.',
+                        placement='right', variant='guide') }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-muted">Select the cluster and preferred provider. Severity, state, namespace, and search remain local to the Alerts or Anomalies record panel.</p>
             </div>

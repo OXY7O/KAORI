@@ -11,7 +11,10 @@
             <div>
                 <div class="flex flex-wrap items-center gap-2">
                     <h3 class="text-lg font-semibold text-content-primary">Storage Capacity &amp; Utilization</h3>
-                    {{ info_tip.render('kubernetes-analytics-storage-capacity-utilization-panel-guide', 'Storage Capacity & Utilization Guide', 'Capacity and volume consumption are distinct; validate measured bytes and coverage before interpreting headroom.', placement='right', variant='guide') }}
+                    {{ info_tip.render('kubernetes-analytics-storage-capacity-utilization-panel-guide',
+                        'Storage Capacity & Utilization Guide',
+                        'Capacity and volume consumption are distinct; validate measured bytes and coverage before interpreting headroom.',
+                        placement='right', variant='guide') }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-muted">Separate node filesystem pressure, namespace PVC volume usage, and cluster PV provisioning into evidence with explicit scope.</p>
             </div>

@@ -15,9 +15,12 @@
                 <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="database" class="h-5 w-5"></i></span>
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
-                    <h3 class="text-lg font-semibold text-content-primary">Persistent Volumes</h3>
-                    {{ info_tip.render('kubernetes-analytics-storage-persistent-volumes-panel-guide', 'Persistent Volumes Guide', 'PV provisioning is cluster-scoped committed evidence; compare lifecycle, capacity, and binding before action.', placement='right', variant='guide') }}
-                </div>
+                        <h3 class="text-lg font-semibold text-content-primary">Persistent Volumes</h3>
+                        {{ info_tip.render('kubernetes-analytics-storage-persistent-volumes-panel-guide',
+                            'Persistent Volumes Guide',
+                            'PV provisioning is cluster-scoped committed evidence; compare lifecycle, capacity, and binding before action.',
+                            placement='right', variant='guide') }}
+                    </div>
                     <p class="mt-1 text-sm leading-6 text-content-muted">Review cluster provisioned capacity, claim binding, storage class, reclaim policy, lifecycle state, and volume-level risk.</p>
                 </div>
             </div>

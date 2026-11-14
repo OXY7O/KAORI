@@ -23,9 +23,12 @@
                     <div class="min-w-0">
                         <p class="{{ analysis_surface.metric_label_classes() }}">Consumer Evidence</p>
                         <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="mt-1 text-base font-semibold text-content-primary">Consumer Records Overview</h2>
-                    {{ info_tip.render('kubernetes-analytics-top_consumers-consumer-detail-section-guide', 'Consumer Records Overview Guide', 'Inspect committed consumer records using local filters and source-qualified evidence; missing records are not zero consumption.', placement='right', variant='guide') }}
-                </div>
+                            <h2 class="mt-1 text-base font-semibold text-content-primary">Consumer Records Overview</h2>
+                            {{ info_tip.render('kubernetes-analytics-top_consumers-consumer-detail-section-guide',
+                                'Consumer Records Overview Guide',
+                                'Inspect committed consumer records using local filters and source-qualified evidence; missing records are not zero consumption.',
+                                placement='right', variant='guide') }}
+                        </div>
                         <p class="mt-1 text-sm leading-6 text-content-secondary">Summarize the active record scope before applying table filters or opening resource-specific evidence.</p>
                     </div>
                 </div>

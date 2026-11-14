@@ -14,7 +14,10 @@
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h2 class="text-base font-semibold text-content-primary">Top Consumer Snapshot</h2>
-                    {{ info_tip.render('kubernetes-analytics-top_consumers-summary-guide', 'Top Consumer Snapshot Guide', 'Committed rankings show top contributions, not incident causation; compare scope and resource denominators.', placement='right', variant='guide') }}
+                    {{ info_tip.render('kubernetes-analytics-top_consumers-summary-guide',
+                        'Top Consumer Snapshot Guide',
+                        'Committed rankings show top contributions, not incident causation; compare scope and resource denominators.',
+                        placement='right', variant='guide') }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-secondary">
                     Compare the highest CPU, memory, pod, and storage consumers in the active committed snapshot.

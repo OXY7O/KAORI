@@ -14,7 +14,10 @@
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h2 class="text-base font-semibold text-content-primary">Cluster Signal Overview</h2>
-                    {{ info_tip.render('kubernetes-analytics-alerts-cluster-signal-overview-guide', 'Cluster Signal Overview Guide', 'Correlate committed alert counts, anomaly candidates, routing, and ownership; fallback sources require explicit qualification.', placement='right', variant='guide') }}
+                    {{ info_tip.render('kubernetes-analytics-alerts-cluster-signal-overview-guide',
+                        'Cluster Signal Overview Guide',
+                        'Correlate committed alert counts, anomaly candidates, routing, and ownership; fallback sources require explicit qualification.',
+                        placement='right', variant='guide') }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-muted">{{ overview.cluster_name }} · committed cluster alerts and anomaly candidates.</p>
             </div>
