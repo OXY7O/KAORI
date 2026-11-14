@@ -80,3 +80,8 @@ def test_registration_copy_does_not_weaken_connection_test_proof() -> None:
     assert "this.$refs.connectionProof.value = ''" in source
     assert 'hx-include="#alertmanager-instance-form"' in source
     assert 'hx-target="#alertmanager-connection-test-result"' in source
+    # Only non-configuration bookkeeping fields may retain a valid proof.
+    assert "['csrf_token', 'connection_test_proof'].includes(fieldName)" in source
+    assert "const fieldName = event.target?.name || ''" in source
+    assert "this.connectionVerified = event.detail?.connected === true" in source
+    assert "this.$refs.connectionProof.value = event.detail?.proof || ''" in source
