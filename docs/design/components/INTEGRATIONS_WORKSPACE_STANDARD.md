@@ -236,6 +236,21 @@ Canonical Connection Registry columns for Kubernetes, Metrics Source, Alertmanag
 Connection | Endpoint / Scope | Core Readiness | Compatibility | Bindings | Actions
 ```
 
+Alertmanager Connection Registry rows use the same six-column geometry,
+but provider-specific factual evidence: **Connection** shows the complete
+Alertmanager identity and description without truncation; **Endpoint / Scope**
+shows the full URL and Alertmanager API v2 context; **Core Readiness** and
+**Compatibility** show independent provider-backed semantic states on one
+top-aligned baseline. Compatibility retains complete profile and detected
+version with compact secondary spacing. The narrow **Bindings** column uses
+the canonical `table_label.metadata_label(count_text(row.binding_count,
+'Binding'))` (for example, `3 Bindings`) instead of an isolated number and a
+clipped scope list. Bound scope type names are retained in the cell's native
+title and assistive-only text, with detailed associations inspected using
+**Manage**. Preserve the existing colgroup, action route, filter/pagination
+and full-card HTMX replacement; do not add a second summary line that
+truncates governed scope evidence or modify provider source data.
+
 Kubernetes Connection Registry rows follow the header semantics without
 changing shared six-column geometry: **Connection** shows cluster identity with
 environment as secondary context; **Endpoint / Scope** shows the full Kubernetes

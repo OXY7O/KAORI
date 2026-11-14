@@ -210,3 +210,43 @@ def test_alertmanager_registration_guidance_is_compact_without_losing_gates() ->
     assert 'operational_toggle.render(' in form
     assert 'whitespace-nowrap' not in form
     assert 'line-clamp' not in form
+
+
+def test_alertmanager_connection_registry_row_has_aligned_semantic_cells() -> None:
+    """Keep full provider identity while displaying a compact binding count."""
+
+    from jinja2 import Environment
+
+    registry = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_inventory_content.html'
+    )
+    Environment().parse(registry)
+    populated = registry.split('{% for row in rows %}', 1)[1].split('{% else %}', 1)[0]
+    cells = populated.split('<td class="{{ table_ui.cell_classes')
+    assert len(cells) == 7  # Six populated cells, including titled Bindings and Actions.
+    assert populated.count('align-top') == 6
+
+    identity, endpoint, readiness, compatibility, bindings, actions = cells[1:]
+    assert '{{ row.instance.name }}' in identity
+    assert "{{ row.instance.description or 'Reusable alert source' }}" in identity
+    assert 'truncate' not in identity
+    assert '[overflow-wrap:anywhere]' in identity
+    assert '{{ row.endpoint }}' in endpoint
+    assert 'Alertmanager API v2' in endpoint
+    assert '[overflow-wrap:anywhere]' in endpoint
+    assert 'integration_status(row.readiness, display="indicator")' in readiness
+    assert 'integration_status(row.compatibility, display="indicator")' in compatibility
+    assert '{{ row.profile or "Capability profile pending" }}' in compatibility
+    assert '{{ row.version or "Version not detected" }}' in compatibility
+
+    assert "table_label.metadata_label(table_label.count_text(row.binding_count, 'Binding'))" in bindings
+    assert "scope_labels|join(', ') if scope_labels else 'No scope bindings'" in bindings
+    assert 'Bound scope types:' in bindings
+    assert 'truncate' not in bindings
+    assert "scope_labels.append(scope_type_labels.get(" in populated
+    assert 'row.scope_types or []' in populated
+    assert "url_for('alertmanager.instance_detail', instance_id=row.instance.id)" in actions
+    assert '<td class="{{ table_ui.cell_classes(action=true) }} align-top">' in populated
+    assert 'provider_registry.connection_registry_colgroup()' in registry
+    assert 'provider_registry.connection_registry_head()' in registry
+    assert "provider_registry.pagination_footer(pagination," in registry
