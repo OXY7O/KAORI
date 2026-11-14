@@ -50,7 +50,6 @@ def test_registration_guidance_remains_compact_without_forced_truncation() -> No
         assert not re.search(r"\b(?:whitespace-nowrap|truncate|line-clamp-\d+)\b", match.group(1))
 
 
-
 def test_registration_and_edit_flows_keep_distinct_validation_guidance() -> None:
     """A generic flow_note match must not silently test the edit flow instead."""
     source = TEMPLATE.read_text(encoding="utf-8")
@@ -60,3 +59,9 @@ def test_registration_and_edit_flows_keep_distinct_validation_guidance() -> None
     assert notes[0] == "Saved changes require successful Full Validation."
     assert notes[1] == "Registration creates identity; Full Validation gates consumer use."
     assert all(len(note) <= 80 and "\n" not in note and "\r" not in note for note in notes)
+
+
+def test_registration_guidance_does_not_introduce_forced_truncation_classes() -> None:
+    """Reject template-level truncation, not just truncation words inside helper copy."""
+    source = TEMPLATE.read_text(encoding="utf-8")
+    assert not re.search(r"(?<![\\w-])(?:whitespace-nowrap|text-ellipsis|truncate|line-clamp-\\d+)(?![\\w-])", source)
