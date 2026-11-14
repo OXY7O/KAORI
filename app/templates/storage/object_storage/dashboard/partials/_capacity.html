@@ -49,20 +49,20 @@
                                                                         aria_label=label ~ ' ' ~ percent_meaning|lower ~ ' percentage') }}
                                 {% endfor %}
                             </div>
-            {% set capacity_review_groups = [
-                ('scan-search', 'Evidence', [
-                    ('Validate', 'Confirm system scope and snapshot freshness'),
-                    ('Assess', 'Review utilization, headroom, and forecast.')
-                ]),
-                ('list-filter', 'Decision', [
-                    ('Prioritize', 'Identify buckets driving capacity pressure'),
-                    ('Act', 'Apply the approved storage or quota change')
-                ]),
-                ('clipboard-check', 'Assurance', [
-                    ('Verify', 'Confirm headroom and projected risk improve'),
-                    ('Record', 'Capture the change and operational evidence')
-                ])
-            ] %}
+                            {% set capacity_review_groups = [
+                                ('scan-search', 'Evidence', [
+                                    ('Validate', 'Confirm system scope and snapshot freshness'),
+                                    ('Assess', 'Review utilization, headroom, and forecast.')
+                                ]),
+                                ('list-filter', 'Decision', [
+                                    ('Prioritize', 'Identify buckets driving capacity pressure'),
+                                    ('Act', 'Apply the approved storage or quota change')
+                                ]),
+                                ('clipboard-check', 'Assurance', [
+                                    ('Verify', 'Confirm headroom and projected risk improve'),
+                                    ('Record', 'Capture the change and operational evidence')
+                                ])
+                            ] %}
                             {% set capacity_tone = dashboard.capacity.posture.tone|default('unknown') %}
                             {% if capacity_tone == 'critical' %}
                                 {% set capacity_action = "Pause discretionary growth, identify the largest bucket consumers, and validate an approved capacity expansion or demand-reduction action." %}
