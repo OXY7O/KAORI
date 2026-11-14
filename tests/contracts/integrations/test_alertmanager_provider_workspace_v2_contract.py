@@ -257,9 +257,7 @@ def test_observability_edit_guidance_is_one_line_copy_with_full_validation_gate(
     from jinja2 import Environment
 
     metrics = read('app/templates/integrations/observability/metrics_source/instance_form.html')
-    alertmanager = read(
-        'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html'
-    )
+    alertmanager = read('app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html')
     for form in (metrics, alertmanager):
         Environment().parse(form)
         assert 'flow_note="Saved changes require successful Full Validation."' in form
