@@ -7,9 +7,9 @@
 {% set definition = selected_job.definition %}
 {% set active_job = selected_job.active_job %}
 {% if active_job %}
-    {% set current_execution_grid = 'xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.95fr)] xl:items-center' %}
+    {% set current_execution_grid = "xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.95fr)] xl:items-center" %}
 {% else %}
-    {% set current_execution_grid = 'lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center' %}
+    {% set current_execution_grid = "lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center" %}
 {% endif %}
 {% set can_execute = current_user.has_permission(definition.execute_permission) and (not definition.domain_execute_permission or current_user.has_permission(definition.domain_execute_permission)) %}
 <section id="job-execution-activity"
@@ -24,7 +24,7 @@
                 <div class="min-w-0 flex-1">
                     <div class="flex min-w-0 flex-wrap items-center gap-2">
                         <h3 class="min-w-0 text-base font-semibold text-content-primary">Execution &amp; Recent Activity</h3>
-                        {{ info_tip.render('jobs-execution-activity-guide-' ~ (definition.key|replace('.', '-')),
+                        {{ info_tip.render('jobs-execution-activity-guide-' ~ (definition.key|replace('.', '-') ),
                         'Execution & Recent Activity',
                         'Read current job state and canonical execution evidence.',
                         items=[
