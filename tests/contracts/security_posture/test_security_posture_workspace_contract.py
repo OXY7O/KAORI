@@ -107,7 +107,9 @@ def test_security_pages_use_approved_dashboard_and_registry_components() -> None
         assert 'components/page_hero.html' in html
     assert 'components/operational_dashboard_workspace.html' in overview
     assert 'page_hero.operational_dashboard(' in overview
-    assert 'components/operational_signal_overview.html' in overview
+    assert 'components/section_intro.html' in overview
+    assert 'components/progress_bar.html' in overview
+    assert 'data-security-exposure-signals' in overview
     assert 'components/operational_metric_card.html' in overview
     assert 'components/table.html' in overview
     assert 'data-security-posture-preview' in overview
@@ -204,6 +206,7 @@ def _renderable_posture(authorized: bool = True) -> dict:
             {'label': 'Critical', 'count': 1, 'tone': 'critical'},
             {'label': 'High', 'count': 0, 'tone': 'warning'},
         ] if authorized else [],
+        'runtime_binding_summary': {'digest': 1, 'reference': 0},
         'pagination': page,
         'search': 'CVE-2022-1586',
         'severity': 'critical',
@@ -230,7 +233,8 @@ def test_security_overview_renders_operational_profile_and_signal_cards() -> Non
     html = _render_workspace_page('overview', _renderable_posture())
     assert 'data-kaori-hero-profile="operational-dashboard"' in html
     assert 'data-kaori-dashboard-framework="operational-v1"' in html
-    assert 'Operational Signal Overview' in html
+    assert 'Security Exposure Signals' in html
+    assert 'Operational Signal Overview' not in html
     assert 'data-kaori-tab-variant="integrated-workspace"' in html
     assert 'Review Registry Security' in html
     assert '/security/findings' in html
@@ -238,13 +242,15 @@ def test_security_overview_renders_operational_profile_and_signal_cards() -> Non
 
 def test_security_assurance_overview_uses_source_backed_exposure_hierarchy() -> None:
     html = _render_workspace_page('overview', _renderable_posture())
-    assert '4 Indicators' in html
+    assert 'data-security-exposure-signals' in html
     for label in ('Scan Coverage', 'Affected Artifact Digests', 'Runtime Correlation', 'Evidence Freshness'):
         assert label in html
-    for label in ('Exposure by Severity', 'Runtime Exposure Context', 'Evidence Confidence'):
+    for label in ('Exposure by Severity', 'Observed Runtime Impact', 'Evidence Confidence'):
         assert label in html
-    assert '1 CVEs' in html
-    assert '0 CVEs' in html
+    assert '1 · 100%' in html
+    assert '0 · 0%' in html
+    assert 'data-security-severity-distribution' in html
+    assert 'role="progressbar"' in html
     assert 'data-security-posture-preview' in html
     assert 'CVE-2022-1586' in html
     assert '/artifact-registry/security/cve/CVE-2022-1586/impact' in html
@@ -252,6 +258,16 @@ def test_security_assurance_overview_uses_source_backed_exposure_hierarchy() -> 
     assert 'No remediation or provider scan runs' in html
     assert 'sipgas-web' not in html  # mockup examples must never become product data
     assert 'Exposure Trend' not in html  # no committed historical series exists
+
+
+def test_security_assurance_runtime_impact_requires_ready_correlation() -> None:
+    posture = _renderable_posture()
+    posture['runtime_status'] = {'status': 'Stale', 'tone': 'warning'}
+    posture['runtime_binding_summary'] = {'digest': 7, 'reference': 2}
+    html = _render_workspace_page('overview', posture)
+    assert 'Binding totals are unavailable until committed correlation is Ready.' in html
+    assert '7' not in html.split('Observed Runtime Impact', 1)[1].split('Evidence Confidence', 1)[0]
+    assert 'Strong identity' not in html
 
 
 def test_security_assurance_labels_preserve_shared_tab_identity_and_bounds() -> None:
