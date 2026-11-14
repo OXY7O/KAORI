@@ -87,6 +87,9 @@ def test_registry_analytics_has_eight_authorized_page_level_views() -> None:
     assert 'artifact-registry-analytics-active-section' in shell
     assert 'artifact-registry-analytics-summary' in shell
     assert "url_for('integrations.registry')" in shell
+    assert "@artifact_registry_bp.get('/analytics/capacity/table')" in routes
+    assert "def analytics_capacity_table() -> ResponseReturnValue:" in routes
+    assert "return redirect(url_for('artifact_registry.analytics_capacity', **query_args))" in routes
     assert "'Open Registry Integrations'," in shell
     assert "action_icon='plug-zap'" in shell
     assert "'Open Intelligence'," not in shell
