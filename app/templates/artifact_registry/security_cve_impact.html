@@ -54,9 +54,7 @@
         title='Runtime Correlation Evidence',
         coverage_supporting='Latest usable scans') }}
         {% if not impact.evidence_ready %}
-            <div role="status"
-                 aria-live="polite"
-                 data-kaori-cve-correlation-advisory>
+            <div role="status" aria-live="polite" data-kaori-cve-correlation-advisory>
                 {% call operational_callout.render(
                     'Impact completeness is not verified',
                     'Runtime evidence may be incomplete. Missing bindings do not establish that no applications are affected.',
@@ -69,9 +67,7 @@
                         {{ table_label.status_indicator_label(impact.correlation.status, impact.correlation.tone) }}
                         <span>Review Runtime Usage readiness and refresh committed correlation when eligible.</span>
                     </div>
-                    <p class="mt-2 text-xs text-content-muted">
-                        Source: Committed Registry × Kubernetes · Read-only evidence
-                    </p>
+                    <p class="mt-2 text-xs text-content-muted">Source: Committed Registry × Kubernetes · Read-only evidence</p>
                 {% endcall %}
             </div>
         {% endif %}
