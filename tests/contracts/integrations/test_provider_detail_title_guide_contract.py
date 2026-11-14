@@ -73,3 +73,13 @@ def test_shared_configuration_guide_is_adjacent_to_primary_heading() -> None:
     assert "connection-contract-detail-guide" in title_row
     assert source.count("aria-labelledby=") >= 1
     assert 'aria-labelledby="{{ provider_label|lower|replace(\' \', \'-\') }}-connection-contract-title"' in source
+
+
+def test_shared_connection_guide_section_describes_its_scope_accessibly() -> None:
+    """The primary Guide heading and visible helper jointly name the section."""
+    source = _source(TEMPLATES / "components/_provider_configuration_contract.html")
+    slug = "{{ provider_label|lower|replace(' ', '-') }}"
+    assert f'aria-labelledby="{slug}-connection-contract-title"' in source
+    assert f'aria-describedby="{slug}-connection-contract-description"' in source
+    assert f'<p id="{slug}-connection-contract-description"' in source
+    assert source.count("-connection-contract-description") == 2
