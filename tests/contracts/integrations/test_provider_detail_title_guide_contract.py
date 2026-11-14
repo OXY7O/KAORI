@@ -101,3 +101,18 @@ def test_kubernetes_primary_heading_guide_ids_do_not_collide_across_tabs() -> No
         assert source.count(f'"{guide_id}"') == 1, filename
         seen.add(guide_id)
     assert len(seen) == len(expected)
+
+
+def test_kubernetes_connection_guide_section_has_matching_accessible_references() -> None:
+    """The named section must point to its own visible title and scope copy."""
+    source = _source(KUBERNETES / "_connection_contract.html")
+    section = source.split('data-kaori-connection-contract-v2', 1)[1]
+    section = section.split('<section aria-labelledby="connection-summary-title"', 1)[0]
+    for suffix, tag in (("title", "h2"), ("description", "p")):
+        target = f"kubernetes-connection-contract-{suffix}"
+        attribute = "aria-labelledby" if suffix == "title" else "aria-describedby"
+        assert section.count(f'{attribute}="{target}"') == 1
+        assert section.count(f'<{tag} id="{target}"') == 1
+    assert section.index('id="kubernetes-connection-contract-title"') < section.index(
+        '"kubernetes-connection-contract-guide"'
+    )
