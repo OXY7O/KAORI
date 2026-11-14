@@ -2,9 +2,17 @@
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% set qualified_projects = analytics.capacity_chart_rows|default([], true) %}
+{% set nearest_value = 'N/A' %}
+{% if analytics.capacity_outlook.nearest_quota_days is not none %}
+    {% set nearest_value = '%.1f days'|format(analytics.capacity_outlook.nearest_quota_days) %}
+{% endif %}
+{% set highest_value = 'N/A' %}
+{% if analytics.capacity_outlook.highest_utilization is not none %}
+    {% set highest_value = '%.1f%%'|format(analytics.capacity_outlook.highest_utilization) %}
+{% endif %}
 {% set capacity_metrics = [
-    ('calendar-clock', 'Nearest Exhaustion', ('%.1f days'|format(analytics.capacity_outlook.nearest_quota_days)) if analytics.capacity_outlook.nearest_quota_days is not none else 'N/A', 'Earliest qualified project forecast'),
-    ('chart-column-increasing', 'Highest Utilization', ('%.1f%%'|format(analytics.capacity_outlook.highest_utilization)) if analytics.capacity_outlook.highest_utilization is not none else 'N/A', 'Highest observed quota usage'),
+    ('calendar-clock', 'Nearest Exhaustion', nearest_value, 'Earliest qualified project forecast'),
+    ('chart-column-increasing', 'Highest Utilization', highest_value, 'Highest observed quota usage'),
     ('trending-up', 'Growth Velocity', analytics.capacity_outlook.growth_display, 'Materialized storage growth'),
     ('database', 'Quota Headroom', analytics.capacity_outlook.quota_headroom_display, 'Qualified committed quota headroom')
 ] %}
@@ -140,9 +148,9 @@
                         <dd class="mt-1 text-sm font-semibold text-content-primary">
                             {{ analytics.capacity_outlook.quota_headroom_display }}
                         </dd>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                        <dd class="mt-1 text-xs leading-5 text-content-secondary">
                             Remaining quota across qualified committed project records.
-                        </p>
+                        </dd>
                     </div>
                     <div class="px-4 py-3">
                         <dt class="{{ analysis_surface.metric_label_classes() }}">Exhaustion horizon</dt>
@@ -153,16 +161,16 @@
                                 No qualified forecast
                             {% endif %}
                         </dd>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                        <dd class="mt-1 text-xs leading-5 text-content-secondary">
                             Forecasts require qualified measured growth history; no horizon is inferred from absent evidence.
-                        </p>
+                        </dd>
                     </div>
                     <div class="px-4 py-3">
                         <dt class="{{ analysis_surface.metric_label_classes() }}">Growth interpretation</dt>
                         <dd class="mt-1 text-sm font-semibold text-content-primary">
                             {{ analytics.capacity_outlook.growth_display }}
                         </dd>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                        <dd class="mt-1 text-xs leading-5 text-content-secondary">
                             {% if analytics.capacity_outlook.growth_bytes_per_day is none %}
                                 Qualified materialized growth history is unavailable.
                             {% elif analytics.capacity_outlook.growth_bytes_per_day == 0 %}
@@ -170,7 +178,7 @@
                             {% else %}
                                 Observed materialized growth is not a prediction of future demand.
                             {% endif %}
-                        </p>
+                        </dd>
                     </div>
                 </dl>
             </aside>
