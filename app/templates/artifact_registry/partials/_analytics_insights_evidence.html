@@ -2,7 +2,8 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/info_tip.html" as info_tip %}
 {% set review_facts = analytics.insights|default([], true)|rejectattr('title', 'equalto', 'No derived review signal')|list %}
-<section class="border-t border-outline-subtle" data-registry-insights-evidence>
+<section class="border-t border-outline-subtle"
+         data-registry-insights-evidence>
     <header class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-5">
         <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2">
