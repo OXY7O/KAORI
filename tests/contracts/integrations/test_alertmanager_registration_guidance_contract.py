@@ -1,7 +1,7 @@
 """Source contracts for concise Alertmanager registration guidance (#4698)."""
 
-from pathlib import Path
 import re
+from pathlib import Path
 
 TEMPLATE = (
     Path(__file__).resolve().parents[3]
@@ -45,7 +45,9 @@ def test_registration_guidance_remains_compact_without_forced_truncation() -> No
         match = re.search(pattern, source)
         assert match is not None, f"Missing registration helper: {pattern}"
         assert len(match.group(1)) <= 80, f"Registration helper is too verbose: {match.group(1)}"
-        assert "\\n" not in match.group(1)
+        assert "\n" not in match.group(1)
+        assert "\r" not in match.group(1)
+        assert not re.search(r"\\b(?:whitespace-nowrap|truncate|line-clamp-\\d+)\\b", match.group(1))
 
 
 
@@ -57,4 +59,4 @@ def test_registration_and_edit_flows_keep_distinct_validation_guidance() -> None
     assert len(notes) == 2, "Expected separate edit and registration guidance"
     assert notes[0] == "Saved changes require successful Full Validation."
     assert notes[1] == "Registration creates identity; Full Validation gates consumer use."
-    assert all(len(note) <= 80 and "\\n" not in note for note in notes)
+    assert all(len(note) <= 80 and "\n" not in note and "\r" not in note for note in notes)
