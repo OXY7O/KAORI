@@ -58,7 +58,7 @@
                         <p class="mt-1 break-words text-sm font-semibold text-content-primary">{{ spotlight.registry_name }}</p>
                         <p class="mt-1 text-xs text-content-muted">{{ spotlight.provider_key|replace('_', ' ')|title }}</p>
                     </div>
-                    {{ table_label.status_label('Observed Comparison', 'normal', size='compact') }}
+                    {{ table_label.status_label('Qualified Growth', 'normal', size='compact') }}
                 </div>
                 <dl class="{{ analysis_surface.guidance_fact_grid_classes(2, 'mt-4') }}">
                     <div class="{{ analysis_surface.guidance_fact_classes() }}">
@@ -80,7 +80,9 @@
             <div class="p-4">
                 <div class="{{ analysis_surface.empty_evidence_classes('px-4 py-5') }}">
                     <p class="text-sm font-semibold text-content-primary">Qualified Growth Comparison Not Available</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">A matching committed comparison or qualified measured history is needed to calculate source growth.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                        A matching committed comparison or qualified measured history is needed to calculate source growth.
+                    </p>
                 </div>
             </div>
         {% endif %}

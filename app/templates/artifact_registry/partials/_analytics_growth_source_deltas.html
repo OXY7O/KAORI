@@ -12,7 +12,9 @@
             <div class="min-w-0">
                 <h4 id="registry-growth-sources-title"
                     class="text-sm font-semibold text-content-primary">Qualified Source Deltas</h4>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Registry-specific net change and materialized rate, without merging different source baselines.</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                    Registry-specific net change and materialized rate, without merging different source baselines.
+                </p>
             </div>
         </div>
         {{ table_label.metadata_label(qualified_growth|length ~ ' Sources', 'database', size='compact') }}
@@ -26,7 +28,7 @@
                             <h5 class="break-words text-sm font-semibold text-content-primary">{{ row.registry_name }}</h5>
                             <p class="mt-1 text-xs text-content-muted">{{ row.provider_key|replace('_', ' ')|title }} · committed source comparison</p>
                         </div>
-                        {{ table_label.status_label('Observed Delta', 'normal', size='compact') }}
+                        {{ table_label.status_label('Qualified Growth', 'normal', size='compact') }}
                     </div>
                     <dl class="{{ analysis_surface.guidance_fact_grid_classes(3, 'mt-3') }}">
                         <div class="{{ analysis_surface.guidance_fact_classes() }}">
@@ -56,7 +58,9 @@
         <div class="p-4">
             <div class="{{ analysis_surface.empty_evidence_classes('px-5 py-5 text-center') }}">
                 <p class="text-sm font-semibold text-content-primary">Source Deltas Not Available</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">A qualified committed growth comparison is required. Missing source evidence is not zero growth.</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                    A qualified committed growth comparison is required. Missing source evidence is not zero growth.
+                </p>
             </div>
         </div>
     {% endif %}

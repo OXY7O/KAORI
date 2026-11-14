@@ -343,7 +343,6 @@ def test_registry_growth_chart_summary_renders_committed_endpoint_evidence() -> 
     assert 'Latest observed' not in empty
 
 
-
 def test_registry_growth_detail_child_tabs_use_shared_analytics_navigation_and_bound_evidence() -> None:
     from jinja2 import Environment, FileSystemLoader
 
@@ -439,7 +438,7 @@ def test_registry_growth_detail_child_tabs_render_observed_zero_missing_and_hist
     assert '123.61 MiB' in rendered
     assert '0 B' in rendered
     assert '+0.0/day' in rendered
-    assert 'Observed Delta' in rendered
+    assert 'Qualified Growth' in rendered
     assert '24H Window' in rendered
     assert 'Source Growth Trend' in rendered
     assert 'Historical Chart Not Available' in rendered
@@ -459,6 +458,7 @@ def test_registry_growth_detail_child_tabs_render_observed_zero_missing_and_hist
     assert 'Stale Candidates' in unavailable
     assert 'N/A' in unavailable
     assert 'No committed source snapshot' in unavailable
+
 
 def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> None:
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()

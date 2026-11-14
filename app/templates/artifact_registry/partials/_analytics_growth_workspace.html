@@ -2,7 +2,11 @@
 {% import "components/content_tabs.html" as content_tabs %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/info_tip.html" as info_tip %}
-{% set growth_tabs = [('overview', 'Overview', 'layout-dashboard'), ('sources', 'Source Deltas', 'chart-no-axes-column-increasing'), ('history', 'History & Evidence', 'chart-spline')] %}
+{% set growth_tabs = [
+    ('overview', 'Overview', 'layout-dashboard'),
+    ('sources', 'Source Deltas', 'chart-no-axes-column-increasing'),
+    ('history', 'History & Evidence', 'chart-spline')
+] %}
 <section id="artifact-registry-growth-content"
          data-analytics-tabset
          data-analytics-tabset-id="artifact-registry-growth-content"
@@ -25,11 +29,13 @@
                                         items=[
                                         'Overview summarizes committed storage, artifact velocity and review-only stale candidates.',
                                         'Source Deltas displays qualified project-independent Registry source comparisons, including exact observed zeros.',
-                                        'History & Evidence distinguishes measured Metrics Source samples from legacy start/end checkpoints, and records snapshot freshness.',
+                                        'History & Evidence distinguishes measured Metrics Source samples from legacy start/end checkpoints and records snapshot freshness.',
                                         'Provider history remains authoritative upstream; KAORI reads only worker-committed analytical evidence.'
                                         ], placement='right', variant='guide') }}
                 </div>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Review source-qualified growth, committed materialization deltas, and measured history independently.</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                    Review source-qualified growth, committed materialization deltas, and measured history independently.
+                </p>
             </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
@@ -37,7 +43,14 @@
             {{ table_label.metadata_label(analytics.snapshot_window|upper ~ ' Window', 'clock-3', size='compact') }}
         </div>
     </header>
-    {{ content_tabs.render_buttons('artifact-registry-growth-content', growth_tabs, 'Growth Analytics Sections', embedded=true, data_namespace='analytics', active_key='overview', show_badges=false, nowrap=true) }}
+    {{ content_tabs.render_buttons('artifact-registry-growth-content',
+                    growth_tabs,
+                    'Growth Analytics Sections',
+                    embedded=true,
+                    data_namespace='analytics',
+                    active_key='overview',
+                    show_badges=false,
+                    nowrap=true) }}
     <div class="p-4 sm:p-5">
         <div id="artifact-registry-growth-content-panel-overview"
              role="tabpanel"
