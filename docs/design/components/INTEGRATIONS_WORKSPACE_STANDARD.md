@@ -51,6 +51,18 @@ Responsibilities:
 
 Provider templates supply factual labels, icons, endpoint data, compatibility evidence, and actions. They do not copy shared geometry or semantic colors.
 
+The seven provider landing Overviews reuse the Inventory metadata-label
+grammar: a visible `metrics|length` **Indicators** count beside the title,
+with existing contract, consumer resolution, and authority explanation retained
+in an icon-only supplementary Info Tip. The six provider registries rendered
+by `_provider_registry.html::registry_header` use its single title-adjacent
+Guide. Vault's existing `table_ui.inventory_block_header(title_extra=...)`
+owns the seventh registry Guide. Never restore the Guide in the nested
+Integration Workspace header (#4544); the Registry Guide is the correct
+location for explanation of connection listing and evidence boundaries.
+Use short natural desktop descriptions instead of `whitespace-nowrap`
+or truncated content.
+
 All seven Integration provider connection-detail workspaces place the canonical
 title-adjacent Violet `components/info_tip.html::render(..., variant='guide')`
 beside their **four primary tab section titles**: Connection Contract,

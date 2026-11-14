@@ -243,7 +243,7 @@ def test_harbor_frontpage_uses_registry_evidence_coverage_contract() -> None:
     assert 'RegistryWebhookEndpoint' in presentation
 
 
-def test_every_provider_integration_overview_inherits_canonical_title_guide() -> None:
+def test_every_provider_overview_uses_inventory_indicator_with_accessible_context() -> None:
     shared = read('app/templates/integrations/components/_provider_frontpage.html')
     tip = read('app/templates/components/info_tip.html')
     pages = (
@@ -260,14 +260,17 @@ def test_every_provider_integration_overview_inherits_canonical_title_guide() ->
     assert shared.count('info_tip.render(') == 1
     # Whitespace around the Jinja replace call is owned by djLint.
     assert '"provider-overview-" ~ (title|lower|replace(" ", "-")' in shared
-    assert 'title ~ " Guide"' in shared
+    assert 'title ~ " Context"' in shared
     assert 'items=overview_guide_items' in shared
+    assert 'components/table_label.html' in shared
+    assert 'table_label.metadata_label(metrics|length ~ " Indicators", icon="layout-grid")' in shared
     assert 'md:grid-cols-3' not in shared
     assert 'integration_ui.metric_grid_classes(4)' in shared
     for section in ('Integration Contract', 'Consumer Resolution', 'Authority Boundary'):
         assert f'"{section} — "' in shared
     assert 'bg-surface-card px-5 py-4 sm:px-6' not in shared
-    assert 'placement="right", variant="guide"' in shared
+    assert 'placement="right", variant="icon"' in shared
+    assert 'placement="right", variant="guide"' not in shared
     for token in (
         'contract_title',
         'contract_description',
@@ -285,7 +288,7 @@ def test_every_provider_integration_overview_inherits_canonical_title_guide() ->
         assert 'integrations/components/_provider_frontpage.html' in page, path
         assert page.count('provider_front.overview(') == 1, path
         if path == 'app/templates/integrations/secrets_management/vault/index.html':
-            # The Vault registry owns a second title-level Guide, not an Overview duplicate.
+            # Vault owns its registry Guide; the shared Overview uses a metadata indicator.
             assert page.count('info_tip.render(') == 1, path
             assert "info_tip.render('vault-connection-registry-guide'," in page
             assert 'title_extra=header_guide' in page
@@ -323,15 +326,16 @@ def test_provider_workspace_tabs_share_title_description_and_existing_tab_geomet
     outer_heading = tabs.split('data-kaori-integration-workspace-tabs')[0]
     assert 'integration_ui.palette_icon(' not in outer_heading
     assert tabs.index('integration_ui.workspace_section_intro(') < tabs.index('data-kaori-integration-workspace-tabs')
-    # Latest operator UAT keeps the provider Overview Guide and removes
-    # the duplicate Guide inside the shared Integration Workspace header.
+    # Latest operator UAT keeps the Overview's architectural Info Tip,
+    # moves the title Guide to the Registry, and excludes the inner Workspace Guide.
     assert 'components/info_tip.html' not in tabs
     assert 'info_tip.render(' not in tabs
     assert 'workspace_guide_items' not in tabs
     assert 'title_extra=workspace_guide' not in tabs
     overview = read('app/templates/integrations/components/_provider_frontpage.html')
     assert overview.count('info_tip.render(') == 1
-    assert 'title ~ " Guide"' in overview
+    assert 'title ~ " Context"' in overview
+    assert 'table_label.metadata_label(metrics|length ~ " Indicators", icon="layout-grid")' in overview
     assert 'items=overview_guide_items' in overview
     shared_header = read('app/templates/integrations/components/_workspace.html')
     assert 'macro workspace_section_intro(title, description, aria_label)' in shared_header
@@ -348,3 +352,75 @@ def test_provider_workspace_tabs_share_title_description_and_existing_tab_geomet
     assert 'x-on:popstate.window="syncTab()"' in tabs
     for page in pages:
         assert 'components/integration_workspace_tabs.html' in read(page), page
+
+
+def test_shared_provider_registry_header_has_single_guide_in_all_six_consumers() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    shared = read('app/templates/integrations/components/_provider_registry.html')
+    paths = (
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html',
+        'app/templates/integrations/observability/metrics_source/partials/_instance_inventory.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_inventory_card.html',
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_registry.html',
+        'app/templates/integrations/registry/providers/harbor/partials/_registry.html',
+        'app/templates/integrations/source_control/github/partials/_connection_registry.html',
+    )
+    assert shared.count('info_tip.render(') == 1
+    assert 'variant="guide"' in shared
+    assert '"connection-registry-" ~ loading_id ~ "-guide"' in shared
+    for path in paths:
+        assert 'provider_registry.registry_header(' in read(path), path
+    vault = read('app/templates/integrations/secrets_management/vault/index.html')
+    assert vault.count('vault-connection-registry-guide') == 1
+    assert 'title_extra=header_guide' in vault
+
+    environment = Environment(loader=FileSystemLoader(ROOT / 'app' / 'templates'), autoescape=True)
+    header = str(
+        environment.get_template('integrations/components/_provider_registry.html').module.registry_header(
+            'Metrics Source Registry',
+            'Review registered Metrics Source connections.',
+            'database-zap',
+            'metrics-source-inventory-loading',
+        )
+    )
+    assert 'data-kaori-info-tip-variant="guide"' in header
+    assert header.count('data-kaori-info-tip-trigger') == 1
+    assert '<span>Guide</span>' in header
+    assert 'connection-registry-metrics-source-inventory-loading-guide-tooltip' in header
+    assert 'Core readiness comes from Full Validation.' in header
+
+
+def test_overview_inventory_indicator_preserves_complete_provider_boundary_help() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    overview = read('app/templates/integrations/components/_provider_frontpage.html')
+    assert 'table_label.metadata_label(metrics|length ~ " Indicators", icon="layout-grid")' in overview
+    metrics_page = read('app/templates/integrations/observability/metrics_source/frontpage.html')
+    assert 'Govern provider-neutral Metrics Sources, query routing, and consumer bindings.' in metrics_page
+    assert 'whitespace-nowrap' not in metrics_page
+    assert 'line-clamp' not in metrics_page
+
+    environment = Environment(loader=FileSystemLoader(ROOT / 'app' / 'templates'), autoescape=True)
+    metric = {'label': 'Ready Sources', 'value': 2, 'description': 'Committed readiness', 'icon': 'badge-check'}
+    html = str(
+        environment.get_template('integrations/components/_provider_frontpage.html').module.overview(
+            'chart-spline',
+            'Metrics Source Overview',
+            'Govern provider-neutral Metrics Sources, query routing, and consumer bindings.',
+            [metric, metric, metric, metric],
+            'Provider Contract',
+            'External metrics platform remains authoritative.',
+            'Consumer Resolution',
+            'Select by scope and capability.',
+            'Authority Boundary',
+            'KAORI correlates committed evidence.',
+        )
+    )
+    assert '4 Indicators' in html
+    assert 'data-kaori-info-tip-variant="icon"' in html
+    assert 'data-kaori-info-tip-variant="guide"' not in html
+    assert 'data-kaori-info-tip-trigger' in html
+    for phrase in ('Integration Contract', 'Consumer Resolution', 'Authority Boundary'):
+        assert phrase in html
+

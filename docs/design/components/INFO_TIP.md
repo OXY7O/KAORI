@@ -47,38 +47,47 @@ On **Resource Profile / Namespace** screens, the Create Resource Profile form, R
 
 For **Kubernetes Tenant**, title-level guidance in Tenant Setup, Discovery, Membership, Access, Credentials, Resource Profiles, Capacity Policy/Budget and Namespace Provisioning/Allocation sections uses the same compact Guide label. **Capsule Initial Owner** consolidates Owner Kind and Owner Subject explanations into one title-adjacent Guide because both fields describe the same provider ownership boundary; the field labels and required ownership state remain visible without hovering. Within Tenant Access Inventory, exactly five title Guides belong to Namespace Access Registry, Credential Lifecycle, Access Grant Registry, External Capsule Access Inventory, and Native Namespace RBAC Inventory; the introductory Effective Namespace Access card remains Guide-free to avoid duplicate guidance. The inventory Guides distinguish committed non-secret KAORI state from provider-authoritative RBAC/Capsule inspection evidence. Other genuinely field-specific principal/selection help and row-specific reconciliation evidence remain icon-only. The four Resource Profile resource-group disclosures render their Guide beside the heading **inside the summary**, never as a detached `Section help` row below it. Activating that Guide must not toggle the disclosure; the chevron and summary area still operate normally. Preserve required inline status/error guidance outside popovers.
 
-## Integration provider Overview headers
+## Integration provider Overview — Inventory-style indicator
 
-All canonical provider landing pages (Kubernetes, Metrics Source, Alertmanager,
-MinIO, Harbor, Vault and GitHub) receive **one** standard Violet
-`Guide` beside the **Integration Overview** section title. The owning
-shared macro is
-`integrations/components/_provider_frontpage.html::overview`, not
-provider-specific markup or a new Info Tip implementation.
+For all seven provider landing pages (Kubernetes, Metrics Source, Alertmanager,
+MinIO, Harbor, Vault, GitHub), the shared
+`integrations/components/_provider_frontpage.html::overview` places a
+**compact inventory-style `4 Indicators` metadata label** immediately beside
+its title, derived from `metrics|length`, using
+`components/table_label.html::metadata_label`. This replaces the former
+title-level **Guide** label following the 2026-11-14 operator Visual UAT.
+Do not hardcode the count, create a new pill, or copy page-specific CSS.
 
-The Guide popover provides existing provider-owned Overview description
-and the **complete** titles and descriptions from **Integration Contract**,
-**Consumer Resolution**, and **Authority Boundary**. In the compact
-Integration Overview design these three explanations live **only in the Guide**;
-the old persistent three-column explanatory footer is removed across all
-seven providers through the shared macro. The four operational KPI cards
-(registered, validated/ready, needs attention, and provider-specific
-coverage/grants) remain continuously visible, because status and readiness
-must not be hidden in contextual help. No provider-specific overview markup,
-new JS/CSS, or custom info icon is permitted.
+The complete Overview explanation (Integration Contract, Consumer Resolution,
+Authority Boundary and descriptions) remains available through the same
+`info_tip.render` **icon-only** trigger next to the indicator. This is a
+specific exception to the default title-level Guide pattern: the metadata label
+now communicates the Overview's four visible operational KPI dimensions, while
+the adjacent supplementary Info Tip owns the detailed architectural context.
+Never hide readiness or action/permission blockers in that context.
+Keep the old three-column explanation footer removed; the shared macro and
+`info_tips.js` retain accessible keyboard, hover, click/touch and viewport
+behavior without introducing new JavaScript.
 
-The trigger uses a provider-title-derived ID to prevent duplicate
-tooltip IDs within a page. It reuses `components/info_tip.html` and
-`info_tips.js` for pointer hover, touch/click, keyboard focus, Escape,
-viewport clamping, and light/dark; no separate scripts or hidden field-level
-question icons. Section titles wrap naturally on mobile.
+Provider descriptions use concise, semantically accurate sentences; Metrics
+Source Overview uses "Govern provider-neutral Metrics Sources, query routing,
+and consumer bindings." to fit a desktop line naturally without forced
+`nowrap`, clipping or font shrinking.
 
-Provider Hero descriptions are concise, semantically accurate copy rather
-than CSS `nowrap`/clamping. The GitHub Hero uses
-`Register GitHub Apps with governed Source Control evidence.` to fit one
-line in the reviewed 1440×900 viewport without changing other providers.
-The shared Overview Guide does not alter KPI counts, operational readiness,
-repository evidence, provider admission or backend behavior.
+## Integration provider Registry — title-level Guides
+
+Six canonical registry headers (Kubernetes, Metrics Source, Alertmanager,
+MinIO, Harbor, GitHub) receive one standard title-adjacent **Guide** through
+`integrations/components/_provider_registry.html::registry_header`. It uses
+`components/info_tip.html::render(..., variant='guide')` with a unique
+loading-id-scoped trigger, preserves result-count labels, and explains registered
+connection scope, external provider authority, and the separation of Full
+Validation, runtime, inventory and consumer evidence. The Vault Connection
+Registry already owns exactly one title Guide through
+`table_ui.inventory_block_header(title_extra=header_guide)` and is **not**
+wrapped in another Guide. This alignment follows the standard Inventory
+registry `title_extra` pattern without forking shared UI components.
+The Guide stays by the title, not in the Clear Filters/action area.
 
 ## Integration Workspace heading — no duplicate Guide
 
@@ -92,14 +101,13 @@ typography and responsive spacing instead of duplicated provider templates.
 
 Inside the card, the existing **Integration Workspace** header retains its
 icon, title, and short explanatory sentence, but deliberately has **no second
-Guide**. The provider-owned **Integration Overview** directly above already
-contains the canonical title-adjacent Guide explaining Integration Contract,
-Consumer Resolution, and Authority Boundary. The **Integration Coverage**
-and **Connection Registry** tab labels and results describe their own scopes;
-repeating a Guide in the nested workspace adds redundant interaction. This
-decision supersedes the earlier inner-workspace Guide contract following
-2026-11-13 operator Visual UAT. Never remove the provider Overview Guide or
-hide visible readiness, validation failures, or permission notices.
+Guide**. The provider-owned **Integration Overview** directly above has an
+Inventory-style four-indicator metadata label and a supplementary Info Tip
+for the complete architecture explanation. The selected **Connection
+Registry** has a single canonical title Guide, so duplicating it in the
+outer Integration Workspace adds redundant interaction. This decision
+supersedes the old inner-workspace Guide test following #4544. Keep
+readiness, validation failures, and permissions visible outside popovers.
 
 The shared `integrations/components/_workspace.html::section_header` retains
 optional `title_extra` for other approved title-level help consumers, but the

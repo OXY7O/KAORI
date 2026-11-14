@@ -194,7 +194,10 @@ def test_domain_provider_open_is_read_first_and_add_is_registration_only() -> No
     assert '"Integration Workspace"' in tabs
     assert '"Switch between integration coverage and registered connections."' in tabs
     assert 'Provider Connections & Coverage' in tabs
-    assert 'title_extra=workspace_guide' in tabs
+    # #4544 removed the redundant inner Workspace Guide. That legacy
+    # assertion was invalid even though source and navigation were correct.
+    assert 'title_extra=workspace_guide' not in tabs
+    assert 'info_tip.render(' not in tabs
 
 
 def test_domain_binding_registry_is_cross_domain_and_asset_centric() -> None:
