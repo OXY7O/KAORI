@@ -65,3 +65,18 @@ def test_registration_guidance_does_not_introduce_forced_truncation_classes() ->
     """Reject template-level truncation, not just truncation words inside helper copy."""
     source = TEMPLATE.read_text(encoding="utf-8")
     assert not re.search(r"(?<![\w-])(?:whitespace-nowrap|text-ellipsis|truncate|line-clamp-\d+)(?![\w-])", source)
+
+
+def test_registration_copy_does_not_weaken_connection_test_proof() -> None:
+    """Concise helper copy must not bypass the existing proof invalidation flow."""
+    source = TEMPLATE.read_text(encoding="utf-8")
+
+    assert 'name="connection_test_proof"' in source
+    assert 'x-ref="connectionProof"' in source
+    assert 'x-on:input.capture="invalidateConnectionTest($event)"' in source
+    assert 'x-on:change.capture="invalidateConnectionTest($event)"' in source
+    assert 'x-on:alertmanager-connection-tested.window="applyConnectionTest($event)"' in source
+    assert 'this.connectionVerified = false' in source
+    assert "this.$refs.connectionProof.value = ''" in source
+    assert 'hx-include="#alertmanager-instance-form"' in source
+    assert 'hx-target="#alertmanager-connection-test-result"' in source
