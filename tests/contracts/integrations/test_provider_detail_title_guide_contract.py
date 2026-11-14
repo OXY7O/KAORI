@@ -116,3 +116,15 @@ def test_kubernetes_connection_guide_section_has_matching_accessible_references(
     assert section.index('id="kubernetes-connection-contract-title"') < section.index(
         '"kubernetes-connection-contract-guide"'
     )
+
+
+def test_capsule_rbac_guide_section_exposes_visible_scope_description() -> None:
+    """Capsule RBAC section must resolve both its title and explanatory scope."""
+    source = _source(KUBERNETES / "_capsule_rbac_bootstrap.html")
+    section = source.split('data-capsule-rbac-bootstrap>', 1)[0]
+    assert 'aria-labelledby="capsule-rbac-bootstrap-heading"' in section
+    assert 'aria-describedby="capsule-rbac-bootstrap-description"' in section
+    assert source.count('id="capsule-rbac-bootstrap-description"') == 1
+    assert source.index('id="capsule-rbac-bootstrap-description"') > source.index(
+        '"kubernetes-capsule-rbac-bootstrap-guide"'
+    )
