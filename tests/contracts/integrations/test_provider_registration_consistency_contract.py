@@ -255,6 +255,51 @@ def test_metrics_source_and_alertmanager_detail_configuration_link_to_edit_pages
     assert "@alertmanager_bp.route('/instances/<int:instance_id>/edit'" in am_routes
 
 
+def test_prometheus_registration_reuses_compact_shared_guidance_and_aligned_contract_cards() -> None:
+    from jinja2 import Environment
+
+    metrics = read('app/templates/integrations/observability/metrics_source/instance_form.html')
+    context = read('app/templates/integrations/components/_provider_registration_context.html')
+    flow = read('app/templates/components/info_flow.html')
+    related = read('app/templates/components/related_page_card.html')
+    toggle = read('app/templates/components/operational_toggle.html')
+    Environment().parse(metrics)
+
+    # Three highlighted lines retain their operational gate/authority.
+    assert 'flow_note="Test Connection must pass before registration."' in metrics
+    assert '"One source supports independent asset bindings."' in metrics
+    assert "'Disabled sources stay stored, not resolved.'" in metrics
+    assert 'Registration requires a successful Test Connection' not in metrics
+    assert 'One metrics source can serve multiple managed assets through' not in metrics
+    assert 'Disabled connections stay stored but are excluded from scope resolution.' not in metrics
+    assert 'Register Connection' in metrics
+    assert 'connectionVerified' in metrics
+    assert 'x-bind:disabled="!connectionVerified"' in read(
+        'app/templates/integrations/components/_provider_registration_actions.html'
+    )
+
+    # Shared components still own the flow note, related workspace and toggle.
+    assert 'info_flow.render(' in context
+    assert 'related_page_card.render(' in context
+    assert '{% if note %}' in flow
+    assert '{% if boundary %}' in related
+    assert 'caller()' in toggle
+    assert metrics.count('provider_registration_context.render(') == 2
+
+    # The two cards use a common grid and surface hierarchy.
+    assert 'grid items-stretch gap-4 md:grid-cols-2' in metrics
+    assert metrics.count(
+        'flex h-full min-w-0 flex-col rounded-lg border border-outline-subtle bg-surface-subtle px-4 py-3'
+    ) == 3
+    assert metrics.count('mt-3 border-t border-outline-subtle pt-2') == 3
+    assert 'flex-1 text-xs leading-5 text-content-secondary' in metrics
+    assert 'Provider identity is immutable.' in metrics
+    assert 'Contract · Prometheus HTTP API v1 / PromQL' in metrics
+    assert "required=provider.version_detection_mode == 'manual'" in metrics
+    assert 'form.compatibility_profile_override' in metrics
+    assert "provider.adapter_key|replace('_', ' ') |title" in metrics
+
+
 def test_provider_registration_and_metrics_validation_guidance_stays_concise() -> None:
     kubernetes_add = read('app/templates/kubernetes/cluster/add.html')
     kubernetes_edit = read('app/templates/kubernetes/cluster/edit.html')
@@ -285,7 +330,7 @@ def test_provider_registration_and_metrics_validation_guidance_stays_concise() -
         in metrics_source
     )
     assert (
-        'One metrics source can serve multiple managed assets through independent bindings and horizon-aware routing.'
+        'One source supports independent asset bindings.'
         in metrics_source
     )
     assert (
