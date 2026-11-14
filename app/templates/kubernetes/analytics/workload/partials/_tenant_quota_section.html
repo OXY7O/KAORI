@@ -1,4 +1,5 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "kubernetes/analytics/components/_evidence_record_list.html" as evidence_list %}
 {% import "kubernetes/analytics/components/_record_detail_modal.html" as record_detail_modal %}
 {% import "kubernetes/analytics/components/_record_filter_bar.html" as record_filter %}
@@ -16,7 +17,13 @@
         <div class="flex min-w-0 items-start gap-3">
             <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="badge-gauge" class="h-5 w-5"></i></span>
             <div class="min-w-0">
-                <h3 class="text-lg font-semibold text-content-primary">Tenant Quota Analysis</h3>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="text-lg font-semibold text-content-primary">Tenant Quota Analysis</h3>
+                    {{ info_tip.render('kubernetes-analytics-workload-tenant-quota-section-guide',
+                        'Tenant Quota Analysis Guide',
+                        'Namespace quota evidence and effective demand come from committed governance and provider observations.',
+                        placement='right', variant='guide') }}
+                </div>
                 <p class="mt-1 text-sm leading-6 text-content-muted">Review ResourceQuota coverage, pressure ownership, runtime demand, and governance risk for the top-level active scope.</p>
             </div>
         </div>

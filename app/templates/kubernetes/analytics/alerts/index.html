@@ -1,5 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "components/info_tip.html" as info_tip %}
 {% block title %}Alerts & Anomalies{% endblock title %}
 {% block dashboard_content %}
     {% set selected_cluster_name = selected_cluster.name if selected_cluster else 'No Cluster Selected' %}
@@ -41,7 +42,11 @@
                 'Review signal records, anomaly candidates, routing, ownership, incident readiness, and response resources.',
                 'layout-dashboard',
                 active_tab,
-                allowed_tabs
+                allowed_tabs,
+                title_accessory=info_tip.render('kubernetes-analytics-alerts-workspace-guide',
+                    'Alerts & Anomalies Workspace Guide',
+                    'Alerts, anomalies, suppression, ownership, readiness, recommendations and response resources are separate evidence families.',
+                    placement='right', variant='guide')
                 ) %}
                 <div id="alerts-content-panel-alerts"
                      role="tabpanel"

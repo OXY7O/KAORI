@@ -1,5 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "kubernetes/analytics/components/_status_notice.html" as status_notice %}
 {% block title %}Resource Utilization{% endblock title %}
@@ -27,7 +28,11 @@
                 'Review current pressure, historical trends, node concentration, and prioritized actions in one workspace.',
                 'chart-no-axes-combined',
                 'summary',
-                ['summary', 'trend', 'nodes', 'recommendations']
+                ['summary', 'trend', 'nodes', 'recommendations'],
+                title_accessory=info_tip.render('kubernetes-analytics-utilization-workspace-guide',
+                    'Resource Utilization Workspace Guide',
+                    'Navigate Summary, committed trend, node detail, and recommendations. Historical and node panels load on demand.',
+                    placement='right', variant='guide')
                 ) %}
                 <div id="utilization-content-panel-summary"
                      role="tabpanel"

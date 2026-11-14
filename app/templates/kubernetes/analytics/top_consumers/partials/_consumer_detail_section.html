@@ -1,4 +1,5 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "kubernetes/analytics/components/_record_filter_bar.html" as record_filter %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_label.html" as table_label %}
@@ -21,7 +22,13 @@
                     <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-filter" class="h-4 w-4"></i></span>
                     <div class="min-w-0">
                         <p class="{{ analysis_surface.metric_label_classes() }}">Consumer Evidence</p>
-                        <h2 class="mt-1 text-base font-semibold text-content-primary">Consumer Records Overview</h2>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="mt-1 text-base font-semibold text-content-primary">Consumer Records Overview</h2>
+                            {{ info_tip.render('kubernetes-analytics-top_consumers-consumer-detail-section-guide',
+                                'Consumer Records Overview Guide',
+                                'Inspect committed consumer records using local filters and source-qualified evidence; missing records are not zero consumption.',
+                                placement='right', variant='guide') }}
+                        </div>
                         <p class="mt-1 text-sm leading-6 text-content-secondary">Summarize the active record scope before applying table filters or opening resource-specific evidence.</p>
                     </div>
                 </div>

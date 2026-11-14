@@ -137,7 +137,7 @@
                         icon='scan-search',
                         role='brand') }}
             {{ overview_surface.interpretation_callout('Forecast Decision',
-                        forecast.risk_note,
+                        forecast.risk_note|replace('No threshold breach is projected from the available evidence.', 'No projected breach in available evidence.')|replace('No threshold breach is projected from available evidence.', 'No projected breach in available evidence.'),
                         'Use risk, horizon, and threshold direction to choose monitoring or capacity planning.',
                         icon='triangle-alert' if risk_count > 0 else 'circle-check',
                         role='brand',

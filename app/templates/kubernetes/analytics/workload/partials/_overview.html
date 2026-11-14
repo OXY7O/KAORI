@@ -1,11 +1,16 @@
 {% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/table_label.html" as table_label %}
 {% call analytics_workspace.overview(
     'Workload Analysis Overview',
     'Summarize quota coverage, request governance, QoS exposure, and high-risk workload records for the active scope.',
     'layout-dashboard',
-    workload_posture.value|default('Overview')
+    workload_posture.value|default('Overview'),
+    title_accessory=info_tip.render('kubernetes-analytics-workload-overview-guide',
+        'Workload Analysis Overview Guide',
+        'Interpret Namespace quota coverage, workload requests, QoS posture, and high-risk records using committed evidence.',
+        placement='right', variant='guide')
     ) %}
     {% set quota_evidence_available = tenant_quota_summary.scope_evidence_available|default(false) %}
     {% set workload_evidence_available = workload_scope_summary.scope_evidence_available|default(false) %}

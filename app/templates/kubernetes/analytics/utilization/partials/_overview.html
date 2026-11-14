@@ -1,4 +1,5 @@
 {% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
@@ -7,7 +8,11 @@
     'Resource Utilization Overview',
     'Summarize current worker compute pressure, node filesystem use, and pod density before opening detailed analysis tabs.',
     'gauge',
-    cluster.name if cluster else 'No Cluster'
+    cluster.name if cluster else 'No Cluster',
+    title_accessory=info_tip.render('kubernetes-analytics-utilization-overview-guide',
+        'Resource Utilization Overview Guide',
+        'Compare committed worker pressure with node usage and scheduling headroom; validate source freshness before remediation.',
+        placement='right', variant='guide')
     ) %}
     <div class="{{ analysis_surface.evidence_shell_classes() }}">
         <div class="{{ analysis_surface.metric_grid_classes(4) }}">
