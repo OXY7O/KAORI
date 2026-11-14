@@ -242,6 +242,23 @@ Clear Filters and footer requests replace the shared CVE evidence workspace
 so query-backed tab links cannot retain stale state. Shared Violet light/dark,
 focus, responsive and keyboard semantics remain authoritative.
 
+## CVE Runtime Impact correlation advisory (Visual UAT #4750)
+
+When `impact.evidence_ready` is false, the exact-CVE impact page displays a
+single read-only **correlation advisory** between the standard Runtime
+Correlation Evidence snapshot and the CVE Evidence workspace. Compose it with
+`components/operational_callout.html` (`variant='neutral'`) rather than a
+page-local bordered paragraph strip. The existing callout owns the semantic
+icon, title, spacing and contrast; the page provides the **actual**
+`impact.correlation.status/tone` badge, concise interpretation and a short
+source/Runtime Usage handoff. Unknown, stale or changed Kubernetes correlation
+means **impact completeness is not verified**, never that no applications
+are affected. Readiness remains owned by the committed Registry × Kubernetes
+correlation source; opening this page or advisory must not trigger a provider
+query, scanner execution or correlation refresh. Keep the approved Hero,
+snapshot bar, source-qualified five-row registries and their existing filters,
+pagination and source-permission boundaries unchanged.
+
 ## QA and admission
 
 - Exact-commit djlint and Ruff check/format on updated templates and Python files.
