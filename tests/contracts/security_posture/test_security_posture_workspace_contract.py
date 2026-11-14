@@ -320,7 +320,8 @@ def test_security_snapshot_replaces_four_independent_kpi_cards() -> None:
     assert 'Affected Artifact Digests' in html
     assert 'Runtime Correlation' in html
     assert 'Evidence Freshness' in html
-    assert 'Active Scope' in html
+    assert 'Provider Authority' in html
+    assert 'Evidence Boundary' in html
     assert 'data-security-posture-insights' in html
     assert html.index('data-security-snapshot-grid') < html.index('data-security-posture-insights')
 
@@ -383,12 +384,12 @@ def test_security_findings_preview_uses_compact_rows_and_embedded_handoff() -> N
     assert 'data-security-posture-preview' in html
     assert 'data-security-investigation-handoff' in html
     assert html.count('data-security-investigation-handoff') == 1
-    assert '1 scanner finding' in html
+    assert '2 scanner findings' in html
     assert 'View All Findings' in html
     assert 'Validate Runtime Impact' in html
     assert 'data-security-posture-preview' in template
     assert "section_card.render('Investigation Handoff'" not in template
-    assert "table_ui.title_cell(row.cve_id" not in template
+    assert 'table_ui.title_cell(row.cve_id' not in template
     assert 'flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1' in template
     assert template.index('data-security-posture-preview') < template.index('data-security-investigation-handoff')
 
@@ -411,12 +412,43 @@ def test_security_hero_surfaces_stale_scanner_status_not_runtime_readiness() -> 
     assert '/security/findings' in hero
 
 
+def test_security_exposure_section_uses_canonical_intro_and_source_guide() -> None:
+    html = _render_workspace_page('overview', _renderable_posture())
+    template = read('app/templates/security_posture/overview.html')
+    assert 'Security Exposure Assessment' in html
+    assert 'Review qualified CVE severity, runtime impact, and scanner confidence.' in html
+    assert 'data-security-exposure-section' in html
+    assert 'data-kaori-info-tip-variant="guide"' in html
+    assert 'Open guide: Security Exposure Assessment Guide' in html
+    assert 'Missing, changed, or stale evidence means exposure is unknown, never zero.' in html
+    assert "section_intro.render('Security Exposure Assessment'" in template
+    assert "header_badge=exposure_guide" in template
+    assert 'data-security-snapshot-grid' in html
+    assert html.index('data-security-snapshot-grid') < html.index('data-security-exposure-section')
+    assert html.index('data-security-exposure-section') < html.index('data-security-overview-tabs')
+
+
+def test_security_context_and_unknown_runtime_messages_fit_one_line_on_desktop() -> None:
+    template = read('app/templates/security_posture/overview.html')
+    assert "('shield-check', 'Evidence Boundary', 'Committed', 'KAORI-normalized evidence')" in template
+    assert 'Correlation not Ready; runtime exposure is unknown.' in template
+    assert 'sm:whitespace-nowrap' in template
+    assert 'Binding totals are unavailable until committed correlation is Ready.' not in template
+    stale = _renderable_posture()
+    stale['runtime_status'] = {'status': 'Inputs Changed', 'tone': 'warning'}
+    html = _render_workspace_page('overview', stale)
+    assert 'Correlation not Ready; runtime exposure is unknown.' in html
+    assert 'KAORI-normalized evidence' in html
+    runtime_panel = html.split('data-security-runtime-impact', 1)[1].split('data-security-evidence-confidence', 1)[0]
+    assert 'Not Collected' not in runtime_panel
+
+
 def test_security_assurance_runtime_impact_requires_ready_correlation() -> None:
     posture = _renderable_posture()
     posture['runtime_status'] = {'status': 'Stale', 'tone': 'warning'}
     posture['runtime_binding_summary'] = {'digest': 7, 'reference': 2}
     html = _render_workspace_page('overview', posture)
-    assert 'Binding totals are unavailable until committed correlation is Ready.' in html
+    assert 'Correlation not Ready; runtime exposure is unknown.' in html
     runtime_panel = html.split('data-security-runtime-impact', 1)[1].split('data-security-evidence-confidence', 1)[0]
     assert '>7<' not in runtime_panel
     assert '>2<' not in runtime_panel
