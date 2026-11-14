@@ -107,7 +107,10 @@ def test_security_pages_use_approved_dashboard_and_registry_components() -> None
         assert 'components/page_hero.html' in html
     assert 'components/operational_dashboard_workspace.html' in overview
     assert 'page_hero.operational_dashboard(' in overview
-    assert 'components/section_intro.html' in overview
+    assert 'components/section_intro.html' not in overview
+    assert 'data-security-posture-insights' in overview
+    assert 'lg:col-span-7' in overview
+    assert 'lg:col-span-5' in overview
     assert 'components/progress_bar.html' in overview
     assert 'data-security-exposure-signals' in overview
     assert 'components/operational_metric_card.html' in overview
@@ -233,16 +236,65 @@ def test_security_overview_renders_operational_profile_and_signal_cards() -> Non
     html = _render_workspace_page('overview', _renderable_posture())
     assert 'data-kaori-hero-profile="operational-dashboard"' in html
     assert 'data-kaori-dashboard-framework="operational-v1"' in html
-    assert 'Security Exposure Signals' in html
+    assert 'Security Exposure Signals' not in html
     assert 'Operational Signal Overview' not in html
     assert 'data-kaori-tab-variant="integrated-workspace"' in html
-    assert 'Review Registry Security' in html
+    assert 'Review Registry Security' not in html
     assert '/security/findings' in html
+
+
+def test_security_assurance_hero_omits_oversized_registry_cta_but_preserves_context() -> None:
+    html = _render_workspace_page(
+        'overview', _renderable_posture(), can_manage_integrations=True
+    )
+    hero = html.split('data-kaori-hero-profile="operational-dashboard"', 1)[1].split('</section>', 1)[0]
+    assert 'Active Scope' in hero
+    assert 'Data Authority' in hero
+    assert 'Open Registry Integrations' not in hero
+    assert '/integrations/registry' not in hero
+    assert 'Operational Signal Scope' in hero
+
+    shared_hero = read('app/templates/components/page_hero.html')
+    assert '{% if action_label and action_href %}' in shared_hero
+    assert 'context_single_action_classes()' in shared_hero
+
+
+def test_security_assurance_compact_metrics_keep_other_dashboard_defaults() -> None:
+    html = _render_workspace_page('overview', _renderable_posture())
+    assert html.count('data-kaori-metric-density="compact"') == 4
+    assert 'Security Exposure Signals' not in html
+    assert 'Observed vulnerability coverage, exposure and evidence freshness.' not in html
+    assert 'Scan Coverage' in html
+    assert 'Latest usable scanner snapshot.' in html
+    assert 'Active Scope' in html  # Scope remains visible in the Hero.
+
+    metric = read('app/templates/components/operational_metric_card.html')
+    assert "compact=false" in metric
+    assert '{% if compact %}' in metric
+    assert '{% else %}' in metric
+    assert "scope_label='Active Scope'" in metric
+    assert 'table_label.metadata_label(scope_label' in metric
+
+
+def test_security_assurance_visual_hierarchy_is_asymmetric_and_unboxed() -> None:
+    template = read('app/templates/security_posture/overview.html')
+    assert 'lg:col-span-7' in template
+    assert 'lg:col-span-5' in template
+    assert 'lg:grid-rows-2' in template
+    assert 'divide-x divide-outline-subtle' in template
+    assert 'rounded-lg border border-outline-subtle bg-surface-subtle p-3' not in template
+    assert "progress_bar.semantic_bar(scan_coverage" in template
+    assert "data-security-posture-insights" in template
+    assert template.index('data-security-exposure-signals') < template.index('data-security-posture-insights')
+    assert template.index('data-security-posture-insights') < template.index('security_tabs =')
 
 
 def test_security_assurance_overview_uses_source_backed_exposure_hierarchy() -> None:
     html = _render_workspace_page('overview', _renderable_posture())
     assert 'data-security-exposure-signals' in html
+    assert html.count('data-kaori-metric-density="compact"') == 4
+    assert 'lg:col-span-7' in read('app/templates/security_posture/overview.html')
+    assert 'lg:col-span-5' in read('app/templates/security_posture/overview.html')
     for label in ('Scan Coverage', 'Affected Artifact Digests', 'Runtime Correlation', 'Evidence Freshness'):
         assert label in html
     for label in ('Exposure by Severity', 'Observed Runtime Impact', 'Evidence Confidence'):
