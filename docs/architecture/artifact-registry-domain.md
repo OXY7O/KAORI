@@ -910,6 +910,27 @@ updates push its canonical page URL. No additional materialization models,
 provider read paths, RBAC definitions, alert collection or central Intelligence
 recommendation lifecycle are introduced.
 
+### Registry Analytics Overview Growth evidence visual UAT refinement (#4632)
+
+The **Growth → Source Growth Trend** workspace uses two peer neutral evidence
+surfaces with a shared icon/title/source-count header, three bounded
+source-derived facts above the Chart.js visualization, a compact chart and
+one interpretation line. The fact strip reports latest observed point,
+retained point count and the first-to-last endpoint direction, using only
+the existing committed `growth_charts` projection. When multiple independent
+Registry sources are selected, fact cells explicitly state **Per source**
+instead of fabricating fleet totals or merging different timestamp scopes.
+
+A matching start and end is not called a stable history: intervening
+measurements can differ. Endpoint-only legacy snapshots keep dashed
+checkpoint styling, an explicit intermediate-history limitation, and
+source-specific accessible start/end observations. Missing evidence retains
+the unchanged unavailable state. At most three Registry source series,
+the existing selected Time Range/provider, HTMX Chart.js lifecycle and
+committed provider authority remain unchanged. The chart uses shorter,
+nonrotated timestamp ticks and only marks measured points when point density
+is low. No provider read, worker materialization or forecast logic is added.
+
 ### Registry Analytics Overview Capacity visual UAT refinement (#4632)
 
 The **Capacity** tab retains its committed four-indicator quota/forecast
