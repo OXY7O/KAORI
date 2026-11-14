@@ -69,7 +69,8 @@ def test_operations_namespace_rows_balance_identity_provider_and_reconciliation(
     assert "reconciliation_evidence.split('. ', 1)[0]" in registry
     assert "'truncate' if stable_state else 'line-clamp-2 break-words'" in registry
     assert 'title="{{ reconciliation_evidence }}"' in registry
-    assert 'aria-label="{{ reconciliation_evidence }}"' in registry
+    assert '<span class="sr-only">{{ reconciliation_evidence }}</span>' in registry
+    assert '<span aria-hidden="true">{{ reconciliation_summary }}</span>' in registry
     assert 'item.provisioning_message or' in registry
     assert "table_label.status_label(item.provisioning_status" in registry
     assert "operations_namespace_pagination.total_items" in registry

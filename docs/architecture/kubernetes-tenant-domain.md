@@ -98,9 +98,10 @@ alignment, source identity tooltips, filter/pagination and hover remain intact.
 For stable Ready/Released records, State shows a compact first-sentence preview
 from the **actual committed reconciliation message**, rather than a tall
 multi-clause paragraph; when evidence is not stable, it retains a bounded
-two-line reason. The complete original message is exposed through native
-`title` and accessible `aria-label`, never replaced by a fabricated
-provider summary. No status calculation, provider authority, workflow,
+two-line reason. The complete original message remains exposed through native
+`title` and screen-reader-only text; the compact visual preview is marked
+`aria-hidden` to avoid duplicate announcement. It is never replaced by a
+fabricated provider summary. No status calculation, provider authority, workflow,
 permission, backend or data source changes. Screenshot/browser QA on
 desktop/mobile, light/dark and long failure messages remains pending.
 

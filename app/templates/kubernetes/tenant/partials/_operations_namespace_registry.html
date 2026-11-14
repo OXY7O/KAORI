@@ -151,8 +151,10 @@
                             <div class="flex min-w-0 flex-col justify-center gap-1">
                                 <div>{{ table_label.status_label(item.provisioning_status|replace('_', ' ') |title, state_tone) }}</div>
                                 <p class="{{ 'truncate' if stable_state else 'line-clamp-2 break-words' }} min-w-0 text-xs leading-5 text-content-muted"
-                                   title="{{ reconciliation_evidence }}"
-                                   aria-label="{{ reconciliation_evidence }}">{{ reconciliation_summary }}</p>
+                                   title="{{ reconciliation_evidence }}">
+                                    <span class="sr-only">{{ reconciliation_evidence }}</span>
+                                    <span aria-hidden="true">{{ reconciliation_summary }}</span>
+                                </p>
                             </div>
                         </td>
                     </tr>
