@@ -1,6 +1,7 @@
 """Security Posture MVP contracts: navigation, RBAC, source boundary and reusable UI."""
 
 import re
+from html import unescape
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -44,6 +45,7 @@ def _security_sidebar(permissions: set[str], endpoint: str = 'security_posture.o
         ('/artifact-registry/', 'artifact_registry.overview'),
         ('/artifact-registry/inventory', 'artifact_registry.inventory'),
         ('/artifact-registry/security', 'artifact_registry.security'),
+        ('/artifact-registry/security/overview', 'artifact_registry.security_overview'),
         ('/artifact-registry/runtime', 'artifact_registry.runtime_overview'),
         ('/artifact-registry/governance', 'artifact_registry.governance'),
         ('/artifact-registry/analytics', 'artifact_registry.analytics'),
@@ -112,8 +114,11 @@ def test_security_pages_use_approved_dashboard_and_registry_components() -> None
     assert 'lg:col-span-7' in overview
     assert 'lg:col-span-5' in overview
     assert 'components/progress_bar.html' in overview
-    assert 'data-security-exposure-signals' in overview
-    assert 'components/operational_metric_card.html' in overview
+    assert 'data-security-snapshot-grid' in overview
+    assert 'data-security-runtime-impact' in overview
+    assert 'data-security-evidence-confidence' in overview
+    assert 'components/resource_posture_grid.html' in overview
+    assert 'components/operational_metric_card.html' not in overview
     assert 'components/table.html' in overview
     assert 'data-security-posture-preview' in overview
     assert 'components/states/_empty_state.html' in overview
@@ -252,52 +257,68 @@ def test_security_assurance_hero_omits_oversized_registry_cta_but_preserves_cont
     assert 'Data Authority' in hero
     assert 'Open Registry Integrations' not in hero
     assert '/integrations/registry' not in hero
-    assert 'Operational Signal Scope' in hero
+    assert 'Security Evidence Scope' in hero
+    assert 'data-kaori-hero-context-extension' in hero
+    assert 'data-kaori-hero-status-strip' in hero
+    assert 'Review CVE Findings' in hero
+    assert 'Evidence Freshness' in hero
 
     shared_hero = read('app/templates/components/page_hero.html')
     assert '{% if action_label and action_href %}' in shared_hero
     assert 'context_single_action_classes()' in shared_hero
 
 
-def test_security_assurance_compact_metrics_keep_other_dashboard_defaults() -> None:
+def test_security_snapshot_replaces_four_independent_kpi_cards() -> None:
     html = _render_workspace_page('overview', _renderable_posture())
-    assert html.count('data-kaori-metric-density="compact"') == 4
+    assert 'Security Snapshot' in html
+    assert 'data-security-snapshot-grid' in html
+    assert 'data-kaori-metric-density="compact"' not in html
+    assert 'data-security-exposure-signals' not in html
     assert 'Security Exposure Signals' not in html
-    assert 'Observed vulnerability coverage, exposure and evidence freshness.' not in html
     assert 'Scan Coverage' in html
-    assert 'Latest usable scanner snapshot.' in html
-    assert 'Active Scope' in html  # Scope remains visible in the Hero.
+    assert 'Affected Artifact Digests' in html
+    assert 'Runtime Correlation' in html
+    assert 'Evidence Freshness' in html
+    assert 'Active Scope' in html
+    assert 'data-security-posture-insights' in html
+    assert html.index('data-security-snapshot-grid') < html.index('data-security-posture-insights')
 
+    snapshot = read('app/templates/security_posture/overview.html')
+    assert "posture_grid.render([" in snapshot
+    assert 'columns=4' in snapshot
+    assert 'metric_card.render(' not in snapshot
+    assert 'components/resource_posture_grid.html' in snapshot
+    # The canonical component remains available to other operational dashboards.
     metric = read('app/templates/components/operational_metric_card.html')
     assert "compact=false" in metric
-    assert '{% if compact %}' in metric
-    assert '{% else %}' in metric
     assert "scope_label='Active Scope'" in metric
-    assert 'table_label.metadata_label(scope_label' in metric
 
 
-def test_security_assurance_visual_hierarchy_is_asymmetric_and_unboxed() -> None:
+def test_security_analysis_uses_exactly_two_peer_cards() -> None:
     template = read('app/templates/security_posture/overview.html')
     assert 'lg:col-span-7' in template
     assert 'lg:col-span-5' in template
-    assert 'lg:grid-rows-2' in template
-    assert 'divide-x divide-outline-subtle' in template
-    assert 'rounded-lg border border-outline-subtle bg-surface-subtle p-3' not in template
+    assert "section_card.render('Exposure by Severity'" in template
+    assert "section_card.render('Runtime & Evidence'" in template
+    assert "section_card.render('Observed Runtime Impact'" not in template
+    assert "section_card.render('Evidence Confidence'" not in template
+    assert 'data-security-runtime-impact' in template
+    assert 'data-security-evidence-confidence' in template
     assert "progress_bar.semantic_bar(scan_coverage" in template
-    assert "data-security-posture-insights" in template
-    assert template.index('data-security-exposure-signals') < template.index('data-security-posture-insights')
+    assert 'rounded-lg border border-outline-subtle bg-surface-subtle p-3' not in template
+    assert template.index('data-security-snapshot-grid') < template.index('data-security-posture-insights')
     assert template.index('data-security-posture-insights') < template.index('security_tabs =')
 
 
 def test_security_assurance_overview_uses_source_backed_exposure_hierarchy() -> None:
     html = _render_workspace_page('overview', _renderable_posture())
-    assert 'data-security-exposure-signals' in html
-    assert html.count('data-kaori-metric-density="compact"') == 4
+    assert 'data-security-snapshot-grid' in html
+    assert 'Runtime &amp; Evidence' in html
     assert 'lg:col-span-7' in read('app/templates/security_posture/overview.html')
     assert 'lg:col-span-5' in read('app/templates/security_posture/overview.html')
     for label in ('Scan Coverage', 'Affected Artifact Digests', 'Runtime Correlation', 'Evidence Freshness'):
         assert label in html
-    for label in ('Exposure by Severity', 'Observed Runtime Impact', 'Evidence Confidence'):
+    for label in ('Exposure by Severity', 'Runtime Impact', 'Evidence Confidence'):
         assert label in html
     assert '1 · 100%' in html
     assert '0 · 0%' in html
@@ -318,14 +339,14 @@ def test_security_assurance_runtime_impact_requires_ready_correlation() -> None:
     posture['runtime_binding_summary'] = {'digest': 7, 'reference': 2}
     html = _render_workspace_page('overview', posture)
     assert 'Binding totals are unavailable until committed correlation is Ready.' in html
-    runtime_panel = html.split('Observed Runtime Impact', 1)[1].split('Evidence Confidence', 1)[0]
+    runtime_panel = html.split('data-security-runtime-impact', 1)[1].split('data-security-evidence-confidence', 1)[0]
     assert '>7<' not in runtime_panel
     assert '>2<' not in runtime_panel
     assert 'Strong identity' not in html
 
 
 def test_security_assurance_labels_preserve_shared_tab_identity_and_bounds() -> None:
-    html = _render_workspace_page('overview', _renderable_posture(), active_tab='capacity')
+    html = unescape(_render_workspace_page('overview', _renderable_posture(), active_tab='capacity'))
     for label in ('Exposure Analysis', 'Assets & Impact', 'Findings & Investigation', 'Evidence & Sources'):
         assert label in html
     for key in ('overview', 'capacity', 'signals', 'reporting'):
