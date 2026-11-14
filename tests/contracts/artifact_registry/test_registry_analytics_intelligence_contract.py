@@ -580,7 +580,19 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     assert 'Quota Chart Not Available' in partial
     assert 'quota_rows|length ~' in partial
     assert 'analytics.capacity_chart_rows' in partial
-    assert 'grid items-stretch gap-4 p-4 lg:grid-cols-5 sm:p-5' in partial
+    assert 'grid gap-4 p-4 lg:grid-cols-5 sm:p-5' in partial
+    assert "analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-3')" in partial
+    assert "analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-2')" in partial
+    assert 'Peak observed utilization' in partial
+    assert '100% = quota limit' in partial
+    assert "analysis_surface.ranked_item_classes('min-w-0 p-3 sm:p-4')" in partial
+    assert 'data-registry-capacity-axis-note' in partial
+    assert 'aria-describedby="registry-capacity-chart-note"' in partial
+    assert 'if (maxObserved <= 1) axisMax = 1' in chart
+    assert 'else if (maxObserved <= 5) axisMax = 5' in chart
+    assert 'else if (maxObserved <= 25) axisMax = 25' in chart
+    assert 'else if (maxObserved > 100) axisMax = Math.ceil(maxObserved / 25) * 25' in chart
+    assert "axisNote.textContent =" in chart
     assert 'lg:col-span-3' in partial
     assert 'lg:col-span-2' in partial
     assert 'aria-labelledby="registry-capacity-chart-title"' in partial
@@ -624,6 +636,11 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     assert 'demo' in rendered
     assert 'Harbor X300' in rendered
     assert '0.6%' in rendered
+    assert rendered.count('Peak observed utilization') == 1
+    assert 'Peak observed utilization' in rendered
+    assert '100% = quota limit' in rendered
+    assert 'registry-capacity-chart-note' in rendered
+    assert 'data-registry-capacity-axis-note' in rendered
     assert 'No forecast' in rendered
     assert 'Observed' in rendered
     assert 'Used' in rendered and 'Quota' in rendered

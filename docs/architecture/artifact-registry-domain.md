@@ -931,6 +931,14 @@ or unavailable evidence is omitted rather than silently rendered as zero.
 At most five qualified projects are plotted, ordered by utilization.
 The visible companion panel preserves the full project name, Registry
 source, actual usage and quota, and independently qualified forecast label.
+For visual UAT the chart panel presents the highest qualified project ratio as
+the primary observed readout, then the bounded horizontal bar chart. For ratios
+at or below 1%, 5%, or 25%, the chart axis automatically zooms to that explicit
+upper bound rather than wasting most pixels on 0–100%; values above quota retain
+a zero-based axis extended beyond 100%. The rendered axis range is named beside
+the chart to prevent a zoomed bar from implying high quota pressure. Exact
+percentages, denominators and forecast status remain in adjacent neutral
+evidence cards; neither the chart nor its visual emphasis implies a forecast.
 Missing all eligible quotas produces a dedicated unavailable state. The
 existing detailed Capacity table and worker/provider ownership are unchanged.
 
