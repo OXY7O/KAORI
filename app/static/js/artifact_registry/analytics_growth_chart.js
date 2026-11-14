@@ -36,9 +36,7 @@
 
     function render(root = document) {
         if (typeof Chart === 'undefined') return
-        const candidates = root.matches?.(panelSelector)
-            ? [root]
-            : Array.from(root.querySelectorAll?.(panelSelector) || [])
+        const candidates = root.matches?.(panelSelector) ? [root] : Array.from(root.querySelectorAll?.(panelSelector) || [])
 
         candidates.forEach((panel) => {
             const canvas = panel.querySelector('[data-registry-growth-chart]')
