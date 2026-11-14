@@ -90,15 +90,19 @@ Provisioning tab's Namespace Provisioning Registry has an independent title
 Guide via the shared table header `title_extra`, without replacing the
 filtered **Results** count or the Provision Namespace CTA.
 
-Its existing fixed five-column table remains at `min-w-[1100px]` with narrow
-viewport horizontal scroll. Column percentages **27/19/17/17/20**
-(Namespace, Tenant/Environment, Resource Profile, Provider, State) reserve
-additional space for long Namespace identity and reconciliation state, while
-shared table cells retain middle alignment, compact primary/secondary baseline,
-truncated identities with full `title` values, and bounded two-line State
-reasons with complete tooltip evidence. No pagination, HTMX, RBAC, data source,
-provider mutation or reconciliation status semantics change. Desktop/mobile
-light/dark visual review of long identities and State reasons remains pending.
+Its fixed five-column table remains at `min-w-[1100px]` with narrow-viewport
+horizontal scroll. Following the operator's next Visual QA iteration (#4670),
+column percentages are **27/19/16/16/22** (Namespace, Tenant/Environment,
+Resource Profile, Provider, State). Shared title-cell primitives, middle
+alignment, source identity tooltips, filter/pagination and hover remain intact.
+For stable Ready/Released records, State shows a compact first-sentence preview
+from the **actual committed reconciliation message**, rather than a tall
+multi-clause paragraph; when evidence is not stable, it retains a bounded
+two-line reason. The complete original message is exposed through native
+`title` and accessible `aria-label`, never replaced by a fabricated
+provider summary. No status calculation, provider authority, workflow,
+permission, backend or data source changes. Screenshot/browser QA on
+desktop/mobile, light/dark and long failure messages remains pending.
 
 ## Tenant Operations — Evidence/Drift Guides and Activity handoffs (#4672)
 
@@ -111,17 +115,17 @@ The Guides clarify committed evidence versus explicit authorized provider
 recovery: synchronization is observation-only and never automatic remediation.
 
 **Activity** remains a navigation-only handoff, not a second audit or reporting
-engine. Following the operator's second Visual QA (#4672), its previous two
-visually flat cards are replaced with **three distinct canonical capability
-destinations**: Activity Audit, Intelligence and Reports. Each uses the shared
-KAORI table block shell, a soft Violet 48px capability icon, a meaningful
-metadata label, a dedicated title/concise description, and a full-width
-secondary-intent Violet action in a bottom-aligned footer. A responsive
-three-column grid stacks on narrow screens. The canonical Activity Audit,
-Intelligence and Reports route destinations remain unchanged; no duplicate
-evidence feed, provider mutation, permission bypass, backend query or status
-logic is introduced. Desktop/mobile light/dark Visual QA and Human Acceptance
-remain required on the integrated review UAT SHA.
+engine. Following further operator Visual QA (#4672), the three heavy
+destination cards have been replaced with **one shared KAORI block containing
+three concise full-width navigation rows** for Activity Audit, Intelligence,
+and Reports. Each row owns its meaningful Violet icon, compact capability
+metadata, clear title/description and right-aligned `Open Workspace` affordance.
+The entire semantic anchor row is keyboard focusable and usable on narrow
+screens; no nested action buttons or repeated header/footer surfaces are
+introduced. Exact canonical routes stay unchanged. No duplicate evidence feed,
+provider mutation, permission bypass, backend query or status logic is
+introduced. Desktop/mobile light/dark Visual QA and Human Acceptance remain
+required on the integrated review UAT SHA.
 
 ## Tenant Operations — primary Allocation / Operational reconcile tabs (#960)
 
