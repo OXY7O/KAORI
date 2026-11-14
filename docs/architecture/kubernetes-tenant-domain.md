@@ -79,6 +79,27 @@ alignment; no page-local geometry framework is introduced.
 
 The completed feature must prove create → provider selection → profile/namespace provisioning → access/credential governance → managed resources/policy → reconciliation → effective-state verification → audit/governance evidence → update/revoke → governed decommission. Native Kubernetes baseline UAT is mandatory; Capsule-backed UAT is required when the approved compatible Capsule test cluster is available.
 
+## Tenant Operations — title and registry visual parity (#4670)
+
+The Operations Estate header uses the canonical shared `operational_section_card`
+indicator label with `operations_metrics|length`: **4 Indicators** describes
+four committed posture dimensions, not a live Namespace count. Operational
+Control owns a single shared title Guide about committed evidence, provider
+authority, reconciliation actions and canonical audit handoffs. The
+Provisioning tab's Namespace Provisioning Registry has an independent title
+Guide via the shared table header `title_extra`, without replacing the
+filtered **Results** count or the Provision Namespace CTA.
+
+Its existing fixed five-column table remains at `min-w-[1100px]` with narrow
+viewport horizontal scroll. Column percentages **27/19/17/17/20**
+(Namespace, Tenant/Environment, Resource Profile, Provider, State) reserve
+additional space for long Namespace identity and reconciliation state, while
+shared table cells retain middle alignment, compact primary/secondary baseline,
+truncated identities with full `title` values, and bounded two-line State
+reasons with complete tooltip evidence. No pagination, HTMX, RBAC, data source,
+provider mutation or reconciliation status semantics change. Desktop/mobile
+light/dark visual review of long identities and State reasons remains pending.
+
 ## Tenant Operations — primary Allocation / Operational reconcile tabs (#960)
 
 Tenant → Operations uses **one shared primary Content Tabs row** rather than a

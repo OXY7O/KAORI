@@ -41,6 +41,13 @@ For a form/card section, place the trigger **immediately beside the section titl
 
 For Kubernetes Secret Operations, the selected Secret heading on the replacement content form is also a title-level owner: render its contextual replacement guide with `variant='guide'`. Keep actual secret type, namespace/key count, write scope, validation and hidden-value safeguards visible outside the popover; do not change field-specific icon help or operational behavior.
 
+For Tenant Operations, the Operations Estate indicator label is a committed
+four-dimension count; Operational Control has one title Guide, and the
+Provisioning tab's Namespace Provisioning Registry owns its own Guide through
+`title_extra` alongside a separate filtered Results label. Do not reuse
+the indicator badge as a record count, duplicate Guide triggers or place
+a Guide among the registry header actions.
+
 For a canonical registry with shared status or lifecycle vocabulary, place one **Guide label** Info Tip **beside the registry title** through the shared table-header `title_extra` slot. The registry card opts into visible overflow while the table itself stays inside its dedicated `overflow-x-auto` container. Header actions remain reserved for operational actions such as Clear Filters, Add, Create, or navigation.
 
 On **Resource Profile / Namespace** screens, the Create Resource Profile form, Resource Profile Registry, Tenant Allocation Overview, Namespace Administration workspace and Namespace Provisioning Registry each own a single title-adjacent Guide. Registry Guides use `title_extra` and retain separate live-free `Results` counts; the two independent admin/creation headings use shared header Guide placement without repeating existing inner section help. Namespace Estate displays `table_label.result_count(namespace_total)` from committed Namespace record scope; this is not a live cluster count or a count of KPI dimensions. Its Namespace Records and Drifted KPI helper copy stays compact, while authoritative provider/committed evidence distinctions remain explicitly available via the workspace Guide and status callouts. No Guide changes allocation admission, provider authority, or source state.

@@ -34,6 +34,35 @@ def test_drift_workflows_use_canonical_primary_tabs_not_nested_tabs() -> None:
     assert "active_tab in {'allocation-drift', 'operational-reconcile'}" in routes
 
 
+def test_operations_titles_follow_shared_indicator_and_guide_contract() -> None:
+    from jinja2 import Environment
+
+    operations = read('app/templates/kubernetes/tenant/operations.html')
+    registry = read('app/templates/kubernetes/tenant/partials/_operations_namespace_registry.html')
+    for source in (operations, registry):
+        Environment(autoescape=True).parse(source)
+
+    assert "table_label.metadata_label((operations_metrics|length) ~ ' Indicators', icon='layout-grid')" in operations
+    assert "resource_posture_grid.render(operations_metrics, columns=4)" in operations
+    assert "info_tip.render('tenant-operational-control-guide'" in operations
+    assert operations.count("'tenant-operational-control-guide'") == 1
+    assert "placement='right', variant='guide'" in operations
+    assert operations.index("'tenant-operational-control-guide'") < operations.index(
+        "id='tenant-operations-workspace'"
+    )
+    assert "id='tenant-operations-workspace'" in operations
+    assert "content_tabs.render_links('tenant-operations'" in operations
+
+    assert "info_tip.render('tenant-operations-namespace-registry-guide'" in registry
+    assert registry.count("'tenant-operations-namespace-registry-guide'") == 1
+    assert "title_extra=title_info" in registry
+    assert "result_count=operations_namespace_pagination.total_items" in registry
+    assert "header_actions=header_actions" in registry
+    assert "Provision Namespace" in registry
+    assert "registry_ui.filter_form(" in registry
+    assert "registry_ui.footer('tenant.operations'" in registry
+
+
 def test_existing_drift_urls_still_map_to_primary_tabs() -> None:
     route_common = read('app/kubernetes/tenant/route_common.py')
     assert "if active_tab == 'drift-reconcile':" in route_common

@@ -27,6 +27,7 @@ TITLE_GUIDES = {
     '_native_namespace_rbac_inventory.html': ('tenant-native-namespace-rbac-inventory-guide',),
     '_namespace_form.html': ('namespace-provisioning-contract-tip',),
     '_namespace_registry.html': ('namespace-provisioning-registry-guide',),
+    '_operations_namespace_registry.html': ('tenant-operations-namespace-registry-guide',),
     '_resource_profile_registry.html': ('resource-profile-registry-guide',),
     '_tenant_allocation_overview.html': ('tenant-allocation-overview-guide',),
     '_capacity_governance.html': (

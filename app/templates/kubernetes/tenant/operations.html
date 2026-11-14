@@ -4,6 +4,8 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/resource_posture_grid.html" as resource_posture_grid %}
 {% import "components/section_intro.html" as section_intro %}
+{% import "components/info_tip.html" as info_tip %}
+{% import "components/table_label.html" as table_label %}
 {% import "components/table.html" as table_ui %}
 {% block tenant_content %}
     {% set operation_tabs = [
@@ -29,6 +31,7 @@
             'Operations Estate',
             'Review committed operational posture before opening a focused workflow.',
             'activity',
+            header_badge=table_label.metadata_label((operations_metrics|length) ~ ' Indicators', icon='layout-grid'),
             body_classes='p-0',
             aria_label='Tenant operations summary'
             ) %}
@@ -44,6 +47,15 @@
             'Operational Control',
             'Provisioning, evidence, drift recovery, and canonical audit/governance handoffs remain separate but correlated.',
             'panels-top-left',
+            header_badge=info_tip.render('tenant-operational-control-guide',
+            'Tenant Operational Control Guide',
+            'Review committed operational evidence and select the governed workflow for each action.',
+            items=[
+            'Provisioning and Runs & Evidence show committed Namespace activity and provider read-back.',
+            'Allocation Drift and Operational Reconcile expose provider differences without bypassing authority.',
+            'Recovery requires explicit permitted actions; Activity Audit and Governance remain canonical handoffs.'
+            ],
+            placement='right', variant='guide'),
             id='tenant-operations-workspace',
             loading_bar_id='tenant-operations-workspace-loading',
             loading_bar_label='Loading Tenant Operations Workspace',

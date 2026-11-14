@@ -1,4 +1,5 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% set registry_id = "operations-namespace-registry" %}
@@ -31,6 +32,17 @@
             Provision Namespace
         </a>
     {% endset %}
+    {% set title_info %}
+        {{ info_tip.render('tenant-operations-namespace-registry-guide',
+                'Namespace Provisioning Registry Guide',
+                'Read committed Namespace ownership, allocation snapshots, and provider reconciliation evidence.',
+                [
+                'Rows use committed KAORI Namespace records; opening Operations never triggers an implicit provider refresh.',
+                'Resource Profile snapshots retain their version; Kubernetes or Capsule remains authoritative for execution.',
+                'Status and reconciliation reasons reflect stored evidence; provisioning and recovery use separate governed actions.'
+                ],
+                placement='right', variant='guide') }}
+    {% endset %}
     {{ table_ui.inventory_block_header('boxes',
         'Namespace Provisioning Registry',
         'Committed Namespace allocation and provider reconciliation evidence.',
@@ -39,7 +51,8 @@
         none,
         none,
         header_actions=header_actions,
-        result_count=operations_namespace_pagination.total_items) }}
+        result_count=operations_namespace_pagination.total_items,
+        title_extra=title_info) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
             'tenant.operations',
@@ -101,11 +114,11 @@
             <caption class="sr-only">Tenant Namespace provisioning evidence.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[23%]">Namespace</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Tenant / Environment</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[27%]">Resource Profile</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Provider</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">State</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[27%]">Namespace</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Tenant / Environment</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Resource Profile</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Provider</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">State</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -114,26 +127,26 @@
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_ui.title_cell(item.namespace, item.ownership_status|replace('_', ' ') |title ~ ' ownership', 'folder-tree') }}</td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
-                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
+                            <p class="text-sm font-semibold leading-5 text-content-primary min-w-0 max-w-full truncate"
                                title="{{ item.environment.tenant.name }}">{{ item.environment.tenant.name }}</p>
-                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted min-w-0 max-w-full truncate"
                                title="{{ item.environment.environment|title }}">{{ item.environment.environment|title }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
-                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
+                            <p class="text-sm font-semibold leading-5 text-content-primary min-w-0 max-w-full truncate"
                                title="{{ item.resource_profile.name if item.resource_profile else 'No profile' }}">{{ item.resource_profile.name if item.resource_profile else 'No profile' }}</p>
-                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted min-w-0 max-w-full truncate"
                                title="Snapshot v{{ item.resource_profile_version or '—' }}">Snapshot v{{ item.resource_profile_version or '—' }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
-                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
+                            <p class="text-sm font-semibold leading-5 text-content-primary min-w-0 max-w-full truncate"
                                title="{{ item.environment.tenant.provider_key|replace('_', ' ') |title }}">{{ item.environment.tenant.provider_key|replace('_', ' ') |title }}</p>
-                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted min-w-0 max-w-full truncate"
                                title="{{ item.environment.tenant.reconciliation_authority|replace('_', ' ') |title }} authority">{{ item.environment.tenant.reconciliation_authority|replace('_', ' ') |title }} authority</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_label.status_label(item.provisioning_status|replace('_', ' ') |title, state_tone) }}
-                            <p class="mt-1 text-xs leading-5 text-content-muted min-w-0 max-w-full truncate"
+                            <p class="mt-1 line-clamp-2 break-words text-xs leading-5 text-content-muted"
                                title="{{ item.provisioning_message or 'Awaiting reconciliation evidence.' }}">{{ item.provisioning_message or 'Awaiting reconciliation evidence.' }}</p>
                         </td>
                     </tr>
