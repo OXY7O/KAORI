@@ -82,129 +82,90 @@
                 {% elif active_tab == 'runs-evidence' %}
                     {% include "kubernetes/tenant/partials/_operations_evidence_registry.html" %}
                 {% elif active_tab == 'allocation-drift' %}
-                    <div class="space-y-3" id="tenant-drift-allocation">
-                        <section class="{{ table_ui.block_classes() }}"
-                                 aria-labelledby="tenant-drift-allocation-title"
-                                 data-tenant-operations-review-intro
-                                 data-capsule-allocation-scope-guide>
-                            <div class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                                <div class="flex min-w-0 items-start gap-3">
-                                    <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
-                                        <i data-lucide="layers-3" class="h-5 w-5"></i>
-                                    </span>
-                                    <div class="min-w-0">
-                                        <h3 id="tenant-drift-allocation-title" class="text-sm font-semibold text-content-primary">Capsule Allocation Review</h3>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">Compare committed Tenant quotas with Capsule observations. Sync observes differences; recovery requires explicit approval.</p>
-                                    </div>
-                                </div>
-                                {{ table_label.metadata_label('Capsule authoritative', icon='shield-check') }}
+                    <div id="tenant-drift-allocation" class="space-y-3">
+                        <div class="flex flex-wrap items-center justify-between gap-3 px-1"
+                             data-tenant-operations-review-intro
+                             data-capsule-allocation-scope-guide>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">Capsule Allocation Authority</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">
+                                    Tenant.spec.resourceQuotas governs Namespace quotas; GlobalResourceQuota governs shared allocation.
+                                    Sync observes drift; recovery requires an explicit decision.
+                                </p>
                             </div>
-                            {% set allocation_scope_items = [
-                                    ('shield-check', 'Tenant Resource Quotas', 'Tenant.spec.resourceQuotas', 'Namespace quota authority', capsule_tenant_quota_drift_pagination.total_items),
-                                    ('layers-3', 'Shared Allocation', 'GlobalResourceQuota', 'Tenant-wide capacity authority', capsule_shared_drift_pagination.total_items)
-                                ] %}
-                            <div class="grid gap-x-4 gap-y-3 border-t border-outline-subtle px-4 py-3 sm:grid-cols-2 sm:px-5">
-                                {% for scope_icon, scope_label, scope_source, scope_detail, scope_count in allocation_scope_items %}
-                                    <div class="flex min-w-0 items-start gap-3">
-                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                              aria-hidden="true">
-                                            <i data-lucide="{{ scope_icon }}" class="h-4 w-4"></i>
-                                        </span>
-                                        <div class="min-w-0 flex-1">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <h4 class="text-xs font-semibold text-content-primary">{{ scope_label }}</h4>
-                                                <span class="text-xs font-semibold text-kaori-primary">{{ scope_count }} Records</span>
-                                            </div>
-                                            <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ scope_source }} · {{ scope_detail }}</p>
-                                        </div>
+                            {{ table_label.metadata_label('Capsule authoritative', icon='shield-check') }}
+                        </div>
+                        {% set allocation_registry_tabs = [
+                                ('tenant-quota', 'Tenant Quota', 'shield-alert', url_for('tenant.operations', tab='allocation-drift', ops_view='tenant-quota')),
+                                ('shared-allocation', 'Shared Allocation', 'layers-3', url_for('tenant.operations', tab='allocation-drift', ops_view='shared-allocation'))
+                            ] %}
+                        <section id="tenant-drift-allocation-registry"
+                                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                                 aria-label="Capsule allocation registries"
+                                 hx-select="#tenant-operations-workspace">
+                            {{ workspace_tabs.render_query_tabs(allocation_registry_tabs,
+                                    active_view,
+                                    aria_label='Capsule allocation registries',
+                                    hx_target='#tenant-operations-workspace',
+                                    hx_indicator='#tenant-operations-workspace-loading',
+                                    hx_sync='#tenant-operations-workspace:replace') }}
+                            <div class="min-w-0 p-4 sm:p-5">
+                                {% if active_view == 'shared-allocation' %}
+                                    <div id="tenant-allocation-shared-panel" class="min-w-0">
+                                        {% include "kubernetes/tenant/partials/_capsule_shared_allocation_drift.html" %}
                                     </div>
-                                {% endfor %}
-                            </div>
-                            {% set allocation_registry_tabs = [
-                                    ('tenant-quota', 'Tenant Quota', 'shield-alert', none, url_for('tenant.operations', tab='allocation-drift', ops_view='tenant-quota')),
-                                    ('shared-allocation', 'Shared Allocation', 'layers-3', none, url_for('tenant.operations', tab='allocation-drift', ops_view='shared-allocation'))
-                                ] %}
-                            <div class="px-4 sm:px-5">
-                                {{ workspace_tabs.render_navigation(allocation_registry_tabs,
-                                        active_view,
-                                        prefix='tenant-allocation-registry',
-                                        aria_label='Allocation Drift Registries',
-                                        hx_target='#tenant-operations-workspace',
-                                        hx_select='#tenant-operations-workspace',
-                                        hx_indicator='#tenant-operations-workspace-loading') }}
+                                {% else %}
+                                    <div id="tenant-allocation-quota-panel" class="min-w-0">
+                                        {% include "kubernetes/tenant/partials/_capsule_tenant_quota_drift.html" %}
+                                    </div>
+                                {% endif %}
                             </div>
                         </section>
-                        <div id="tenant-drift-allocation-content" aria-label="Capsule Allocation Review selected registry">
-                            {% if active_view == 'shared-allocation' %}
-                                {% include "kubernetes/tenant/partials/_capsule_shared_allocation_drift.html" %}
-                            {% else %}
-                                {% include "kubernetes/tenant/partials/_capsule_tenant_quota_drift.html" %}
-                            {% endif %}
-                        </div>
                     </div>
                 {% elif active_tab == 'operational-reconcile' %}
-                    <div class="space-y-3" id="tenant-drift-operations">
-                        <section class="{{ table_ui.block_classes() }}"
-                                 aria-labelledby="tenant-drift-operations-title"
-                                 data-tenant-operations-review-intro>
-                            <div class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                                <div class="flex min-w-0 items-start gap-3">
-                                    <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
-                                        <i data-lucide="git-compare-arrows" class="h-5 w-5"></i>
-                                    </span>
-                                    <div class="min-w-0">
-                                        <h3 id="tenant-drift-operations-title" class="text-sm font-semibold text-content-primary">Operational Reconciliation Review</h3>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">Review Namespace differences, Access Grant reconciliation and provider ownership separately. Recovery requires an explicit decision.</p>
-                                    </div>
-                                </div>
-                                {{ table_label.metadata_label('Committed evidence', icon='shield-check') }}
+                    <div id="tenant-drift-operations" class="space-y-3">
+                        <div class="flex flex-wrap items-center justify-between gap-3 px-1"
+                             data-tenant-operations-review-intro>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">Operational Reconciliation</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">
+                                    Review Namespace drift and Access Grant reconciliation separately.
+                                    Provider Authority is read-only ownership context, not a drift finding.
+                                </p>
                             </div>
-                            {% set operational_scope_items = [
-                                    ('refresh-cw', 'Namespace Drift', 'Namespace/Allocation', 'Reconciliation findings', operations_drift_pagination.total_items),
-                                    ('key-round', 'Access Reconciliation', 'Kubernetes RBAC', 'Grant and effective state', operations_access_pagination.total_items),
-                                    ('shield-check', 'Provider Authority', 'Tenant Registry', 'Ownership reference, not drift', operations_provider_pagination.total_items)
-                                ] %}
-                            <div class="grid gap-x-4 gap-y-3 border-t border-outline-subtle px-4 py-3 sm:grid-cols-3 sm:px-5">
-                                {% for scope_icon, scope_label, scope_source, scope_detail, scope_count in operational_scope_items %}
-                                    <div class="flex min-w-0 items-start gap-3">
-                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                              aria-hidden="true">
-                                            <i data-lucide="{{ scope_icon }}" class="h-4 w-4"></i>
-                                        </span>
-                                        <div class="min-w-0 flex-1">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <h4 class="text-xs font-semibold text-content-primary">{{ scope_label }}</h4>
-                                                <span class="text-xs font-semibold text-kaori-primary">{{ scope_count }} Records</span>
-                                            </div>
-                                            <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ scope_source }} · {{ scope_detail }}</p>
-                                        </div>
+                            {{ table_label.metadata_label('Committed evidence', icon='shield-check') }}
+                        </div>
+                        {% set operational_registry_tabs = [
+                                ('namespace-drift', 'Namespace Drift', 'refresh-cw', url_for('tenant.operations', tab='operational-reconcile', ops_view='namespace-drift')),
+                                ('access-reconciliation', 'Access Reconciliation', 'key-round', url_for('tenant.operations', tab='operational-reconcile', ops_view='access-reconciliation')),
+                                ('provider-authority', 'Provider Authority', 'shield-check', url_for('tenant.operations', tab='operational-reconcile', ops_view='provider-authority'))
+                            ] %}
+                        <section id="tenant-drift-operations-registry"
+                                 class="min-w-0 overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                                 aria-label="Operational reconciliation registries"
+                                 hx-select="#tenant-operations-workspace">
+                            {{ workspace_tabs.render_query_tabs(operational_registry_tabs,
+                                    active_view,
+                                    aria_label='Operational reconciliation registries',
+                                    hx_target='#tenant-operations-workspace',
+                                    hx_indicator='#tenant-operations-workspace-loading',
+                                    hx_sync='#tenant-operations-workspace:replace') }}
+                            <div class="min-w-0 p-4 sm:p-5">
+                                {% if active_view == 'access-reconciliation' %}
+                                    <div id="tenant-operational-access-panel" class="min-w-0">
+                                        {% include "kubernetes/tenant/partials/_operations_access_reconciliation_registry.html" %}
                                     </div>
-                                {% endfor %}
-                            </div>
-                            {% set operational_registry_tabs = [
-                                    ('namespace-drift', 'Namespace Drift', 'refresh-cw', none, url_for('tenant.operations', tab='operational-reconcile', ops_view='namespace-drift')),
-                                    ('access-reconciliation', 'Access Reconciliation', 'key-round', none, url_for('tenant.operations', tab='operational-reconcile', ops_view='access-reconciliation')),
-                                    ('provider-authority', 'Provider Authority', 'shield-check', none, url_for('tenant.operations', tab='operational-reconcile', ops_view='provider-authority'))
-                                ] %}
-                            <div class="px-4 sm:px-5">
-                                {{ workspace_tabs.render_navigation(operational_registry_tabs,
-                                        active_view,
-                                        prefix='tenant-operational-registry',
-                                        aria_label='Operational Reconcile Registries',
-                                        hx_target='#tenant-operations-workspace',
-                                        hx_select='#tenant-operations-workspace',
-                                        hx_indicator='#tenant-operations-workspace-loading') }}
+                                {% elif active_view == 'provider-authority' %}
+                                    <div id="tenant-operational-authority-panel" class="min-w-0">
+                                        {% include "kubernetes/tenant/partials/_operations_provider_registry.html" %}
+                                    </div>
+                                {% else %}
+                                    <div id="tenant-operational-namespace-panel" class="min-w-0">
+                                        {% include "kubernetes/tenant/partials/_operations_drift_registry.html" %}
+                                    </div>
+                                {% endif %}
                             </div>
                         </section>
-                        <div id="tenant-drift-operations-content" aria-label="Operational Reconciliation Review selected registry">
-                            {% if active_view == 'access-reconciliation' %}
-                                {% include "kubernetes/tenant/partials/_operations_access_reconciliation_registry.html" %}
-                            {% elif active_view == 'provider-authority' %}
-                                {% include "kubernetes/tenant/partials/_operations_provider_registry.html" %}
-                            {% else %}
-                                {% include "kubernetes/tenant/partials/_operations_drift_registry.html" %}
-                            {% endif %}
-                        </div>
                     </div>
                 {% else %}
                     <section class="{{ table_ui.block_classes() }}"
