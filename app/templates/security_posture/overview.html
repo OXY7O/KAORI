@@ -11,19 +11,14 @@
     <div id="security-posture-overview" class="space-y-5">
         {% set registry_ready = posture.authorized_registry and posture.sources > 0 %}
         {% set security_scope = 'All Authorized Registry Sources' if registry_ready else 'No Eligible Registry Source' %}
+        {% set hero_metadata = [('database-zap', 'Registry Scan Evidence'), ('waypoints', 'Runtime Correlation'), ('shield-alert', 'CVE Exposure')] %}
+        {% set hero_state = 'normal' if registry_ready else 'blocked' %}
+        {% set blocked_info = 'Connect a Registry source with committed inventory and grant authorized domain access.' %}
         {{ page_hero.operational_dashboard('Security Posture', 'shield-alert', 'Security Overview',
                 'Investigate committed CVE exposure and runtime impact.',
-                [
-                    ('database-zap', 'Registry Scan Evidence'),
-                    ('waypoints', 'Runtime Correlation'),
-                    ('shield-alert', 'CVE Exposure')
-                ],
-                security_scope, none, none,
-                data_authority='Committed Evidence',
-                state='normal' if registry_ready else 'blocked',
-                blocked_title='Security Evidence Unavailable',
-                blocked_info='Connect a Registry source with committed inventory and grant authorized domain access.'
-        ) }}
+                hero_metadata, security_scope, none, none,
+                data_authority='Committed Evidence', state=hero_state,
+                blocked_title='Security Evidence Unavailable', blocked_info=blocked_info) }}
         {% if not registry_ready %}
             {% set empty_state_icon = "shield-alert" %}
             {% set empty_state_label = "Setup Required" %}
@@ -38,27 +33,20 @@
         {% else %}
             {% call dashboard_workspace.controller(active_tab, 'security-posture-overview') %}
                 <div class="space-y-5" data-security-overview-layout>
+                {% set scan_status_badge = table_label.status_indicator_label(posture.scan_status.label, posture.scan_status.tone) %}
+                {% set runtime_status_badge = table_label.status_indicator_label(posture.runtime_status.status, posture.runtime_status.tone) %}
+                {% set coverage_metric = ('scan-search', 'Scan Coverage', posture.scanned_artifacts ~ ' / ' ~ posture.artifacts_total, 'Usable scanner snapshots', posture.scan_status.tone) %}
+                {% set affected_metric = ('package-search', 'Affected Artifact Digests', posture.affected_artifacts if posture.scanned_artifacts else 'Not Collected', 'Distinct observed digests', 'info' if posture.scanned_artifacts else 'unknown') %}
+                {% set runtime_metric = ('waypoints', 'Runtime Correlation', posture.runtime_status.status, 'Committed binding generation', posture.runtime_status.tone) %}
+                {% set freshness_metric = ('clock-3', 'Evidence Freshness', posture.scan_updated_label|replace('Updated ', '') if posture.last_scan else 'Not Collected', 'Latest usable scan', posture.scan_status.tone) %}
+                {% set snapshot_metrics = [coverage_metric, affected_metric, runtime_metric, freshness_metric] %}
                 {% call section_card.render('Security Snapshot',
                     'Observed Registry scanner and Kubernetes evidence in the authorized scope.',
                     'shield-check',
-                    header_badge=table_label.status_indicator_label(posture.scan_status.label,
-                        posture.scan_status.tone),
+                    header_badge=scan_status_badge,
                     body_classes='p-0') %}
                     <div data-security-snapshot-grid>
-                        {{ posture_grid.render([
-                            ('scan-search', 'Scan Coverage',
-                                posture.scanned_artifacts ~ ' / ' ~ posture.artifacts_total,
-                                'Usable scanner snapshots', posture.scan_status.tone),
-                            ('package-search', 'Affected Artifact Digests',
-                                posture.affected_artifacts if posture.scanned_artifacts else 'Not Collected',
-                                'Distinct observed digests', 'info' if posture.scanned_artifacts else 'unknown'),
-                            ('waypoints', 'Runtime Correlation',
-                                posture.runtime_status.status,
-                                'Committed binding generation', posture.runtime_status.tone),
-                            ('clock-3', 'Evidence Freshness',
-                                posture.scan_updated_label|replace('Updated ', '') if posture.last_scan else 'Not Collected',
-                                'Latest usable scan', posture.scan_status.tone)
-                        ], columns=4) }}
+                        {{ posture_grid.render(snapshot_metrics, columns=4) }}
                     </div>
                 {% endcall %}
                 {% call section_card.render('Exposure & Runtime Evidence',
@@ -83,16 +71,14 @@
                                             <span class="text-3xl font-semibold tabular-nums text-content-primary">{{ total_cves }}</span>
                                             <span class="pb-1 text-xs text-content-muted">Distinct CVEs observed</span>
                                         </div>
-                                        {{ table_label.status_indicator_label(posture.scan_status.label,
-                                            posture.scan_status.tone) }}
+                                        {{ scan_status_badge }}
                                     </div>
                                     <div class="mt-4 space-y-3">
                                         {% for severity_row in severity_rows %}
                                             {% set percentage = (severity_row.count * 100 / total_cves)|round|int if total_cves else 0 %}
                                             <div class="grid grid-cols-[5rem_minmax(0,1fr)_5rem] items-center gap-3">
                                                 <span class="text-xs font-semibold text-content-secondary">{{ severity_row.label }}</span>
-                                                {{ progress_bar.semantic_bar(percentage, tone=severity_row.tone,
-                                                    label=severity_row.label ~ ' CVE share') }}
+                                                {{ progress_bar.semantic_bar(percentage, tone=severity_row.tone, label=severity_row.label ~ ' CVE share') }}
                                                 <span class="text-right text-xs font-semibold tabular-nums text-content-primary">
                                                     {{ severity_row.count }} · {{ percentage }}%
                                                 </span>
@@ -126,8 +112,7 @@
                                 <div class="flex flex-wrap items-center justify-between gap-2">
                                     <h3 id="security-runtime-impact-heading"
                                         class="text-sm font-semibold text-content-primary">Runtime Impact</h3>
-                                    {{ table_label.status_indicator_label(posture.runtime_status.status,
-                                        posture.runtime_status.tone) }}
+                                    {{ runtime_status_badge }}
                                 </div>
                                 {% if posture.runtime_status.status == 'Ready' and posture.scanned_artifacts %}
                                     <div class="mt-3 grid grid-cols-2 gap-4">
@@ -162,8 +147,7 @@
                                 <div class="flex flex-wrap items-center justify-between gap-2">
                                     <h3 id="security-evidence-confidence-heading"
                                         class="text-sm font-semibold text-content-primary">Evidence Confidence</h3>
-                                    {{ table_label.status_indicator_label(posture.scan_status.label,
-                                        posture.scan_status.tone) }}
+                                    {{ scan_status_badge }}
                                 </div>
                                 {% if posture.artifacts_total > 0 %}
                                     {% set scan_coverage = (posture.scanned_artifacts * 100 / posture.artifacts_total)|round|int %}
@@ -174,8 +158,7 @@
                                                 {{ posture.scanned_artifacts }} / {{ posture.artifacts_total }}
                                             </span>
                                         </div>
-                                        {{ progress_bar.semantic_bar(scan_coverage, tone=posture.scan_status.tone,
-                                            label='Observed scanner coverage') }}
+                                        {{ progress_bar.semantic_bar(scan_coverage, tone=posture.scan_status.tone, label='Observed scanner coverage') }}
                                     </div>
                                 {% else %}
                                     <p class="mt-3 text-sm text-content-secondary">
@@ -198,14 +181,8 @@
                     </div>
                 {% endcall %}
                 <div class="space-y-4" data-security-overview-tabs>
-                {% set security_tabs = [
-                    ('overview', 'Exposure Analysis', 'shield-alert'),
-                    ('capacity', 'Assets & Impact', 'waypoints'),
-                    ('signals', 'Findings & Investigation', 'list-filter'),
-                    ('reporting', 'Evidence & Sources', 'database')
-                ] %}
-                {{ dashboard_workspace.navigation('security-posture-overview',
-                    'Security Assurance Perspectives', tabs=security_tabs) }}
+                {% set security_tabs = [('overview', 'Exposure Analysis', 'shield-alert'), ('capacity', 'Assets & Impact', 'waypoints'), ('signals', 'Findings & Investigation', 'list-filter'), ('reporting', 'Evidence & Sources', 'database')] %}
+                {{ dashboard_workspace.navigation('security-posture-overview', 'Security Assurance Perspectives', tabs=security_tabs) }}
                 <div class="space-y-4">
                     {% call dashboard_workspace.panel('overview', active_tab, 'security-posture-overview') %}
                         {% call section_card.render('Findings & Investigation',
