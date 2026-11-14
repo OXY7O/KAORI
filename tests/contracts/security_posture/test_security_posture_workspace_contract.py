@@ -415,7 +415,7 @@ def test_security_overview_cve_registry_is_filterable_htmx_and_url_paginated() -
     assert 'name="q"' in html
     assert 'name="severity"' in html
     assert 'name="per_page"' in html
-    assert 'Reload Evidence' in html
+    assert 'Refresh View' in html
     assert 'Clear Filters' in html
     assert 'data-kaori-clear-filters' in html
     assert 'tab=overview' in html
@@ -427,6 +427,25 @@ def test_security_overview_cve_registry_is_filterable_htmx_and_url_paginated() -
     assert '[5, 10, 25, 50]' in template
     for option in ('5', '10', '25', '50'):
         assert f'<option value="{option}"' in html
+
+
+def test_security_refresh_view_is_in_header_and_not_filter_bar() -> None:
+    template = read('app/templates/security_posture/overview.html')
+    header_actions = template.split('{% set cve_registry_actions %}', 1)[1].split('{% endset %}', 1)[0]
+    filter_region = template.split('{% call registry.filter_form(', 1)[1].split('{% endcall %}', 1)[0]
+    handoff = template.split('data-security-investigation-handoff', 1)[1].split('registry.footer(', 1)[0]
+    assert 'Refresh View' in header_actions
+    assert 'Refresh View' not in filter_region
+    assert 'registry.clear_filters_link' in header_actions
+    assert 'View All Findings' not in header_actions
+    assert 'View All Findings' in handoff
+    assert 'Re-read committed KAORI evidence; does not trigger Security Sync' in header_actions
+
+    html = _render_workspace_page('overview', _renderable_posture())
+    assert html.count('Refresh View') == 1
+    assert 'aria-label="Refresh committed CVE table without starting a security sync"' in html
+    assert 'View All Findings' in html
+    assert 'data-kaori-canonical-registry-footer="security-posture-cve-registry"' in html
 
 
 def test_security_overview_cve_registry_empty_filter_is_not_a_safety_verdict() -> None:
@@ -558,7 +577,7 @@ def test_security_overview_table_renders_complete_server_paged_results() -> None
     assert 'Showing 1' in html
     assert '7 of 7' in html
     assert 'name="per_page"' in html
-    assert re.search(r'<option value="10"\\s+selected', html)
+    assert re.search(r'<option value="10"\s+selected', html)
     assert 'posture.rows[:5]' not in read('app/templates/security_posture/overview.html')
 
 

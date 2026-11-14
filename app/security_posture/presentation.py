@@ -64,6 +64,7 @@ def _security_severity_distribution(counts: dict[int, int]) -> list[dict[str, An
         distribution.append({'label': 'Unknown', 'count': int(counts[5]), 'tone': 'unknown'})
     return distribution
 
+
 def _scanner_findings(source_ids: list[int]) -> Any:
     """Latest usable successful scan, qualified by active source ownership."""
     latest_success = (
@@ -224,21 +225,25 @@ def build_security_posture(
         severity_distribution = _security_severity_distribution(severity_counts)
         # Count unique container-level bindings across all scoped CVE evidence.
         # Never sum per-CVE binding counts: one workload can carry many CVEs.
-        binding_totals = scoped_cve_findings.outerjoin(
-            RegistryWorkloadBinding,
-            RegistryWorkloadBinding.artifact_id == RegistryScanSnapshot.artifact_id,
-        ).with_entities(
-            func.count(
-                func.distinct(
-                    case((RegistryWorkloadBinding.match_type == 'digest', RegistryWorkloadBinding.id), else_=None)
-                )
-            ).label('digest'),
-            func.count(
-                func.distinct(
-                    case((RegistryWorkloadBinding.match_type != 'digest', RegistryWorkloadBinding.id), else_=None)
-                )
-            ).label('reference'),
-        ).first()
+        binding_totals = (
+            scoped_cve_findings.outerjoin(
+                RegistryWorkloadBinding,
+                RegistryWorkloadBinding.artifact_id == RegistryScanSnapshot.artifact_id,
+            )
+            .with_entities(
+                func.count(
+                    func.distinct(
+                        case((RegistryWorkloadBinding.match_type == 'digest', RegistryWorkloadBinding.id), else_=None)
+                    )
+                ).label('digest'),
+                func.count(
+                    func.distinct(
+                        case((RegistryWorkloadBinding.match_type != 'digest', RegistryWorkloadBinding.id), else_=None)
+                    )
+                ).label('reference'),
+            )
+            .first()
+        )
         if binding_totals:
             runtime_binding_summary = {
                 'digest': int(binding_totals.digest or 0),

@@ -19,13 +19,49 @@ Security Posture is an Assurance workspace that **consumes** source-qualified co
 - `Artifact Registry → Security` continues as authoritative source-domain workspace. Exact CVE rows link to its existing `/artifact-registry/security/cve/<CVE>/impact` drill-down; Security does **not** duplicate that detail view.
 - The **Assurance** sidebar contains a two-level Security parent with only real route-backed Overview/Findings children. Planned capabilities remain hidden; no new renderer/CSS family.
 
+## Security Sync, scanner freshness and runtime correlation
+
+These are **three independent authorities**. `artifact_registry_security`
+`JobExecution.completed_at` (Security Evidence Operations → Last Successful)
+reports the **collection job's** completion, not the time a new Harbor/Trivy
+vulnerability report was generated. The Registry Security collector performs
+incremental collection: it compares the provider's scan completion identity,
+reuses the existing `RegistryScanSnapshot` when unchanged, and records
+`refreshed_report_count` versus `reused_report_count` in the job result.
+A successful job with only reused reports can therefore leave
+`RegistryScanSnapshot.observed_at` at its original date. The
+`Security Evidence Snapshot` uses qualified committed scan timestamps, and
+the Security Posture Overview checks the oldest usable scanner timestamp
+against its 24-hour freshness window. **Do not replace those timestamps with
+the last successful job time or silence Stale after a successful sync.**
+
+Operator troubleshooting sequence: inspect the latest
+`artifact_registry_security` JobExecution result (especially
+`refreshed_report_count`, `reused_report_count`, per-source warnings, and
+`report_failure_count`); check the provider's most recent scan completion
+time and scan policy; run/authorize a *provider-side scan* only through the
+provider's established workflow when a new scan is required, then use
+`Sync Security Evidence` to commit the updated provider report to KAORI.
+A UI **Refresh View** only re-reads committed KAORI table state, never
+dispatches Security Sync or triggers a provider scan.
+
+`Inputs Changed` belongs to a separate
+`artifact_registry_runtime_correlation` JobExecution. The Runtime Usage
+readiness check compares its last committed `input_signature` to current
+Registry artifacts and Kubernetes Pod inventory and can also report a
+missing generation proof. Inspect Runtime Usage prerequisites and rebuild
+the committed correlation through its existing authorized job when eligible;
+rerunning Security Sync or refreshing a table cannot make this status Ready.
+A stale scan and an unready correlation must remain separate visible
+warnings; neither condition proves that any application is unaffected.
+
 ## Read / RBAC contract
 
 Both Security routes require `security_posture.view`; `flask seed-rbac` (in a configured **development** environment) registers the new canonical permission. **Artifact Registry source reads and source links additionally require** `artifact_registry.view`. A Security-only authorized user sees qualified unavailable/unknown states without any Registry SQL data access. Integration management and Intelligence/Reports links remain separately permission-filtered. Do not grant Registry visibility transitively from this aggregate parent.
 
 The read model consumes only active/enabled Registry integrations with committed inventory. CVE rows come from the latest usable successful scanner snapshot per artifact. Failed scan refresh preserves last-good evidence, but freshness can become stale; a newer successful scan supersedes old findings. Deduplicated artifact and runtime binding counters are *observations* and are never a normalized application owner count. The oldest usable scanner observation and missing inventory scan coverage qualify scanner readiness; mixed partial/stale evidence is **Partial / Stale**. The canonical Runtime Correlation readiness reflects input changes and failures separately. Missing, unsupported, stale or denied sources must not be described as remediated or 'no exposure'.
 
-The Security Overview distinct-CVE severity breakdown aggregates **all authorized latest usable scanner CVEs** independently of the local table's search/severity/page state. The Overview's Findings & Investigation block is now a full server-backed CVE registry reusing the same qualified read model as canonical Security Findings. It supports normalized CVE search, severity, committed-state reload, default five-row pagination (5/10/25/50), HTMX scoped replacement, and source-qualified exact-CVE impact links. Security Findings remains the owning full investigation workspace; no second scanner, source provider call, or invented remediation lifecycle has been introduced. The Security-specific layout reuses the **Governance Overview Hero** composition: shared Violet shell and context card, source-authority/evidence-boundary metrics, source-qualified status, and a `Review CVE Findings` CTA instead of a Registry Integrations shortcut. It renders one grouped Security Snapshot without an unboxed section intro, then a single analysis section card with a 7/5 internal desktop grid: Exposure by Severity on the left; Runtime Impact and Evidence Confidence as internally separated right-hand sections. An explicit shared `space-y-5` workspace rhythm prevents Snapshot, analysis and tabs from touching. The analysis has its own shared `section_intro` heading and concise scope description above the card, and the card header embeds a keyboard/touch-accessible `info_tip.render(..., variant='guide')` explaining scanner authority, runtime-binding confidence, freshness and why missing evidence never means zero exposure. The normal Hero Evidence Boundary helper is shortened to a single line; non-Ready runtime correlation shows one compact unknown-exposure statement without publishing binding totals. The server-paginated CVE table and Investigation Handoff share one canonical `table_ui.block_classes()` registry with shared `inventory_block_header`, `table_registry.filter_form/clear_filters_link/footer` and a header loading bar; inline CVE severity, row-level impact links, and canonical pagination follow the approved Table & Label standard. Search/severity change only the table rows and filtered result count, never the Security Snapshot, severity chart or runtime-impact aggregates. Source permissions are unchanged. Severity proportion bars reuse shared KAORI progress visualization. Runtime Impact deduplicates observed digest/reference binding identities across scoped CVE artifacts, and suppresses binding totals unless correlation is Ready. No trend chart appears until a trustworthy historical time-series contract exists. Missing scanner evidence, a stale scan, or a Ready runtime binding do not independently imply safe or remediated applications.
+The Security Overview distinct-CVE severity breakdown aggregates **all authorized latest usable scanner CVEs** independently of the local table's search/severity/page state. The Overview's Findings & Investigation block is a full server-backed CVE registry reusing the same qualified read model as canonical Security Findings. It supports normalized CVE search, severity, **Refresh View** (header action, rereads committed state only), default five-row pagination (5/10/25/50), HTMX scoped replacement, and source-qualified exact-CVE impact links. The header keeps at most two actions (conditional Clear Filters plus Refresh View); the full Findings handoff is in the integrated Investigation Handoff footer. Filter controls stay full-width. Security Findings remains the owning full investigation workspace; no second scanner, source provider call, or invented remediation lifecycle has been introduced. The Security-specific layout reuses the **Governance Overview Hero** composition: shared Violet shell and context card, source-authority/evidence-boundary metrics, source-qualified status, and a `Review CVE Findings` CTA instead of a Registry Integrations shortcut. It renders one grouped Security Snapshot without an unboxed section intro, then a single analysis section card with a 7/5 internal desktop grid: Exposure by Severity on the left; Runtime Impact and Evidence Confidence as internally separated right-hand sections. An explicit shared `space-y-5` workspace rhythm prevents Snapshot, analysis and tabs from touching. The analysis has its own shared `section_intro` heading and concise scope description above the card, and the card header embeds a keyboard/touch-accessible `info_tip.render(..., variant='guide')` explaining scanner authority, runtime-binding confidence, freshness and why missing evidence never means zero exposure. The normal Hero Evidence Boundary helper is shortened to a single line; non-Ready runtime correlation shows one compact unknown-exposure statement without publishing binding totals. The server-paginated CVE table and Investigation Handoff share one canonical `table_ui.block_classes()` registry with shared `inventory_block_header`, `table_registry.filter_form/clear_filters_link/footer` and a header loading bar; inline CVE severity, row-level impact links, and canonical pagination follow the approved Table & Label standard. Search/severity change only the table rows and filtered result count, never the Security Snapshot, severity chart or runtime-impact aggregates. Source permissions are unchanged. Severity proportion bars reuse shared KAORI progress visualization. Runtime Impact deduplicates observed digest/reference binding identities across scoped CVE artifacts, and suppresses binding totals unless correlation is Ready. No trend chart appears until a trustworthy historical time-series contract exists. Missing scanner evidence, a stale scan, or a Ready runtime binding do not independently imply safe or remediated applications.
 
 The Findings registry differentiates **strong digest bindings** from weaker
 **mutable/reference bindings** using the same correlation identity distinction
