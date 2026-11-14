@@ -246,7 +246,7 @@ def test_alertmanager_connection_registry_row_has_aligned_semantic_cells() -> No
     assert "scope_labels.append(scope_type_labels.get(" in populated
     assert 'row.scope_types or []' in populated
     assert "url_for('alertmanager.instance_detail', instance_id=row.instance.id)" in actions
-    assert 'table_ui.cell_classes(action=true)' in actions
+    assert '<td class="{{ table_ui.cell_classes(action=true) }} align-top">' in populated
     assert 'provider_registry.connection_registry_colgroup()' in registry
     assert 'provider_registry.connection_registry_head()' in registry
     assert "provider_registry.pagination_footer(pagination," in registry
