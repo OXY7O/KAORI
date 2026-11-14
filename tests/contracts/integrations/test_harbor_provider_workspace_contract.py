@@ -129,8 +129,7 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
 
     assert 'Harbor remains authoritative for native Registry state and policies.' in configuration
     assert (
-        'Certificate validation policy applied to Harbor API requests to ensure secure HTTPS connections '
-        'and trusted server identity verification.' in configuration
+        'Verify Harbor TLS certificates and trusted server identity.' in configuration
     )
     assert (
         'Revalidate the Harbor integration after upgrades, credential rotations, permission updates, '
@@ -161,7 +160,10 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
     assert 'Required API reads:' in access_reference
     assert 'GET /api/v2.0/systeminfo' in access_reference
     assert 'Optional Metadata Reader' in access_reference
-    assert 'Harbor role and permission labels can differ by qualified release.' in access_reference
+    assert (
+        'Harbor permission labels vary by release; grant only required read access, never broad administration.'
+        in access_reference
+    )
     assert 'Required Harbor readiness and read-capability evidence.' in validation
     assert 'Optional capability evidence; does not affect readiness.' in validation
     assert (
@@ -511,3 +513,68 @@ def test_harbor_compact_flow_notes_preserve_full_validation_and_provider_authori
     assert 'provider_registration_context.render(' in form
     assert 'Harbor remains authoritative for native projects' in form
     assert 'Connection-sensitive changes reset readiness; Test Configuration never substitutes' not in form
+
+
+def test_harbor_webhook_configuration_layout_preserves_admission_and_credential_contracts() -> None:
+    configuration = read('app/templates/integrations/registry/providers/harbor/partials/_detail_configuration.html')
+    token_result = read('app/templates/artifact_registry/partials/_webhook_token_created.html')
+    access_reference = read(
+        'app/templates/integrations/registry/providers/harbor/partials/_minimum_validation_access.html'
+    )
+
+    # Human UAT copy budgets: natural wrap on mobile, no forced clipping.
+    tls_copy = 'Verify Harbor TLS certificates and trusted server identity.'
+    webhook_copy = (
+        'Authenticated Harbor events trigger targeted Inventory refresh; '
+        'scheduled reconciliation remains authoritative.'
+    )
+    permission_copy = (
+        'Harbor permission labels vary by release; grant only required read access, '
+        'never broad administration.'
+    )
+    assert tls_copy in configuration and len(tls_copy) <= 65
+    assert webhook_copy in configuration and len(webhook_copy) <= 120
+    assert permission_copy in access_reference and len(permission_copy) <= 115
+    assert 'whitespace-nowrap' not in access_reference
+
+    # Existing semantic status remains server-owned. No invented delivery or sync success.
+    assert 'data-kaori-harbor-webhook-configuration' in configuration
+    assert 'table_label.status_indicator_label(webhook_status.label,' in configuration
+    assert 'Ready means admission is configured, not that an event was delivered' in configuration
+    assert 'webhook_endpoint.last_event_at|user_datetime' in configuration
+    assert 'No event received yet' in configuration
+
+    # Shared KAORI Violet surfaces and palette icons; desktop side-by-side,
+    # mobile stacked, with the credential actions in a separate aligned row.
+    assert 'grid gap-4 p-4 sm:p-5 lg:grid-cols-5' in configuration
+    assert 'lg:col-span-2' in configuration
+    assert 'lg:col-span-3' in configuration
+    assert 'harbor-webhook-admission-title' in configuration
+    assert 'harbor-webhook-receiver-title' in configuration
+    assert 'integration_ui.palette_icon("shield-check", "brand", size="sm")' in configuration
+    assert 'integration_ui.palette_icon("link-2", "brand", size="sm")' in configuration
+
+    # Exact existing authenticated admission and one-time credential lifecycle.
+    assert "url_for('artifact_registry.webhook_receive'" in configuration
+    assert 'Authorization: Bearer &lt;token&gt;' in configuration
+    assert 'X-KAORI-Webhook-Token: &lt;token&gt;' in configuration
+    assert "receiver_host in ['localhost', '127.0.0.1']" in configuration
+    assert "request.host.startswith('[::1]')" in configuration
+    assert 'Harbor-reachable HTTPS address' in configuration
+    assert "operational_callout.semantic_surface_classes('warning')" in configuration
+    assert "url_for('harbor.webhook_token', instance_id=instance.id)" in configuration
+    assert "url_for('harbor.webhook_disable', instance_id=instance.id)" in configuration
+    assert configuration.count('name="csrf_token" value="{{ csrf_token() }}"') == 2
+    assert 'hx-target="#harbor-webhook-token-result"' in configuration
+    assert 'hx-swap="innerHTML"' in configuration
+    assert 'hx-disabled-elt="find button"' in configuration
+    assert "action_button.classes('primary')" in configuration
+    assert "action_button.classes('secondary')" in configuration
+
+    # HTMX response keeps token once, with no persistence or premature display.
+    assert "operational_callout.semantic_surface_classes('warning')" in token_result
+    assert 'integration_ui.palette_icon("key-round", "warning", size="sm")' in token_result
+    assert '{{ webhook_token }}' in token_result
+    assert 'cannot reveal it later' in token_result
+    assert 'max-w-3xl' in token_result
+    assert 'id="harbor-webhook-token-result"' in configuration
