@@ -47,7 +47,7 @@ def test_registration_guidance_remains_compact_without_forced_truncation() -> No
         assert len(match.group(1)) <= 80, f"Registration helper is too verbose: {match.group(1)}"
         assert "\n" not in match.group(1)
         assert "\r" not in match.group(1)
-        assert not re.search(r"\\b(?:whitespace-nowrap|truncate|line-clamp-\\d+)\\b", match.group(1))
+        assert not re.search(r"\b(?:whitespace-nowrap|truncate|line-clamp-\d+)\b", match.group(1))
 
 
 
