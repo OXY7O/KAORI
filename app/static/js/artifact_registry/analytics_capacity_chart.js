@@ -1,6 +1,6 @@
 ;(() => {
     const charts = new Map()
-    const selector = '[data-registry-capacity-quota-series]'
+    const panelSelector = '[data-registry-capacity-quota-series]'
 
     const cssVariable = (name, fallback) =>
         getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
@@ -28,7 +28,9 @@
 
     function render(root = document) {
         if (typeof Chart === 'undefined') return
-        const panels = root.matches?.(selector) ? [root] : Array.from(root.querySelectorAll?.(selector) || [])
+        const panels = root.matches?.(panelSelector)
+            ? [root]
+            : Array.from(root.querySelectorAll?.(panelSelector) || [])
 
         panels.forEach((panel) => {
             const canvas = panel.querySelector('[data-registry-capacity-quota-chart]')
