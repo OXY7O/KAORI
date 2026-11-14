@@ -104,7 +104,7 @@ def _filesystem_reference(evidence: CapacityEvidence) -> dict[str, Any]:
         'available': bytes_to_gib(available.value) if available.available else None,
         'headroom': safe_percent(available.value, capacity.value) if complete else None,
         'scheduling_resource': False,
-        'scope_label': 'Operational node-filesystem reference; not Kubernetes allocatable capacity',
+        'scope_label': 'Filesystem: not Kubernetes allocatable.',
     }
 
 

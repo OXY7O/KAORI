@@ -1,5 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "kubernetes/analytics/components/_status_notice.html" as status_notice %}
+{% import "components/section_intro.html" as section_intro %}
 {% block title %}Storage Analysis{% endblock title %}
 {% block dashboard_content %}
     <div id="storage-page"
@@ -18,8 +19,20 @@
                 ) }}
             {% endif %}
             {% if cluster %}
-                {% include "kubernetes/analytics/storage/partials/_overview.html" %}
-                {% include "kubernetes/analytics/storage/partials/_storage_section.html" %}
+                <section class="space-y-4"
+                         aria-labelledby="analytics-storage-posture-heading">
+                    {{ section_intro.render('Review Storage Posture',
+                            'Assess committed PVC demand, observed capacity, and node filesystem evidence.',
+                            'analytics-storage-posture-heading') }}
+                    {% include "kubernetes/analytics/storage/partials/_overview.html" %}
+                </section>
+                <section class="space-y-4"
+                         aria-labelledby="analytics-storage-domains-heading">
+                    {{ section_intro.render('Explore Storage Domains',
+                            'Inspect storage capacity, filesystem, claims, volumes, and recommendations by domain.',
+                            'analytics-storage-domains-heading') }}
+                    {% include "kubernetes/analytics/storage/partials/_storage_section.html" %}
+                </section>
             {% endif %}
         {% endif %}
     </div>
