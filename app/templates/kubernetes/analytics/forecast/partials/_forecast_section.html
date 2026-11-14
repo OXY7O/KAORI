@@ -1,4 +1,5 @@
 {% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "kubernetes/analytics/components/_interactive_forecast_chart.html" as forecast_chart %}
 {% import "components/progress_bar.html" as progress_bar %}
@@ -24,7 +25,11 @@
         'Review each capacity domain, compare historical and projected signals, and act on forecast recommendations.',
         'sparkles',
         initial_tab,
-        allowed_tabs
+        allowed_tabs,
+        title_accessory=info_tip.render('kubernetes-analytics-forecast-workspace-guide',
+            'Resource Forecast Workspace Guide',
+            'Compare CPU, memory, storage, and pod projections with history and recommendations; distinguish projected and measured values.',
+            placement='right', variant='guide')
         ) %}
         <template id="forecast-chart-data" data-kaori-json-payload>{{ forecast_payload.chart|default({}, true) |tojson }}</template>
         {% for resource_key, resource_label, resource_icon in resource_tabs[:4] %}

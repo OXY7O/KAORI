@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "kubernetes/analytics/components/_status_notice.html" as status_notice %}
 {% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% block title %}Workload Analysis{% endblock title %}
 {% block dashboard_content %}
@@ -25,7 +26,11 @@
                     'Review quota governance, workload resource mapping, and prioritized workload recommendations in one workspace.',
                     'boxes',
                     active_tab,
-                    ['quotas', 'mapping', 'recommendations']
+                    ['quotas', 'mapping', 'recommendations'],
+                    title_accessory=info_tip.render('kubernetes-analytics-workload-workspace-guide',
+                        'Workload Analysis Workspace Guide',
+                        'Review quota governance, resource mapping, and evidence-qualified workload actions independently.',
+                        placement='right', variant='guide')
                     ) %}
                     <div id="workload-content-panel-quotas"
                          role="tabpanel"

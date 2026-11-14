@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "kubernetes/analytics/components/_status_notice.html" as status_notice %}
 {% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "components/info_tip.html" as info_tip %}
 {% block title %}Capacity Analysis{% endblock title %}
 {% block dashboard_content %}
     <div id="capacity-page"
@@ -23,7 +24,11 @@
                     'Review worker capacity, allocation pressure, resource headroom, risk, and prioritized actions in one workspace.',
                     'server-cog',
                     initial_tab|default('summary'),
-                    ['summary', 'allocation', 'risk', 'recommendations']
+                    ['summary', 'allocation', 'risk', 'recommendations'],
+                    title_accessory=info_tip.render('kubernetes-analytics-capacity-workspace-guide',
+                        'Capacity Analysis Workspace Guide',
+                        'Switch between worker capacity, allocation headroom, risk, and explicit capacity recommendations without losing scope.',
+                        placement='right', variant='guide')
                     ) %}
                     <div id="capacity-content-panel-summary"
                          role="tabpanel"
