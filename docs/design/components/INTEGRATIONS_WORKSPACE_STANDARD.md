@@ -346,6 +346,34 @@ by the catalog and visible in the provider contract metadata. Use short
 factual copy rather than page-local nowrap, clipping, or micro-typography.
 Long provider identifiers and mobile content may wrap naturally.
 
+### Evidence density and Copy actions (UAT #4716)
+
+On Alertmanager Configuration, the Alerting Authority helper describes
+provider-owned routing/delivery and binding-scoped consumer use in two
+natural desktop lines. The lifecycle Retained Evidence helper is one compact
+line describing runtime/job history and Activity Audit persistence. For
+Alertmanager binding validation, a successful governed selector with no
+matching active alerts uses a short **display-only** summary; the complete
+`row.validation_message` stays persisted and available through the native
+title and assistive text. Do not alter the committed validation result or
+present absent payload-label evidence as observed.
+
+The shared `_binding_validation_result.html` owns display of the exact
+`technical_checks[].query` string. Technical query content uses a
+monospace bounded horizontal code region, visually separated from explanation,
+with one Copy button per query using existing `clipboard.js` delegated
+`data-kaori-copy-*` primitives. Preserve literal query syntax and keyboard
+access; do not add inline JavaScript or page-wide horizontal scrolling.
+
+Metrics Source Effective Consumer Resolution keeps its full-width workspace,
+scope pagination and disclosure contract. Within each expanded consumer,
+the Required Capability Contract is a compact wrap-friendly capability
+strip, followed by a row-based list of source candidates with exact
+identity, role/priority, selected/eligible/skipped status, decision reason,
+and binding-evidence handoff. No tall blank companion card, no independent
+provider authority, no new resolution evaluation, and no filtering of
+ineligible candidates.
+
 ## Provider Registry Contract
 
 Metrics Source and Alertmanager registries share:
