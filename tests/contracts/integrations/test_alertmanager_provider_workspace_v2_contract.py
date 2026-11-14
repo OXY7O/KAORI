@@ -134,10 +134,7 @@ def test_observability_connection_copy_is_concise_and_binding_scoped():
     )
     metrics = read('app/templates/integrations/observability/metrics_source/instance_form.html')
 
-    assert (
-        'One Alertmanager runtime can serve multiple integrations through independent bindings and selectors.'
-        in alertmanager
-    )
+    assert 'One Alertmanager serves multiple integrations.' in alertmanager
     assert 'Update metrics access while preserving validation and bindings.' in metrics
     assert 'Maintain governed validation and consumer-binding context.' not in metrics
     assert 'Update Alertmanager access while preserving consumer bindings.' in alertmanager
@@ -176,3 +173,40 @@ def test_alertmanager_review_copy_is_concise_and_explicit():
     assert 'Identity changes clear stale evidence and require revalidation.' in binding_modal
     assert 'How saved changes return to governed use.' in alert_form
     assert 'How saved changes return to governed use.' in metrics_form
+
+
+def test_alertmanager_registration_guidance_is_compact_without_losing_gates() -> None:
+    """The four human-marked hints are single-line desktop copy, not clipped UI."""
+
+    from jinja2 import Environment
+
+    form = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html'
+    )
+    Environment().parse(form)
+    messages = (
+        'Configure endpoint access, then test connectivity.',
+        'Registration only; Full Validation gates use.',
+        'One Alertmanager serves multiple integrations.',
+        'Disabled connections stay stored, not resolved.',
+    )
+    for message in messages:
+        assert form.count(message) == 1
+        assert len(message) <= 50
+
+    for obsolete in (
+        'Define Alertmanager endpoint access and authentication, then verify reachability before registration.',
+        'Registration creates the reusable connection identity only;',
+        'One Alertmanager runtime can serve multiple integrations through',
+        'Disabled connections stay stored but are excluded from scope resolution.',
+    ):
+        assert obsolete not in form
+
+    # The detailed flow still owns the separately governed consumer gate.
+    assert 'then complete Full Validation before attaching consumer bindings.' in form
+    assert 'alertmanager_related_description ~' in form
+    assert 'provider_registration_context.render(' in form
+    assert 'connection_validation_header.render(' in form
+    assert 'operational_toggle.render(' in form
+    assert 'whitespace-nowrap' not in form
+    assert 'line-clamp' not in form
