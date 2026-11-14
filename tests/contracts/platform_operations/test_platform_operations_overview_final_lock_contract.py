@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from jinja2 import Environment
+
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -172,3 +174,43 @@ def test_platform_operations_workspace_description_is_compact_and_accessible() -
     assert "'description': 'Protected Kubernetes controls with readiness and authorization gates.'" not in presentation
     assert 'lg:grid-cols-3' in template
     assert 'for workspace in platform_overview.workspaces' not in presentation
+
+
+def test_workspace_posture_has_one_shared_guide_after_authoritative_status() -> None:
+    template = read('app/templates/platform_operations/overview/index.html')
+    Environment().parse(template)
+
+    assert '{% import "components/info_tip.html" as info_tip %}' in template
+    assert template.count("info_tip.render('operations-overview-workspace-posture-guide'") == 1
+    assert template.count("variant='guide'") == 1
+    assert 'header_badge=workspace_posture_context' in template
+
+    posture = template.index('table_label.status_indicator_label(platform_overview.overall_status_label')
+    guide = template.index("info_tip.render('operations-overview-workspace-posture-guide'")
+    assert posture < guide < template.index('{% endset %}', guide)
+    assert 'permission-scoped, committed operational signals' in template
+    assert 'the Overview does not execute jobs' in template
+    assert 'archive-first cleanup' in template
+    assert 'Secret values stay in Secret Management' in template
+    assert 'live access is verified at execution' in template
+
+
+def test_operating_boundary_copy_is_compact_without_dropping_authority() -> None:
+    template = read('app/templates/platform_operations/overview/index.html')
+    presentation = read('app/platform_operations/overview/presentation.py')
+
+    expected = (
+        'Jobs owns queues, retries and execution evidence.',
+        'Data Lifecycle owns retention and verified archives.',
+        'Kubernetes governs readiness and reveal access.',
+    )
+    for copy in expected:
+        assert f"'boundary_description': '{copy}'" in presentation
+        assert len(copy) <= 55
+
+    assert 'title="{{ workspace.boundary_description }}"' in template
+    assert 'text-content-muted lg:truncate' in template
+    assert '{{ workspace.boundary_description }}' in template
+    assert '{% for workspace in platform_overview.workspaces %}' in template
+    assert 'lg:grid-cols-3' in template
+    assert 'hx-post=' not in template
