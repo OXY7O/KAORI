@@ -1,0 +1,119 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
+{% set usage_rows = analytics.usage_chart_rows|default([], true) %}
+<section class="border-t border-outline-subtle"
+         data-registry-usage-series="{{ usage_rows|tojson|forceescape }}">
+    <header class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+        <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+                <h4 class="text-sm font-semibold text-content-primary">Observed Pull Activity by Project</h4>
+                {{ info_tip.render('registry-analytics-usage-chart-guide',
+                                'Observed Pull Activity Guide',
+                                'Committed Registry Metrics Source pull counters per qualified project.',
+                                items=[
+                                'Bars show observed provider pull counters, not distinct images, runtime bindings, or a time-series trend.',
+                                'Only nonnegative finite project counts from a committed source are plotted; an observed zero remains zero.',
+                                'At most five project records are shown, ordered by observed pulls. Source names are retained independently.',
+                                'Missing pull-counter evidence is unavailable, never interpreted as no demand.'
+                                ], placement='right', variant='guide') }}
+            </div>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">Project-level provider pull-counter evidence from committed Registry snapshots.</p>
+        </div>
+        {{ table_label.metadata_label(usage_rows|length ~ ' Projects', 'activity', size='compact') }}
+    </header>
+    {% if usage_rows %}
+        <div class="grid gap-4 p-4 lg:grid-cols-5 sm:p-5">
+            <section class="{{ analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-3') }}"
+                     aria-labelledby="registry-usage-chart-title">
+                <header class="flex min-w-0 items-start justify-between gap-3 border-b border-outline-subtle px-4 py-4">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="{{ analysis_surface.role_icon_classes('brand', size='compact') }}"
+                              aria-hidden="true">
+                            <i data-lucide="chart-bar" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h5 id="registry-usage-chart-title"
+                                class="text-sm font-semibold text-content-primary">Pulls by Project</h5>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Observed pull-counter values for qualified projects.</p>
+                        </div>
+                    </div>
+                    {{ table_label.status_label('Observed', 'normal', size='compact') }}
+                </header>
+                <div class="p-4">
+                    <div class="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 rounded-lg border border-outline-subtle bg-surface-muted px-4 py-3">
+                        <div class="min-w-0">
+                            <p class="{{ analysis_surface.metric_label_classes() }}">Highest observed pulls</p>
+                            <p class="mt-1 text-2xl font-semibold tabular-nums text-kaori-primary-dark dark:text-kaori-accent">
+                                {{ usage_rows[0].pull_display }}
+                            </p>
+                            <p class="mt-1 break-words text-xs text-content-secondary">{{ usage_rows[0].project_name }} · {{ usage_rows[0].registry_name }}</p>
+                        </div>
+                        <div class="min-w-0 sm:text-right">
+                            <p class="{{ analysis_surface.metric_label_classes() }}">Qualified projects</p>
+                            <p class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ usage_rows|length }}</p>
+                            <p class="mt-1 text-xs text-content-secondary">Individual source records</p>
+                        </div>
+                    </div>
+                    <div class="relative mt-4 h-44 min-w-0 sm:h-52">
+                        <canvas data-registry-usage-chart
+                                width="720"
+                                height="220"
+                                role="img"
+                                aria-describedby="registry-usage-chart-note"
+                                aria-label="Observed project pull count bar chart; horizontal axis begins at zero"></canvas>
+                    </div>
+                    <p id="registry-usage-chart-note"
+                       class="mt-3 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">Zero is a valid observed count; exact source values are listed beside the chart. No pull-demand forecast is inferred.</p>
+                </div>
+            </section>
+            <section class="{{ analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-2') }}"
+                     aria-labelledby="registry-usage-evidence-title">
+                <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-4">
+                    <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
+                          aria-hidden="true">
+                        <i data-lucide="list-checks" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h5 id="registry-usage-evidence-title"
+                            class="text-sm font-semibold text-content-primary">Qualified Project Evidence</h5>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Committed pull counts and their Registry sources.</p>
+                    </div>
+                </header>
+                <div class="space-y-3 bg-surface-muted p-3 sm:p-4">
+                    {% for row in usage_rows %}
+                        <article class="{{ analysis_surface.ranked_item_classes('min-w-0 p-3 sm:p-4') }}">
+                            <div class="flex min-w-0 items-start justify-between gap-3">
+                                <div class="flex min-w-0 items-start gap-2">
+                                    <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
+                                          aria-hidden="true">
+                                        <i data-lucide="folder" class="h-3.5 w-3.5"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <h6 class="break-words text-sm font-semibold text-content-primary">{{ row.project_name }}</h6>
+                                        <p class="mt-0.5 break-words text-xs text-content-muted">{{ row.registry_name }}</p>
+                                    </div>
+                                </div>
+                                <span class="shrink-0 text-lg font-semibold tabular-nums text-kaori-primary-dark dark:text-kaori-accent">
+                                    {{ row.pull_display }}
+                                </span>
+                            </div>
+                            <div class="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-outline-subtle pt-3 text-xs">
+                                <span class="font-medium text-content-secondary">Observed pulls</span>
+                                <span class="text-content-muted">Provider counter</span>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+    {% else %}
+        <div class="flex min-h-52 flex-col items-center justify-center gap-2 px-5 py-6 text-center">
+            <i data-lucide="activity"
+               class="h-5 w-5 text-content-muted"
+               aria-hidden="true"></i>
+            <p class="text-sm font-semibold text-content-primary">Pull Activity Chart Not Available</p>
+            <p class="max-w-lg text-xs leading-5 text-content-secondary">A committed nonnegative project pull counter with a Registry source is required. Missing pull metrics are not zero demand.</p>
+        </div>
+    {% endif %}
+</section>
