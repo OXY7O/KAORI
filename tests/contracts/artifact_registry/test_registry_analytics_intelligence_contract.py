@@ -438,7 +438,7 @@ def test_registry_growth_detail_child_tabs_render_observed_zero_missing_and_hist
     assert '123.61 MiB' in rendered
     assert '0 B' in rendered
     assert '+0.0/day' in rendered
-    assert 'Qualified Growth' in rendered
+    assert 'Committed Comparison' in rendered
     assert '24H Window' in rendered
     assert 'Source Growth Trend' in rendered
     assert 'Historical Chart Not Available' in rendered

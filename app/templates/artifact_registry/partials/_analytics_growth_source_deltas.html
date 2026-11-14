@@ -28,7 +28,7 @@
                             <h5 class="break-words text-sm font-semibold text-content-primary">{{ row.registry_name }}</h5>
                             <p class="mt-1 text-xs text-content-muted">{{ row.provider_key|replace('_', ' ')|title }} · committed source comparison</p>
                         </div>
-                        {{ table_label.status_label('Qualified Growth', 'normal', size='compact') }}
+                        {{ table_label.metadata_label('Committed Comparison', 'database', size='compact') }}
                     </div>
                     <dl class="{{ analysis_surface.guidance_fact_grid_classes(3, 'mt-3') }}">
                         <div class="{{ analysis_surface.guidance_fact_classes() }}">
