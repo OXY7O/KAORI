@@ -127,11 +127,15 @@ remains available in the title tooltip and screen-reader context. For
 the profile; this preserves provider-specific consumer context without altering
 binding identity. Type-specific icons follow the existing Integrations icon
 vocabulary for Kubernetes, Object Storage, Vault, and default managed assets.
-For Registry instance key-based rows, the shared cell renders the canonical
-asset key with the compact `Asset ID: ` label (for example `Asset ID: 6`),
-so a numeric key is not presented as an unexplained bare integer. The value
-remains unchanged and fully visible. Other domain key-based rows retain their
-existing key-only secondary line, with no duplicated taxonomy type prefix.
+For numeric key-based rows, including Registry instances and Secrets & PKI
+Vault instances, the shared cell renders the canonical asset key with the
+compact `Asset ID:` label (for example `Asset ID: 6`). This is a display
+convention, not an identifier conversion: Registry and Vault currently bind
+to the string representation of the canonical `IntegrationInstance.id` integer.
+Kubernetes and Object Storage use the UUID keys of their separate managed
+asset models. The persisted `asset_type` + `asset_key` identity remains
+unchanged; UUID and other nonnumeric domain keys retain their existing
+key-only secondary line, without a duplicated taxonomy type prefix.
 Long keys wrap naturally and remain available in full; do not use a duplicated
 type prefix, truncated UUID, a page-local second icon system, or additional
 provider lookups to decorate a binding. Repeated instances of one consumer
