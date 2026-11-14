@@ -101,7 +101,10 @@ semantics while the visible policy summary and exclusions remain truthful.
 - **Activity Audit:** one persisted notifications table serves both the
   account-scoped Notification Center and permissioned Activity Audit; transient
   toasts are neither persisted nor lifecycle-managed. Authentication audit
-  remains a distinct audit stream within the approved coverage.
+  remains a distinct audit stream within the approved coverage. Its coverage
+  card uses the compact description `Authentication events follow the audit
+  stream's lifecycle.` to target two readable desktop lines without implying
+  that authentication events are stored in the notifications table.
 - **Runtime Observations:** committed normalized Kubernetes, Object Storage,
   Metrics Source and Alertmanager observations are provider-neutral evidence,
   not a copy of provider configuration, credentials or live source authority.

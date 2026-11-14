@@ -21,7 +21,7 @@ def _domain_coverage(name: str) -> tuple[dict[str, str], ...]:
             {
                 'icon': 'shield-check',
                 'label': 'Authentication Audit',
-                'description': 'Authentication events remain lifecycle-managed with the audit stream.',
+                'description': "Authentication events follow the audit stream's lifecycle.",
             },
         ),
         'job_execution': (
