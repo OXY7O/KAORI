@@ -336,3 +336,14 @@ def test_provider_detail_guide_uses_canonical_accessible_jinja_macro() -> None:
         'role="tooltip"',
     ):
         assert token in html
+
+
+def test_shared_connection_guide_heading_has_provider_scoped_accessible_name() -> None:
+    """The shared contract section must resolve its own provider-specific heading."""
+
+    source = read('app/templates/integrations/components/_provider_configuration_contract.html')
+    heading_id = "{{ provider_label|lower|replace(' ', '-') }}-connection-contract-title"
+    assert source.count(heading_id) == 2
+    assert f'aria-labelledby="{heading_id}"' in source
+    assert f'<h2 id="{heading_id}"' in source
+    assert source.index(f'<h2 id="{heading_id}"') < source.index('info_tip.render(')
