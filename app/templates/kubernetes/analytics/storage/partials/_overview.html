@@ -1,4 +1,5 @@
 {% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
@@ -12,7 +13,11 @@
     'Storage Analysis Overview',
     'Summarize node filesystem capacity, namespace PVC evidence, and cluster PV provisioning without mixing their scopes or denominators.',
     'hard-drive',
-    selected_namespace if selected_namespace else 'All Namespaces'
+    selected_namespace if selected_namespace else 'All Namespaces',
+    title_accessory=info_tip.render('kubernetes-analytics-storage-overview-guide',
+        'Storage Analysis Overview Guide',
+        'Filesystem pressure, PVC demand, and PV provisioning have distinct scopes and denominators; missing metrics remain Unknown.',
+        placement='right', variant='guide')
     ) %}
     <div class="{{ analysis_surface.evidence_shell_classes() }}">
         <div class="{{ analysis_surface.metric_grid_classes(4) }}">
