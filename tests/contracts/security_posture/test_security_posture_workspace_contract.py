@@ -266,7 +266,9 @@ def test_security_assurance_runtime_impact_requires_ready_correlation() -> None:
     posture['runtime_binding_summary'] = {'digest': 7, 'reference': 2}
     html = _render_workspace_page('overview', posture)
     assert 'Binding totals are unavailable until committed correlation is Ready.' in html
-    assert '7' not in html.split('Observed Runtime Impact', 1)[1].split('Evidence Confidence', 1)[0]
+    runtime_panel = html.split('Observed Runtime Impact', 1)[1].split('Evidence Confidence', 1)[0]
+    assert '>7<' not in runtime_panel
+    assert '>2<' not in runtime_panel
     assert 'Strong identity' not in html
 
 
