@@ -299,3 +299,48 @@ def test_presentation_reuses_provider_owner_for_sidebar_and_breadcrumb() -> None
     assert "workspace.key == 'integrations'" in sidebar
     assert 'active_workspace == workspace.key' in sidebar
     assert 'active_capability_override in {capability.key for capability in visible_capabilities}' in sidebar
+
+
+def test_registry_domain_consumer_bindings_project_asset_owned_observability_sources() -> None:
+    """Registry owns registry_instance assets; cross-domain sources remain independent."""
+
+    from app.integrations.taxonomy import asset_types_for_domain, domain_key_for_asset_type
+
+    assert asset_types_for_domain('registry') == ('registry_instance',)
+    assert domain_key_for_asset_type('registry_instance') == 'registry'
+    assert domain_key_for_asset_type('kubernetes_cluster') == 'orchestration'
+    assert domain_key_for_asset_type('object_storage_system') == 'storage'
+
+    taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
+    registry_capability = taxonomy_catalog.split('- key: registry\n  domain_key: registry\n', 1)[1].split(
+        '\n- key: secrets_pki', 1
+    )[0]
+    assert '  asset_types:\n  - registry_instance' in registry_capability
+    assert '- asset_type: registry_instance' in taxonomy_catalog
+    assert '  integration_type: registry' in taxonomy_catalog
+
+    domain_service = read('app/integrations/domain_service.py')
+    related = domain_service.split('def _load_related_bindings(', 1)[1].split(
+        'def _integration_type_rows(', 1
+    )[0]
+    assert 'owned_asset_types = asset_types_for_domain(domain_key)' in related
+    assert 'IntegrationInstance.integration_type.in_(integration_types)' in related
+    assert 'IntegrationBinding.asset_type.in_(owned_asset_types)' in related
+    assert '.filter(or_(*clauses))' in related
+
+    # The existing domain flow loads the provider and owned-asset evidence
+    # together, but never counts native provider ownership as a consumer.
+    assert 'consumer_bindings = [binding for binding in related_bindings if not _is_owner_asset_binding(binding)]' in domain_service
+    assert "'bindings': sum(1 for binding in consumer_bindings if binding.enabled)" in domain_service
+    assert 'all_binding_rows = _binding_registry_rows(' in domain_service
+    assert 'filtered_binding_rows = _filter_binding_rows(' in domain_service
+    assert 'binding_registry_rows, binding_pagination = paginate_sequence(' in domain_service
+
+    registry_observability = read('app/integrations/registry/observability.py')
+    harbor_presentation = read('app/integrations/registry/providers/harbor/application/presentation.py')
+    harbor_service = read('app/integrations/registry/providers/harbor/application/service.py')
+    assert "IntegrationBinding.asset_type == 'registry_instance'" in registry_observability
+    assert "IntegrationInstance.integration_type == 'metrics_source'" in registry_observability
+    assert "asset_type='registry_instance'" in harbor_presentation
+    assert "'asset_type': 'registry_instance'" in harbor_service
+    assert "'asset_key': str(canonical.id)" in harbor_service

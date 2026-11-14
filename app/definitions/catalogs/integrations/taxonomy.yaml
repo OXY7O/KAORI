@@ -81,7 +81,8 @@ capabilities:
   label: Registry
   description: OCI Registry provider connectivity, compatibility, readiness, and evidence collection.
   order: 10
-  asset_types: []
+  asset_types:
+  - registry_instance
 - key: secrets_pki
   domain_key: secrets_management
   label: Secrets & PKI

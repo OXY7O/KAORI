@@ -408,6 +408,21 @@ wraps naturally; never add nowrap, clipping, smaller typography or another
 registry component to force line counts. Scoped source checks and pre-existing
 formatter/test drift are handled in the corresponding UAT issue.
 
+**Registry domain Consumer Bindings asset ownership (#4734):** `Registry`
+owns the canonical `registry_instance` asset type, matching the existing
+consumer asset catalog and Harbor connection identity metadata. The shared
+domain binding projection includes source-owned Metrics Source/Alert Source
+`IntegrationBinding` records when their `asset_type` is `registry_instance`
+and their `asset_key` points to a Registry connection. The binding count,
+provider filter, row list and existing five-row pagination all derive from
+those same committed records. Do not count the Harbor provider itself as a
+consumer, duplicate a provider's source bindings, infer associations from a
+connection name, or fetch live provider evidence to populate this table.
+An Observability binding targeting Kubernetes or Object Storage remains
+in that asset owner's domain; only bindings targeting `registry_instance`
+belong to the Registry domain. An unbound Registry asset must continue to
+render the existing empty state.
+
 ## Provider Registry Contract
 
 Metrics Source and Alertmanager registries share:
