@@ -96,7 +96,7 @@ def test_findings_is_bounded_read_only_and_requires_qualified_evidence() -> None
     assert 're.fullmatch(' in presentation
     assert 'HarborClient' not in presentation
     assert 'if include_overview_summary and source_ids:' in presentation
-    assert "grouped.order_by(None).subquery()" in presentation
+    assert 'grouped.order_by(None).subquery()' in presentation
     assert "'severity_distribution': severity_distribution" in presentation
     assert 'requests.get(' not in presentation
 
@@ -213,7 +213,9 @@ def _renderable_posture(authorized: bool = True) -> dict:
         'severity_distribution': [
             {'label': 'Critical', 'count': 1, 'tone': 'critical'},
             {'label': 'High', 'count': 0, 'tone': 'warning'},
-        ] if authorized else [],
+        ]
+        if authorized
+        else [],
         'runtime_binding_summary': {'digest': 1, 'reference': 0},
         'pagination': page,
         'search': 'CVE-2022-1586',
@@ -246,6 +248,7 @@ def test_security_overview_renders_operational_profile_and_signal_cards() -> Non
     assert 'data-kaori-tab-variant="integrated-workspace"' in html
     assert 'Review Registry Security' not in html
     assert '/security/findings' in html
+    assert 'data-kaori-hero-context-extension' not in html
 
 
 def test_security_assurance_hero_omits_oversized_registry_cta_but_preserves_context() -> None:
@@ -255,15 +258,28 @@ def test_security_assurance_hero_omits_oversized_registry_cta_but_preserves_cont
     assert 'Data Authority' in hero
     assert 'Open Registry Integrations' not in hero
     assert '/integrations/registry' not in hero
-    assert 'Security Evidence Scope' in hero
-    assert 'data-kaori-hero-context-extension' in hero
-    assert 'data-kaori-hero-status-strip' in hero
-    assert 'Review CVE Findings' in hero
-    assert 'Evidence Freshness' in hero
+    assert 'Operational Signal Scope' in hero
+    assert 'data-kaori-hero-context-extension' not in hero
+    assert 'data-kaori-hero-status-strip' not in hero
+    assert hero.count('data-kaori-hero-context-metric') == 2
+    assert 'Review CVE Findings' not in hero
 
     shared_hero = read('app/templates/components/page_hero.html')
     assert '{% if action_label and action_href %}' in shared_hero
     assert 'context_single_action_classes()' in shared_hero
+    assert 'context_extension' not in shared_hero
+    assert "context_header('Dashboard Context', 'Operational Signal Scope', 'scan-search')" in shared_hero
+
+
+def test_security_overview_blocks_do_not_touch_and_analysis_has_one_outer_card() -> None:
+    html = _render_workspace_page('overview', _renderable_posture())
+    assert 'data-security-overview-layout' in html
+    assert 'data-security-overview-tabs' in html
+    assert 'Exposure &amp; Runtime Evidence' in html
+    assert html.count('data-security-posture-insights') == 1
+    assert 'lg:border-t-0 lg:border-l' in html
+    assert html.index('data-security-snapshot-grid') < html.index('data-security-posture-insights')
+    assert html.index('data-security-posture-insights') < html.index('data-security-overview-tabs')
 
 
 def test_security_snapshot_renders_unavailable_evidence_without_global_all_clear() -> None:
@@ -275,7 +291,7 @@ def test_security_snapshot_renders_unavailable_evidence_without_global_all_clear
     assert 'Security Snapshot' in html
     assert 'Partial / Stale' in html
     assert 'Updated 32d ago' in html
-    assert 'data-kaori-hero-context-extension' in html
+    assert 'data-kaori-hero-context-extension' not in html
     assert 'Partial, stale or unavailable evidence cannot establish an all-clear.' in html
 
 
@@ -295,28 +311,30 @@ def test_security_snapshot_replaces_four_independent_kpi_cards() -> None:
     assert html.index('data-security-snapshot-grid') < html.index('data-security-posture-insights')
 
     snapshot = read('app/templates/security_posture/overview.html')
-    assert "posture_grid.render([" in snapshot
+    assert 'posture_grid.render(snapshot_metrics, columns=4)' in snapshot
     assert 'columns=4' in snapshot
     assert 'metric_card.render(' not in snapshot
     assert 'components/resource_posture_grid.html' in snapshot
     # The canonical component remains available to other operational dashboards.
     metric = read('app/templates/components/operational_metric_card.html')
-    assert "compact=false" in metric
+    assert 'compact=false' in metric
     assert "scope_label='Active Scope'" in metric
 
 
-def test_security_analysis_uses_exactly_two_peer_cards() -> None:
+def test_security_analysis_is_one_shared_card_with_internal_peer_sections() -> None:
     template = read('app/templates/security_posture/overview.html')
+    assert "section_card.render('Exposure & Runtime Evidence'" in template
+    assert "section_card.render('Exposure by Severity'" not in template
+    assert "section_card.render('Runtime & Evidence'" not in template
     assert 'lg:col-span-7' in template
     assert 'lg:col-span-5' in template
-    assert "section_card.render('Exposure by Severity'" in template
-    assert "section_card.render('Runtime & Evidence'" in template
-    assert "section_card.render('Observed Runtime Impact'" not in template
-    assert "section_card.render('Evidence Confidence'" not in template
+    assert 'lg:border-t-0 lg:border-l' in template
     assert 'data-security-runtime-impact' in template
     assert 'data-security-evidence-confidence' in template
-    assert "progress_bar.semantic_bar(scan_coverage" in template
-    assert 'rounded-lg border border-outline-subtle bg-surface-subtle p-3' not in template
+    assert 'data-security-overview-layout' in template
+    assert 'data-security-overview-tabs' in template
+    assert 'class="space-y-5" data-security-overview-layout' in template
+    assert 'progress_bar.semantic_bar(scan_coverage' in template
     assert template.index('data-security-snapshot-grid') < template.index('data-security-posture-insights')
     assert template.index('data-security-posture-insights') < template.index('security_tabs =')
 
@@ -324,7 +342,7 @@ def test_security_analysis_uses_exactly_two_peer_cards() -> None:
 def test_security_assurance_overview_uses_source_backed_exposure_hierarchy() -> None:
     html = _render_workspace_page('overview', _renderable_posture())
     assert 'data-security-snapshot-grid' in html
-    assert 'Runtime &amp; Evidence' in html
+    assert 'Exposure &amp; Runtime Evidence' in html
     assert 'lg:col-span-7' in read('app/templates/security_posture/overview.html')
     assert 'lg:col-span-5' in read('app/templates/security_posture/overview.html')
     for label in ('Scan Coverage', 'Affected Artifact Digests', 'Runtime Correlation', 'Evidence Freshness'):
@@ -365,8 +383,8 @@ def test_security_assurance_labels_preserve_shared_tab_identity_and_bounds() -> 
         assert f'security-posture-overview-panel-{key}' in html
     assert 'data-kaori-tab-variant="integrated-workspace"' in html
     shared = read('app/templates/components/operational_dashboard_workspace.html')
-    assert "navigation(prefix, aria_label, tabs=none)" in shared
-    assert "tabs if tabs is not none else standard_tabs" in shared
+    assert 'navigation(prefix, aria_label, tabs=none)' in shared
+    assert 'tabs if tabs is not none else standard_tabs' in shared
     assert "('overview', 'Operations Overview', 'activity')" in shared
     assert "('capacity', 'Capacity & Demand', 'gauge')" in shared
 
@@ -382,10 +400,7 @@ def test_security_distinct_cve_severity_projection_preserves_unknown_without_fal
 
 def test_security_overview_preview_never_renders_more_than_five_cves() -> None:
     posture = _renderable_posture()
-    posture['rows'] = [
-        {**posture['rows'][0], 'cve_id': f'CVE-2022-{2000 + index}'}
-        for index in range(7)
-    ]
+    posture['rows'] = [{**posture['rows'][0], 'cve_id': f'CVE-2022-{2000 + index}'} for index in range(7)]
     html = _render_workspace_page('overview', posture)
     assert 'CVE-2022-2000' in html
     assert 'CVE-2022-2004' in html
