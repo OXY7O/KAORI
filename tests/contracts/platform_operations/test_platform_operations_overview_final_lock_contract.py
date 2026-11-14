@@ -214,3 +214,33 @@ def test_operating_boundary_copy_is_compact_without_dropping_authority() -> None
     assert '{% for workspace in platform_overview.workspaces %}' in template
     assert 'lg:grid-cols-3' in template
     assert 'hx-post=' not in template
+
+
+def test_workspace_posture_metric_labels_are_compact_and_accessible() -> None:
+    template = read('app/templates/platform_operations/overview/index.html')
+    presentation = read('app/platform_operations/overview/presentation.py')
+    Environment().parse(template)
+
+    expected_labels = (
+        ('Exec / Policy', 'Execution / Policy Alerts'),
+        ('Archives / Jobs', 'Active Archives / Jobs'),
+        ('Protected NS', 'Protected Namespaces'),
+    )
+    for short, full in expected_labels:
+        assert f"'{short}'" in presentation
+        assert f"'{full}'" in presentation
+        assert len(short) <= 15
+
+    assert 'for icon, label, value, full_label in workspace.metrics' in template
+    assert 'title="{{ full_label }}"' in template
+    assert '<span class="min-w-0 truncate" aria-hidden="true">{{ label }}</span>' in template
+    assert '<span class="sr-only">{{ full_label }}</span>' in template
+    assert 'grid grid-cols-3 divide-x divide-outline-subtle' in template
+    assert 'for workspace in platform_overview.workspaces' in template
+
+    # Preserve separate source-owned counts; never combine archive and job
+    # activity or turn execution vs. policy attention into one total.
+    assert "f'{attention} / {policy_attention}'" in presentation
+    archive_job_expression = '{lifecycle["active_archive_total"]} / {lifecycle["active_job_total"]}'
+    assert f'f{archive_job_expression!r}' in presentation
+    assert 'protected_namespaces' in presentation
