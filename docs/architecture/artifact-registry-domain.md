@@ -989,13 +989,25 @@ another endpoint, provider query or worker materialization.
 **Overview** retains actual Storage Footprint, Artifact Velocity, and
 review-only Stale Candidates. It adds a qualified source comparison spotlight
 and source/window/materialization facts without inventing an overall stable
-trend when endpoint deltas are zero. **Source Deltas** provides at most five
+trend when endpoint deltas are zero. Its compact three-column metric strip
+uses the canonical Analytics role icons and neutral surfaces, while the
+spotlight and materialization facts share a consistent two-panel hierarchy.
+**Source Deltas** provides at most five
 separate Registry source records with original artifact/storage deltas,
 per-day rates, window length and explicit N/A for missing inputs. **History
 & Evidence** reuses the existing bounded measured-series Chart.js surfaces,
 which distinguish actual measured points from legacy endpoint checkpoints
 or unavailable history, and adds at most five committed snapshot status
 records distinguishing current, stale-but-readable and not materialized.
+The Growth detail Visual UAT refinement removes the redundant top History
+source-count/time-range KPI strip (already provided by the chart header and
+the chart cards), wraps the existing plots and a compact lineage list inside
+one shared evidence surface, and uses a flatter divider-based Source Deltas
+list rather than nested large cards. The existing source-chart partial is
+reused unchanged so measured points and chart behavior remain authoritative.
+It also updates previous string-only tests to assert against the owning
+Growth partial and tolerate canonical djLint multiline rendering, without
+weakening missing-data, source-window or RBAC checks.
 
 External Registry/Metrics Source engines remain authoritative. KAORI reads
 only committed materialized evidence, does not extrapolate missing samples,

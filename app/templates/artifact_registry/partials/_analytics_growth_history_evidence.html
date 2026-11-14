@@ -1,75 +1,62 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/table_label.html" as table_label %}
 {% set source_rows = analytics.latest_rows|default([], true) %}
-{% set series_artifacts = analytics.growth_charts.artifacts|default([], true) %}
-{% set series_storage = analytics.growth_charts.storage|default([], true) %}
 <div class="{{ analysis_surface.evidence_shell_classes() }}">
-    <div class="{{ analysis_surface.guidance_fact_grid_classes(3) }}">
-        <div class="{{ analysis_surface.guidance_fact_classes() }}">
-            <p class="{{ analysis_surface.metric_label_classes() }}">Artifact History Sources</p>
-            <p class="mt-1.5 text-xl font-semibold tabular-nums text-content-primary">{{ series_artifacts|length }}</p>
-            <p class="mt-1 text-xs text-content-muted">Qualified measured or checkpoint series</p>
-        </div>
-        <div class="{{ analysis_surface.guidance_fact_classes() }}">
-            <p class="{{ analysis_surface.metric_label_classes() }}">Storage History Sources</p>
-            <p class="mt-1.5 text-xl font-semibold tabular-nums text-content-primary">{{ series_storage|length }}</p>
-            <p class="mt-1 text-xs text-content-muted">Qualified source-scoped series</p>
-        </div>
-        <div class="{{ analysis_surface.guidance_fact_classes() }}">
-            <p class="{{ analysis_surface.metric_label_classes() }}">Selected Time Range</p>
-            <p class="mt-1.5 text-xl font-semibold text-content-primary">{{ analytics.snapshot_window|upper }}</p>
-            <p class="mt-1 text-xs text-content-muted">Worker-committed evidence only</p>
-        </div>
-    </div>
-</div>
-{% include "artifact_registry/partials/_analytics_growth_charts.html" %}
-<section class="{{ analysis_surface.evidence_shell_classes() }}"
-         aria-labelledby="registry-growth-history-lineage-title">
-    <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-4">
-        <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
-              aria-hidden="true">
-            <i data-lucide="database-backup" class="h-4 w-4"></i>
-        </span>
-        <div class="min-w-0">
-            <h4 id="registry-growth-history-lineage-title"
-                class="text-sm font-semibold text-content-primary">Committed Snapshot Lineage</h4>
-            <p class="mt-1 text-xs leading-5 text-content-secondary">Snapshot currency is independent of whether a measured history series is available.</p>
-        </div>
-    </header>
-    {% if source_rows %}
-        <div class="divide-y divide-outline-subtle">
-            {% for row in source_rows[:5] %}
-                <div class="flex min-w-0 flex-wrap items-start justify-between gap-3 px-4 py-3">
-                    <div class="min-w-0">
-                        <p class="break-words text-sm font-semibold text-content-primary">{{ row.identity.name }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">
-                            {% if row.snapshot and row.is_current %}
-                                Current committed snapshot
-                            {% elif row.snapshot %}
-                                Previous committed snapshot; not current
-                            {% else %}
-                                No committed snapshot for this selected window
-                            {% endif %}
-                        </p>
-                    </div>
-                    {{ table_label.status_label(row.status_label, row.tone, size='compact') }}
+    {% include "artifact_registry/partials/_analytics_growth_charts.html" %}
+    <section class="border-t border-outline-subtle"
+             aria-labelledby="registry-growth-history-lineage-title">
+        <header class="flex min-w-0 flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
+                      aria-hidden="true">
+                    <i data-lucide="database-backup" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h4 id="registry-growth-history-lineage-title"
+                        class="text-sm font-semibold text-content-primary">Committed Snapshot Lineage</h4>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                        Snapshot currency is separate from measured-series availability. No projection is shown.
+                    </p>
                 </div>
-            {% endfor %}
-        </div>
-        {% if source_rows|length > 5 %}
-            <p class="border-t border-outline-subtle px-4 py-3 text-xs text-content-muted">
-                Showing 5 of {{ source_rows|length }} Registry source records.
-            </p>
-        {% endif %}
-    {% else %}
-        <div class="p-4">
-            <div class="{{ analysis_surface.empty_evidence_classes('px-5 py-5 text-center') }}">
-                <p class="text-sm font-semibold text-content-primary">Snapshot Lineage Not Available</p>
-                <p class="mt-1 text-xs text-content-secondary">No Registry source was selected for committed historical analysis.</p>
             </div>
-        </div>
-    {% endif %}
-    <p class="border-t border-outline-subtle px-4 py-3 text-xs leading-5 text-content-muted">
-        A measured history is not inferred from a previous/current snapshot pair; legacy start/end checkpoints are labeled explicitly. No projection is shown.
-    </p>
-</section>
+            {{ table_label.metadata_label(source_rows|length ~ ' Sources', 'database', size='compact') }}
+        </header>
+        {% if source_rows %}
+            <div class="divide-y divide-outline-subtle">
+                {% for row in source_rows[:5] %}
+                    <div class="flex min-w-0 flex-wrap items-start justify-between gap-3 px-4 py-3 sm:px-5">
+                        <div class="min-w-0">
+                            <p class="break-words text-sm font-semibold text-content-primary">
+                                {{ row.identity.name }}
+                            </p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                {% if row.snapshot and row.is_current %}
+                                    Current committed snapshot
+                                {% elif row.snapshot %}
+                                    Previous committed snapshot; not current
+                                {% else %}
+                                    No committed snapshot for this selected window
+                                {% endif %}
+                            </p>
+                        </div>
+                        {{ table_label.status_label(row.status_label, row.tone, size='compact') }}
+                    </div>
+                {% endfor %}
+            </div>
+            {% if source_rows|length > 5 %}
+                <p class="border-t border-outline-subtle px-4 py-3 text-xs text-content-muted">
+                    Showing 5 of {{ source_rows|length }} Registry source records.
+                </p>
+            {% endif %}
+        {% else %}
+            <div class="p-4">
+                <div class="{{ analysis_surface.empty_evidence_classes('px-5 py-5 text-center') }}">
+                    <p class="text-sm font-semibold text-content-primary">Snapshot Lineage Not Available</p>
+                    <p class="mt-1 text-xs text-content-secondary">
+                        No Registry source was selected for committed historical analysis.
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+    </section>
+</div>
