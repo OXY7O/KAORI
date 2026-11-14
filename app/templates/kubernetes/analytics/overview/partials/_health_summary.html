@@ -1,5 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/info_tip.html" as info_tip %}
+{% import "components/section_intro.html" as section_intro %}
 {% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
 {% import "analytics/components/_controls_readiness.html" as shared_readiness %}
 {% import "analytics/components/_analysis_surfaces.html" as overview_surface %}
@@ -100,93 +101,99 @@
             </div>
         {% endcall %}
     </form>
-    <section class="{{ overview_surface.snapshot_shell_classes() }}">
-        <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ overview_surface.metric_icon_classes() }}">
-                    <i data-lucide="heart-pulse" class="h-4 w-4"></i>
-                </span>
-                <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h2 class="text-base font-semibold text-content-primary">Operational Health Summary</h2>
-                        {{ info_tip.render('kubernetes-analytics-overview-health-guide',
-                                        'Operational Health Summary Guide',
-                                        'Read the six committed operational signals together, while preserving evidence and source freshness limits.',
-                                        items=[
-                                        'Cluster health, resource pressure, capacity risk, active alerts, forecast risk, and top-risk Namespace are distinct signals.',
-                                        'Warning or Critical posture requires source verification and scoped operational review.',
-                                        'Unknown or incomplete snapshots must never be interpreted as healthy zero values.'
-                                        ],
-                                        placement='right', variant='guide') }}
+    <section class="space-y-4"
+             aria-labelledby="analytics-overview-health-review-heading">
+        {{ section_intro.render('Operational Health Review',
+                'Assess committed health signals, evidence coverage, and priority risks before choosing follow-up actions.',
+                'analytics-overview-health-review-heading') }}
+        <section class="{{ overview_surface.snapshot_shell_classes() }}">
+            <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="{{ overview_surface.metric_icon_classes() }}">
+                        <i data-lucide="heart-pulse" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="text-base font-semibold text-content-primary">Operational Health Summary</h2>
+                            {{ info_tip.render('kubernetes-analytics-overview-health-guide',
+                                            'Operational Health Summary Guide',
+                                            'Read the six committed operational signals together, while preserving evidence and source freshness limits.',
+                                            items=[
+                                            'Cluster health, resource pressure, capacity risk, active alerts, forecast risk, and top-risk Namespace are distinct signals.',
+                                            'Warning or Critical posture requires source verification and scoped operational review.',
+                                            'Unknown or incomplete snapshots must never be interpreted as healthy zero values.'
+                                            ],
+                                            placement='right', variant='guide') }}
+                        </div>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Current cluster, resource, capacity, alert, forecast, and namespace risk posture.</p>
                     </div>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Current cluster, resource, capacity, alert, forecast, and namespace risk posture.</p>
                 </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    {{ table_label.metadata_label("6 Health Signals") }}
+                    {% if posture.critical > 0 %}
+                        {{ table_label.status_label(posture.critical ~ ' Critical', 'critical') }}
+                    {% elif posture.warning > 0 %}
+                        {{ table_label.status_label(posture.warning ~ ' Warning', 'warning') }}
+                    {% elif posture.unknown > 0 %}
+                        {{ table_label.status_label(posture.unknown ~ ' Unknown', 'unknown') }}
+                    {% else %}
+                        {{ table_label.status_label('Normal Posture', 'normal') }}
+                    {% endif %}
+                </div>
+            </header>
+            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-3">
+                {% for item in health_signals %}
+                    {% set semantic_tone = table_label.semantic_tone(item.tone or item.status)|trim %}
+                    <article class="min-w-0 bg-surface-card px-4 py-4 sm:px-5">
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="{{ overview_surface.semantic_icon_classes(semantic_tone) }}">
+                                <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
+                            </span>
+                            {{ table_label.status_label(item.status|replace('_', ' ') |title, semantic_tone, size='compact') }}
+                        </div>
+                        <p class="mt-3 {{ overview_surface.metric_label_classes() }}">{{ item.label }}</p>
+                        <p class="mt-1.5 break-words text-lg font-semibold leading-6 text-content-primary">{{ item.value }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.description }}</p>
+                    </article>
+                {% endfor %}
             </div>
-            <div class="flex flex-wrap items-center gap-2">
-                {{ table_label.metadata_label("6 Health Signals") }}
+            <div class="{{ overview_surface.interpretation_grid_classes() }}">
                 {% if posture.critical > 0 %}
-                    {{ table_label.status_label(posture.critical ~ ' Critical', 'critical') }}
+                    {{ overview_surface.interpretation_callout('Operational Reading',
+                                    'Critical Signals Are Present And Require Immediate Triage',
+                                    'Open the relevant domain tab, validate the source snapshot, and resolve active service risk before optimization work.',
+                                    icon='shield-alert',
+                                    role='status',
+                                    tone='critical') }}
                 {% elif posture.warning > 0 %}
-                    {{ table_label.status_label(posture.warning ~ ' Warning', 'warning') }}
+                    {{ overview_surface.interpretation_callout('Operational Reading',
+                                    'Warning Signals Require Planned Operational Review',
+                                    'Review headroom, forecasts, and alerts before scheduling remediation.',
+                                    icon='triangle-alert',
+                                    role='status',
+                                    tone='warning') }}
                 {% elif posture.unknown > 0 %}
-                    {{ table_label.status_label(posture.unknown ~ ' Unknown', 'unknown') }}
+                    {{ overview_surface.interpretation_callout('Operational Reading',
+                                    'Operational Posture Cannot Be Confirmed Yet',
+                                    'Refresh missing or stale worker datasets before treating zero counts as a healthy result.',
+                                    icon='database-zap',
+                                    role='status',
+                                    tone='unknown') }}
                 {% else %}
-                    {{ table_label.status_label('Normal Posture', 'normal') }}
+                    {{ overview_surface.interpretation_callout('Operational Reading',
+                                    'No Immediate Operational Escalation Is Indicated',
+                                    'Continue monitoring committed snapshots and review recommendations for preventive improvements.',
+                                    icon='circle-check',
+                                    role='status',
+                                    tone='normal') }}
                 {% endif %}
+                {{ overview_surface.interpretation_callout('Recommended Review Path',
+                            'Start With Risk, Then Validate Capacity And Ownership',
+                            'Review Alerts, Capacity, Forecast, Workloads, and Storage tabs in that order when multiple domains require attention.',
+                            icon='scan-search',
+                            role='brand',
+                            tone='maintenance') }}
             </div>
-        </header>
-        <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-3">
-            {% for item in health_signals %}
-                {% set semantic_tone = table_label.semantic_tone(item.tone or item.status)|trim %}
-                <article class="min-w-0 bg-surface-card px-4 py-4 sm:px-5">
-                    <div class="flex items-start justify-between gap-3">
-                        <span class="{{ overview_surface.semantic_icon_classes(semantic_tone) }}">
-                            <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
-                        </span>
-                        {{ table_label.status_label(item.status|replace('_', ' ') |title, semantic_tone, size='compact') }}
-                    </div>
-                    <p class="mt-3 {{ overview_surface.metric_label_classes() }}">{{ item.label }}</p>
-                    <p class="mt-1.5 break-words text-lg font-semibold leading-6 text-content-primary">{{ item.value }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.description }}</p>
-                </article>
-            {% endfor %}
-        </div>
-        <div class="{{ overview_surface.interpretation_grid_classes() }}">
-            {% if posture.critical > 0 %}
-                {{ overview_surface.interpretation_callout('Operational Reading',
-                                'Critical Signals Are Present And Require Immediate Triage',
-                                'Open the relevant domain tab, validate the source snapshot, and resolve active service risk before optimization work.',
-                                icon='shield-alert',
-                                role='status',
-                                tone='critical') }}
-            {% elif posture.warning > 0 %}
-                {{ overview_surface.interpretation_callout('Operational Reading',
-                                'Warning Signals Require Planned Operational Review',
-                                'Review headroom, forecasts, and alerts before scheduling remediation.',
-                                icon='triangle-alert',
-                                role='status',
-                                tone='warning') }}
-            {% elif posture.unknown > 0 %}
-                {{ overview_surface.interpretation_callout('Operational Reading',
-                                'Operational Posture Cannot Be Confirmed Yet',
-                                'Refresh missing or stale worker datasets before treating zero counts as a healthy result.',
-                                icon='database-zap',
-                                role='status',
-                                tone='unknown') }}
-            {% else %}
-                {{ overview_surface.interpretation_callout('Operational Reading',
-                                'No Immediate Operational Escalation Is Indicated',
-                                'Continue monitoring committed snapshots and review recommendations for preventive improvements.',
-                                icon='circle-check',
-                                role='status',
-                                tone='normal') }}
-            {% endif %}
-            {{ overview_surface.interpretation_callout('Recommended Review Path',
-                        'Start With Risk, Then Validate Capacity And Ownership',
-                        'Review Alerts, Capacity, Forecast, Workloads, and Storage tabs in that order when multiple domains require attention.',
-                        icon='scan-search',
-                        role='brand',
-                        tone='maintenance') }}
-        </div>
+        </section>
     </section>
 </div>

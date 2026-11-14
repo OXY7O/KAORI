@@ -127,6 +127,45 @@ def test_metrics_source_status_uses_one_canonical_card_contract() -> None:
     assert 'compact=' not in source
 
 
+
+def test_overview_major_sections_reuse_shared_intro_outside_cards() -> None:
+    """#4736 Visual UAT: contextual introductions before Health and Analytics tabs."""
+    from jinja2 import Environment
+
+    health = read('partials/_health_summary.html')
+    overview = read('index.html')
+
+    for source in (health, overview):
+        Environment(autoescape=True).parse(source)
+        assert '{% import "components/section_intro.html" as section_intro %}' in source
+        assert source.count('section_intro.render(') == 1
+        assert 'section class="space-y-4"' in source
+
+    assert health.index('</form>') < health.index("section_intro.render(")
+    assert health.index("section_intro.render(") < health.index(
+        '<section class="{{ overview_surface.snapshot_shell_classes() }}">'
+    )
+    assert 'aria-labelledby="analytics-overview-health-review-heading"' in health
+    assert "'Operational Health Review'" in health
+    assert 'evidence coverage, and priority risks' in health
+    assert health.count('Operational Health Summary</h2>') == 1
+    assert '6 Health Signals' in health
+
+    assert overview.index('id="overview-health-summary"') < overview.index(
+        "section_intro.render("
+    )
+    assert overview.index("section_intro.render(") < overview.index(
+        'id="analytics-overview-workspace"'
+    )
+    assert 'aria-labelledby="analytics-overview-domain-review-heading"' in overview
+    assert "'Explore Analytics Domains'" in overview
+    assert 'committed evidence, operational signals' in overview
+    assert overview.count('Analytics Overview Workspace</h2>') == 1
+    assert overview.count('content_tabs.render_buttons(') == 1
+    assert 'hx-trigger="load delay:150ms once"' in overview
+    assert 'hx-trigger="kaori:analytics-tab-activated once"' in overview
+
+
 def test_operational_health_summary_has_separate_vertical_rhythm() -> None:
     source = read('partials/_health_summary.html')
 

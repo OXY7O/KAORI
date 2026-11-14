@@ -38,6 +38,12 @@ Kubernetes Analytics Overview follows the established title-level Violet `info_t
 
 The shared `snapshot_unavailable(..., title_accessory='')` accepts an optional Guide for the seven worker-backed Overview panels when the committed dataset is unavailable. Its default empty accessory preserves existing consumers. Guide contents explain source, interpretation and workflow boundaries; actual stale/unknown/critical statuses and required recovery guidance remain visible in the normal surface. Tooltip IDs must be unique, and mobile titles may wrap naturally. The warning Operational Reading sentence is concise for a normal desktop single line without truncating or hiding risk.
 
+## Overview Section Introduction Hierarchy (#4736 Visual UAT)
+
+Kubernetes Analytics Overview separates Controls & Data Readiness from Operational Health Summary and the nine-tab Analytics Overview Workspace with two **plain section introductions**. They reuse `components/section_intro.html::render` and a `space-y-4` semantic wrapper with `aria-labelledby`, rather than adding another card, a second Hero, an unrelated callout, or a duplicate Guide.
+
+**Operational Health Review** appears in the committed Health Summary lazy partial after the controls form and before its existing six-signal card. **Explore Analytics Domains** appears in the parent Overview template after the Health Summary lazy target and before the original tabbed workspace. Each explains the purpose of the next card without repeating its own heading. HTMX lazy loading, filter scope, tab IDs, evidence authority, and existing Guide/status controls remain unchanged.
+
 ## Kubernetes Focused Analysis Guides and Concise Decisions (#4746)
 
 After the nine-tab Overview title Guide standard (#4736), the seven focused Kubernetes Analytics routes — **Usage, Capacity, Workloads, Storage, Consumers, Forecast, and Alerts & Anomalies** — use the same `components/info_tip.html::render(..., variant='guide', placement='right')` beside their owning headers. This includes Controls & Data Readiness or Source Readiness, high-level summary, the shared Content Tabs workspace, and the selected tab's primary evidence section. Nested resource projections use distinct IDs per resource; asynchronous HTMX fragments own their Guide IDs and keep existing swap scope.
