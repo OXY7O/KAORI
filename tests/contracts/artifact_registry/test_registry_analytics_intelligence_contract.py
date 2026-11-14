@@ -506,12 +506,17 @@ def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> 
     assert 'never auto-cleaned' in growth_overview
     capacity_detail = (ROOT / 'app/templates/artifact_registry/partials/_analytics_capacity_outlook.html').read_text()
     assert 'Capacity Outlook' in capacity_detail
-    assert 'Qualified Quota Comparison' in capacity_detail
+    capacity_projects = (ROOT / 'app/templates/artifact_registry/partials/_analytics_capacity_project_quotas.html').read_text()
+    assert 'Qualified Quota Comparison' in capacity_projects
     assert (
         'central Intelligence owns recommendation semantics, Accepted Risk, escalation, and automation control'
         in section
     )
-    assert "url_for('intelligence.recommendations', domain='registry')" in shell
+    assert "url_for('integrations.registry')" in shell
+    assert (
+        "url_for('intelligence.recommendations', domain='registry')"
+        in section
+    )
 
     assert "aggregate['inflight_requests'] > 100" not in presentation
     assert "aggregate['task_queue_size'] > 0" not in presentation
@@ -1609,21 +1614,57 @@ def test_registry_alert_workspace_reuses_committed_alert_evidence_contract() -> 
 
 
 def test_registry_capacity_outlook_table_reuses_canonical_primitives() -> None:
-    """Capacity detail uses committed qualified source rows and shared KAORI table macros."""
+    """Three canonical tabs separate quota posture, project evidence and forecast provenance."""
     from jinja2 import Environment, FileSystemLoader
 
-    section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
-    capacity = (ROOT / 'app/templates/artifact_registry/partials/_analytics_capacity_outlook.html').read_text()
-    page = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
-    presenter = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    root = ROOT / 'app/templates/artifact_registry/partials'
+    section = (root / '_analytics_section.html').read_text()
+    workspace = (root / '_analytics_capacity_outlook.html').read_text()
+    overview = (root / '_analytics_capacity_overview.html').read_text()
+    projects = (root / '_analytics_capacity_project_quotas.html').read_text()
+    evidence = (root / '_analytics_capacity_forecast_evidence.html').read_text()
     shared = (ROOT / 'app/templates/components/table_primitives.html').read_text()
+    navigation = (ROOT / 'app/static/js/analytics/controls.js').read_text()
 
     env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
-    env.parse(section)
-    env.parse(capacity)
+    for source in (section, workspace, overview, projects, evidence):
+        env.parse(source)
+
     assert '{% include "artifact_registry/partials/_analytics_capacity_outlook.html" %}' in section
-    assert "table_ui.table_classes('min-w-[760px]')" in capacity
-    assert '{% import "components/table_primitives.html" as table_ui %}' in capacity
+    assert 'data-analytics-tabset-id="artifact-registry-capacity-content"' in workspace
+    assert 'data-analytics-update-query="false"' in workspace
+    assert "content_tabs.render_buttons('artifact-registry-capacity-content'," in workspace
+    assert "('overview', 'Overview', 'layout-dashboard')" in workspace
+    assert "('projects', 'Project Quotas', 'table-properties')" in workspace
+    assert "('evidence', 'Forecast & Evidence', 'clipboard-check')" in workspace
+    assert workspace.count('role="tabpanel"') == 3
+    assert workspace.count('data-analytics-tab-panel=') == 3
+    for key in ('overview', 'projects', 'evidence'):
+        assert f'id="artifact-registry-capacity-content-panel-{key}"' in workspace
+        assert f'aria-labelledby="artifact-registry-capacity-content-tab-{key}"' in workspace
+    assert 'htmx:afterSwap' in navigation
+    assert 'Capacity Reading' in overview
+    assert 'Project Quota Pressure' in overview
+    assert 'Nearest Exhaustion' in overview
+    assert 'Quota Headroom' in overview
+    assert 'qualified_projects[:5]' in overview
+    assert 'qualified_projects[:5]' in projects
+    assert 'source_rows[:5]' in evidence
+    assert 'Qualified Quota Comparison' in projects
+    assert 'Project Forecast Evidence' in evidence
+    assert 'Committed Snapshot Lineage' in evidence
+    assert "table_ui.table_classes('min-w-[760px]')" in projects
+    assert 'table_ui.head_classes()' in projects
+    assert projects.count('table_ui.header_cell_classes()') == 5
+    assert projects.count('scope="col"') == 5
+    assert projects.count('table_ui.cell_classes()') == 5
+    assert 'table_ui.row_classes()' in projects
+    assert 'table_ui.title_cell(row.project_name, row.registry_name' in projects
+    assert 'row.utilization_percent > 100' in projects
+    assert 'aria-valuetext="{{ row.utilization_display }} observed utilization"' in projects
+    assert 'Qualified Quota Evidence Not Available' in projects
+    assert 'Previous committed snapshot; not current' in evidence
+    assert 'qualified_projects = analytics.capacity_chart_rows' in projects
     for macro in (
         'table_classes',
         'head_classes',
@@ -1634,26 +1675,6 @@ def test_registry_capacity_outlook_table_reuses_canonical_primitives() -> None:
         'title_cell',
     ):
         assert f'macro {macro}(' in shared
-    assert 'table_ui.head_classes()' in capacity
-    assert capacity.count('table_ui.header_cell_classes()') == 5
-    assert capacity.count('scope="col"') == 5
-    assert 'table_ui.body_classes()' in capacity
-    assert 'table_ui.row_classes()' in capacity
-    assert capacity.count('table_ui.cell_classes()') == 5
-    assert 'table_ui.title_cell(row.project_name, row.registry_name' in capacity
-    assert 'qualified_projects = analytics.capacity_chart_rows' in capacity
-    assert 'Qualified Quota Comparison' in capacity
-    assert 'Capacity Reading' in capacity
-    assert 'aria-valuetext="{{ row.utilization_display }} observed utilization"' in capacity
-    assert 'row.utilization_percent > 100' in capacity
-    assert 'Qualified Quota Evidence Not Available' in capacity
-    assert "table_label.status_indicator_label(row.forecast_label, 'info'" in capacity
-    assert 'growth_display' in presenter
-    assert "'growth_display': row.get('growth_display') or 'Insufficient history'" in presenter
-    assert "'Open Registry Integrations'," in page
-    assert "url_for('integrations.registry')" in page
-    assert "action_icon='plug-zap'" in page
-    assert "'Open Intelligence'," not in page
 
     demo = {
         'project_name': 'demo',
@@ -1673,8 +1694,18 @@ def test_registry_capacity_outlook_table_reuses_canonical_primitives() -> None:
         'utilization_percent': 0.0,
         'utilization_display': '0.0%',
     }
-    analytics = {
+    analytic_data = {
+        'snapshot_window': '24h',
         'capacity_chart_rows': [demo, sandbox],
+        'latest_rows': [
+            {
+                'identity': {'name': 'Harbor X300'},
+                'snapshot': {'status': 'ready'},
+                'is_current': True,
+                'status_label': 'Current Snapshot',
+                'tone': 'normal',
+            }
+        ],
         'capacity_outlook': {
             'nearest_quota_days': None,
             'highest_utilization': 0.6,
@@ -1684,8 +1715,8 @@ def test_registry_capacity_outlook_table_reuses_canonical_primitives() -> None:
         },
     }
     template = env.get_template('artifact_registry/partials/_analytics_capacity_outlook.html')
-    rendered = template.render(analytics=analytics)
-    assert rendered.count('<th scope="col"') == 5
+    rendered = template.render(analytics=analytic_data)
+    assert rendered.count('role="tabpanel"') == 3
     assert 'demo' in rendered and 'sandbox' in rendered
     assert '62.87 MiB' in rendered and '10.00 GiB' in rendered
     assert '0.6%' in rendered and '0.0%' in rendered
@@ -1694,21 +1725,25 @@ def test_registry_capacity_outlook_table_reuses_canonical_primitives() -> None:
     assert 'No qualified forecast' in rendered
     assert 'Zero net growth does not prove' in rendered
     assert 'Qualified Quota Evidence Not Available' not in rendered
-    assert rendered.count('<progress ') == 2
-    assert 'Qualified Quota Comparison' in rendered
+    assert rendered.count('<progress ') == 4
+    assert 'Current committed snapshot' in rendered
     assert 'Capacity Reading' in rendered
 
     over_quota = {**demo, 'utilization_percent': 125.0, 'utilization_display': '125.0%'}
-    analytics['capacity_chart_rows'] = [over_quota]
-    over = template.render(analytics=analytics)
-    assert '125.0%' in over
-    assert 'Over quota' in over
-    assert 'value="100"' in over
+    analytic_data['capacity_chart_rows'] = [over_quota]
+    above = template.render(analytics=analytic_data)
+    assert '125.0%' in above
+    assert 'Over quota' in above
+    assert 'value="100"' in above
 
-    analytics['capacity_chart_rows'] = []
-    analytics['capacity_outlook']['growth_bytes_per_day'] = None
-    analytics['capacity_outlook']['growth_display'] = 'N/A'
-    empty = template.render(analytics=analytics)
-    assert 'Qualified Quota Evidence Not Available' in empty
-    assert 'Qualified materialized growth history is unavailable.' in empty
-    assert '<progress ' not in empty
+    analytic_data['capacity_chart_rows'] = []
+    analytic_data['latest_rows'] = []
+    analytic_data['capacity_outlook']['growth_bytes_per_day'] = None
+    analytic_data['capacity_outlook']['growth_display'] = 'N/A'
+    missing = template.render(analytics=analytic_data)
+    assert 'Quota Pressure Evidence Not Available' in missing
+    assert 'Qualified Quota Evidence Not Available' in missing
+    assert 'Project Forecast Evidence Not Available' in missing
+    assert 'Snapshot Lineage Not Available' in missing
+    assert 'Qualified materialized growth history is unavailable.' in missing
+    assert '<progress ' not in missing

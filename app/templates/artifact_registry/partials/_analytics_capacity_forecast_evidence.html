@@ -1,0 +1,154 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/table_label.html" as table_label %}
+{% set source_rows = analytics.latest_rows|default([], true) %}
+{% set qualified_projects = analytics.capacity_chart_rows|default([], true) %}
+<div class="grid items-start gap-4 md:grid-cols-2">
+    <section class="{{ analysis_surface.evidence_shell_classes('min-w-0') }}"
+             aria-labelledby="registry-capacity-forecast-title">
+        <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-3">
+            <span class="{{ analysis_surface.role_icon_classes('insight', size='compact') }}"
+                  aria-hidden="true">
+                <i data-lucide="calendar-clock" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0">
+                <h4 id="registry-capacity-forecast-title"
+                    class="text-sm font-semibold text-content-primary">Forecast Qualification</h4>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Earliest committed project exhaustion horizon.</p>
+            </div>
+        </header>
+        <div class="px-4 py-4">
+            {% if analytics.capacity_outlook.nearest_quota_days is not none %}
+                <p class="text-xl font-semibold tabular-nums text-content-primary">
+                    {{ '%.1f days'|format(analytics.capacity_outlook.nearest_quota_days) }}
+                </p>
+                <p class="mt-2 text-xs leading-5 text-content-secondary">
+                    A qualified forecast is available for at least one committed project. Review the source records below.
+                </p>
+            {% else %}
+                {{ table_label.status_label('No qualified forecast', 'unknown', size='compact') }}
+                <p class="mt-2 text-xs leading-5 text-content-secondary">
+                    An exhaustion horizon requires a valid quota and qualified materialized growth history.
+                </p>
+            {% endif %}
+        </div>
+    </section>
+    <section class="{{ analysis_surface.evidence_shell_classes('min-w-0') }}"
+             aria-labelledby="registry-capacity-growth-evidence-title">
+        <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-3">
+            <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
+                  aria-hidden="true">
+                <i data-lucide="database-backup" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0">
+                <h4 id="registry-capacity-growth-evidence-title"
+                    class="text-sm font-semibold text-content-primary">Growth Evidence</h4>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Materialized change is not a future-demand projection.</p>
+            </div>
+        </header>
+        <div class="px-4 py-4">
+            <p class="text-xl font-semibold tabular-nums text-content-primary">
+                {{ analytics.capacity_outlook.growth_display }}
+            </p>
+            <p class="mt-2 text-xs leading-5 text-content-secondary">
+                {% if analytics.capacity_outlook.growth_bytes_per_day is none %}
+                    Qualified materialized growth history is unavailable.
+                {% elif analytics.capacity_outlook.growth_bytes_per_day == 0 %}
+                    Zero net growth does not prove that no workload activity occurred.
+                {% else %}
+                    Observed materialized growth is not a prediction of future demand.
+                {% endif %}
+            </p>
+        </div>
+    </section>
+</div>
+<section class="{{ analysis_surface.evidence_shell_classes() }}"
+         aria-labelledby="registry-capacity-horizons-title">
+    <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ analysis_surface.role_icon_classes('brand', size='compact') }}"
+                  aria-hidden="true">
+                <i data-lucide="clipboard-list" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0">
+                <h4 id="registry-capacity-horizons-title"
+                    class="text-sm font-semibold text-content-primary">Project Forecast Evidence</h4>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                    Source-specific horizon and measured growth status, not a generated forecast.
+                </p>
+            </div>
+        </div>
+        {{ table_label.metadata_label(qualified_projects|length ~ ' Projects', 'database', size='compact') }}
+    </header>
+    {% if qualified_projects %}
+        <div class="divide-y divide-outline-subtle">
+            {% for row in qualified_projects[:5] %}
+                <div class="flex min-w-0 flex-wrap items-center justify-between gap-3 px-4 py-3">
+                    <div class="min-w-0">
+                        <p class="break-words text-sm font-semibold text-content-primary">{{ row.project_name }}</p>
+                        <p class="mt-1 text-xs text-content-muted">
+                            {{ row.registry_name }} · Growth {{ row.growth_display }}
+                        </p>
+                    </div>
+                    {{ table_label.status_indicator_label(row.forecast_label, 'info', size='compact') }}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="p-4">
+            <div class="{{ analysis_surface.empty_evidence_classes('px-5 py-5 text-center') }}">
+                <p class="text-sm font-semibold text-content-primary">Project Forecast Evidence Not Available</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">No qualified committed project quota comparisons in the selected window.</p>
+            </div>
+        </div>
+    {% endif %}
+</section>
+<section class="{{ analysis_surface.evidence_shell_classes() }}"
+         aria-labelledby="registry-capacity-lineage-title">
+    <header class="flex min-w-0 flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
+                  aria-hidden="true">
+                <i data-lucide="history" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0">
+                <h4 id="registry-capacity-lineage-title"
+                    class="text-sm font-semibold text-content-primary">Committed Snapshot Lineage</h4>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Freshness of committed Registry source records, not live provider health.</p>
+            </div>
+        </div>
+        {{ table_label.metadata_label(source_rows|length ~ ' Sources', 'database', size='compact') }}
+    </header>
+    {% if source_rows %}
+        <div class="divide-y divide-outline-subtle">
+            {% for row in source_rows[:5] %}
+                <div class="flex min-w-0 flex-wrap items-center justify-between gap-3 px-4 py-3">
+                    <div class="min-w-0">
+                        <p class="break-words text-sm font-semibold text-content-primary">{{ row.identity.name }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                            {% if row.snapshot and row.is_current %}
+                                Current committed snapshot
+                            {% elif row.snapshot %}
+                                Previous committed snapshot; not current
+                            {% else %}
+                                No committed snapshot for this selected window
+                            {% endif %}
+                        </p>
+                    </div>
+                    {{ table_label.status_label(row.status_label, row.tone, size='compact') }}
+                </div>
+            {% endfor %}
+        </div>
+        {% if source_rows|length > 5 %}
+            <p class="border-t border-outline-subtle px-4 py-3 text-xs text-content-muted">
+                Showing 5 of {{ source_rows|length }} Registry source records.
+            </p>
+        {% endif %}
+    {% else %}
+        <div class="p-4">
+            <div class="{{ analysis_surface.empty_evidence_classes('px-5 py-5 text-center') }}">
+                <p class="text-sm font-semibold text-content-primary">Snapshot Lineage Not Available</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">No committed Registry source snapshot is available in this scope.</p>
+            </div>
+        </div>
+    {% endif %}
+</section>
