@@ -10,6 +10,7 @@
 {% set can_manage = current_user.has_permission('clusters.manage') and current_user.has_permission('integrations.manage') %}
 <section class="{{ operational_section_card.shell_classes('mt-5') }}"
          aria-labelledby="capsule-rbac-bootstrap-heading"
+         aria-describedby="capsule-rbac-bootstrap-description"
          data-capsule-rbac-bootstrap>
     <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
         <div class="flex min-w-0 items-start gap-3">
@@ -35,7 +36,8 @@
                             placement="right", variant="guide"
                         ) }}
                     </div>
-                    <p class="mt-1 max-w-2xl text-xs leading-5 text-content-secondary">
+                    <p id="capsule-rbac-bootstrap-description"
+                       class="mt-1 max-w-2xl text-xs leading-5 text-content-secondary">
                         Reusable ClusterRoles for governed Capsule Access Grants.
                     </p>
                 </div>
