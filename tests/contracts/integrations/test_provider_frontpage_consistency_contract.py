@@ -326,15 +326,16 @@ def test_provider_workspace_tabs_share_title_description_and_existing_tab_geomet
     outer_heading = tabs.split('data-kaori-integration-workspace-tabs')[0]
     assert 'integration_ui.palette_icon(' not in outer_heading
     assert tabs.index('integration_ui.workspace_section_intro(') < tabs.index('data-kaori-integration-workspace-tabs')
-    # Latest operator UAT keeps the provider Overview Guide and removes
-    # the duplicate Guide inside the shared Integration Workspace header.
+    # Latest operator UAT keeps the Overview's architectural Info Tip,
+    # moves the title Guide to the Registry, and excludes the inner Workspace Guide.
     assert 'components/info_tip.html' not in tabs
     assert 'info_tip.render(' not in tabs
     assert 'workspace_guide_items' not in tabs
     assert 'title_extra=workspace_guide' not in tabs
     overview = read('app/templates/integrations/components/_provider_frontpage.html')
     assert overview.count('info_tip.render(') == 1
-    assert 'title ~ " Guide"' in overview
+    assert 'title ~ " Context"' in overview
+    assert 'table_label.metadata_label(metrics|length ~ " Indicators", icon="layout-grid")' in overview
     assert 'items=overview_guide_items' in overview
     shared_header = read('app/templates/integrations/components/_workspace.html')
     assert 'macro workspace_section_intro(title, description, aria_label)' in shared_header
