@@ -643,7 +643,7 @@ def test_kubernetes_connection_registry_cells_follow_header_semantics() -> None:
     )
     Environment().parse(registry)
     populated = registry.split('{% for row in rows %}', 1)[1].split('{% else %}', 1)[0]
-    cells = populated.split('<td class="{{ table_ui.cell_classes() }}">')
+    cells = populated.split('<td class="{{ table_ui.cell_classes() }}"')
     assert len(cells) == 6
 
     # Connection: canonical cluster identity and environment, not an API URL.
