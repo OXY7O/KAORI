@@ -296,7 +296,9 @@ def test_drift_context_cards_precede_attached_registries_without_new_runtime_act
 
     assert 'lg:grid-cols-3' in operational
     assert 'Namespace Drift' in operational
-    assert 'effective Kubernetes RBAC evidence' in operational
+    assert 'Compare committed Access Grants with effective Kubernetes RBAC. Review access drift separately.' in operational
+    # Keep the concise description within the approved desktop two-line copy budget.
+    assert len('Compare committed Access Grants with effective Kubernetes RBAC. Review access drift separately.') <= 100
     assert 'read-only context, not a drift queue' in operational
     assert page.count('workspace_tabs.render_query_tabs(') == 2
 
