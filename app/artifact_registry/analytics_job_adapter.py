@@ -201,8 +201,9 @@ def _analytics_snapshot_posture(
     eligible_count: int,
     covered_count: int,
     current_count: int,
+    snapshot_views: list[dict[str, Any]] | None = None,
 ) -> tuple[str, str, str]:
-    """Classify committed data without claiming worker/provider readiness from missing evidence."""
+    """Classify selected-window committed evidence without assuming all non-current data expired."""
     if not eligible_count:
         return 'Blocked', 'warning', 'No eligible Registry providers. Validate and enable a provider first.'
     if not covered_count:
@@ -214,8 +215,51 @@ def _analytics_snapshot_posture(
     if current_count == eligible_count:
         return 'Current Snapshot', 'normal', 'All eligible providers have current committed analytics evidence.'
     if current_count:
-        return 'Partial Coverage', 'warning', 'Some providers have stale or missing committed analytics snapshots.'
-    return 'Stale Snapshot', 'warning', 'All available snapshots have expired; prior evidence remains readable.'
+        return (
+            'Partial Coverage',
+            'warning',
+            'Some sources are missing current evidence; check expiry, changed inputs, and source completeness.',
+        )
+    if covered_count < eligible_count:
+        return (
+            'Partial Coverage',
+            'warning',
+            'Some eligible sources have no selected-window snapshot; existing evidence is not current.',
+        )
+
+    views = snapshot_views or []
+    if views and all(bool(view.get('is_stale')) for view in views):
+        return (
+            'Stale Snapshot',
+            'warning',
+            'Selected-window snapshots have expired; earlier committed evidence remains readable.',
+        )
+    if views and all(view.get('label') == 'Inputs Changed' and not view.get('is_stale') for view in views):
+        return (
+            'Inputs Changed',
+            'warning',
+            'Committed Registry inputs changed after this window was materialized; refresh the selected interval.',
+        )
+    if views and all(view.get('label') == 'Partial Evidence' for view in views):
+        return (
+            'Partial Evidence',
+            'warning',
+            'Committed snapshots exist, but required Metrics Source or governance evidence is incomplete.',
+        )
+    return (
+        'Snapshot Attention',
+        'warning',
+        'Committed snapshots are not current; check expiry, changed inputs, and incomplete evidence.',
+    )
+
+
+def _registry_analytics_last_job_window(job: JobExecution | None) -> str | None:
+    """Read a JobExecution's committed fleet scope without inferring the selected UI window."""
+    scope_key = getattr(job, 'scope_key', None)
+    if not isinstance(scope_key, str) or not scope_key.startswith('all:'):
+        return None
+    window = scope_key.partition(':')[2]
+    return window if window in _ANALYTICS_SNAPSHOT_WINDOWS else None
 
 
 _AUTO_RETRY_COOLDOWN = timedelta(minutes=5)
@@ -289,11 +333,13 @@ def build_registry_analytics_readiness(
 
     from app.artifact_registry.presentation_common import _analytics_snapshot_view
 
-    current = [item for item in snapshots if _analytics_snapshot_view(item)['is_current']]
+    snapshot_views = [_analytics_snapshot_view(item) for item in snapshots]
+    current_count = sum(bool(view['is_current']) for view in snapshot_views)
     label, tone, helper = _analytics_snapshot_posture(
         eligible_count=len(eligible_ids),
         covered_count=len(snapshots),
-        current_count=len(current),
+        current_count=current_count,
+        snapshot_views=snapshot_views,
     )
     if normalized_window != 'current' and not has_older_evidence and eligible_ids:
         label, tone, helper = (
@@ -319,6 +365,7 @@ def build_registry_analytics_readiness(
         execution_helper = 'Analytics data will be materialized by the registered worker when scheduled or requested.'
 
     latest_snapshot = max(snapshots, key=lambda item: item.generated_at) if snapshots else None
+    last_attempt_window = _registry_analytics_last_job_window(latest)
     if latest is not None and latest.status in {'failed', 'canceled', 'expired'} and active is None:
         if label == 'Current Snapshot':
             label, tone = 'Refresh Failed', 'warning'
@@ -333,8 +380,9 @@ def build_registry_analytics_readiness(
         'eligible_count': len(eligible_ids),
         'registered_count': registered_count,
         'covered_count': len(snapshots),
-        'current_count': len(current),
+        'current_count': current_count,
         'snapshot_count': len(snapshots),
+        'last_attempt_window': last_attempt_window,
         'latest_generated_at': latest_snapshot.generated_at if latest_snapshot else None,
         'latest_expiry_at': latest_snapshot.expires_at if latest_snapshot else None,
         'is_active': active is not None,
