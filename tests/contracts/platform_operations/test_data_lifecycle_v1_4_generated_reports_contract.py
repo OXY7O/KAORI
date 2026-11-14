@@ -111,7 +111,10 @@ def test_data_lifecycle_ui_explains_generated_report_evidence_and_status_windows
     assert 'Requested, Queued, Generating, active regeneration jobs' in workspace
     assert 'generated_report_ui.GENERATED_REPORT_COVERAGE_NOTE' in presentation
     assert 'generated_report_ui.GENERATED_REPORT_EXCLUSION_NOTE' in presentation
-    assert 'Pending, generating, and artifact-unsafe reports remain excluded from archive and cleanup until eligible.' in generated_presentation
+    assert (
+        'Pending, generating, and artifact-unsafe reports remain excluded from archive and cleanup until eligible.'
+        in generated_presentation
+    )
     assert "source_detail = 'Reports metadata + PDF/XLSX/CSV'" in presentation
 
 
