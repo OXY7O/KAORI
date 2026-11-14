@@ -106,6 +106,7 @@ def test_compact_policy_notices_preserve_archive_and_evidence_safety() -> None:
     assert 'Ready/Archived PDF/XLSX/CSV are SHA-256-verified before cleanup;' in template
     assert 'pending or regenerating reports remain protected.' in template
     assert 'Manual Archive Only; scheduling and cleanup blocked.' in source
+    assert 'Eligible delivery records require a manual archive request.' in source
     assert 'One policy covers persisted notifications shared by Activity Audit and the user inbox.' in source
     assert 'Transient toasts are not persisted, so they remain outside retention and archive management.' in source
     assert 'Hot delivery records retain deduplication, retries, channel dependencies and lifetime counts.' in template
