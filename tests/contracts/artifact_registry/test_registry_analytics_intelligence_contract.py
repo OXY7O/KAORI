@@ -520,9 +520,7 @@ def test_registry_overview_panels_render_unknown_without_fabricating_evidence() 
 def test_registry_capacity_chart_projection_requires_committed_valid_quota_evidence() -> None:
     from app.artifact_registry.presentation_analytics import _registry_capacity_chart_rows
 
-    def project(
-        name: str, usage: float, quota: float, *, registry: str = 'Harbor X300'
-    ) -> dict[str, object]:
+    def project(name: str, usage: float, quota: float, *, registry: str = 'Harbor X300') -> dict[str, object]:
         return {
             'project_name': name,
             'registry_name': registry,
@@ -562,9 +560,7 @@ def test_registry_capacity_chart_projection_requires_committed_valid_quota_evide
     assert projected[0]['usage_bytes'] == 150.0
     assert projected[0]['quota_bytes'] == 100.0
     assert projected[0]['forecast_label'] == 'No forecast'
-    assert _registry_capacity_chart_rows([project('zero', 0, 100)])[0][
-        'utilization_percent'
-    ] == 0.0
+    assert _registry_capacity_chart_rows([project('zero', 0, 100)])[0]['utilization_percent'] == 0.0
     assert _registry_capacity_chart_rows([project('missing-quota', 10, 0)]) == []
     assert _registry_capacity_chart_rows([]) == []
 
