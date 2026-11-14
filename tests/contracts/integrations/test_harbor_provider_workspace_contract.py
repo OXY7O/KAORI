@@ -558,6 +558,7 @@ def test_harbor_webhook_configuration_layout_preserves_admission_and_credential_
     assert "receiver_host in ['localhost', '127.0.0.1']" in configuration
     assert "request.host.startswith('[::1]')" in configuration
     assert 'Harbor-reachable HTTPS address' in configuration
+    assert "operational_callout.semantic_surface_classes('warning')" in configuration
     assert "url_for('harbor.webhook_token', instance_id=instance.id)" in configuration
     assert "url_for('harbor.webhook_disable', instance_id=instance.id)" in configuration
     assert configuration.count('name="csrf_token" value="{{ csrf_token() }}"') == 2
@@ -568,7 +569,7 @@ def test_harbor_webhook_configuration_layout_preserves_admission_and_credential_
     assert "action_button.classes('secondary')" in configuration
 
     # HTMX response keeps token once, with no persistence or premature display.
-    assert 'operational_callout.semantic_surface_classes(\'warning\')' in token_result
+    assert "operational_callout.semantic_surface_classes('warning')" in token_result
     assert 'integration_ui.palette_icon("key-round", "warning", size="sm")' in token_result
     assert '{{ webhook_token }}' in token_result
     assert 'cannot reveal it later' in token_result
