@@ -13,8 +13,16 @@ FOCUS = {
     'capacity': ('partials/_controls_readiness.html', 'partials/_overview.html', 'index.html'),
     'workload': ('partials/_controls_readiness.html', 'partials/_overview.html', 'index.html'),
     'storage': ('partials/_controls_readiness.html', 'partials/_overview.html', 'partials/_storage_section.html'),
-    'top_consumers': ('partials/_controls_readiness.html', 'partials/_summary.html', 'partials/_top_consumers_section.html'),
-    'forecast': ('partials/_controls_readiness.html', 'partials/_overview_methodology.html', 'partials/_forecast_section.html'),
+    'top_consumers': (
+        'partials/_controls_readiness.html',
+        'partials/_summary.html',
+        'partials/_top_consumers_section.html',
+    ),
+    'forecast': (
+        'partials/_controls_readiness.html',
+        'partials/_overview_methodology.html',
+        'partials/_forecast_section.html',
+    ),
     'alerts': ('partials/_filters.html', 'partials/_cluster_signal_overview.html', 'index.html'),
 }
 CONTENT = {
@@ -90,10 +98,7 @@ def test_all_focused_analytics_routes_have_title_owned_guides() -> None:
             assert 'title_accessory=info_tip.render(' in controls
         if domain not in {'alerts', 'top_consumers'}:
             assert 'title_accessory=info_tip.render(' in overview
-        assert (
-            'title_accessory=info_tip.render(' in workspace
-            or domain == 'alerts' and 'title_accessory=info_tip.render(' in read(ROOT / domain / 'index.html')
-        )
+        assert 'title_accessory=info_tip.render(' in workspace
 
     for domain, parts in CONTENT.items():
         for name in parts:
@@ -138,7 +143,7 @@ def test_overview_compact_copy_preserves_risk_and_source_semantics() -> None:
     assert 'Restore PVC usage evidence before confirming storage health.' in storage
     assert 'Monitor free capacity and Namespace growth; plan expansion before utilization rises.' in storage
     assert 'Storage Evidence Is Limited' in storage
-    assert "analysis_surface.unavailable_value_classes()" not in storage
+    assert "overview_surface.unavailable_value_classes()" in storage
     assert 'Check requests, limits, replicas, and storage allocation before resizing.' in consumers
     assert 'No projected breach in available evidence.' in forecast
     assert 'forecast.risk_note|replace(' in forecast
