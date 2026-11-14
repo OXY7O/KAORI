@@ -64,7 +64,12 @@ def build_platform_operations_overview_context(
                         f'{attention} / {policy_attention}',
                         'Execution / Policy Alerts',
                     ),
-                    ('circle-check', 'Completed · 24H', _count_value(job_stats.get('completed_24h', 0)), 'Completed · 24H'),
+                    (
+                        'circle-check',
+                        'Completed · 24H',
+                        _count_value(job_stats.get('completed_24h', 0)),
+                        'Completed · 24H',
+                    ),
                 ),
                 'action_endpoint': ('jobs.configuration' if policy_attention and not attention else 'jobs.executions'),
                 'action_label': (
