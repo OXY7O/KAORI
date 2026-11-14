@@ -241,5 +241,6 @@ def test_workspace_posture_metric_labels_are_compact_and_accessible() -> None:
     # Preserve separate source-owned counts; never combine archive and job
     # activity or turn execution vs. policy attention into one total.
     assert "f'{attention} / {policy_attention}'" in presentation
-    assert """f'{lifecycle["active_archive_total"]} / {lifecycle["active_job_total"]}'""" in presentation
+    archive_job_expression = '{lifecycle["active_archive_total"]} / {lifecycle["active_job_total"]}'
+    assert f'f{archive_job_expression!r}' in presentation
     assert 'protected_namespaces' in presentation
