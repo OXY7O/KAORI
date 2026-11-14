@@ -51,9 +51,7 @@
                     {{ metric_card.render('Runtime Correlation',
                         posture.runtime_status.status,
                         'Committed binding readiness.',
-                        'waypoints', source_label='Registry × Kubernetes', compact=true,
-                        status_label=posture.runtime_status.status,
-                        status_tone=posture.runtime_status.tone) }}
+                        'waypoints', source_label='Registry × Kubernetes', compact=true) }}
                     {{ metric_card.render('Evidence Freshness',
                         posture.scan_updated_label|replace('Updated ', '') if posture.last_scan else 'Not Collected',
                         'Latest usable scanner snapshot.',
