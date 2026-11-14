@@ -10,7 +10,11 @@ from jinja2 import Environment
 
 from app.common.pagination import build_pagination_window, pagination_payload
 from app.common.workspace_navigation import build_sidebar_navigation
-from app.security_posture.presentation import _scanner_coverage_state, build_security_posture
+from app.security_posture.presentation import (
+    _scanner_coverage_state,
+    _security_severity_distribution,
+    build_security_posture,
+)
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -263,6 +267,28 @@ def test_security_assurance_labels_preserve_shared_tab_identity_and_bounds() -> 
     assert "tabs if tabs is not none else standard_tabs" in shared
     assert "('overview', 'Operations Overview', 'activity')" in shared
     assert "('capacity', 'Capacity & Demand', 'gauge')" in shared
+
+
+def test_security_distinct_cve_severity_projection_preserves_unknown_without_false_total() -> None:
+    distribution = _security_severity_distribution({0: 2, 1: 1, 5: 3})
+    assert distribution[0] == {'label': 'Critical', 'count': 2, 'tone': 'critical'}
+    assert distribution[1] == {'label': 'High', 'count': 1, 'tone': 'warning'}
+    assert distribution[2]['count'] == 0
+    assert distribution[-1] == {'label': 'Unknown', 'count': 3, 'tone': 'unknown'}
+    assert sum(row['count'] for row in distribution) == 6
+
+
+def test_security_overview_preview_never_renders_more_than_five_cves() -> None:
+    posture = _renderable_posture()
+    posture['rows'] = [
+        {**posture['rows'][0], 'cve_id': f'CVE-2022-{2000 + index}'}
+        for index in range(7)
+    ]
+    html = _render_workspace_page('overview', posture)
+    assert 'CVE-2022-2000' in html
+    assert 'CVE-2022-2004' in html
+    assert 'CVE-2022-2005' not in html
+    assert 'CVE-2022-2006' not in html
 
 
 def test_security_assurance_stale_scanner_is_not_runtime_all_clear() -> None:
