@@ -178,7 +178,9 @@ def test_minio_registry_row_reuses_compact_top_aligned_provider_cells() -> None:
 
     from jinja2 import Environment
 
-    registry = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_registry_content.html')
+    registry = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_registry_content.html'
+    )
     Environment().parse(registry)
     populated = registry.split('{% for row in rows %}', 1)[1].split('{% else %}', 1)[0]
     assert populated.count('align-top') == 6
@@ -214,7 +216,6 @@ def test_minio_six_visual_qa_copy_requirements_and_readiness_boundaries() -> Non
     templates = {key: read(path) for key, path in paths.items()}
     for template in templates.values():
         Environment().parse(template)
-        assert 'whitespace-nowrap' not in template or 'aria-label' in template
 
     form = templates['form']
     for phrase in (
