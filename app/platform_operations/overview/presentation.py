@@ -67,9 +67,7 @@ def build_platform_operations_overview_context(
                 ),
                 'boundary_label': 'Canonical execution evidence',
                 'boundary_title': 'Execution Evidence',
-                'boundary_description': (
-                    'Jobs owns queues, retries and execution evidence.'
-                ),
+                'boundary_description': 'Jobs owns queues, retries and execution evidence.',
             }
         )
 
@@ -108,9 +106,7 @@ def build_platform_operations_overview_context(
                 'action_label': 'Open Data Lifecycle',
                 'boundary_label': 'Archive-first governance',
                 'boundary_title': 'Lifecycle Governance',
-                'boundary_description': (
-                    'Data Lifecycle owns retention and verified archives.'
-                ),
+                'boundary_description': 'Data Lifecycle owns retention and verified archives.',
             }
         )
 
@@ -141,9 +137,7 @@ def build_platform_operations_overview_context(
                 'action_label': 'Open Kubernetes Administration',
                 'boundary_label': 'Protected control boundary',
                 'boundary_title': 'Protected Administration',
-                'boundary_description': (
-                    'Kubernetes governs readiness and reveal access.'
-                ),
+                'boundary_description': 'Kubernetes governs readiness and reveal access.',
             }
         )
 
