@@ -42,7 +42,7 @@
         {% set asset_icon = 'database' %}
     {% elif asset_type == 'vault_instance' %}
         {% set asset_icon = 'key-round' %}
-    {% elif asset_type == 'artifact_registry' %}
+    {% elif asset_type in ['artifact_registry', 'registry_instance'] %}
         {% set asset_icon = 'package' %}
     {% endif %}
     {% set distinct_type = type_label and type_label|trim|lower != label|trim|lower %}
@@ -61,6 +61,9 @@
                     {% if show_type_inline %}<span class="text-content-secondary">{{ type_label }}</span>{% endif %}
                     {% if show_type_inline and metadata %}<span aria-hidden="true"> · </span>{% endif %}
                     {% if metadata %}
+                        {% if metadata_is_key and asset_type == 'registry_instance' %}
+                            <span class="text-content-secondary">Asset ID: </span>
+                        {% endif %}
                         <span class="{{ 'font-mono' if metadata_is_key else '' }}">{{ metadata }}</span>
                     {% endif %}
                 </p>
