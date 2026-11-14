@@ -1082,21 +1082,38 @@ its approved three-child-tab composition matches focused Growth Analytics:
 ARIA tab/panel identities and opt out of legacy `?tab=` query rewriting.
 No extra provider/worker request occurs when a child tab activates.
 
-**Overview** uses one divider-based four-metric strip, compact source-specific
-quota-pressure meters and a non-stretched Capacity Reading panel. **Project
-Quotas** owns the only detailed five-column project comparison table, so it
-is no longer squeezed beside a tall interpretive sidebar. **Forecast &
-Evidence** shows bounded project forecast status, independently qualified
-growth evidence and committed source-snapshot freshness; it distinguishes
-current, stale-but-readable, and unmaterialized evidence without asserting
-provider health. These data sections remain read-only and content-height.
+**Overview** preserves four qualified capacity metrics with semantic role
+icons, provides a full-width project quota-pressure visualization for the
+five highest-utilization committed projects, and places three compact
+planning-interpretation facts below it. The previous uneven sidebar and
+large blank space are removed.
+
+**Project Quotas** uses the KAORI standard full-width, six-column table
+(Project/Registry, Used, Quota, Utilization, Growth, Forecast), with native
+pagination defaulting to five rows and shared 5/10/25/50 page-size controls.
+The new `capacity_project_rows` projection includes all qualified committed
+project observations, whereas `capacity_chart_rows` remains intentionally
+bounded to five for the existing Overview chart. Both projections use the
+same finite/nonnegative usage and positive-quota qualifier. The
+RBAC-protected `/analytics/capacity/table` endpoint returns only the
+paginated committed table fragment on HTMX requests and redirects normal
+requests to the authorized Capacity detail page. The current Registry
+source and time window remain scoped; no external provider call is added.
+
+**Forecast & Evidence** uses three compact source-backed indicators,
+project-level proportional utilization meters showing observed quota
+pressure (not forecasts), independent growth and forecast labels, and a
+compact source snapshot lineage with current/stale/unmaterialized states.
+Missing growth cannot be silently replaced with zero and neither observed
+net-zero nor snapshot currency claims provider health.
 
 The detail reuses KAORI Analytics evidence surfaces and canonical table
 primitives to organize four existing committed Capacity Outlook metrics,
-**Qualified Quota Comparison** and **Capacity Reading** in separate tabs. Project records are the exact already-qualified
-`capacity_chart_rows` (finite nonnegative observed usage, finite positive
-quota, valid Registry/project identities, maximum five) rather than a second
-ad hoc qualification pass. Provider identity remains with the project.
+**Qualified Quota Comparison** and **Capacity Reading** in separate tabs.
+Full project rows and the five-row chart preview share the same committed
+qualification rules (finite nonnegative usage, finite positive quota,
+valid Registry/project identities) without a second provider-data authority.
+Provider identity remains with each project.
 Materialized growth display is carried through from the existing decorated
 project forecast rows, not recalculated in Jinja. Each row retains observed
 usage/quota, exact utilization including 0% and over-quota values, and

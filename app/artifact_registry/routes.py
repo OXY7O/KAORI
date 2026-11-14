@@ -687,6 +687,8 @@ def analytics_section(section: str) -> ResponseReturnValue:
         alert_source=request.args.get('alert_source', 'all', type=str),
         alert_page=request.args.get('alert_page', 1, type=int) or 1,
         alert_per_page=request.args.get('alert_per_page', 5, type=int) or 5,
+        capacity_page=request.args.get('capacity_page', 1, type=int) or 1,
+        capacity_per_page=request.args.get('capacity_per_page', 5, type=int) or 5,
     )
     if overview_panel:
         if section == 'evidence':
@@ -705,6 +707,28 @@ def analytics_section(section: str) -> ResponseReturnValue:
         else 'artifact_registry/partials/_analytics_section.html'
     )
     return render_template(template, analytics=context)
+
+
+@artifact_registry_bp.get('/analytics/capacity/table')
+@permission_required('artifact_registry.view')
+def analytics_capacity_table() -> ResponseReturnValue:
+    """Paginated committed project quota evidence, never a live provider query."""
+    query_args: dict[str, Any] = request.args.to_dict(flat=True)
+    query_args.pop('tab', None)
+    if not is_htmx_request(request.headers):
+        return redirect(url_for('artifact_registry.analytics_capacity', **query_args))
+
+    context = build_analytics(
+        active_tab='capacity',
+        provider_id=_analytics_provider_id(),
+        snapshot_window=request.args.get('snapshot_window', '24h', type=str),
+        capacity_page=request.args.get('capacity_page', 1, type=int) or 1,
+        capacity_per_page=request.args.get('capacity_per_page', 5, type=int) or 5,
+    )
+    return render_template(
+        'artifact_registry/partials/_analytics_capacity_project_quotas.html',
+        analytics=context,
+    )
 
 
 @artifact_registry_bp.get('/analytics/alerts/table')

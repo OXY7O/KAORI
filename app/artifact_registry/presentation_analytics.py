@@ -618,8 +618,8 @@ def _registry_usage_chart_rows(activity_rows: list[dict[str, Any]]) -> list[dict
     )[:5]
 
 
-def _registry_capacity_chart_rows(forecast_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Bounded, committed project quota ratios; never synthesize a forecast."""
+def _registry_capacity_project_rows(forecast_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Qualified, committed project quota ratios; never synthesize a forecast."""
     qualified: list[dict[str, Any]] = []
     for row in forecast_rows:
         usage, quota = row.get('usage_bytes'), row.get('quota_bytes')
@@ -658,8 +658,12 @@ def _registry_capacity_chart_rows(forecast_rows: list[dict[str, Any]]) -> list[d
     return sorted(
         qualified,
         key=lambda row: (-row['utilization_percent'], row['project_name'].casefold()),
-    )[:5]
+    )
 
+
+def _registry_capacity_chart_rows(forecast_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Keep Overview chart bounded while the detail table paginates."""
+    return _registry_capacity_project_rows(forecast_rows)[:5]
 
 def _analytics_summary_cards(
     aggregate: dict[str, Any],
@@ -882,6 +886,8 @@ def build_analytics(
     alert_source: str = 'all',
     alert_page: int = 1,
     alert_per_page: int = 5,
+    capacity_page: int = 1,
+    capacity_per_page: int = 5,
 ) -> dict[str, Any]:
     overview = build_overview()
     identities = _providers()
@@ -908,6 +914,10 @@ def build_analytics(
         source=alert_source,
         page=alert_page,
         per_page=alert_per_page,
+    )
+    capacity_project_rows = _registry_capacity_project_rows(forecast_rows)
+    capacity_page_rows, capacity_pagination = paginate_sequence(
+        capacity_project_rows, page=capacity_page, per_page=capacity_per_page
     )
     normalized_tab = (
         active_tab
@@ -936,6 +946,9 @@ def build_analytics(
             growth=growth,
         ),
         'capacity_chart_rows': _registry_capacity_chart_rows(forecast_rows),
+        'capacity_project_rows': capacity_page_rows,
+        'capacity_project_count': len(capacity_project_rows),
+        'capacity_pagination': capacity_pagination,
         'usage_chart_rows': _registry_usage_chart_rows(bundle['activity_rows']),
         'insights': _analytics_insights(aggregate, growth_rows=growth_rows, growth=growth)[:5],
         'coverage': coverage,
