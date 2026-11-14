@@ -361,7 +361,8 @@ def test_registry_growth_detail_child_tabs_use_shared_analytics_navigation_and_b
     assert 'Registry Growth' in section
     assert 'data-analytics-tabset-id="artifact-registry-growth-content"' in workspace
     assert 'data-analytics-update-query="false"' in workspace
-    assert "content_tabs.render_buttons('artifact-registry-growth-content', growth_tabs" in workspace
+    assert "content_tabs.render_buttons('artifact-registry-growth-content'," in workspace
+    assert 'growth_tabs,' in workspace
     assert "('overview', 'Overview', 'layout-dashboard')" in workspace
     assert "('sources', 'Source Deltas', 'chart-no-axes-column-increasing')" in workspace
     assert "('history', 'History & Evidence', 'chart-spline')" in workspace
@@ -381,9 +382,14 @@ def test_registry_growth_detail_child_tabs_use_shared_analytics_navigation_and_b
     assert 'Qualified Growth Comparison Not Available' in overview
     assert "spotlight.artifact_delta if spotlight.artifact_delta is not none else 'N/A'" in overview
     assert 'zero net change does not prove there was no intermediate activity' in overview
+    assert 'md:grid-cols-3 md:divide-x md:divide-y-0' in overview
+    assert 'Qualified Source Spotlight' in overview
+    assert 'Materialization Basis' in overview
     assert 'qualified_growth[0]' in overview
 
     assert 'qualified_growth[:5]' in sources
+    assert 'divide-y divide-outline-subtle' in sources
+    assert 'grid gap-px overflow-hidden rounded-lg' in sources
     assert 'row.artifact_growth_display' in sources
     assert 'row.size_growth_display' in sources
     assert 'row.size_delta_display' in sources
@@ -391,8 +397,10 @@ def test_registry_growth_detail_child_tabs_use_shared_analytics_navigation_and_b
     assert 'Source Deltas Not Available' in sources
     assert 'Missing source evidence is not zero growth.' in sources
 
-    assert 'analytics.growth_charts.artifacts' in history
-    assert 'analytics.growth_charts.storage' in history
+    assert 'Artifact History Sources' not in history
+    assert 'Storage History Sources' not in history
+    assert 'Selected Time Range' not in history
+    assert 'analysis_surface.evidence_shell_classes()' in history
     assert 'artifact_registry/partials/_analytics_growth_charts.html' in history
     assert 'source_rows[:5]' in history
     assert 'row.status_label, row.tone' in history
@@ -443,7 +451,7 @@ def test_registry_growth_detail_child_tabs_render_observed_zero_missing_and_hist
     assert 'Source Growth Trend' in rendered
     assert 'Historical Chart Not Available' in rendered
     assert 'Current committed snapshot' in rendered
-    assert 'No projection is shown.' in rendered
+    assert 'Not a forecast' in rendered
 
     analytics['growth_rows'] = []
     analytics['snapshot_count'] = 0
@@ -492,7 +500,8 @@ def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> 
     assert "return _render_registry_analytics_page('overview')" in routes
     assert "legacy_tab = request.args.get('tab', '', type=str)" in routes
     assert 'never waits on live Harbor, Alertmanager, Prometheus, or Thanos requests' in shell
-    assert 'never auto-cleaned' in section
+    growth_overview = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_overview.html').read_text()
+    assert 'never auto-cleaned' in growth_overview
     assert (
         'central Intelligence owns recommendation semantics, Accepted Risk, escalation, and automation control'
         in section

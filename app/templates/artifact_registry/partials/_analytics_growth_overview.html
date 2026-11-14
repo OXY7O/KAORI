@@ -2,9 +2,15 @@
 {% import "components/table_label.html" as table_label %}
 {% set qualified_growth = analytics.growth_rows|default([], true) %}
 <div class="{{ analysis_surface.evidence_shell_classes() }}">
-    <div class="{{ analysis_surface.guidance_fact_grid_classes(3) }}">
-        <div class="{{ analysis_surface.guidance_fact_classes() }}">
-            <p class="{{ analysis_surface.metric_label_classes() }}">Storage Footprint</p>
+    <div class="grid divide-y divide-outline-subtle md:grid-cols-3 md:divide-x md:divide-y-0">
+        <div class="min-w-0 px-4 py-4 sm:px-5">
+            <div class="flex items-center gap-2">
+                <span class="{{ analysis_surface.role_icon_classes('brand', size='compact') }}"
+                      aria-hidden="true">
+                    <i data-lucide="database" class="h-3.5 w-3.5"></i>
+                </span>
+                <p class="{{ analysis_surface.metric_label_classes() }}">Storage Footprint</p>
+            </div>
             <p class="mt-2 break-words text-xl font-semibold tabular-nums text-content-primary">
                 {{ analytics.summary_cards[0].value }}
             </p>
@@ -16,29 +22,43 @@
                 {% endif %}
             </p>
         </div>
-        <div class="{{ analysis_surface.guidance_fact_classes() }}">
-            <p class="{{ analysis_surface.metric_label_classes() }}">Artifact Velocity</p>
+        <div class="min-w-0 px-4 py-4 sm:px-5">
+            <div class="flex items-center gap-2">
+                <span class="{{ analysis_surface.role_icon_classes('insight', size='compact') }}"
+                      aria-hidden="true">
+                    <i data-lucide="trending-up" class="h-3.5 w-3.5"></i>
+                </span>
+                <p class="{{ analysis_surface.metric_label_classes() }}">Artifact Velocity</p>
+            </div>
             <p class="mt-2 break-words text-xl font-semibold tabular-nums text-content-primary">
                 {{ analytics.summary_cards[1].value }}
             </p>
             <p class="mt-1 text-xs leading-5 text-content-secondary">Worker-materialized rate, when qualified</p>
         </div>
-        <div class="{{ analysis_surface.guidance_fact_classes() }}">
+        <div class="min-w-0 px-4 py-4 sm:px-5">
             <div class="flex flex-wrap items-center justify-between gap-2">
-                <p class="{{ analysis_surface.metric_label_classes() }}">Stale Candidates</p>
+                <div class="flex items-center gap-2">
+                    <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
+                          aria-hidden="true">
+                        <i data-lucide="archive" class="h-3.5 w-3.5"></i>
+                    </span>
+                    <p class="{{ analysis_surface.metric_label_classes() }}">Stale Candidates</p>
+                </div>
                 {{ table_label.metadata_label('Review Only', 'archive', size='compact') }}
             </div>
             <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">
                 {{ analytics.aggregate.stale_candidates if analytics.snapshot_count else 'N/A' }}
             </p>
-            <p class="mt-1 text-xs leading-5 text-content-secondary">Review candidates; never automatically deleted</p>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">
+                Review candidates; never auto-cleaned
+            </p>
         </div>
     </div>
 </div>
-<div class="grid gap-4 lg:grid-cols-5">
+<div class="grid gap-3 lg:grid-cols-5">
     <section class="{{ analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-3') }}"
              aria-labelledby="registry-growth-posture-title">
-        <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-4">
+        <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-3">
             <span class="{{ analysis_surface.role_icon_classes('insight', size='compact') }}"
                   aria-hidden="true">
                 <i data-lucide="chart-no-axes-column-increasing" class="h-4 w-4"></i>
@@ -46,34 +66,42 @@
             <div class="min-w-0">
                 <h4 id="registry-growth-posture-title"
                     class="text-sm font-semibold text-content-primary">Growth Reading</h4>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Observed net change in a qualified source comparison.</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                    Source-specific endpoint comparison, not an inferred trend.
+                </p>
             </div>
         </header>
         {% if qualified_growth %}
             {% set spotlight = qualified_growth[0] %}
             <div class="p-4">
-                <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="flex min-w-0 flex-wrap items-start justify-between gap-3">
                     <div class="min-w-0">
-                        <p class="{{ analysis_surface.metric_label_classes() }}">Qualified source spotlight</p>
-                        <p class="mt-1 break-words text-sm font-semibold text-content-primary">{{ spotlight.registry_name }}</p>
-                        <p class="mt-1 text-xs text-content-muted">{{ spotlight.provider_key|replace('_', ' ')|title }}</p>
+                        <p class="{{ analysis_surface.metric_label_classes() }}">Qualified Source Spotlight</p>
+                        <p class="mt-1 break-words text-sm font-semibold text-content-primary">
+                            {{ spotlight.registry_name }}
+                        </p>
+                        <p class="mt-1 text-xs text-content-muted">
+                            {{ spotlight.provider_key|replace('_', ' ') |title }}
+                        </p>
                     </div>
                     {{ table_label.metadata_label('Committed Comparison', 'database', size='compact') }}
                 </div>
-                <dl class="{{ analysis_surface.guidance_fact_grid_classes(2, 'mt-4') }}">
-                    <div class="{{ analysis_surface.guidance_fact_classes() }}">
+                <dl class="mt-3 grid gap-2 sm:grid-cols-2">
+                    <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-muted px-4 py-3">
                         <dt class="{{ analysis_surface.metric_label_classes() }}">Artifact Δ</dt>
-                        <dd class="mt-2 text-lg font-semibold tabular-nums text-content-primary">
+                        <dd class="mt-1.5 text-lg font-semibold tabular-nums text-content-primary">
                             {{ spotlight.artifact_delta if spotlight.artifact_delta is not none else 'N/A' }}
                         </dd>
                     </div>
-                    <div class="{{ analysis_surface.guidance_fact_classes() }}">
+                    <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-muted px-4 py-3">
                         <dt class="{{ analysis_surface.metric_label_classes() }}">Storage Δ</dt>
-                        <dd class="mt-2 text-lg font-semibold tabular-nums text-content-primary">{{ spotlight.size_delta_display }}</dd>
+                        <dd class="mt-1.5 text-lg font-semibold tabular-nums text-content-primary">
+                            {{ spotlight.size_delta_display }}
+                        </dd>
                     </div>
                 </dl>
                 <p class="mt-3 text-xs leading-5 text-content-muted">
-                    Endpoint deltas describe a committed comparison; a zero net change does not prove there was no intermediate activity.
+                    A zero net change does not prove there was no intermediate activity.
                 </p>
             </div>
         {% else %}
@@ -89,7 +117,7 @@
     </section>
     <section class="{{ analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-2') }}"
              aria-labelledby="registry-growth-basis-title">
-        <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-4">
+        <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-3">
             <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
                   aria-hidden="true">
                 <i data-lucide="database-backup" class="h-4 w-4"></i>
@@ -97,25 +125,33 @@
             <div class="min-w-0">
                 <h4 id="registry-growth-basis-title"
                     class="text-sm font-semibold text-content-primary">Materialization Basis</h4>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Provenance of the selected analytical view.</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                    Evidence coverage of the selected analysis.
+                </p>
             </div>
         </header>
         <dl class="divide-y divide-outline-subtle">
             <div class="flex items-center justify-between gap-3 px-4 py-3 text-xs">
                 <dt class="text-content-muted">Selected Time Range</dt>
-                <dd class="font-semibold text-content-primary">{{ analytics.snapshot_window|upper }}</dd>
+                <dd class="font-semibold text-content-primary">
+                    {{ analytics.snapshot_window|upper }}
+                </dd>
             </div>
             <div class="flex items-center justify-between gap-3 px-4 py-3 text-xs">
                 <dt class="text-content-muted">Committed Snapshots</dt>
-                <dd class="font-semibold tabular-nums text-content-primary">{{ analytics.snapshot_count }}/{{ analytics.provider_count }}</dd>
+                <dd class="font-semibold tabular-nums text-content-primary">
+                    {{ analytics.snapshot_count }}/{{ analytics.provider_count }}
+                </dd>
             </div>
             <div class="flex items-center justify-between gap-3 px-4 py-3 text-xs">
                 <dt class="text-content-muted">Qualified Comparisons</dt>
-                <dd class="font-semibold tabular-nums text-content-primary">{{ qualified_growth|length }}</dd>
+                <dd class="font-semibold tabular-nums text-content-primary">
+                    {{ qualified_growth|length }}
+                </dd>
             </div>
         </dl>
-        <p class="border-t border-outline-subtle px-4 py-3 text-xs leading-5 text-content-secondary">
-            KAORI reads committed Registry analytics; measured growth quality and snapshot freshness are reviewed under History & Evidence.
+        <p class="border-t border-outline-subtle px-4 py-3 text-xs leading-5 text-content-muted">
+            View measured-history qualification and snapshot currency in History & Evidence.
         </p>
     </section>
 </div>

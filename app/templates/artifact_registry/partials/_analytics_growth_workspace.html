@@ -2,11 +2,7 @@
 {% import "components/content_tabs.html" as content_tabs %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/info_tip.html" as info_tip %}
-{% set growth_tabs = [
-    ('overview', 'Overview', 'layout-dashboard'),
-    ('sources', 'Source Deltas', 'chart-no-axes-column-increasing'),
-    ('history', 'History & Evidence', 'chart-spline')
-] %}
+{% set growth_tabs = [('overview', 'Overview', 'layout-dashboard'), ('sources', 'Source Deltas', 'chart-no-axes-column-increasing'), ('history', 'History & Evidence', 'chart-spline')] %}
 <section id="artifact-registry-growth-content"
          data-analytics-tabset
          data-analytics-tabset-id="artifact-registry-growth-content"
@@ -44,36 +40,30 @@
         </div>
     </header>
     {{ content_tabs.render_buttons('artifact-registry-growth-content',
-                    growth_tabs,
-                    'Growth Analytics Sections',
-                    embedded=true,
-                    data_namespace='analytics',
-                    active_key='overview',
-                    show_badges=false,
-                    nowrap=true) }}
+        growth_tabs,
+        'Growth Analytics Sections',
+        embedded=true,
+        data_namespace='analytics',
+        active_key='overview',
+        show_badges=false,
+        nowrap=true) }}
     <div class="p-4 sm:p-5">
         <div id="artifact-registry-growth-content-panel-overview"
              role="tabpanel"
              aria-labelledby="artifact-registry-growth-content-tab-overview"
              data-analytics-tab-panel="overview"
-             class="space-y-4">
-            {% include "artifact_registry/partials/_analytics_growth_overview.html" %}
-        </div>
+             class="space-y-4">{% include "artifact_registry/partials/_analytics_growth_overview.html" %}</div>
         <div id="artifact-registry-growth-content-panel-sources"
              role="tabpanel"
              aria-labelledby="artifact-registry-growth-content-tab-sources"
              data-analytics-tab-panel="sources"
              hidden
-             class="space-y-4">
-            {% include "artifact_registry/partials/_analytics_growth_source_deltas.html" %}
-        </div>
+             class="space-y-4">{% include "artifact_registry/partials/_analytics_growth_source_deltas.html" %}</div>
         <div id="artifact-registry-growth-content-panel-history"
              role="tabpanel"
              aria-labelledby="artifact-registry-growth-content-tab-history"
              data-analytics-tab-panel="history"
              hidden
-             class="space-y-4">
-            {% include "artifact_registry/partials/_analytics_growth_history_evidence.html" %}
-        </div>
+             class="space-y-4">{% include "artifact_registry/partials/_analytics_growth_history_evidence.html" %}</div>
     </div>
 </section>
