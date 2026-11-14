@@ -19,6 +19,42 @@ Security Posture is an Assurance workspace that **consumes** source-qualified co
 - `Artifact Registry → Security` continues as authoritative source-domain workspace. Exact CVE rows link to its existing `/artifact-registry/security/cve/<CVE>/impact` drill-down; Security does **not** duplicate that detail view.
 - The **Assurance** sidebar contains a two-level Security parent with only real route-backed Overview/Findings children. Planned capabilities remain hidden; no new renderer/CSS family.
 
+## Security Sync, scanner freshness and runtime correlation
+
+These are **three independent authorities**. `artifact_registry_security`
+`JobExecution.completed_at` (Security Evidence Operations → Last Successful)
+reports the **collection job's** completion, not the time a new Harbor/Trivy
+vulnerability report was generated. The Registry Security collector performs
+incremental collection: it compares the provider's scan completion identity,
+reuses the existing `RegistryScanSnapshot` when unchanged, and records
+`refreshed_report_count` versus `reused_report_count` in the job result.
+A successful job with only reused reports can therefore leave
+`RegistryScanSnapshot.observed_at` at its original date. The
+`Security Evidence Snapshot` uses qualified committed scan timestamps, and
+the Security Posture Overview checks the oldest usable scanner timestamp
+against its 24-hour freshness window. **Do not replace those timestamps with
+the last successful job time or silence Stale after a successful sync.**
+
+Operator troubleshooting sequence: inspect the latest
+`artifact_registry_security` JobExecution result (especially
+`refreshed_report_count`, `reused_report_count`, per-source warnings, and
+`report_failure_count`); check the provider's most recent scan completion
+time and scan policy; run/authorize a *provider-side scan* only through the
+provider's established workflow when a new scan is required, then use
+`Sync Security Evidence` to commit the updated provider report to KAORI.
+A UI **Refresh View** only re-reads committed KAORI table state, never
+dispatches Security Sync or triggers a provider scan.
+
+`Inputs Changed` belongs to a separate
+`artifact_registry_runtime_correlation` JobExecution. The Runtime Usage
+readiness check compares its last committed `input_signature` to current
+Registry artifacts and Kubernetes Pod inventory and can also report a
+missing generation proof. Inspect Runtime Usage prerequisites and rebuild
+the committed correlation through its existing authorized job when eligible;
+rerunning Security Sync or refreshing a table cannot make this status Ready.
+A stale scan and an unready correlation must remain separate visible
+warnings; neither condition proves that any application is unaffected.
+
 ## Read / RBAC contract
 
 Both Security routes require `security_posture.view`; `flask seed-rbac` (in a configured **development** environment) registers the new canonical permission. **Artifact Registry source reads and source links additionally require** `artifact_registry.view`. A Security-only authorized user sees qualified unavailable/unknown states without any Registry SQL data access. Integration management and Intelligence/Reports links remain separately permission-filtered. Do not grant Registry visibility transitively from this aggregate parent.
