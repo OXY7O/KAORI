@@ -338,6 +338,22 @@ this pattern and needs no duplicate. Vault's non-tabular Source Qualification
 Boundaries are explanatory, not a query-results registry, and must not gain a
 misleading result count.
 
+**Connection Registry filtered Results parity (UAT #4693):** all seven provider
+Connection Registries display the same canonical `N Result(s)` immediately
+after their title Guide using `pagination.total_items`, not a page row count.
+Kubernetes, MinIO, Harbor and GitHub already pass that value into the shared
+`provider_registry.registry_header`; Metrics Source and Alertmanager also
+pass it explicitly. Vault keeps its approved
+`table_ui.inventory_block_header(..., title_extra=header_guide,
+result_count=pagination.total_items)` without a second shared Guide. For
+Metrics Source and Alertmanager, filters and pagination **replace the owning
+registry card** with HTMX `outerHTML` (existing `app/integrations/routes.py`
+card-target dispatch) rather than replacing only the table content: the
+header result count, filters and visible rows must reflect the same committed
+filtered pagination after every operation. Reuse the existing card IDs and
+loading indicator, preserve the active tab and query parameters; do not add
+OOB counters, page-local count pills or new provider requests.
+
 Coverage status is not provider runtime health. `Covered`, `Uncovered`, missing binding, validation-required binding, and incompatible source remain distinct states.
 
 ## Runtime Overview Contract

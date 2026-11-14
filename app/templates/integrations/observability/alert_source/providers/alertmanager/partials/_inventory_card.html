@@ -28,15 +28,16 @@
         'Manage reusable Alertmanager connections and their downstream consumer bindings.',
         'database-zap',
         'alertmanager-inventory-loading',
-        action_html=registry_clear_action) }}
+        action_html=registry_clear_action,
+         result_count=pagination.total_items) }}
     <div class="{{ integration_ui.filter_region_classes() }}"
          data-kaori-one-line-filters>
         <form id="alertmanager-inventory-filter-form"
               method="get"
               action="{{ url_for('integrations.alertmanager') }}"
               hx-get="{{ url_for('integrations.alertmanager') }}"
-              hx-target="#alertmanager-inventory-content"
-              hx-swap="innerHTML"
+              hx-target="#alertmanager-inventory-card"
+              hx-swap="outerHTML"
               hx-push-url="true"
               hx-trigger="change from:select, keyup changed delay:500ms from:input[name='q'], search from:input[name='q']"
               hx-indicator="#alertmanager-inventory-loading"
