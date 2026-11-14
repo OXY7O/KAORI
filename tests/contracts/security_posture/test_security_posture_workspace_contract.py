@@ -444,7 +444,8 @@ def test_security_overview_cve_registry_empty_filter_is_not_a_safety_verdict() -
 
 def test_security_overview_filter_params_preserve_unfiltered_scope_totals() -> None:
     routes = read('app/security_posture/routes.py')
-    overview_route = routes.split('def overview() -> ResponseReturnValue:', 1)[1].split('@security_posture_bp.get', 1)[0]
+    overview_route = routes.split('def overview() -> ResponseReturnValue:', 1)[1]
+    overview_route = overview_route.split('@security_posture_bp.get', 1)[0]
     assert "search=request.args.get('q', '', type=str)" in overview_route
     assert "severity=request.args.get('severity', '', type=str)" in overview_route
     assert "page=request.args.get('page', 1, type=int) or 1" in overview_route
