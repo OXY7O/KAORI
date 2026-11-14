@@ -37,10 +37,10 @@ def test_registration_guidance_remains_compact_without_forced_truncation() -> No
 
     source = TEMPLATE.read_text(encoding="utf-8")
     patterns = (
-        r"'Endpoint & Access',\\s*'([^']+)'",
+        r"'Endpoint & Access',\s*'([^']+)'",
         r'flow_note="([^"]+)"',
         r'alertmanager_related_description = "([^"]+)"',
-        r"'Allow KAORI to Use This Connection',\\s*'([^']+)'",
+        r"'Allow KAORI to Use This Connection',\s*'([^']+)'",
     )
     for pattern in patterns:
         match = re.search(pattern, source)
