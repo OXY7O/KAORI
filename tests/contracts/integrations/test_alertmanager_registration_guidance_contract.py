@@ -29,3 +29,25 @@ def test_registration_guidance_keeps_shared_components_and_binding_context() -> 
     assert 'name="enabled"' in source
     assert 'name="verify_ssl"' in source
     assert "Run Full Validation" in source
+
+
+def test_registration_guidance_remains_compact_without_forced_truncation() -> None:
+    """Keep the four operator-reviewed helpers naturally readable on desktop."""
+    import re
+
+    source = TEMPLATE.read_text(encoding="utf-8")
+    patterns = (
+        r"'Endpoint & Access',\\s*'([^']+)'",
+        r'flow_note="([^"]+)"',
+        r'alertmanager_related_description = "([^"]+)"',
+        r"'Allow KAORI to Use This Connection',\\s*'([^']+)'",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, source)
+        assert match is not None, f"Missing registration helper: {pattern}"
+        assert len(match.group(1)) <= 80, f"Registration helper is too verbose: {match.group(1)}"
+        assert "\\n" not in match.group(1)
+
+    # Natural responsive wrapping is intentional; do not hide copy with truncation.
+    assert "whitespace-nowrap" not in source
+    assert "line-clamp" not in source
