@@ -87,7 +87,7 @@ def test_audit_exclusion_and_generated_exclusion_are_compact_but_protected() -> 
     assert 'Raw metadata, IP/UA, actor reconstruction, bundle downloads' in presentation
     assert 'schedules, cleanup and record lookup' in presentation
     assert "'are excluded.'" in presentation
-    assert 'Pending or unsafe-artifact reports are protected.' in generated
+    assert 'Pending, generating, and artifact-unsafe reports remain excluded from archive and cleanup until eligible.' in generated
     assert 'Generated Reports Policy' in template
     assert 'Request' in template and 'safe artifact references remain protected.' in template
     assert 'GENERATED_REPORT_EXCLUSION_NOTE' in presentation
@@ -114,3 +114,20 @@ def test_compact_policy_notices_preserve_archive_and_evidence_safety() -> None:
     assert 'lifecycle.next_schedule_label' in verifier
     assert 'Requires Policy enabled + Scheduled execution.' not in verifier
     assert 'Transient toasts are not persisted, so they remain outside retention and archive management.' in verifier
+
+
+def test_generated_report_exclusion_and_hot_source_fit_target_density_without_hiding_policy() -> None:
+    template = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
+    generated = read('app/platform_operations/data_lifecycle/retention/generated_report_presentation.py')
+    source = read('app/platform_operations/data_lifecycle/retention/presentation.py')
+
+    exclusion = 'Pending, generating, and artifact-unsafe reports remain excluded from archive and cleanup until eligible.'
+    assert exclusion in generated
+    assert len(exclusion) >= 90
+    assert 'GENERATED_REPORT_EXCLUSION_NOTE' in source
+    assert '{{ lifecycle.exclusion_note }}' in template
+    assert "source_detail = 'Reports metadata + PDF/XLSX/CSV'" in source
+    assert '{{ lifecycle.storage_contract.hot_source_detail }}' in template
+    assert 'break-words font-mono' in template
+    assert 'Ready/Archived PDF, XLSX and CSV files are copied and checksum-verified before cleanup.' in template
+    assert 'Requested, Queued, Generating, active regeneration jobs' in template
