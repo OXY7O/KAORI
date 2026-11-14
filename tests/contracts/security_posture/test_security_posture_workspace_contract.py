@@ -439,7 +439,8 @@ def test_security_context_and_unknown_runtime_messages_fit_one_line_on_desktop()
     html = _render_workspace_page('overview', stale)
     assert 'Correlation not Ready; runtime exposure is unknown.' in html
     assert 'KAORI-normalized evidence' in html
-    assert 'Not Collected' not in html.split('data-security-runtime-impact', 1)[1].split('data-security-evidence-confidence', 1)[0]
+    runtime_panel = html.split('data-security-runtime-impact', 1)[1].split('data-security-evidence-confidence', 1)[0]
+    assert 'Not Collected' not in runtime_panel
 
 
 def test_security_assurance_runtime_impact_requires_ready_correlation() -> None:
