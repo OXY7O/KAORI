@@ -1,0 +1,64 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
+{% set quota_rows = analytics.capacity_chart_rows %}
+<section class="border-t border-outline-subtle"
+         data-registry-capacity-quota-series="{{ quota_rows|tojson|forceescape }}">
+    <header class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+        <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+                <h4 class="text-sm font-semibold text-content-primary">Project Quota Utilization</h4>
+                {{ info_tip.render('registry-analytics-capacity-chart-guide',
+                                'Project Quota Utilization Guide',
+                                'A committed per-project quota snapshot, not a time-series forecast.',
+                                items=[
+                                'Bars represent observed project storage usage divided by a valid positive project quota.',
+                                'Only qualified project quotas are plotted, with at most five projects shown and highest utilization first.',
+                                'An observed zero is a valid value. Missing or invalid quota evidence is excluded instead of shown as zero.',
+                                'Forecast labels come from separately qualified measured growth history; No forecast never implies unlimited capacity.'
+                                ], placement='right', variant='guide') }}
+            </div>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">Observed storage usage against configured quota for each qualified Registry project.</p>
+        </div>
+        {{ table_label.metadata_label(quota_rows|length ~ ' Projects', 'gauge', size='compact') }}
+    </header>
+    {% if quota_rows %}
+        <div class="grid gap-4 p-4 lg:grid-cols-5 sm:p-5">
+            <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card p-4 lg:col-span-3">
+                <h5 class="text-sm font-semibold text-content-primary">Utilization by Project</h5>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Percent of observed quota used · point-in-time evidence.</p>
+                <div class="relative mt-4 h-64">
+                    <canvas data-registry-capacity-quota-chart
+                            width="720"
+                            height="280"
+                            role="img"
+                            aria-label="Observed Registry project quota utilization bar chart"></canvas>
+                </div>
+            </div>
+            <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card p-4 lg:col-span-2">
+                <h5 class="text-sm font-semibold text-content-primary">Qualified Project Evidence</h5>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Actual usage, quota and forecast qualification.</p>
+                <dl class="mt-3 divide-y divide-outline-subtle">
+                    {% for row in quota_rows %}
+                        <div class="flex min-w-0 flex-wrap items-start justify-between gap-x-3 gap-y-2 py-2.5">
+                            <dt class="min-w-0 flex-1">
+                                <span class="block break-words text-xs font-semibold text-content-primary">{{ row.project_name }}</span>
+                                <span class="block text-xs text-content-muted">{{ row.registry_name }}</span>
+                            </dt>
+                            <dd class="shrink-0 text-right text-xs font-semibold tabular-nums text-content-primary">{{ row.utilization_display }}</dd>
+                            <dd class="w-full text-xs leading-5 text-content-secondary">
+                                {{ row.usage_display }} used / {{ row.quota_display }} quota · {{ row.forecast_label }}
+                            </dd>
+                        </div>
+                    {% endfor %}
+                </dl>
+            </div>
+        </div>
+    {% else %}
+        <div class="flex min-h-52 flex-col items-center justify-center gap-2 px-5 py-6 text-center">
+            <i data-lucide="gauge" class="h-5 w-5 text-content-muted" aria-hidden="true"></i>
+            <p class="text-sm font-semibold text-content-primary">Quota Chart Not Available</p>
+            <p class="max-w-lg text-xs leading-5 text-content-secondary">A committed project with valid storage usage and a positive configured quota is required. Missing evidence is not zero utilization.</p>
+        </div>
+    {% endif %}
+    <p class="border-t border-outline-subtle px-4 py-3 text-xs leading-5 text-content-muted sm:px-5">Observed quota utilization is not a growth forecast. Review Capacity Analysis for complete project evidence.</p>
+</section>
