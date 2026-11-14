@@ -13,14 +13,11 @@ def has_jinja_assignment(source: str, variable: str, value: str) -> bool:
     return re.search(pattern, source) is not None
 
 
-
 def test_kubernetes_overview_title_guides_cover_all_tabs_and_unavailable_states() -> None:
     """#4736: title-owned Guides remain visible with and without worker snapshots."""
     from jinja2 import Environment, FileSystemLoader
 
-    environment = Environment(
-        loader=FileSystemLoader('app/templates'), autoescape=True
-    )
+    environment = Environment(loader=FileSystemLoader('app/templates'), autoescape=True)
     panel_guides = {
         'partials/_resource_snapshot.html': 'usage',
         'partials/_capacity_snapshot.html': 'capacity',
@@ -81,7 +78,12 @@ def test_kubernetes_overview_title_guides_cover_all_tabs_and_unavailable_states(
     assert 'Guide' in rendered
     assert 'Snapshot Unavailable' in rendered
     assert 'Missing evidence' in rendered
-
+    default_rendered = environment.from_string(
+        "{% import 'analytics/components/_analysis_surfaces.html' as surface %}"
+        "{{ surface.snapshot_unavailable('usage', 'Example', 'Missing evidence') }}"
+    ).render()
+    assert 'Guide' not in default_rendered
+    assert 'Snapshot Unavailable' in default_rendered
 
 
 def test_overview_controls_and_readiness_follow_shared_analytics_standard() -> None:
