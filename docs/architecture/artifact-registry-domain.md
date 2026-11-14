@@ -1075,10 +1075,25 @@ the Insights detail workspace, where central Intelligence remains the sole
 recommendation lifecycle authority.
 
 The focused `/analytics/capacity` detail is a separate read-only workspace
-from the Capacity Overview chart. The detail reuses KAORI Analytics evidence
-surfaces and canonical table primitives to organize four existing committed
-Capacity Outlook metrics, then **Qualified Quota Comparison** plus a compact
-**Capacity Reading** panel. Project records are the exact already-qualified
+from the Capacity Overview chart. Following operator visual UAT on 2026-11-14,
+its approved three-child-tab composition matches focused Growth Analytics:
+**Overview**, **Project Quotas**, and **Forecast & Evidence**. The tabs reuse
+`content_tabs.render_buttons`, the shared Analytics tab controller, unique
+ARIA tab/panel identities and opt out of legacy `?tab=` query rewriting.
+No extra provider/worker request occurs when a child tab activates.
+
+**Overview** uses one divider-based four-metric strip, compact source-specific
+quota-pressure meters and a non-stretched Capacity Reading panel. **Project
+Quotas** owns the only detailed five-column project comparison table, so it
+is no longer squeezed beside a tall interpretive sidebar. **Forecast &
+Evidence** shows bounded project forecast status, independently qualified
+growth evidence and committed source-snapshot freshness; it distinguishes
+current, stale-but-readable, and unmaterialized evidence without asserting
+provider health. These data sections remain read-only and content-height.
+
+The detail reuses KAORI Analytics evidence surfaces and canonical table
+primitives to organize four existing committed Capacity Outlook metrics,
+**Qualified Quota Comparison** and **Capacity Reading** in separate tabs. Project records are the exact already-qualified
 `capacity_chart_rows` (finite nonnegative observed usage, finite positive
 quota, valid Registry/project identities, maximum five) rather than a second
 ad hoc qualification pass. Provider identity remains with the project.
