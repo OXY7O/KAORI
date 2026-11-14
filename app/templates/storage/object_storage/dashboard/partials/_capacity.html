@@ -61,7 +61,7 @@
                             {% endif %}
                             {{ capacity_decision.render(dashboard.capacity.posture.status|default('Unknown'),
                                                          capacity_tone,
-                                                         dashboard.capacity.posture.detail|default("Capacity posture is unavailable until the worker snapshot contains usable capacity evidence."),
+                                                         dashboard.capacity.posture.detail|default("Capacity posture is unavailable until committed storage analytics contain usable capacity evidence."),
                                                          'Current usage is ' ~ dashboard.capacity.utilization_display ~ ' with ' ~ dashboard.capacity.headroom_display ~ ' headroom inside the committed usable-capacity boundary.',
                                                          capacity_action) }}
                             <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4"
