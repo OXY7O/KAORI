@@ -285,7 +285,16 @@ def test_capsule_authority_copy_and_blocker_rows_retain_complete_evidence() -> N
     assert 'Choose an allocation authority' in overview
     assert 'Select the committed Tenant or shared quota source' in overview
     assert 'Generated Namespace ResourceQuotas are provider effects' in overview
+    assert 'not shared budgets.' in overview
     assert 'Capsule authoritative' in overview
+    header = overview.split('<div class="grid items-stretch gap-4 lg:grid-cols-2">', 1)[0]
+    assert header.index('Choose an allocation authority') < header.index('Capsule authoritative')
+    assert header.index('Capsule authoritative') < header.index('Select the committed Tenant')
+    assert header.count('<p ') == 1
+    assert 'max-w-4xl' not in header
+    assert 'items-start justify-between' not in header
+    assert 'flex-wrap items-center gap-x-3 gap-y-2' in header
+    assert 'border-b border-outline-subtle pb-4' in header
     assert 'capsule_tenant_quota_managed|length' in overview
     assert 'capsule_tenant_quota_cutover_tenants|length' in overview
     assert 'capsule_shared_tenants|length' in overview

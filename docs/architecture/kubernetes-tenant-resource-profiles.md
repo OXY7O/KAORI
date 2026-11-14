@@ -1404,9 +1404,12 @@ navigation. The framed tabs and selected subview are one integrated surface;
 no extra page-local tab implementation is permitted. The source is committed
 KAORI state; no live provider calls are added to ordinary navigation.
 
-**Authority panel visual refinement (#4652):** The Overview separates the
-decision caption from the Namespace ResourceQuota provider-effect disclaimer
-without changing committed count sources or Capsule ownership. Actual applicable
+**Authority panel visual refinement (#4652):** Following operator review, the
+Overview uses one compact, full-width description sentence beneath a single
+title-and-Capsule-authority-badge row rather than two constrained helper lines
+with excess empty horizontal space. The provider-effect disclaimer remains
+visible in that sentence, with natural wrapping only when the viewport narrows.
+Committed count sources and Capsule ownership do not change. Actual applicable
 but blocked GlobalResourceQuota scopes render a warning summary and one
 per-Tenant row with the **complete provider reason**, committed GRQ source
 count, and observed API. Different committed authorities remain a distinct
