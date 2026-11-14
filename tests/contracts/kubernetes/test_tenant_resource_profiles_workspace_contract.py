@@ -1506,7 +1506,7 @@ def test_tenant_operations_empty_registries_keep_canonical_pagination_without_ho
     assert 'data-kaori-canonical-registry-rows' in footer
 
 
-def test_tenant_operations_provider_authority_remains_optional_without_nested_card() -> None:
+def test_tenant_operations_provider_authority_is_a_read_only_standalone_subview() -> None:
     from jinja2 import Environment
 
     page = read('app/templates/kubernetes/tenant/operations.html')
@@ -1516,21 +1516,17 @@ def test_tenant_operations_provider_authority_remains_optional_without_nested_ca
     for src in (page, provider, access):
         Environment().parse(src)
 
-    # #960 owns one Operations primary tab row, and keeps authority as an
-    # optional, explanatory reference rather than another visible drift queue.
-    assert 'data-tenant-provider-authority-disclosure' in page
-    assert 'Provider Authority Reference' in page
-    assert 'Reference only—not a drift finding.' in page
-    assert 'View Records' in page
-    assert '{% set provider_authority_embedded = true %}' in page
+    # #4718 supersedes the former hidden disclosure: authority remains a
+    # dedicated, read-only Registry and is never mixed into a drift queue.
+    assert 'data-tenant-provider-authority-disclosure' not in page
+    assert "ops_view='provider-authority'" in page
+    assert "active_view == 'provider-authority'" in page
+    assert 'Ownership reference, not drift' in page
+    assert '{% set provider_authority_embedded = true %}' not in page
     assert '_operations_provider_registry.html" %}' in page
-    assert 'View Provider Authority' not in page
-    assert 'open>' not in page.split('data-tenant-provider-authority-disclosure', 1)[1].split('<summary', 1)[0]
-    assert 'group-open:rotate-180' in page
 
-    # The existing authoritative per-Tenant registry is still present and
-    # filterable. Embedded mode removes only its duplicate shell/header; no
-    # endpoint, query scope, pagination or provider metadata is discarded.
+    # Existing embedded mode remains supported in the partial, but Tenant
+    # Operations now uses its standalone header/filter/Rows pagination.
     assert 'provider_authority_embedded|default(false)' in provider
     assert 'if provider_authority_embedded' in provider
     assert '{% else %}' in provider
