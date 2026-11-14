@@ -160,7 +160,10 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
     assert 'Required API reads:' in access_reference
     assert 'GET /api/v2.0/systeminfo' in access_reference
     assert 'Optional Metadata Reader' in access_reference
-    assert 'Harbor permission labels vary by release; grant only required read access, never broad administration.' in access_reference
+    assert (
+        'Harbor permission labels vary by release; grant only required read access, never broad administration.'
+        in access_reference
+    )
     assert 'Required Harbor readiness and read-capability evidence.' in validation
     assert 'Optional capability evidence; does not affect readiness.' in validation
     assert (
