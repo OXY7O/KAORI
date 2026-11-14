@@ -330,7 +330,11 @@ def test_registry_domain_consumer_bindings_project_asset_owned_observability_sou
 
     # The existing domain flow loads the provider and owned-asset evidence
     # together, but never counts native provider ownership as a consumer.
-    assert 'consumer_bindings = [binding for binding in related_bindings if not _is_owner_asset_binding(binding)]' in domain_service
+    owner_filter = (
+        'consumer_bindings = [binding for binding in related_bindings '
+        'if not _is_owner_asset_binding(binding)]'
+    )
+    assert owner_filter in domain_service
     assert "'bindings': sum(1 for binding in consumer_bindings if binding.enabled)" in domain_service
     assert 'all_binding_rows = _binding_registry_rows(' in domain_service
     assert 'filtered_binding_rows = _filter_binding_rows(' in domain_service
