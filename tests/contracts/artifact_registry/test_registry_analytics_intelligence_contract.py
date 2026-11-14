@@ -485,12 +485,16 @@ def test_registry_analytics_overview_panels_preserve_missing_data_and_evidence_a
     assert 'aggregate.governance_projects_assessed > 0' in panel
     assert 'if alerts_ready else unknown' in panel
     assert 'if has_snapshot else unknown' in panel
-    assert 'Committed Source Coverage' in panel
-    assert 'analytics.latest_rows[:5]' in panel
+    insight_panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_insights_evidence.html').read_text()
+    evidence_panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_evidence_readiness.html').read_text()
+    assert 'artifact_registry/partials/_analytics_insights_evidence.html' in panel
+    assert 'artifact_registry/partials/_analytics_evidence_readiness.html' in panel
+    assert 'Committed Source Coverage' in evidence_panel
+    assert 'source_rows[:5]' in evidence_panel
     assert 'readiness.current_count' in panel
     assert 'readiness.execution_label' in panel
-    assert 'row.status_label, row.tone' in panel
-    assert 'No committed snapshots for the selected Registry and Time Range.' in panel
+    assert 'row.status_label, row.tone' in evidence_panel
+    assert 'No committed snapshots for the selected Registry and Time Range.' in evidence_panel
     charts = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_charts.html').read_text()
     assert 'artifact_registry/partials/_analytics_growth_charts.html' in panel
     assert 'data-registry-growth-chart-panel' in charts
@@ -502,7 +506,7 @@ def test_registry_analytics_overview_panels_preserve_missing_data_and_evidence_a
     assert 'artifact_registry/partials/_analytics_usage_chart.html' in panel
     assert 'analytics.usage_chart_rows' in usage_chart
     assert 'data-registry-usage-chart' in usage_chart
-    assert 'analytics.insights[:3]' in panel
+    assert 'review_facts[:3]' in insight_panel
     alert_sources = (ROOT / 'app/templates/artifact_registry/partials/_analytics_alert_sources.html').read_text()
     assert 'artifact_registry/partials/_analytics_alert_sources.html' in panel
     assert 'source_rows[:3]' in alert_sources
@@ -588,6 +592,118 @@ def test_registry_alert_source_overview_reuses_committed_selection_and_fallback_
     assert 'Alert Source Evidence Not Available' in empty
     assert 'Source Ready' not in empty
     assert 'Missing source evidence does not indicate zero alerts.' in empty
+
+
+def test_registry_insights_overview_renders_factual_review_cards_and_ownership() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    template = env.get_template('artifact_registry/partials/_analytics_insights_evidence.html')
+    critical = {
+        'icon': 'shield-alert',
+        'title': 'Critical findings intersect runtime usage',
+        'detail': '1 runtime artifact requires review.',
+        'tone': 'critical',
+    }
+    growth = {
+        'icon': 'trending-up',
+        'title': 'Registry growth is materialized',
+        'detail': '+0.0 artifacts/day measured.',
+        'tone': 'info',
+    }
+    rendered = template.render(analytics={'snapshot_count': 1, 'insights': [growth, critical]})
+    assert 'data-registry-insights-evidence' in rendered
+    assert 'Derived Review Signals Guide' in rendered
+    assert rendered.count('id="registry-insights-facts-title"') == 1
+    assert rendered.count('id="registry-insights-governance-title"') == 1
+    assert 'Registry growth is materialized' in rendered
+    assert 'Critical findings intersect runtime usage' in rendered
+    assert '1 runtime artifact requires review.' in rendered
+    assert 'Interpretation & Ownership' in rendered
+    assert 'Central Intelligence' in rendered
+    assert 'Recommendations, Accepted Risk, escalation and automation decisions' in rendered
+    assert 'Review Signal Evidence Not Available' not in rendered
+
+    extra = [
+        growth,
+        critical,
+        {**growth, 'title': 'Stale inventory candidates exist'},
+        {**growth, 'title': 'Hidden fourth signal'},
+    ]
+    limited = template.render(analytics={'snapshot_count': 1, 'insights': extra})
+    assert 'Showing 3 of 4 derived facts' in limited
+    assert 'Hidden fourth signal' not in limited
+
+    absent = template.render(analytics={'snapshot_count': 0, 'insights': []})
+    assert 'Review Signal Evidence Not Available' in absent
+    assert 'Missing evidence is not proof of no risk.' in absent
+    no_facts = template.render(analytics={'snapshot_count': 1, 'insights': []})
+    assert 'No Derived Review Facts' in no_facts
+    assert 'clean risk posture' in no_facts
+
+    placeholder = {**growth, 'title': 'No derived review signal'}
+    sentinel = template.render(analytics={'snapshot_count': 1, 'insights': [placeholder]})
+    assert 'No Derived Review Facts' in sentinel
+    assert '1 Facts' not in sentinel
+
+
+def test_registry_evidence_overview_preserves_snapshot_freshness_vs_worker_status() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    template = env.get_template('artifact_registry/partials/_analytics_evidence_readiness.html')
+    readiness = {
+        'label': 'Stale Snapshot',
+        'tone': 'warning',
+        'execution_label': 'Last Collection Completed',
+        'execution_tone': 'normal',
+        'helper': 'All snapshots expired; old evidence remains readable.',
+        'execution_helper': 'Collection has committed a previous snapshot.',
+    }
+    stale = {
+        'identity': {'name': 'Harbor X300'},
+        'snapshot': {'status': 'ready'},
+        'is_current': False,
+        'status_label': 'Inputs Changed',
+        'tone': 'warning',
+    }
+    current = {
+        'identity': {'name': 'Harbor X400'},
+        'snapshot': {'status': 'ready'},
+        'is_current': True,
+        'status_label': 'Current',
+        'tone': 'normal',
+    }
+    missing = {
+        'identity': {'name': 'Harbor X500'},
+        'snapshot': None,
+        'status_label': 'Not Materialized',
+        'tone': 'unknown',
+    }
+    rendered = template.render(analytics={'latest_rows': [stale, current, missing], 'data_readiness': readiness})
+    assert 'data-registry-evidence-readiness' in rendered
+    assert 'Committed Source Coverage Guide' in rendered
+    assert rendered.count('id="registry-evidence-sources-title"') == 1
+    assert rendered.count('id="registry-evidence-context-title"') == 1
+    assert 'Harbor X300' in rendered and 'Inputs Changed' in rendered
+    assert 'Previous evidence remains readable; not current' in rendered
+    assert 'Harbor X400' in rendered and 'Current committed snapshot' in rendered
+    assert 'Harbor X500' in rendered and 'No snapshot committed for the selected window' in rendered
+    assert 'Stale Snapshot' in rendered
+    assert 'Last Collection Completed' in rendered
+    assert 'All snapshots expired; old evidence remains readable.' in rendered
+    assert 'Eligible ≠ Current' in rendered
+    assert 'No committed snapshots for the selected Registry and Time Range.' not in rendered
+
+    more = [stale, current, missing, current, stale, {**current, 'identity': {'name': 'Hidden Harbor'}}]
+    limited = template.render(analytics={'latest_rows': more, 'data_readiness': readiness})
+    assert 'Showing 5 of 6 source records' in limited
+    assert 'Hidden Harbor' not in limited
+
+    empty = template.render(analytics={'latest_rows': [], 'data_readiness': readiness})
+    assert 'Source Snapshots Not Available' in empty
+    assert 'No committed snapshots for the selected Registry and Time Range.' in empty
+    assert 'Last Collection Completed' in empty
 
 
 def test_registry_overview_panels_render_unknown_without_fabricating_evidence() -> None:

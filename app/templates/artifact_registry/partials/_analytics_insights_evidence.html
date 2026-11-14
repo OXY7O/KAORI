@@ -1,0 +1,109 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
+{% set review_facts = analytics.insights|default([], true)|rejectattr('title', 'equalto', 'No derived review signal')|list %}
+<section class="border-t border-outline-subtle" data-registry-insights-evidence>
+    <header class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+        <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+                <h4 class="text-sm font-semibold text-content-primary">Derived Review Signals</h4>
+                {{ info_tip.render('registry-analytics-review-facts-guide',
+                                'Derived Review Signals Guide',
+                                'Registry Analytics derives factual review signals from committed evidence; central Intelligence owns recommendations.',
+                                items=[
+                                'Signals are review facts and can overlap; they are not distinct Registry assets, findings, or recommendations.',
+                                'The preview is limited to three committed facts for the selected Registry and Time Range.',
+                                'Intelligence owns Recommendations, Accepted Risk, escalation, and automation decisions.',
+                                'Missing committed evidence does not prove that there is no operational or security risk.'
+                                ], placement='right', variant='guide') }}
+            </div>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">Prioritized review facts with explicit decision ownership.</p>
+        </div>
+        {{ table_label.metadata_label(review_facts|length ~ ' Facts', 'sparkles', size='compact') }}
+    </header>
+    {% if analytics.snapshot_count > 0 and review_facts %}
+        <div class="grid gap-4 p-4 lg:grid-cols-5 sm:p-5">
+            <section class="{{ analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-3') }}"
+                     aria-labelledby="registry-insights-facts-title">
+                <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-4">
+                    <span class="{{ analysis_surface.role_icon_classes('brand', size='compact') }}"
+                          aria-hidden="true">
+                        <i data-lucide="list-checks" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h5 id="registry-insights-facts-title"
+                            class="text-sm font-semibold text-content-primary">Committed Review Facts</h5>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Factual observations from the selected analytical snapshot.</p>
+                    </div>
+                </header>
+                <div class="space-y-3 bg-surface-muted p-3 sm:p-4">
+                    {% for insight in review_facts[:3] %}
+                        <article class="{{ analysis_surface.ranked_item_classes('min-w-0 p-3 sm:p-4') }}">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <span class="{{ analysis_surface.role_icon_classes('status', insight.tone, size='compact') }}"
+                                      aria-hidden="true">
+                                    <i data-lucide="{{ insight.icon }}" class="h-3.5 w-3.5"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="{{ analysis_surface.role_label_classes('evidence') }}">Review fact</p>
+                                    <h6 class="mt-1 break-words text-sm font-semibold text-content-primary">{{ insight.title }}</h6>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ insight.detail }}</p>
+                                </div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                    {% if review_facts|length > 3 %}
+                        <p class="px-1 text-xs leading-5 text-content-muted">
+                            Showing 3 of {{ review_facts|length }} derived facts. Open Insights Analysis for the full review.
+                        </p>
+                    {% endif %}
+                </div>
+            </section>
+            <section class="{{ analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-2') }}"
+                     aria-labelledby="registry-insights-governance-title">
+                <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-4">
+                    <span class="{{ analysis_surface.role_icon_classes('insight', size='compact') }}"
+                          aria-hidden="true">
+                        <i data-lucide="brain-circuit" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h5 id="registry-insights-governance-title"
+                            class="text-sm font-semibold text-content-primary">Interpretation & Ownership</h5>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Review facts are not automated decisions.</p>
+                    </div>
+                </header>
+                <div class="space-y-5 p-4 sm:p-5">
+                    {{ analysis_surface.interpretation_content('Analytics evidence',
+                                        'Review signals',
+                                        'Signals can overlap and require evidence review; they do not represent distinct affected assets.',
+                                        icon='scan-search', role='evidence', compact=true) }}
+                    <div class="border-t border-outline-subtle pt-4">
+                        {{ analysis_surface.interpretation_content('Decision authority',
+                                                'Central Intelligence',
+                                                'Recommendations, Accepted Risk, escalation and automation decisions remain governed by Intelligence.',
+                                                icon='brain-circuit', role='brand', compact=true) }}
+                    </div>
+                </div>
+            </section>
+        </div>
+    {% else %}
+        <div class="p-4 sm:p-5">
+            <div class="{{ analysis_surface.empty_evidence_classes('flex min-h-40 flex-col items-center justify-center gap-2 px-5 py-6 text-center') }}">
+                <i data-lucide="sparkles"
+                   class="h-5 w-5 text-content-muted"
+                   aria-hidden="true"></i>
+                {% if analytics.snapshot_count == 0 %}
+                    <p class="text-sm font-semibold text-content-primary">Review Signal Evidence Not Available</p>
+                    <p class="max-w-lg text-xs leading-5 text-content-secondary">
+                        A committed Registry Analytics snapshot is required. Missing evidence is not proof of no risk.
+                    </p>
+                {% else %}
+                    <p class="text-sm font-semibold text-content-primary">No Derived Review Facts</p>
+                    <p class="max-w-lg text-xs leading-5 text-content-secondary">
+                        No derived facts are available in this snapshot preview; this does not establish a clean risk posture.
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</section>

@@ -937,6 +937,37 @@ updates push its canonical page URL. No additional materialization models,
 provider read paths, RBAC definitions, alert collection or central Intelligence
 recommendation lifecycle are introduced.
 
+### Registry Analytics Overview Insights & Data Evidence visual UAT refinement (#4632)
+
+The **Insights** tab now uses the canonical neutral Analytics evidence
+shell with up to three committed derived review-fact cards. Original
+`icon`, `title`, `detail` and `tone` are passed through from the existing
+read-only Intelligence review projection without inventing a severity,
+distinct-asset count or recommendation. The companion interpretation panel
+distinguishes **Analytics-derived review facts** from **central Intelligence**
+authority for Recommendations, Accepted Risk, escalation and automation.
+Missing committed snapshots show an unavailable state instead of fabricating
+"No risk"; a snapshot with no derived facts states only that no facts were
+returned in the preview.
+
+The **Data & Evidence** tab presents at most five Registry snapshot records
+with the provider identity, existing committed status label and snapshot
+currency, plus a separate **Collection & Freshness** panel. It deliberately
+shows both `data_readiness.label/tone/helper` (snapshot validity) and
+`execution_label/execution_tone/execution_helper` (worker outcome) without
+equating a successful last collection with a current snapshot. A previous
+snapshot may be readable while marked stale or inputs changed. Missing source
+records show an explicit unavailable state. Counts, eligibility, snapshot
+currentness, worker execution and selected Registry/Time Range are read from
+existing committed projections, not new live provider calls.
+
+Both tabs reuse shared Analytics evidence/ranked item/icon/interpretation,
+Info Tip Guide, and semantic label components. The existing Overview header,
+four KPI row, ownership footers, Insights deep-route CTA, and Evidence-only
+"Committed evidence only" boundary are unchanged. No new JS, CSS, worker,
+database migration, provider normalization or local recommendation lifecycle
+is introduced.
+
 ### Registry Analytics Overview Growth evidence visual UAT refinement (#4632)
 
 The **Growth → Source Growth Trend** workspace uses two peer neutral evidence
