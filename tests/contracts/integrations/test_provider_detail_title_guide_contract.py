@@ -37,3 +37,29 @@ def test_shared_provider_connection_contract_has_one_title_guide() -> None:
     assert source.count("connection-contract-detail-guide") == 1
     assert source.index(heading) < source.index("connection-contract-detail-guide")
     assert 'variant="guide"' in source
+
+
+def test_kubernetes_validation_and_runtime_guides_are_passed_to_primary_headers() -> None:
+    """A Guide elsewhere in the template must not satisfy the title contract."""
+    for filename, guide_id in (
+        ("_capability_workspace.html", "kubernetes-full-validation-detail-guide"),
+        ("_runtime_workspace.html", "kubernetes-runtime-health-detail-guide"),
+    ):
+        source = _source(KUBERNETES / filename)
+        header_start = source.index("{% call connection_validation_header.render(")
+        header_end = source.index("%}", header_start)
+        header_call = source[header_start:header_end]
+        assert "title_extra=info_tip.render(" in header_call, filename
+        assert f'"{guide_id}"' in header_call, filename
+        assert 'placement="right", variant="guide"' in header_call, filename
+
+
+def test_shared_configuration_guide_is_adjacent_to_primary_heading() -> None:
+    """Prevent a regression that moves the Guide into a footer or inner card."""
+    source = _source(TEMPLATES / "components/_provider_configuration_contract.html")
+    heading = '<h2 class="text-base font-semibold text-content-primary">Connection Contract</h2>'
+    title_row = source[source.index('<div class="flex flex-wrap items-center gap-2">'):]
+    title_row = title_row[: title_row.index("</div>")]
+    assert heading in title_row
+    assert title_row.count("info_tip.render(") == 1
+    assert "connection-contract-detail-guide" in title_row
