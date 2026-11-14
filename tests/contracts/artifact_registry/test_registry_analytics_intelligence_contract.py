@@ -503,7 +503,11 @@ def test_registry_analytics_overview_panels_preserve_missing_data_and_evidence_a
     assert 'analytics.usage_chart_rows' in usage_chart
     assert 'data-registry-usage-chart' in usage_chart
     assert 'analytics.insights[:3]' in panel
-    assert 'analytics.alert_source_rows[:3]' in panel
+    alert_sources = (ROOT / 'app/templates/artifact_registry/partials/_analytics_alert_sources.html').read_text()
+    assert 'artifact_registry/partials/_analytics_alert_sources.html' in panel
+    assert 'source_rows[:3]' in alert_sources
+    assert 'Source Selection' in alert_sources
+    assert 'Evidence Coverage' in alert_sources
     assert 'no automatic cleanup' in panel
     assert 'Missing pull metrics do not imply zero demand.' in panel
     assert 'not interchangeable' in panel
@@ -511,6 +515,79 @@ def test_registry_analytics_overview_panels_preserve_missing_data_and_evidence_a
     assert 'Intelligence owns Recommendations' in panel
     assert 'scanner_observed = has_snapshot and aggregate.scanned_artifacts > 0' in panel
     assert 'aggregate.alert_sources_ready == analytics.provider_count' in panel
+
+
+def test_registry_alert_source_overview_reuses_committed_selection_and_fallback_evidence() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    partial = (ROOT / 'app/templates/artifact_registry/partials/_analytics_alert_sources.html').read_text()
+    overview = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
+    presenter = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    Environment().parse(partial)
+    assert 'artifact_registry/partials/_analytics_alert_sources.html' in overview
+    assert 'data-registry-alert-sources' in partial
+    assert 'Committed Alert Sources Guide' in partial
+    assert "analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-3')" in partial
+    assert "analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-2')" in partial
+    assert "analysis_surface.ranked_item_classes('min-w-0 p-3 sm:p-4')" in partial
+    assert "source_rows|selectattr('status', 'equalto', 'ready')" in partial
+    assert "source_rows|selectattr('fallback_used', 'equalto', true)" in partial
+    assert "source_rows[:3]" in partial
+    assert "'alert_source_rows': bundle['alert_source_rows']" in presenter
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    template = env.get_template('artifact_registry/partials/_analytics_alert_sources.html')
+    primary = {
+        'registry_name': 'Harbor X300',
+        'status': 'ready',
+        'source_label': 'Alertmanager',
+        'resolved_source': 'alertmanager',
+        'fallback_used': False,
+        'detail': 'Primary committed source evidence.',
+    }
+    fallback = {
+        'registry_name': 'Harbor B',
+        'status': 'ready',
+        'source_label': 'Prometheus Metrics Source',
+        'resolved_source': 'metrics_source',
+        'fallback_used': True,
+        'detail': 'Active-alert fallback evidence.',
+    }
+    unavailable = {
+        'registry_name': 'Harbor C',
+        'status': 'unavailable',
+        'source_label': 'Unavailable',
+        'resolved_source': 'none',
+        'fallback_used': False,
+        'detail': 'Alert source could not be collected.',
+    }
+    rendered = template.render(analytics={'alert_source_rows': [primary, fallback, unavailable]})
+    assert rendered.count('id="registry-alert-sources-title"') == 1
+    assert rendered.count('id="registry-alert-coverage-title"') == 1
+    assert 'Harbor X300' in rendered and 'Prometheus Metrics Source' in rendered
+    assert 'Source Ready' in rendered
+    assert 'Fallback Selected' in rendered
+    assert 'Evidence Unavailable' in rendered
+    assert 'Primary committed source evidence.' in rendered
+    assert 'Ready sources' in rendered and 'Fallback records' in rendered
+    assert 'Primary authority · Alertmanager' in rendered
+    assert 'Fallback · Metrics Source' in rendered
+    assert 'Alert Source Evidence Not Available' not in rendered
+
+    failed_fallback = {**fallback, 'status': 'unavailable'}
+    blocked = template.render(analytics={'alert_source_rows': [failed_fallback]})
+    assert 'Fallback Unavailable' in blocked
+    assert 'Source Ready' not in blocked
+
+    fourth = {**primary, 'registry_name': 'Harbor D'}
+    limited = template.render(analytics={'alert_source_rows': [primary, fallback, unavailable, fourth]})
+    assert 'Showing 3 of 4 committed sources' in limited
+    assert 'Harbor D' not in limited
+
+    empty = template.render(analytics={'alert_source_rows': []})
+    assert 'Alert Source Evidence Not Available' in empty
+    assert 'Source Ready' not in empty
+    assert 'Missing source evidence does not indicate zero alerts.' in empty
 
 
 def test_registry_overview_panels_render_unknown_without_fabricating_evidence() -> None:

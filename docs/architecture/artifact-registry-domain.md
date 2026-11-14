@@ -725,6 +725,33 @@ changes presentation, not the committed bounded graph count. Truncation and
 omitted-binding warnings remain separate from relationship counts. No new
 provider calls, projection, model or mutation authority is introduced.
 
+### Registry Analytics Overview Alert Source Evidence UAT refinement (#4632)
+
+The Overview **Alerts** tab replaces the previous one-line
+`Committed Alert Sources` list with a two-region, responsive committed
+evidence composition. **Source Selection** uses neutral KAORI Analytics
+record surfaces to identify the Registry instance, the committed selected
+alert source, the recorded source-readiness state, and any available
+provider-detail text. Ready primary evidence, successfully selected
+fallback, attempted-but-unavailable fallback, and unavailable source
+evidence have distinct semantic labels.
+
+**Evidence Coverage** reports the count of ready committed source rows and
+fallback-record flags, without presenting a live health check. A concise
+authority guide distinguishes Alertmanager's primary alert lifecycle
+semantics from the narrower active-alert Metrics Source fallback. Records
+remain limited to a three-source Overview preview, while the source
+count and a truncation label preserve awareness of additional committed
+sources. When no committed source rows are present, an explicit unavailable
+state appears; absence is never rendered as zero alerts or clean health.
+
+This change consumes existing `alert_source_rows` from the committed
+Registry Analytics snapshot. It introduces no live provider request, new
+chart based on zero counts, worker normalization, model/schema change,
+mutation, or Registry-local alert authority. The outer Overview footer
+continues to own the alert-source boundary and navigation to the full
+Alerts & Anomalies Analysis workspace.
+
 ## Registry Alert Analytics Contract
 
 Artifact Registry alert analytics extends the same Alert Source architecture already used by Kubernetes and

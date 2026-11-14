@@ -1,0 +1,146 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
+{% set source_rows = analytics.alert_source_rows|default([], true) %}
+{% set preview_sources = source_rows[:3] %}
+{% set ready_count = source_rows|selectattr('status', 'equalto', 'ready')|list|length %}
+{% set fallback_count = source_rows|selectattr('fallback_used', 'equalto', true)|list|length %}
+<section class="border-t border-outline-subtle" data-registry-alert-sources>
+    <header class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+        <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+                <h4 class="text-sm font-semibold text-content-primary">Committed Alert Sources</h4>
+                {{ info_tip.render('registry-analytics-alert-source-guide',
+                                'Committed Alert Sources Guide',
+                                'Source selection and fallback status are read from the committed Registry Analytics snapshot.',
+                                items=[
+                                'Alertmanager is the primary alert lifecycle authority; a Metrics Source fallback has narrower active-alert semantics.',
+                                'Ready describes committed source evidence, not live source health or a guarantee of zero alerts.',
+                                'Fallback attempted is different from successfully materialized fallback evidence.',
+                                'The selected Registry and Time Range govern this evidence. Unavailable source evidence does not imply zero alerts.'
+                                ], placement='right', variant='guide') }}
+            </div>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">Which alert source supplied the committed Registry evidence, and whether fallback was used.</p>
+        </div>
+        {{ table_label.metadata_label(source_rows|length ~ ' Sources', 'database', size='compact') }}
+    </header>
+    {% if preview_sources %}
+        <div class="grid gap-4 p-4 lg:grid-cols-5 sm:p-5">
+            <section class="{{ analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-3') }}"
+                     aria-labelledby="registry-alert-sources-title">
+                <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-4">
+                    <span class="{{ analysis_surface.role_icon_classes('brand', size='compact') }}"
+                          aria-hidden="true">
+                        <i data-lucide="radio-tower" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h5 id="registry-alert-sources-title"
+                            class="text-sm font-semibold text-content-primary">Source Selection</h5>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Selected alert evidence per committed Registry source.</p>
+                    </div>
+                </header>
+                <div class="space-y-3 bg-surface-muted p-3 sm:p-4">
+                    {% for source in preview_sources %}
+                        <article class="{{ analysis_surface.ranked_item_classes('min-w-0 p-3 sm:p-4') }}">
+                            <div class="flex flex-wrap items-start justify-between gap-3">
+                                <div class="flex min-w-0 items-start gap-2">
+                                    <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
+                                          aria-hidden="true">
+                                        <i data-lucide="server" class="h-3.5 w-3.5"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <h6 class="break-words text-sm font-semibold text-content-primary">{{ source.registry_name }}</h6>
+                                        <p class="mt-0.5 text-xs text-content-muted">Registry instance</p>
+                                    </div>
+                                </div>
+                                {% if source.fallback_used and source.status == 'ready' %}
+                                    {{ table_label.status_label('Fallback Selected', 'warning', size='compact') }}
+                                {% elif source.fallback_used %}
+                                    {{ table_label.status_label('Fallback Unavailable', 'warning', size='compact') }}
+                                {% elif source.status == 'ready' %}
+                                    {{ table_label.status_label('Source Ready', 'normal', size='compact') }}
+                                {% else %}
+                                    {{ table_label.status_label('Evidence Unavailable', 'unknown', size='compact') }}
+                                {% endif %}
+                            </div>
+                            <dl class="mt-3 border-t border-outline-subtle pt-3">
+                                <dt class="{{ analysis_surface.metric_label_classes() }}">Committed evidence source</dt>
+                                <dd class="mt-1 break-words text-sm font-semibold text-content-primary">
+                                    {{ source.source_label }}
+                                </dd>
+                            </dl>
+                            {% if source.detail %}
+                                <p class="mt-2 text-xs leading-5 text-content-secondary">{{ source.detail }}</p>
+                            {% endif %}
+                        </article>
+                    {% endfor %}
+                    {% if source_rows|length > 3 %}
+                        <p class="px-1 text-xs leading-5 text-content-muted">
+                            Showing 3 of {{ source_rows|length }} committed sources. Open Alerts & Anomalies Analysis for all source records.
+                        </p>
+                    {% endif %}
+                </div>
+            </section>
+            <section class="{{ analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-2') }}"
+                     aria-labelledby="registry-alert-coverage-title">
+                <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-4">
+                    <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
+                          aria-hidden="true">
+                        <i data-lucide="shield-check" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h5 id="registry-alert-coverage-title"
+                            class="text-sm font-semibold text-content-primary">Evidence Coverage</h5>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Recorded source selection, not a live health check.</p>
+                    </div>
+                </header>
+                <dl class="{{ analysis_surface.guidance_fact_grid_classes(2) }}">
+                    <div class="{{ analysis_surface.guidance_fact_classes() }}">
+                        <dt class="{{ analysis_surface.metric_label_classes() }}">Ready sources</dt>
+                        <dd class="mt-1.5 text-2xl font-semibold tabular-nums text-content-primary">{{ ready_count }}</dd>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Committed ready evidence</p>
+                    </div>
+                    <div class="{{ analysis_surface.guidance_fact_classes() }}">
+                        <dt class="{{ analysis_surface.metric_label_classes() }}">Fallback records</dt>
+                        <dd class="mt-1.5 text-2xl font-semibold tabular-nums text-content-primary">{{ fallback_count }}</dd>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Selected or attempted</p>
+                    </div>
+                </dl>
+                <div class="space-y-3 border-t border-outline-subtle p-4">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="{{ analysis_surface.role_icon_classes('brand', size='compact') }}"
+                              aria-hidden="true">
+                            <i data-lucide="shield" class="h-3.5 w-3.5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-content-primary">Primary authority · Alertmanager</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Owns alert state and lifecycle when qualified.</p>
+                        </div>
+                    </div>
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="{{ analysis_surface.role_icon_classes('insight', size='compact') }}"
+                              aria-hidden="true">
+                            <i data-lucide="git-compare-arrows" class="h-3.5 w-3.5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-content-primary">Fallback · Metrics Source</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Provides bounded active-alert evidence only when selected.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    {% else %}
+        <div class="p-4 sm:p-5">
+            <div class="{{ analysis_surface.empty_evidence_classes('flex min-h-40 flex-col items-center justify-center gap-2 px-5 py-6 text-center') }}">
+                <i data-lucide="shield-alert"
+                   class="h-5 w-5 text-content-muted"
+                   aria-hidden="true"></i>
+                <p class="text-sm font-semibold text-content-primary">Alert Source Evidence Not Available</p>
+                <p class="max-w-lg text-xs leading-5 text-content-secondary">
+                    A selected Registry and Time Range need committed alert-source evidence. Missing source evidence does not indicate zero alerts.
+                </p>
+            </div>
+        </div>
+    {% endif %}
+</section>
