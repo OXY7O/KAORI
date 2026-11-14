@@ -691,6 +691,12 @@ def test_registry_evidence_overview_preserves_snapshot_freshness_vs_worker_statu
     assert 'Stale Snapshot' in rendered
     assert 'Last Collection Completed' in rendered
     assert 'All snapshots expired; old evidence remains readable.' in rendered
+    partial = (ROOT / 'app/templates/artifact_registry/partials/_analytics_evidence_readiness.html').read_text()
+    assert 'space-y-3 p-4 sm:p-5' in partial
+    assert "analysis_surface.evidence_shell_classes('min-w-0')" in partial
+    assert 'grid gap-3 sm:grid-cols-2' in partial
+    assert 'lg:col-span' not in partial
+    assert "interpretation_content('Evidence boundary'" not in partial
     assert 'Snapshot Freshness' in rendered
     assert 'Latest Worker Outcome' in rendered
     assert rendered.count('id="registry-evidence-worker-title"') == 1
@@ -707,7 +713,6 @@ def test_registry_evidence_overview_preserves_snapshot_freshness_vs_worker_statu
     assert 'No committed snapshots for the selected Registry and Time Range.' in empty
     assert 'Last Collection Completed' in empty
     assert 'Latest Worker Outcome' in empty
-    assert 'Source Snapshots Not Available' in empty
 
 
 def test_registry_overview_panels_render_unknown_without_fabricating_evidence() -> None:
