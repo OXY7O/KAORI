@@ -320,9 +320,7 @@ def test_registry_domain_consumer_bindings_project_asset_owned_observability_sou
     assert '  integration_type: registry' in taxonomy_catalog
 
     domain_service = read('app/integrations/domain_service.py')
-    related = domain_service.split('def _load_related_bindings(', 1)[1].split(
-        'def _integration_type_rows(', 1
-    )[0]
+    related = domain_service.split('def _load_related_bindings(', 1)[1].split('def _integration_type_rows(', 1)[0]
     assert 'owned_asset_types = asset_types_for_domain(domain_key)' in related
     assert 'IntegrationInstance.integration_type.in_(integration_types)' in related
     assert 'IntegrationBinding.asset_type.in_(owned_asset_types)' in related
@@ -331,8 +329,7 @@ def test_registry_domain_consumer_bindings_project_asset_owned_observability_sou
     # The existing domain flow loads the provider and owned-asset evidence
     # together, but never counts native provider ownership as a consumer.
     owner_filter = (
-        'consumer_bindings = [binding for binding in related_bindings '
-        'if not _is_owner_asset_binding(binding)]'
+        'consumer_bindings = [binding for binding in related_bindings if not _is_owner_asset_binding(binding)]'
     )
     assert owner_filter in domain_service
     assert "'bindings': sum(1 for binding in consumer_bindings if binding.enabled)" in domain_service
