@@ -169,8 +169,13 @@ or denied source evidence remains explicit and cannot be presented as an
 all-clear. A filtered zero-result table uses the canonical shared empty
 state and footer, not a false global security verdict.
 
-The scoped `Reload Evidence` affordance re-reads committed KAORI state via
-HTMX; it must not call the scanner/provider. The separate Security Findings
+The scoped header `Refresh View` affordance re-reads committed KAORI state via
+HTMX; it must not call the scanner/provider. Keep it inside the canonical
+`inventory_block_header(..., header_actions=...)` group, after the conditional
+leading `Clear Filters`; keep `View All Findings` as an inline Investigation
+Handoff link so the header has no more than two actions and both filter fields
+fill their row. The label intentionally distinguishes table reload from
+provider-side scan and the `artifact_registry.security.sync` JobExecution. The separate Security Findings
 page continues to own the full investigation workflow; Overview links to
 that owner while maintaining a compact permission-filtered Investigation
 Handoff inside the same table block. Header/Guide, loading, filter bar,
