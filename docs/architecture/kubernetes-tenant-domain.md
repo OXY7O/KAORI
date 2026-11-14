@@ -135,13 +135,24 @@ operator's new human design review supersedes #960's earlier rejection of a
 second row *only inside the two multi-registry tabs*. The operator's
 subsequent screenshot correction requires exact **Membership Registry /
 Tenant Group Registry** geometry rather than a stacked introduction card
-and separated underline navigation. A brief, unboxed authority explanation
-now precedes **one integrated rounded registry shell**, where the approved
-`workspace_tabs.render_query_tabs` tab strip attaches directly to the
-selected registry beneath it. Each focused registry retains its own Guide,
-Results, filters and pagination. The introductory scope/count grid and
-detached navigation/card shell were removed, not simply restyled. The
-inner navigation is URL/HTMX-owned, not a duplicated JS tab controller.
+and separated underline navigation. The latest human screenshot review
+retains that Membership-style attached registry shell while adding **compact
+operational context before the child tabs**: one unboxed authority heading
+followed by shared `operational_callout.render` neutral cards. Allocation Drift
+uses two cards distinguishing Tenant.spec.resourceQuotas (Namespace quotas)
+from GlobalResourceQuota (shared Tenant allocation); Operational Reconcile
+uses three cards separating Namespace drift, Access Grant reconciliation and
+read-only Provider Authority. The cards explain scope, source of evidence,
+and explicit recovery boundaries without claiming live health, adding a
+separate registry, or repeating filtered Results counts.
+
+Each destination still has **one integrated rounded registry shell**, where
+the approved `workspace_tabs.render_query_tabs` tab strip attaches directly
+to its selected registry. Each focused registry retains its own Guide,
+Results, filters and pagination. The earlier detached count grid, underline
+navigation and large stacked introduction card remain removed. These
+informational context cards introduce no new URL/controller/action. Inner
+navigation stays URL/HTMX-owned, not a duplicated JS tab controller.
 
 - `tab=allocation-drift`: **Tenant Quota** (`ops_view=tenant-quota`) or
   **Shared Allocation** (`ops_view=shared-allocation`). The introduction
