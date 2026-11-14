@@ -652,6 +652,7 @@ def _registry_capacity_chart_rows(forecast_rows: list[dict[str, Any]]) -> list[d
                 'usage_display': row['usage_display'],
                 'quota_display': row['quota_display'],
                 'forecast_label': row.get('days_to_quota_display') or 'No forecast',
+                'growth_display': row.get('growth_display') or 'Insufficient history',
             }
         )
     return sorted(

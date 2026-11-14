@@ -485,7 +485,6 @@ def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> 
     assert 'Explore Analytics' in shell
     for title in (
         'Registry Growth',
-        'Capacity Outlook',
         'Artifact Usage',
         'Risk Concentration',
         'Governance Gaps',
@@ -505,6 +504,9 @@ def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> 
     assert 'never waits on live Harbor, Alertmanager, Prometheus, or Thanos requests' in shell
     growth_overview = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_overview.html').read_text()
     assert 'never auto-cleaned' in growth_overview
+    capacity_detail = (ROOT / 'app/templates/artifact_registry/partials/_analytics_capacity_outlook.html').read_text()
+    assert 'Capacity Outlook' in capacity_detail
+    assert 'Qualified Quota Comparison' in capacity_detail
     assert (
         'central Intelligence owns recommendation semantics, Accepted Risk, escalation, and automation control'
         in section
@@ -1607,17 +1609,21 @@ def test_registry_alert_workspace_reuses_committed_alert_evidence_contract() -> 
 
 
 def test_registry_capacity_outlook_table_reuses_canonical_primitives() -> None:
-    """Keep the materialized forecast content while reusing shared table geometry."""
-    from jinja2 import Environment
+    """Capacity detail uses committed qualified source rows and shared KAORI table macros."""
+    from jinja2 import Environment, FileSystemLoader
 
-    template = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text(encoding='utf-8')
-    # Verify the real owning template parses, without requiring a live Registry provider.
-    Environment().parse(template)
-    capacity = template.split("{% elif analytics.active_tab == 'capacity' %}", 1)[1].split(
-        "{% elif analytics.active_tab == 'usage' %}", 1
-    )[0]
-    shared = (ROOT / 'app/templates/components/table_primitives.html').read_text(encoding='utf-8')
+    section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
+    capacity = (ROOT / 'app/templates/artifact_registry/partials/_analytics_capacity_outlook.html').read_text()
+    page = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    presenter = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    shared = (ROOT / 'app/templates/components/table_primitives.html').read_text()
 
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    env.parse(section)
+    env.parse(capacity)
+    assert '{% include "artifact_registry/partials/_analytics_capacity_outlook.html" %}' in section
+    assert "table_ui.table_classes('min-w-[760px]')" in capacity
+    assert '{% import "components/table_primitives.html" as table_ui %}' in capacity
     for macro in (
         'table_classes',
         'head_classes',
@@ -1625,34 +1631,84 @@ def test_registry_capacity_outlook_table_reuses_canonical_primitives() -> None:
         'body_classes',
         'row_classes',
         'cell_classes',
+        'title_cell',
     ):
         assert f'macro {macro}(' in shared
-    assert '{% import "components/table_primitives.html" as table_ui %}' in template
-    assert "table_ui.table_classes('min-w-[760px]')" in capacity
     assert 'table_ui.head_classes()' in capacity
     assert capacity.count('table_ui.header_cell_classes()') == 5
     assert capacity.count('scope="col"') == 5
     assert 'table_ui.body_classes()' in capacity
     assert 'table_ui.row_classes()' in capacity
-    assert capacity.count('table_ui.cell_classes()') == 6
-    assert 'overflow-x-auto' in capacity
-    assert '<table class="min-w-full divide-y divide-outline-subtle text-sm">' not in capacity
-    assert '<th class="px-4 py-3">' not in capacity
+    assert capacity.count('table_ui.cell_classes()') == 5
+    assert 'table_ui.title_cell(row.project_name, row.registry_name' in capacity
+    assert 'qualified_projects = analytics.capacity_chart_rows' in capacity
+    assert 'Qualified Quota Comparison' in capacity
+    assert 'Capacity Reading' in capacity
+    assert 'aria-valuetext="{{ row.utilization_display }} observed utilization"' in capacity
+    assert 'row.utilization_percent > 100' in capacity
+    assert 'Qualified Quota Evidence Not Available' in capacity
+    assert "table_label.status_indicator_label(row.forecast_label, 'info'" in capacity
+    assert 'growth_display' in presenter
+    assert "'growth_display': row.get('growth_display') or 'Insufficient history'" in presenter
+    assert "'Open Registry Integrations'," in page
+    assert "url_for('integrations.registry')" in page
+    assert "action_icon='plug-zap'" in page
+    assert "'Open Intelligence'," not in page
 
-    for label in ('Registry / Project', 'Usage / Quota', 'Utilization', 'Growth', 'Forecast'):
-        assert f'>{label}</th>' in capacity
-    for value in (
-        'row.project_name',
-        'row.registry_name',
-        'row.usage_display',
-        'row.quota_display',
-        'row.utilization_display',
-        'row.growth_display',
-        "table_label.status_indicator_label(row.days_to_quota_display, 'info')",
-    ):
-        assert value in capacity
-    assert 'analytics.forecast_rows[:5]' in capacity
-    assert 'colspan="5"' in capacity
-    assert 'No qualified project quota forecast is available.' in capacity
-    assert 'analytics.capacity_outlook.nearest_quota_days' in capacity
-    assert 'analytics.capacity_outlook.quota_headroom_display' in capacity
+    demo = {
+        'project_name': 'demo',
+        'registry_name': 'Harbor X300',
+        'usage_display': '62.87 MiB',
+        'quota_display': '10.00 GiB',
+        'utilization_percent': 0.6,
+        'utilization_display': '0.6%',
+        'growth_display': '0 B/day',
+        'forecast_label': 'No forecast',
+    }
+    sandbox = {
+        **demo,
+        'project_name': 'sandbox',
+        'usage_display': '0 B',
+        'quota_display': '1.00 GiB',
+        'utilization_percent': 0.0,
+        'utilization_display': '0.0%',
+    }
+    analytics = {
+        'capacity_chart_rows': [demo, sandbox],
+        'capacity_outlook': {
+            'nearest_quota_days': None,
+            'highest_utilization': 0.6,
+            'growth_bytes_per_day': 0,
+            'growth_display': '0 B/day',
+            'quota_headroom_display': '10.94 GiB',
+        },
+    }
+    template = env.get_template('artifact_registry/partials/_analytics_capacity_outlook.html')
+    rendered = template.render(analytics=analytics)
+    assert rendered.count('<th scope="col"') == 5
+    assert 'demo' in rendered and 'sandbox' in rendered
+    assert '62.87 MiB' in rendered and '10.00 GiB' in rendered
+    assert '0.6%' in rendered and '0.0%' in rendered
+    assert '0 B/day' in rendered and 'No forecast' in rendered
+    assert '10.94 GiB' in rendered
+    assert 'No qualified forecast' in rendered
+    assert 'Zero net growth does not prove' in rendered
+    assert 'Qualified Quota Evidence Not Available' not in rendered
+    assert rendered.count('<progress ') == 2
+    assert 'Qualified Quota Comparison' in rendered
+    assert 'Capacity Reading' in rendered
+
+    over_quota = {**demo, 'utilization_percent': 125.0, 'utilization_display': '125.0%'}
+    analytics['capacity_chart_rows'] = [over_quota]
+    over = template.render(analytics=analytics)
+    assert '125.0%' in over
+    assert 'Over quota' in over
+    assert 'value="100"' in over
+
+    analytics['capacity_chart_rows'] = []
+    analytics['capacity_outlook']['growth_bytes_per_day'] = None
+    analytics['capacity_outlook']['growth_display'] = 'N/A'
+    empty = template.render(analytics=analytics)
+    assert 'Qualified Quota Evidence Not Available' in empty
+    assert 'Qualified materialized growth history is unavailable.' in empty
+    assert '<progress ' not in empty
