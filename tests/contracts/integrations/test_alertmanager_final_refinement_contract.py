@@ -131,12 +131,19 @@ def test_alertmanager_evidence_copy_preserves_authority_and_persisted_validation
     assert 'Alertmanager routes and delivers alerts; bindings scope consumer use.' in configuration
     assert 'Alertmanager owns alert routing and delivery; bindings only scope consumer use.' not in configuration
     assert 'Runtime, job history, and Activity Audit remain after removal.' in lifecycle
-    assert 'Runtime observations, execution history, and Activity Audit records remain available after' not in lifecycle
+    retired_lifecycle_copy = (
+        'Runtime observations, execution history, and Activity Audit records remain available after'
+    )
+    assert retired_lifecycle_copy not in lifecycle
     assert "family == 'alerts'" in validation
     assert 'Selector accepted; payload-label evidence awaits matching alerts.' in validation
     assert 'title="{{ row.validation_message }}"' in validation
     assert '<span class="sr-only"> {{ row.validation_message }}</span>' in validation
-    assert '<p class="mt-1 max-w-4xl text-xs leading-5 text-content-secondary">{{ row.validation_message }}</p>' in validation
+    fallback_message = (
+        '<p class="mt-1 max-w-4xl text-xs leading-5 text-content-secondary">'
+        '{{ row.validation_message }}</p>'
+    )
+    assert fallback_message in validation
     assert 'binding_validation_result.render(row, \'alerts\')' in read(
         'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html'
     )
