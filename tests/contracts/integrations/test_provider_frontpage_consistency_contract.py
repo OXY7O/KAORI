@@ -66,12 +66,11 @@ def test_shared_overview_owns_summary_and_boundary_geometry() -> None:
     assert 'Integration Contract' in overview
     assert 'Consumer Resolution' in overview
     assert 'Authority Boundary' in overview
-    # Architectural explanations live in the shared Guide, not persistent footer cards.
+    # The Overview owns four visible KPIs and no redundant title Info Tip.
     assert 'md:grid-cols-3' not in overview
     assert '<article class="bg-surface-card px-5 py-4 sm:px-6">' not in overview
-    assert 'info_tip.render(' in overview
-    for section in ('Integration Contract', 'Consumer Resolution', 'Authority Boundary'):
-        assert f'"{section} — "' in overview
+    assert 'table_label.metadata_label(metrics|length ~ " Indicators", icon="layout-grid")' in overview
+    assert 'info_tip.render(' not in overview
 
 
 def test_kubernetes_frontpage_uses_same_coverage_and_registry_contract() -> None:
@@ -243,9 +242,8 @@ def test_harbor_frontpage_uses_registry_evidence_coverage_contract() -> None:
     assert 'RegistryWebhookEndpoint' in presentation
 
 
-def test_every_provider_overview_uses_inventory_indicator_with_accessible_context() -> None:
+def test_every_provider_overview_uses_inventory_indicator_without_redundant_help() -> None:
     shared = read('app/templates/integrations/components/_provider_frontpage.html')
-    tip = read('app/templates/components/info_tip.html')
     pages = (
         'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/frontpage.html',
         'app/templates/integrations/observability/metrics_source/frontpage.html',
@@ -256,21 +254,15 @@ def test_every_provider_overview_uses_inventory_indicator_with_accessible_contex
         'app/templates/integrations/source_control/github/index.html',
     )
 
-    assert 'components/info_tip.html' in shared
-    assert shared.count('info_tip.render(') == 1
-    # Whitespace around the Jinja replace call is owned by djLint.
-    assert '"provider-overview-" ~ (title|lower|replace(" ", "-")' in shared
-    assert 'title ~ " Context"' in shared
-    assert 'items=overview_guide_items' in shared
+    assert 'components/info_tip.html' not in shared
+    assert 'info_tip.render(' not in shared
+    assert 'overview_guide_items' not in shared
     assert 'components/table_label.html' in shared
     assert 'table_label.metadata_label(metrics|length ~ " Indicators", icon="layout-grid")' in shared
     assert 'md:grid-cols-3' not in shared
     assert 'integration_ui.metric_grid_classes(4)' in shared
-    for section in ('Integration Contract', 'Consumer Resolution', 'Authority Boundary'):
-        assert f'"{section} — "' in shared
     assert 'bg-surface-card px-5 py-4 sm:px-6' not in shared
-    assert 'placement="right", variant="icon"' in shared
-    assert 'placement="right", variant="guide"' not in shared
+    # Keep the provider call interface stable until a separate contract migration.
     for token in (
         'contract_title',
         'contract_description',
@@ -280,8 +272,6 @@ def test_every_provider_overview_uses_inventory_indicator_with_accessible_contex
         'authority_description',
     ):
         assert token in shared
-    assert 'data-kaori-info-tip-trigger' in tip
-    assert 'data-kaori-info-tip-variant' in tip
 
     for path in pages:
         page = read(path)
@@ -326,17 +316,16 @@ def test_provider_workspace_tabs_share_title_description_and_existing_tab_geomet
     outer_heading = tabs.split('data-kaori-integration-workspace-tabs')[0]
     assert 'integration_ui.palette_icon(' not in outer_heading
     assert tabs.index('integration_ui.workspace_section_intro(') < tabs.index('data-kaori-integration-workspace-tabs')
-    # Latest operator UAT keeps the Overview's architectural Info Tip,
-    # moves the title Guide to the Registry, and excludes the inner Workspace Guide.
+    # Operator UAT keeps Inventory-style Overview indicators, the Registry Guide,
+    # and no duplicate Guide inside the Integration Workspace.
     assert 'components/info_tip.html' not in tabs
     assert 'info_tip.render(' not in tabs
     assert 'workspace_guide_items' not in tabs
     assert 'title_extra=workspace_guide' not in tabs
     overview = read('app/templates/integrations/components/_provider_frontpage.html')
-    assert overview.count('info_tip.render(') == 1
-    assert 'title ~ " Context"' in overview
+    assert 'info_tip.render(' not in overview
+    assert 'components/info_tip.html' not in overview
     assert 'table_label.metadata_label(metrics|length ~ " Indicators", icon="layout-grid")' in overview
-    assert 'items=overview_guide_items' in overview
     shared_header = read('app/templates/integrations/components/_workspace.html')
     assert 'macro workspace_section_intro(title, description, aria_label)' in shared_header
     assert '<header class="min-w-0 px-1" aria-label="{{ aria_label }}">' in shared_header
@@ -376,6 +365,9 @@ def test_shared_provider_registry_header_has_single_guide_in_all_six_consumers()
     assert 'title_extra=header_guide' in vault
 
     environment = Environment(loader=FileSystemLoader(ROOT / 'app' / 'templates'), autoescape=True)
+    # The imported global table macro contains a custom filter not used by
+    # this Registry Guide render; register it for standalone Jinja compilation.
+    environment.filters['environment_name'] = str
     header = str(
         environment.get_template('integrations/components/_provider_registry.html').module.registry_header(
             'Metrics Source Registry',
@@ -391,7 +383,7 @@ def test_shared_provider_registry_header_has_single_guide_in_all_six_consumers()
     assert 'Core readiness comes from Full Validation.' in header
 
 
-def test_overview_inventory_indicator_preserves_complete_provider_boundary_help() -> None:
+def test_overview_indicator_has_no_extra_info_trigger_on_all_provider_landings() -> None:
     from jinja2 import Environment, FileSystemLoader
 
     overview = read('app/templates/integrations/components/_provider_frontpage.html')
@@ -418,9 +410,7 @@ def test_overview_inventory_indicator_preserves_complete_provider_boundary_help(
         )
     )
     assert '4 Indicators' in html
-    assert 'data-kaori-info-tip-variant="icon"' in html
-    assert 'data-kaori-info-tip-variant="guide"' not in html
-    assert 'data-kaori-info-tip-trigger' in html
-    for phrase in ('Integration Contract', 'Consumer Resolution', 'Authority Boundary'):
-        assert phrase in html
+    assert 'data-kaori-info-tip' not in html
+    assert 'data-kaori-info-tip-trigger' not in html
+    assert 'data-kaori-provider-integration-overview' in html
 

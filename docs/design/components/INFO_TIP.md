@@ -65,16 +65,15 @@ its title, derived from `metrics|length`, using
 title-level **Guide** label following the 2026-11-14 operator Visual UAT.
 Do not hardcode the count, create a new pill, or copy page-specific CSS.
 
-The complete Overview explanation (Integration Contract, Consumer Resolution,
-Authority Boundary and descriptions) remains available through the same
-`info_tip.render` **icon-only** trigger next to the indicator. This is a
-specific exception to the default title-level Guide pattern: the metadata label
-now communicates the Overview's four visible operational KPI dimensions, while
-the adjacent supplementary Info Tip owns the detailed architectural context.
-Never hide readiness or action/permission blockers in that context.
-Keep the old three-column explanation footer removed; the shared macro and
-`info_tips.js` retain accessible keyboard, hover, click/touch and viewport
-behavior without introducing new JavaScript.
+The Overview title has **no adjacent Info Tip icon or Guide** after the
+Indicators label. The 2026-11-14 operator screenshot explicitly removes that
+redundant control from all seven provider landing Overviews. Scope, provider
+authority and independent evidence boundaries remain available in the provider
+details and the existing Integration Coverage / Connection Registry Guides.
+The shared Overview macro keeps its legacy provider-context parameters for
+call-site compatibility, but deliberately does not render a separate tooltip.
+Do not restore the old three-column explanation footer, create an unlabeled
+icon-only title trigger, or hide status/actions behind help.
 
 Provider descriptions use concise, semantically accurate sentences; Metrics
 Source Overview uses "Govern provider-neutral Metrics Sources, query routing,
@@ -109,10 +108,9 @@ typography and responsive spacing instead of duplicated provider templates.
 Inside the card, the existing **Integration Workspace** header retains its
 icon, title, and short explanatory sentence, but deliberately has **no second
 Guide**. The provider-owned **Integration Overview** directly above has an
-Inventory-style four-indicator metadata label and a supplementary Info Tip
-for the complete architecture explanation. The selected **Connection
-Registry** has a single canonical title Guide, so duplicating it in the
-outer Integration Workspace adds redundant interaction. This decision
+Inventory-style four-indicator metadata label **without** an extra Info Tip.
+The selected **Connection Registry** has one canonical title Guide; duplicating
+it in the outer Integration Workspace adds redundant interaction. This decision
 supersedes the old inner-workspace Guide test following #4544. Keep
 readiness, validation failures, and permissions visible outside popovers.
 

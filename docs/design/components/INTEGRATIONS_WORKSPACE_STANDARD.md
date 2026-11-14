@@ -53,10 +53,13 @@ Provider templates supply factual labels, icons, endpoint data, compatibility ev
 
 The seven provider landing Overviews reuse the Inventory metadata-label
 grammar: a visible `metrics|length` **Indicators** count beside the title,
-with existing contract, consumer resolution, and authority explanation retained
-in an icon-only supplementary Info Tip. The six provider registries rendered
-by `_provider_registry.html::registry_header` use its single title-adjacent
-Guide. Vault's existing `table_ui.inventory_block_header(title_extra=...)`
+**without any extra icon-only Info Tip or Guide** (2026-11-14 Human Visual UAT).
+Provider authority and evidence boundaries are explained by existing Coverage,
+Registry and detail-level Guides, not an adjacent Overview tooltip. The shared
+Overview macro retains legacy provider-context parameters for call-site
+compatibility; those parameters are not rendered as another title control.
+The six provider registries rendered by `_provider_registry.html::registry_header`
+use a single title-adjacent Guide. Vault's existing `table_ui.inventory_block_header(title_extra=...)`
 owns the seventh registry Guide. Never restore the Guide in the nested
 Integration Workspace header (#4544); the Registry Guide is the correct
 location for explanation of connection listing and evidence boundaries.

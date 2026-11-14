@@ -256,9 +256,7 @@ def test_provider_sidebar_uses_registry_owner_not_default_overview(monkeypatch) 
 
     def active_keys(endpoint: str, override: str | None = None) -> list[str]:
         sections = sidebar.build_sidebar_navigation(endpoint, user, active_capability_override=override)
-        workspace = next(
-            item for section in sections for item in section['items'] if item['key'] == 'integrations'
-        )
+        workspace = next(item for section in sections for item in section['items'] if item['key'] == 'integrations')
         assert workspace['active']
         return [child['key'] for child in workspace['children'] if child['active']]
 
@@ -292,7 +290,9 @@ def test_presentation_reuses_provider_owner_for_sidebar_and_breadcrumb() -> None
     sidebar = read('app/common/workspace_navigation.py')
 
     assert 'integration_owner = integration_endpoint_owner(request.endpoint)' in presentation
-    assert "active_integration_domain_key = integration_owner['domain_key'] if integration_owner else None" in presentation
+    assert (
+        "active_integration_domain_key = integration_owner['domain_key'] if integration_owner else None" in presentation
+    )
     assert "active_integration_domain_key = selector_domain['key']" in presentation
     assert 'active_capability_override=active_integration_domain_key' in presentation
     assert 'integration_owner=integration_owner' in presentation

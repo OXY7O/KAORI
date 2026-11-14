@@ -393,9 +393,7 @@ def test_consumer_asset_identity_is_shared_and_omits_duplicate_taxonomy_label() 
     assert '<span class="font-mono">cluster-123</span>' in kubernetes
     assert '<span class="text-content-secondary">Kubernetes Cluster</span>' not in kubernetes
 
-    storage = str(
-        macro('Object Storage System', 'object_storage_system', 'storage-456', 'Object Storage System', True)
-    )
+    storage = str(macro('Object Storage System', 'object_storage_system', 'storage-456', 'Object Storage System', True))
     assert 'data-lucide="database"' in storage
     assert '<span class="font-mono">storage-456</span>' in storage
     assert '<span class="text-content-secondary">Object Storage System</span>' not in storage
