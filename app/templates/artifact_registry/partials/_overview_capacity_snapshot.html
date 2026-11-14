@@ -13,7 +13,7 @@
     extra_classes='h-full'
     ) %}
     {% if overview.capacity.available %}
-        <div class="space-y-4">
+        <div class="space-y-3">
             <div class="flex items-start gap-3 rounded-lg border border-outline-default bg-kaori-soft p-3 text-xs leading-5 text-content-secondary">
                 <i data-lucide="info"
                    class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
@@ -33,12 +33,26 @@
                                         aria_label=item.label ~ ' ' ~ item.progress_label|lower ~ ' percentage') }}
                 {% endfor %}
             </div>
+            {% set capacity_review_groups = [
+                ('scan-search', 'Evidence', [
+                    ('Validate', 'Confirm scope and snapshot freshness.'),
+                    ('Assess', 'Review footprint, headroom, and forecast.')
+                ]),
+                ('list-filter', 'Decision', [
+                    ('Prioritize', 'Identify projects driving Registry capacity pressure'),
+                    ('Act', 'Apply approved changes in the provider.')
+                ]),
+                ('clipboard-check', 'Assurance', [
+                    ('Verify', 'Refresh evidence; verify headroom'),
+                    ('Record', 'Preserve the decision and operational evidence')
+                ])
+            ] %}
             {% set capacity_tone = 'critical' if overview.capacity.risk == 'Critical' else ('warning' if overview.capacity.risk == 'Medium' else ('normal' if overview.capacity.risk == 'Low' else 'unknown')) %}
             {{ capacity_decision.render(overview.capacity.risk,
                                          capacity_tone,
                                          overview.capacity.insight,
                                          overview.capacity.risk_detail,
-                                         overview.capacity.recommended_action) }}
+                                         overview.capacity.recommended_action, review_groups=capacity_review_groups) }}
             <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4"
                      aria-label="Registry project quota balance chart">
                 <div class="flex flex-wrap items-center justify-between gap-2">
