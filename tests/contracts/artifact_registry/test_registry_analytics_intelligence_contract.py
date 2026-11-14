@@ -641,6 +641,11 @@ def test_registry_insights_overview_renders_factual_review_cards_and_ownership()
     assert 'No Derived Review Facts' in no_facts
     assert 'clean risk posture' in no_facts
 
+    placeholder = {**growth, 'title': 'No derived review signal'}
+    sentinel = template.render(analytics={'snapshot_count': 1, 'insights': [placeholder]})
+    assert 'No Derived Review Facts' in sentinel
+    assert '1 Facts' not in sentinel
+
 
 def test_registry_evidence_overview_preserves_snapshot_freshness_vs_worker_status() -> None:
     from jinja2 import Environment, FileSystemLoader

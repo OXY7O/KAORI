@@ -100,13 +100,13 @@
                 <div class="space-y-2 px-4 py-4 sm:px-5">
                     <dt class="{{ analysis_surface.metric_label_classes() }}">Snapshot freshness</dt>
                     <dd>{{ table_label.status_label(readiness.label, readiness.tone, size='compact') }}</dd>
-                    <p class="text-xs leading-5 text-content-secondary">{{ readiness.helper }}</p>
+                    <dd class="text-xs leading-5 text-content-secondary">{{ readiness.helper }}</dd>
                 </div>
                 <div class="space-y-2 px-4 py-4 sm:px-5">
                     <dt class="{{ analysis_surface.metric_label_classes() }}">Latest worker outcome</dt>
                     <dd>{{ table_label.status_label(readiness.execution_label, readiness.execution_tone, size='compact') }}</dd>
                     {% if readiness.execution_helper %}
-                        <p class="text-xs leading-5 text-content-secondary">{{ readiness.execution_helper }}</p>
+                        <dd class="text-xs leading-5 text-content-secondary">{{ readiness.execution_helper }}</dd>
                     {% endif %}
                 </div>
             </dl>
