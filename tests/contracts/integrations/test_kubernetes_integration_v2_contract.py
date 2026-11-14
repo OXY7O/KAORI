@@ -631,3 +631,45 @@ def test_kubernetes_validation_copy_is_compact_without_changing_capability_or_rb
     assert 'whitespace-nowrap' not in shared_readiness
     assert 'text-ellipsis' not in rbac
     assert '<p class="mt-1 max-w-2xl text-xs leading-5 text-content-secondary">' in rbac
+
+
+def test_kubernetes_connection_registry_cells_follow_header_semantics() -> None:
+    """Read-only row identity and timestamp remain readable at narrow widths."""
+
+    from jinja2 import Environment
+
+    registry = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html'
+    )
+    Environment().parse(registry)
+    populated = registry.split('{% for row in rows %}', 1)[1].split('{% else %}', 1)[0]
+    cells = populated.split('<td class="{{ table_ui.cell_classes() }}">')
+    assert len(cells) == 6
+
+    # Connection: canonical cluster identity and environment, not an API URL.
+    assert '{{ row.cluster_name }}' in cells[1]
+    assert '{{ row.environment }}' in cells[1]
+    assert '{{ row.server }}' not in cells[1]
+    assert 'integration_ui.palette_icon("server-cog", connection_icon_tone)' in cells[1]
+
+    # Endpoint / Scope: complete provider endpoint plus owning API context.
+    assert '{{ row.server }}' in cells[2]
+    assert 'Kubernetes API' in cells[2]
+    assert '{{ row.environment }}' not in cells[2]
+    assert '[overflow-wrap:anywhere]' in cells[2]
+    assert 'truncate' not in cells[2]
+
+    # Readiness: full observed time, accessible label, no redundant visible prefix.
+    assert 'integration_status(row.readiness, display="indicator")' in cells[3]
+    assert '<span class="sr-only">Last validation: </span>{{ row.last_validated_at }}' in cells[3]
+    assert 'title="Last validation: {{ row.last_validated_at }}"' in cells[3]
+    assert 'Validated {{ row.last_validated_at }}' not in cells[3]
+
+    assert '{{ row.compatibility_profile or "Validation Required" }}' in cells[4]
+    assert '{{ row.version or "Version not discovered" }}' in cells[4]
+    assert "table_label.count_text(row.source_binding_count, 'Source')" in cells[5]
+
+    assert 'provider_registry.connection_registry_colgroup()' in registry
+    assert 'provider_registry.pagination_footer(pagination,' in registry
+    assert "url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id)" in registry
+    assert 'table-fixed' not in registry

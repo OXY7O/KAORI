@@ -440,9 +440,7 @@ def test_tabular_provider_coverage_headers_share_filtered_result_counts() -> Non
     assert 'provider_registry.registry_header(' in shared
     assert 'result_count=pagination.total_items' in shared
     metrics = read('app/templates/integrations/observability/metrics_source/frontpage.html')
-    alertmanager = read(
-        'app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html'
-    )
+    alertmanager = read('app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html')
     for provider in (metrics, alertmanager):
         assert 'integrations/partials/_coverage_card.html' in provider
     coverage_adapter = read('app/templates/integrations/partials/_coverage_card.html')
