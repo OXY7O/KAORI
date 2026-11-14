@@ -458,7 +458,7 @@ def _domain_storage_contract(
 
     if name == 'generated_report':
         source_label = 'PostgreSQL + Reports Artifact Storage'
-        source_detail = 'reports metadata plus retained PDF, XLSX, or CSV artifacts'
+        source_detail = 'Reports metadata + PDF/XLSX/CSV'
         archive_content = 'JSONL.GZ + manifest + report artifacts'
         archive_detail = 'Ready and manually Archived report binaries are copied and checksum-verified.'
     elif name == 'runtime_observation':
