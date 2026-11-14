@@ -250,6 +250,57 @@ def test_integrated_child_registry_tab_shell_matches_membership_reference() -> N
     assert operations.count('data-capsule-allocation-scope-guide') == 1
 
 
+
+
+def test_drift_context_cards_precede_attached_registries_without_new_runtime_actions() -> None:
+    """#4718: operator-requested scope guidance belongs before both child tabsets."""
+    from jinja2 import Environment
+
+    page = read('app/templates/kubernetes/tenant/operations.html')
+    Environment(autoescape=True).parse(page)
+    assert 'components/operational_callout.html' in page
+
+    allocation = page.split("{% elif active_tab == 'allocation-drift' %}", 1)[1].split(
+        "{% elif active_tab == 'operational-reconcile' %}", 1
+    )[0]
+    operational = page.split("{% elif active_tab == 'operational-reconcile' %}", 1)[1].split(
+        '{% else %}\n                    <section', 1
+    )[0]
+
+    for source, context, shell, count in (
+        (allocation, 'allocation', 'tenant-drift-allocation-registry', 2),
+        (operational, 'operational', 'tenant-drift-operations-registry', 3),
+    ):
+        assert source.count('operational_callout.render(') == count
+        assert f'data-tenant-drift-context="{context}"' in source
+        assert source.index('data-tenant-operations-review-intro') < source.index(
+            f'data-tenant-drift-context="{context}"'
+        )
+        assert source.index(f'data-tenant-drift-context="{context}"') < source.index(
+            f'id="{shell}"'
+        )
+        assert source.index(f'id="{shell}"') < source.index(
+            'workspace_tabs.render_query_tabs('
+        )
+        assert source.count("variant='neutral'") == count
+        assert '<form method="post"' not in source
+        assert 'hx-post=' not in source
+        assert 'requests.get(' not in source
+
+    assert 'md:grid-cols-2' in allocation
+    assert 'Tenant Quota · Namespace scope' in allocation
+    assert 'Tenant.spec.resourceQuotas' in allocation
+    assert 'Shared Allocation · Tenant scope' in allocation
+    assert 'GlobalResourceQuota' in allocation
+    assert 'reapply or accept provider state only through governed recovery' in allocation
+
+    assert 'lg:grid-cols-3' in operational
+    assert 'Namespace Drift' in operational
+    assert 'effective Kubernetes RBAC evidence' in operational
+    assert 'read-only context, not a drift queue' in operational
+    assert page.count('workspace_tabs.render_query_tabs(') == 2
+
+
 def test_each_registry_retains_child_view_during_filter_clear_and_pagination() -> None:
     specs = (
         ('_capsule_tenant_quota_drift.html', 'allocation-drift', 'tenant-quota'),
