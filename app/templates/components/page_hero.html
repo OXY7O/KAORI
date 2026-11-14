@@ -99,7 +99,7 @@
         {% endif %}
     </div>
 {%- endmacro %}
-{% macro operational_dashboard(eyebrow_label, leading_icon, title, description, metadata, active_scope, action_label, action_href, action_icon='settings-2', data_authority='Committed Snapshots', state='normal', blocked_title='Setup Required', blocked_info='Complete setup to activate operational signals.', context_extension=none) -%}
+{% macro operational_dashboard(eyebrow_label, leading_icon, title, description, metadata, active_scope, action_label, action_href, action_icon='settings-2', data_authority='Committed Snapshots', state='normal', blocked_title='Setup Required', blocked_info='Complete setup to activate operational signals.', context_extension=none, context_title='Operational Signal Scope') -%}
     <section class="{{ shell_classes() }}"
              data-kaori-hero-profile="operational-dashboard"
              data-kaori-hero-state="{{ state }}">
@@ -126,7 +126,7 @@
                     'info') }}
                 {% else %}
                     <div class="{{ context_panel_classes() }} {{ 'justify-center' if not (action_label and action_href or context_extension) else '' }}">
-                        {{ context_header('Dashboard Context', 'Operational Signal Scope', 'scan-search') }}
+                        {{ context_header('Dashboard Context', context_title, 'scan-search') }}
                         <div class="{{ context_panel_metrics_classes() }}">
                             {{ context_metric('scan-search', 'Active Scope', active_scope, 'Applied across dashboard signals', 'text-sm font-semibold leading-5') }}
                             {{ context_metric('database-zap', 'Data Authority', data_authority, 'No live provider query on page load', 'text-sm font-semibold leading-5') }}
