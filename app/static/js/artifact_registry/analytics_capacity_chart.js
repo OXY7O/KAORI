@@ -82,7 +82,9 @@
                                 label: (context) => {
                                     const row = data[context.dataIndex]
                                     if (!row) return 'Evidence unavailable'
-                                    return `${Number(row.utilization_percent).toFixed(1)}% used · ${formatBytes(Number(row.usage_bytes))} / ${formatBytes(Number(row.quota_bytes))}`
+                                    const used = formatBytes(Number(row.usage_bytes))
+                                    const quota = formatBytes(Number(row.quota_bytes))
+                                    return `${Number(row.utilization_percent).toFixed(1)}% used · ${used} / ${quota}`
                                 },
                             },
                         },
