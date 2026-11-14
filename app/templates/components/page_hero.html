@@ -125,17 +125,19 @@
                     'lock-keyhole',
                     'info') }}
                 {% else %}
-                    <div class="{{ context_panel_classes() }}">
+                    <div class="{{ context_panel_classes() }} {{ 'justify-center' if not (action_label and action_href) else '' }}">
                         {{ context_header('Dashboard Context', 'Operational Signal Scope', 'scan-search') }}
                         <div class="{{ context_panel_metrics_classes() }}">
                             {{ context_metric('scan-search', 'Active Scope', active_scope, 'Applied across dashboard signals', 'text-sm font-semibold leading-5') }}
                             {{ context_metric('database-zap', 'Data Authority', data_authority, 'No live provider query on page load', 'text-sm font-semibold leading-5') }}
                         </div>
-                        <a href="{{ action_href }}"
-                           class="{{ context_single_action_classes() }}">
-                            <i data-lucide="{{ action_icon }}" class="h-4 w-4" aria-hidden="true"></i>
-                            <span>{{ action_label }}</span>
-                        </a>
+                        {% if action_label and action_href %}
+                            <a href="{{ action_href }}"
+                               class="{{ context_single_action_classes() }}">
+                                <i data-lucide="{{ action_icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                                <span>{{ action_label }}</span>
+                            </a>
+                        {% endif %}
                     </div>
                 {% endif %}
             </aside>
