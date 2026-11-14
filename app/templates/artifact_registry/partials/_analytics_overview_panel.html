@@ -129,18 +129,8 @@
     </div>
     {% if overview_domain == 'growth' %}
         {% include "artifact_registry/partials/_analytics_growth_charts.html" %}
-    {% elif overview_domain == 'capacity' and analytics.forecast_rows %}
-        <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
-            <h4 class="text-sm font-semibold text-content-primary">Qualified Project Outlook</h4>
-            <div class="mt-3 divide-y divide-outline-subtle">
-                {% for row in analytics.forecast_rows[:3] %}
-                    <div class="flex flex-wrap items-center justify-between gap-3 py-2 text-xs">
-                        <span class="font-semibold text-content-primary">{{ row.project_name }} · {{ row.registry_name }}</span>
-                        <span class="text-content-secondary">{{ row.utilization_display }} used · {{ row.days_to_quota_display }}</span>
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
+    {% elif overview_domain == 'capacity' %}
+        {% include "artifact_registry/partials/_analytics_capacity_chart.html" %}
     {% elif overview_domain == 'usage' and analytics.activity_rows %}
         <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
             <h4 class="text-sm font-semibold text-content-primary">Observed Pull Activity by Project</h4>
