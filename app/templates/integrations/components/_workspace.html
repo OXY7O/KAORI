@@ -37,17 +37,18 @@
     </span>
 {%- endmacro %}
 {% macro consumer_asset_identity(label, asset_type, metadata=none, type_label=none, metadata_is_key=false) -%}
-    {% set asset_icon = 'boxes' %}
+    {% set asset_icon = "boxes" %}
     {% if asset_type == 'object_storage_system' %}
-        {% set asset_icon = 'database' %}
+        {% set asset_icon = "database" %}
     {% elif asset_type == 'vault_instance' %}
-        {% set asset_icon = 'key-round' %}
-    {% elif asset_type in ['artifact_registry', 'registry_instance'] %}
-        {% set asset_icon = 'package' %}
+        {% set asset_icon = "key-round" %}
+    {% elif asset_type in ["artifact_registry", "registry_instance"] %}
+        {% set asset_icon = "package" %}
     {% endif %}
     {% set distinct_type = type_label and type_label|trim|lower != label|trim|lower %}
     {% set show_type_inline = distinct_type and not metadata_is_key %}
-    <div class="flex min-w-0 items-start gap-2.5" data-kaori-consumer-asset-identity>
+    <div class="flex min-w-0 items-start gap-2.5"
+         data-kaori-consumer-asset-identity>
         {{ palette_icon(asset_icon, 'brand', size='sm') }}
         <div class="min-w-0">
             <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]"
@@ -59,10 +60,10 @@
                 <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]"
                    title="{{ metadata or type_label or label }}">
                     {% if show_type_inline %}<span class="text-content-secondary">{{ type_label }}</span>{% endif %}
-                    {% if show_type_inline and metadata %}<span aria-hidden="true"> · </span>{% endif %}
+                    {% if show_type_inline and metadata %}<span aria-hidden="true">·</span>{% endif %}
                     {% if metadata %}
-                        {% if metadata_is_key and asset_type == 'registry_instance' %}
-                            <span class="text-content-secondary">Asset ID: </span>
+                        {% if metadata_is_key and (metadata|string|trim).isdigit() %}
+                            <span class="text-content-secondary">Asset ID:</span>
                         {% endif %}
                         <span class="{{ 'font-mono' if metadata_is_key else '' }}">{{ metadata }}</span>
                     {% endif %}
