@@ -1,4 +1,5 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% set registry_id = "operations-drift-registry" %}
@@ -25,6 +26,17 @@
             ) }}
         {% endif %}
     {% endset %}
+    {% set title_info %}
+        {{ info_tip.render('tenant-operations-drift-registry-guide',
+                'Namespace & Allocation Drift Guide',
+                'Review committed drift findings before an explicit recovery decision.',
+                [
+                'Sync observes provider state and commits differences; it does not automatically repair Kubernetes or Capsule resources.',
+                'Namespace and allocation differences correlate committed intent with provider reconciliation evidence.',
+                'Recovery requires separately authorized human action and verified provider read-back.'
+                ],
+                placement='right', variant='guide') }}
+    {% endset %}
     {{ table_ui.inventory_block_header('refresh-cw',
         'Namespace & Allocation Drift',
         'Sync observes provider state only. Recovery requires an explicit human reconciliation decision.',
@@ -33,7 +45,8 @@
         none,
         none,
         header_actions=header_actions,
-        result_count=operations_drift_pagination.total_items) }}
+        result_count=operations_drift_pagination.total_items,
+        title_extra=title_info) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
             'tenant.operations',
