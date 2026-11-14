@@ -39,6 +39,7 @@ TITLE_GUIDES = {
     '_capacity_decisions.html': ('tenant-capacity-decision-tip',),
     '_allocation_change.html': ('namespace-allocation-change-tip',),
     '_allocation_cutover.html': ('allocation-cutover-tip',),
+    '_capsule_governance_overview.html': ('capsule-governance-overview-guide',),
     '_capsule_tenant_quota_cutover.html': ('capsule-tenant-quota-tip',),
     '_capsule_shared_allocation_cutover.html': ('capsule-shared-cutover-tip',),
     '_resource_profile_form.html': (

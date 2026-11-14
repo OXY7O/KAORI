@@ -274,6 +274,45 @@ def test_capsule_scope_tabs_reuse_jobs_framed_navigation_with_htmx_fallback() ->
     assert workspace.count('_capsule_shared_allocation_cutover.html') == 1
 
 
+def test_capsule_governance_legacy_captions_are_compact_without_losing_authority() -> None:
+    from jinja2 import Environment
+
+    tenant = _read('app/templates/kubernetes/tenant/partials/_capsule_tenant_quota_cutover.html')
+    shared = _read('app/templates/kubernetes/tenant/partials/_capsule_shared_allocation_cutover.html')
+    overview = _read('app/templates/kubernetes/tenant/partials/_capsule_governance_overview.html')
+    for source in (tenant, shared, overview):
+        Environment(autoescape=True).parse(source)
+
+    captions = (
+        (
+            tenant,
+            'For legacy Adopted / Observed allocation only: govern Capsule Tenant quota.',
+            'capsule-tenant-quota-tip',
+            'Managed-on-Adopt already performs governed takeover',
+        ),
+        (
+            shared,
+            'For legacy Adopted / Observed Capsule allocation only: govern GlobalResourceQuota.',
+            'capsule-shared-cutover-tip',
+            'KAORI never substitutes a Native ResourceQuota write',
+        ),
+    )
+    for source, caption, guide_id, preserved_contract in captions:
+        header = source.split('</header>', 1)[0]
+        assert caption in header
+        assert len(caption) < 90
+        assert 'whitespace-nowrap' not in header
+        assert header.count(f"'{guide_id}'") == 1
+        assert "variant='guide'" in header
+        assert preserved_contract in header
+        assert 'name="csrf_token"' in source
+
+    assert 'Capsule Governance Overview</h2>' in overview
+    assert 'capsule-governance-overview-guide' in overview
+    assert 'table_label.special_label' in overview
+    assert 'Generated Namespace ResourceQuotas are provider effects' in overview
+
+
 def test_capsule_authority_copy_and_blocker_rows_retain_complete_evidence() -> None:
     from jinja2 import Environment
 
@@ -282,18 +321,30 @@ def test_capsule_authority_copy_and_blocker_rows_retain_complete_evidence() -> N
     for source in (overview, shared):
         Environment(autoescape=True).parse(source)
 
-    assert 'Choose an allocation authority' in overview
-    assert 'Select the committed Tenant or shared quota source' in overview
+    assert 'Capsule Governance Overview' in overview
+    assert 'Choose the committed Tenant or shared quota source' in overview
     assert 'Generated Namespace ResourceQuotas are provider effects' in overview
     assert 'not shared budgets.' in overview
     assert 'Capsule authoritative' in overview
     header = overview.split('<div class="grid items-stretch gap-4 lg:grid-cols-2">', 1)[0]
-    assert header.index('Choose an allocation authority') < header.index('Capsule authoritative')
-    assert header.index('Capsule authoritative') < header.index('Select the committed Tenant')
+    assert header.index('Capsule Governance Overview</h2>') < header.index(
+        "info_tip.render('capsule-governance-overview-guide'"
+    )
+    assert header.index("info_tip.render('capsule-governance-overview-guide'") < header.index(
+        "table_label.special_label('Capsule authoritative'"
+    )
+    assert header.index("table_label.special_label('Capsule authoritative'") < header.index(
+        'Choose the committed Tenant'
+    )
+    assert header.count("info_tip.render('capsule-governance-overview-guide'") == 1
+    assert "placement='right', variant='guide'" in header
+    assert 'data-lucide="layout-grid"' in header
+    assert 'h-9 w-9' in header
+    assert 'text-base font-semibold text-content-primary' in header
+    assert 'text-sm leading-6 text-content-secondary' in header
     assert header.count('<p ') == 1
     assert 'max-w-4xl' not in header
     assert 'items-start justify-between' not in header
-    assert 'flex-wrap items-center gap-x-3 gap-y-2' in header
     assert 'border-b border-outline-subtle pb-4' in header
     assert 'capsule_tenant_quota_managed|length' in overview
     assert 'capsule_tenant_quota_cutover_tenants|length' in overview

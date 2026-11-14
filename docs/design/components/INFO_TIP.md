@@ -29,10 +29,12 @@ For genuinely field-specific guidance, the icon trigger may sit inline beside th
 
 The Namespace Provisioning Allocation Change workspace applies this same
 title-adjacent Info Tip pattern to its Native Allocation Change, Native
-Governance Cutover, Capsule Tenant Quota Governance, and Capsule Shared
-Allocation Governance sections. Capsule status/authority badges remain
-independent of the help trigger; do not position title-level contextual guidance in the
-far-right header action corner.
+Governance Cutover, Capsule Governance Overview, Capsule Tenant Quota Governance,
+and Capsule Shared Allocation Governance sections. Capsule status/authority
+badges remain independent of the help trigger; do not position title-level
+contextual guidance in the far-right header action corner. The Capsule
+Governance Overview header uses the same Violet icon/title/Guide/badge geometry
+as its quota governance peers, not a compact page-local title or badge.
 
 For a form/card section, place the trigger **immediately beside the section title** so the same visual grammar is used across Tenant, Operations, Governance, Integrations, and future domains. The owning surface must permit visible overflow for the desktop hover preview; do not trap the preview inside an `overflow-hidden` card. Rounded visual containment should be preserved by the card/header geometry rather than by clipping the Info Tip.
 
