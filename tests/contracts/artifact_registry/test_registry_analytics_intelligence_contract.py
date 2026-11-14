@@ -517,7 +517,6 @@ def test_registry_analytics_overview_panels_preserve_missing_data_and_evidence_a
     assert 'aggregate.alert_sources_ready == analytics.provider_count' in panel
 
 
-
 def test_registry_alert_source_overview_reuses_committed_selection_and_fallback_evidence() -> None:
     from jinja2 import Environment, FileSystemLoader
 

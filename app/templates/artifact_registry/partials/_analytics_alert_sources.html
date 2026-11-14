@@ -75,7 +75,9 @@
                         </article>
                     {% endfor %}
                     {% if source_rows|length > 3 %}
-                        <p class="px-1 text-xs leading-5 text-content-muted">Showing 3 of {{ source_rows|length }} committed sources. Open Alerts & Anomalies Analysis for all source records.</p>
+                        <p class="px-1 text-xs leading-5 text-content-muted">
+                            Showing 3 of {{ source_rows|length }} committed sources. Open Alerts & Anomalies Analysis for all source records.
+                        </p>
                     {% endif %}
                 </div>
             </section>
@@ -135,7 +137,9 @@
                    class="h-5 w-5 text-content-muted"
                    aria-hidden="true"></i>
                 <p class="text-sm font-semibold text-content-primary">Alert Source Evidence Not Available</p>
-                <p class="max-w-lg text-xs leading-5 text-content-secondary">A selected Registry and Time Range need committed alert-source evidence. Missing source evidence does not indicate zero alerts.</p>
+                <p class="max-w-lg text-xs leading-5 text-content-secondary">
+                    A selected Registry and Time Range need committed alert-source evidence. Missing source evidence does not indicate zero alerts.
+                </p>
             </div>
         </div>
     {% endif %}
