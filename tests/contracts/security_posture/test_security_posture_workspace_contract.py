@@ -10,7 +10,11 @@ from jinja2 import Environment
 
 from app.common.pagination import build_pagination_window, pagination_payload
 from app.common.workspace_navigation import build_sidebar_navigation
-from app.security_posture.presentation import _scanner_coverage_state, build_security_posture
+from app.security_posture.presentation import (
+    _scanner_coverage_state,
+    _security_severity_distribution,
+    build_security_posture,
+)
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -89,6 +93,9 @@ def test_findings_is_bounded_read_only_and_requires_qualified_evidence() -> None
     assert 'paginate_query(' in presentation
     assert 're.fullmatch(' in presentation
     assert 'HarborClient' not in presentation
+    assert 'if include_overview_summary and source_ids:' in presentation
+    assert "grouped.order_by(None).subquery()" in presentation
+    assert "'severity_distribution': severity_distribution" in presentation
     assert 'requests.get(' not in presentation
 
 
@@ -100,8 +107,12 @@ def test_security_pages_use_approved_dashboard_and_registry_components() -> None
         assert 'components/page_hero.html' in html
     assert 'components/operational_dashboard_workspace.html' in overview
     assert 'page_hero.operational_dashboard(' in overview
-    assert 'components/operational_signal_overview.html' in overview
+    assert 'components/section_intro.html' in overview
+    assert 'components/progress_bar.html' in overview
+    assert 'data-security-exposure-signals' in overview
     assert 'components/operational_metric_card.html' in overview
+    assert 'components/table.html' in overview
+    assert 'data-security-posture-preview' in overview
     assert 'components/states/_empty_state.html' in overview
     assert 'components/states/_empty_state.html' in findings
     assert 'Security Evidence Prerequisites' in overview
@@ -139,6 +150,7 @@ def test_security_permission_alone_never_queries_registry_evidence(monkeypatch) 
     assert posture['rows'] == []
     assert not posture['has_complete_security_evidence']
     assert posture['pagination']['per_page'] == 5
+    assert posture['severity_distribution'] == []
 
 
 def _render_workspace_page(name: str, posture: dict, **options: bool | str) -> str:
@@ -189,6 +201,12 @@ def _renderable_posture(authorized: bool = True) -> dict:
         'affected_artifacts': 1,
         'has_complete_security_evidence': authorized,
         'scan_updated_label': 'Updated 1m ago',
+        'last_scan': datetime.now(UTC) if authorized else None,
+        'severity_distribution': [
+            {'label': 'Critical', 'count': 1, 'tone': 'critical'},
+            {'label': 'High', 'count': 0, 'tone': 'warning'},
+        ] if authorized else [],
+        'runtime_binding_summary': {'digest': 1, 'reference': 0},
         'pagination': page,
         'search': 'CVE-2022-1586',
         'severity': 'critical',
@@ -215,10 +233,93 @@ def test_security_overview_renders_operational_profile_and_signal_cards() -> Non
     html = _render_workspace_page('overview', _renderable_posture())
     assert 'data-kaori-hero-profile="operational-dashboard"' in html
     assert 'data-kaori-dashboard-framework="operational-v1"' in html
-    assert 'Operational Signal Overview' in html
+    assert 'Security Exposure Signals' in html
+    assert 'Operational Signal Overview' not in html
     assert 'data-kaori-tab-variant="integrated-workspace"' in html
     assert 'Review Registry Security' in html
     assert '/security/findings' in html
+
+
+def test_security_assurance_overview_uses_source_backed_exposure_hierarchy() -> None:
+    html = _render_workspace_page('overview', _renderable_posture())
+    assert 'data-security-exposure-signals' in html
+    for label in ('Scan Coverage', 'Affected Artifact Digests', 'Runtime Correlation', 'Evidence Freshness'):
+        assert label in html
+    for label in ('Exposure by Severity', 'Observed Runtime Impact', 'Evidence Confidence'):
+        assert label in html
+    assert '1 · 100%' in html
+    assert '0 · 0%' in html
+    assert 'data-security-severity-distribution' in html
+    assert 'role="progressbar"' in html
+    assert 'data-security-posture-preview' in html
+    assert 'CVE-2022-1586' in html
+    assert '/artifact-registry/security/cve/CVE-2022-1586/impact' in html
+    assert '0 mutable/other' in html
+    assert 'No remediation or provider scan runs' in html
+    assert 'sipgas-web' not in html  # mockup examples must never become product data
+    assert 'Exposure Trend' not in html  # no committed historical series exists
+
+
+def test_security_assurance_runtime_impact_requires_ready_correlation() -> None:
+    posture = _renderable_posture()
+    posture['runtime_status'] = {'status': 'Stale', 'tone': 'warning'}
+    posture['runtime_binding_summary'] = {'digest': 7, 'reference': 2}
+    html = _render_workspace_page('overview', posture)
+    assert 'Binding totals are unavailable until committed correlation is Ready.' in html
+    runtime_panel = html.split('Observed Runtime Impact', 1)[1].split('Evidence Confidence', 1)[0]
+    assert '>7<' not in runtime_panel
+    assert '>2<' not in runtime_panel
+    assert 'Strong identity' not in html
+
+
+def test_security_assurance_labels_preserve_shared_tab_identity_and_bounds() -> None:
+    html = _render_workspace_page('overview', _renderable_posture(), active_tab='capacity')
+    for label in ('Exposure Analysis', 'Assets & Impact', 'Findings & Investigation', 'Evidence & Sources'):
+        assert label in html
+    for key in ('overview', 'capacity', 'signals', 'reporting'):
+        assert f'security-posture-overview-tab-{key}' in html
+        assert f'security-posture-overview-panel-{key}' in html
+    assert 'data-kaori-tab-variant="integrated-workspace"' in html
+    shared = read('app/templates/components/operational_dashboard_workspace.html')
+    assert "navigation(prefix, aria_label, tabs=none)" in shared
+    assert "tabs if tabs is not none else standard_tabs" in shared
+    assert "('overview', 'Operations Overview', 'activity')" in shared
+    assert "('capacity', 'Capacity & Demand', 'gauge')" in shared
+
+
+def test_security_distinct_cve_severity_projection_preserves_unknown_without_false_total() -> None:
+    distribution = _security_severity_distribution({0: 2, 1: 1, 5: 3})
+    assert distribution[0] == {'label': 'Critical', 'count': 2, 'tone': 'critical'}
+    assert distribution[1] == {'label': 'High', 'count': 1, 'tone': 'warning'}
+    assert distribution[2]['count'] == 0
+    assert distribution[-1] == {'label': 'Unknown', 'count': 3, 'tone': 'unknown'}
+    assert sum(row['count'] for row in distribution) == 6
+
+
+def test_security_overview_preview_never_renders_more_than_five_cves() -> None:
+    posture = _renderable_posture()
+    posture['rows'] = [
+        {**posture['rows'][0], 'cve_id': f'CVE-2022-{2000 + index}'}
+        for index in range(7)
+    ]
+    html = _render_workspace_page('overview', posture)
+    assert 'CVE-2022-2000' in html
+    assert 'CVE-2022-2004' in html
+    assert 'CVE-2022-2005' not in html
+    assert 'CVE-2022-2006' not in html
+
+
+def test_security_assurance_stale_scanner_is_not_runtime_all_clear() -> None:
+    posture = _renderable_posture()
+    posture['scan_status'] = {'label': 'Stale', 'tone': 'warning'}
+    posture['scan_updated_label'] = 'Updated 32d ago'
+    posture['has_complete_security_evidence'] = False
+    html = _render_workspace_page('overview', posture)
+    assert 'Stale' in html
+    assert 'Updated 32d ago' in html
+    assert 'Partial, stale or unavailable evidence cannot establish an all-clear.' in html
+    assert 'Kubernetes binding generation can be Ready while scanner evidence is Stale.' in html
+    assert 'Ready' in html
 
 
 def test_security_overview_blocks_without_eligible_source_without_inventing_kpis() -> None:

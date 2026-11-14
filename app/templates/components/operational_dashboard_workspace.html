@@ -26,8 +26,8 @@
         {{ caller() }}
     </div>
 {%- endmacro %}
-{% macro navigation(prefix, aria_label) -%}
-    {{ workspace_tabs.render(standard_tabs, prefix=prefix, aria_label=aria_label) }}
+{% macro navigation(prefix, aria_label, tabs=none) -%}
+    {{ workspace_tabs.render(tabs if tabs is not none else standard_tabs, prefix=prefix, aria_label=aria_label) }}
 {%- endmacro %}
 {% macro panel(tab_key, active_tab, prefix, extra_classes='space-y-5') -%}
     <div id="{{ prefix }}-panel-{{ tab_key }}"

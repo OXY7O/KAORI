@@ -53,6 +53,17 @@ def _scanner_coverage_state(
     return {'label': 'Observed', 'tone': 'normal'}
 
 
+def _security_severity_distribution(counts: dict[int, int]) -> list[dict[str, Any]]:
+    """Project distinct grouped-CVE severity totals without inventing findings."""
+    tones = {'critical': 'critical', 'high': 'warning', 'medium': 'warning', 'low': 'info'}
+    distribution = [
+        {'label': level.title(), 'count': int(counts.get(rank, 0)), 'tone': tones.get(level, 'unknown')}
+        for level, rank in _SEVERITY_RANK.items()
+    ]
+    if counts.get(5):
+        distribution.append({'label': 'Unknown', 'count': int(counts[5]), 'tone': 'unknown'})
+    return distribution
+
 def _scanner_findings(source_ids: list[int]) -> Any:
     """Latest usable successful scan, qualified by active source ownership."""
     latest_success = (
@@ -102,6 +113,7 @@ def build_security_posture(
     severity: str = '',
     page: int = 1,
     per_page: int = 5,
+    include_overview_summary: bool = False,
 ) -> dict[str, Any]:
     """Paginated cross-domain read projection; never a scanner or global all-clear."""
     if not can_view_registry:
@@ -126,6 +138,8 @@ def build_security_posture(
                 'description': 'No authorized committed Registry source.',
             },
             'has_complete_security_evidence': False,
+            'severity_distribution': [],
+            'runtime_binding_summary': {'digest': 0, 'reference': 0},
         }
     sources = _providers()
     source_ids = [int(source.id) for source in sources]
@@ -181,6 +195,40 @@ def build_security_posture(
         per_page=per_page,
     )
     rows = _security_finding_rows(page_rows)
+    severity_distribution: list[dict[str, Any]] = []
+    runtime_binding_summary = {'digest': 0, 'reference': 0}
+    if include_overview_summary and source_ids:
+        # Count distinct grouped CVEs at their highest qualified severity.
+        # A preview page or raw finding-row count cannot represent the scope.
+        severity_summary = grouped.order_by(None).subquery()
+        severity_counts = dict(
+            grouped.session.execute(
+                select(severity_summary.c.severity_rank, func.count()).group_by(severity_summary.c.severity_rank)
+            ).all()
+        )
+        severity_distribution = _security_severity_distribution(severity_counts)
+        # Count unique container-level bindings across all scoped CVE evidence.
+        # Never sum per-CVE binding counts: one workload can carry many CVEs.
+        binding_totals = cve_findings.outerjoin(
+            RegistryWorkloadBinding,
+            RegistryWorkloadBinding.artifact_id == RegistryScanSnapshot.artifact_id,
+        ).with_entities(
+            func.count(
+                func.distinct(
+                    case((RegistryWorkloadBinding.match_type == 'digest', RegistryWorkloadBinding.id), else_=None)
+                )
+            ).label('digest'),
+            func.count(
+                func.distinct(
+                    case((RegistryWorkloadBinding.match_type != 'digest', RegistryWorkloadBinding.id), else_=None)
+                )
+            ).label('reference'),
+        ).first()
+        if binding_totals:
+            runtime_binding_summary = {
+                'digest': int(binding_totals.digest or 0),
+                'reference': int(binding_totals.reference or 0),
+            }
     scanned_artifacts = 0
     artifacts_total = 0
     last_scan = None
@@ -240,6 +288,8 @@ def build_security_posture(
         'scan_updated_label': f'Updated {_human_time(last_scan)}' if last_scan else 'Not Collected',
         'scan_status': scan_status,
         'runtime_status': correlation,
+        'severity_distribution': severity_distribution,
+        'runtime_binding_summary': runtime_binding_summary,
         'has_complete_security_evidence': bool(
             source_ids
             and last_scan

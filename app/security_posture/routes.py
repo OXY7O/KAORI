@@ -16,7 +16,10 @@ security_posture_bp = Blueprint('security_posture', __name__, url_prefix='/secur
 @security_posture_bp.get('/')
 @permission_required('security_posture.view')
 def overview() -> ResponseReturnValue:
-    posture = build_security_posture(can_view_registry=current_user.has_permission('artifact_registry.view'))
+    posture = build_security_posture(
+        can_view_registry=current_user.has_permission('artifact_registry.view'),
+        include_overview_summary=True,
+    )
     return render_template(
         'security_posture/overview.html',
         posture=posture,
