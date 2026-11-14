@@ -10,15 +10,52 @@
 {% block dashboard_content %}
     <div id="security-posture-overview" class="space-y-5">
         {% set registry_ready = posture.authorized_registry and posture.sources > 0 %}
-        {% set security_scope = 'All Authorized Registry Sources' if registry_ready else 'No Eligible Registry Source' %}
-        {% set hero_metadata = [('database-zap', 'Registry Scan Evidence'), ('waypoints', 'Runtime Correlation'), ('shield-alert', 'CVE Exposure')] %}
-        {% set hero_state = 'normal' if registry_ready else 'blocked' %}
-        {% set blocked_info = 'Connect a Registry source with committed inventory and grant authorized domain access.' %}
-        {{ page_hero.operational_dashboard('Security Posture', 'shield-alert', 'Security Overview',
-                'Investigate committed CVE exposure and runtime impact.',
-                hero_metadata, security_scope, none, none,
-                data_authority='Committed Evidence', state=hero_state,
-                blocked_title='Security Evidence Unavailable', blocked_info=blocked_info) }}
+        {% set blocked_info = "Connect a Registry source with committed inventory and grant authorized domain access." %}
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('layout-dashboard', 'Security Posture', 'shield-alert') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Overview</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            Investigate committed CVE exposure and Kubernetes runtime impact.
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('database-zap', 'Registry Scan Evidence') }}
+                            {{ page_hero.meta_label('waypoints', 'Runtime Correlation') }}
+                            {{ page_hero.meta_label('shield-alert', 'CVE Exposure') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {% if not registry_ready %}
+                    <aside class="{{ page_hero.aside_classes() }}" aria-label="Security evidence readiness">
+                        {% set readiness_metrics = [
+                            ('database-zap', 'Provider Authority', 'Artifact Registry', 'Registry scanner source'),
+                            ('lock-keyhole', 'Evidence Boundary', 'Not Collected', 'No eligible committed Registry evidence')
+                        ] %}
+                        {{ page_hero.blocked_context_body(
+                            'Assurance Readiness', 'Registry Evidence Required', readiness_metrics,
+                            blocked_info, 'Blocked', 'warning', 'lock-keyhole', 'info'
+                        ) }}
+                    </aside>
+                {% else %}
+                    {% set evidence_context_metrics = [
+                        ('database-zap', 'Provider Authority', 'Artifact Registry', 'Registry scanner remains authoritative'),
+                        ('shield-check', 'Evidence Boundary', 'Committed', 'KAORI normalized exposure and runtime evidence')
+                    ] %}
+                    {{ page_hero.context_card(
+                        'Security Overview context',
+                        'Assurance Boundary',
+                        'Security Evidence',
+                        posture.scan_status.label,
+                        posture.scan_status.tone,
+                        evidence_context_metrics,
+                        'Review CVE Findings',
+                        url_for('security_posture.findings'),
+                        'shield-alert'
+                    ) }}
+                {% endif %}
+            </div>
+        </section>
         {% if not registry_ready %}
             {% set empty_state_icon = "shield-alert" %}
             {% set empty_state_label = "Setup Required" %}
@@ -181,10 +218,15 @@
                 {{ dashboard_workspace.navigation('security-posture-overview', 'Security Assurance Perspectives', tabs=security_tabs) }}
                 <div class="space-y-4">
                     {% call dashboard_workspace.panel('overview', active_tab, 'security-posture-overview') %}
-                        {% call section_card.render('Findings & Investigation',
-                            'First five qualified CVEs ranked by severity; open Findings for the complete filtered register.',
-                            'list-filter', action_href=url_for('security_posture.findings'), action_label='View All Findings') %}
-                            <div class="overflow-x-auto" data-security-posture-preview>
+                        {% call section_card.render(
+                            'Findings & Investigation',
+                            'Five highest-severity observed CVEs; open Findings for the complete source-qualified register.',
+                            'list-filter',
+                            action_href=url_for('security_posture.findings'),
+                            action_label='View All Findings',
+                            body_classes='p-0'
+                        ) %}
+                            <div class="overflow-x-auto px-5 py-4" data-security-posture-preview>
                                 <table class="{{ table_ui.table_classes('min-w-[48rem]') }}">
                                     <caption class="sr-only">
                                         Five highest-ranked committed CVEs in authorized Registry scope.
@@ -203,21 +245,28 @@
                                         {% for row in posture.rows[:5] %}
                                             <tr class="{{ table_ui.row_classes() }}">
                                                 <td class="{{ table_ui.cell_classes() }}">
-                                                    {{ table_ui.title_cell(row.cve_id, row.finding_count ~ ' scanner findings', 'shield-alert') }}
-                                                    <div class="mt-1">
-                                                        {% set row_tone = 'critical' if row.severity == 'Critical' else ('warning' if row.severity in ['High', 'Medium'] else 'unknown') %}
+                                                    {% set row_tone = 'critical' if row.severity == 'Critical' else ('warning' if row.severity in ['High', 'Medium'] else 'unknown') %}
+                                                    <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                                                        <span class="text-sm font-semibold text-content-primary">{{ row.cve_id }}</span>
                                                         {{ table_label.status_indicator_label(row.severity, row_tone) }}
                                                     </div>
+                                                    <p class="mt-1 text-xs text-content-muted">
+                                                        {{ row.finding_count }} scanner {{ 'finding' if row.finding_count == 1 else 'findings' }}
+                                                    </p>
                                                 </td>
-                                                <td class="{{ table_ui.cell_classes() }}">{{ row.artifact_count }}</td>
                                                 <td class="{{ table_ui.cell_classes() }}">
-                                                    <span class="font-semibold text-content-primary">{{ row.binding_count }}</span>
+                                                    <span class="font-medium tabular-nums text-content-primary">{{ row.artifact_count }}</span>
+                                                </td>
+                                                <td class="{{ table_ui.cell_classes() }}">
+                                                    <span class="font-medium tabular-nums text-content-primary">{{ row.binding_count }}</span>
                                                     <p class="mt-1 text-xs text-content-muted">
                                                         {{ row.digest_binding_count }} digest ·
                                                         {{ row.reference_binding_count }} mutable/other
                                                     </p>
                                                 </td>
-                                                <td class="{{ table_ui.cell_classes() }}">{{ row.observed_at|user_datetime }}</td>
+                                                <td class="{{ table_ui.cell_classes() }}">
+                                                    <span class="text-xs text-content-secondary">{{ row.observed_at|user_datetime }}</span>
+                                                </td>
                                                 <td class="{{ table_ui.cell_classes(action=true) }}">
                                                     {% if posture.authorized_registry and row.impact_available %}
                                                         <a href="{{ url_for('artifact_registry.security_cve_impact', cve_id=row.cve_id) }}"
@@ -238,21 +287,24 @@
                                     </tbody>
                                 </table>
                             </div>
-                        {% endcall %}
-                        {% call section_card.render('Investigation Handoff',
-                            'Follow authoritative source evidence before planning remediation.',
-                            'waypoints') %}
-                            <div class="flex flex-wrap items-center gap-2">
-                                <a href="{{ url_for('security_posture.findings') }}"
-                                   class="{{ table_ui.action_classes() }}">Review CVE Findings</a>
-                                <a href="{{ url_for('artifact_registry.runtime') }}"
-                                   class="{{ table_ui.action_classes() }}">Validate Runtime Impact</a>
-                                {% if can_view_intelligence %}
-                                    <a href="{{ url_for('intelligence.recommendations') }}"
-                                       class="{{ table_ui.action_classes() }}">Open Recommendations</a>
-                                {% endif %}
+                            <div class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                                 data-security-investigation-handoff>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">Investigation Handoff</p>
+                                    <p class="mt-1 text-xs text-content-muted">
+                                        Validate workload bindings before governed remediation.
+                                        No provider scan or mutation runs here.
+                                    </p>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <a href="{{ url_for('artifact_registry.runtime') }}"
+                                       class="{{ table_ui.action_classes() }}">Validate Runtime Impact</a>
+                                    {% if can_view_intelligence %}
+                                        <a href="{{ url_for('intelligence.recommendations') }}"
+                                           class="{{ table_ui.action_classes() }}">Open Recommendations</a>
+                                    {% endif %}
+                                </div>
                             </div>
-                            <p class="mt-2 text-xs text-content-muted">No remediation or provider scan runs from this read-only dashboard.</p>
                         {% endcall %}
                     {% endcall %}
                     {% call dashboard_workspace.panel('capacity', active_tab, 'security-posture-overview') %}
