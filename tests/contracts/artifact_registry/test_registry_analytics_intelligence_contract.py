@@ -1612,6 +1612,52 @@ def test_registry_alert_workspace_reuses_committed_alert_evidence_contract() -> 
     assert "url_for('artifact_registry.analytics_alerts_table')" in template
 
 
+def test_registry_capacity_project_table_paginates_all_qualified_rows_without_changing_chart_limit() -> None:
+    from app.artifact_registry.presentation_analytics import (
+        _registry_capacity_chart_rows,
+        _registry_capacity_project_rows,
+    )
+    from app.common.pagination import paginate_sequence
+
+    projects = [
+        {
+            'project_name': f'project-{i:02d}',
+            'registry_name': 'Harbor X300',
+            'usage_bytes': float(i),
+            'quota_bytes': 100.0,
+            'usage_display': f'{i} B',
+            'quota_display': '100 B',
+            'days_to_quota_display': 'No forecast',
+            'growth_display': '0 B/day',
+        }
+        for i in range(1, 13)
+    ]
+    projects.append({**projects[0], 'project_name': 'invalid', 'quota_bytes': 0})
+    qualified = _registry_capacity_project_rows(projects)
+    chart = _registry_capacity_chart_rows(projects)
+    assert len(qualified) == 12
+    assert len(chart) == 5
+    assert [row['project_name'] for row in chart] == [
+        'project-12',
+        'project-11',
+        'project-10',
+        'project-09',
+        'project-08',
+    ]
+    first, first_page = paginate_sequence(qualified, page=1, per_page=5)
+    second, second_page = paginate_sequence(qualified, page=2, per_page=5)
+    last, last_page = paginate_sequence(qualified, page=3, per_page=5)
+    assert (len(first), len(second), len(last)) == (5, 5, 2)
+    assert first_page['total_pages'] == 3 and first_page['total_items'] == 12
+    assert second_page['start_item'] == 6 and second_page['end_item'] == 10
+    assert last_page['start_item'] == 11 and last_page['end_item'] == 12
+    assert {row['project_name'] for row in first}.isdisjoint({row['project_name'] for row in second})
+    ten, ten_page = paginate_sequence(qualified, page=2, per_page=10)
+    assert len(ten) == 2 and ten_page['per_page'] == 10
+    invalid, fallback_page = paginate_sequence(qualified, page=3, per_page=999)
+    assert len(invalid) == 2 and fallback_page['per_page'] == 5
+
+
 def test_registry_capacity_outlook_table_reuses_canonical_primitives() -> None:
     """Three canonical tabs separate quota posture, project evidence and forecast provenance."""
     from jinja2 import Environment, FileSystemLoader
@@ -1637,35 +1683,49 @@ def test_registry_capacity_outlook_table_reuses_canonical_primitives() -> None:
     assert "('projects', 'Project Quotas', 'table-properties')" in workspace
     assert "('evidence', 'Forecast & Evidence', 'clipboard-check')" in workspace
     assert workspace.count('role="tabpanel"') == 3
+    assert 'data-default-tab="{{ capacity_default_tab }}"' in workspace
+    assert 'active_key=capacity_default_tab' in workspace
     assert workspace.count('data-analytics-tab-panel=') == 3
     for key in ('overview', 'projects', 'evidence'):
         assert f'id="artifact-registry-capacity-content-panel-{key}"' in workspace
         assert f'aria-labelledby="artifact-registry-capacity-content-tab-{key}"' in workspace
     assert 'htmx:afterSwap' in navigation
     assert 'Capacity Reading' in overview
+    assert 'md:grid-cols-3' in overview
+    assert 'Observed quota pressure' in evidence
     assert 'Forecast Boundary' in overview
     assert 'Evidence Coverage' in overview
     assert 'Project Quota Pressure' in overview
     assert 'Nearest Exhaustion' in overview
     assert 'Quota Headroom' in overview
     assert 'qualified_projects[:5]' in overview
-    assert 'qualified_projects[:5]' in projects
+    assert 'for row in qualified_projects' in projects
+    assert 'pager.numeric_pages' in projects
+    assert 'pager.page_size_classes()' in projects
     assert 'source_rows[:5]' in evidence
     assert 'Qualified Quota Comparison' in projects
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    page = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    assert "def analytics_capacity_table() -> ResponseReturnValue:" in routes
+    assert "capacity_page=request.args.get('capacity_page', 1, type=int)" in routes
+    assert "capacity_page=request.args.get('capacity_page', 1, type=int)" in page
+    assert "'capacity_project_rows': capacity_page_rows" in presentation
+    assert "'capacity_pagination': capacity_pagination" in presentation
     assert 'Project Forecast Evidence' in evidence
     assert 'Committed Snapshot Lineage' in evidence
-    assert "table_ui.table_classes('min-w-[760px]')" in projects
+    assert "table_ui.table_classes('min-w-[960px]')" in projects
     assert 'table_ui.head_classes()' in projects
-    assert projects.count('table_ui.header_cell_classes()') == 5
-    assert projects.count('scope="col"') == 5
-    assert projects.count('table_ui.cell_classes()') == 5
+    assert projects.count('table_ui.header_cell_classes()') == 6
+    assert projects.count('scope="col"') == 6
+    assert projects.count('table_ui.cell_classes()') == 6
     assert 'table_ui.row_classes()' in projects
     assert 'table_ui.title_cell(row.project_name, row.registry_name' in projects
     assert 'row.utilization_percent > 100' in projects
     assert 'aria-valuetext="{{ row.utilization_display }} observed utilization"' in projects
     assert 'Qualified Quota Evidence Not Available' in projects
     assert 'Previous committed snapshot; not current' in evidence
-    assert 'qualified_projects = analytics.capacity_chart_rows' in projects
+    assert 'qualified_projects = analytics.capacity_project_rows' in projects
     for macro in (
         'table_classes',
         'head_classes',
@@ -1726,7 +1786,7 @@ def test_registry_capacity_outlook_table_reuses_canonical_primitives() -> None:
     assert 'No qualified forecast' in rendered
     assert 'Zero net growth does not prove' in rendered
     assert 'Qualified Quota Evidence Not Available' not in rendered
-    assert rendered.count('<progress ') == 4
+    assert rendered.count('<progress ') == 6
     assert 'Current committed snapshot' in rendered
     assert 'Capacity Reading' in rendered
 
