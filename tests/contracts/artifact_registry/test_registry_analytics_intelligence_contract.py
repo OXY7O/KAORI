@@ -755,7 +755,8 @@ def test_registry_insights_overview_renders_factual_review_cards_and_ownership()
     assert '1 runtime artifact requires review.' in rendered
     assert 'Interpretation & Ownership' in rendered
     assert 'Central Intelligence' in rendered
-    assert 'Recommendations, Accepted Risk, escalation and automation decisions' in rendered
+    assert 'Review overlapping signals; they are not distinct affected assets.' in rendered
+    assert 'Intelligence owns Recommendations, Accepted Risk, escalation and automation.' in rendered
     assert 'Review Signal Evidence Not Available' not in rendered
 
     extra = [
@@ -1432,6 +1433,33 @@ def test_registry_analytics_selector_renders_only_explicit_registry_sources() ->
     assert 'No Registries Available' in empty
     assert 'All Registries' not in empty
 
+    # A completed manual JobExecution for current does not validate the
+    # separately selected 24h committed snapshot.
+    page['provider_options'] = source_options
+    page['data_readiness'] = {
+        **page['data_readiness'],
+        'label': 'Inputs Changed',
+        'tone': 'warning',
+        'current_count': 0,
+        'eligible_count': 1,
+        'helper': 'Committed Registry inputs changed after materialization.',
+        'last_attempt_window': 'current',
+    }
+    attention = env.get_template('artifact_registry/partials/_analytics_controls_readiness.html').render(
+        analytics=page
+    )
+    assert 'Committed Snapshot Requires Review' in attention
+    assert 'Last worker attempt targeted CURRENT; this view selects 24H.' in attention
+    assert 'Committed Snapshot Needs Refresh' not in attention
+
+    page['data_readiness']['label'] = 'Stale Snapshot'
+    page['data_readiness']['last_attempt_window'] = '24h'
+    expired = env.get_template('artifact_registry/partials/_analytics_controls_readiness.html').render(
+        analytics=page
+    )
+    assert 'Committed Snapshot Needs Refresh' in expired
+    assert 'Last worker attempt targeted CURRENT' not in expired
+
 
 def test_registry_analytics_risk_copy_stays_compact_without_changing_risk_semantics() -> None:
     from app.artifact_registry.presentation_analytics import _analytics_summary_cards
@@ -1564,7 +1592,55 @@ def test_registry_analytics_posture_classifies_missing_partial_and_current_snaps
     assert _analytics_snapshot_posture(eligible_count=2, covered_count=0, current_count=0)[0] == 'Not Materialized'
     assert _analytics_snapshot_posture(eligible_count=2, covered_count=2, current_count=2)[0] == 'Current Snapshot'
     assert _analytics_snapshot_posture(eligible_count=3, covered_count=2, current_count=1)[0] == 'Partial Coverage'
-    assert _analytics_snapshot_posture(eligible_count=2, covered_count=2, current_count=0)[0] == 'Stale Snapshot'
+    assert _analytics_snapshot_posture(eligible_count=2, covered_count=2, current_count=0)[0] == 'Snapshot Attention'
+
+    expired = {'label': 'Stale Snapshot', 'is_stale': True, 'is_current': False}
+    inputs_changed = {'label': 'Inputs Changed', 'is_stale': False, 'is_current': False}
+    partial = {'label': 'Partial Evidence', 'is_stale': False, 'is_current': False}
+
+    stale_label, _, stale_helper = _analytics_snapshot_posture(
+        eligible_count=2, covered_count=2, current_count=0, snapshot_views=[expired, expired]
+    )
+    assert stale_label == 'Stale Snapshot'
+    assert 'have expired' in stale_helper
+
+    inputs_label, _, inputs_helper = _analytics_snapshot_posture(
+        eligible_count=1, covered_count=1, current_count=0, snapshot_views=[inputs_changed]
+    )
+    assert inputs_label == 'Inputs Changed'
+    assert 'inputs changed' in inputs_helper
+    assert 'expired' not in inputs_helper
+
+    partial_label, _, partial_helper = _analytics_snapshot_posture(
+        eligible_count=1, covered_count=1, current_count=0, snapshot_views=[partial]
+    )
+    assert partial_label == 'Partial Evidence'
+    assert 'incomplete' in partial_helper
+    assert 'expired' not in partial_helper
+
+    mixed_label, _, mixed_helper = _analytics_snapshot_posture(
+        eligible_count=2, covered_count=2, current_count=0, snapshot_views=[expired, partial]
+    )
+    assert mixed_label == 'Snapshot Attention'
+    assert 'snapshots are not current' in mixed_helper
+
+    missing_label, _, missing_helper = _analytics_snapshot_posture(
+        eligible_count=2, covered_count=1, current_count=0, snapshot_views=[expired]
+    )
+    assert missing_label == 'Partial Coverage'
+    assert 'no selected-window snapshot' in missing_helper
+
+
+def test_registry_analytics_latest_job_scope_distinguishes_manual_current_from_selected_history() -> None:
+    from types import SimpleNamespace
+
+    from app.artifact_registry.analytics_job_adapter import _registry_analytics_last_job_window
+
+    assert _registry_analytics_last_job_window(SimpleNamespace(scope_key='all:current')) == 'current'
+    assert _registry_analytics_last_job_window(SimpleNamespace(scope_key='all:24h')) == '24h'
+    assert _registry_analytics_last_job_window(SimpleNamespace(scope_key='all:unknown')) is None
+    assert _registry_analytics_last_job_window(SimpleNamespace(scope_key='registry:24h')) is None
+    assert _registry_analytics_last_job_window(None) is None
 
 
 def test_registry_analytics_auto_collection_cooldown_and_evidence_checks() -> None:
