@@ -1,4 +1,5 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "kubernetes/analytics/components/_resource_pressure_lane.html" as resource_pressure_lane %}
 {% import "components/table_label.html" as table_label %}
 {% set pv = storage_summary.persistent_storage.pv %}
@@ -8,7 +9,10 @@
         <div class="flex items-start gap-3">
             <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="hard-drive" class="h-5 w-5"></i></span>
             <div>
-                <h3 class="text-lg font-semibold text-content-primary">Storage Capacity &amp; Utilization</h3>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="text-lg font-semibold text-content-primary">Storage Capacity &amp; Utilization</h3>
+                    {{ info_tip.render('kubernetes-analytics-storage-capacity-utilization-panel-guide', 'Storage Capacity & Utilization Guide', 'Capacity and volume consumption are distinct; validate measured bytes and coverage before interpreting headroom.', placement='right', variant='guide') }}
+                </div>
                 <p class="mt-1 text-sm leading-6 text-content-muted">Separate node filesystem pressure, namespace PVC volume usage, and cluster PV provisioning into evidence with explicit scope.</p>
             </div>
         </div>

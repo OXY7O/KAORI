@@ -41,7 +41,10 @@
                 <header class="flex flex-wrap items-start justify-between gap-3">
                     <div class="min-w-0">
                         <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Resource Footprint</p>
-                        <h3 class="mt-1 text-base font-semibold text-content-primary">Find the consumers that matter</h3>
+                        <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="mt-1 text-base font-semibold text-content-primary">Find the consumers that matter</h3>
+                    {{ info_tip.render('kubernetes-analytics-top_consumers-rankings-guide', 'Find the consumers that matter Guide', 'Resource lenses are independent; compare ranked CPU, memory, pod, and PVC demand with the correct units.', placement='right', variant='guide') }}
+                </div>
                         <p class="mt-1 text-sm leading-6 text-content-secondary">Choose a resource below to inspect its largest consumers. Each resource keeps its own unit and denominator.</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
@@ -176,7 +179,10 @@
                     <div class="flex min-w-0 items-start gap-3">
                         <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
                         <div class="min-w-0">
-                            <h2 class="text-base font-semibold text-content-primary">Consumer Recommendations</h2>
+                            <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-base font-semibold text-content-primary">Consumer Recommendations</h2>
+                    {{ info_tip.render('kubernetes-analytics-top_consumers-recommendations-guide', 'Consumer Recommendations Guide', 'Validate sustained demand, workload ownership, and resource configuration before resizing consumers.', placement='right', variant='guide') }}
+                </div>
                             <p class="mt-1 text-sm leading-6 text-content-secondary">Prioritized actions derived from request coverage, memory-limit policy, resource pressure, scope contribution, PVC utilization, and evidence completeness.</p>
                         </div>
                     </div>
