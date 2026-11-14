@@ -128,9 +128,7 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
     validation = read('app/templates/integrations/registry/providers/harbor/partials/_detail_validation.html')
 
     assert 'Harbor remains authoritative for native Registry state and policies.' in configuration
-    assert (
-        'Verify Harbor TLS certificates and trusted server identity.' in configuration
-    )
+    assert 'Verify Harbor TLS certificates and trusted server identity.' in configuration
     assert (
         'Revalidate the Harbor integration after upgrades, credential rotations, permission updates, '
         'or changes to API accessibility and configuration.' in validation
@@ -528,10 +526,7 @@ def test_harbor_webhook_configuration_layout_preserves_admission_and_credential_
         'Authenticated Harbor events trigger targeted Inventory refresh; '
         'scheduled reconciliation remains authoritative.'
     )
-    permission_copy = (
-        'Harbor permission labels vary by release; grant only required read access, '
-        'never broad administration.'
-    )
+    permission_copy = 'Harbor permission labels vary by release; grant only required read access, never broad administration.'
     assert tls_copy in configuration and len(tls_copy) <= 65
     assert webhook_copy in configuration and len(webhook_copy) <= 120
     assert permission_copy in access_reference and len(permission_copy) <= 115
@@ -540,13 +535,13 @@ def test_harbor_webhook_configuration_layout_preserves_admission_and_credential_
     # Existing semantic status remains server-owned. No invented delivery or sync success.
     assert 'data-kaori-harbor-webhook-configuration' in configuration
     assert 'table_label.status_indicator_label(webhook_status.label,' in configuration
-    assert 'Ready means admission is configured, not that an event was delivered' in configuration
+    assert 'Ready confirms admission setup, not delivery or Inventory completion.' in configuration
     assert 'webhook_endpoint.last_event_at|user_datetime' in configuration
     assert 'No event received yet' in configuration
 
     # Shared KAORI Violet surfaces and palette icons; desktop side-by-side,
     # mobile stacked, with the credential actions in a separate aligned row.
-    assert 'grid gap-4 p-4 sm:p-5 lg:grid-cols-5' in configuration
+    assert 'grid overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle lg:grid-cols-5' in configuration
     assert 'lg:col-span-2' in configuration
     assert 'lg:col-span-3' in configuration
     assert 'harbor-webhook-admission-title' in configuration
@@ -558,6 +553,12 @@ def test_harbor_webhook_configuration_layout_preserves_admission_and_credential_
     assert "url_for('artifact_registry.webhook_receive'" in configuration
     assert 'Authorization: Bearer &lt;token&gt;' in configuration
     assert 'X-KAORI-Webhook-Token: &lt;token&gt;' in configuration
+    assert 'Accepted Harbor webhook authentication headers' in configuration
+    assert 'Auth headers' in configuration
+    assert 'Configure Harbor with a generated credential using' not in configuration
+    assert 'This loopback URL is normally unreachable' not in configuration
+    warning_copy = 'Remote Harbor cannot reach loopback. Use a Harbor-reachable HTTPS address.'
+    assert warning_copy in configuration and len(warning_copy) <= 85
     assert "receiver_host in ['localhost', '127.0.0.1']" in configuration
     assert "request.host.startswith('[::1]')" in configuration
     assert 'Harbor-reachable HTTPS address' in configuration
@@ -576,5 +577,13 @@ def test_harbor_webhook_configuration_layout_preserves_admission_and_credential_
     assert 'integration_ui.palette_icon("key-round", "warning", size="sm")' in token_result
     assert '{{ webhook_token }}' in token_result
     assert 'cannot reveal it later' in token_result
-    assert 'max-w-3xl' in token_result
+    assert 'w-full' in token_result
+    assert 'sm:grid-cols-2 sm:items-center' in token_result
+    assert 'max-w-3xl' not in token_result
     assert 'id="harbor-webhook-token-result"' in configuration
+
+    # Existing Jinja syntax for provider and HTMX fragment must remain valid.
+    from jinja2 import Environment
+
+    Environment().parse(configuration)
+    Environment().parse(token_result)
