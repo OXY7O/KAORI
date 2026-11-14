@@ -72,7 +72,8 @@
                                 },
                                 label: (context) => {
                                     const row = data[context.dataIndex]
-                                    return row ? `${row.pull_count.toLocaleString()} observed pulls` : 'Evidence unavailable'
+                                    if (!row) return 'Evidence unavailable'
+                                    return `${row.pull_count.toLocaleString()} observed pulls`
                                 },
                             },
                         },

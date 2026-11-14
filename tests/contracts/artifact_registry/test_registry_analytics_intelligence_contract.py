@@ -730,7 +730,6 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     assert 'data-registry-capacity-quota-chart' not in empty
 
 
-
 def test_registry_usage_chart_projection_and_rendered_evidence() -> None:
     from jinja2 import Environment, FileSystemLoader
 

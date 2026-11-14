@@ -2,8 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/info_tip.html" as info_tip %}
 {% set usage_rows = analytics.usage_chart_rows|default([], true) %}
-<section class="border-t border-outline-subtle"
-         data-registry-usage-series="{{ usage_rows|tojson|forceescape }}">
+<section class="border-t border-outline-subtle" data-registry-usage-series="{{ usage_rows|tojson|forceescape }}">
     <header class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-5">
         <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2">
