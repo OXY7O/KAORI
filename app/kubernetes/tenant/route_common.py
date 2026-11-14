@@ -106,6 +106,38 @@ def _operations_active_tab() -> str:
     return active_tab
 
 
+def _operations_active_view(active_tab: str) -> str:
+    """Use URL-owned registry subviews; retain legacy table-specific bookmarks."""
+    requested = str(request.args.get('ops_view') or '').strip()
+    if active_tab == 'allocation-drift':
+        if requested in {'tenant-quota', 'shared-allocation'}:
+            return requested
+        if any(key in request.args for key in (
+            'ops_capsule_shared_page', 'ops_capsule_shared_per_page',
+            'ops_capsule_shared_tenant_id', 'ops_capsule_shared_search',
+        )):
+            return 'shared-allocation'
+        return 'tenant-quota'
+    if active_tab == 'operational-reconcile':
+        if requested in {'namespace-drift', 'access-reconciliation', 'provider-authority'}:
+            return requested
+        for view, keys in (
+            ('provider-authority', (
+                'ops_provider_page', 'ops_provider_per_page', 'ops_provider_search',
+                'ops_provider_cluster_id', 'ops_provider_environment', 'ops_provider_lifecycle',
+            )),
+            ('access-reconciliation', (
+                'ops_access_page', 'ops_access_per_page', 'ops_access_search',
+                'ops_access_tenant_id', 'ops_access_status',
+                'ops_access_reconciliation', 'ops_access_scope',
+            )),
+        ):
+            if any(key in request.args for key in keys):
+                return view
+        return 'namespace-drift'
+    return ''
+
+
 def _operations_provisioning_context() -> dict[str, Any]:
     namespace_context = get_namespace_registry_context(
         page=request.args.get('ops_namespace_page', 1, type=int) or 1,

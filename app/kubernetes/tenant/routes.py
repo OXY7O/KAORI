@@ -120,6 +120,7 @@ from app.kubernetes.tenant.release_successor_claim import (
 from app.kubernetes.tenant.route_common import (
     _csrf,
     _operations_active_tab,
+    _operations_active_view,
     _operations_provisioning_context,
     _record,
     _required_int,
@@ -548,6 +549,7 @@ def _operations_drift_context() -> dict[str, Any]:
 @any_permission_required('tenant.view', 'tenant.manage')
 def operations():
     active_tab = _operations_active_tab()
+    active_view = _operations_active_view(active_tab)
     context = _tenant_workspace_context()
     context.update(get_tenant_operations_summary_context())
     if active_tab == 'provisioning':
@@ -571,6 +573,7 @@ def operations():
         tenant_page_title='Operations',
         tenant_page_icon='activity',
         active_tab=active_tab,
+        active_view=active_view,
         can_manage=current_user.has_permission('tenant.manage'),
         **context,
     )
