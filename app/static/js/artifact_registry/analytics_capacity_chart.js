@@ -86,7 +86,8 @@
                                     if (!row) return 'Evidence unavailable'
                                     const used = formatBytes(Number(row.usage_bytes))
                                     const quota = formatBytes(Number(row.quota_bytes))
-                                    return `${Number(row.utilization_percent).toFixed(1)}% used · ${used} / ${quota}`
+                                    const percent = Number(row.utilization_percent).toFixed(1)
+                                    return `${percent}% used · ${used} / ${quota}`
                                 },
                             },
                         },
