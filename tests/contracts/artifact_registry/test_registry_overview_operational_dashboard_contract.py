@@ -301,6 +301,9 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
     assert 'percent is not none' in shared_capacity
     assert 'percentage unavailable' in shared_capacity
     assert 'capacity_decision.render(' in capacity_snapshot
+    assert 'review_groups=capacity_review_groups' in capacity_snapshot
+    for topic in ('Validate', 'Assess', 'Prioritize', 'Act', 'Verify', 'Record'):
+        assert f"'{topic}'" in capacity_snapshot
     assert 'overview.capacity.risk_detail' in capacity_snapshot
     assert 'overview.capacity.recommended_action' in capacity_snapshot
     assert 'Recommended Capacity Action Flow' not in capacity_snapshot

@@ -209,6 +209,11 @@ def test_capacity_decision_shared_component_renders_evidence_with_no_provider_ac
 
     env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
     render = env.get_template('components/operational_capacity_decision.html').module.render
+    review_groups = [
+        ('scan-search', 'Evidence', [('Validate', 'Confirm scope'), ('Assess', 'Review headroom')]),
+        ('list-filter', 'Decision', [('Prioritize', 'Identify pressure'), ('Act', 'Approved change')]),
+        ('clipboard-check', 'Assurance', [('Verify', 'Confirm outcome'), ('Record', 'Retain evidence')]),
+    ]
     for risk, tone in (
         ('Low', 'normal'),
         ('Medium', 'warning'),
@@ -221,6 +226,7 @@ def test_capacity_decision_shared_component_renders_evidence_with_no_provider_ac
             'Committed capacity insight',
             'Evidence interpretation',
             'Recommended operational action',
+            review_groups=review_groups,
         )
         assert 'Overall Capacity Risk' in html
         assert 'What This Means' in html
@@ -230,6 +236,15 @@ def test_capacity_decision_shared_component_renders_evidence_with_no_provider_ac
         assert 'Evidence interpretation' in html
         assert 'Recommended operational action' in html
         assert 'data-kaori-capacity-decision' in html
+        assert 'data-kaori-capacity-review' in html
+        assert 'Capacity Review Reference' in html
+        assert 'Guidance only' in html
+        assert html.count('role="listitem"') == 3
+        assert 'grid gap-2 sm:grid-cols-3' in html
+        assert 'arrow-right' not in html
+        for consideration in ('Validate', 'Assess', 'Prioritize', 'Act', 'Verify', 'Record'):
+            assert f'>{consideration}</p>' in html
+        assert 'break-words text-sm leading-6 text-content-secondary' in html
         assert 'aria-label="Capacity decision from committed evidence"' in html
         assert '<form' not in html
         assert 'hx-post' not in html
@@ -252,6 +267,10 @@ def test_capacity_metric_cards_follow_kubernetes_visual_grammar() -> None:
         assert 'bg-surface-elevated p-4' in template
         assert 'components/operational_capacity_decision.html' in template
         assert 'capacity_decision.render(' in template
+        assert 'capacity_review_groups' in template
+        assert 'review_groups=capacity_review_groups' in template
+        for topic in ('Validate', 'Assess', 'Prioritize', 'Act', 'Verify', 'Record'):
+            assert f"'{topic}'" in template
         assert 'Recommended Capacity Action Flow' not in template
         assert 'components/operational_flow_steps.html' not in template
 

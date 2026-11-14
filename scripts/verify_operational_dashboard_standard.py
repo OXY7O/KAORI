@@ -475,6 +475,12 @@ def _verify_artifact_registry_dashboard(
             '{{ interpretation }}',
             '{{ recommended_action }}',
             "table_label.status_label(risk, tone, size='detail')",
+            'Capacity Review Reference',
+            'Guidance only',
+            'data-kaori-capacity-review',
+            'role="listitem"',
+            'sm:grid-cols-3',
+            'break-words text-sm leading-6 text-content-secondary',
         ),
         'one reusable committed-evidence Capacity Decision',
     )
@@ -491,6 +497,8 @@ def _verify_artifact_registry_dashboard(
                 'grid gap-3 lg:grid-cols-3',
                 'components/operational_capacity_decision.html',
                 'capacity_decision.render(',
+                'capacity_review_groups',
+                'review_groups=capacity_review_groups',
             ),
             owner + ' shared Capacity Snapshot presentation ownership',
         )
@@ -498,6 +506,9 @@ def _verify_artifact_registry_dashboard(
             raise AssertionError(f'{owner}: static Capacity Action Flow is not a dashboard decision')
         if 'components/operational_flow_steps.html' in capacity_source:
             raise AssertionError(f'{owner}: capacity must use evidence-driven decision, not a generic flow')
+        for topic in ('Validate', 'Assess', 'Prioritize', 'Act', 'Verify', 'Record'):
+            if f"'{topic}'" not in capacity_source:
+                raise AssertionError(f'{owner}: missing operator reference topic {topic}')
     _require(
         presentation,
         (
