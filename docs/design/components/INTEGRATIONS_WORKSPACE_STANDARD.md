@@ -195,6 +195,33 @@ DevContainer PostgreSQL query-count/fleet profiling, filter/page-size UAT
 and actual provider detail modal verification remain admission evidence,
 not substitutes for this committed-state architecture contract.
 
+## Harbor Connection Configuration UAT Contract
+
+Harbor's Connection Contract follows the shared provider configuration evidence
+geometry: compact HTTPS/TLS trust copy in the four-column evidence card, and
+permission examples from the existing modal without a broad-administration
+recommendation. Desktop copy should fit its allocated context naturally
+(approximately two TLS lines and one modal-note line); mobile must wrap safely
+without truncation or `whitespace-nowrap`.
+
+Harbor **Webhook Reconciliation** remains a provider-owned Configuration
+section, not a Registry Governance action or delivery dashboard. Its compact
+Violet hierarchy uses one header with the persisted semantic admission status,
+two responsive peer panels (admission/last event and receiver/authentication),
+and a separate credential action row with the existing HTMX one-time token
+result. The receiver URL is shown in full; loopback reachability guidance
+appears only when the request host is loopback. Admission `Ready` means
+credential admission is configured; it does **not** claim a received event,
+successful delivery, executed Inventory refresh, or authoritative inventory
+correctness. Scheduled reconciliation remains the recovery/correctness path.
+
+Keep the existing CSRF-protected Generate/Rotate/Disable routes, `hx-target`
+contract, redacted persisted digest, one-time display and Harbor-side
+authentication headers intact. The generated token uses the shared warning
+surface in a compact bounded card; do not log or preserve a live token in
+screenshots, issue text, tests, or admission artifacts. This is presentation
+only: no new webhook state, provider mutation, or delivery evidence.
+
 ## Provider Front Page Contract
 
 Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor provider landing pages use one canonical front-page hierarchy. Provider-specific technical evidence may differ inside the workspace, but the navigation and visual grammar must not.
