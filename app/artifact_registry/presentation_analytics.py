@@ -587,6 +587,37 @@ def _analytics_capacity_outlook(
     }
 
 
+def _registry_usage_chart_rows(activity_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Qualified committed pull counters per project; zero is an observed value."""
+    qualified: list[dict[str, Any]] = []
+    for row in activity_rows:
+        raw_count = row.get('pull_count')
+        if (
+            isinstance(raw_count, bool)
+            or not isinstance(raw_count, (int, float))
+            or not isfinite(raw_count)
+            or raw_count < 0
+        ):
+            continue
+        project = str(row.get('project_name') or '').strip()
+        registry = str(row.get('registry_name') or '').strip()
+        if not project or not registry:
+            continue
+        count = float(raw_count)
+        qualified.append(
+            {
+                'project_name': project,
+                'registry_name': registry,
+                'pull_count': count,
+                'pull_display': f'{count:,.0f}',
+            }
+        )
+    return sorted(
+        qualified,
+        key=lambda row: (-row['pull_count'], row['project_name'].casefold(), row['registry_name'].casefold()),
+    )[:5]
+
+
 def _registry_capacity_chart_rows(forecast_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Bounded, committed project quota ratios; never synthesize a forecast."""
     qualified: list[dict[str, Any]] = []
@@ -904,6 +935,7 @@ def build_analytics(
             growth=growth,
         ),
         'capacity_chart_rows': _registry_capacity_chart_rows(forecast_rows),
+        'usage_chart_rows': _registry_usage_chart_rows(bundle['activity_rows']),
         'insights': _analytics_insights(aggregate, growth_rows=growth_rows, growth=growth)[:5],
         'coverage': coverage,
         'activity_rows': sorted(

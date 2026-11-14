@@ -931,6 +931,32 @@ committed provider authority remain unchanged. The chart uses shorter,
 nonrotated timestamp ticks and only marks measured points when point density
 is low. No provider read, worker materialization or forecast logic is added.
 
+### Registry Analytics Overview Usage pull evidence chart (#4632)
+
+The **Usage** tab replaces the former three-line Observed Pull Activity list
+with a bounded horizontal Chart.js bar chart and companion project evidence
+cards, using the canonical neutral Analytics evidence shell and role icons.
+The chart and record cards read `usage_chart_rows`, derived exclusively from
+committed `activity_rows` Metrics Source project pull counters, not from
+synchronous Harbor or Kubernetes provider calls.
+
+Only finite, nonnegative numeric counters with both a project and Registry
+identity qualify; an observed zero is valid, while missing or invalid
+evidence is excluded rather than converted to zero. Up to five project/source
+records are sorted by observed count. The zero-based chart uses provider
+counter units (not percentage). The highest observed source/project is shown
+in a compact summary, while precise counts including zero remain in the
+adjacent evidence cards. Charts do not merge distinct provider namespaces,
+synthesize history or pull velocity, or infer a per-project runtime binding
+from unrelated aggregate Runtime KPI figures.
+
+The same bundled Chart.js script and existing HTMX tab-visible / swap
+destruction/re-render contract apply. The source-level chart has no separate
+live collection path or backend mutation. The owning Overview footer retains
+the distinction among pull counters, runtime bindings and distinct artifacts;
+missing pull metrics never imply zero demand. The original Usage detail route
+and Registry/Time Range scope remain unchanged.
+
 ### Registry Analytics Overview Capacity visual UAT refinement (#4632)
 
 The **Capacity** tab retains its committed four-indicator quota/forecast

@@ -498,7 +498,10 @@ def test_registry_analytics_overview_panels_preserve_missing_data_and_evidence_a
     assert 'artifact_registry/partials/_analytics_capacity_chart.html' in panel
     assert 'analytics.capacity_chart_rows' in capacity_chart
     assert 'data-registry-capacity-quota-series' in capacity_chart
-    assert 'analytics.activity_rows[:3]' in panel
+    usage_chart = (ROOT / 'app/templates/artifact_registry/partials/_analytics_usage_chart.html').read_text()
+    assert 'artifact_registry/partials/_analytics_usage_chart.html' in panel
+    assert 'analytics.usage_chart_rows' in usage_chart
+    assert 'data-registry-usage-chart' in usage_chart
     assert 'analytics.insights[:3]' in panel
     assert 'analytics.alert_source_rows[:3]' in panel
     assert 'no automatic cleanup' in panel
@@ -725,6 +728,66 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     )
     assert 'Quota Chart Not Available' in empty
     assert 'data-registry-capacity-quota-chart' not in empty
+
+
+def test_registry_usage_chart_projection_and_rendered_evidence() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    from app.artifact_registry.presentation_analytics import _registry_usage_chart_rows
+
+    raw_rows = [
+        {'project_name': 'sandbox', 'registry_name': 'Harbor X300', 'pull_count': 0},
+        {'project_name': 'demo', 'registry_name': 'Harbor X300', 'pull_count': 6},
+        {'project_name': 'library', 'registry_name': 'Harbor X300', 'pull_count': 2},
+        {'project_name': 'other', 'registry_name': 'Harbor X300', 'pull_count': 1},
+        {'project_name': 'extra', 'registry_name': 'Harbor X300', 'pull_count': 3},
+        {'project_name': 'last', 'registry_name': 'Harbor X300', 'pull_count': 4},
+        {'project_name': 'invalid', 'registry_name': 'Harbor X300', 'pull_count': float('nan')},
+        {'project_name': 'negative', 'registry_name': 'Harbor X300', 'pull_count': -1},
+        {'project_name': 'boolean', 'registry_name': 'Harbor X300', 'pull_count': True},
+        {'project_name': 'missing', 'registry_name': '', 'pull_count': 9},
+    ]
+    rows = _registry_usage_chart_rows(raw_rows)
+    assert [row['project_name'] for row in rows] == ['demo', 'last', 'extra', 'library', 'other']
+    assert rows[0]['pull_display'] == '6'
+    assert _registry_usage_chart_rows(raw_rows[:3])[-1]['pull_count'] == 0.0
+    assert _registry_usage_chart_rows(raw_rows[-4:]) == []
+    assert _registry_usage_chart_rows([]) == []
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    usage = env.get_template('artifact_registry/partials/_analytics_usage_chart.html')
+    rendered = usage.render(analytics={'usage_chart_rows': _registry_usage_chart_rows(raw_rows[:3])})
+    assert 'data-registry-usage-series=' in rendered
+    assert 'data-registry-usage-chart' in rendered
+    assert 'Observed Pull Activity by Project' in rendered
+    assert 'Observed Pull Activity Guide' in rendered
+    assert 'Highest observed pulls' in rendered
+    assert 'Qualified projects' in rendered
+    assert 'demo' in rendered and 'library' in rendered and 'sandbox' in rendered
+    assert '0' in rendered
+    assert rendered.count('id="registry-usage-chart-title"') == 1
+    assert rendered.count('id="registry-usage-evidence-title"') == 1
+    assert 'Missing pull metrics are not zero demand.' not in rendered
+
+    empty = usage.render(analytics={'usage_chart_rows': []})
+    assert 'Pull Activity Chart Not Available' in empty
+    assert 'data-registry-usage-chart' not in empty
+    assert 'Missing pull metrics are not zero demand.' in empty
+
+    page = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    js = (ROOT / 'app/static/js/artifact_registry/analytics_usage_chart.js').read_text()
+    overview = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
+    presenter = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    assert "usage_chart_rows': _registry_usage_chart_rows(bundle['activity_rows'])" in presenter
+    assert 'analytics_usage_chart.js' in page
+    assert 'vendor/chartjs/chart.umd.min.js' in page
+    assert "type: 'bar'" in js
+    assert "indexAxis: 'y'" in js
+    assert 'min: 0' in js
+    assert 'htmx:beforeSwap' in js and 'htmx:afterSwap' in js
+    assert 'kaori:analytics-tab-visible' in js
+    assert 'artifact_registry/partials/_analytics_usage_chart.html' in overview
+    assert 'analytics.activity_rows[:3]' not in overview
 
 
 def test_registry_analytics_uses_fast_shell_and_bounded_fragments() -> None:

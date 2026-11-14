@@ -131,18 +131,8 @@
         {% include "artifact_registry/partials/_analytics_growth_charts.html" %}
     {% elif overview_domain == 'capacity' %}
         {% include "artifact_registry/partials/_analytics_capacity_chart.html" %}
-    {% elif overview_domain == 'usage' and analytics.activity_rows %}
-        <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
-            <h4 class="text-sm font-semibold text-content-primary">Observed Pull Activity by Project</h4>
-            <div class="mt-3 divide-y divide-outline-subtle">
-                {% for row in analytics.activity_rows[:3] %}
-                    <div class="flex flex-wrap items-center justify-between gap-3 py-2 text-xs">
-                        <span class="font-semibold text-content-primary">{{ row.project_name }} · {{ row.registry_name }}</span>
-                        <span class="text-content-secondary">{{ '%.0f'|format(row.pull_count) }} observed pulls</span>
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
+    {% elif overview_domain == 'usage' %}
+        {% include "artifact_registry/partials/_analytics_usage_chart.html" %}
     {% elif overview_domain == 'alerts' and analytics.alert_source_rows %}
         <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
             <h4 class="text-sm font-semibold text-content-primary">Committed Alert Sources</h4>
