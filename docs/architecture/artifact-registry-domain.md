@@ -934,6 +934,14 @@ source, actual usage and quota, and independently qualified forecast label.
 Missing all eligible quotas produces a dedicated unavailable state. The
 existing detailed Capacity table and worker/provider ownership are unchanged.
 
+The subsequent Capacity visual UAT refinement reuses existing semantic card
+classes to align chart and evidence-panel headers, shows project identity and
+actual **Used / Quota / Forecast** fields in an accessible definition list,
+and keeps the observed-state status explicit. Only the outer analytical
+workspace footer owns the evidence caveat and **Open Capacity Analysis**
+navigation. The nested chart no longer adds a duplicate disclaimer or
+bottom border; its absence/zero/missing-data semantics are unchanged.
+
 ### Registry Analytics Overview Growth visual UAT refinement (#4632)
 
 The **Analytical Evidence Summary** header uses the same shared
