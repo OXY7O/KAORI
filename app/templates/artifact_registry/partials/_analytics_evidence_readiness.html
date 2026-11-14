@@ -1,0 +1,121 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
+{% set readiness = analytics.data_readiness %}
+{% set source_rows = analytics.latest_rows|default([], true) %}
+<section class="border-t border-outline-subtle" data-registry-evidence-readiness>
+    <header class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+        <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+                <h4 class="text-sm font-semibold text-content-primary">Committed Source Coverage</h4>
+                {{ info_tip.render('registry-analytics-evidence-readiness-guide',
+                                'Committed Source Coverage Guide',
+                                'Registry source eligibility, snapshot currency and worker outcome are separate evidence dimensions.',
+                                items=[
+                                'Eligible means the Registry can be collected; Materialized means a selected-window snapshot was committed.',
+                                'Current requires a valid committed snapshot and matching input state; an older snapshot can remain readable but not current.',
+                                'Last Collection Completed describes the worker result, not necessarily freshness of the snapshot now.',
+                                'Worker failures do not prove that external providers are unhealthy or that older committed evidence is current.'
+                                ], placement='right', variant='guide') }}
+            </div>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">Per-source committed state alongside independent collection and freshness context.</p>
+        </div>
+        {{ table_label.metadata_label(source_rows|length ~ ' Sources', 'database', size='compact') }}
+    </header>
+    <div class="grid gap-4 p-4 lg:grid-cols-5 sm:p-5">
+        <section class="{{ analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-3') }}"
+                 aria-labelledby="registry-evidence-sources-title">
+            <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-4">
+                <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
+                      aria-hidden="true">
+                    <i data-lucide="database-backup" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h5 id="registry-evidence-sources-title"
+                        class="text-sm font-semibold text-content-primary">Registry Snapshot Evidence</h5>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Current and previous committed records, not live provider health.</p>
+                </div>
+            </header>
+            {% if source_rows %}
+                <div class="space-y-3 bg-surface-muted p-3 sm:p-4">
+                    {% for row in source_rows[:5] %}
+                        <article class="{{ analysis_surface.ranked_item_classes('min-w-0 p-3 sm:p-4') }}">
+                            <div class="flex min-w-0 items-start justify-between gap-3">
+                                <div class="flex min-w-0 items-start gap-2">
+                                    <span class="{{ analysis_surface.role_icon_classes('status', row.tone, size='compact') }}"
+                                          aria-hidden="true">
+                                        <i data-lucide="server" class="h-3.5 w-3.5"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <h6 class="break-words text-sm font-semibold text-content-primary">{{ row.identity.name }}</h6>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                            {% if row.snapshot and row.is_current %}
+                                                Current committed snapshot
+                                            {% elif row.snapshot %}
+                                                Previous evidence remains readable; not current
+                                            {% else %}
+                                                No snapshot committed for the selected window
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="shrink-0">
+                                    {{ table_label.status_label(row.status_label, row.tone, size='compact') }}
+                                </div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                    {% if source_rows|length > 5 %}
+                        <p class="px-1 text-xs leading-5 text-content-muted">
+                            Showing 5 of {{ source_rows|length }} source records. Check full Data & Evidence controls for collection details.
+                        </p>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="p-4">
+                    <div class="{{ analysis_surface.empty_evidence_classes('flex min-h-36 flex-col items-center justify-center gap-2 px-5 py-6 text-center') }}">
+                        <i data-lucide="database"
+                           class="h-5 w-5 text-content-muted"
+                           aria-hidden="true"></i>
+                        <p class="text-sm font-semibold text-content-primary">Source Snapshots Not Available</p>
+                        <p class="max-w-lg text-xs leading-5 text-content-secondary">No committed snapshots for the selected Registry and Time Range.</p>
+                    </div>
+                </div>
+            {% endif %}
+        </section>
+        <section class="{{ analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-2') }}"
+                 aria-labelledby="registry-evidence-context-title">
+            <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-4">
+                <span class="{{ analysis_surface.role_icon_classes('insight', size='compact') }}"
+                      aria-hidden="true">
+                    <i data-lucide="clock-3" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h5 id="registry-evidence-context-title"
+                        class="text-sm font-semibold text-content-primary">Collection & Freshness</h5>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Two independent committed-state assessments.</p>
+                </div>
+            </header>
+            <dl class="divide-y divide-outline-subtle">
+                <div class="space-y-2 px-4 py-4 sm:px-5">
+                    <dt class="{{ analysis_surface.metric_label_classes() }}">Snapshot freshness</dt>
+                    <dd>{{ table_label.status_label(readiness.label, readiness.tone, size='compact') }}</dd>
+                    <p class="text-xs leading-5 text-content-secondary">{{ readiness.helper }}</p>
+                </div>
+                <div class="space-y-2 px-4 py-4 sm:px-5">
+                    <dt class="{{ analysis_surface.metric_label_classes() }}">Latest worker outcome</dt>
+                    <dd>{{ table_label.status_label(readiness.execution_label, readiness.execution_tone, size='compact') }}</dd>
+                    {% if readiness.execution_helper %}
+                        <p class="text-xs leading-5 text-content-secondary">{{ readiness.execution_helper }}</p>
+                    {% endif %}
+                </div>
+            </dl>
+            <div class="border-t border-outline-subtle p-4 sm:p-5">
+                {{ analysis_surface.interpretation_content('Evidence boundary',
+                                        'Eligible ≠ Current',
+                                        'A completed collection and a readable older snapshot do not establish current evidence or live provider health.',
+                                        icon='shield-check', role='evidence', compact=true) }}
+            </div>
+        </section>
+    </div>
+</section>
