@@ -83,3 +83,21 @@ def test_shared_connection_guide_section_describes_its_scope_accessibly() -> Non
     assert f'aria-describedby="{slug}-connection-contract-description"' in source
     assert f'<p id="{slug}-connection-contract-description"' in source
     assert source.count("-connection-contract-description") == 2
+
+
+def test_kubernetes_primary_heading_guide_ids_do_not_collide_across_tabs() -> None:
+    """Distinct tab Guides must keep distinct popover controller IDs."""
+    expected = {
+        "_connection_contract.html": "kubernetes-connection-contract-guide",
+        "_capsule_rbac_bootstrap.html": "kubernetes-capsule-rbac-bootstrap-guide",
+        "_capability_workspace.html": "kubernetes-full-validation-detail-guide",
+        "_runtime_workspace.html": "kubernetes-runtime-health-detail-guide",
+        "_inventory_lifecycle.html": "kubernetes-inventory-lifecycle-detail-guide",
+    }
+    seen: set[str] = set()
+    for filename, guide_id in expected.items():
+        source = _source(KUBERNETES / filename)
+        assert guide_id not in seen, filename
+        assert source.count(f'"{guide_id}"') == 1, filename
+        seen.add(guide_id)
+    assert len(seen) == len(expected)
