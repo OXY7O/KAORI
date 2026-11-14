@@ -19,7 +19,10 @@
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h3 class="text-lg font-semibold text-content-primary">Tenant Quota Analysis</h3>
-                    {{ info_tip.render('kubernetes-analytics-workload-tenant-quota-section-guide', 'Tenant Quota Analysis Guide', 'Namespace quota evidence and effective demand come from committed governance and provider observations.', placement='right', variant='guide') }}
+                    {{ info_tip.render('kubernetes-analytics-workload-tenant-quota-section-guide',
+                        'Tenant Quota Analysis Guide',
+                        'Namespace quota evidence and effective demand come from committed governance and provider observations.',
+                        placement='right', variant='guide') }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-muted">Review ResourceQuota coverage, pressure ownership, runtime demand, and governance risk for the top-level active scope.</p>
             </div>

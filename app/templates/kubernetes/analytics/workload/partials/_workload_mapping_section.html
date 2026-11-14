@@ -21,7 +21,10 @@
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h3 class="text-lg font-semibold text-content-primary">Workload Resource Mapping</h3>
-                    {{ info_tip.render('kubernetes-analytics-workload-workload-mapping-section-guide', 'Workload Resource Mapping Guide', 'Compare declared request/limit profiles with workload runtime evidence; incomplete coverage does not prove policy conformance.', placement='right', variant='guide') }}
+                    {{ info_tip.render('kubernetes-analytics-workload-workload-mapping-section-guide',
+                        'Workload Resource Mapping Guide',
+                        'Compare declared request/limit profiles with workload runtime evidence; incomplete coverage does not prove policy conformance.',
+                        placement='right', variant='guide') }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-muted">Compare request and limit coverage, factual QoS classification, current usage, selected-window pod peak sums, and evidence-gated right-sizing risk.</p>
             </div>

@@ -10,9 +10,12 @@
         <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="chart-pie" class="h-5 w-5"></i></span>
         <div>
             <div class="flex flex-wrap items-center gap-2">
-                    <h3 class="text-lg font-semibold text-content-primary">Cluster Resource Allocation &amp; Headroom</h3>
-                    {{ info_tip.render('kubernetes-analytics-capacity-allocation-guide', 'Cluster Resource Allocation & Headroom Guide', 'Compare allocatable, requested, used, and residual resources; requests do not equal real-time consumption.', placement='right', variant='guide') }}
-                </div>
+                <h3 class="text-lg font-semibold text-content-primary">Cluster Resource Allocation &amp; Headroom</h3>
+                {{ info_tip.render('kubernetes-analytics-capacity-allocation-guide',
+                    'Cluster Resource Allocation & Headroom Guide',
+                    'Compare allocatable, requested, used, and residual resources; requests do not equal real-time consumption.',
+                    placement='right', variant='guide') }}
+            </div>
             <p class="mt-1 text-sm leading-6 text-content-muted">Compare the Ready-worker scheduling envelope, then inspect requests, limits, actual usage, and observed peak pressure.</p>
         </div>
     </div>

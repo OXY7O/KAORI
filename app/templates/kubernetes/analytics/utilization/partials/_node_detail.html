@@ -14,9 +14,12 @@
                 <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="server-crash" class="h-4 w-4"></i></span>
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
-                    <h3 class="text-lg font-semibold text-content-primary">Node Resource &amp; Pressure Detail</h3>
-                    {{ info_tip.render('kubernetes-analytics-utilization-node-detail-guide', 'Node Resource & Pressure Detail Guide', 'Node-scoped CPU, memory, scheduling and filesystem readings require committed evidence and a selected node.', placement='right', variant='guide') }}
-                </div>
+                        <h3 class="text-lg font-semibold text-content-primary">Node Resource &amp; Pressure Detail</h3>
+                        {{ info_tip.render('kubernetes-analytics-utilization-node-detail-guide',
+                            'Node Resource & Pressure Detail Guide',
+                            'Node-scoped CPU, memory, scheduling and filesystem readings require committed evidence and a selected node.',
+                            placement='right', variant='guide') }}
+                    </div>
                     <p class="mt-1 text-sm leading-6 text-content-muted">Drill down CPU, memory, pods, and filesystem pressure using a committed node-scoped snapshot.</p>
                 </div>
             </div>

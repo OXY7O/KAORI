@@ -10,7 +10,10 @@
             <div>
                 <div class="flex flex-wrap items-center gap-2">
                     <h3 class="text-lg font-semibold text-content-primary">Capacity Recommendations</h3>
-                    {{ info_tip.render('kubernetes-analytics-capacity-recommendations-guide', 'Capacity Recommendations Guide', 'Validate workload ownership, requests, limits, and sustained pressure before taking explicit action.', placement='right', variant='guide') }}
+                    {{ info_tip.render('kubernetes-analytics-capacity-recommendations-guide',
+                        'Capacity Recommendations Guide',
+                        'Validate workload ownership, requests, limits, and sustained pressure before taking explicit action.',
+                        placement='right', variant='guide') }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-muted">Prioritized actions derived from headroom, allocation pressure, overcommit, and worker scheduling evidence.</p>
             </div>

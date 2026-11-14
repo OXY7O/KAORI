@@ -12,7 +12,10 @@
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h3 class="text-lg font-semibold text-content-primary">Workload Recommendations</h3>
-                    {{ info_tip.render('kubernetes-analytics-workload-recommendations-guide', 'Workload Recommendations Guide', 'Keep right-sizing proposals evidence-gated and review CPU limit policy separately from actionable request gaps.', placement='right', variant='guide') }}
+                    {{ info_tip.render('kubernetes-analytics-workload-recommendations-guide',
+                        'Workload Recommendations Guide',
+                        'Keep right-sizing proposals evidence-gated and review CPU limit policy separately from actionable request gaps.',
+                        placement='right', variant='guide') }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-muted">Prioritized quota, request, limit, QoS, and right-sizing actions for the selected workload scope.</p>
             </div>

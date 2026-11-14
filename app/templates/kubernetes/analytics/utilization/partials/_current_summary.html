@@ -10,7 +10,10 @@
             <div>
                 <div class="flex flex-wrap items-center gap-2">
                     <h3 class="text-lg font-semibold text-content-primary">Resource Pressure Detail</h3>
-                    {{ info_tip.render('kubernetes-analytics-utilization-current-summary-guide', 'Resource Pressure Detail Guide', 'Compare measured percentage with allocatable units and headroom. Missing denominators remain N/A.', placement='right', variant='guide') }}
+                    {{ info_tip.render('kubernetes-analytics-utilization-current-summary-guide',
+                        'Resource Pressure Detail Guide',
+                        'Compare measured percentage with allocatable units and headroom. Missing denominators remain N/A.',
+                        placement='right', variant='guide') }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-muted">Compare current percentage, absolute consumption, remaining headroom, and the operational meaning of each resource signal.</p>
             </div>
