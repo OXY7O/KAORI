@@ -69,6 +69,21 @@ Suspend, Expired, and Revoked states remove effective ServiceAccount/binding sta
 
 If a human Access Grant, membership, or owning user becomes invalid, reconciliation fails closed by revoking the dependent credential rather than preserving a credential-only authorization bypass.
 
+## Credential Lifecycle registry timestamp presentation (#4706)
+
+The routine non-secret Credential Lifecycle registry keeps all six columns
+and the canonical `user_datetime` local timestamp and timezone. The **Validity**
+column already communicates entitlement validity: the visible text displays
+just the complete localized date/time/timezone, in one unbroken line at the
+reviewed desktop width. Its accessible hidden prefix and full native tooltip
+retain **Valid until** for screen-reader and hover context. The bounded fixed
+table reserves 18% width for Validity (23/15/17/11/18/16 for
+Identity/Tenant/Type/Lifecycle/Validity/Actions) and a 1000px mobile table
+minimum with horizontal overflow. It does not alter credential expiry,
+revocation, lifecycle validation, timezone conversion, token lifetime,
+provider state or the governed actions in the details row. UI Visual QA at
+reference desktop and narrow viewports remains required.
+
 ## Namespace Access Package
 
 The non-secret Namespace Access Package contains:

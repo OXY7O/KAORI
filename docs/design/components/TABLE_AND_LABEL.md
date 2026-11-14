@@ -66,6 +66,14 @@ A form-local progress indicator may remain inside a form action area when it onl
 - Ordinary status, numeric, timestamp, and operational cells are not centered merely for decoration.
 - A documented analytics table may use numeric alignment when comparison accuracy requires it.
 - All body cells use vertical alignment `middle`.
+- For dense credential/entitlement tables, avoid redundant visible text such as
+  `Valid until` inside a column already named **Validity**. Keep the entire
+  localized date/time/timezone together on desktop with enough reserved width,
+  maintain a screen-reader label and full native tooltip, and preserve bounded
+  horizontal table overflow on small screens rather than clipping or dropping
+  the timezone. The Credential Lifecycle registry is the approved instance
+  (23/15/17/11/18/16 columns, 1000px mobile minimum); never change timezone
+  semantics or the underlying validity state for presentation alignment.
 
 ## 6. Table header typography
 

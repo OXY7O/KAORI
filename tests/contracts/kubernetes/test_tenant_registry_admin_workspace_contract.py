@@ -440,7 +440,8 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     assert 'human-credential-tip' in workspace
     assert 'deployer-credential-tip' in workspace
     assert workspace.count('hx-target="#tenant-admin-workspace"') >= 2
-    assert "table_ui.table_classes('min-w-[900px] table-fixed lg:min-w-0')" in registry
+    assert "table_ui.table_classes('min-w-[1000px] table-fixed lg:min-w-0')" in registry
+    assert '<span class="sr-only">Valid until </span>{{ credential.valid_until|user_datetime }}' in registry
     assert 'min-w-[1180px]' not in registry
     assert 'table_ui.action_grid_classes(2)' not in registry
     assert 'detail_row.toggle_button(' in registry

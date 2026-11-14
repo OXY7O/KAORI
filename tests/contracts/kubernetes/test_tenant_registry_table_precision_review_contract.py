@@ -245,11 +245,20 @@ def test_destructive_and_multi_action_cells_have_reserved_width() -> None:
 def test_credential_column_balance_preserves_existing_shared_table_and_detail_actions() -> None:
     credential = _template('_credential_registry')
     decisions = _template('_capacity_decisions')
-    assert "table_ui.table_classes('min-w-[900px] table-fixed lg:min-w-0')" in credential
-    assert _header_widths(credential) == (24, 17, 17, 11, 15, 16)
+    assert "table_ui.table_classes('min-w-[1000px] table-fixed lg:min-w-0')" in credential
+    assert _header_widths(credential) == (23, 15, 17, 11, 18, 16)
     assert sum(_header_widths(credential)) == 100
     assert 'overflow-x-auto lg:overflow-visible' in credential
     assert "detail_row.toggle_button('tenant-credentials'" in credential
+    # A long redundant prefix plus an undersized 15% timestamp cell could
+    # orphan WIB on its own line despite same-format credential records.
+    assert '<th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Validity</th>' in credential
+    assert '<p class="whitespace-nowrap text-xs font-medium leading-5 text-content-secondary"' in credential
+    assert 'title="Valid until {{ credential.valid_until|user_datetime }}"' in credential
+    assert '<span class="sr-only">Valid until </span>{{ credential.valid_until|user_datetime }}' in credential
+    assert 'Valid until {{ credential.valid_until|user_datetime }}\n' not in credential
+    assert "table_ui.cell_classes(action=true)" in credential
+    assert 'detail_row.static_detail_row(detail_row_id, detail_target_id, 6' in credential
     # Capacity decisions have an approved wider bounded record shape, with an
     # explicit action column and shared horizontal overflow on compact screens.
     assert "table_ui.table_classes('min-w-[1060px] !table-fixed')" in decisions
