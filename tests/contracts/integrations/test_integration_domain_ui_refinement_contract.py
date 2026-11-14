@@ -450,11 +450,26 @@ def test_registry_consumer_asset_id_has_context_without_changing_other_domains()
         )
     )
     assert '>Harbor X300</p>' in registry_html
-    assert 'Asset ID: ' in registry_html
+    assert '>Asset ID:</span>' in registry_html
     assert '<span class="font-mono">6</span>' in registry_html
     assert 'data-lucide="package"' in registry_html
     assert 'Asset type: Registry Instance' in registry_html
     assert 'Registry Instance · 6' not in registry_html
+
+    # Vault uses the same canonical IntegrationInstance integer-key contract.
+    vault_html = str(
+        component.consumer_asset_identity(
+            'Vault X300',
+            'vault_instance',
+            metadata='42',
+            type_label='Vault Instance',
+            metadata_is_key=True,
+        )
+    )
+    assert '>Vault X300</p>' in vault_html
+    assert '>Asset ID:</span>' in vault_html
+    assert '<span class="font-mono">42</span>' in vault_html
+    assert 'data-lucide="key-round"' in vault_html
 
     storage_key = 'c0e9f10c-8b25-49d2-b5e1-116c06f3a289'
     storage_html = str(
@@ -466,6 +481,6 @@ def test_registry_consumer_asset_id_has_context_without_changing_other_domains()
             metadata_is_key=True,
         )
     )
-    assert 'Asset ID: ' not in storage_html
+    assert 'Asset ID:' not in storage_html
     assert storage_key in storage_html
     assert 'data-lucide="database"' in storage_html
