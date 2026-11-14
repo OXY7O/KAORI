@@ -6,6 +6,7 @@
 **Reference consumers:** `app/templates/kubernetes/dashboard/partials/_content.html` and `app/templates/storage/object_storage/dashboard/partials/_content.html`  
 **Additional conforming consumer:** `Artifact Registry → Overview` through `app/templates/artifact_registry/partials/_overview_content.html`
 **Security Posture first-slice consumer (#2613):** `Security → Overview` at `app/templates/security_posture/overview.html` consumes the same Operational Dashboard Hero, Operational Signal Overview, independent metric cards and four-tab framework. Its limited Registry/Kubernetes source scope is explicit; without authorized committed Registry evidence, it renders the approved blocked Hero and a readiness section instead of fabricated KPIs.
+**Security assurance UI refinement (#4711):** The existing four panel keys and shared controller remain unchanged, but this scoped Assurance domain supplies source-appropriate labels through the optional `navigation(..., tabs=...)` argument. All other dashboard consumers retain canonical labels; the variant does not introduce another tab renderer or change URL normalization.
 
 ## Purpose
 
@@ -109,6 +110,21 @@ Object Storage Reporting passes concise **Committed snapshots** as its domain-ow
 - Do not introduce page-local Hero/card/tab/label/pagination/chart geometry, arbitrary typography, or dark-mode colors.
 - The dashboard remains neutral-first in dark mode. Violet is limited to identity, active state, focus, links, progress, and primary actions.
 - Operational Dashboard content is a read-only committed-state projection. Navigation/handoff links are allowed, but job initiation and mutation controls such as inventory synchronization do not render inside dashboard KPI or evidence cards; those actions remain in their owning operational workflow.
+
+### Security Posture: evidence-qualified assurance perspective (#4711)
+
+Security Overview is a **source-scoped Assurance** presentation, not a global fleet security verdict or integration health dashboard. Its initial evidence is committed Registry scanner findings and Registry-to-Kubernetes runtime correlation. Preserve `page_hero.operational_dashboard`, `operational_signal_overview`, independent `operational_metric_card`, `operational_dashboard_workspace` panel keys/keyboard/URL semantics, shared section cards, and canonical read-only source boundaries. A domain-specific *label variant*, not a new navigation component, maps the same four keys:
+
+| Existing panel key / deep link | Security label | Evidence purpose |
+| --- | --- | --- |
+| `overview` | Exposure Analysis | Qualified CVE severity + bounded grouped-CVE preview |
+| `capacity` | Assets & Impact | Affected artifact digests and runtime binding evidence, **not** infrastructure capacity |
+| `signals` | Findings & Investigation | Ownership handoff to canonical Findings and Intelligence |
+| `reporting` | Evidence & Sources | Scanner/runtime authority, freshness, and Reports handoff |
+
+The four independent KPI cards represent `scanned_artifacts / artifacts_total`, affected digests, runtime correlation status, and source-qualified scan update age. Display latest successful **usable** evidence with explicit partial/stale/unknown caveats. Distinct-CVE severity distribution uses an aggregate over **all grouped scope CVEs**, not only the five preview rows or raw scanner finding count. The preview is a read-only five-CVE sorted subset; search/filter/pagination and CVE impact drilldown remain owned by Security Findings. Do not fake severity values, named Kubernetes workloads, a four-scan timeline, trends, remediation status, Service/Team ownership, host/network coverage, or an organization-wide score. An absent/denied Registry source uses the existing blocked Hero and suppresses all KPIs and findings rather than reporting zero or success. `artifact_registry.view` authorization remains independent of `security_posture.view`.
+
+This approval is a bounded semantic variant for the Security consumer, **not** permission to rename the fixed tabs of Kubernetes, Object Storage, or Registry operational dashboards. Retain shared-component regression and human visual acceptance.
 
 ## Information hierarchy
 
