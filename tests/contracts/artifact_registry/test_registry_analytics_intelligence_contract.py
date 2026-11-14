@@ -422,7 +422,12 @@ def test_registry_analytics_overview_panels_preserve_missing_data_and_evidence_a
     charts = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_charts.html').read_text()
     assert 'artifact_registry/partials/_analytics_growth_charts.html' in panel
     assert 'data-registry-growth-chart-panel' in charts
-    assert 'analytics.forecast_rows[:3]' in panel
+    capacity_chart = (
+        ROOT / 'app/templates/artifact_registry/partials/_analytics_capacity_chart.html'
+    ).read_text()
+    assert 'artifact_registry/partials/_analytics_capacity_chart.html' in panel
+    assert 'analytics.capacity_chart_rows' in capacity_chart
+    assert 'data-registry-capacity-quota-series' in capacity_chart
     assert 'analytics.activity_rows[:3]' in panel
     assert 'analytics.insights[:3]' in panel
     assert 'analytics.alert_source_rows[:3]' in panel
@@ -475,6 +480,7 @@ def test_registry_overview_panels_render_unknown_without_fabricating_evidence() 
         'growth_rows': [],
         'growth_charts': {'artifacts': [], 'storage': []},
         'forecast_rows': [],
+        'capacity_chart_rows': [],
         'activity_rows': [],
         'alert_source_rows': [],
         'insights': [],
@@ -509,6 +515,117 @@ def test_registry_overview_panels_render_unknown_without_fabricating_evidence() 
         else:
             assert 'Historical Materialization Required' in rendered
             assert 'No committed snapshots for the selected Registry and Time Range.' in rendered
+
+
+def test_registry_capacity_chart_projection_requires_committed_valid_quota_evidence() -> None:
+    from app.artifact_registry.presentation_analytics import _registry_capacity_chart_rows
+
+    def project(
+        name: str, usage: float, quota: float, *, registry: str = 'Harbor X300'
+    ) -> dict[str, object]:
+        return {
+            'project_name': name,
+            'registry_name': registry,
+            'usage_bytes': usage,
+            'quota_bytes': quota,
+            'usage_display': f'{usage} B',
+            'quota_display': f'{quota} B',
+            'days_to_quota_display': 'No forecast',
+        }
+
+    rows = [
+        project('zero', 0, 100),
+        project('small', 6, 1000),
+        project('over-quota', 150, 100),
+        project('half', 50, 100),
+        project('third', 30, 100),
+        project('quarter', 25, 100),
+        project('seven', 10, 100),
+        project('missing-quota', 10, 0),
+        project('negative-usage', -10, 100),
+        project('nonfinite-usage', float('nan'), 100),
+        project('nonfinite-quota', 5, float('inf')),
+        project('invalid-type', True, 100),
+        project('', 20, 100),
+    ]
+    projected = _registry_capacity_chart_rows(rows)
+    assert len(projected) == 5
+    assert [row['project_name'] for row in projected] == [
+        'over-quota',
+        'half',
+        'third',
+        'quarter',
+        'seven',
+    ]
+    assert projected[0]['utilization_percent'] == 150.0
+    assert projected[0]['utilization_display'] == '150.0%'
+    assert projected[0]['usage_bytes'] == 150.0
+    assert projected[0]['quota_bytes'] == 100.0
+    assert projected[0]['forecast_label'] == 'No forecast'
+    assert _registry_capacity_chart_rows([project('zero', 0, 100)])[0][
+        'utilization_percent'
+    ] == 0.0
+    assert _registry_capacity_chart_rows([project('missing-quota', 10, 0)]) == []
+    assert _registry_capacity_chart_rows([]) == []
+
+
+def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contract() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    partial = (ROOT / 'app/templates/artifact_registry/partials/_analytics_capacity_chart.html').read_text()
+    overview = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
+    page = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    chart = (ROOT / 'app/static/js/artifact_registry/analytics_capacity_chart.js').read_text()
+    present = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    shared = (ROOT / 'app/templates/components/table_label.html').read_text()
+    Environment().parse(partial)
+    assert 'artifact_registry/partials/_analytics_capacity_chart.html' in overview
+    assert 'data-registry-capacity-quota-series' in partial
+    assert 'data-registry-capacity-quota-chart' in partial
+    assert 'Project Quota Utilization Guide' in partial
+    assert 'Quota Chart Not Available' in partial
+    assert 'quota_rows|length ~' in partial
+    assert 'analytics.capacity_chart_rows' in partial
+    assert 'metadata_label(' in shared
+    assert "[:5]" in present or "[:5]" in partial
+    assert "'capacity_chart_rows': _registry_capacity_chart_rows(forecast_rows)" in present
+    assert 'js/artifact_registry/analytics_capacity_chart.js' in page
+    assert 'vendor/chartjs/chart.umd.min.js' in page
+    assert "type: 'bar'" in chart
+    assert "indexAxis: 'y'" in chart
+    assert 'new Chart(' in chart
+    assert 'htmx:beforeSwap' in chart
+    assert 'htmx:afterSwap' in chart
+    assert 'kaori:analytics-tab-visible' in chart
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    rows = [
+        {
+            'project_name': 'demo',
+            'registry_name': 'Harbor X300',
+            'utilization_percent': 0.6,
+            'utilization_display': '0.6%',
+            'usage_bytes': 6.0,
+            'quota_bytes': 1000.0,
+            'usage_display': '6 B',
+            'quota_display': '1000 B',
+            'forecast_label': 'No forecast',
+        }
+    ]
+    rendered = env.get_template('artifact_registry/partials/_analytics_capacity_chart.html').render(
+        analytics={'capacity_chart_rows': rows}
+    )
+    assert 'demo' in rendered
+    assert 'Harbor X300' in rendered
+    assert '0.6%' in rendered
+    assert 'No forecast' in rendered
+    assert 'data-registry-capacity-quota-chart' in rendered
+    assert 'Quota Chart Not Available' not in rendered
+    empty = env.get_template('artifact_registry/partials/_analytics_capacity_chart.html').render(
+        analytics={'capacity_chart_rows': []}
+    )
+    assert 'Quota Chart Not Available' in empty
+    assert 'data-registry-capacity-quota-chart' not in empty
 
 
 def test_registry_analytics_uses_fast_shell_and_bounded_fragments() -> None:
