@@ -36,9 +36,7 @@
                            title="{{ row.endpoint }}">{{ row.endpoint }}</p>
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">Alertmanager API v2</p>
                     </td>
-                    <td class="{{ table_ui.cell_classes() }} align-top">
-                        {{ integration_status(row.readiness, display="indicator") }}
-                    </td>
+                    <td class="{{ table_ui.cell_classes() }} align-top">{{ integration_status(row.readiness, display="indicator") }}</td>
                     <td class="{{ table_ui.cell_classes() }} align-top">
                         {{ integration_status(row.compatibility, display="indicator") }}
                         <p class="mt-0.5 break-words text-xs font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ row.profile or "Capability profile pending" }}</p>
@@ -50,8 +48,8 @@
                     {% endfor %}
                     <td class="{{ table_ui.cell_classes() }} align-top"
                         title="{{ scope_labels|join(', ') if scope_labels else 'No scope bindings' }}">
-                        {{ table_label.metadata_label(table_label.count_text(row.binding_count, 'Binding')) }}
-                        <span class="sr-only">Bound scope types: {{ scope_labels|join(', ') if scope_labels else 'No scope bindings' }}</span>
+                        {{ table_label.metadata_label(table_label.count_text(row.binding_count, 'Binding') ) }}
+                        <span class="sr-only">Bound scope types: {{ scope_labels|join(", ") if scope_labels else 'No scope bindings' }}</span>
                     </td>
                     <td class="{{ table_ui.cell_classes(action=true) }} align-top">
                         <a href="{{ url_for('alertmanager.instance_detail', instance_id=row.instance.id) }}"
