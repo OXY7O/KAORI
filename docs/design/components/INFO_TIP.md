@@ -50,9 +50,12 @@ a Guide among the registry header actions.
 
 The Tenant Operations **Runs & Evidence Registry** and **Namespace & Allocation Drift**
 each have one title-owned Guide in `title_extra` while preserving their own
-filtered Results label, scope filters and pagination. The Activity tab is a
-separate pair of equal-height canonical handoff cards with aligned action
-footers, not a duplicate evidence registry or audit feed.
+filtered Results label, scope filters and pagination. The Activity tab uses three distinct canonical capability destination cards
+(Activity Audit, Intelligence, Reports) rather than repeating one undifferentiated
+two-card layout. Reuse shared block surfaces and canonical metadata labels with
+larger Violet icon anchors, concise descriptions and bottom-aligned full-width
+actions; links must remain owned by their external capability and must not
+duplicate evidence, audit or reports in Tenant Operations.
 
 For a canonical registry with shared status or lifecycle vocabulary, place one **Guide label** Info Tip **beside the registry title** through the shared table-header `title_extra` slot. The registry card opts into visible overflow while the table itself stays inside its dedicated `overflow-x-auto` container. Header actions remain reserved for operational actions such as Clear Filters, Add, Create, or navigation.
 

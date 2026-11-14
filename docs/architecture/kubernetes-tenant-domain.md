@@ -111,13 +111,17 @@ The Guides clarify committed evidence versus explicit authorized provider
 recovery: synchronization is observation-only and never automatic remediation.
 
 **Activity** remains a navigation-only handoff, not a second audit or reporting
-engine. Its Activity Audit and Governance & Reports cards reuse shared KAORI
-block/icon/secondary-action components, equal-height responsive columns,
-matching compact descriptions and bottom-aligned action footers. The canonical
-Activity Audit, Intelligence and Reports route destinations remain unchanged.
-No mutation, provider read, permission, database, data-feed or status logic is
-introduced. Desktop/mobile light/dark Visual QA and Human Acceptance are
-required on the reviewed integration SHA.
+engine. Following the operator's second Visual QA (#4672), its previous two
+visually flat cards are replaced with **three distinct canonical capability
+destinations**: Activity Audit, Intelligence and Reports. Each uses the shared
+KAORI table block shell, a soft Violet 48px capability icon, a meaningful
+metadata label, a dedicated title/concise description, and a full-width
+secondary-intent Violet action in a bottom-aligned footer. A responsive
+three-column grid stacks on narrow screens. The canonical Activity Audit,
+Intelligence and Reports route destinations remain unchanged; no duplicate
+evidence feed, provider mutation, permission bypass, backend query or status
+logic is introduced. Desktop/mobile light/dark Visual QA and Human Acceptance
+remain required on the integrated review UAT SHA.
 
 ## Tenant Operations — primary Allocation / Operational reconcile tabs (#960)
 
