@@ -100,6 +100,25 @@ reasons with complete tooltip evidence. No pagination, HTMX, RBAC, data source,
 provider mutation or reconciliation status semantics change. Desktop/mobile
 light/dark visual review of long identities and State reasons remains pending.
 
+## Tenant Operations — Evidence/Drift Guides and Activity handoffs (#4672)
+
+**Runs & Evidence Registry** and **Namespace & Allocation Drift** now each use the
+canonical title-adjacent `Guide` through the existing
+`table_ui.inventory_block_header(title_extra=...)` slot. Their separate
+filtered **Results** labels, evidence family / drift filters, HTMX navigation,
+empty-state pagination and provider-authoritative read models are preserved.
+The Guides clarify committed evidence versus explicit authorized provider
+recovery: synchronization is observation-only and never automatic remediation.
+
+**Activity** remains a navigation-only handoff, not a second audit or reporting
+engine. Its Activity Audit and Governance & Reports cards reuse shared KAORI
+block/icon/secondary-action components, equal-height responsive columns,
+matching compact descriptions and bottom-aligned action footers. The canonical
+Activity Audit, Intelligence and Reports route destinations remain unchanged.
+No mutation, provider read, permission, database, data-feed or status logic is
+introduced. Desktop/mobile light/dark Visual QA and Human Acceptance are
+required on the reviewed integration SHA.
+
 ## Tenant Operations — primary Allocation / Operational reconcile tabs (#960)
 
 Tenant → Operations uses **one shared primary Content Tabs row** rather than a

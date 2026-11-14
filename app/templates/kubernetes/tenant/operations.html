@@ -187,44 +187,42 @@
                         </details>
                     </div>
                 {% else %}
-                    <div class="grid gap-5 xl:grid-cols-2">
-                        <section class="{{ table_ui.block_classes() }}"
+                    <div class="grid items-stretch gap-4 lg:grid-cols-2">
+                        <section class="{{ table_ui.block_classes() }} flex min-w-0 flex-col"
                                  aria-label="Activity Audit handoff">
-                            <div class="p-5">
-                                <div class="flex items-start gap-3">
-                                    <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
-                                        <i data-lucide="activity" class="h-5 w-5"></i>
-                                    </span>
-                                    <div class="min-w-0">
-                                        <h3 class="{{ table_ui.block_title_classes() }}">Activity Audit</h3>
-                                        <p class="mt-1 text-sm leading-6 text-content-secondary">Tenant mutation history stays in the canonical Activity Audit surface so Operations does not duplicate an unbounded audit feed.</p>
-                                        <a href="{{ url_for('access.activity_audit.index') }}"
-                                           class="{{ action_button.classes('secondary') }} mt-4">
-                                            Open Activity Audit
-                                            <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
-                                        </a>
-                                    </div>
+                            <div class="flex flex-1 items-start gap-3 p-4 sm:p-5">
+                                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                                    <i data-lucide="activity" class="h-5 w-5"></i>
+                                </span>
+                                <div class="min-w-0 flex-1">
+                                    <h3 class="{{ table_ui.block_title_classes() }}">Activity Audit</h3>
+                                    <p class="mt-1 text-sm leading-6 text-content-secondary">Review Tenant mutation history in the canonical Activity Audit workspace.</p>
                                 </div>
                             </div>
+                            <div class="mt-auto flex flex-wrap items-center gap-2 border-t border-outline-subtle px-4 py-3 sm:px-5">
+                                <a href="{{ url_for('access.activity_audit.index') }}"
+                                   class="{{ action_button.classes('secondary') }}">
+                                    Open Activity Audit
+                                    <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
+                                </a>
+                            </div>
                         </section>
-                        <section class="{{ table_ui.block_classes() }}"
+                        <section class="{{ table_ui.block_classes() }} flex min-w-0 flex-col"
                                  aria-label="Governance and Reports handoff">
-                            <div class="p-5">
-                                <div class="flex items-start gap-3">
-                                    <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
-                                        <i data-lucide="brain-circuit" class="h-5 w-5"></i>
-                                    </span>
-                                    <div class="min-w-0">
-                                        <h3 class="{{ table_ui.block_title_classes() }}">Governance &amp; Reports</h3>
-                                        <p class="mt-1 text-sm leading-6 text-content-secondary">Recommendations and published reports remain owned by their canonical KAORI capabilities rather than being copied into Tenant Operations.</p>
-                                        <div class="mt-4 flex flex-wrap gap-2">
-                                            <a href="{{ url_for('intelligence.recommendations') }}"
-                                               class="{{ action_button.classes('secondary') }}">Intelligence</a>
-                                            <a href="{{ url_for('reports.generate_report') }}"
-                                               class="{{ action_button.classes('secondary') }}">Reports</a>
-                                        </div>
-                                    </div>
+                            <div class="flex flex-1 items-start gap-3 p-4 sm:p-5">
+                                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                                    <i data-lucide="brain-circuit" class="h-5 w-5"></i>
+                                </span>
+                                <div class="min-w-0 flex-1">
+                                    <h3 class="{{ table_ui.block_title_classes() }}">Governance &amp; Reports</h3>
+                                    <p class="mt-1 text-sm leading-6 text-content-secondary">Open recommendations and reports in their canonical KAORI workspaces.</p>
                                 </div>
+                            </div>
+                            <div class="mt-auto flex flex-wrap items-center gap-2 border-t border-outline-subtle px-4 py-3 sm:px-5">
+                                <a href="{{ url_for('intelligence.recommendations') }}"
+                                   class="{{ action_button.classes('secondary') }}">Intelligence</a>
+                                <a href="{{ url_for('reports.generate_report') }}"
+                                   class="{{ action_button.classes('secondary') }}">Reports</a>
                             </div>
                         </section>
                     </div>
