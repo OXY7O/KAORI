@@ -1093,7 +1093,10 @@ large blank space are removed.
 pagination defaulting to five rows and shared 5/10/25/50 page-size controls.
 The new `capacity_project_rows` projection includes all qualified committed
 project observations, whereas `capacity_chart_rows` remains intentionally
-bounded to five for the existing Overview chart. Both projections use the
+bounded to five for the existing Overview chart. Both the Overview utilization
+plot and its adjacent Qualified Project Evidence use those same five highest
+utilization records; when more projects qualify, the Overview badge shows
+"Top 5 of N Projects" rather than implying all projects are displayed. Both projections use the
 same finite/nonnegative usage and positive-quota qualifier. The
 RBAC-protected `/analytics/capacity/table` endpoint returns only the
 paginated committed table fragment on HTMX requests and redirects normal
