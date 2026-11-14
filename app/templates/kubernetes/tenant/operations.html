@@ -2,6 +2,7 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/content_tabs.html" as content_tabs %}
 {% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/operational_callout.html" as operational_callout %}
 {% import "components/resource_posture_grid.html" as resource_posture_grid %}
 {% import "components/section_intro.html" as section_intro %}
 {% import "components/info_tip.html" as info_tip %}
@@ -95,6 +96,20 @@
                             </div>
                             {{ table_label.metadata_label('Capsule authoritative', icon='shield-check') }}
                         </div>
+                        <div class="grid gap-3 md:grid-cols-2"
+                             data-tenant-drift-context="allocation"
+                             aria-label="Capsule allocation governance context">
+                            {{ operational_callout.render(
+                                'Tenant Quota · Namespace scope',
+                                'Capsule Tenant.spec.resourceQuotas governs per-Namespace quotas. Compare committed KAORI intent with observed ResourceQuota evidence before deciding on recovery.',
+                                icon='shield-alert',
+                                variant='neutral') }}
+                            {{ operational_callout.render(
+                                'Shared Allocation · Tenant scope',
+                                'Capsule GlobalResourceQuota governs shared Tenant allocation separately. Sync records differences; reapply or accept provider state only through governed recovery.',
+                                icon='layers-3',
+                                variant='neutral') }}
+                        </div>
                         {% set allocation_registry_tabs = [
                                 ('tenant-quota', 'Tenant Quota', 'shield-alert', url_for('tenant.operations', tab='allocation-drift', ops_view='tenant-quota')),
                                 ('shared-allocation', 'Shared Allocation', 'layers-3', url_for('tenant.operations', tab='allocation-drift', ops_view='shared-allocation'))
@@ -134,6 +149,25 @@
                                 </p>
                             </div>
                             {{ table_label.metadata_label('Committed evidence', icon='shield-check') }}
+                        </div>
+                        <div class="grid gap-3 lg:grid-cols-3"
+                             data-tenant-drift-context="operational"
+                             aria-label="Operational reconciliation scope">
+                            {{ operational_callout.render(
+                                'Namespace Drift',
+                                'Compare committed Namespace and allocation intent with provider observations. A mismatch requires an explicit recovery decision.',
+                                icon='refresh-cw',
+                                variant='neutral') }}
+                            {{ operational_callout.render(
+                                'Access Reconciliation',
+                                'Review committed Access Grants against effective Kubernetes RBAC evidence. Grant reconciliation remains separate from Namespace drift.',
+                                icon='key-round',
+                                variant='neutral') }}
+                            {{ operational_callout.render(
+                                'Provider Authority',
+                                'Confirm the owning Kubernetes or Capsule provider and reconciliation policy. This is read-only context, not a drift queue.',
+                                icon='shield-check',
+                                variant='neutral') }}
                         </div>
                         {% set operational_registry_tabs = [
                                 ('namespace-drift', 'Namespace Drift', 'refresh-cw', url_for('tenant.operations', tab='operational-reconcile', ops_view='namespace-drift')),
