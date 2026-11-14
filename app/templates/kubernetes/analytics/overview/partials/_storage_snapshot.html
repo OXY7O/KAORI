@@ -119,7 +119,7 @@
                         </div>
                     {% else %}
                         <p class="mt-1 text-sm font-semibold text-content-primary">Storage Evidence Is Limited</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Restore observed PVC capacity and usage evidence before treating storage posture as healthy.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Restore PVC usage evidence before confirming storage health.</p>
                         <div class="{{ overview_surface.guidance_card_classes('mt-4') }}">
                             {{ overview_surface.interpretation_callout('Recommended Action',
                                                         'Restore PVC Volume Evidence',
@@ -154,7 +154,7 @@
                 {% else %}
                     {{ overview_surface.interpretation_callout('What To Watch',
                                         'Continue Monitoring Namespace Storage Growth',
-                                        'Current storage posture is healthy. Monitor free capacity and namespace demand so expansion can be planned before utilization accelerates.',
+                                        'Monitor free capacity and Namespace growth; plan expansion before utilization rises.',
                                         icon='circle-check',
                                         role='brand',
                                         tone='normal') }}
