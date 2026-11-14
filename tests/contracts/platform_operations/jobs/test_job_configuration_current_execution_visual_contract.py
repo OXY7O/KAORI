@@ -99,7 +99,7 @@ def test_execution_activity_section_has_one_title_level_guide_and_compact_summar
 
 def test_current_execution_grid_classes_remain_unmodified_by_template_formatting() -> None:
     source = TEMPLATE.read_text(encoding='utf-8')
-    assert "xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.95fr)]" in source
-    assert "lg:grid-cols-[minmax(0,1fr)_auto]" in source
-    assert "xl:grid-cols-[minmax(0,1fr) _minmax(18rem,0.95fr)]" not in source
-    assert "{{ current_execution_grid }}" in source
+    assert 'xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.95fr)]' in source
+    assert 'lg:grid-cols-[minmax(0,1fr)_auto]' in source
+    assert 'xl:grid-cols-[minmax(0,1fr) _minmax(18rem,0.95fr)]' not in source
+    assert '{{ current_execution_grid }}' in source
