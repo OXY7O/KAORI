@@ -1109,10 +1109,11 @@ net-zero nor snapshot currency claims provider health.
 
 The detail reuses KAORI Analytics evidence surfaces and canonical table
 primitives to organize four existing committed Capacity Outlook metrics,
-**Qualified Quota Comparison** and **Capacity Reading** in separate tabs. Project records are the exact already-qualified
-`capacity_chart_rows` (finite nonnegative observed usage, finite positive
-quota, valid Registry/project identities) rather than a second
-ad hoc qualification pass. Provider identity remains with the project.
+**Qualified Quota Comparison** and **Capacity Reading** in separate tabs.
+Full project rows and the five-row chart preview share the same committed
+qualification rules (finite nonnegative usage, finite positive quota,
+valid Registry/project identities) without a second provider-data authority.
+Provider identity remains with each project.
 Materialized growth display is carried through from the existing decorated
 project forecast rows, not recalculated in Jinja. Each row retains observed
 usage/quota, exact utilization including 0% and over-quota values, and
