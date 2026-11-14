@@ -128,3 +128,16 @@ def test_capsule_rbac_guide_section_exposes_visible_scope_description() -> None:
     assert source.index('id="capsule-rbac-bootstrap-description"') > source.index(
         '"kubernetes-capsule-rbac-bootstrap-guide"'
     )
+
+
+def test_kubernetes_inventory_guide_section_exposes_visible_scope_description() -> None:
+    """Inventory Guide section must reference its visible heading and scope copy."""
+    source = _source(KUBERNETES / "_inventory_lifecycle.html")
+    section = source.split('<section class="{{ integration_ui.section_shell_classes() }}"', 1)[1]
+    section = section.split("</header>", 1)[0]
+    assert 'aria-labelledby="inventory-operational-use-title"' in section
+    assert 'aria-describedby="inventory-operational-use-description"' in section
+    assert section.count('id="inventory-operational-use-description"') == 1
+    assert section.index('"kubernetes-inventory-lifecycle-detail-guide"') < section.index(
+        'id="inventory-operational-use-description"'
+    )
