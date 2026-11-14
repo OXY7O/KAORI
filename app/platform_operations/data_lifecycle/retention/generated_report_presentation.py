@@ -21,4 +21,6 @@ GENERATED_REPORT_COVERAGE = (
 GENERATED_REPORT_COVERAGE_NOTE = (
     'Ready reports use hot retention; Failed and Archived use dedicated windows. Artifacts archive before cleanup.'
 )
-GENERATED_REPORT_EXCLUSION_NOTE = 'Pending or unsafe-artifact reports are protected.'
+GENERATED_REPORT_EXCLUSION_NOTE = (
+    'Pending, generating, and artifact-unsafe reports remain excluded from archive and cleanup until eligible.'
+)
