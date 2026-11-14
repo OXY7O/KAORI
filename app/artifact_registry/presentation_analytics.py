@@ -587,6 +587,48 @@ def _analytics_capacity_outlook(
     }
 
 
+def _registry_capacity_chart_rows(forecast_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Bounded, committed project quota ratios; never synthesize a forecast."""
+    qualified: list[dict[str, Any]] = []
+    for row in forecast_rows:
+        usage, quota = row.get('usage_bytes'), row.get('quota_bytes')
+        if (
+            isinstance(usage, bool)
+            or isinstance(quota, bool)
+            or not isinstance(usage, (int, float))
+            or not isinstance(quota, (int, float))
+            or not isfinite(usage)
+            or not isfinite(quota)
+            or usage < 0
+            or quota <= 0
+        ):
+            continue
+        project = str(row.get('project_name') or '').strip()
+        registry = str(row.get('registry_name') or '').strip()
+        if not project or not registry:
+            continue
+        ratio = float(usage) / float(quota) * 100.0
+        if not isfinite(ratio):
+            continue
+        qualified.append(
+            {
+                'project_name': project,
+                'registry_name': registry,
+                'utilization_percent': round(ratio, 3),
+                'utilization_display': f'{ratio:.1f}%',
+                'usage_bytes': float(usage),
+                'quota_bytes': float(quota),
+                'usage_display': row['usage_display'],
+                'quota_display': row['quota_display'],
+                'forecast_label': row.get('days_to_quota_display') or 'No forecast',
+            }
+        )
+    return sorted(
+        qualified,
+        key=lambda row: (-row['utilization_percent'], row['project_name'].casefold()),
+    )[:5]
+
+
 def _analytics_summary_cards(
     aggregate: dict[str, Any],
     *,
@@ -861,6 +903,7 @@ def build_analytics(
             growth_rows=growth_rows,
             growth=growth,
         ),
+        'capacity_chart_rows': _registry_capacity_chart_rows(forecast_rows),
         'insights': _analytics_insights(aggregate, growth_rows=growth_rows, growth=growth)[:5],
         'coverage': coverage,
         'activity_rows': sorted(
