@@ -104,6 +104,20 @@ Tenant Management is also a first-class Welcome workspace under **Act / Infrastr
 
 Access remains one platform-administration workspace. Its discoverability includes `identity_providers.view` alongside user/role/audit permissions so Identity Provider and Directory Provisioning capabilities do not become hidden behind unrelated user-management authority.
 
+### Tenant Management / Access description balance — operator review 2026-11-14
+
+The two Welcome card descriptions use concise, naturally wrapping copy intended to
+occupy **two readable desktop lines** at the reviewed two-column workspace layout:
+Tenant Management explicitly names resource profiles, namespace provisioning,
+access control, capacity and lifecycle; Access explicitly retains identity
+providers, directory-projected external identities and audit. Reuse the existing
+`workspace_link_card.render` description typography; do not add hard line
+breaks, forced no-wrap, fixed-height truncation or per-card layout overrides.
+The existing Playwright test guards at **most two lines without clipping** on
+canonical laptop/large-desktop viewports. Exact two-line appearance at the
+operator's screenshot width, compact laptop and mobile still requires browser
+Visual QA / human acceptance; source copy length is not rendering evidence.
+
 ## Cross-domain visibility workspaces
 
 Inventory and Analytics cards are permission-owned by their asset domain. Kubernetes permissions must not implicitly reveal Object Storage workspaces.
