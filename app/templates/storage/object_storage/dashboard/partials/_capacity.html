@@ -25,7 +25,7 @@
                     extra_classes='h-full'
                     ) %}
                     {% if dashboard.capacity.available %}
-                        <div class="space-y-4">
+                        <div class="space-y-3">
                             <div class="flex items-start gap-3 rounded-lg border border-outline-default bg-kaori-soft p-3 text-xs leading-5 text-content-secondary">
                                 <i data-lucide="info"
                                    class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
@@ -49,6 +49,20 @@
                                                                         aria_label=label ~ ' ' ~ percent_meaning|lower ~ ' percentage') }}
                                 {% endfor %}
                             </div>
+                            {% set capacity_review_groups = [
+                                ('scan-search', 'Evidence', [
+                                    ('Validate', 'Confirm system scope and snapshot freshness'),
+                                    ('Assess', 'Review utilization, headroom, and forecast.')
+                                ]),
+                                ('list-filter', 'Decision', [
+                                    ('Prioritize', 'Identify buckets driving capacity pressure'),
+                                    ('Act', 'Apply the approved storage or quota change')
+                                ]),
+                                ('clipboard-check', 'Assurance', [
+                                    ('Verify', 'Confirm headroom and projected risk improve'),
+                                    ('Record', 'Capture the change and operational evidence')
+                                ])
+                            ] %}
                             {% set capacity_tone = dashboard.capacity.posture.tone|default('unknown') %}
                             {% if capacity_tone == 'critical' %}
                                 {% set capacity_action = "Pause discretionary growth, identify the largest bucket consumers, and validate an approved capacity expansion or demand-reduction action." %}
@@ -63,7 +77,7 @@
                                                          capacity_tone,
                                                          dashboard.capacity.posture.detail|default("Capacity posture is unavailable until committed storage analytics contain usable capacity evidence."),
                                                          'Current usage is ' ~ dashboard.capacity.utilization_display ~ ' with ' ~ dashboard.capacity.headroom_display ~ ' headroom inside the committed usable-capacity boundary.',
-                                                         capacity_action) }}
+                                                         capacity_action, review_groups=capacity_review_groups) }}
                             <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4"
                                      aria-label="Object Storage utilization balance chart">
                                 <div class="flex flex-wrap items-center justify-between gap-2">

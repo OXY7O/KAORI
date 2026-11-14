@@ -245,6 +245,7 @@ def test_capacity_dashboard_matches_kubernetes_forecast_and_top_consumer_pattern
     for token in (
         'components/operational_capacity_decision.html',
         'capacity_decision.render(',
+        'review_groups=capacity_review_groups',
         'Data Scope',
         'dashboard.capacity.posture.status',
         'capacity_action',
@@ -252,6 +253,8 @@ def test_capacity_dashboard_matches_kubernetes_forecast_and_top_consumer_pattern
         assert token in capacity
     assert 'Recommended Capacity Action Flow' not in capacity
     assert 'components/operational_flow_steps.html' not in capacity
+    for topic in ('Validate', 'Assess', 'Prioritize', 'Act', 'Verify', 'Record'):
+        assert f"'{topic}'" in capacity
     decision = read('app/templates/components/operational_capacity_decision.html')
     for label in ('Overall Capacity Risk', 'What This Means', 'Recommended Action'):
         assert label in decision
