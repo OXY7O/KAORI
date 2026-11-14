@@ -18,7 +18,7 @@ REGISTRIES = {
     '_membership_registry': (960, (25, 21, 13, 11, 14, 16)),
     '_operations_drift_registry': (1420, (17, 16, 19, 28, 20)),
     '_operations_provider_registry': (980, (23, 28, 31, 18)),
-    '_operations_namespace_registry': (1100, (27, 19, 17, 17, 20)),
+    '_operations_namespace_registry': (1100, (27, 19, 16, 16, 22)),
     '_operations_access_reconciliation_registry': (1100, (22, 20, 25, 12, 21)),
     '_capsule_shared_allocation_drift': (840, (24, 21, 13, 27, 15)),
     '_capsule_tenant_quota_drift': (840, (24, 21, 13, 27, 15)),
@@ -58,14 +58,20 @@ def test_tenant_registry_tables_use_bounded_existing_table_primitives() -> None:
 
 def test_operations_namespace_rows_balance_identity_provider_and_reconciliation() -> None:
     registry = _template('_operations_namespace_registry')
-    assert _header_widths(registry) == (27, 19, 17, 17, 20)
+    assert _header_widths(registry) == (27, 19, 16, 16, 22)
     assert "table_ui.table_classes('min-w-[1100px] !table-fixed')" in registry
     assert "table_ui.title_cell(item.namespace," in registry
     assert "table_ui.cell_classes()" in registry  # shared middle-aligned cells
     assert registry.count('text-sm font-semibold leading-5 text-content-primary') == 3
     assert registry.count('mt-0.5 text-xs leading-5 text-content-muted') == 3
-    assert "line-clamp-2 break-words text-xs leading-5 text-content-muted" in registry
-    assert 'title="{{ item.provisioning_message or' in registry
+    assert "reconciliation_evidence = item.provisioning_message or" in registry
+    assert "stable_state = item.provisioning_status in ('ready', 'released')" in registry
+    assert "reconciliation_evidence.split('. ', 1)[0]" in registry
+    assert "'truncate' if stable_state else 'line-clamp-2 break-words'" in registry
+    assert 'title="{{ reconciliation_evidence }}"' in registry
+    assert '<span class="sr-only">{{ reconciliation_evidence }}</span>' in registry
+    assert '<span aria-hidden="true">{{ reconciliation_summary }}</span>' in registry
+    assert 'item.provisioning_message or' in registry
     assert "table_label.status_label(item.provisioning_status" in registry
     assert "operations_namespace_pagination.total_items" in registry
     assert "operations_namespace_pagination.allowed_per_page" in registry

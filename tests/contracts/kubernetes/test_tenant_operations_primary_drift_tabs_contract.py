@@ -102,7 +102,7 @@ def test_operations_evidence_and_drift_guides_keep_results_filters_and_ownership
     assert 'explicit recovery decision' in drift
 
 
-def test_activity_destination_cards_have_distinct_canonical_handoffs() -> None:
+def test_activity_directory_uses_three_canonical_link_rows_not_nested_cards() -> None:
     from jinja2 import Environment
 
     page = read('app/templates/kubernetes/tenant/operations.html')
@@ -111,17 +111,20 @@ def test_activity_destination_cards_have_distinct_canonical_handoffs() -> None:
     activity = page.split('data-tenant-activity-destinations', 1)[1].split(
         '                {% endif %}', 1
     )[0]
-    assert 'grid items-stretch gap-4 lg:grid-cols-3' in page
-    assert activity.count('class="{{ table_ui.block_classes() }} flex min-w-0 flex-col"') == 3
-    assert activity.count('border-b border-outline-subtle bg-surface-hover px-5 py-4') == 3
-    assert activity.count('h-12 w-12 shrink-0 items-center justify-center') == 3
-    assert activity.count('table_label.metadata_label(') == 3
-    assert activity.count('mt-auto border-t border-outline-subtle px-5 py-3') == 3
-    assert activity.count("action_button.classes('soft')") == 3
-    assert activity.count('w-full') == 3
-    assert activity.count('aria-labelledby=') == 3
-    assert activity.count('class="{{ table_ui.block_title_classes() }}"') == 3
-    assert activity.count('class="{{ table_ui.block_description_classes() }}"') == 3
+
+    assert 'Canonical Workspaces</h3>' in activity
+    assert "table_label.metadata_label('3 Destinations', icon='layout-grid')" in activity
+    assert activity.count('class="{{ table_ui.block_icon_classes() }}"') == 3
+    assert activity.count('<li class="border-b border-outline-subtle last:border-b-0">') == 3
+    assert activity.count('class="group flex min-w-0 items-center justify-between') == 3
+    assert activity.count('focus-visible:ring-inset focus-visible:ring-outline-focus') == 3
+    assert activity.count('Open Workspace') == 3
+    assert activity.count('table_label.metadata_label(') == 4
+    assert activity.count('aria-label="Open ') == 3
+    assert activity.count('<section') == 0
+    assert 'lg:grid-cols-3' not in activity
+    assert 'mt-auto border-t' not in activity
+    assert "action_button.classes('soft')" not in activity
 
     for title, detail, route in (
         (
@@ -144,7 +147,6 @@ def test_activity_destination_cards_have_distinct_canonical_handoffs() -> None:
         assert detail in activity
         assert activity.count(route) == 1
 
-    assert 'Governance &amp; Reports</h3>' not in activity
     assert 'hx-post' not in activity
     assert 'hx-delete' not in activity
 
