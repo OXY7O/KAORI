@@ -108,7 +108,11 @@ def test_security_pages_use_approved_dashboard_and_registry_components() -> None
         Environment().parse(html)
         assert 'components/page_hero.html' in html
     assert 'components/operational_dashboard_workspace.html' in overview
-    assert 'page_hero.operational_dashboard(' in overview
+    assert 'page_hero.context_card(' in overview
+    assert 'page_hero.blocked_context_body(' in overview
+    assert "page_hero.intro('layout-dashboard', 'Security Posture', 'shield-alert')" in overview
+    assert 'page_hero.shell_classes()' in overview
+    assert 'page_hero.layout_classes()' in overview
     assert 'components/section_intro.html' not in overview
     assert 'data-security-posture-insights' in overview
     assert 'lg:col-span-7' in overview
@@ -239,9 +243,14 @@ def _renderable_posture(authorized: bool = True) -> dict:
     }
 
 
-def test_security_overview_renders_operational_profile_and_signal_cards() -> None:
+def test_security_overview_reuses_governance_hero_and_dashboard_tabs() -> None:
     html = _render_workspace_page('overview', _renderable_posture())
-    assert 'data-kaori-hero-profile="operational-dashboard"' in html
+    assert 'kaori-hero-shell' in html
+    assert 'Assurance Boundary' in html
+    assert 'Security Evidence' in html
+    assert 'Provider Authority' in html
+    assert 'Evidence Boundary' in html
+    assert 'Review CVE Findings' in html
     assert 'data-kaori-dashboard-framework="operational-v1"' in html
     assert 'Security Exposure Signals' not in html
     assert 'Operational Signal Overview' not in html
@@ -253,16 +262,21 @@ def test_security_overview_renders_operational_profile_and_signal_cards() -> Non
 
 def test_security_assurance_hero_omits_oversized_registry_cta_but_preserves_context() -> None:
     html = _render_workspace_page('overview', _renderable_posture(), can_manage_integrations=True)
-    hero = html.split('data-kaori-hero-profile="operational-dashboard"', 1)[1].split('</section>', 1)[0]
-    assert 'Active Scope' in hero
-    assert 'Data Authority' in hero
+    hero = html.split('kaori-hero-shell', 1)[1].split('</section>', 1)[0]
+    assert 'Provider Authority' in hero
+    assert 'Artifact Registry' in hero
+    assert 'Evidence Boundary' in hero
+    assert 'Committed' in hero
+    assert 'Security Evidence' in hero
+    assert 'Assurance Boundary' in hero
     assert 'Open Registry Integrations' not in hero
     assert '/integrations/registry' not in hero
-    assert 'Operational Signal Scope' in hero
+    assert 'Operational Signal Scope' not in hero
     assert 'data-kaori-hero-context-extension' not in hero
     assert 'data-kaori-hero-status-strip' not in hero
     assert hero.count('data-kaori-hero-context-metric') == 2
-    assert 'Review CVE Findings' not in hero
+    assert 'Review CVE Findings' in hero
+    assert 'Overview' in hero
 
     shared_hero = read('app/templates/components/page_hero.html')
     assert '{% if action_label and action_href %}' in shared_hero
@@ -357,9 +371,44 @@ def test_security_assurance_overview_uses_source_backed_exposure_hierarchy() -> 
     assert 'CVE-2022-1586' in html
     assert '/artifact-registry/security/cve/CVE-2022-1586/impact' in html
     assert '0 mutable/other' in html
-    assert 'No remediation or provider scan runs' in html
+    assert 'No provider scan or mutation runs here.' in html
+    assert 'data-security-investigation-handoff' in html
     assert 'sipgas-web' not in html  # mockup examples must never become product data
     assert 'Exposure Trend' not in html  # no committed historical series exists
+
+
+def test_security_findings_preview_uses_compact_rows_and_embedded_handoff() -> None:
+    html = _render_workspace_page('overview', _renderable_posture())
+    template = read('app/templates/security_posture/overview.html')
+    assert 'data-security-posture-preview' in html
+    assert 'data-security-investigation-handoff' in html
+    assert html.count('data-security-investigation-handoff') == 1
+    assert '1 scanner finding' in html
+    assert 'View All Findings' in html
+    assert 'Validate Runtime Impact' in html
+    assert 'data-security-posture-preview' in template
+    assert "section_card.render('Investigation Handoff'" not in template
+    assert "table_ui.title_cell(row.cve_id" not in template
+    assert 'flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1' in template
+    assert template.index('data-security-posture-preview') < template.index('data-security-investigation-handoff')
+
+
+def test_security_investigation_recommendations_are_permission_filtered() -> None:
+    allowed = _render_workspace_page('overview', _renderable_posture(), can_view_intelligence=True)
+    denied = _render_workspace_page('overview', _renderable_posture(), can_view_intelligence=False)
+    assert 'Open Recommendations' in allowed
+    assert 'Open Recommendations' not in denied
+    assert 'Validate Runtime Impact' in denied
+
+
+def test_security_hero_surfaces_stale_scanner_status_not_runtime_readiness() -> None:
+    posture = _renderable_posture()
+    posture['scan_status'] = {'label': 'Stale', 'tone': 'warning'}
+    html = _render_workspace_page('overview', posture)
+    hero = html.split('kaori-hero-shell', 1)[1].split('</section>', 1)[0]
+    assert 'Stale' in hero
+    assert 'Ready' not in hero
+    assert '/security/findings' in hero
 
 
 def test_security_assurance_runtime_impact_requires_ready_correlation() -> None:
@@ -428,7 +477,9 @@ def test_security_overview_blocks_without_eligible_source_without_inventing_kpis
     posture['artifacts_total'] = 0
     posture['affected_artifacts'] = 0
     html = _render_workspace_page('overview', posture)
-    assert 'data-kaori-hero-state="blocked"' in html
+    assert 'data-kaori-blocked-state' in html
+    assert 'Registry Evidence Required' in html
+    assert 'No eligible committed Registry evidence' in html
     assert 'Security Evidence Prerequisites' in html
     assert 'data-kaori-dashboard-framework="operational-v1"' not in html
 
