@@ -178,14 +178,12 @@ def test_minio_registry_row_reuses_compact_top_aligned_provider_cells() -> None:
 
     from jinja2 import Environment
 
-    registry = read(
-        'app/templates/integrations/storage/object_storage/providers/minio/partials/_registry_content.html'
-    )
+    registry = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_registry_content.html')
     Environment().parse(registry)
     populated = registry.split('{% for row in rows %}', 1)[1].split('{% else %}', 1)[0]
     assert populated.count('align-top') == 6
     assert populated.count('<td class="{{ table_ui.cell_classes') == 6
-    assert "row.asset_name and row.asset_name != row.name" in populated
+    assert 'row.asset_name and row.asset_name != row.name' in populated
     assert 'Object Storage System' in populated
     assert '{{ row.name }}' in populated
     assert '{{ row.endpoint }}' in populated

@@ -84,10 +84,7 @@ def test_harbor_registration_copy_is_concise_and_preserves_authority_boundaries(
         in form
     )
     assert 'Disabled connections remain registered but are not resolved for use.' in form
-    assert (
-        'Harbor executes Registry APIs; KAORI owns normalized identity, evidence, readiness, runtime, and audit.'
-        in form
-    )
+    assert 'Harbor runs Registry APIs; KAORI governs evidence.' in form
     assert 'How KAORI registers a reusable Registry connection.' in form
     assert 'How changes restore Registry provider readiness.' in form
     assert (
@@ -467,3 +464,50 @@ def test_harbor_full_coverage_is_not_required_for_core_provider_readiness() -> N
     assert 'Core readiness is separate.' in overview
     assert 'optional integration dimensions do not gate core provider readiness.' in coverage
     assert 'not a failed connection test' in docs
+
+
+def test_harbor_connection_registry_uses_aligned_cells_and_compact_binding_identity() -> None:
+    """Retain provider evidence and the shared six-column Registry contract."""
+
+    from jinja2 import Environment
+
+    registry = read('app/templates/integrations/registry/providers/harbor/partials/_registry.html')
+    Environment().parse(registry)
+    populated = registry.split('{% for row in rows %}', 1)[1].split('{% else %}', 1)[0]
+    assert populated.count('align-top') == 6
+    assert populated.count('<td class="{{ table_ui.cell_classes') == 6
+    assert 'provider_registry.connection_registry_colgroup()' in registry
+    assert 'provider_registry.connection_registry_head()' in registry
+    assert 'provider_registry.pagination_footer(pagination,' in registry
+    assert 'provider_registry.registry_header(' in registry
+    assert 'hx-target="#harbor-connection-registry"' in registry
+    assert '{{ row.name }}' in populated
+    assert 'row.environment|default("Unspecified")' in populated
+    assert '{{ row.endpoint }}' in populated
+    assert 'title="{{ row.endpoint }}"' in populated
+    assert 'Harbor API v2.0' in populated
+    assert 'integration_status(row.readiness_status' in populated
+    assert '{{ row.compatibility_profile or "Not Validated" }}' in populated
+    assert '{{ row.detected_version or "Version Not Observed" }}' in populated
+    assert "table_label.metadata_label(table_label.count_text(row.binding_count, 'Binding') )" in populated
+    assert 'Metrics Source consumer associations' in populated
+    assert 'Metrics Source binding{{' in populated
+    assert '<p class="font-semibold tabular-nums text-content-primary">{{ row.binding_count }}</p>' not in populated
+    assert "url_for('harbor.instance_detail', instance_id=row.id)" in populated
+
+
+def test_harbor_compact_flow_notes_preserve_full_validation_and_provider_authority() -> None:
+    """Copy is concise, without making registration equivalent to readiness."""
+
+    from jinja2 import Environment
+
+    form = read('app/templates/integrations/registry/providers/harbor/instance_form.html')
+    Environment().parse(form)
+    assert 'Registration checks access; Full Validation gates readiness.' in form
+    assert 'Changes reset readiness; rerun Full Validation.' in form
+    assert 'Harbor runs Registry APIs; KAORI governs evidence.' in form
+    assert "harbor_flow_items = [('Define Connection Identity'" in form
+    assert "'Run Full Validation'" in form
+    assert 'provider_registration_context.render(' in form
+    assert 'Harbor remains authoritative for native projects' in form
+    assert 'Connection-sensitive changes reset readiness; Test Configuration never substitutes' not in form

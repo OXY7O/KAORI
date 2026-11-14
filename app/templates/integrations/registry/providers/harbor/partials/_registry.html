@@ -1,4 +1,5 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "integrations/components/_provider_registry.html" as provider_registry %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
@@ -99,33 +100,34 @@
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for row in rows %}
                     <tr class="{{ table_ui.row_classes() }}">
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <div class="flex min-w-0 items-start gap-3">
+                        <td class="{{ table_ui.cell_classes() }} align-top">
+                            <div class="flex min-w-0 items-center gap-2.5">
                                 {{ integration_ui.palette_icon('package', 'brand') }}
                                 <div class="min-w-0">
-                                    <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.name }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">{{ row.environment|default("Unspecified") |replace('_', ' ')|title }}</p>
+                                    <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ row.name }}</p>
+                                    <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ row.environment|default("Unspecified") |replace('_', ' ')|title }}</p>
                                 </div>
                             </div>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.endpoint }}</p>
-                            <p class="mt-1 text-xs text-content-muted">Harbor API v2.0</p>
+                        <td class="{{ table_ui.cell_classes() }} align-top">
+                            <p class="break-words text-xs font-medium leading-5 text-content-primary [overflow-wrap:anywhere]" title="{{ row.endpoint }}">{{ row.endpoint }}</p>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Harbor API v2.0</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} align-top">
                             {{ integration_status(row.readiness_status or 'validation_required',
                                                         (row.readiness_status or 'validation_required') |replace('_', ' ')|title,
                             display='indicator') }}
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="break-words text-sm font-medium text-content-primary [overflow-wrap:anywhere]">{{ row.compatibility_profile or "Not Validated" }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ row.detected_version or "Version Not Observed" }}</p>
+                        <td class="{{ table_ui.cell_classes() }} align-top">
+                            <p class="break-words text-xs font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ row.compatibility_profile or "Not Validated" }}</p>
+                            <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ row.detected_version or "Version Not Observed" }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="font-semibold tabular-nums text-content-primary">{{ row.binding_count }}</p>
-                            <p class="mt-1 text-xs text-content-muted">Metrics Source binding{{ "" if row.binding_count == 1 else "s" }}</p>
+                        <td class="{{ table_ui.cell_classes() }} align-top"
+                            title="{{ row.binding_count }} Metrics Source binding{{ '' if row.binding_count == 1 else 's' }}">
+                            {{ table_label.metadata_label(table_label.count_text(row.binding_count, 'Binding') ) }}
+                            <span class="sr-only">Metrics Source consumer associations</span>
                         </td>
-                        <td class="{{ table_ui.cell_classes(action=true) }}">
+                        <td class="{{ table_ui.cell_classes(action=true) }} align-top">
                             <a href="{{ url_for('harbor.instance_detail', instance_id=row.id) }}"
                                class="{{ table_ui.action_classes() }}">
                                 <i data-lucide="activity" class="h-3.5 w-3.5" aria-hidden="true"></i>

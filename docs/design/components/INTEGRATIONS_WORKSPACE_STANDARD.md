@@ -392,6 +392,22 @@ The Metrics Source Scope Final Lock explicitly verifies the current
 missing-capability details into source scope. Shared Observability template
 formatting and regression tests follow existing djlint/Ruff gates.
 
+**Harbor Connection Registry / connection-form UAT (#4730):** the Harbor
+Registry follows the same six-column top-aligned KAORI row hierarchy as MinIO
+and Alertmanager. Keep full endpoint, environment, API v2.0, compatibility
+profile, detected version, readiness, Manage route, and independent filter /
+pagination state. Its binding count uses the shared compact `N Bindings`
+metadata label; the title and assistive text preserve the fact that those
+associations are Metrics Source bindings. Registration proves access, not
+provider readiness; changes reset readiness until Full Validation is rerun.
+Both Register and Edit right-hand Flow/Related Workspace surfaces use short
+provider-owned copy and the existing shared context component. MinIO
+Access Contract helper should occupy approximately two desktop lines without
+sacrificing encrypted-secret and governed S3-discovery semantics. Mobile
+wraps naturally; never add nowrap, clipping, smaller typography or another
+registry component to force line counts. Scoped source checks and pre-existing
+formatter/test drift are handled in the corresponding UAT issue.
+
 ## Provider Registry Contract
 
 Metrics Source and Alertmanager registries share:

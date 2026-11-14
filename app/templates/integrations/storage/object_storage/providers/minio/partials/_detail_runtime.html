@@ -58,14 +58,14 @@
         loading_active=runtime_refresh_job and runtime_refresh_job.is_active,
         loading_label="Refreshing MinIO runtime health",
         title_extra=info_tip.render(
-            "minio-runtime-health-detail-guide",
-            "MinIO Runtime Health & Diagnostics",
-            "Review committed MinIO endpoint health without rediscovering inventory or changing capabilities.",
-            [
-                "Runtime Refresh is independent of Full Validation.",
-                "Use retained diagnostic observations to investigate health findings."
-            ],
-            placement="right", variant="guide"
+        "minio-runtime-health-detail-guide",
+        "MinIO Runtime Health & Diagnostics",
+        "Review committed MinIO endpoint health without rediscovering inventory or changing capabilities.",
+        [
+        "Runtime Refresh is independent of Full Validation.",
+        "Use retained diagnostic observations to investigate health findings."
+        ],
+        placement="right", variant="guide"
         )
         ) %}
         <button type="button"
