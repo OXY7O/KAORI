@@ -222,11 +222,11 @@ def test_alertmanager_connection_registry_row_has_aligned_semantic_cells() -> No
     )
     Environment().parse(registry)
     populated = registry.split('{% for row in rows %}', 1)[1].split('{% else %}', 1)[0]
-    cells = populated.split('<td class="{{ table_ui.cell_classes() }} align-top">')
-    assert len(cells) == 6  # Five ordinary cells and one action cell.
+    cells = populated.split('<td class="{{ table_ui.cell_classes')
+    assert len(cells) == 7  # Six populated cells, including titled Bindings and Actions.
     assert populated.count('align-top') == 6
 
-    identity, endpoint, readiness, compatibility, bindings = cells[1:]
+    identity, endpoint, readiness, compatibility, bindings, actions = cells[1:]
     assert '{{ row.instance.name }}' in identity
     assert "{{ row.instance.description or 'Reusable alert source' }}" in identity
     assert 'truncate' not in identity
@@ -245,8 +245,8 @@ def test_alertmanager_connection_registry_row_has_aligned_semantic_cells() -> No
     assert 'truncate' not in bindings
     assert "scope_labels.append(scope_type_labels.get(" in populated
     assert 'row.scope_types or []' in populated
-    assert "url_for('alertmanager.instance_detail', instance_id=row.instance.id)" in populated
-    assert 'table_ui.cell_classes(action=true)' in populated
+    assert "url_for('alertmanager.instance_detail', instance_id=row.instance.id)" in actions
+    assert 'table_ui.cell_classes(action=true)' in actions
     assert 'provider_registry.connection_registry_colgroup()' in registry
     assert 'provider_registry.connection_registry_head()' in registry
     assert "provider_registry.pagination_footer(pagination," in registry
