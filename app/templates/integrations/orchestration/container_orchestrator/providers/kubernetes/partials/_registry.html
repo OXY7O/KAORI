@@ -96,7 +96,7 @@
                         <td class="{{ table_ui.cell_classes() }}">
                             {{ integration_status(row.readiness, display="indicator") }}
                             <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]"
-                               title="Last validation: {{ row.last_validated_at }}"><span class="sr-only">Last validation: </span>{{ row.last_validated_at }}</p>
+                               title="Last validation: {{ row.last_validated_at }}"><span class="sr-only">Last validation:</span> {{ row.last_validated_at }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ row.compatibility_profile or "Validation Required" }}</p>

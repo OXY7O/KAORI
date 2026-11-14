@@ -29,15 +29,16 @@
         'Manage provider-neutral metrics connections and the operational scopes that can use them.',
         'database-zap',
         'metrics-source-inventory-loading',
-        action_html=registry_clear_action) }}
+        action_html=registry_clear_action,
+         result_count=pagination.total_items) }}
     <div class="{{ integration_ui.filter_region_classes() }}"
          data-kaori-one-line-filters>
         <form id="metrics-source-inventory-filter-form"
               method="get"
               action="{{ url_for('integrations.metrics_sources') }}"
               hx-get="{{ url_for('integrations.metrics_sources') }}"
-              hx-target="#metrics-source-inventory-content"
-              hx-swap="innerHTML"
+              hx-target="#metrics-source-inventory-card"
+              hx-swap="outerHTML"
               hx-push-url="true"
               hx-trigger="change from:select, keyup changed delay:500ms from:input[name='q'], search from:input[name='q']"
               hx-indicator="#metrics-source-inventory-loading"

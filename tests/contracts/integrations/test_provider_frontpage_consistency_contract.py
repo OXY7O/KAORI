@@ -470,3 +470,60 @@ def test_coverage_result_badge_uses_canonical_singular_and_plural() -> None:
         badge = str(result_count(count))
         assert expected in badge
         assert 'data-lucide="list-filter"' in badge
+
+
+def test_all_seven_connection_registries_display_filtered_results_and_refresh_header() -> None:
+    """Registry Guide and Results must stay in sync with filtered pagination."""
+
+    shared_header = read('app/templates/integrations/components/_provider_registry.html')
+    assert 'table_label.result_count(result_count)' in shared_header
+    assert 'variant="guide"' in shared_header
+
+    normal_registries = (
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html',
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_registry.html',
+        'app/templates/integrations/registry/providers/harbor/partials/_registry.html',
+        'app/templates/integrations/source_control/github/partials/_connection_registry.html',
+        'app/templates/integrations/observability/metrics_source/partials/_instance_inventory.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_inventory_card.html',
+    )
+    for path in normal_registries:
+        source = read(path)
+        assert 'provider_registry.registry_header(' in source, path
+        assert 'result_count=pagination.total_items' in source, path
+        assert 'result_count=rows|length' not in source, path
+        assert 'result_count=stats.total' not in source, path
+
+    vault = read('app/templates/integrations/secrets_management/vault/index.html')
+    assert 'title_extra=header_guide' in vault
+    assert 'result_count=pagination.total_items' in vault
+    assert 'vault-connection-registry-guide' in vault
+
+    # Metrics Source and Alertmanager formerly replaced only the table,
+    # leaving a newly displayed header count stale after filtering/paging.
+    routes = read('app/integrations/routes.py')
+    for provider, header_path, content_path, card_path in (
+        (
+            'metrics-source',
+            normal_registries[4],
+            'app/templates/integrations/observability/metrics_source/partials/_inventory_content.html',
+            'integrations/observability/metrics_source/partials/_instance_inventory.html',
+        ),
+        (
+            'alertmanager',
+            normal_registries[5],
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_inventory_content.html',
+            'integrations/observability/alert_source/providers/alertmanager/partials/_inventory_card.html',
+        ),
+    ):
+        card_target = f'{provider}-inventory-card'
+        header = read(header_path)
+        content = read(content_path)
+        assert f'hx-target="#{card_target}"' in header
+        assert 'hx-swap="outerHTML"' in header
+        assert f"'{card_target}'" in routes
+        assert f"'{card_path}'" in routes
+        assert f"'#{card_target}'" in content
+        assert "swap='outerHTML'" in content
+        assert f"hx-target=\"#{provider}-inventory-content\"" not in header
+        assert f"'#{provider}-inventory-content'" not in content

@@ -661,7 +661,7 @@ def test_kubernetes_connection_registry_cells_follow_header_semantics() -> None:
 
     # Readiness: full observed time, accessible label, no redundant visible prefix.
     assert 'integration_status(row.readiness, display="indicator")' in cells[3]
-    assert '<span class="sr-only">Last validation: </span>{{ row.last_validated_at }}' in cells[3]
+    assert '<span class="sr-only">Last validation:</span> {{ row.last_validated_at }}' in cells[3]
     assert 'title="Last validation: {{ row.last_validated_at }}"' in cells[3]
     assert 'Validated {{ row.last_validated_at }}' not in cells[3]
 
