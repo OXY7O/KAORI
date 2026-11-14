@@ -83,5 +83,14 @@ def test_registration_copy_does_not_weaken_connection_test_proof() -> None:
     # Only non-configuration bookkeeping fields may retain a valid proof.
     assert "['csrf_token', 'connection_test_proof'].includes(fieldName)" in source
     assert "const fieldName = event.target?.name || ''" in source
-    assert "this.connectionVerified = event.detail?.connected === true" in source
-    assert "this.$refs.connectionProof.value = event.detail?.proof || ''" in source
+    assert "this.connectionVerified = proof.length > 0" in source
+    assert "this.$refs.connectionProof.value = proof" in source
+
+
+def test_connection_test_event_rejects_missing_proof() -> None:
+    """A connected response without proof must never mark the form verified."""
+    source = TEMPLATE.read_text(encoding="utf-8")
+    assert "event.detail?.connected === true" in source
+    assert "typeof event.detail?.proof === 'string'" in source
+    assert "this.connectionVerified = proof.length > 0" in source
+    assert "this.$refs.connectionProof.value = proof" in source
