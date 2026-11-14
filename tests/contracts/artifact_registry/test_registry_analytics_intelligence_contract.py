@@ -515,10 +515,7 @@ def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> 
         in section
     )
     assert "url_for('integrations.registry')" in shell
-    assert (
-        "url_for('intelligence.recommendations', domain='registry')"
-        in section
-    )
+    assert "url_for('intelligence.recommendations', domain='registry')" in section
 
     assert "aggregate['inflight_requests'] > 100" not in presentation
     assert "aggregate['task_queue_size'] > 0" not in presentation
