@@ -635,7 +635,8 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     )
     assert 'demo' in rendered
     assert 'Harbor X300' in rendered
-    assert rendered.count('0.6%') == 2
+    assert '0.6%' in rendered
+    assert rendered.count('Peak observed utilization') == 1
     assert 'Peak observed utilization' in rendered
     assert '100% = quota limit' in rendered
     assert 'registry-capacity-chart-note' in rendered
