@@ -5,7 +5,7 @@
 **Canonical framework:** `app/templates/components/operational_dashboard_workspace.html`  
 **Reference consumers:** `app/templates/kubernetes/dashboard/partials/_content.html` and `app/templates/storage/object_storage/dashboard/partials/_content.html`  
 **Additional conforming consumer:** `Artifact Registry → Overview` through `app/templates/artifact_registry/partials/_overview_content.html`
-**Security Posture first-slice consumer (#2613, revised by #4711):** `Security → Overview` at `app/templates/security_posture/overview.html` retains the shared Violet Hero primitives and four-tab workspace controller, with the normal Hero presentation **exactly following `Kubernetes Governance → Overview`**: `page_hero.shell_classes/layout_classes/intro/context_card` (not the operational dashboard profile). The context uses a single source-qualified scanner status, `Provider Authority` (Artifact Registry) and `Evidence Boundary` (Committed), plus the `Review CVE Findings` handoff; a blocked source uses shared `blocked_context_body`. A grouped Security Snapshot and one shared Exposure/Runtime analysis card follow. Findings preview and Investigation Handoff share **one** operational section card, with compact CVE rows and an internal footer. This is a bounded Assurance consumer of committed Registry + Kubernetes evidence; no global security score, provider read, mutation, or fabricated KPI.
+**Security Posture first-slice consumer (#2613, revised by #4711):** `Security → Overview` at `app/templates/security_posture/overview.html` retains the shared Violet Hero primitives and four-tab workspace controller, with the normal Hero presentation **exactly following `Kubernetes Governance → Overview`**: `page_hero.shell_classes/layout_classes/intro/context_card` (not the operational dashboard profile). The context uses a single source-qualified scanner status, `Provider Authority` (Artifact Registry) and `Evidence Boundary` (Committed), plus the `Review CVE Findings` handoff; a blocked source uses shared `blocked_context_body`. A grouped Security Snapshot and one shared Exposure/Runtime analysis card follow. The full Findings & Investigation table and Handoff share **one** canonical Registry table block with HTMX filters, loading bar, pagination footer, and compact CVE rows. This is a bounded Assurance consumer of committed Registry + Kubernetes evidence; no global security score, provider read, mutation, or fabricated KPI.
 **Security assurance UI refinement (#4711):** The existing four panel keys and shared controller remain unchanged, but this scoped Assurance domain supplies source-appropriate labels through the optional `navigation(..., tabs=...)` argument. All other dashboard consumers retain canonical labels; the variant does not introduce another tab renderer or change URL normalization.
 
 ## Purpose
@@ -117,14 +117,14 @@ Security Overview is a **source-scoped Assurance** presentation, not a global fl
 
 | Existing panel key / deep link | Security label | Evidence purpose |
 | --- | --- | --- |
-| `overview` | Exposure Analysis | Qualified CVE severity + bounded grouped-CVE preview |
+| `overview` | Exposure Analysis | Qualified CVE severity + full paginated committed-CVE registry |
 | `capacity` | Assets & Impact | Affected artifact digests and runtime binding evidence, **not** infrastructure capacity |
 | `signals` | Findings & Investigation | Ownership handoff to canonical Findings and Intelligence |
 | `reporting` | Evidence & Sources | Scanner/runtime authority, freshness, and Reports handoff |
 
 For Security Exposure Analysis (#4711), the shared `section_intro.render` provides a plain **Security Exposure Assessment** title and short scope description *above* the combined analysis card, following the established Analytics/Governance section hierarchy. The combined `operational_section_card` header uses the existing `info_tip.render(..., variant='guide')` to explain scanner authority, Kubernetes binding semantics, stale/missing evidence and the Findings handoff. The normal Hero Evidence Boundary helper and non-Ready Runtime Impact text remain concise (a single line at desktop); the latter explicitly states exposure is unknown, never inferred as zero. This refinement introduces neither a new tooltip nor a new UI family.
 
-Security Snapshot groups four source-qualified metrics in one shared section card: `scanned_artifacts / artifacts_total`, affected digests, runtime correlation status and scan update age. The Security-only variant uses shared `resource_posture_grid` and `progress_bar.semantic_bar` for its metrics, severity proportions and coverage, without creating a parallel chart engine. Runtime Impact counts distinct observed container bindings across all qualifying CVE artifacts separately for immutable-digest and weaker reference matches; these are not a sum of per-CVE binding counts. Display latest successful **usable** evidence with explicit partial/stale/unknown caveats. Distinct-CVE severity distribution uses an aggregate over **all grouped scope CVEs**, not only the five preview rows or raw scanner finding count. The preview is a read-only five-CVE sorted subset; search/filter/pagination and CVE impact drilldown remain owned by Security Findings. Do not fake severity values, named Kubernetes workloads, a four-scan timeline, trends, remediation status, Service/Team ownership, host/network coverage, or an organization-wide score. An absent/denied Registry source uses the existing blocked Hero and suppresses all KPIs and findings rather than reporting zero or success. `artifact_registry.view` authorization remains independent of `security_posture.view`.
+Security Snapshot groups four source-qualified metrics in one shared section card: `scanned_artifacts / artifacts_total`, affected digests, runtime correlation status and scan update age. The Security-only variant uses shared `resource_posture_grid` and `progress_bar.semantic_bar` for its metrics, severity proportions and coverage, without creating a parallel chart engine. Runtime Impact counts distinct observed container bindings across all qualifying CVE artifacts separately for immutable-digest and weaker reference matches; these are not a sum of per-CVE binding counts. Display latest successful **usable** evidence with explicit partial/stale/unknown caveats. Distinct-CVE severity distribution uses an aggregate over **all authorized grouped scope CVEs**, independently of filter/page state; scanner finding counts are not equivalent to distinct CVEs. Security Overview's CVE table uses the same read model as Security Findings, with canonical search/severity filters, HTMX loading/committed reload, 5/10/25/50 pagination, and exact-CVE drilldown. The full Security Findings page remains the owning investigation workspace; Overview never runs scans, changes provider evidence or implies remediation state. Do not fake severity values, named Kubernetes workloads, a four-scan timeline, trends, remediation status, Service/Team ownership, host/network coverage, or an organization-wide score. An absent/denied Registry source uses the existing blocked Hero and suppresses all KPIs and findings rather than reporting zero or success. `artifact_registry.view` authorization remains independent of `security_posture.view`.
 
 **Earlier Human Visual UAT correction (2026-11-14, #4711, superseded for Hero):** The Security normal Hero initially used the Operations Dashboard two-metric Active Scope/Data Authority context. The current approved reference is **Kubernetes Governance → Overview**. Security now uses the shared Governance-style Hero with two different semantic slots: *Provider Authority* (Artifact Registry) and *Evidence Boundary* (Committed), scanner-freshness status, and a Findings CTA. The previous Security-only dashboard context was rejected; no new Hero CSS or macro has been introduced. Other dashboard consumers retain their existing Hero action behavior; the blocked Security readiness state still offers permission-aware setup guidance. A single **Security Snapshot** card contains the shared four-metric `resource_posture_grid` (responsive two/four columns), including Evidence Freshness. A `space-y-5` content wrapper explicitly separates Hero-adjacent Snapshot, analysis and tabs: none of these sections may touch. One **Exposure & Runtime Evidence** `operational_section_card` contains two internal regions in an asymmetric 7/5 desktop grid, with a shared subtle divider (top border on mobile, left border on desktop): Severity distribution on the left, Runtime Impact and Evidence Confidence stacked as content **within the same card** on the right. No duplicate outer card shells or nested mini-cards. Existing semantic bars, source-qualified stale/unknown states, canonical four tab keys, five-CVE preview and permission-gated source handoffs remain unchanged. This is a bounded Security Assurance variant; no new Hero/layout family is introduced.
 
@@ -144,6 +144,39 @@ The Hero establishes identity, evidence boundary, and readiness. Operational Sig
 The Operational Dashboard verifier protects the **ordered six-step sequence**, shared response component, committed alert-source validation, accountable ownership, safety guardrails, and follow-up evidence. Domain-specific explanatory copy may be shortened for UAT readability; the verifier must not lock obsolete sentence fragments that are no longer part of the approved content contract.
 
 `Governed Reporting Flow` remains `Validate → Select → Create → Generate → Schedule → Retain`, but its geometry is owned by `components/reporting_dashboard_workspace.html`. Domain wrappers provide scope/evidence wording only. Capacity & Demand keeps all six Validate / Assess / Prioritize / Act / Verify / Record considerations in one compact, non-sequential **2×3 reference matrix**, not an arrow-linked flow or three stacked explanatory cards. The shared `operational_capacity_decision.html` displays risk, source-backed interpretation, and a short domain-owned recommended action on a full-width text row. Kubernetes Data Scope is concise for one-line desktop display, with the full original scope retained as a native title; status copy across Kubernetes, Object Storage and Registry targets one readable line at the reference viewport, wrapping naturally on mobile. Preserve real headroom, forecast and top-consumer evidence; no provider action is triggered by reading guidance. The `operational_flow_steps.html` renderer remains for genuine directional workflows.
+
+### Security Assurance CVE registry: scoped server table (#4751)
+
+The **Exposure Analysis** panel's `Findings & Investigation` block is a
+canonical server-backed KAORI table, superseding #4711's earlier five-record
+read-only preview. Reuse `table_ui.block_classes`,
+`table_ui.inventory_block_header`, `table_registry.filter_form`,
+`clear_filters_link`, and `footer` with the standard loading bar, HTMX
+latest-request-wins synchronization and default five-row pagination.
+`/security/?tab=overview` preserves its tab state through `q`, `severity`,
+`page` and `per_page` changes; filtering/Rows changes reset page one,
+and Clear Filters preserves the selected Rows. Requests replace **only** the
+`#security-posture-cve-registry` region, not the Hero, Security Snapshot,
+analysis, tab controller or sibling panels.
+
+Only source-backed search by normalized CVE identifier and severity are valid
+facets for the initial Registry/Kubernetes evidence slice. Do **not** invent
+workflow investigation status, owner/team, risk scores, bulk actions or sort
+availability. Pagination fetches only the requested committed row window;
+the unfiltered severity distribution, total scope metrics, and distinct runtime
+binding totals stay stable across filter/page changes. Failed, stale, unknown
+or denied source evidence remains explicit and cannot be presented as an
+all-clear. A filtered zero-result table uses the canonical shared empty
+state and footer, not a false global security verdict.
+
+The scoped `Reload Evidence` affordance re-reads committed KAORI state via
+HTMX; it must not call the scanner/provider. The separate Security Findings
+page continues to own the full investigation workflow; Overview links to
+that owner while maintaining a compact permission-filtered Investigation
+Handoff inside the same table block. Header/Guide, loading, filter bar,
+data table, empty state, handoff and pagination follow the approved
+`docs/design/components/TABLE_AND_LABEL.md` hierarchy. Responsive, focus,
+light/dark and exact-head human UAT remain mandatory.
 
 ### Alerts Summary preview contract
 
