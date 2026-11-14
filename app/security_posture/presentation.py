@@ -102,6 +102,7 @@ def build_security_posture(
     severity: str = '',
     page: int = 1,
     per_page: int = 5,
+    include_overview_summary: bool = False,
 ) -> dict[str, Any]:
     """Paginated cross-domain read projection; never a scanner or global all-clear."""
     if not can_view_registry:
@@ -126,6 +127,7 @@ def build_security_posture(
                 'description': 'No authorized committed Registry source.',
             },
             'has_complete_security_evidence': False,
+            'severity_distribution': [],
         }
     sources = _providers()
     source_ids = [int(source.id) for source in sources]
@@ -181,6 +183,25 @@ def build_security_posture(
         per_page=per_page,
     )
     rows = _security_finding_rows(page_rows)
+    severity_distribution: list[dict[str, Any]] = []
+    if include_overview_summary and source_ids:
+        # Count distinct grouped CVEs at their highest qualified severity.
+        # A preview page or raw finding-row count cannot represent the scope.
+        severity_summary = grouped.order_by(None).subquery()
+        severity_counts = dict(
+            grouped.session.execute(
+                select(severity_summary.c.severity_rank, func.count()).group_by(severity_summary.c.severity_rank)
+            ).all()
+        )
+        tones = {'critical': 'critical', 'high': 'warning', 'medium': 'warning', 'low': 'info'}
+        severity_distribution = [
+            {'label': level.title(), 'count': int(severity_counts.get(rank, 0)), 'tone': tones.get(level, 'unknown')}
+            for level, rank in _SEVERITY_RANK.items()
+        ]
+        if severity_counts.get(5):
+            severity_distribution.append(
+                {'label': 'Unknown', 'count': int(severity_counts[5]), 'tone': 'unknown'}
+            )
     scanned_artifacts = 0
     artifacts_total = 0
     last_scan = None
@@ -240,6 +261,7 @@ def build_security_posture(
         'scan_updated_label': f'Updated {_human_time(last_scan)}' if last_scan else 'Not Collected',
         'scan_status': scan_status,
         'runtime_status': correlation,
+        'severity_distribution': severity_distribution,
         'has_complete_security_evidence': bool(
             source_ids
             and last_scan
