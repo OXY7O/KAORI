@@ -345,7 +345,12 @@ def test_capsule_authority_copy_and_blocker_rows_retain_complete_evidence() -> N
     assert header.count('<p ') == 1
     assert 'max-w-4xl' not in header
     assert 'items-start justify-between' not in header
-    assert 'border-b border-outline-subtle pb-4' in header
+    assert 'border-b border-outline-subtle px-5 py-4' in header
+    assert '<section class="overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm"' in overview
+    assert '<div class="space-y-4 p-4 sm:p-5">' in overview
+    assert overview.index('<div class="space-y-4 p-4 sm:p-5">') < overview.index(
+        '<div class="grid items-stretch gap-4 lg:grid-cols-2">'
+    )
     assert 'capsule_tenant_quota_managed|length' in overview
     assert 'capsule_tenant_quota_cutover_tenants|length' in overview
     assert 'capsule_shared_tenants|length' in overview
