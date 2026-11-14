@@ -65,13 +65,13 @@
                             ] %}
                             {% set capacity_tone = dashboard.capacity.posture.tone|default('unknown') %}
                             {% if capacity_tone == 'critical' %}
-                                {% set capacity_action = "Pause discretionary growth, identify the largest bucket consumers, and validate an approved capacity expansion or demand-reduction action." %}
+                                {% set capacity_action = "Review major buckets; approve capacity expansion or demand reduction." %}
                             {% elif capacity_tone == 'warning' %}
-                                {% set capacity_action = "Review top bucket concentration and the 30-day forecast before approving additional growth or quota changes." %}
+                                {% set capacity_action = "Check top buckets and forecast before approving storage growth." %}
                             {% elif capacity_tone == 'normal' %}
-                                {% set capacity_action = "Keep analytics and forecasts current; review concentration before growth." %}
+                                {% set capacity_action = "Maintain analytics; review bucket growth before approving changes." %}
                             {% else %}
-                                {% set capacity_action = "Refresh Object Storage Analytics evidence before using capacity posture for an operational decision." %}
+                                {% set capacity_action = "Refresh committed storage analytics before capacity decisions." %}
                             {% endif %}
                             {{ capacity_decision.render(dashboard.capacity.posture.status|default('Unknown'),
                                                          capacity_tone,
