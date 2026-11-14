@@ -32,7 +32,8 @@
         "route",
         "kubernetes-coverage-loading",
         title_id="kubernetes-coverage-title",
-        action_html=coverage_clear_action) }}
+        action_html=coverage_clear_action,
+        result_count=coverage_pagination.total_items) }}
     <div class="{{ integration_ui.filter_region_classes() }}">
         <form id="kubernetes-coverage-filter-form"
               method="get"

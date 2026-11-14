@@ -63,10 +63,8 @@ def test_shared_overview_owns_summary_and_boundary_geometry() -> None:
     assert 'page_hero.context_action_classes()' in overview
     assert 'data-kaori-provider-integration-overview' in overview
     assert 'integration_ui.metric_grid_classes(4)' in overview
-    assert 'Integration Contract' in overview
-    assert 'Consumer Resolution' in overview
-    assert 'Authority Boundary' in overview
-    # The Overview owns four visible KPIs and no redundant title Info Tip.
+    # The obsolete Overview Info Tip content was removed by approved Visual UAT (#4666).
+    # Four KPI cells and an Inventory-style indicator remain the actual contract.
     assert 'md:grid-cols-3' not in overview
     assert '<article class="bg-surface-card px-5 py-4 sm:px-6">' not in overview
     assert 'table_label.metadata_label(metrics|length ~ " Indicators", icon="layout-grid")' in overview
@@ -413,3 +411,64 @@ def test_overview_indicator_has_no_extra_info_trigger_on_all_provider_landings()
     assert 'data-kaori-info-tip' not in html
     assert 'data-kaori-info-tip-trigger' not in html
     assert 'data-kaori-provider-integration-overview' in html
+
+
+def test_tabular_provider_coverage_headers_share_filtered_result_counts() -> None:
+    """All tabular provider coverage cards label filtered totals, not page length."""
+
+    direct_coverage = (
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_integration_coverage.html',
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_coverage.html',
+        'app/templates/integrations/registry/providers/harbor/partials/_coverage.html',
+        'app/templates/integrations/source_control/github/partials/_integration_coverage.html',
+    )
+    for path in direct_coverage:
+        template = read(path)
+        assert 'provider_registry.registry_header(' in template, path
+        assert 'result_count=coverage_pagination.total_items' in template, path
+        assert 'result_count=coverage_rows|length' not in template, path
+
+    # MinIO owns pagination in the separately refreshed table-body partial.
+    minio_content = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_coverage_content.html'
+    )
+    assert 'provider_registry.pagination_footer(coverage_pagination,' in minio_content
+    for path in (direct_coverage[0], direct_coverage[2], direct_coverage[3]):
+        assert 'provider_registry.pagination_footer(coverage_pagination,' in read(path), path
+
+    shared = read('app/templates/components/integration_coverage.html')
+    assert 'provider_registry.registry_header(' in shared
+    assert 'result_count=pagination.total_items' in shared
+    metrics = read('app/templates/integrations/observability/metrics_source/frontpage.html')
+    alertmanager = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html'
+    )
+    for provider in (metrics, alertmanager):
+        assert 'integrations/partials/_coverage_card.html' in provider
+    coverage_adapter = read('app/templates/integrations/partials/_coverage_card.html')
+    assert 'components/integration_coverage.html' in coverage_adapter
+    assert 'coverage_pagination,' in coverage_adapter
+
+    vault = read('app/templates/integrations/secrets_management/vault/index.html')
+    assert "table_label.metadata_label('Integration Coverage', 'route')" in vault
+    assert 'Source Qualification Boundaries' in vault
+
+    shared_header = read('app/templates/integrations/components/_provider_registry.html')
+    assert 'table_label.result_count(result_count)' in shared_header
+    assert 'variant="guide"' in shared_header
+    assert 'result_count=pagination.total_items' in read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html'
+    )
+
+
+def test_coverage_result_badge_uses_canonical_singular_and_plural() -> None:
+    """One/zero/many counts reuse the existing KAORI table-label macro."""
+
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(ROOT / 'app' / 'templates'), autoescape=True)
+    result_count = env.get_template('components/table_label.html').module.result_count
+    for count, expected in ((0, '0 Results'), (1, '1 Result'), (2, '2 Results')):
+        badge = str(result_count(count))
+        assert expected in badge
+        assert 'data-lucide="list-filter"' in badge
