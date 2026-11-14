@@ -6,6 +6,7 @@
 {% set loading_id = "capsule-tenant-quota-drift-loading" %}
 {% set query_params = {
     'tab': 'allocation-drift',
+    'ops_view': 'tenant-quota',
     'ops_capsule_tenant_quota_tenant_id': capsule_tenant_quota_filters.tenant_id,
     'ops_capsule_tenant_quota_search': capsule_tenant_quota_filters.search
 } %}
@@ -19,7 +20,7 @@
                         loading_id,
                         capsule_tenant_quota_drift_pagination.per_page,
                         table_ui.action_classes() ,
-            query_params={'tab': 'allocation-drift'},
+            query_params={'tab': 'allocation-drift', 'ops_view': 'tenant-quota'},
             page_param='ops_capsule_tenant_quota_page',
             per_page_param='ops_capsule_tenant_quota_per_page'
             ) }}
@@ -53,6 +54,7 @@
             per_page_param='ops_capsule_tenant_quota_per_page',
             aria_label='Filter Capsule Tenant Quota Drift') %}
             <input type="hidden" name="tab" value="allocation-drift">
+            <input type="hidden" name="ops_view" value="tenant-quota">
             <div>
                 <label for="capsule-tenant-quota-drift-tenant"
                        class="{{ table_ui.filter_label_classes() }}">Tenant</label>
