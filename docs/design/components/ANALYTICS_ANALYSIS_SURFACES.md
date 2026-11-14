@@ -32,6 +32,12 @@ Use:
 
 The previous Overview-only surface component was removed. Do not introduce a compatibility wrapper or duplicate page-local surface macros.
 
+## Kubernetes Analytics Overview Title Guides (#4736)
+
+Kubernetes Analytics Overview follows the established title-level Violet `info_tip.render(..., variant='guide')` grammar from Object Storage and Artifact Registry Analytics. **Controls & Data Readiness**, **Operational Health Summary**, and the parent **Analytics Overview Workspace** have one Guide beside their titles. Every Overview tab (Usage, Capacity, Workload, Storage, Consumers, Forecast, Alerts, Actions, Guidance) also owns one domain-specific Guide beside its snapshot title, independent of the semantic status badge and drill-down action.
+
+The shared `snapshot_unavailable(..., title_accessory='')` accepts an optional Guide for the seven worker-backed Overview panels when the committed dataset is unavailable. Its default empty accessory preserves existing consumers. Guide contents explain source, interpretation and workflow boundaries; actual stale/unknown/critical statuses and required recovery guidance remain visible in the normal surface. Tooltip IDs must be unique, and mobile titles may wrap naturally. The warning Operational Reading sentence is concise for a normal desktop single line without truncating or hiding risk.
+
 ## Primary Evidence
 
 Controls, readiness, committed snapshot metadata, charts, ranked records, pressure lanes, findings, and analytical context use neutral `bg-surface-card` or `bg-surface-muted` surfaces. Borders and whitespace separate peer evidence. Role-colored compact icons, labels, badges, charts, and bars provide hierarchy without tinting complete evidence panels.

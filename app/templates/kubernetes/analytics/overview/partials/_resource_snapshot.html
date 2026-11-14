@@ -2,9 +2,21 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
 {% import "analytics/components/_analysis_surfaces.html" as overview_surface %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "kubernetes/analytics/components/_scoped_link.html" as scoped_link %}
+{% set overview_usage_guide %}
+    {{ info_tip.render('kubernetes-analytics-overview-usage-guide',
+            'Resource Utilization Snapshot Guide',
+            'Interpret committed CPU, memory, storage, and pod utilization for the selected cluster and time range.',
+            items=[
+                'Compare current utilization against remaining headroom and the threshold lanes before escalating pressure.',
+                'The committed snapshot is not a live probe; missing worker data must remain unavailable, not healthy.',
+                'Open Resource Utilization for sustained trends and workload-level evidence.'
+            ],
+            placement='right', variant='guide') }}
+{% endset %}
 {% if not payload.resource_snapshot.available|default(false) %}
-    {{ overview_surface.snapshot_unavailable('utilization', 'Resource Utilization Snapshot', 'The Analytics worker has not committed utilization evidence for the selected cluster and time range.', icon='gauge') }}
+    {{ overview_surface.snapshot_unavailable('utilization', 'Resource Utilization Snapshot', 'The Analytics worker has not committed utilization evidence for the selected cluster and time range.', icon='gauge', title_accessory=overview_usage_guide) }}
 {% else %}
     {% set resources = [payload.resource_snapshot.cpu, payload.resource_snapshot.memory, payload.resource_snapshot.storage, payload.resource_snapshot.pods] %}
     {% set ranked_resources = resources|sort(attribute='percent', reverse=true) %}
@@ -21,6 +33,7 @@
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="text-base font-semibold text-content-primary">Resource Utilization Snapshot</h2>
+                        {{ overview_usage_guide }}
                         {{ table_label.status_label('Critical' if overall_tone == 'critical' else ('Review Required' if overall_tone == 'warning' else 'Normal') , overall_tone) }}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Current CPU, memory, storage, and pod utilization from the committed snapshot.</p>

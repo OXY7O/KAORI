@@ -1,9 +1,21 @@
 {% import "components/section_link_button.html" as section_link_button %}
 {% import "components/table_label.html" as table_label %}
 {% import "analytics/components/_analysis_surfaces.html" as overview_surface %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "kubernetes/analytics/components/_scoped_link.html" as scoped_link %}
+{% set overview_alerts_guide %}
+    {{ info_tip.render('kubernetes-analytics-overview-alerts-guide',
+            'Alerts & Anomalies Snapshot Guide',
+            'Distinguish active alert pressure, pending signals, and anomaly candidates from committed Alertmanager and Metrics Source evidence.',
+            items=[
+                'Critical or firing alerts may require immediate triage; warnings and pending signals need scoped follow-up.',
+                'Anomaly candidates are not automatically confirmed incidents.',
+                'Confirm freshness, routing, and owning workload before escalation.'
+            ],
+            placement='right', variant='guide') }}
+{% endset %}
 {% if not payload.alerts_snapshot.available|default(false) %}
-    {{ overview_surface.snapshot_unavailable('alerts', 'Alerts & Anomalies Snapshot', 'The Analytics worker has not committed alert and anomaly evidence for the selected cluster.', icon='bell-ring') }}
+    {{ overview_surface.snapshot_unavailable('alerts', 'Alerts & Anomalies Snapshot', 'The Analytics worker has not committed alert and anomaly evidence for the selected cluster.', icon='bell-ring', title_accessory=overview_alerts_guide) }}
 {% else %}
     {% set alerts = payload.alerts_snapshot %}
     {% set immediate_count = alerts.critical_alerts + alerts.firing_alerts %}
@@ -19,6 +31,7 @@
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="text-base font-semibold text-content-primary">Alerts &amp; Anomalies Snapshot</h2>
+                        {{ overview_alerts_guide }}
                         {{ table_label.status_label(alerts.status|default('Unknown') , alert_tone) }}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Active alert pressure, severity distribution, and recent anomaly candidates.</p>

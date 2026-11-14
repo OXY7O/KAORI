@@ -1,7 +1,19 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
 {% import "analytics/components/_controls_readiness.html" as shared_readiness %}
 {% import "analytics/components/_analysis_surfaces.html" as overview_surface %}
+{% set analytics_controls_guide %}
+    {{ info_tip.render('kubernetes-analytics-overview-controls-guide',
+            'Analytics Controls & Data Readiness Guide',
+            'Confirm analysis scope, live Metrics Source eligibility, and committed worker dataset freshness independently.',
+            items=[
+                'Cluster and Time Range control the selected analytical scope; changing either refreshes the Overview.',
+                'Metrics Source Query Ready confirms query eligibility, not that every committed worker dataset is current.',
+                'Review committed snapshot coverage and refresh warnings before drawing cross-domain conclusions.'
+            ],
+            placement='right', variant='guide') }}
+{% endset %}
 {% set snapshot = payload.snapshot_summary|default({}) %}
 {% set snapshot_tone = snapshot.tone|default('unknown') %}
 {% set issue_count = snapshot.stale_dataset_count|default(0) + snapshot.pending_dataset_count|default(0) + snapshot.failed_dataset_count|default(0) + snapshot.missing_dataset_count|default(0) %}
@@ -41,7 +53,8 @@
             'Set the cluster and analysis window, then confirm the Metrics Source and committed overview datasets.',
             'sliders-horizontal',
             'analytics-overview-refresh-indicator',
-            eyebrow='Analytics Overview'
+            eyebrow='Analytics Overview',
+            title_accessory=analytics_controls_guide
             ) %}
             {% call shared_readiness.controls_grid() %}
                 {{ shared_readiness.selector('analytics-overview-cluster-filter',
@@ -94,7 +107,18 @@
                     <i data-lucide="heart-pulse" class="h-4 w-4"></i>
                 </span>
                 <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">Operational Health Summary</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Operational Health Summary</h2>
+                        {{ info_tip.render('kubernetes-analytics-overview-health-guide',
+                                        'Operational Health Summary Guide',
+                                        'Read the six committed operational signals together, while preserving evidence and source freshness limits.',
+                                        items=[
+                                        'Cluster health, resource pressure, capacity risk, active alerts, forecast risk, and top-risk Namespace are distinct signals.',
+                                        'Warning or Critical posture requires source verification and scoped operational review.',
+                                        'Unknown or incomplete snapshots must never be interpreted as healthy zero values.'
+                                        ],
+                                        placement='right', variant='guide') }}
+                    </div>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Current cluster, resource, capacity, alert, forecast, and namespace risk posture.</p>
                 </div>
             </div>
@@ -138,7 +162,7 @@
             {% elif posture.warning > 0 %}
                 {{ overview_surface.interpretation_callout('Operational Reading',
                                 'Warning Signals Require Planned Operational Review',
-                                'Compare the affected domain with current headroom, forecast direction, and alert context before scheduling remediation.',
+                                'Review headroom, forecasts, and alerts before scheduling remediation.',
                                 icon='triangle-alert',
                                 role='status',
                                 tone='warning') }}
