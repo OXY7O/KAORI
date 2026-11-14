@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from jinja2 import Environment, FileSystemLoader
+
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -432,3 +434,38 @@ def test_consumer_asset_identity_is_shared_and_omits_duplicate_taxonomy_label() 
     assert '<span class="text-content-secondary">Object Storage System</span>' in provider_custom
     assert 'Production Profile' in provider_custom
     assert '<span class="sr-only">Asset type: Object Storage System</span>' not in provider_custom
+
+
+def test_registry_consumer_asset_id_has_context_without_changing_other_domains() -> None:
+    env = Environment(loader=FileSystemLoader(ROOT / 'app/templates'), autoescape=True)
+    component = env.get_template('integrations/components/_workspace.html').module
+
+    registry_html = str(
+        component.consumer_asset_identity(
+            'Harbor X300',
+            'registry_instance',
+            metadata='6',
+            type_label='Registry Instance',
+            metadata_is_key=True,
+        )
+    )
+    assert '>Harbor X300</p>' in registry_html
+    assert 'Asset ID: ' in registry_html
+    assert '<span class="font-mono">6</span>' in registry_html
+    assert 'data-lucide="package"' in registry_html
+    assert 'Asset type: Registry Instance' in registry_html
+    assert 'Registry Instance · 6' not in registry_html
+
+    storage_key = 'c0e9f10c-8b25-49d2-b5e1-116c06f3a289'
+    storage_html = str(
+        component.consumer_asset_identity(
+            'MinIO X300',
+            'object_storage_system',
+            metadata=storage_key,
+            type_label='Object Storage System',
+            metadata_is_key=True,
+        )
+    )
+    assert 'Asset ID: ' not in storage_html
+    assert storage_key in storage_html
+    assert 'data-lucide="database"' in storage_html
