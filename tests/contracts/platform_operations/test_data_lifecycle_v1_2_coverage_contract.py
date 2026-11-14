@@ -58,6 +58,8 @@ def test_activity_audit_and_user_notifications_share_one_lifecycle_source() -> N
     assert "'label': 'Activity Audit Table'" in coverage
     assert "'label': 'Notification Center'" in coverage
     assert "'label': 'Authentication Audit'" in coverage
+    assert "Authentication events follow the audit stream's lifecycle." in coverage
+    assert 'Authentication events remain lifecycle-managed with the audit stream.' not in coverage
     assert 'Activity Audit and persistent Notification Center records share the same archive-first policy' in activity
     assert 'Persistent notifications share the Activity Audit retention policy.' in center
     assert 'Transient toasts remain outside Data Lifecycle.' in center
