@@ -11,9 +11,12 @@
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                    <h3 class="text-base font-semibold text-content-primary">Anomaly Candidates</h3>
-                    {{ info_tip.render('kubernetes-analytics-alerts-anomalies-table-guide', 'Anomaly Candidates Guide', 'Metrics Source anomalies are candidates pending operational correlation, not automatically incidents.', placement='right', variant='guide') }}
-                </div>
+                        <h3 class="text-base font-semibold text-content-primary">Anomaly Candidates</h3>
+                        {{ info_tip.render('kubernetes-analytics-alerts-anomalies-table-guide',
+                            'Anomaly Candidates Guide',
+                            'Metrics Source anomalies are candidates pending operational correlation, not automatically incidents.',
+                            placement='right', variant='guide') }}
+                    </div>
                     <p class="mt-1 text-sm leading-6 text-content-muted">Metrics Source-derived restart and readiness deviations requiring validation before incident escalation.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">

@@ -10,7 +10,10 @@
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h3 class="text-lg font-semibold text-content-primary">Suppression Evidence</h3>
-                    {{ info_tip.render('kubernetes-analytics-alerts-silence-inhibition-summary-guide', 'Suppression Evidence Guide', 'Inspect active silence scope and inhibition policies without mistaking suppressed signals for healthy services.', placement='right', variant='guide') }}
+                    {{ info_tip.render('kubernetes-analytics-alerts-silence-inhibition-summary-guide',
+                        'Suppression Evidence Guide',
+                        'Inspect active silence scope and inhibition policies without mistaking suppressed signals for healthy services.',
+                        placement='right', variant='guide') }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-muted">Active silence scope and inhibition policy evidence from Alertmanager.</p>
             </div>

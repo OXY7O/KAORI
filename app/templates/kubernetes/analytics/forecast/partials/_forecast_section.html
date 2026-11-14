@@ -53,9 +53,12 @@
                                 <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="{{ item.icon }}" class="h-5 w-5"></i></span>
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
-                    <h3 class="text-lg font-semibold text-content-primary">{{ item.label }} Forecast</h3>
-                    {{ info_tip.render('kubernetes-analytics-forecast-resource-' ~ resource_key ~ '-guide', item.label ~ ' Forecast Guide', 'Each projected resource uses committed historical samples and a resource-specific capacity denominator; Unknown quality remains explicit.', placement='right', variant='guide') }}
-                </div>
+                                        <h3 class="text-lg font-semibold text-content-primary">{{ item.label }} Forecast</h3>
+                                        {{ info_tip.render('kubernetes-analytics-forecast-resource-' ~ resource_key ~ '-guide',
+                                            item.label ~ ' Forecast Guide',
+                                            'Each projected resource uses committed historical samples and a resource-specific capacity denominator; Unknown quality remains explicit.',
+                                            placement='right', variant='guide') }}
+                                    </div>
                                     <p class="mt-1 text-sm leading-6 text-content-muted">{{ item.description }}</p>
                                 </div>
                             </div>
@@ -197,9 +200,12 @@
                         <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="line-chart" class="h-5 w-5"></i></span>
                         <div>
                             <div class="flex flex-wrap items-center gap-2">
-                    <h3 class="text-lg font-semibold text-content-primary">Trend Analysis</h3>
-                    {{ info_tip.render('kubernetes-analytics-forecast-trend-guide', 'Trend Analysis Guide', 'Compare measured history with projected direction and source coverage; a projection is not a provider observation.', placement='right', variant='guide') }}
-                </div>
+                                <h3 class="text-lg font-semibold text-content-primary">Trend Analysis</h3>
+                                {{ info_tip.render('kubernetes-analytics-forecast-trend-guide',
+                                    'Trend Analysis Guide',
+                                    'Compare measured history with projected direction and source coverage; a projection is not a provider observation.',
+                                    placement='right', variant='guide') }}
+                            </div>
                             <p class="mt-1 text-sm leading-6 text-content-muted">Compare the available resource projections, threshold timing, and evidence quality across the selected scope.</p>
                         </div>
                     </div>
@@ -310,9 +316,12 @@
                         <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-checks" class="h-5 w-5"></i></span>
                         <div>
                             <div class="flex flex-wrap items-center gap-2">
-                    <h3 class="text-lg font-semibold text-content-primary">Forecast Recommendations</h3>
-                    {{ info_tip.render('kubernetes-analytics-forecast-recommendations-guide', 'Forecast Recommendations Guide', 'Plan capacity actions only after validating confidence, horizon, threshold timing, and owner.', placement='right', variant='guide') }}
-                </div>
+                                <h3 class="text-lg font-semibold text-content-primary">Forecast Recommendations</h3>
+                                {{ info_tip.render('kubernetes-analytics-forecast-recommendations-guide',
+                                    'Forecast Recommendations Guide',
+                                    'Plan capacity actions only after validating confidence, horizon, threshold timing, and owner.',
+                                    placement='right', variant='guide') }}
+                            </div>
                             <p class="mt-1 text-sm leading-6 text-content-muted">Prioritized actions derived from projected utilization, threshold ETA, weekly trend, and historical signal quality.</p>
                         </div>
                     </div>

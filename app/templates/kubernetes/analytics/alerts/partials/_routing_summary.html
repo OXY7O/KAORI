@@ -10,7 +10,10 @@
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h3 class="text-lg font-semibold text-content-primary">Routing Context</h3>
-                    {{ info_tip.render('kubernetes-analytics-alerts-routing-summary-guide', 'Routing Context Guide', 'Route and receiver evidence belongs to the external alerting provider; verify effective delivery and owner before action.', placement='right', variant='guide') }}
+                    {{ info_tip.render('kubernetes-analytics-alerts-routing-summary-guide',
+                        'Routing Context Guide',
+                        'Route and receiver evidence belongs to the external alerting provider; verify effective delivery and owner before action.',
+                        placement='right', variant='guide') }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-muted">Receiver, grouping, namespace, and severity distribution from the committed alert source.</p>
             </div>
