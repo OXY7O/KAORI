@@ -264,6 +264,7 @@ def test_registry_growth_overview_charts_and_summary_reuse_canonical_patterns() 
     assert 'analysis_surface.guidance_fact_grid_classes(3)' in growth
     assert "analysis_surface.empty_evidence_classes('px-5 py-6 text-center')" in growth
     assert 'maxTicksLimit: 3' in script
+    assert 'pointRadiusForSeries(source)' in script
     assert 'source.points.length <= 6 ? 3 : 0' in script
     assert 'chart.umd.min.js' in page
     assert 'js/artifact_registry/analytics_growth_chart.js' in page
@@ -309,6 +310,8 @@ def test_registry_growth_chart_summary_renders_committed_endpoint_evidence() -> 
     assert rendered.count('data-registry-growth-chart-series=') == 2
     assert rendered.count('data-registry-growth-chart\n') == 2
     assert rendered.count('Latest observed') == 2
+    assert 'Latest measured point' in rendered
+    assert 'Latest committed checkpoint' in rendered
     assert rendered.count('Retained observations') == 2
     assert rendered.count('Endpoint change') == 2
     assert rendered.count('Same endpoints') == 2
@@ -329,17 +332,17 @@ def test_registry_growth_chart_summary_renders_committed_endpoint_evidence() -> 
         }
     )
     assert mixed.count('Per source') >= 3
+    assert 'Independent source values' in mixed
     assert 'no fleet-wide aggregate or projection' in mixed
     assert 'Historical Chart Not Available' in mixed
     assert mixed.count('data-registry-growth-chart\n') == 1
     assert 'data-registry-growth-chart-panel="storage"' in mixed
 
-    empty = template.render(
-        analytics={'snapshot_window': '24h', 'growth_charts': {'artifacts': [], 'storage': []}}
-    )
+    empty = template.render(analytics={'snapshot_window': '24h', 'growth_charts': {'artifacts': [], 'storage': []}})
     assert empty.count('Historical Chart Not Available') == 2
     assert 'data-registry-growth-chart\n' not in empty
     assert 'Latest observed' not in empty
+
 
 def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> None:
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
@@ -661,7 +664,7 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     assert 'else if (maxObserved <= 5) axisMax = 5' in chart
     assert 'else if (maxObserved <= 25) axisMax = 25' in chart
     assert 'else if (maxObserved > 100) axisMax = Math.ceil(maxObserved / 25) * 25' in chart
-    assert "axisNote.textContent =" in chart
+    assert 'axisNote.textContent =' in chart
     assert 'lg:col-span-3' in partial
     assert 'lg:col-span-2' in partial
     assert 'aria-labelledby="registry-capacity-chart-title"' in partial

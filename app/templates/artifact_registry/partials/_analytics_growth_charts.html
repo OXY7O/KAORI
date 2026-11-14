@@ -2,8 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/info_tip.html" as info_tip %}
 {% set growth_charts = analytics.growth_charts %}
-<section class="border-t border-outline-subtle"
-         data-registry-growth-charts>
+<section class="border-t border-outline-subtle" data-registry-growth-charts>
     <header class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-5">
         <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2">
@@ -61,6 +60,15 @@
                                     <span class="text-sm">Per source</span>
                                 {% endif %}
                             </dd>
+                            <p class="mt-0.5 text-xs text-content-muted">
+                                {% if single_source and single_source.mode == 'checkpoints' %}
+                                    Latest committed checkpoint
+                                {% elif single_source %}
+                                    Latest measured point
+                                {% else %}
+                                    Independent source values
+                                {% endif %}
+                            </p>
                         </div>
                         <div class="{{ analysis_surface.guidance_fact_classes() }}">
                             <dt class="{{ analysis_surface.metric_label_classes() }}">Retained observations</dt>
@@ -108,7 +116,9 @@
                         <dl class="sr-only" aria-label="{{ title }} measured source values">
                             {% for source in series %}
                                 <dt>{{ source.label }} ({{ source.mode }})</dt>
-                                <dd>Start {{ source.points[0].value }} at {{ source.points[0].timestamp }} Unix seconds; end {{ source.points[-1].value }} at {{ source.points[-1].timestamp }} Unix seconds.</dd>
+                                <dd>
+                                    Start {{ source.points[0].value }} at {{ source.points[0].timestamp }} Unix seconds; end {{ source.points[-1].value }} at {{ source.points[-1].timestamp }} Unix seconds.
+                                </dd>
                             {% endfor %}
                         </dl>
                         <div class="mt-3 flex items-start gap-2 border-t border-outline-subtle pt-3">
