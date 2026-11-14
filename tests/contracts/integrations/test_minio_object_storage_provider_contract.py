@@ -215,15 +215,12 @@ def test_minio_review_copy_keeps_secret_and_revalidation_guidance_concise() -> N
     )
 
     assert 'Configure MinIO S3 credentials, then test the S3 API endpoint—not the Console URL.' in form
-    assert (
-        'MinIO provides the storage API; Metrics Source and Alertmanager remain separate bindings to the same asset.'
-        in form
-    )
+    assert 'MinIO owns storage; observability binds separately.' in form
     assert (
         'MinIO remains the storage authority. KAORI keeps provider readiness and binding evidence without storing '
         'observability credentials here.'
     ) in form
-    assert 'Secret keys stay encrypted; registration and Full Validation use governed S3 discovery.' in configuration
+    assert 'Secrets stay encrypted; S3 discovery is governed.' in configuration
     assert 'Persistent provider, asset, validation, binding, and audit identity.' in configuration
     assert 'Environment context for coverage, policy, ownership, and consumer resolution.' in configuration
     assert 'Product family resolved by Full Validation for compatibility and capability selection.' in configuration
