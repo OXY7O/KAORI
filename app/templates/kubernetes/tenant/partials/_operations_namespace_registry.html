@@ -116,14 +116,17 @@
                 <tr>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[27%]">Namespace</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Tenant / Environment</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Resource Profile</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Provider</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">State</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Resource Profile</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Provider</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">State</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for item in operations_namespace_rows %}
                     {% set state_tone = 'normal' if item.provisioning_status == 'ready' else ('critical' if item.provisioning_status == 'failed' else 'warning') %}
+                    {% set reconciliation_evidence = item.provisioning_message or 'Awaiting reconciliation evidence.' %}
+                    {% set stable_state = item.provisioning_status in ('ready', 'released') %}
+                    {% set reconciliation_summary = reconciliation_evidence.split('. ', 1)[0] if stable_state and '. ' in reconciliation_evidence else reconciliation_evidence %}
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_ui.title_cell(item.namespace, item.ownership_status|replace('_', ' ') |title ~ ' ownership', 'folder-tree') }}</td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
@@ -145,9 +148,12 @@
                                title="{{ item.environment.tenant.reconciliation_authority|replace('_', ' ') |title }} authority">{{ item.environment.tenant.reconciliation_authority|replace('_', ' ') |title }} authority</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
-                            {{ table_label.status_label(item.provisioning_status|replace('_', ' ') |title, state_tone) }}
-                            <p class="mt-1 line-clamp-2 break-words text-xs leading-5 text-content-muted"
-                               title="{{ item.provisioning_message or 'Awaiting reconciliation evidence.' }}">{{ item.provisioning_message or 'Awaiting reconciliation evidence.' }}</p>
+                            <div class="flex min-w-0 flex-col justify-center gap-1">
+                                <div>{{ table_label.status_label(item.provisioning_status|replace('_', ' ') |title, state_tone) }}</div>
+                                <p class="{{ 'truncate' if stable_state else 'line-clamp-2 break-words' }} min-w-0 text-xs leading-5 text-content-muted"
+                                   title="{{ reconciliation_evidence }}"
+                                   aria-label="{{ reconciliation_evidence }}">{{ reconciliation_summary }}</p>
+                            </div>
                         </td>
                     </tr>
                 {% else %}
