@@ -66,6 +66,17 @@ location for explanation of connection listing and evidence boundaries.
 Use short natural desktop descriptions instead of `whitespace-nowrap`
 or truncated content.
 
+**Registration helper copy (#4698):** Keep the Endpoint & Access,
+Registration Flow, Related Operational Workspace, and enable-gate helper
+sentences concise (target at most 80 characters each), naturally wrapping on
+mobile. Registration creates connection identity; successful Full Validation
+separately governs consumer eligibility, and consumer bindings retain their
+own authority. Disabled connections remain stored but unavailable to
+consumers. Do not introduce line clamps, ellipsis, `whitespace-nowrap`,
+smaller typography, or a second registration component to fit the copy.
+Shortening guidance must not change connection-test proof invalidation,
+TLS/authentication, submission, or initial-cluster binding behavior.
+
 All seven Integration provider connection-detail workspaces place the canonical
 title-adjacent Violet `components/info_tip.html::render(..., variant='guide')`
 beside their **four primary tab section titles**: Connection Contract,
