@@ -1,5 +1,6 @@
 """Guard canonical primary-heading Guides in Kubernetes provider detail (#4645)."""
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -32,10 +33,11 @@ def test_kubernetes_five_primary_headings_have_unique_canonical_guides() -> None
 
 def test_shared_provider_connection_contract_has_one_title_guide() -> None:
     source = _source(TEMPLATES / "components/_provider_configuration_contract.html")
-    heading = '<h2 class="text-base font-semibold text-content-primary">Connection Contract</h2>'
-    assert source.count(heading) == 1
+    heading = re.compile(r'<h2\s+id="[^"]+-connection-contract-title"\s+class="text-base font-semibold text-content-primary">Connection Contract</h2>')
+    matches = list(heading.finditer(source))
+    assert len(matches) == 1
     assert source.count("connection-contract-detail-guide") == 1
-    assert source.index(heading) < source.index("connection-contract-detail-guide")
+    assert matches[0].end() < source.index("connection-contract-detail-guide")
     assert 'variant="guide"' in source
 
 
@@ -57,9 +59,11 @@ def test_kubernetes_validation_and_runtime_guides_are_passed_to_primary_headers(
 def test_shared_configuration_guide_is_adjacent_to_primary_heading() -> None:
     """Prevent a regression that moves the Guide into a footer or inner card."""
     source = _source(TEMPLATES / "components/_provider_configuration_contract.html")
-    heading = '<h2 class="text-base font-semibold text-content-primary">Connection Contract</h2>'
+    heading = re.compile(r'<h2\s+id="[^"]+-connection-contract-title"\s+class="text-base font-semibold text-content-primary">Connection Contract</h2>')
     title_row = source[source.index('<div class="flex flex-wrap items-center gap-2">'):]
     title_row = title_row[: title_row.index("</div>")]
-    assert heading in title_row
+    assert heading.search(title_row)
     assert title_row.count("info_tip.render(") == 1
     assert "connection-contract-detail-guide" in title_row
+    assert source.count("aria-labelledby=") >= 1
+    assert 'aria-labelledby="{{ provider_label|lower|replace(\' + "\' \'" + ', \'-\') }}-connection-contract-title"' in source
