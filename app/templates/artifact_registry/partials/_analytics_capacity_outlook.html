@@ -3,10 +3,11 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/info_tip.html" as info_tip %}
 {% set capacity_tabs = [('overview', 'Overview', 'layout-dashboard'), ('projects', 'Project Quotas', 'table-properties'), ('evidence', 'Forecast & Evidence', 'clipboard-check')] %}
+{% set capacity_default_tab = 'projects' if analytics.capacity_pagination is defined and analytics.capacity_pagination.page > 1 else 'overview' %}
 <section id="artifact-registry-capacity-content"
          data-analytics-tabset
          data-analytics-tabset-id="artifact-registry-capacity-content"
-         data-default-tab="overview"
+         data-default-tab="{{ capacity_default_tab }}"
          data-analytics-update-query="false"
          class="{{ analysis_surface.snapshot_shell_classes() }}"
          aria-labelledby="registry-capacity-outlook-title"
@@ -39,7 +40,7 @@
             </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            {{ table_label.metadata_label(analytics.capacity_chart_rows|length ~ ' Projects', 'database', size='compact') }}
+            {{ table_label.metadata_label(analytics.capacity_project_count|default(analytics.capacity_chart_rows|length) ~ ' Projects', 'database', size='compact') }}
             {{ table_label.metadata_label(analytics.snapshot_window|upper ~ ' Window', 'clock-3', size='compact') }}
         </div>
     </header>
@@ -48,7 +49,7 @@
         'Capacity Analytics Sections',
         embedded=true,
         data_namespace='analytics',
-        active_key='overview',
+        active_key=capacity_default_tab,
         show_badges=false,
         nowrap=true) }}
     <div class="p-4 sm:p-5">
@@ -56,12 +57,13 @@
              role="tabpanel"
              aria-labelledby="artifact-registry-capacity-content-tab-overview"
              data-analytics-tab-panel="overview"
+             {% if capacity_default_tab != 'overview' %}hidden{% endif %}
              class="space-y-4">{% include "artifact_registry/partials/_analytics_capacity_overview.html" %}</div>
         <div id="artifact-registry-capacity-content-panel-projects"
              role="tabpanel"
              aria-labelledby="artifact-registry-capacity-content-tab-projects"
              data-analytics-tab-panel="projects"
-             hidden
+             {% if capacity_default_tab != 'projects' %}hidden{% endif %}
              class="space-y-4">{% include "artifact_registry/partials/_analytics_capacity_project_quotas.html" %}</div>
         <div id="artifact-registry-capacity-content-panel-evidence"
              role="tabpanel"
