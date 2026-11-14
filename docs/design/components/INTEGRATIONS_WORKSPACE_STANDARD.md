@@ -310,6 +310,20 @@ Provider-specific evidence remains explicit. Metrics Source retains provider/ada
 
 Provider coverage uses the shared coverage component and the same pagination ownership as provider registries. Normal links always resolve the complete provider page; HTMX requests replace only the coverage panel.
 
+**Tabular Coverage filtered Results label (UAT #4679):** Kubernetes, MinIO,
+Harbor, GitHub and the shared Metrics Source / Alertmanager Coverage surface
+pass the authoritative `coverage_pagination.total_items` into
+`provider_registry.registry_header(..., result_count=...)` (the shared
+`integration_coverage.render` uses its `pagination.total_items` parameter).
+The existing `table_label.result_count` renders `1 Result`, `0 Results` or
+`N Results` immediately after the title Guide, matching Connection Registry.
+The count is the filtered total **before pagination**, never `rows|length`,
+the selected-tab badge, or the provider registration count. Filters and HTMX
+re-render the same header with the updated total. GitHub already implements
+this pattern and needs no duplicate. Vault's non-tabular Source Qualification
+Boundaries are explanatory, not a query-results registry, and must not gain a
+misleading result count.
+
 Coverage status is not provider runtime health. `Covered`, `Uncovered`, missing binding, validation-required binding, and incompatible source remain distinct states.
 
 ## Runtime Overview Contract
