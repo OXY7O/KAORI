@@ -990,7 +990,8 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     assert 'data-registry-capacity-quota-chart' in partial
     assert 'Project Quota Utilization Guide' in partial
     assert 'Quota Chart Not Available' in partial
-    assert 'quota_rows|length ~' in partial
+    assert "project_count_label = 'Top ' ~ quota_rows|length ~ ' of ' ~ qualified_total ~ ' Projects'" in partial
+    assert "table_label.metadata_label(project_count_label, 'gauge', size='compact')" in partial
     assert 'analytics.capacity_chart_rows' in partial
     assert 'grid gap-4 p-4 lg:grid-cols-5 sm:p-5' in partial
     assert "analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-3')" in partial
@@ -1060,6 +1061,27 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     assert rendered.count('id="registry-capacity-evidence-title"') == 1
     assert 'data-registry-capacity-quota-chart' in rendered
     assert 'Quota Chart Not Available' not in rendered
+    assert 'Top 1 of' not in rendered
+
+    top_five = [
+        {**rows[0], 'project_name': f'project-{i}', 'utilization_display': f'{i}.0%'}
+        for i in range(1, 6)
+    ]
+    bounded = env.get_template('artifact_registry/partials/_analytics_capacity_chart.html').render(
+        analytics={'capacity_chart_rows': top_five, 'capacity_project_count': 10}
+    )
+    assert 'Top 5 of 10 Projects' in bounded
+    assert bounded.count('<article ') == 5
+    for index in range(1, 6):
+        assert f'project-{index}' in bounded
+    assert 'project-6' not in bounded
+
+    all_five = env.get_template('artifact_registry/partials/_analytics_capacity_chart.html').render(
+        analytics={'capacity_chart_rows': top_five, 'capacity_project_count': 5}
+    )
+    assert '5 Projects' in all_five
+    assert 'Top 5 of 5' not in all_five
+
     empty = env.get_template('artifact_registry/partials/_analytics_capacity_chart.html').render(
         analytics={'capacity_chart_rows': []}
     )
