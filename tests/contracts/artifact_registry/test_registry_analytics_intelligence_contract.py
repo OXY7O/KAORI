@@ -422,9 +422,7 @@ def test_registry_analytics_overview_panels_preserve_missing_data_and_evidence_a
     charts = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_charts.html').read_text()
     assert 'artifact_registry/partials/_analytics_growth_charts.html' in panel
     assert 'data-registry-growth-chart-panel' in charts
-    capacity_chart = (
-        ROOT / 'app/templates/artifact_registry/partials/_analytics_capacity_chart.html'
-    ).read_text()
+    capacity_chart = (ROOT / 'app/templates/artifact_registry/partials/_analytics_capacity_chart.html').read_text()
     assert 'artifact_registry/partials/_analytics_capacity_chart.html' in panel
     assert 'analytics.capacity_chart_rows' in capacity_chart
     assert 'data-registry-capacity-quota-series' in capacity_chart
@@ -582,8 +580,20 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     assert 'Quota Chart Not Available' in partial
     assert 'quota_rows|length ~' in partial
     assert 'analytics.capacity_chart_rows' in partial
+    assert 'grid items-stretch gap-4 p-4 lg:grid-cols-5 sm:p-5' in partial
+    assert 'lg:col-span-3' in partial
+    assert 'lg:col-span-2' in partial
+    assert 'aria-labelledby="registry-capacity-chart-title"' in partial
+    assert 'aria-labelledby="registry-capacity-evidence-title"' in partial
+    assert "table_label.status_label('Observed', 'normal', size='compact')" in partial
+    assert 'Committed usage, quota and forecast status.' in partial
+    assert '<dt class="text-content-muted">Used</dt>' in partial
+    assert '<dt class="text-content-muted">Quota</dt>' in partial
+    assert '<dt class="text-content-muted">Forecast</dt>' in partial
+    assert 'Review Capacity Analysis for complete project evidence.' not in partial
+    assert 'Quota utilization is observed; exhaustion forecasts require qualified growth history.' in overview
     assert 'metadata_label(' in shared
-    assert "[:5]" in present or "[:5]" in partial
+    assert '[:5]' in present or '[:5]' in partial
     assert "'capacity_chart_rows': _registry_capacity_chart_rows(forecast_rows)" in present
     assert 'js/artifact_registry/analytics_capacity_chart.js' in page
     assert 'vendor/chartjs/chart.umd.min.js' in page
@@ -615,6 +625,10 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     assert 'Harbor X300' in rendered
     assert '0.6%' in rendered
     assert 'No forecast' in rendered
+    assert 'Observed' in rendered
+    assert 'Used' in rendered and 'Quota' in rendered
+    assert rendered.count('id="registry-capacity-chart-title"') == 1
+    assert rendered.count('id="registry-capacity-evidence-title"') == 1
     assert 'data-registry-capacity-quota-chart' in rendered
     assert 'Quota Chart Not Available' not in rendered
     empty = env.get_template('artifact_registry/partials/_analytics_capacity_chart.html').render(
