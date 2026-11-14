@@ -405,7 +405,10 @@ def test_registry_growth_detail_child_tabs_use_shared_analytics_navigation_and_b
     assert 'source_rows[:5]' in history
     assert 'row.status_label, row.tone' in history
     assert 'Previous committed snapshot; not current' in history
-    assert 'legacy start/end checkpoints are labeled explicitly' in history
+    charts = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_charts.html').read_text()
+    assert 'has_endpoint_only' in charts
+    assert 'Dashed series are start/end checkpoints only' in charts
+    assert 'No projection is shown.' in history
 
 
 def test_registry_growth_detail_child_tabs_render_observed_zero_missing_and_history_lineage() -> None:
@@ -451,7 +454,7 @@ def test_registry_growth_detail_child_tabs_render_observed_zero_missing_and_hist
     assert 'Source Growth Trend' in rendered
     assert 'Historical Chart Not Available' in rendered
     assert 'Current committed snapshot' in rendered
-    assert 'Not a forecast' in rendered
+    assert 'No projection is shown.' in rendered
 
     analytics['growth_rows'] = []
     analytics['snapshot_count'] = 0
