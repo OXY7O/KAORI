@@ -77,7 +77,11 @@ semantics while the visible policy summary and exclusions remain truthful.
   verified report artifacts; the Guide retains Ready/Failed/Archived policy
   distinctions and explicit protection for Requested/Queued/Generating,
   active regeneration, and missing-safe-artifact cases. The Excluded footer
-  gives a one-line summary while the complete boundary remains accessible.
+  targets two readable desktop lines, explicitly describing protected reports
+  without altering the archive/cleanup eligibility contract. The Hot Source
+  detail uses the concise `Reports metadata + PDF/XLSX/CSV` label for a
+  single desktop row. Full artifact and safety context remains in the Guide,
+  Lifecycle Coverage and storage ownership boundaries.
 - **Administrative Audit Events:** a compact Excluded statement preserves
   non-admission of raw metadata, actor reconstruction, downloads, scheduling,
   cleanup, and record-level lookup. The existing Guide remains the full
@@ -117,6 +121,11 @@ for pending/regenerating work; fuller status conditions remain in its Guide.
 The **Notification Delivery** Coverage summary remains one-line on the reference
 desktop card, while **Activity Audit** Coverage and Excluded summaries target two
 lines. Normal responsive wrapping is allowed and must be visually checked.
+For Generated Reports, the Excluded footer is intentionally **two lines**
+at normal desktop widths, while its Hot Source detail targets **one line**;
+do not apply forced no-wrap, ellipsis, or page-local layout changes to
+security-sensitive exclusions. Viewport-specific browser evidence is required
+to verify the final line count.
 
 The mandatory Data Lifecycle Final Lock verifier must enforce the current
 `Policy + schedule required.` message **and** the source-derived
