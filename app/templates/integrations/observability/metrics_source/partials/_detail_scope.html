@@ -121,7 +121,7 @@
                                 <p class="text-sm font-semibold text-content-primary">{{ scope.scope_label }}</p>
                                 {{ table_label.metadata_label(scope.scope_type_label) }}
                             </div>
-                            <p class="mt-1 max-w-2xl truncate text-xs text-content-muted"
+                            <p class="mt-1 max-w-2xl break-words text-xs text-content-muted [overflow-wrap:anywhere]"
                                title="{{ scope.scope_key }}">{{ scope.scope_key }}</p>
                         </div>
                         <p class="text-xs font-medium text-content-muted">{{ scope.consumers|length }} Consumer Domains</p>
@@ -139,7 +139,7 @@
                                             <p class="mt-0.5 text-xs text-content-muted">{{ consumer.required_capabilities|length }} Required Capabilit{{ 'y' if consumer.required_capabilities|length == 1 else 'ies' }}</p>
                                         </div>
                                     </div>
-                                    <p class="min-w-0 truncate text-xs font-medium text-content-secondary"
+                                    <p class="min-w-0 break-words text-xs font-medium text-content-secondary [overflow-wrap:anywhere]"
                                        title="{{ consumer.selected_instance_name or 'No eligible metrics source selected' }}">{{ consumer.selected_instance_name or 'No eligible metrics source selected' }}</p>
                                     <div class="flex shrink-0 items-center justify-end gap-2">
                                         {{ integration_status(consumer_status, consumer_status_label, display='indicator') }}
@@ -148,31 +148,49 @@
                                            aria-hidden="true"></i>
                                     </div>
                                 </summary>
-                                <div class="border-t border-outline-subtle bg-surface-subtle px-4 py-4">
-                                    <div class="grid gap-3 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-                                        <div class="rounded-lg border border-outline-subtle bg-surface-card p-3.5">
-                                            <p class="text-xs font-semibold text-content-primary">Required Capability Contract</p>
-                                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ consumer.required_capabilities|join(", ") }}</p>
-                                        </div>
-                                        <div class="space-y-2">
+                                <div class="border-t border-outline-subtle bg-surface-subtle p-3 sm:p-4">
+                                    <div class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card"
+                                         data-kaori-resolution-evidence>
+                                        <section class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-start sm:gap-4"
+                                                 data-kaori-resolution-capability-contract>
+                                            <div class="shrink-0">
+                                                <p class="text-xs font-semibold text-content-primary">Required Capability Contract</p>
+                                                <p class="mt-0.5 text-xs text-content-muted">{{ consumer.required_capabilities|length }} required</p>
+                                            </div>
+                                            <div class="flex min-w-0 flex-wrap gap-1.5">
+                                                {% for capability in consumer.required_capabilities %}
+                                                    <span class="inline-flex max-w-full items-center break-words rounded-md border border-outline-subtle bg-surface-subtle px-2 py-1 text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ capability }}</span>
+                                                {% else %}
+                                                    <p class="text-xs leading-5 text-content-muted">No additional capability requirements.</p>
+                                                {% endfor %}
+                                            </div>
+                                        </section>
+                                        <section data-kaori-resolution-candidates>
+                                            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-outline-subtle bg-surface-subtle px-4 py-2">
+                                                <p class="text-xs font-semibold text-content-primary">Source Candidates</p>
+                                                {{ table_label.metadata_label(consumer.candidates|length ~ (' Candidate' if consumer.candidates|length == 1 else ' Candidates') ) }}
+                                            </div>
                                             {% for candidate in consumer.candidates %}
-                                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3.5">
-                                                    <div class="flex items-start justify-between gap-3">
-                                                        <div class="min-w-0">
-                                                            <p class="text-xs font-semibold text-content-primary">{{ candidate.instance_name }}</p>
-                                                            <p class="mt-1 text-xs text-content-muted">{{ candidate.binding_role|title }} · Priority {{ candidate.priority }}</p>
-                                                        </div>
+                                                <div class="grid gap-2 border-b border-outline-subtle px-4 py-3 last:border-b-0 lg:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_auto] lg:items-start"
+                                                     data-kaori-resolution-candidate-row>
+                                                    <div class="min-w-0">
+                                                        <p class="break-words text-xs font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ candidate.instance_name }}</p>
+                                                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ candidate.binding_role|title }} · Priority {{ candidate.priority }}</p>
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <p class="text-xs leading-5 text-content-secondary">{{ candidate.decision_reason }}</p>
+                                                        {% if candidate.missing_capability_labels or candidate.missing_binding_capabilities %}
+                                                            <p class="mt-1 text-xs font-medium leading-5 text-content-muted">Open Bindings &amp; Consumers → View More for exact missing capability evidence and remediation.</p>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="lg:justify-self-end">
                                                         {{ integration_status('ready' if candidate.is_selected and candidate.operational_state == 'healthy' else ('degraded' if candidate.eligible else 'blocked') , 'Selected' if candidate.is_selected else ('Eligible' if candidate.eligible else 'Skipped'), display='indicator') }}
                                                     </div>
-                                                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ candidate.decision_reason }}</p>
-                                                    {% if candidate.missing_capability_labels or candidate.missing_binding_capabilities %}
-                                                        <p class="mt-2 text-xs font-medium text-content-muted">Open Bindings & Consumers → View More on the affected binding for exact missing capability evidence and remediation.</p>
-                                                    {% endif %}
                                                 </div>
                                             {% else %}
-                                                <p class="rounded-lg border border-outline-subtle bg-surface-card p-3.5 text-xs leading-5 text-content-secondary">No candidate source is registered for this consumer asset.</p>
+                                                <p class="px-4 py-4 text-xs leading-5 text-content-secondary">No candidate source is registered for this consumer asset.</p>
                                             {% endfor %}
-                                        </div>
+                                        </section>
                                     </div>
                                 </div>
                             </details>

@@ -96,3 +96,64 @@ def test_metrics_source_degraded_runtime_uses_compatibility_guidance() -> None:
     assert 'Upgrade or qualify its release, then rerun Full Validation.' in runtime
     assert 'Source remains usable with degraded compatibility.' in validation
     assert 'Upgrade or qualify its release, then rerun Full Validation.' in validation
+
+
+def test_binding_technical_queries_reuse_global_copy_without_new_scripts() -> None:
+    """Each query owns a visibly separate code surface and delegated Copy."""
+
+    from jinja2 import Environment
+
+    template = read('app/templates/integrations/components/_binding_validation_result.html')
+    Environment().parse(template)
+    clipboard = read('app/static/js/clipboard.js')
+    for marker in (
+        'data-kaori-copy-root',
+        'data-kaori-copy-button',
+        'data-kaori-copy-source',
+        'data-kaori-copy-label',
+        'data-kaori-copy-icon',
+        'data-kaori-binding-query',
+        'data-copy-label="Copy"',
+        'data-copied-label="Copied"',
+        'type="button"',
+        'font-mono',
+        'overflow-x-auto',
+    ):
+        assert marker in template
+
+    assert 'check.get("query")' in template
+    assert "item.get('technical_checks')" in template
+    assert 'data-kaori-copy-button' in clipboard
+    assert "source?.textContent?.trim()" in clipboard
+    assert 'clipboard.writeText(text)' in clipboard
+    assert '<script' not in template
+    assert 'onclick=' not in template
+
+
+def test_effective_consumer_resolution_uses_compact_capabilities_and_source_rows() -> None:
+    """Keep every candidate decision while removing the empty left-column card."""
+
+    from jinja2 import Environment
+
+    template = read('app/templates/integrations/observability/metrics_source/partials/_detail_scope.html')
+    Environment().parse(template)
+    assert 'data-kaori-consumer-resolution-full-width' in template
+    assert 'data-kaori-resolution-capability-contract' in template
+    assert 'data-kaori-resolution-candidates' in template
+    assert 'data-kaori-resolution-candidate-row' in template
+    assert 'for capability in consumer.required_capabilities' in template
+    assert 'for candidate in consumer.candidates' in template
+    assert 'candidate.instance_name' in template
+    assert 'candidate.binding_role|title' in template
+    assert 'candidate.priority' in template
+    assert 'candidate.decision_reason' in template
+    assert 'candidate.is_selected' in template
+    assert 'candidate.eligible' in template
+    assert "'Selected' if candidate.is_selected else ('Eligible' if candidate.eligible else 'Skipped')" in template
+    assert 'candidate.missing_capability_labels or candidate.missing_binding_capabilities' in template
+    assert 'No candidate source is registered for this consumer asset.' in template
+    assert 'lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]' not in template
+    assert 'consumer.required_capabilities|join(' not in template
+    assert 'data-kaori-binding-details-row' in read(
+        'app/templates/integrations/observability/metrics_source/partials/_binding_registry.html'
+    )
