@@ -236,6 +236,20 @@ Canonical Connection Registry columns for Kubernetes, Metrics Source, Alertmanag
 Connection | Endpoint / Scope | Core Readiness | Compatibility | Bindings | Actions
 ```
 
+Kubernetes Connection Registry rows follow the header semantics without
+changing shared six-column geometry: **Connection** shows cluster identity with
+environment as secondary context; **Endpoint / Scope** shows the full Kubernetes
+API URL with a secondary `Kubernetes API` descriptor; **Core Readiness** uses
+the canonical semantic status indicator and shows the complete validation
+timestamp without a redundant visible `Validated` prefix (its full meaning
+remains available to assistive technology); **Compatibility** retains profile
+and detected version on aligned lines. The existing `N Sources` metadata
+label and its native association tooltip remain in **Bindings** (#4560), and
+the **Manage** action preserves its owning route. Long endpoints and profile
+IDs use controlled `overflow-wrap:anywhere`, not truncated values or a new
+column-width contract. The existing shared table cells own vertical alignment
+and responsive horizontal overflow; no provider data or evidence is changed.
+
 Canonical direct-provider coverage columns for Kubernetes and MinIO are:
 
 ```text
