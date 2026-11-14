@@ -1,4 +1,5 @@
 {% extends "layouts/app.html" %}
+{% import "components/section_intro.html" as section_intro %}
 {% block title %}Top Consumers{% endblock title %}
 {% block dashboard_content %}
     <div id="top-consumers-page"
@@ -14,10 +15,22 @@
         {% endif %}
         {% if not dependency_blocker %}
             {% include "kubernetes/analytics/top_consumers/partials/_controls_readiness.html" %}
-            {% include "kubernetes/analytics/top_consumers/partials/_summary.html" %}
-            <div id="top-consumers-section">
-                {% include "kubernetes/analytics/top_consumers/partials/_top_consumers_section.html" %}
-            </div>
+            <section class="space-y-4"
+                     aria-labelledby="analytics-top_consumers-posture-heading">
+                {{ section_intro.render('Review Consumer Posture',
+                        'Assess ranked resource demand, committed scope coverage, and ownership context.',
+                        'analytics-top_consumers-posture-heading') }}
+                {% include "kubernetes/analytics/top_consumers/partials/_summary.html" %}
+            </section>
+            <section class="space-y-4"
+                     aria-labelledby="analytics-top_consumers-domains-heading">
+                {{ section_intro.render('Explore Consumer Domains',
+                        'Compare consumer rankings, record evidence, and recommendations before resizing.',
+                        'analytics-top_consumers-domains-heading') }}
+                <div id="top-consumers-section">
+                    {% include "kubernetes/analytics/top_consumers/partials/_top_consumers_section.html" %}
+                </div>
+            </section>
         {% endif %}
     </div>
 {% endblock dashboard_content %}

@@ -1,4 +1,5 @@
 {% extends "layouts/app.html" %}
+{% import "components/section_intro.html" as section_intro %}
 {% block title %}Resource Forecast{% endblock title %}
 {% block dashboard_content %}
     <div id="forecast-page"
@@ -15,8 +16,20 @@
             {% include "components/dependencies/_blocker.html" %}
         {% else %}
             {% include "kubernetes/analytics/forecast/partials/_controls_readiness.html" %}
-            {% include "kubernetes/analytics/forecast/partials/_overview_methodology.html" %}
-            <div id="forecast-section">{% include "kubernetes/analytics/forecast/partials/_forecast_section.html" %}</div>
+            <section class="space-y-4"
+                     aria-labelledby="analytics-forecast-posture-heading">
+                {{ section_intro.render('Review Forecast Posture',
+                        'Assess projected pressure, model quality, and threshold timing from committed evidence.',
+                        'analytics-forecast-posture-heading') }}
+                {% include "kubernetes/analytics/forecast/partials/_overview_methodology.html" %}
+            </section>
+            <section class="space-y-4"
+                     aria-labelledby="analytics-forecast-domains-heading">
+                {{ section_intro.render('Explore Forecast Domains',
+                        'Inspect resource projections, historical trends, and evidence-qualified actions.',
+                        'analytics-forecast-domains-heading') }}
+                <div id="forecast-section">{% include "kubernetes/analytics/forecast/partials/_forecast_section.html" %}</div>
+            </section>
         {% endif %}
     </div>
 {% endblock dashboard_content %}

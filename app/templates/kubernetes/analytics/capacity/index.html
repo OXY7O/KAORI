@@ -2,6 +2,7 @@
 {% import "kubernetes/analytics/components/_status_notice.html" as status_notice %}
 {% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
 {% import "components/info_tip.html" as info_tip %}
+{% import "components/section_intro.html" as section_intro %}
 {% block title %}Capacity Analysis{% endblock title %}
 {% block dashboard_content %}
     <div id="capacity-page"
@@ -14,51 +15,63 @@
             {% if error %}{{ status_notice.render('Capacity Data Unavailable', error, tone='warning') }}{% endif %}
             {% include "kubernetes/analytics/capacity/partials/_controls_readiness.html" %}
             {% if cluster %}
-                {% include "kubernetes/analytics/capacity/partials/_overview.html" %}
+                <section class="space-y-4"
+                         aria-labelledby="analytics-capacity-posture-heading">
+                    {{ section_intro.render('Review Capacity Posture',
+                            'Assess Ready-worker headroom and operational filesystem context before capacity decisions.',
+                            'analytics-capacity-posture-heading') }}
+                    {% include "kubernetes/analytics/capacity/partials/_overview.html" %}
+                </section>
                 {% set capacity_tabs = [('summary', 'Worker Capacity Summary', 'server-cog'), ('allocation', 'Allocation & Headroom', 'chart-pie'), ('risk', 'Capacity Risk Summary', 'shield-alert'), ('recommendations', 'Capacity Recommendations', 'list-checks')] %}
-                {% call analytics_workspace.tabbed(
-                    'capacity-content',
-                    capacity_tabs,
-                    'Capacity Analysis Content',
-                    'Capacity Analysis Workspace',
-                    'Review worker capacity, allocation pressure, resource headroom, risk, and prioritized actions in one workspace.',
-                    'server-cog',
-                    initial_tab|default('summary'),
-                    ['summary', 'allocation', 'risk', 'recommendations'],
-                    title_accessory=info_tip.render('kubernetes-analytics-capacity-workspace-guide',
-                        'Capacity Analysis Workspace Guide',
-                        'Switch between worker capacity, allocation headroom, risk, and explicit capacity recommendations without losing scope.',
-                        placement='right', variant='guide')
-                    ) %}
-                    <div id="capacity-content-panel-summary"
-                         role="tabpanel"
-                         aria-labelledby="capacity-content-tab-summary"
-                         data-analytics-tab-panel="summary"
-                         {% if initial_tab|default('summary') != 'summary' %}hidden{% endif %}>
-                        {% include "kubernetes/analytics/capacity/partials/_worker_summary.html" %}
-                    </div>
-                    <div id="capacity-content-panel-allocation"
-                         role="tabpanel"
-                         aria-labelledby="capacity-content-tab-allocation"
-                         data-analytics-tab-panel="allocation"
-                         {% if initial_tab|default('summary') != 'allocation' %}hidden{% endif %}>
-                        {% include "kubernetes/analytics/capacity/partials/_allocation.html" %}
-                    </div>
-                    <div id="capacity-content-panel-risk"
-                         role="tabpanel"
-                         aria-labelledby="capacity-content-tab-risk"
-                         data-analytics-tab-panel="risk"
-                         {% if initial_tab|default('summary') != 'risk' %}hidden{% endif %}>
-                        {% include "kubernetes/analytics/capacity/partials/_risk.html" %}
-                    </div>
-                    <div id="capacity-content-panel-recommendations"
-                         role="tabpanel"
-                         aria-labelledby="capacity-content-tab-recommendations"
-                         data-analytics-tab-panel="recommendations"
-                         {% if initial_tab|default('summary') != 'recommendations' %}hidden{% endif %}>
-                        {% include "kubernetes/analytics/capacity/partials/_recommendations.html" %}
-                    </div>
-                {% endcall %}
+                <section class="space-y-4"
+                         aria-labelledby="analytics-capacity-domains-heading">
+                    {{ section_intro.render('Explore Capacity Domains',
+                            'Review worker capacity, allocation, risks, and recommendations using committed evidence.',
+                            'analytics-capacity-domains-heading') }}
+                    {% call analytics_workspace.tabbed(
+                        'capacity-content',
+                        capacity_tabs,
+                        'Capacity Analysis Content',
+                        'Capacity Analysis Workspace',
+                        'Review worker capacity, allocation pressure, resource headroom, risk, and prioritized actions in one workspace.',
+                        'server-cog',
+                        initial_tab|default('summary'),
+                        ['summary', 'allocation', 'risk', 'recommendations'],
+                        title_accessory=info_tip.render('kubernetes-analytics-capacity-workspace-guide',
+                            'Capacity Analysis Workspace Guide',
+                            'Switch between worker capacity, allocation headroom, risk, and explicit capacity recommendations without losing scope.',
+                            placement='right', variant='guide')
+                        ) %}
+                        <div id="capacity-content-panel-summary"
+                             role="tabpanel"
+                             aria-labelledby="capacity-content-tab-summary"
+                             data-analytics-tab-panel="summary"
+                             {% if initial_tab|default('summary') != 'summary' %}hidden{% endif %}>
+                            {% include "kubernetes/analytics/capacity/partials/_worker_summary.html" %}
+                        </div>
+                        <div id="capacity-content-panel-allocation"
+                             role="tabpanel"
+                             aria-labelledby="capacity-content-tab-allocation"
+                             data-analytics-tab-panel="allocation"
+                             {% if initial_tab|default('summary') != 'allocation' %}hidden{% endif %}>
+                            {% include "kubernetes/analytics/capacity/partials/_allocation.html" %}
+                        </div>
+                        <div id="capacity-content-panel-risk"
+                             role="tabpanel"
+                             aria-labelledby="capacity-content-tab-risk"
+                             data-analytics-tab-panel="risk"
+                             {% if initial_tab|default('summary') != 'risk' %}hidden{% endif %}>
+                            {% include "kubernetes/analytics/capacity/partials/_risk.html" %}
+                        </div>
+                        <div id="capacity-content-panel-recommendations"
+                             role="tabpanel"
+                             aria-labelledby="capacity-content-tab-recommendations"
+                             data-analytics-tab-panel="recommendations"
+                             {% if initial_tab|default('summary') != 'recommendations' %}hidden{% endif %}>
+                            {% include "kubernetes/analytics/capacity/partials/_recommendations.html" %}
+                        </div>
+                    {% endcall %}
+                </section>
             {% endif %}
         {% endif %}
     </div>
