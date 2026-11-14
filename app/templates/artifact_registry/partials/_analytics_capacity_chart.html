@@ -2,6 +2,11 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/info_tip.html" as info_tip %}
 {% set quota_rows = analytics.capacity_chart_rows %}
+{% set qualified_total = analytics.capacity_project_count|default(quota_rows|length) %}
+{% set project_count_label = quota_rows|length ~ ' Projects' %}
+{% if qualified_total > quota_rows|length %}
+    {% set project_count_label = 'Top ' ~ quota_rows|length ~ ' of ' ~ qualified_total ~ ' Projects' %}
+{% endif %}
 <section class="border-t border-outline-subtle"
          data-registry-capacity-quota-series="{{ quota_rows|tojson|forceescape }}">
     <header class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-5">
@@ -20,7 +25,7 @@
             </div>
             <p class="mt-1 text-xs leading-5 text-content-secondary">Observed storage usage against configured quota for each qualified Registry project.</p>
         </div>
-        {{ table_label.metadata_label(quota_rows|length ~ ' Projects', 'gauge', size='compact') }}
+        {{ table_label.metadata_label(project_count_label, 'gauge', size='compact') }}
     </header>
     {% if quota_rows %}
         <div class="grid gap-4 p-4 lg:grid-cols-5 sm:p-5">
