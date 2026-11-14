@@ -3,8 +3,14 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_section_card.html" as operational_section %}
 {% import "components/operational_callout.html" as operational_callout %}
+{% import "components/info_tip.html" as info_tip %}
 {% set definition = selected_job.definition %}
 {% set active_job = selected_job.active_job %}
+{% if active_job %}
+    {% set current_execution_grid = 'xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.95fr)] xl:items-center' %}
+{% else %}
+    {% set current_execution_grid = 'lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center' %}
+{% endif %}
 {% set can_execute = current_user.has_permission(definition.execute_permission) and (not definition.domain_execute_permission or current_user.has_permission(definition.domain_execute_permission)) %}
 <section id="job-execution-activity"
          {% if execution_activity_oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}
@@ -15,9 +21,22 @@
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                     <i data-lucide="activity" class="h-4 w-4"></i>
                 </span>
-                <div class="min-w-0">
-                    <h3 class="text-base font-semibold text-content-primary">Execution &amp; Recent Activity</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ definition.execution_summary }}</p>
+                <div class="min-w-0 flex-1">
+                    <div class="flex min-w-0 flex-wrap items-center gap-2">
+                        <h3 class="min-w-0 text-base font-semibold text-content-primary">Execution &amp; Recent Activity</h3>
+                        {{ info_tip.render('jobs-execution-activity-guide-' ~ (definition.key|replace('.', '-')),
+                                            'Execution & Recent Activity',
+                                            'Read current job state and canonical execution evidence.',
+                                            items=[
+                                            'Current Execution is the observed job state; readiness alone does not prove that a job has run.',
+                                            'Active runs expose worker progress and details; recent records retain canonical execution history.',
+                                            'Manual dispatch requires permission and an eligible target; blocked states remain visible in the workspace.'
+                                            ],
+                                            placement='right',
+                                            variant='guide') }}
+                    </div>
+                    <p class="mt-1 min-w-0 text-xs leading-5 text-content-muted lg:truncate"
+                       title="{{ definition.execution_summary }}">{{ definition.execution_summary }}</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
@@ -30,7 +49,7 @@
     </header>
     <div class="border-b border-outline-subtle px-5 py-5 sm:px-6">
         <div class="overflow-hidden rounded-xl border border-kaori-primary/15 bg-kaori-soft/40">
-            <div class="grid min-w-0 gap-4 px-4 py-4 sm:px-5 {{ 'xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.95fr)] xl:items-center' if active_job else 'lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center' }}">
+            <div class="grid min-w-0 gap-4 px-4 py-4 sm:px-5 {{ current_execution_grid }}">
                 <div class="flex min-w-0 items-start gap-3">
                     <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-card text-kaori-primary shadow-sm ring-1 ring-kaori-primary/10">
                         <i data-lucide="{{ 'loader-circle' if active_job else 'circle-check' }}"
@@ -58,10 +77,11 @@
                             </dl>
                         {% else %}
                             {% set idle_execution_helper = 'No active execution. Manual dispatch is blocked until an eligible target is available.' if selected_job.execution_disabled else 'No active execution. The job is ready for its next scheduled or manual run.' %}
+                            {% set idle_execution_helper_short = 'Manual run blocked until an eligible target is available.' if selected_job.execution_disabled else 'No active run; awaiting scheduled or manual execution.' %}
                             <p class="mt-2 min-w-0 text-sm font-semibold leading-6 text-content-primary lg:truncate"
                                title="{{ selected_job.execution_state.description }}">{{ selected_job.execution_state.description }}</p>
                             <p class="mt-1 min-w-0 text-xs leading-5 text-content-muted lg:truncate"
-                               title="{{ idle_execution_helper }}">{{ idle_execution_helper }}</p>
+                               title="{{ idle_execution_helper }}">{{ idle_execution_helper_short }}</p>
                         {% endif %}
                     </div>
                 </div>
