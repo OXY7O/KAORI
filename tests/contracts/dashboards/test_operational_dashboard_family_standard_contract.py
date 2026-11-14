@@ -237,18 +237,68 @@ def test_capacity_decision_shared_component_renders_evidence_with_no_provider_ac
         assert 'Recommended operational action' in html
         assert 'data-kaori-capacity-decision' in html
         assert 'data-kaori-capacity-review' in html
-        assert 'Capacity Review Reference' in html
-        assert 'Guidance only' in html
-        assert html.count('role="listitem"') == 3
-        assert 'grid gap-2 sm:grid-cols-3' in html
+        assert 'Capacity Review Guide' in html
+        assert 'Reference only' in html
+        assert html.count('<li class="flex min-w-0 items-start gap-2 border-b') == 6
+        assert 'grid grid-cols-1 gap-x-5 sm:grid-cols-2' in html
+        assert '<article' not in html
         assert 'arrow-right' not in html
         for consideration in ('Validate', 'Assess', 'Prioritize', 'Act', 'Verify', 'Record'):
-            assert f'>{consideration}</p>' in html
-        assert 'break-words text-sm leading-6 text-content-secondary' in html
+            assert f'>{consideration}</h5>' in html
+        assert 'mt-1 break-words text-xs leading-5 text-content-secondary' in html
+        assert 'data-kaori-capacity-action' in html
         assert 'aria-label="Capacity decision from committed evidence"' in html
         assert '<form' not in html
         assert 'hx-post' not in html
         assert 'Recommended Capacity Action Flow' not in html
+
+
+
+def test_capacity_status_action_copy_is_concise_without_forced_truncation() -> None:
+    kubernetes = read('app/kubernetes/dashboard/sections/capacity.py')
+    storage = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
+    registry = read('app/artifact_registry/presentation_common.py')
+    action_copy = {
+        'Kubernetes': (
+            kubernetes,
+            (
+                'Review top consumers, reduce load, and expand approved worker capacity.',
+                'Review high-use workloads and plan scaling before critical pressure.',
+                'Check headroom, requests/limits, and forecast before workload growth.',
+                'No scaling needed; monitor trends, requests/limits, and baselines.',
+                'Refresh Metrics Source and node-role evidence before capacity decisions.',
+            ),
+        ),
+        'Object Storage': (
+            storage,
+            (
+                'Review major buckets; approve capacity expansion or demand reduction.',
+                'Check top buckets and forecast before approving storage growth.',
+                'Maintain analytics; review bucket growth before approving changes.',
+                'Refresh committed storage analytics before capacity decisions.',
+            ),
+        ),
+        'Artifact Registry': (
+            registry,
+            (
+                'Review quota pressure; approve retention, cleanup, or quota changes.',
+                'Review top projects, retention, and quota ownership before growth.',
+                'Keep Registry analytics current; review growth after publications.',
+                'Refresh Registry Analytics after checking the Metrics Source binding.',
+            ),
+        ),
+    }
+    for source, actions in action_copy.values():
+        for action in actions:
+            assert action in source
+            assert len(action) <= 80
+    shared = read('app/templates/components/operational_capacity_decision.html')
+    assert 'data-kaori-capacity-action' in shared
+    assert '<h4 class="text-xs font-semibold text-content-primary">Recommended Action</h4>' in shared
+    assert 'mt-1 break-words text-xs leading-5 text-content-secondary' in shared
+    assert 'whitespace-nowrap' not in shared
+    assert 'truncate' not in shared
+    assert 'line-clamp' not in shared
 
 
 def test_capacity_metric_cards_follow_kubernetes_visual_grammar() -> None:

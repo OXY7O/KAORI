@@ -271,6 +271,8 @@ def test_dashboard_restores_card_grid_freshness_and_visible_action_flows() -> No
     assert 'bg-surface-elevated p-3.5' in evidence_tile
     assert 'capacity_decision.render(' in capacity
     assert 'review_groups=capacity_review_groups' in capacity
+    assert 'Capacity Analysis workers; control-plane/master excluded.' in capacity
+    assert 'matching Capacity Analysis and excluding nodes with control-plane or master roles.' in capacity
     assert 'Recommended Capacity Action Flow' not in capacity
     assert 'Controlled Alert Response Flow' in alert
     assert 'Alert Interpretation & Response' in alert_response
