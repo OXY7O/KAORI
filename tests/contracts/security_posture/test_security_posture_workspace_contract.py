@@ -113,7 +113,7 @@ def test_security_pages_use_approved_dashboard_and_registry_components() -> None
     assert "page_hero.intro('layout-dashboard', 'Security Posture', 'shield-alert')" in overview
     assert 'page_hero.shell_classes()' in overview
     assert 'page_hero.layout_classes()' in overview
-    assert 'components/section_intro.html' not in overview
+    assert 'components/section_intro.html' in overview
     assert 'data-security-posture-insights' in overview
     assert 'lg:col-span-7' in overview
     assert 'lg:col-span-5' in overview
@@ -124,7 +124,11 @@ def test_security_pages_use_approved_dashboard_and_registry_components() -> None
     assert 'components/resource_posture_grid.html' in overview
     assert 'components/operational_metric_card.html' not in overview
     assert 'components/table.html' in overview
-    assert 'data-security-posture-preview' in overview
+    assert 'data-security-posture-cve-registry' in overview
+    assert 'components/table_registry.html' in overview
+    assert 'registry.filter_form(' in overview
+    assert 'registry.footer(' in overview
+    assert 'table_ui.inventory_block_header(' in overview
     assert 'components/states/_empty_state.html' in overview
     assert 'components/states/_empty_state.html' in findings
     assert 'Security Evidence Prerequisites' in overview
@@ -368,7 +372,7 @@ def test_security_assurance_overview_uses_source_backed_exposure_hierarchy() -> 
     assert '0 · 0%' in html
     assert 'data-security-severity-distribution' in html
     assert 'role="progressbar"' in html
-    assert 'data-security-posture-preview' in html
+    assert 'data-security-posture-cve-registry' in html
     assert 'CVE-2022-1586' in html
     assert '/artifact-registry/security/cve/CVE-2022-1586/impact' in html
     assert '0 mutable/other' in html
@@ -378,20 +382,83 @@ def test_security_assurance_overview_uses_source_backed_exposure_hierarchy() -> 
     assert 'Exposure Trend' not in html  # no committed historical series exists
 
 
-def test_security_findings_preview_uses_compact_rows_and_embedded_handoff() -> None:
+def test_security_findings_registry_uses_full_table_and_embedded_handoff() -> None:
     html = _render_workspace_page('overview', _renderable_posture())
     template = read('app/templates/security_posture/overview.html')
-    assert 'data-security-posture-preview' in html
+    assert 'data-security-posture-cve-registry' in html
+    assert 'data-security-posture-cve-table' in html
     assert 'data-security-investigation-handoff' in html
     assert html.count('data-security-investigation-handoff') == 1
     assert '2 scanner findings' in html
     assert 'View All Findings' in html
     assert 'Validate Runtime Impact' in html
-    assert 'data-security-posture-preview' in template
+    assert 'data-security-posture-cve-registry' in template
     assert "section_card.render('Investigation Handoff'" not in template
     assert 'table_ui.title_cell(row.cve_id' not in template
     assert 'flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1' in template
-    assert template.index('data-security-posture-preview') < template.index('data-security-investigation-handoff')
+    assert template.index('data-security-posture-cve-table') < template.index('data-security-investigation-handoff')
+    assert template.index('data-security-investigation-handoff') < template.index('registry.footer(')
+
+
+def test_security_overview_cve_registry_is_filterable_htmx_and_url_paginated() -> None:
+    html = _render_workspace_page('overview', _renderable_posture())
+    template = read('app/templates/security_posture/overview.html')
+    assert 'id="security-posture-cve-registry"' in html
+    assert 'data-kaori-canonical-registry-filter="security-posture-cve-registry"' in html
+    assert 'data-kaori-canonical-registry-footer="security-posture-cve-registry"' in html
+    assert 'data-kaori-canonical-registry-pagination="security-posture-cve-registry"' in html
+    assert 'data-kaori-page-size-control="security-posture-overview-cve"' in html
+    assert 'hx-target="#security-posture-cve-registry"' in html
+    assert 'hx-select="#security-posture-cve-registry"' in html
+    assert 'hx-indicator="#security-posture-cve-loading"' in html
+    assert 'name="tab" value="overview"' in html
+    assert 'name="q"' in html
+    assert 'name="severity"' in html
+    assert 'name="per_page"' in html
+    assert 'Reload Evidence' in html
+    assert 'Clear Filters' in html
+    assert 'data-kaori-clear-filters' in html
+    assert 'tab=overview' in html
+    assert 'page=1' in html
+    assert 'page=3' in html
+    assert 'data-kaori-info-tip-variant="guide"' in html
+    assert 'components/table_registry.html' in template
+    assert 'Loading CVE findings' in template
+    assert '[5, 10, 25, 50]' in template
+    for option in ('5', '10', '25', '50'):
+        assert f'<option value="{option}"' in html
+
+
+def test_security_overview_cve_registry_empty_filter_is_not_a_safety_verdict() -> None:
+    posture = _renderable_posture()
+    posture['rows'] = []
+    posture['pagination'] = pagination_payload(build_pagination_window(total_items=0, page=1, per_page=5))
+    posture['search'] = 'CVE-9999-999999'
+    html = _render_workspace_page('overview', posture)
+    assert 'No CVEs match this filter' in html
+    assert 'No match does not prove safety.' in html
+    assert 'data-kaori-canonical-registry-footer="security-posture-cve-registry"' in html
+    assert 'Showing 0' in html
+    assert 'Clear Filters' in html
+
+
+def test_security_overview_filter_params_preserve_unfiltered_scope_totals() -> None:
+    routes = read('app/security_posture/routes.py')
+    overview_route = routes.split('def overview() -> ResponseReturnValue:', 1)[1]
+    overview_route = overview_route.split('@security_posture_bp.get', 1)[0]
+    assert "search=request.args.get('q', '', type=str)" in overview_route
+    assert "severity=request.args.get('severity', '', type=str)" in overview_route
+    assert "page=request.args.get('page', 1, type=int) or 1" in overview_route
+    assert "per_page=request.args.get('per_page', 5, type=int) or 5" in overview_route
+    assert 'include_overview_summary=True' in overview_route
+
+    presentation = read('app/security_posture/presentation.py')
+    assert 'scoped_cve_findings = scoped_findings.filter(all_cve_ids.like(' in presentation
+    assert 'grouped = _grouped_security_cves(scoped_cve_findings)' in presentation
+    assert 'filtered_grouped = _grouped_security_cves(filtered_findings)' in presentation
+    assert 'severity_summary = grouped.order_by(None).subquery()' in presentation
+    assert 'binding_totals = scoped_cve_findings.outerjoin(' in presentation
+    assert 'paginate_query(' in presentation
 
 
 def test_security_investigation_recommendations_are_permission_filtered() -> None:
@@ -422,7 +489,7 @@ def test_security_exposure_section_uses_canonical_intro_and_source_guide() -> No
     assert 'Open guide: Security Exposure Assessment Guide' in html
     assert 'Missing, changed, or stale evidence means exposure is unknown, never zero.' in html
     assert "section_intro.render('Security Exposure Assessment'" in template
-    assert "header_badge=exposure_guide" in template
+    assert 'header_badge=exposure_guide' in template
     assert 'data-security-snapshot-grid' in html
     assert html.index('data-security-snapshot-grid') < html.index('data-security-exposure-section')
     assert html.index('data-security-exposure-section') < html.index('data-security-overview-tabs')
@@ -479,14 +546,20 @@ def test_security_distinct_cve_severity_projection_preserves_unknown_without_fal
     assert sum(row['count'] for row in distribution) == 6
 
 
-def test_security_overview_preview_never_renders_more_than_five_cves() -> None:
+def test_security_overview_table_renders_complete_server_paged_results() -> None:
     posture = _renderable_posture()
     posture['rows'] = [{**posture['rows'][0], 'cve_id': f'CVE-2022-{2000 + index}'} for index in range(7)]
+    posture['pagination'] = pagination_payload(build_pagination_window(total_items=7, page=1, per_page=10))
     html = _render_workspace_page('overview', posture)
     assert 'CVE-2022-2000' in html
     assert 'CVE-2022-2004' in html
-    assert 'CVE-2022-2005' not in html
-    assert 'CVE-2022-2006' not in html
+    assert 'CVE-2022-2005' in html
+    assert 'CVE-2022-2006' in html
+    assert 'Showing 1' in html
+    assert '7 of 7' in html
+    assert 'name="per_page"' in html
+    assert re.search(r'<option value="10"\\s+selected', html)
+    assert 'posture.rows[:5]' not in read('app/templates/security_posture/overview.html')
 
 
 def test_security_assurance_stale_scanner_is_not_runtime_all_clear() -> None:
