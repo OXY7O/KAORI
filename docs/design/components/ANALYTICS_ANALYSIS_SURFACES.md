@@ -38,6 +38,14 @@ Kubernetes Analytics Overview follows the established title-level Violet `info_t
 
 The shared `snapshot_unavailable(..., title_accessory='')` accepts an optional Guide for the seven worker-backed Overview panels when the committed dataset is unavailable. Its default empty accessory preserves existing consumers. Guide contents explain source, interpretation and workflow boundaries; actual stale/unknown/critical statuses and required recovery guidance remain visible in the normal surface. Tooltip IDs must be unique, and mobile titles may wrap naturally. The warning Operational Reading sentence is concise for a normal desktop single line without truncating or hiding risk.
 
+## Kubernetes Focused Analysis Guides and Concise Decisions (#4746)
+
+After the nine-tab Overview title Guide standard (#4736), the seven focused Kubernetes Analytics routes — **Usage, Capacity, Workloads, Storage, Consumers, Forecast, and Alerts & Anomalies** — use the same `components/info_tip.html::render(..., variant='guide', placement='right')` beside their owning headers. This includes Controls & Data Readiness or Source Readiness, high-level summary, the shared Content Tabs workspace, and the selected tab's primary evidence section. Nested resource projections use distinct IDs per resource; asynchronous HTMX fragments own their Guide IDs and keep existing swap scope.
+
+`kubernetes/analytics/components/_analysis_workspace.html` provides optional default-empty `title_accessory` slots on existing `controls_readiness`, `overview`, and `tabbed` macros. The slots reuse `analytics/components/_controls_readiness.html` and shared header geometry; they do not introduce independent Guide controls, wrapper shells, tab controllers or new CSS. Context remains source-qualified and read-only. Statuses, unavailable observations, ownership, provider authority, and actions remain visible in the original surface.
+
+Overview compact text policy uses **shorter meaningful copy, not truncation or forced single-line CSS**: Storage Risk Context evidence-limit advice and Consumers' Recommended Action are concise for one desktop line; healthy Storage What To Watch aims for two desktop lines. Forecast Decision shortens only the exact no-projected-breach wording in the display, preserving other `forecast.risk_note` values and the original evidence/threshold classification. Natural mobile wrapping, desktop readability, and different fonts must still be visually verified.
+
 ## Primary Evidence
 
 Controls, readiness, committed snapshot metadata, charts, ranked records, pressure lanes, findings, and analytical context use neutral `bg-surface-card` or `bg-surface-muted` surfaces. Borders and whitespace separate peer evidence. Role-colored compact icons, labels, badges, charts, and bars provide hierarchy without tinting complete evidence panels.
