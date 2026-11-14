@@ -305,6 +305,18 @@ Rules:
 
 The retired sentence `Run Test Connection successfully before KAORI enables Register Connection.` must not be reintroduced as registration-footer UI copy.
 
+**Compact Alertmanager registration guidance (UAT #4698):** keep the
+Endpoint & Access subtitle, Registration Flow note, Related Operational
+Workspace summary, and disabled-connection toggle description concise enough
+for a natural single desktop line at the approved split-panel width.
+The shared `connection_validation_header`, `provider_registration_context`
+and `operational_toggle` continue owning layout and semantics; shorten
+provider-owned copy rather than adding `whitespace-nowrap`, truncation,
+smaller text, or custom layout. The flow still explicitly requires Full
+Validation before consumer bindings, while disabled connections remain
+persisted but excluded from scope resolution. Narrow/mobile layouts and
+additional initial-cluster context may wrap naturally.
+
 ## Provider Registry Contract
 
 Metrics Source and Alertmanager registries share:
