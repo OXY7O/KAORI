@@ -208,7 +208,8 @@ def test_drift_sections_have_context_before_child_tabs_and_one_active_registry()
         assert 'workspace_tabs.render_navigation(' not in source
         assert 'sm:grid-cols-' not in source
         # The introductory copy is not its own large nested card.
-        assert 'data-capsule-allocation-scope-guide' in source if section == 'allocation' else True
+        if section == 'allocation':
+            assert 'data-capsule-allocation-scope-guide' in source
 
     assert "ops_view='tenant-quota'" in allocation
     assert "ops_view='shared-allocation'" in allocation
