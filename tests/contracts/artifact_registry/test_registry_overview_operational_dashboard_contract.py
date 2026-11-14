@@ -300,7 +300,10 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
     shared_capacity = read('app/templates/components/operational_capacity_metric_card.html')
     assert 'percent is not none' in shared_capacity
     assert 'percentage unavailable' in shared_capacity
-    assert 'Refresh evidence; verify headroom' in capacity_snapshot
+    assert 'capacity_decision.render(' in capacity_snapshot
+    assert 'overview.capacity.risk_detail' in capacity_snapshot
+    assert 'overview.capacity.recommended_action' in capacity_snapshot
+    assert 'Recommended Capacity Action Flow' not in capacity_snapshot
     assert 'Registry project quota balance chart' in capacity_snapshot
     assert 'Project Quota Balance' in capacity_snapshot
     assert 'overview.capacity.metrics[1].progress_percent' in capacity_snapshot

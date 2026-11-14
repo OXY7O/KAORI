@@ -174,7 +174,8 @@ def test_kubernetes_capacity_decision_notes_and_forecast_helpers() -> None:
     assert 'progress_bar.bar(headroom_percent,' in capacity
     assert 'headroom unavailable' in capacity
     assert 'Capacity Decision Notes' not in capacity
-    assert 'Recommended Capacity Action Flow' in capacity
+    assert 'capacity_decision.render(' in capacity
+    assert 'Recommended Capacity Action Flow' not in capacity
     for text in (
         'Peak projected utilization',
         'Resources nearing forecast limits',
@@ -202,6 +203,39 @@ def test_kubernetes_dashboard_forecast_cards_fill_peer_width_without_clipping() 
     assert 'item.projected_percent' in forecast
 
 
+
+def test_capacity_decision_shared_component_renders_evidence_with_no_provider_action() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
+    render = env.get_template('components/operational_capacity_decision.html').module.render
+    for risk, tone in (
+        ('Low', 'normal'),
+        ('Medium', 'warning'),
+        ('High', 'critical'),
+        ('Unknown', 'unknown'),
+    ):
+        html = render(
+            risk,
+            tone,
+            'Committed capacity insight',
+            'Evidence interpretation',
+            'Recommended operational action',
+        )
+        assert 'Overall Capacity Risk' in html
+        assert 'What This Means' in html
+        assert 'Recommended Action' in html
+        assert risk in html
+        assert 'Committed capacity insight' in html
+        assert 'Evidence interpretation' in html
+        assert 'Recommended operational action' in html
+        assert 'data-kaori-capacity-decision' in html
+        assert 'aria-label="Capacity decision from committed evidence"' in html
+        assert '<form' not in html
+        assert 'hx-post' not in html
+        assert 'Recommended Capacity Action Flow' not in html
+
+
 def test_capacity_metric_cards_follow_kubernetes_visual_grammar() -> None:
     kubernetes = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
     storage = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
@@ -216,8 +250,10 @@ def test_capacity_metric_cards_follow_kubernetes_visual_grammar() -> None:
         assert 'bg-status-info' in template
         assert 'bg-status-pending' in template
         assert 'bg-surface-elevated p-4' in template
-        assert 'Overall Capacity Risk' in template
-        assert 'Recommended Capacity Action Flow' in template
+        assert 'components/operational_capacity_decision.html' in template
+        assert 'capacity_decision.render(' in template
+        assert 'Recommended Capacity Action Flow' not in template
+        assert 'components/operational_flow_steps.html' not in template
 
     assert 'progress_bar.bar(percent,' in storage
     assert 'percentage unavailable' in storage

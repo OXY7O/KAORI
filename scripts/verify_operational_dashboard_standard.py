@@ -59,6 +59,7 @@ WORKSPACE_TABS = ROOT / 'app' / 'templates' / 'components' / 'workspace_tabs.htm
 DASHBOARD_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_dashboard_workspace.html'
 REPORTING_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'reporting_dashboard_workspace.html'
 METRIC_CARD = ROOT / 'app' / 'templates' / 'components' / 'operational_metric_card.html'
+CAPACITY_DECISION = ROOT / 'app' / 'templates' / 'components' / 'operational_capacity_decision.html'
 SIGNAL_OVERVIEW_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_signal_overview.html'
 EVIDENCE_TILE = ROOT / 'app' / 'templates' / 'components' / 'operational_evidence_tile.html'
 ALERT_SUMMARY_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_alert_summary.html'
@@ -432,7 +433,8 @@ def _verify_artifact_registry_dashboard(
             'item.progress_percent',
             'item.progress_label',
             "missing_label='Inventory' if item.progress_label == 'Inventory' else 'No Quota'",
-            'Refresh evidence; verify headroom',
+            'components/operational_capacity_decision.html',
+            'capacity_decision.render(',
             'Registry project quota balance chart',
             'overview.capacity.metrics[1].progress_percent',
             'overview.capacity.metrics[2].progress_percent',
@@ -460,6 +462,22 @@ def _verify_artifact_registry_dashboard(
         ),
         'shared Capacity metric card with known/missing evidence and accessible percentage',
     )
+    capacity_decision = _read(CAPACITY_DECISION)
+    _require(
+        capacity_decision,
+        (
+            'components/table_label.html',
+            'data-kaori-capacity-decision',
+            'aria-label="Capacity decision from committed evidence"',
+            'Overall Capacity Risk',
+            'What This Means',
+            'Recommended Action',
+            '{{ interpretation }}',
+            '{{ recommended_action }}',
+            "table_label.status_label(risk, tone, size='detail')",
+        ),
+        'one reusable committed-evidence Capacity Decision',
+    )
     for owner, capacity_source in (
         ('Kubernetes', _read(KUBERNETES_CAPACITY)),
         ('Object Storage', _read(OBJECT_CAPACITY)),
@@ -471,9 +489,15 @@ def _verify_artifact_registry_dashboard(
                 'components/operational_capacity_metric_card.html',
                 'capacity_metric_card.render(',
                 'grid gap-3 lg:grid-cols-3',
+                'components/operational_capacity_decision.html',
+                'capacity_decision.render(',
             ),
             owner + ' shared Capacity Snapshot presentation ownership',
         )
+        if 'Recommended Capacity Action Flow' in capacity_source or 'capacity_action_rows' in capacity_source:
+            raise AssertionError(f'{owner}: static Capacity Action Flow is not a dashboard decision')
+        if 'components/operational_flow_steps.html' in capacity_source:
+            raise AssertionError(f'{owner}: capacity must use evidence-driven decision, not a generic flow')
     _require(
         presentation,
         (

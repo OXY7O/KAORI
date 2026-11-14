@@ -150,7 +150,8 @@ def test_primary_and_peer_operational_flows_are_static_and_controlled_flows_reus
     assert 'Governed Flow' in reporting_workspace
     assert 'sm:grid-cols-2' in reporting_workspace
     assert 'gap-px overflow-hidden' in reporting_workspace
-    assert 'components/operational_flow_steps.html' in capacity
+    assert 'components/operational_capacity_decision.html' in capacity
+    assert 'components/operational_flow_steps.html' not in capacity
     assert 'components/context_guidance_card.html' not in alert_guidance
     assert 'components/context_guidance_card.html' not in reporting_guidance
     assert 'always visible' in contract
@@ -268,7 +269,8 @@ def test_dashboard_restores_card_grid_freshness_and_visible_action_flows() -> No
     assert "body_classes='grid gap-3 p-5 sm:grid-cols-2'" in freshness
     assert 'components/operational_evidence_tile.html' in freshness
     assert 'bg-surface-elevated p-3.5' in evidence_tile
-    assert 'Recommended Capacity Action Flow' in capacity
+    assert 'capacity_decision.render(' in capacity
+    assert 'Recommended Capacity Action Flow' not in capacity
     assert 'Controlled Alert Response Flow' in alert
     assert 'Alert Interpretation & Response' in alert_response
     assert 'components/reporting_dashboard_workspace.html' in reporting
