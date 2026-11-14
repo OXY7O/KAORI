@@ -64,7 +64,7 @@
                         </div>
                         {{ integration_ui.palette_icon("database", "normal" if bucket_count else "unknown", size="md") }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ "Historical snapshot from the previous connection identity. Run Core Validation and Object Storage Inventory Sync before using it as current evidence." if inventory_source_changed else "Committed object-storage inventory from the latest Object Storage Inventory Sync at " ~ inventory_observed_at_display ~ "." }}</p>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ "Previous connection snapshot; revalidate and resync before use." if inventory_source_changed else "Committed bucket snapshot · Synced " ~ inventory_observed_at_display ~ "." }}</p>
                 </article>
                 <article class="bg-surface-card p-5">
                     <div class="flex items-start justify-between gap-3">
@@ -84,7 +84,7 @@
                         </div>
                         {{ integration_ui.palette_icon("radio-tower", "info" if binding_total else "unknown", size="md") }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">Metrics Source and Alertmanager remain reusable source-owned connections with asset-scoped binding evidence.</p>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">Metrics Source and Alertmanager remain independent; bindings are asset-scoped.</p>
                 </article>
                 <article class="bg-surface-card p-5">
                     <div class="flex items-start justify-between gap-3">

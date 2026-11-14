@@ -31,16 +31,14 @@
                     <div>
                         <div class="flex flex-wrap items-center gap-2">
                             <h2 class="text-base font-semibold text-content-primary">Bindings &amp; Consumers</h2>
-                            {{ info_tip.render(
-                                "alertmanager-bindings-consumers-detail-guide",
-                                "Alertmanager Bindings & Consumers",
-                                "Review consumer alert bindings, selectors, source resolution and lifecycle guardrails.",
-                                [
-                                    "Alertmanager stays authoritative for provider behavior; KAORI governs committed binding evidence.",
-                                    "Binding actions retain existing authorization and audit boundaries."
-                                ],
-                                placement="right", variant="guide"
-                            ) }}
+                            {{ info_tip.render("alertmanager-bindings-consumers-detail-guide",
+                                                        "Alertmanager Bindings & Consumers",
+                                                        "Review consumer alert bindings, selectors, source resolution and lifecycle guardrails.",
+                                                        [
+                                                        "Alertmanager stays authoritative for provider behavior; KAORI governs committed binding evidence.",
+                                                        "Binding actions retain existing authorization and audit boundaries."
+                                                        ],
+                                                        placement="right", variant="guide") }}
                         </div>
                         <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Review bindings, selectors, profiles, source resolution, and lifecycle guardrails.</p>
                     </div>

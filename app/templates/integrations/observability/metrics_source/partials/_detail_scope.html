@@ -32,16 +32,14 @@
                         <div class="flex flex-wrap items-center gap-2">
                             <h2 id="metrics-source-bindings-title"
                                 class="text-base font-semibold text-content-primary">Bindings &amp; Consumers</h2>
-                            {{ info_tip.render(
-                                "metrics-source-bindings-consumers-detail-guide",
-                                "Metrics Source Bindings & Consumers",
-                                "Review asset-specific bindings, validation profiles and effective source resolution.",
-                                [
-                                    "Binding Validation owns metric identity and selector evidence.",
-                                    "Removing a binding does not remove retained provider runtime observations."
-                                ],
-                                placement="right", variant="guide"
-                            ) }}
+                            {{ info_tip.render("metrics-source-bindings-consumers-detail-guide",
+                                                        "Metrics Source Bindings & Consumers",
+                                                        "Review asset-specific bindings, validation profiles and effective source resolution.",
+                                                        [
+                                                        "Binding Validation owns metric identity and selector evidence.",
+                                                        "Removing a binding does not remove retained provider runtime observations."
+                                                        ],
+                                                        placement="right", variant="guide") }}
                         </div>
                         <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Review asset bindings, validation profiles, resolver preference, and query horizons for this metrics source.</p>
                     </div>

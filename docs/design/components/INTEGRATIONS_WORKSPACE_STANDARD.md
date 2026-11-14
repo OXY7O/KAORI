@@ -374,6 +374,24 @@ and binding-evidence handoff. No tall blank companion card, no independent
 provider authority, no new resolution evaluation, and no filtering of
 ineligible candidates.
 
+**MinIO six-panel Visual UAT refinement (#4722):** the MinIO Connection
+Registry uses the same six-column shared colgroup and top-aligned row hierarchy
+as Kubernetes/Alertmanager; when the connection and managed asset share the
+same display name, the subdued second line states `Object Storage System`
+rather than repeating the title. The Binding cell uses the canonical
+`metadata_label(count_text(row.binding_count, 'Binding'))`; full endpoint,
+compatibility profile, release, readiness, Manage, filters and pagination are
+unchanged. Compact MinIO registration/edit context and Runtime/Inventory
+summaries must preserve the registration-vs-validation boundary, connection
+revalidation, asset-scoped source bindings, and committed inventory timestamp
+and stale-source warning. Target one natural desktop line for registration,
+runtime, access and edit helpers, two for Inventory decision metrics. Mobile
+may wrap; do not add nowrap, text clipping or an independent typography system.
+The Metrics Source Scope Final Lock explicitly verifies the current
+`Bindings & Consumers → View More` evidence handoff, without copying technical
+missing-capability details into source scope. Shared Observability template
+formatting and regression tests follow existing djlint/Ruff gates.
+
 ## Provider Registry Contract
 
 Metrics Source and Alertmanager registries share:

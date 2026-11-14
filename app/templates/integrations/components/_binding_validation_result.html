@@ -13,7 +13,7 @@
                 </div>
                 {% if family == 'alerts' and 'accepted the governed selector. No active alert currently matches it' in (row.validation_message or '') %}
                     <p class="mt-1 max-w-4xl text-xs leading-5 text-content-secondary"
-                       title="{{ row.validation_message }}">Selector accepted; payload-label evidence awaits matching alerts.<span class="sr-only"> {{ row.validation_message }}</span></p>
+                       title="{{ row.validation_message }}">Selector accepted; payload-label evidence awaits matching alerts.<span class="sr-only">{{ row.validation_message }}</span></p>
                 {% else %}
                     <p class="mt-1 max-w-4xl text-xs leading-5 text-content-secondary">{{ row.validation_message }}</p>
                 {% endif %}
@@ -122,7 +122,7 @@
                                                         </button>
                                                     </div>
                                                     <pre class="max-w-full overflow-x-auto px-3 py-3"><code class="block w-max min-w-full font-mono text-xs leading-5 text-content-primary"
-                                                                  data-kaori-copy-source>{{ check.get("query") }}</code></pre>
+      data-kaori-copy-source>{{ check.get("query") }}</code></pre>
                                                 </div>
                                             {% endif %}
                                         </div>
