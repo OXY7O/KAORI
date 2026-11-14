@@ -36,9 +36,7 @@
 
     function render(root = document) {
         if (typeof Chart === 'undefined') return
-        const candidates = root.matches?.(panelSelector)
-            ? [root]
-            : Array.from(root.querySelectorAll?.(panelSelector) || [])
+        const candidates = root.matches?.(panelSelector) ? [root] : Array.from(root.querySelectorAll?.(panelSelector) || [])
 
         candidates.forEach((panel) => {
             const canvas = panel.querySelector('[data-registry-growth-chart]')
@@ -70,7 +68,7 @@
                 backgroundColor: palette[index],
                 borderWidth: 2.5,
                 borderDash: source.mode === 'checkpoints' ? [6, 4] : [],
-                pointRadius: source.mode === 'checkpoints' ? 4 : 0,
+                pointRadius: source.mode === 'checkpoints' ? 4 : source.points.length <= 6 ? 3 : 0,
                 pointHoverRadius: 5,
                 fill: false,
                 spanGaps: false,
@@ -108,7 +106,9 @@
                             type: 'linear',
                             ticks: {
                                 color: textColor,
-                                maxTicksLimit: 6,
+                                maxTicksLimit: 3,
+                                maxRotation: 0,
+                                minRotation: 0,
                                 callback: (value) => formatTime(value),
                             },
                             grid: { color: gridColor },

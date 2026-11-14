@@ -260,6 +260,11 @@ def test_registry_growth_overview_charts_and_summary_reuse_canonical_patterns() 
     assert 'data-registry-growth-chart' in growth
     assert 'Historical Chart Not Available' in growth
     assert 'Source Growth Trend Guide' in growth
+    assert "analysis_surface.evidence_shell_classes('min-w-0')" in growth
+    assert 'analysis_surface.guidance_fact_grid_classes(3)' in growth
+    assert "analysis_surface.empty_evidence_classes('px-5 py-6 text-center')" in growth
+    assert 'maxTicksLimit: 3' in script
+    assert 'source.points.length <= 6 ? 3 : 0' in script
     assert 'chart.umd.min.js' in page
     assert 'js/artifact_registry/analytics_growth_chart.js' in page
     assert 'new Chart(' in script
@@ -271,6 +276,70 @@ def test_registry_growth_overview_charts_and_summary_reuse_canonical_patterns() 
     assert 'MetricsConsumer' not in presentation
     assert 'consumer.query_range(' in worker
 
+
+
+def test_registry_growth_chart_summary_renders_committed_endpoint_evidence() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    template = env.get_template('artifact_registry/partials/_analytics_growth_charts.html')
+
+    measured = {
+        'label': 'Harbor X300',
+        'mode': 'measured',
+        'sample_count': 2,
+        'points': [{'timestamp': 10.0, 'value': 4.0}, {'timestamp': 20.0, 'value': 4.0}],
+    }
+    checkpoints = {
+        'label': 'Harbor X300',
+        'mode': 'checkpoints',
+        'sample_count': 2,
+        'points': [
+            {'timestamp': 10.0, 'value': 129_499_136.0},
+            {'timestamp': 20.0, 'value': 129_499_136.0},
+        ],
+    }
+    rendered = template.render(
+        analytics={
+            'snapshot_window': '24h',
+            'growth_charts': {'artifacts': [measured], 'storage': [checkpoints]},
+        }
+    )
+    assert rendered.count('data-registry-growth-chart-panel=') == 2
+    assert rendered.count('data-registry-growth-chart-series=') == 2
+    assert rendered.count('data-registry-growth-chart\n') == 2
+    assert rendered.count('Latest observed') == 2
+    assert rendered.count('Retained observations') == 2
+    assert rendered.count('Endpoint change') == 2
+    assert rendered.count('Same endpoints') == 2
+    assert '123.5 MiB' in rendered
+    assert 'Start / end only' in rendered
+    assert 'intermediate history was not retained' in rendered
+    assert 'intermediate observations may still differ' in rendered
+    assert 'No forecast' not in rendered
+    assert 'Not a forecast' in rendered
+
+    mixed = template.render(
+        analytics={
+            'snapshot_window': '24h',
+            'growth_charts': {
+                'artifacts': [measured, {**measured, 'label': 'Other Harbor'}],
+                'storage': [],
+            },
+        }
+    )
+    assert mixed.count('Per source') >= 3
+    assert 'no fleet-wide aggregate or projection' in mixed
+    assert 'Historical Chart Not Available' in mixed
+    assert mixed.count('data-registry-growth-chart\n') == 1
+    assert 'data-registry-growth-chart-panel="storage"' in mixed
+
+    empty = template.render(
+        analytics={'snapshot_window': '24h', 'growth_charts': {'artifacts': [], 'storage': []}}
+    )
+    assert empty.count('Historical Chart Not Available') == 2
+    assert 'data-registry-growth-chart\n' not in empty
+    assert 'Latest observed' not in empty
 
 def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> None:
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
