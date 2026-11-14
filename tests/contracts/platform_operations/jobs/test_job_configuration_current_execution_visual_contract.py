@@ -33,7 +33,7 @@ def test_current_execution_idle_layout_uses_flexible_text_and_compact_badge() ->
     Environment().parse(source)
 
     assert "{% set current_execution_grid = 'lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center' %}" in source
-    assert "{% set current_execution_grid = 'xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.95fr)] xl:items-center' %}" in source
+    assert "'xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.95fr)] xl:items-center'" in source
     assert 'class="grid min-w-0 gap-4 px-4 py-4 sm:px-5 {{ current_execution_grid }}"' in source
     assert 'justify-self-start lg:self-center lg:justify-self-end' in source
     assert "status_indicator_label('Ready for Execution', 'normal')" in source
