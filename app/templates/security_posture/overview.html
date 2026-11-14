@@ -2,7 +2,8 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/operational_dashboard_workspace.html" as dashboard_workspace %}
 {% import "components/operational_section_card.html" as section_card %}
-{% import "components/operational_signal_overview.html" as signal_overview %}
+{% import "components/section_intro.html" as section_intro %}
+{% import "components/progress_bar.html" as progress_bar %}
 {% import "components/operational_metric_card.html" as metric_card %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
@@ -54,16 +55,26 @@
                 </a>
             {% endset %}
             {% call dashboard_workspace.controller(active_tab, 'security-posture-overview') %}
-                {% call signal_overview.render(
-                    'Authorized Registry scanner findings and committed Kubernetes correlation.',
-                    '4 Indicators', security_scope, 'shield-alert',
-                    posture.scan_status.label, posture.scan_status.tone,
-                    posture.scan_updated_label, scope_context
-                ) %}
+                <section aria-labelledby="security-exposure-signals-heading"
+                         data-security-exposure-signals>
+                    <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+                        {{ section_intro.render('Security Exposure Signals',
+                            'Observed vulnerability coverage, exposure and evidence freshness.',
+                            'security-exposure-signals-heading') }}
+                        <div class="flex flex-wrap items-center gap-2">
+                            {{ table_label.status_indicator_label(posture.scan_status.label,
+                                posture.scan_status.tone) }}
+                            <span class="text-xs text-content-muted">{{ posture.scan_updated_label }}</span>
+                            <a href="{{ url_for('security_posture.findings') }}"
+                               class="text-xs font-semibold text-kaori-primary hover:underline">
+                                Review CVE Findings
+                            </a>
+                        </div>
+                    </div>
                     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                         {{ metric_card.render('Scan Coverage',
                             posture.scanned_artifacts ~ ' / ' ~ posture.artifacts_total,
-                            'Usable committed scans in the authorized scope.',
+                            'Usable committed scans in authorized Registry scope.',
                             'scan-search', source_label='Registry Scan', scope_label='Active Scope') }}
                         {{ metric_card.render('Affected Artifact Digests',
                             posture.affected_artifacts if posture.scanned_artifacts else 'Not Collected',
@@ -74,49 +85,88 @@
                             'Committed artifact-to-workload binding readiness.',
                             'waypoints', source_label='Registry × Kubernetes', scope_label='Active Scope') }}
                         {{ metric_card.render('Evidence Freshness',
-                            posture.scan_updated_label if posture.last_scan else 'Not Collected',
-                            'Latest usable scan; source coverage may be older.',
+                            posture.scan_updated_label|replace('Updated ', '') if posture.last_scan else 'Not Collected',
+                            'Latest usable scan, not fleet-wide proof of freshness.',
                             'clock-3', source_label='Registry Scan', scope_label='Active Scope') }}
                     </div>
-                {% endcall %}
+                </section>
                 <div class="grid gap-3 lg:grid-cols-3" data-security-posture-insights>
                     {% call section_card.render('Exposure by Severity',
                         'Distinct observed CVEs at their highest recorded severity.',
                         'shield-alert') %}
                         {% set severity_rows = posture.get('severity_distribution', []) %}
+                        {% set total_cves = severity_rows|sum(attribute='count') %}
                         {% if posture.scanned_artifacts and severity_rows %}
-                            <div class="space-y-2">
+                            <div class="space-y-3" data-security-severity-distribution>
+                                <div class="flex items-end justify-between gap-3">
+                                    <div>
+                                        <p class="text-3xl font-semibold tabular-nums text-content-primary">{{ total_cves }}</p>
+                                        <p class="text-xs text-content-muted">Distinct CVEs in scope</p>
+                                    </div>
+                                    {{ table_label.status_indicator_label(posture.scan_status.label,
+                                        posture.scan_status.tone) }}
+                                </div>
                                 {% for severity_row in severity_rows %}
-                                    <div class="flex items-center justify-between gap-3 border-b border-outline-subtle py-1.5 last:border-b-0">
-                                        {{ table_label.status_indicator_label(severity_row.label, severity_row.tone) }}
-                                        <span class="text-sm font-semibold tabular-nums text-content-primary">
-                                            {{ severity_row.count }} CVEs
-                                        </span>
+                                    {% set percentage = (severity_row.count * 100 / total_cves)|round|int if total_cves else 0 %}
+                                    <div class="space-y-1.5">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="text-xs font-semibold text-content-secondary">
+                                                {{ severity_row.label }}
+                                            </span>
+                                            <span class="text-xs font-medium tabular-nums text-content-primary">
+                                                {{ severity_row.count }} · {{ percentage }}%
+                                            </span>
+                                        </div>
+                                        {{ progress_bar.semantic_bar(percentage, tone=severity_row.tone,
+                                            label=severity_row.label ~ ' CVE share') }}
                                     </div>
                                 {% endfor %}
                             </div>
                             <p class="mt-3 text-xs text-content-muted">
-                                Counts reflect scanner records, not verified production risk or distinct applications.
+                                CVEs are grouped at highest observed severity; this is not a global security score.
                             </p>
                         {% else %}
                             <p class="text-sm text-content-secondary">
-                                No qualified CVE distribution is available in this committed scope.
+                                No qualified CVE distribution is available.
                                 Missing findings are not proof of safety.
                             </p>
                         {% endif %}
                     {% endcall %}
-                    {% call section_card.render('Runtime Exposure Context',
-                        'Interpret artifact findings against observed workload bindings.',
+                    {% call section_card.render('Observed Runtime Impact',
+                        'Unique committed container bindings for affected CVE artifacts.',
                         'waypoints') %}
-                        <div class="flex flex-wrap items-center gap-2">
+                        {% set bindings = posture.get('runtime_binding_summary', {'digest': 0, 'reference': 0}) %}
+                        <div class="flex flex-wrap items-center justify-between gap-2">
                             {{ table_label.status_indicator_label(posture.runtime_status.status,
                                 posture.runtime_status.tone) }}
                             {{ table_label.metadata_label(posture.affected_artifacts ~ ' Affected Digests',
                                 icon='package-search', size='compact') }}
                         </div>
-                        <p class="mt-3 text-sm text-content-secondary">
-                            Digest bindings offer stronger evidence than mutable image references.
-                            A binding is not a distinct logical application.
+                        {% if posture.runtime_status.status == 'Ready' and posture.scanned_artifacts %}
+                            <div class="mt-4 grid grid-cols-2 gap-3">
+                                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                                    <p class="text-xs font-medium text-content-secondary">Digest matches</p>
+                                    <p class="mt-1 text-2xl font-semibold tabular-nums text-content-primary">
+                                        {{ bindings.digest }}
+                                    </p>
+                                    <p class="mt-1 text-xs text-content-muted">Strong identity</p>
+                                </div>
+                                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                                    <p class="text-xs font-medium text-content-secondary">Reference matches</p>
+                                    <p class="mt-1 text-2xl font-semibold tabular-nums text-content-primary">
+                                        {{ bindings.reference }}
+                                    </p>
+                                    <p class="mt-1 text-xs text-content-muted">Weaker identity</p>
+                                </div>
+                            </div>
+                        {% else %}
+                            <p class="mt-3 text-sm text-content-secondary">
+                                Binding totals are unavailable until committed correlation is Ready.
+                                Do not infer zero observed runtime exposure.
+                            </p>
+                        {% endif %}
+                        <p class="mt-3 text-xs text-content-muted">
+                            Bindings count observed containers, not distinct applications or a live vulnerability check.
                         </p>
                         <a href="{{ url_for('artifact_registry.runtime') }}"
                            class="mt-3 inline-flex text-sm font-semibold text-kaori-primary hover:underline">
