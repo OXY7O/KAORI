@@ -63,6 +63,69 @@ def test_operations_titles_follow_shared_indicator_and_guide_contract() -> None:
     assert "registry_ui.footer('tenant.operations'" in registry
 
 
+def test_operations_evidence_and_drift_guides_keep_results_filters_and_ownership() -> None:
+    from jinja2 import Environment
+
+    for name, guide_id, total, tab in (
+        (
+            '_operations_evidence_registry.html',
+            'tenant-operations-evidence-registry-guide',
+            'operations_evidence_pagination.total_items',
+            'runs-evidence',
+        ),
+        (
+            '_operations_drift_registry.html',
+            'tenant-operations-drift-registry-guide',
+            'operations_drift_pagination.total_items',
+            'operational-reconcile',
+        ),
+    ):
+        source = (PARTIALS / name).read_text(encoding='utf-8')
+        Environment(autoescape=True).parse(source)
+        assert source.count(f"'{guide_id}'") == 1
+        assert "variant='guide'" in source
+        assert 'title_extra=title_info' in source
+        assert f'result_count={total}' in source
+        assert 'header_actions=header_actions' in source
+        assert 'registry_ui.filter_form(' in source
+        assert "registry_ui.footer('tenant.operations'" in source
+        assert f"'tab': '{tab}'" in source
+        assert f'name="tab" value="{tab}"' in source
+        assert 'operations-' in source
+
+    evidence = read('app/templates/kubernetes/tenant/partials/_operations_evidence_registry.html')
+    drift = read('app/templates/kubernetes/tenant/partials/_operations_drift_registry.html')
+    assert "operations_evidence_filters.evidence_type" in evidence
+    assert "operations_evidence_pagination.allowed_per_page" in evidence
+    assert "operations_drift_pagination.allowed_per_page" in drift
+    assert "url_for('tenant." in drift
+    assert 'explicit recovery decision' in drift
+
+
+def test_activity_cards_use_equal_height_shared_handoffs_and_aligned_action_footers() -> None:
+    from jinja2 import Environment
+
+    page = read('app/templates/kubernetes/tenant/operations.html')
+    Environment(autoescape=True).parse(page)
+    activity = page.split('<div class="grid items-stretch gap-4 lg:grid-cols-2">', 1)[1].split(
+        '                {% endif %}', 1
+    )[0]
+    assert activity.count('class="{{ table_ui.block_classes() }} flex min-w-0 flex-col"') == 2
+    assert activity.count('class="flex flex-1 items-start gap-3 p-4 sm:p-5"') == 2
+    assert activity.count('class="mt-auto flex flex-wrap items-center gap-2 border-t') == 2
+    assert activity.count("action_button.classes('secondary')") == 3
+    assert 'Review Tenant mutation history in the canonical Activity Audit workspace.' in activity
+    assert 'Open recommendations and reports in their canonical KAORI workspaces.' in activity
+    for canonical_route in (
+        "url_for('access.activity_audit.index')",
+        "url_for('intelligence.recommendations')",
+        "url_for('reports.generate_report')",
+    ):
+        assert canonical_route in activity
+    assert activity.count('aria-label=') == 2
+    assert 'bg-kaori-soft' not in activity
+
+
 def test_existing_drift_urls_still_map_to_primary_tabs() -> None:
     route_common = read('app/kubernetes/tenant/route_common.py')
     assert "if active_tab == 'drift-reconcile':" in route_common

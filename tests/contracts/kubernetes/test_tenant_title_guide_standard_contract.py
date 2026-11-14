@@ -28,6 +28,8 @@ TITLE_GUIDES = {
     '_namespace_form.html': ('namespace-provisioning-contract-tip',),
     '_namespace_registry.html': ('namespace-provisioning-registry-guide',),
     '_operations_namespace_registry.html': ('tenant-operations-namespace-registry-guide',),
+    '_operations_evidence_registry.html': ('tenant-operations-evidence-registry-guide',),
+    '_operations_drift_registry.html': ('tenant-operations-drift-registry-guide',),
     '_resource_profile_registry.html': ('resource-profile-registry-guide',),
     '_tenant_allocation_overview.html': ('tenant-allocation-overview-guide',),
     '_capacity_governance.html': (

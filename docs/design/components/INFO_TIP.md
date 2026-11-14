@@ -48,6 +48,12 @@ Provisioning tab's Namespace Provisioning Registry owns its own Guide through
 the indicator badge as a record count, duplicate Guide triggers or place
 a Guide among the registry header actions.
 
+The Tenant Operations **Runs & Evidence Registry** and **Namespace & Allocation Drift**
+each have one title-owned Guide in `title_extra` while preserving their own
+filtered Results label, scope filters and pagination. The Activity tab is a
+separate pair of equal-height canonical handoff cards with aligned action
+footers, not a duplicate evidence registry or audit feed.
+
 For a canonical registry with shared status or lifecycle vocabulary, place one **Guide label** Info Tip **beside the registry title** through the shared table-header `title_extra` slot. The registry card opts into visible overflow while the table itself stays inside its dedicated `overflow-x-auto` container. Header actions remain reserved for operational actions such as Clear Filters, Add, Create, or navigation.
 
 On **Resource Profile / Namespace** screens, the Create Resource Profile form, Resource Profile Registry, Tenant Allocation Overview, Namespace Administration workspace and Namespace Provisioning Registry each own a single title-adjacent Guide. Registry Guides use `title_extra` and retain separate live-free `Results` counts; the two independent admin/creation headings use shared header Guide placement without repeating existing inner section help. Namespace Estate displays `table_label.result_count(namespace_total)` from committed Namespace record scope; this is not a live cluster count or a count of KPI dimensions. Its Namespace Records and Drifted KPI helper copy stays compact, while authoritative provider/committed evidence distinctions remain explicitly available via the workspace Guide and status callouts. No Guide changes allocation admission, provider authority, or source state.
