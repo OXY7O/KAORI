@@ -243,14 +243,18 @@ def test_capacity_dashboard_matches_kubernetes_forecast_and_top_consumer_pattern
     assert 'percentage unavailable' in shared_capacity
     assert 'Capacity Utilization</h3>' not in capacity
     for token in (
-        'components/operational_flow_steps.html',
+        'components/operational_capacity_decision.html',
+        'capacity_decision.render(',
         'Data Scope',
-        'Overall Capacity Risk',
-        'What This Means',
-        'Recommended Action',
-        'Recommended Capacity Action Flow',
+        'dashboard.capacity.posture.status',
+        'capacity_action',
     ):
         assert token in capacity
+    assert 'Recommended Capacity Action Flow' not in capacity
+    assert 'components/operational_flow_steps.html' not in capacity
+    decision = read('app/templates/components/operational_capacity_decision.html')
+    for label in ('Overall Capacity Risk', 'What This Means', 'Recommended Action'):
+        assert label in decision
     for token in (
         'components/forecast_projection_chart.html',
         'Projected Storage Utilization Trend',
