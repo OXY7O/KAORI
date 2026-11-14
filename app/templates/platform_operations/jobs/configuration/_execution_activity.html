@@ -25,15 +25,15 @@
                     <div class="flex min-w-0 flex-wrap items-center gap-2">
                         <h3 class="min-w-0 text-base font-semibold text-content-primary">Execution &amp; Recent Activity</h3>
                         {{ info_tip.render('jobs-execution-activity-guide-' ~ (definition.key|replace('.', '-')),
-                                            'Execution & Recent Activity',
-                                            'Read current job state and canonical execution evidence.',
-                                            items=[
-                                            'Current Execution is the observed job state; readiness alone does not prove that a job has run.',
-                                            'Active runs expose worker progress and details; recent records retain canonical execution history.',
-                                            'Manual dispatch requires permission and an eligible target; blocked states remain visible in the workspace.'
-                                            ],
-                                            placement='right',
-                                            variant='guide') }}
+                        'Execution & Recent Activity',
+                        'Read current job state and canonical execution evidence.',
+                        items=[
+                        'Current Execution is the observed job state; readiness alone does not prove that a job has run.',
+                        'Active runs expose worker progress and details; recent records retain canonical execution history.',
+                        'Manual dispatch requires permission and an eligible target; blocked states remain visible in the workspace.'
+                        ],
+                        placement='right',
+                        variant='guide') }}
                     </div>
                     <p class="mt-1 min-w-0 text-xs leading-5 text-content-muted lg:truncate"
                        title="{{ definition.execution_summary }}">{{ definition.execution_summary }}</p>
