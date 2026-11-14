@@ -1,8 +1,8 @@
 """Security Posture MVP contracts: navigation, RBAC, source boundary and reusable UI."""
 
 import re
-from html import unescape
 from datetime import UTC, datetime, timedelta
+from html import unescape
 from pathlib import Path
 
 import yaml
@@ -249,9 +249,7 @@ def test_security_overview_renders_operational_profile_and_signal_cards() -> Non
 
 
 def test_security_assurance_hero_omits_oversized_registry_cta_but_preserves_context() -> None:
-    html = _render_workspace_page(
-        'overview', _renderable_posture(), can_manage_integrations=True
-    )
+    html = _render_workspace_page('overview', _renderable_posture(), can_manage_integrations=True)
     hero = html.split('data-kaori-hero-profile="operational-dashboard"', 1)[1].split('</section>', 1)[0]
     assert 'Active Scope' in hero
     assert 'Data Authority' in hero
@@ -266,6 +264,19 @@ def test_security_assurance_hero_omits_oversized_registry_cta_but_preserves_cont
     shared_hero = read('app/templates/components/page_hero.html')
     assert '{% if action_label and action_href %}' in shared_hero
     assert 'context_single_action_classes()' in shared_hero
+
+
+def test_security_snapshot_renders_unavailable_evidence_without_global_all_clear() -> None:
+    posture = _renderable_posture()
+    posture['scan_status'] = {'label': 'Partial / Stale', 'tone': 'warning'}
+    posture['scan_updated_label'] = 'Updated 32d ago'
+    posture['has_complete_security_evidence'] = False
+    html = _render_workspace_page('overview', posture)
+    assert 'Security Snapshot' in html
+    assert 'Partial / Stale' in html
+    assert 'Updated 32d ago' in html
+    assert 'data-kaori-hero-context-extension' in html
+    assert 'Partial, stale or unavailable evidence cannot establish an all-clear.' in html
 
 
 def test_security_snapshot_replaces_four_independent_kpi_cards() -> None:
