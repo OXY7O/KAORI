@@ -1,0 +1,70 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/table_label.html" as table_label %}
+{% set qualified_growth = analytics.growth_rows|default([], true) %}
+<section class="{{ analysis_surface.evidence_shell_classes() }}"
+         aria-labelledby="registry-growth-sources-title">
+    <header class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ analysis_surface.role_icon_classes('brand', size='compact') }}"
+                  aria-hidden="true">
+                <i data-lucide="layers-3" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0">
+                <h4 id="registry-growth-sources-title"
+                    class="text-sm font-semibold text-content-primary">Qualified Source Deltas</h4>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                    Registry-specific net change and materialized rate, without merging different source baselines.
+                </p>
+            </div>
+        </div>
+        {{ table_label.metadata_label(qualified_growth|length ~ ' Sources', 'database', size='compact') }}
+    </header>
+    {% if qualified_growth %}
+        <div class="grid gap-3 p-3 sm:p-4">
+            {% for row in qualified_growth[:5] %}
+                <article class="{{ analysis_surface.ranked_item_classes('min-w-0 p-4') }}">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <h5 class="break-words text-sm font-semibold text-content-primary">{{ row.registry_name }}</h5>
+                            <p class="mt-1 text-xs text-content-muted">{{ row.provider_key|replace('_', ' ')|title }} · committed source comparison</p>
+                        </div>
+                        {{ table_label.metadata_label('Committed Comparison', 'database', size='compact') }}
+                    </div>
+                    <dl class="{{ analysis_surface.guidance_fact_grid_classes(3, 'mt-3') }}">
+                        <div class="{{ analysis_surface.guidance_fact_classes() }}">
+                            <dt class="{{ analysis_surface.metric_label_classes() }}">Artifact Δ</dt>
+                            <dd class="mt-1.5 text-base font-semibold tabular-nums text-content-primary">
+                                {{ row.artifact_delta if row.artifact_delta is not none else 'N/A' }}
+                            </dd>
+                            <dd class="mt-1 text-xs text-content-secondary">{{ row.artifact_growth_display }}</dd>
+                        </div>
+                        <div class="{{ analysis_surface.guidance_fact_classes() }}">
+                            <dt class="{{ analysis_surface.metric_label_classes() }}">Storage Δ</dt>
+                            <dd class="mt-1.5 text-base font-semibold tabular-nums text-content-primary">{{ row.size_delta_display }}</dd>
+                            <dd class="mt-1 text-xs text-content-secondary">{{ row.size_growth_display }}</dd>
+                        </div>
+                        <div class="{{ analysis_surface.guidance_fact_classes() }}">
+                            <dt class="{{ analysis_surface.metric_label_classes() }}">Comparison Window</dt>
+                            <dd class="mt-1.5 text-base font-semibold tabular-nums text-content-primary">
+                                {{ ('%.1f days'|format(row.elapsed_days)) if row.elapsed_days is not none else 'N/A' }}
+                            </dd>
+                            <dd class="mt-1 text-xs text-content-secondary">Committed interval</dd>
+                        </div>
+                    </dl>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="p-4">
+            <div class="{{ analysis_surface.empty_evidence_classes('px-5 py-5 text-center') }}">
+                <p class="text-sm font-semibold text-content-primary">Source Deltas Not Available</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                    A qualified committed growth comparison is required. Missing source evidence is not zero growth.
+                </p>
+            </div>
+        </div>
+    {% endif %}
+    <p class="border-t border-outline-subtle px-4 py-3 text-xs leading-5 text-content-muted">
+        All values reflect worker-committed source comparisons. Observed zeros are valid; missing comparison inputs remain N/A.
+    </p>
+</section>
