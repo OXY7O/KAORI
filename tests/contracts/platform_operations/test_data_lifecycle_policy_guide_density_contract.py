@@ -87,7 +87,10 @@ def test_audit_exclusion_and_generated_exclusion_are_compact_but_protected() -> 
     assert 'Raw metadata, IP/UA, actor reconstruction, bundle downloads' in presentation
     assert 'schedules, cleanup and record lookup' in presentation
     assert "'are excluded.'" in presentation
-    assert 'Pending, generating, and artifact-unsafe reports remain excluded from archive and cleanup until eligible.' in generated
+    assert (
+        'Pending, generating, and artifact-unsafe reports remain excluded from archive and cleanup until eligible.'
+        in generated
+    )
     assert 'Generated Reports Policy' in template
     assert 'Request' in template and 'safe artifact references remain protected.' in template
     assert 'GENERATED_REPORT_EXCLUSION_NOTE' in presentation
@@ -121,7 +124,9 @@ def test_generated_report_exclusion_and_hot_source_fit_target_density_without_hi
     generated = read('app/platform_operations/data_lifecycle/retention/generated_report_presentation.py')
     source = read('app/platform_operations/data_lifecycle/retention/presentation.py')
 
-    exclusion = 'Pending, generating, and artifact-unsafe reports remain excluded from archive and cleanup until eligible.'
+    exclusion = (
+        'Pending, generating, and artifact-unsafe reports remain excluded from archive and cleanup until eligible.'
+    )
     assert exclusion in generated
     assert len(exclusion) >= 90
     assert 'GENERATED_REPORT_EXCLUSION_NOTE' in source
