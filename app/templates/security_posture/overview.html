@@ -307,69 +307,69 @@
                                             Reload Evidence
                                         </a>
                                     {% endcall %}
-                                    <div class="overflow-x-auto px-4 py-3 sm:px-5" data-security-posture-cve-table>
-                                    <table class="{{ table_ui.table_classes('min-w-[48rem]') }}">
-                                        <caption class="sr-only">
-                                            Qualified committed CVE records from the authorized Registry source scope.
-                                            Runtime bindings are observed containers, not logical applications.
-                                        </caption>
-                                        <thead class="{{ table_ui.head_classes() }}">
-                                            <tr>
-                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">CVE / Severity</th>
-                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Affected Digests</th>
-                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Runtime Bindings</th>
-                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed</th>
-                                                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Investigation</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="{{ table_ui.body_classes() }}">
-                                            {% for row in posture.rows %}
-                                                <tr class="{{ table_ui.row_classes() }}">
-                                                    <td class="{{ table_ui.cell_classes() }}">
-                                                        {% set row_tone = 'critical' if row.severity == 'Critical' else ('warning' if row.severity in ['High', 'Medium'] else 'unknown') %}
-                                                        <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                                                            <span class="text-sm font-semibold text-content-primary">{{ row.cve_id }}</span>
-                                                            {{ table_label.status_indicator_label(row.severity, row_tone) }}
-                                                        </div>
-                                                        <p class="mt-1 text-xs text-content-muted">
-                                                            {{ row.finding_count }} scanner {{ 'finding' if row.finding_count == 1 else 'findings' }}
-                                                        </p>
-                                                    </td>
-                                                    <td class="{{ table_ui.cell_classes() }}">
-                                                        <span class="font-medium tabular-nums text-content-primary">{{ row.artifact_count }}</span>
-                                                    </td>
-                                                    <td class="{{ table_ui.cell_classes() }}">
-                                                        <span class="font-medium tabular-nums text-content-primary">{{ row.binding_count }}</span>
-                                                        <p class="mt-1 text-xs text-content-muted">
-                                                            {{ row.digest_binding_count }} digest ·
-                                                            {{ row.reference_binding_count }} mutable/other
-                                                        </p>
-                                                    </td>
-                                                    <td class="{{ table_ui.cell_classes() }}">
-                                                        <span class="text-xs text-content-secondary">{{ row.observed_at|user_datetime }}</span>
-                                                    </td>
-                                                    <td class="{{ table_ui.cell_classes(action=true) }}">
-                                                        {% if posture.authorized_registry and row.impact_available %}
-                                                            <a href="{{ url_for('artifact_registry.security_cve_impact', cve_id=row.cve_id) }}"
-                                                               class="{{ table_ui.action_classes() }}">View Impact</a>
-                                                        {% else %}
-                                                            {{ table_label.status_indicator_label('Unqualified', 'unknown') }}
-                                                        {% endif %}
-                                                    </td>
-                                                </tr>
-                                            {% else %}
+                                    <div class="overflow-x-auto" data-security-posture-cve-table>
+                                        <table class="{{ table_ui.table_classes('min-w-[48rem]') }}">
+                                            <caption class="sr-only">
+                                                Qualified committed CVE records from the authorized Registry source scope.
+                                                Runtime bindings are observed containers, not logical applications.
+                                            </caption>
+                                            <thead class="{{ table_ui.head_classes() }}">
                                                 <tr>
-                                                    <td colspan="5">
-                                                        {% set empty_state_icon = "shield-alert" %}
-                                                        {% set empty_state_label = "No Matching Evidence" %}
-                                                        {% set empty_state_title = "No CVEs match this filter" %}
-                                                        {% set empty_state_description = "Try other filters or review the authorized sources. No match does not prove safety." %}
-                                                        {% include "components/states/_empty_state.html" %}
-                                                    </td>
+                                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">CVE / Severity</th>
+                                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Affected Digests</th>
+                                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Runtime Bindings</th>
+                                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed</th>
+                                                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Investigation</th>
                                                 </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody class="{{ table_ui.body_classes() }}">
+                                                {% for row in posture.rows %}
+                                                    <tr class="{{ table_ui.row_classes() }}">
+                                                        <td class="{{ table_ui.cell_classes() }}">
+                                                            {% set row_tone = 'critical' if row.severity == 'Critical' else ('warning' if row.severity in ['High', 'Medium'] else 'unknown') %}
+                                                            <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                                                                <span class="text-sm font-semibold text-content-primary">{{ row.cve_id }}</span>
+                                                                {{ table_label.status_indicator_label(row.severity, row_tone) }}
+                                                            </div>
+                                                            <p class="mt-1 text-xs text-content-muted">
+                                                                {{ row.finding_count }} scanner {{ 'finding' if row.finding_count == 1 else 'findings' }}
+                                                            </p>
+                                                        </td>
+                                                        <td class="{{ table_ui.cell_classes() }}">
+                                                            <span class="font-medium tabular-nums text-content-primary">{{ row.artifact_count }}</span>
+                                                        </td>
+                                                        <td class="{{ table_ui.cell_classes() }}">
+                                                            <span class="font-medium tabular-nums text-content-primary">{{ row.binding_count }}</span>
+                                                            <p class="mt-1 text-xs text-content-muted">
+                                                                {{ row.digest_binding_count }} digest ·
+                                                                {{ row.reference_binding_count }} mutable/other
+                                                            </p>
+                                                        </td>
+                                                        <td class="{{ table_ui.cell_classes() }}">
+                                                            <span class="text-xs text-content-secondary">{{ row.observed_at|user_datetime }}</span>
+                                                        </td>
+                                                        <td class="{{ table_ui.cell_classes(action=true) }}">
+                                                            {% if posture.authorized_registry and row.impact_available %}
+                                                                <a href="{{ url_for('artifact_registry.security_cve_impact', cve_id=row.cve_id) }}"
+                                                                   class="{{ table_ui.action_classes() }}">View Impact</a>
+                                                            {% else %}
+                                                                {{ table_label.status_indicator_label('Unqualified', 'unknown') }}
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                {% else %}
+                                                    <tr>
+                                                        <td colspan="5">
+                                                            {% set empty_state_icon = "shield-alert" %}
+                                                            {% set empty_state_label = "No Matching Evidence" %}
+                                                            {% set empty_state_title = "No CVEs match this filter" %}
+                                                            {% set empty_state_description = "Try other filters or review the authorized sources. No match does not prove safety." %}
+                                                            {% include "components/states/_empty_state.html" %}
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
                                     </div>
                                     <div class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
                                          data-security-investigation-handoff>
