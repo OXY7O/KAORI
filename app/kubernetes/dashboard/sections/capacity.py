@@ -121,7 +121,7 @@ def empty_capacity_snapshot(*, insight: str) -> CapacitySnapshot:
         risk='Unknown',
         insight=insight,
         risk_detail='Overall worker capacity risk cannot be calculated because one or more required metrics are unavailable.',
-        recommended_action='Verify the selected cluster Metrics Source and kube-state-metrics node-role labels, then reload the snapshot.',
+        recommended_action='Verify Metrics Source and node-role evidence; refresh the capacity snapshot.',
         source_status='Unavailable',
     )
 
@@ -137,24 +137,24 @@ def _capacity_risk_guidance(
         return (
             f'{resource} utilization is {utilization:.0f}%, leaving almost no worker-node scheduling buffer. '
             'New pods may remain Pending and existing workloads may face eviction or performance degradation.',
-            'Review Capacity Analysis and Top Consumers immediately, reduce avoidable load, and add or resize worker capacity before the remaining headroom is exhausted.',
+            'Review top consumers, reduce load, and expand approved worker capacity.',
         )
     if risk == 'High':
         return (
             f'{resource} utilization is {utilization:.0f}%. Worker-node headroom is limited and sustained growth can affect scheduling reliability.',
-            'Review top consumers, requests and limits, forecast trend, and pending workloads. Prepare scaling or workload optimization before utilization reaches the critical threshold.',
+            'Review high-use workloads and plan scaling before critical pressure.',
         )
     if risk == 'Medium':
         return (
             f'{resource} utilization is {utilization:.0f}%. Capacity remains usable, but the operational buffer is narrowing.',
-            'Validate requests/limits, growth, and planned deployments against current worker headroom.',
+            'Check headroom, requests/limits, and forecast before workload growth.',
         )
     if risk == 'Low':
         return (
             f'{resource} is the highest worker-node signal at {utilization:.0f}%, with sufficient headroom for current demand.',
-            'No immediate scaling required. Keep trends, workload requests and limits, and capacity baselines current.',
+            'No scaling needed; monitor trends, requests/limits, and baselines.',
         )
     return (
         'Worker capacity risk is unknown because the required utilization or allocatable metrics are incomplete.',
-        'Verify Metrics Source, kube-state-metrics, and node-role labels before making scaling or placement decisions.',
+        'Refresh Metrics Source and node-role evidence before capacity decisions.',
     )

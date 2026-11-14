@@ -35,7 +35,7 @@
                 <i data-lucide="info"
                    class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
                    aria-hidden="true"></i>
-                <p><span class="font-semibold text-kaori-primary">Data Scope:</span> worker nodes only, matching Capacity Analysis and excluding nodes with control-plane or master roles.</p>
+                <p title="Worker nodes only, matching Capacity Analysis and excluding nodes with control-plane or master roles."><span class="font-semibold text-kaori-primary">Data Scope:</span> Capacity Analysis workers; control-plane/master excluded.</p>
             </div>
             <div class="grid gap-3 lg:grid-cols-3">
                 {% for item in dashboard.capacity_snapshot.items %}

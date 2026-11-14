@@ -253,6 +253,7 @@ def test_capacity_dashboard_matches_kubernetes_forecast_and_top_consumer_pattern
         assert token in capacity
     assert 'Recommended Capacity Action Flow' not in capacity
     assert 'components/operational_flow_steps.html' not in capacity
+    assert 'Refresh committed storage analytics before capacity decisions.' in capacity
     for topic in ('Validate', 'Assess', 'Prioritize', 'Act', 'Verify', 'Record'):
         assert f"'{topic}'" in capacity
     decision = read('app/templates/components/operational_capacity_decision.html')
