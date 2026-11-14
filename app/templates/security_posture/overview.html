@@ -244,6 +244,7 @@
                                                 'Use View Impact for the exact CVE and Findings for the complete evidence workflow.'
                                             ], variant='guide', placement='left') }}
                                     {% endset %}
+                                    {% set reload_cve_url = url_for('security_posture.overview', tab='overview', q=posture.search, severity=posture.severity, page=posture.pagination.page, per_page=posture.pagination.per_page) %}
                                     {% set cve_registry_actions %}
                                         {% if posture.search or posture.severity %}
                                             {{ registry.clear_filters_link('security_posture.overview',
@@ -253,10 +254,18 @@
                                                 table_ui.action_classes(),
                                                 query_params={'tab': 'overview'}) }}
                                         {% endif %}
-                                        <a href="{{ url_for('security_posture.findings', q=posture.search, severity=posture.severity, page=posture.pagination.page, per_page=posture.pagination.per_page) }}"
-                                           class="{{ table_ui.action_classes() }}">
-                                            <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
-                                            View All Findings
+                                        <a href="{{ reload_cve_url }}"
+                                           hx-get="{{ reload_cve_url }}"
+                                           hx-target="#security-posture-cve-registry"
+                                           hx-select="#security-posture-cve-registry"
+                                           hx-swap="outerHTML"
+                                           hx-indicator="#security-posture-cve-loading"
+                                           hx-sync="closest section:replace"
+                                           class="{{ table_ui.action_classes() }}"
+                                           aria-label="Refresh committed CVE table without starting a security sync"
+                                           title="Re-read committed KAORI evidence; does not trigger Security Sync">
+                                            <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                                            Refresh View
                                         </a>
                                     {% endset %}
                                     {{ table_ui.inventory_block_header(
@@ -269,7 +278,6 @@
                                         header_actions=cve_registry_actions,
                                         title_extra=cve_registry_header_extra
                                     ) }}
-                                    {% set reload_cve_url = url_for('security_posture.overview', tab='overview', q=posture.search, severity=posture.severity, page=posture.pagination.page, per_page=posture.pagination.per_page) %}
                                     {% call registry.filter_form(
                                         'security_posture.overview',
                                         'security-posture-cve-registry',
@@ -294,18 +302,7 @@
                                                 {% endfor %}
                                             </select>
                                         </label>
-                                        <a href="{{ reload_cve_url }}"
-                                           hx-get="{{ reload_cve_url }}"
-                                           hx-target="#security-posture-cve-registry"
-                                           hx-select="#security-posture-cve-registry"
-                                           hx-swap="outerHTML"
-                                           hx-indicator="#security-posture-cve-loading"
-                                           hx-sync="closest section:replace"
-                                           class="{{ table_ui.action_classes() }}"
-                                           aria-label="Reload committed CVE evidence">
-                                            <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
-                                            Reload Evidence
-                                        </a>
+
                                     {% endcall %}
                                     <div class="overflow-x-auto" data-security-posture-cve-table>
                                         <table class="{{ table_ui.table_classes('min-w-[48rem]') }}">
@@ -378,6 +375,8 @@
                                             <p class="mt-1 text-xs text-content-muted">
                                                 Validate workload bindings before governed remediation.
                                                 No provider scan or mutation runs here.
+                                                <a href="{{ url_for('security_posture.findings', q=posture.search, severity=posture.severity, page=posture.pagination.page, per_page=posture.pagination.per_page) }}"
+                                                   class="font-semibold text-kaori-primary hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">View All Findings</a>.
                                             </p>
                                         </div>
                                         <div class="flex flex-wrap items-center gap-2">
