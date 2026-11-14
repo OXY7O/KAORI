@@ -1064,6 +1064,37 @@ the distinction among pull counters, runtime bindings and distinct artifacts;
 missing pull metrics never imply zero demand. The original Usage detail route
 and Registry/Time Range scope remain unchanged.
 
+### Registry Analytics Insights copy and non-current snapshot diagnostics (#4756)
+
+The **Insights → Interpretation & Ownership** preview uses compact
+single-desktop-line evidence/decision-authority copy without altering the
+central Intelligence boundary: overlapping review signals are not distinct
+affected assets, and Intelligence owns Recommendations, Accepted Risk,
+escalation and automation. The canonical shared
+`analysis_surface.interpretation_content` retains natural mobile wrapping.
+
+Registry Analytics read-only **Committed Snapshot** status is distinct from
+the latest Analytics JobExecution outcome. Source freshness is governed by
+`_analytics_snapshot_view`: validated ready payload, generation/expiry,
+committed Inventory/Governance/scan/runtime input generation and qualification
+of Metrics Source and governance evidence. Materializer freshness defaults to
+15 minutes, but fresh-by-time snapshots may still be **Inputs Changed** or
+**Partial Evidence**. The selected-window readiness projection only says
+**Stale Snapshot / expired** when the committed selected-window snapshots
+actually expired. Mixed/invalid cases show **Snapshot Attention** or **Partial
+Coverage** and preserve the underlying source's reason rather than inventing
+a provider failure or false-green Current.
+
+The registered manual Analytics job defaults to `snapshot_window=current`
+when none is supplied; the UI may select `24h` or another measured window.
+Committed JobExecution fleet `scope_key=all:<window>` is used to identify
+the last recorded job window in the existing readiness warning when it
+differs from the selected view. That attempt does **not** establish a new
+materialization for the selected window; the request path does not perform a
+live Harbor/Prometheus/Thanos query. This is informational diagnostics, not
+an automatic dispatch, TTL change, worker-status conversion or guaranteed
+root-cause attribution to any live operator attempt.
+
 ### Registry Analytics Capacity detail / hero management CTA (#4723)
 
 The shared Artifact Registry Analytics hero now uses **Open Registry Integrations**

@@ -109,8 +109,21 @@
                                 <i data-lucide="history" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Committed Snapshot Needs Refresh</p>
+                                <p class="text-sm font-semibold text-content-primary">
+                                    {% if readiness.label == 'Stale Snapshot' %}
+                                        Committed Snapshot Needs Refresh
+                                    {% elif readiness.label in ['Not Materialized', 'Historical Materialization Required'] %}
+                                        Analytics Snapshot Not Materialized
+                                    {% else %}
+                                        Committed Snapshot Requires Review
+                                    {% endif %}
+                                </p>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">{{ readiness.helper }}</p>
+                                {% if readiness.last_attempt_window is defined and readiness.last_attempt_window and readiness.last_attempt_window != analytics.snapshot_window %}
+                                    <p class="mt-2 text-xs leading-5 text-content-secondary">
+                                        Last worker attempt targeted {{ readiness.last_attempt_window|upper }}; this view selects {{ analytics.snapshot_window|upper }}. The selected interval needs its own committed snapshot.
+                                    </p>
+                                {% endif %}
                             </div>
                         </div>
                     {% endif %}
