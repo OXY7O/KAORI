@@ -18,7 +18,7 @@
     {% set domain_title = "Quota & Capacity Posture" %}
     {% set domain_description = "Project quota utilization, qualified headroom, and forecast horizons." %}
     {% set domain_icon = "gauge" %}
-    {% set boundary = "Forecast requires an observed quota and qualified positive growth history. Missing quotas or history remain unavailable." %}
+    {% set boundary = "Quota utilization is observed; exhaustion forecasts require qualified growth history." %}
     {% set overview_metrics = [
             ('gauge', 'Highest Utilization', ('%.1f%%'|format(analytics.capacity_outlook.highest_utilization)) if analytics.capacity_outlook.highest_utilization is not none else unknown, 'Highest observed project quota pressure', 'info'),
             ('calendar-clock', 'Nearest Exhaustion', ('%.1f days'|format(analytics.capacity_outlook.nearest_quota_days)) if analytics.capacity_outlook.nearest_quota_days is not none else 'No forecast', 'Earliest qualified project forecast', 'warning'),
