@@ -1,0 +1,136 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/table_label.html" as table_label %}
+{% set qualified_projects = analytics.capacity_chart_rows|default([], true) %}
+{% set nearest_value = "N/A" %}
+{% if analytics.capacity_outlook.nearest_quota_days is not none %}
+    {% set nearest_value = '%.1f days'|format(analytics.capacity_outlook.nearest_quota_days) %}
+{% endif %}
+{% set highest_value = "N/A" %}
+{% if analytics.capacity_outlook.highest_utilization is not none %}
+    {% set highest_value = '%.1f%%'|format(analytics.capacity_outlook.highest_utilization) %}
+{% endif %}
+{% set capacity_metrics = [
+    ('calendar-clock', 'Nearest Exhaustion', nearest_value, 'Earliest qualified project forecast'),
+    ('chart-column-increasing', 'Highest Utilization', highest_value, 'Highest observed quota usage'),
+    ('trending-up', 'Growth Velocity', analytics.capacity_outlook.growth_display, 'Materialized storage growth'),
+    ('database', 'Quota Headroom', analytics.capacity_outlook.quota_headroom_display, 'Qualified committed quota headroom')
+] %}
+<div class="{{ analysis_surface.evidence_shell_classes() }}">
+    <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-4 xl:divide-x">
+        {% for icon, label, value, detail in capacity_metrics %}
+            <div class="min-w-0 px-4 py-4 sm:px-5">
+                <div class="flex items-center gap-2">
+                    <span class="{{ analysis_surface.role_icon_classes('brand', size='compact') }}"
+                          aria-hidden="true">
+                        <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+                    </span>
+                    <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                </div>
+                <p class="mt-2 break-words text-xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ detail }}</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+<div class="grid items-start gap-4 lg:grid-cols-5">
+    <section class="{{ analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-3') }}"
+             aria-labelledby="registry-capacity-pressure-title">
+        <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
+                      aria-hidden="true">
+                    <i data-lucide="chart-no-axes-column-increasing" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h4 id="registry-capacity-pressure-title"
+                        class="text-sm font-semibold text-content-primary">Project Quota Pressure</h4>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Observed quota utilization for qualified Registry projects.</p>
+                </div>
+            </div>
+            {{ table_label.metadata_label(qualified_projects|length ~ ' Projects', 'database', size='compact') }}
+        </header>
+        {% if qualified_projects %}
+            <div class="divide-y divide-outline-subtle">
+                {% for row in qualified_projects[:5] %}
+                    <div class="px-4 py-3">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="break-words text-sm font-semibold text-content-primary">{{ row.project_name }}</p>
+                                <p class="mt-1 text-xs text-content-muted">
+                                    {{ row.registry_name }} · {{ row.usage_display }} of {{ row.quota_display }}
+                                </p>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-sm font-semibold tabular-nums text-content-primary">{{ row.utilization_display }}</span>
+                                {% if row.utilization_percent > 100 %}
+                                    {{ table_label.status_label('Over quota', 'warning', size='compact') }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <progress class="mt-2 h-2 w-full max-w-full accent-kaori-primary"
+                                  max="100"
+                                  value="{{ 100 if row.utilization_percent > 100 else row.utilization_percent }}"
+                                  aria-label="{{ row.project_name }} observed quota usage"
+                                  aria-valuetext="{{ row.utilization_display }} observed utilization"></progress>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="p-4">
+                <div class="{{ analysis_surface.empty_evidence_classes('px-5 py-5 text-center') }}">
+                    <p class="text-sm font-semibold text-content-primary">Quota Pressure Evidence Not Available</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                        No project has a qualified committed usage and positive quota denominator.
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+    </section>
+    <section class="{{ analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-2') }}"
+             aria-labelledby="registry-capacity-reading-title">
+        <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-3">
+            <span class="{{ analysis_surface.role_icon_classes('insight', size='compact') }}"
+                  aria-hidden="true">
+                <i data-lucide="scan-search" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0">
+                <h4 id="registry-capacity-reading-title"
+                    class="text-sm font-semibold text-content-primary">Capacity Reading</h4>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Evidence-based planning interpretation.</p>
+            </div>
+        </header>
+        <div class="divide-y divide-outline-subtle">
+            <div class="px-4 py-3">
+                <p class="{{ analysis_surface.metric_label_classes() }}">Evidence Coverage</p>
+                <p class="mt-1 text-sm font-semibold text-content-primary">
+                    {{ qualified_projects|length }} qualified quota projects
+                </p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                    Only committed nonnegative usage with a valid positive quota qualifies.
+                </p>
+            </div>
+            <div class="px-4 py-3">
+                <p class="{{ analysis_surface.metric_label_classes() }}">Forecast Boundary</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                    {% if analytics.capacity_outlook.nearest_quota_days is not none %}
+                        A project has a qualified exhaustion horizon; review its evidence under Forecast & Evidence.
+                    {% else %}
+                        No qualified forecast; an exhaustion horizon cannot be inferred from missing growth evidence.
+                    {% endif %}
+                </p>
+            </div>
+            <div class="px-4 py-3">
+                <p class="{{ analysis_surface.metric_label_classes() }}">Growth Interpretation</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                    {% if analytics.capacity_outlook.growth_bytes_per_day is none %}
+                        Growth history is unavailable; an unknown rate is not zero demand.
+                    {% elif analytics.capacity_outlook.growth_bytes_per_day == 0 %}
+                        Zero net growth does not prove that no intermediate workload activity occurred.
+                    {% else %}
+                        Materialized growth is an observation, not a prediction of future demand.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </section>
+</div>

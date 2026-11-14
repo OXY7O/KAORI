@@ -90,9 +90,10 @@ def test_registry_analytics_has_eight_authorized_page_level_views() -> None:
     assert "'Open Registry Integrations'," in shell
     assert "action_icon='plug-zap'" in shell
     assert "'Open Intelligence'," not in shell
-    assert "url_for('intelligence.recommendations', domain='registry')" in (
-        ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html'
-    ).read_text()
+    assert (
+        "url_for('intelligence.recommendations', domain='registry')"
+        in (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
+    )
 
 
 def test_registry_analytics_legacy_links_redirect_and_preserve_alert_filters() -> None:
