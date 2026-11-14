@@ -1,6 +1,7 @@
 """Source contracts for concise Alertmanager registration guidance (#4698)."""
 
 from pathlib import Path
+import re
 
 TEMPLATE = (
     Path(__file__).resolve().parents[3]
@@ -33,12 +34,10 @@ def test_registration_guidance_keeps_shared_components_and_binding_context() -> 
 
 def test_registration_guidance_remains_compact_without_forced_truncation() -> None:
     """Keep the four operator-reviewed helpers naturally readable on desktop."""
-    import re
-
     source = TEMPLATE.read_text(encoding="utf-8")
     patterns = (
         r"'Endpoint & Access',\s*'([^']+)'",
-        r'flow_note="([^"]+)"',
+        r'flow_note="(Registration[^"]+)"',
         r'alertmanager_related_description = "([^"]+)"',
         r"'Allow KAORI to Use This Connection',\s*'([^']+)'",
     )
@@ -48,3 +47,14 @@ def test_registration_guidance_remains_compact_without_forced_truncation() -> No
         assert len(match.group(1)) <= 80, f"Registration helper is too verbose: {match.group(1)}"
         assert "\\n" not in match.group(1)
 
+
+
+def test_registration_and_edit_flows_keep_distinct_validation_guidance() -> None:
+    """A generic flow_note match must not silently test the edit flow instead."""
+    source = TEMPLATE.read_text(encoding="utf-8")
+    notes = re.findall(r'flow_note="([^"]+)"', source)
+
+    assert len(notes) == 2, "Expected separate edit and registration guidance"
+    assert notes[0] == "Saved changes require successful Full Validation."
+    assert notes[1] == "Registration creates identity; Full Validation gates consumer use."
+    assert all(len(note) <= 80 and "\\n" not in note for note in notes)
