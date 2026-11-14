@@ -343,6 +343,123 @@ def test_registry_growth_chart_summary_renders_committed_endpoint_evidence() -> 
     assert 'Latest observed' not in empty
 
 
+
+def test_registry_growth_detail_child_tabs_use_shared_analytics_navigation_and_bound_evidence() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
+    workspace = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_workspace.html').read_text()
+    overview = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_overview.html').read_text()
+    sources = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_source_deltas.html').read_text()
+    history = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_history_evidence.html').read_text()
+    js = (ROOT / 'app/static/js/analytics/controls.js').read_text()
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    for source in (section, workspace, overview, sources, history):
+        env.parse(source)
+
+    assert 'artifact_registry/partials/_analytics_growth_workspace.html' in section
+    assert 'Registry Growth' in section
+    assert 'data-analytics-tabset-id="artifact-registry-growth-content"' in workspace
+    assert 'data-analytics-update-query="false"' in workspace
+    assert "content_tabs.render_buttons('artifact-registry-growth-content', growth_tabs" in workspace
+    assert "('overview', 'Overview', 'layout-dashboard')" in workspace
+    assert "('sources', 'Source Deltas', 'chart-no-axes-column-increasing')" in workspace
+    assert "('history', 'History & Evidence', 'chart-spline')" in workspace
+    assert workspace.count('role="tabpanel"') == 3
+    assert workspace.count('data-analytics-tab-panel=') == 3
+    for key in ('overview', 'sources', 'history'):
+        assert f'id="artifact-registry-growth-content-panel-{key}"' in workspace
+        assert f'aria-labelledby="artifact-registry-growth-content-tab-{key}"' in workspace
+    assert workspace.count('\n             hidden\n') == 2
+    assert 'stabilizeAnalyticsTabsets(root)' in js
+    assert "document.body.addEventListener('htmx:afterSwap'" in js
+
+    assert 'Storage Footprint' in overview
+    assert 'Artifact Velocity' in overview
+    assert 'Stale Candidates' in overview
+    assert "analytics.aggregate.stale_candidates if analytics.snapshot_count else 'N/A'" in overview
+    assert 'Qualified Growth Comparison Not Available' in overview
+    assert "spotlight.artifact_delta if spotlight.artifact_delta is not none else 'N/A'" in overview
+    assert 'zero net change does not prove there was no intermediate activity' in overview
+    assert 'qualified_growth[0]' in overview
+
+    assert 'qualified_growth[:5]' in sources
+    assert 'row.artifact_growth_display' in sources
+    assert 'row.size_growth_display' in sources
+    assert 'row.size_delta_display' in sources
+    assert 'row.elapsed_days' in sources
+    assert 'Source Deltas Not Available' in sources
+    assert 'Missing source evidence is not zero growth.' in sources
+
+    assert 'analytics.growth_charts.artifacts' in history
+    assert 'analytics.growth_charts.storage' in history
+    assert 'artifact_registry/partials/_analytics_growth_charts.html' in history
+    assert 'source_rows[:5]' in history
+    assert 'row.status_label, row.tone' in history
+    assert 'Previous committed snapshot; not current' in history
+    assert 'legacy start/end checkpoints are labeled explicitly' in history
+
+
+def test_registry_growth_detail_child_tabs_render_observed_zero_missing_and_history_lineage() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    growth_row = {
+        'registry_name': 'Harbor X300',
+        'provider_key': 'harbor',
+        'artifact_delta': 0,
+        'artifact_growth_display': '+0.0/day',
+        'size_delta_display': '0 B',
+        'size_growth_display': '0 B/day',
+        'elapsed_days': 1.0,
+    }
+    current = {
+        'identity': {'name': 'Harbor X300'},
+        'snapshot': {'status': 'ready'},
+        'is_current': True,
+        'status_label': 'Current Snapshot',
+        'tone': 'normal',
+    }
+    analytics = {
+        'summary_cards': [{'value': '123.61 MiB'}, {'value': '+0.0/day'}],
+        'aggregate': {'artifacts': 3, 'stale_candidates': 0},
+        'growth_rows': [growth_row],
+        'growth_charts': {'artifacts': [], 'storage': []},
+        'latest_rows': [current],
+        'snapshot_count': 1,
+        'provider_count': 1,
+        'snapshot_window': '24h',
+    }
+    rendered = env.get_template('artifact_registry/partials/_analytics_growth_workspace.html').render(
+        analytics=analytics, growth_detail_label='Registry Growth'
+    )
+    assert rendered.count('role="tabpanel"') == 3
+    assert 'Storage Footprint' in rendered
+    assert '123.61 MiB' in rendered
+    assert '0 B' in rendered
+    assert '+0.0/day' in rendered
+    assert 'Observed Delta' in rendered
+    assert '24H Window' in rendered
+    assert 'Source Growth Trend' in rendered
+    assert 'Historical Chart Not Available' in rendered
+    assert 'Current committed snapshot' in rendered
+    assert 'No projection is shown.' in rendered
+
+    analytics['growth_rows'] = []
+    analytics['snapshot_count'] = 0
+    analytics['latest_rows'] = []
+    analytics['summary_cards'] = [{'value': 'N/A'}, {'value': 'N/A'}]
+    unavailable = env.get_template('artifact_registry/partials/_analytics_growth_workspace.html').render(
+        analytics=analytics, growth_detail_label='Registry Growth'
+    )
+    assert 'Qualified Growth Comparison Not Available' in unavailable
+    assert 'Source Deltas Not Available' in unavailable
+    assert 'Snapshot Lineage Not Available' in unavailable
+    assert 'Stale Candidates' in unavailable
+    assert 'N/A' in unavailable
+    assert 'No committed source snapshot' in unavailable
+
 def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> None:
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
     section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()

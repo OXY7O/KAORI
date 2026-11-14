@@ -973,6 +973,38 @@ four KPI row, ownership footers, Insights deep-route CTA, and Evidence-only
 database migration, provider normalization or local recommendation lifecycle
 is introduced.
 
+### Registry Analytics Growth detail child-tab workspace (#4712)
+
+The focused `/analytics/growth` level-3 route now uses a three-child-tab
+workspace nested under the existing Registry/Time Range controls:
+**Overview**, **Source Deltas**, and **History & Evidence**. This is a
+distinct workstream from #4632, which owns the separate eight-tab Analytics
+Overview surface. The navigation reuses `content_tabs.render_buttons` and
+the global Analytics client controller; the local tabset opts out of URL
+`?tab=` rewriting to preserve the existing Registry legacy redirect and
+fail-closed source scope. The owning detail section remains lazily fetched
+once by HTMX; child views read the same committed projection without
+another endpoint, provider query or worker materialization.
+
+**Overview** retains actual Storage Footprint, Artifact Velocity, and
+review-only Stale Candidates. It adds a qualified source comparison spotlight
+and source/window/materialization facts without inventing an overall stable
+trend when endpoint deltas are zero. **Source Deltas** provides at most five
+separate Registry source records with original artifact/storage deltas,
+per-day rates, window length and explicit N/A for missing inputs. **History
+& Evidence** reuses the existing bounded measured-series Chart.js surfaces,
+which distinguish actual measured points from legacy endpoint checkpoints
+or unavailable history, and adds at most five committed snapshot status
+records distinguishing current, stale-but-readable and not materialized.
+
+External Registry/Metrics Source engines remain authoritative. KAORI reads
+only committed materialized evidence, does not extrapolate missing samples,
+does not create provider-clone live calls, and does not introduce a stale
+artifact cleanup queue, local recommendation engine, new JS/CSS or database
+schema. The shared Growth workspace uses semantic KAORI analysis surfaces,
+accessible tab navigation, responsive rendering and current dark/light
+tokens; implementation requires exact-head Dev Container QA and human UAT.
+
 ### Registry Analytics Overview Growth evidence visual UAT refinement (#4632)
 
 The **Growth → Source Growth Trend** workspace uses two peer neutral evidence
