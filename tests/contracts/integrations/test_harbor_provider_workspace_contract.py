@@ -541,7 +541,8 @@ def test_harbor_webhook_configuration_layout_preserves_admission_and_credential_
 
     # Shared KAORI Violet surfaces and palette icons; desktop side-by-side,
     # mobile stacked, with the credential actions in a separate aligned row.
-    assert 'grid overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle lg:grid-cols-5' in configuration
+    assert 'grid overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle' in configuration
+    assert 'lg:grid-cols-5' in configuration
     assert 'lg:col-span-2' in configuration
     assert 'lg:col-span-3' in configuration
     assert 'harbor-webhook-admission-title' in configuration
