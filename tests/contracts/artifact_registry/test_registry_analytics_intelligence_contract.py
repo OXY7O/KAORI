@@ -278,7 +278,6 @@ def test_registry_growth_overview_charts_and_summary_reuse_canonical_patterns() 
     assert 'consumer.query_range(' in worker
 
 
-
 def test_registry_growth_chart_summary_renders_committed_endpoint_evidence() -> None:
     from jinja2 import Environment, FileSystemLoader
 
@@ -536,7 +535,7 @@ def test_registry_alert_source_overview_reuses_committed_selection_and_fallback_
     assert "analysis_surface.ranked_item_classes('min-w-0 p-3 sm:p-4')" in partial
     assert "source_rows|selectattr('status', 'equalto', 'ready')" in partial
     assert "source_rows|selectattr('fallback_used', 'equalto', true)" in partial
-    assert "source_rows[:3]" in partial
+    assert 'source_rows[:3]' in partial
     assert "'alert_source_rows': bundle['alert_source_rows']" in presenter
 
     env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
@@ -692,7 +691,16 @@ def test_registry_evidence_overview_preserves_snapshot_freshness_vs_worker_statu
     assert 'Stale Snapshot' in rendered
     assert 'Last Collection Completed' in rendered
     assert 'All snapshots expired; old evidence remains readable.' in rendered
-    assert 'Eligible ≠ Current' in rendered
+    partial = (ROOT / 'app/templates/artifact_registry/partials/_analytics_evidence_readiness.html').read_text()
+    assert 'space-y-3 p-4 sm:p-5' in partial
+    assert "analysis_surface.evidence_shell_classes('min-w-0')" in partial
+    assert 'grid gap-3 sm:grid-cols-2' in partial
+    assert 'lg:col-span' not in partial
+    assert "interpretation_content('Evidence boundary'" not in partial
+    assert 'Snapshot Freshness' in rendered
+    assert 'Latest Worker Outcome' in rendered
+    assert rendered.count('id="registry-evidence-worker-title"') == 1
+    assert 'Eligible ≠ Current' not in rendered
     assert 'No committed snapshots for the selected Registry and Time Range.' not in rendered
 
     more = [stale, current, missing, current, stale, {**current, 'identity': {'name': 'Hidden Harbor'}}]
@@ -704,6 +712,7 @@ def test_registry_evidence_overview_preserves_snapshot_freshness_vs_worker_statu
     assert 'Source Snapshots Not Available' in empty
     assert 'No committed snapshots for the selected Registry and Time Range.' in empty
     assert 'Last Collection Completed' in empty
+    assert 'Latest Worker Outcome' in empty
 
 
 def test_registry_overview_panels_render_unknown_without_fabricating_evidence() -> None:

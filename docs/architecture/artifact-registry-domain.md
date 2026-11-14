@@ -952,8 +952,13 @@ returned in the preview.
 
 The **Data & Evidence** tab presents at most five Registry snapshot records
 with the provider identity, existing committed status label and snapshot
-currency, plus a separate **Collection & Freshness** panel. It deliberately
-shows both `data_readiness.label/tone/helper` (snapshot validity) and
+currency in a full-width, content-height evidence lane. Two compact peer
+cards beneath it show **Snapshot Freshness** and **Latest Worker Outcome**,
+removing the unused height previously caused by stretching a single source
+record alongside a much taller context panel. An inner evidence-boundary
+callout is removed because the parent Overview footer already owns the
+boundary explanation. The independent cards still show both
+`data_readiness.label/tone/helper` (snapshot validity) and
 `execution_label/execution_tone/execution_helper` (worker outcome) without
 equating a successful last collection with a current snapshot. A previous
 snapshot may be readable while marked stale or inputs changed. Missing source
