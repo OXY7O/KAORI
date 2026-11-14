@@ -53,6 +53,17 @@ def _scanner_coverage_state(
     return {'label': 'Observed', 'tone': 'normal'}
 
 
+def _security_severity_distribution(counts: dict[int, int]) -> list[dict[str, Any]]:
+    """Project distinct grouped-CVE severity totals without inventing findings."""
+    tones = {'critical': 'critical', 'high': 'warning', 'medium': 'warning', 'low': 'info'}
+    distribution = [
+        {'label': level.title(), 'count': int(counts.get(rank, 0)), 'tone': tones.get(level, 'unknown')}
+        for level, rank in _SEVERITY_RANK.items()
+    ]
+    if counts.get(5):
+        distribution.append({'label': 'Unknown', 'count': int(counts[5]), 'tone': 'unknown'})
+    return distribution
+
 def _scanner_findings(source_ids: list[int]) -> Any:
     """Latest usable successful scan, qualified by active source ownership."""
     latest_success = (
@@ -193,15 +204,7 @@ def build_security_posture(
                 select(severity_summary.c.severity_rank, func.count()).group_by(severity_summary.c.severity_rank)
             ).all()
         )
-        tones = {'critical': 'critical', 'high': 'warning', 'medium': 'warning', 'low': 'info'}
-        severity_distribution = [
-            {'label': level.title(), 'count': int(severity_counts.get(rank, 0)), 'tone': tones.get(level, 'unknown')}
-            for level, rank in _SEVERITY_RANK.items()
-        ]
-        if severity_counts.get(5):
-            severity_distribution.append(
-                {'label': 'Unknown', 'count': int(severity_counts[5]), 'tone': 'unknown'}
-            )
+        severity_distribution = _security_severity_distribution(severity_counts)
     scanned_artifacts = 0
     artifacts_total = 0
     last_scan = None
