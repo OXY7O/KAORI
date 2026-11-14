@@ -112,7 +112,7 @@
                         <p class="mt-1 text-xs font-semibold tabular-nums text-content-primary">{{ row.growth_display }}</p>
                     </div>
                     <div class="min-w-0 md:col-span-2 md:text-right">
-                        {{ table_label.status_indicator_label(row.forecast_label, 'info', size='compact') }}
+                        {{ table_label.status_indicator_label(row.forecast_label, 'unknown' if row.forecast_label == 'No forecast' else 'info', size='compact') }}
                     </div>
                 </article>
             {% endfor %}

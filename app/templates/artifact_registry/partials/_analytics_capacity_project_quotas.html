@@ -4,6 +4,11 @@
 {% import "components/pagination.html" as pager %}
 {% set qualified_projects = analytics.capacity_project_rows|default(analytics.capacity_chart_rows|default([], true)) %}
 {% set page_window = analytics.capacity_pagination|default(none) %}
+{% set capacity_page_query = {
+    'provider_id': analytics.selected_provider_id,
+    'snapshot_window': analytics.snapshot_window,
+    'capacity_per_page': page_window.per_page if page_window else 5
+} %}
 <section id="registry-capacity-projects-table"
          class="{{ analysis_surface.evidence_shell_classes() }}"
          aria-labelledby="registry-capacity-projects-title"
@@ -69,7 +74,7 @@
                                 <span class="whitespace-nowrap tabular-nums text-content-primary">{{ row.growth_display }}</span>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_label.status_indicator_label(row.forecast_label, 'info', size='compact') }}
+                                {{ table_label.status_indicator_label(row.forecast_label, 'unknown' if row.forecast_label == 'No forecast' else 'info', size='compact') }}
                             </td>
                         </tr>
                     {% endfor %}
@@ -124,7 +129,7 @@
                                             hx_target='#registry-capacity-projects-table',
                                             endpoint='artifact_registry.analytics_capacity_table',
                                             href_endpoint='artifact_registry.analytics_capacity',
-                                            query_params={'provider_id': analytics.selected_provider_id, 'snapshot_window': analytics.snapshot_window, 'capacity_per_page': page_window.per_page},
+                                            query_params=capacity_page_query,
                                             hx_swap='outerHTML') }}
                 </nav>
             {% endif %}
