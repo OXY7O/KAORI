@@ -1405,11 +1405,13 @@ no extra page-local tab implementation is permitted. The source is committed
 KAORI state; no live provider calls are added to ordinary navigation.
 
 **Authority panel visual refinement (#4652):** Following operator review,
-Overview now uses the exact sibling governance header grammar: 9x9 Violet
-icon surface, `text-base` title, one title-adjacent standard `Guide`, and
-canonical `table_label.special_label` for Capsule authority. The concise
-full-width subtitle remains visible below the title/badges, without narrow
-max-width containers or custom badge classes. Tenant Quota and Shared
+Overview now uses the exact sibling governance card shell and header grammar:
+`rounded-xl` semantic bordered card, `px-5 py-4` header, 9x9 Violet icon
+surface, `text-base` title, one title-adjacent standard `Guide`, and canonical
+`table_label.special_label` for Capsule authority. Its two committed authority
+cards and read-only evidence note share the sibling `p-4 sm:p-5` content inset.
+The concise full-width subtitle remains visible below the title/badges, without
+narrow max-width containers or custom badge classes. Tenant Quota and Shared
 Allocation headers retain their own title Guides and provider authority badges;
 their legacy-only captions are compact enough for desktop while the complete
 provider, Native-not-Capsule and Managed-on-Adopt cutover boundaries remain
