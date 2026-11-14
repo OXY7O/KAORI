@@ -332,6 +332,20 @@ Validation before consumer bindings, while disabled connections remain
 persisted but excluded from scope resolution. Narrow/mobile layouts and
 additional initial-cluster context may wrap naturally.
 
+**Compact Observability edit guidance (UAT #4709):** Prometheus, Thanos Query,
+and Alertmanager **edit** forms share the existing Registration Context UI.
+Their Flow Note reads `Saved changes require successful Full Validation.`,
+and the related workspace summary uses the provider-specific concise
+`Review <provider> readiness and bindings.` wording. The Save Changes step
+still explicitly marks readiness as Validation Required; it is not a
+substitute for Full Validation evidence or downstream Binding Validation.
+The Thanos Query provider catalog description is shortened to
+`PromQL queries with long-term retention.`; the existing Prometheus HTTP
+adapter, PromQL query language, and historical query horizon remain defined
+by the catalog and visible in the provider contract metadata. Use short
+factual copy rather than page-local nowrap, clipping, or micro-typography.
+Long provider identifiers and mobile content may wrap naturally.
+
 ## Provider Registry Contract
 
 Metrics Source and Alertmanager registries share:

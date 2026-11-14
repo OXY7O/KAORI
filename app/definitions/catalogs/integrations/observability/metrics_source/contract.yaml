@@ -28,7 +28,7 @@ provider_kinds:
     validation_basis: Provider readiness validates endpoint compatibility and the configured metrics adapter; consumer contracts are validated per asset binding.
 - key: thanos
   label: Thanos Query
-  description: Thanos Query endpoint using the Prometheus HTTP API and PromQL with long-retention support.
+  description: PromQL queries with long-term retention.
   adapter_key: prometheus_http
   query_language: promql
   default_query_horizon: historical

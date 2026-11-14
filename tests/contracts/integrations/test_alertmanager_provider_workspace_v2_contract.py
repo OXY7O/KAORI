@@ -138,7 +138,7 @@ def test_observability_connection_copy_is_concise_and_binding_scoped():
     assert 'Update metrics access while preserving validation and bindings.' in metrics
     assert 'Maintain governed validation and consumer-binding context.' not in metrics
     assert 'Update Alertmanager access while preserving consumer bindings.' in alertmanager
-    assert 'Review Alertmanager coverage, readiness, and alert consumer bindings.' in alertmanager
+    assert 'Review Alertmanager readiness and bindings.' in alertmanager
     assert 'Maintain governed validation and consumer-binding context.' not in alertmanager
 
 
@@ -180,9 +180,7 @@ def test_alertmanager_registration_guidance_is_compact_without_losing_gates() ->
 
     from jinja2 import Environment
 
-    form = read(
-        'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html'
-    )
+    form = read('app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html')
     Environment().parse(form)
     messages = (
         'Configure endpoint access, then test connectivity.',
@@ -239,14 +237,44 @@ def test_alertmanager_connection_registry_row_has_aligned_semantic_cells() -> No
     assert '{{ row.profile or "Capability profile pending" }}' in compatibility
     assert '{{ row.version or "Version not detected" }}' in compatibility
 
-    assert "table_label.metadata_label(table_label.count_text(row.binding_count, 'Binding'))" in bindings
+    assert "table_label.metadata_label(table_label.count_text(row.binding_count, 'Binding') )" in bindings
     assert "scope_labels|join(', ') if scope_labels else 'No scope bindings'" in bindings
+    assert 'scope_labels|join(", ") if scope_labels else' in bindings
     assert 'Bound scope types:' in bindings
     assert 'truncate' not in bindings
-    assert "scope_labels.append(scope_type_labels.get(" in populated
+    assert 'scope_labels.append(scope_type_labels.get(' in populated
     assert 'row.scope_types or []' in populated
     assert "url_for('alertmanager.instance_detail', instance_id=row.instance.id)" in actions
     assert '<td class="{{ table_ui.cell_classes(action=true) }} align-top">' in populated
     assert 'provider_registry.connection_registry_colgroup()' in registry
     assert 'provider_registry.connection_registry_head()' in registry
-    assert "provider_registry.pagination_footer(pagination," in registry
+    assert 'provider_registry.pagination_footer(pagination,' in registry
+
+
+def test_observability_edit_guidance_is_one_line_copy_with_full_validation_gate() -> None:
+    """Shared edit flows stay concise without changing provider authority."""
+
+    from jinja2 import Environment
+
+    metrics = read('app/templates/integrations/observability/metrics_source/instance_form.html')
+    alertmanager = read('app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html')
+    for form in (metrics, alertmanager):
+        Environment().parse(form)
+        assert 'flow_note="Saved changes require successful Full Validation."' in form
+        assert 'Saving changes does not establish readiness until Full Validation succeeds.' not in form
+        assert 'return readiness to Validation Required.' in form
+        assert 'provider_registration_context.render(' in form
+
+    assert '"Review " ~ metrics_source_label ~ " readiness and bindings."' in metrics
+    assert '"Review Alertmanager readiness and bindings."' in alertmanager
+    assert 'coverage, connection readiness, and consumer bindings from the observability workspace.' not in metrics
+    assert 'Review Alertmanager coverage, readiness, and alert consumer bindings.' not in alertmanager
+
+    catalog = read('app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml')
+    thanos = catalog.split('- key: thanos', 1)[1].split('\n- key:', 1)[0]
+    assert 'description: PromQL queries with long-term retention.' in thanos
+    assert 'adapter_key: prometheus_http' in thanos
+    assert 'query_language: promql' in thanos
+    assert 'default_query_horizon: historical' in thanos
+    assert 'Thanos Query endpoint using the Prometheus HTTP API' not in thanos
+    assert '{{ provider.description }}' in metrics
