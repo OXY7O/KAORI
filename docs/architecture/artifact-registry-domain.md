@@ -1064,6 +1064,41 @@ the distinction among pull counters, runtime bindings and distinct artifacts;
 missing pull metrics never imply zero demand. The original Usage detail route
 and Registry/Time Range scope remain unchanged.
 
+### Registry Analytics Capacity detail / hero management CTA (#4723)
+
+The shared Artifact Registry Analytics hero now uses **Open Registry Integrations**
+(`url_for('integrations.registry')`, `plug-zap`) as its primary
+domain-management action, matching the approved patterns in the Kubernetes
+and Object Storage Analytics heroes and the existing Registry Overview
+hero. This does not remove the separate **Open Intelligence** action from
+the Insights detail workspace, where central Intelligence remains the sole
+recommendation lifecycle authority.
+
+The focused `/analytics/capacity` detail is a separate read-only workspace
+from the Capacity Overview chart. The detail reuses KAORI Analytics evidence
+surfaces and canonical table primitives to organize four existing committed
+Capacity Outlook metrics, then **Qualified Quota Comparison** plus a compact
+**Capacity Reading** panel. Project records are the exact already-qualified
+`capacity_chart_rows` (finite nonnegative observed usage, finite positive
+quota, valid Registry/project identities, maximum five) rather than a second
+ad hoc qualification pass. Provider identity remains with the project.
+Materialized growth display is carried through from the existing decorated
+project forecast rows, not recalculated in Jinja. Each row retains observed
+usage/quota, exact utilization including 0% and over-quota values, and
+independent qualified forecast label. Its native progress meter is capped
+at 100% for visual capacity while the original numeric percentage is always
+shown and over-quota evidence is explicitly labeled. The native meter
+does not infer an exhaustion forecast.
+
+Capacity Reading distinguishes committed headroom from future forecasts,
+an unavailable forecast from zero observed growth, and a zero net rate from
+proof that no intermediate activity occurred. Missing eligible quota data
+produces a dedicated unavailable state; no external provider fetch, worker
+job, per-project runtime claim, new JS/CSS or data mutation is introduced.
+The existing Registry/Time Range controls, HTMX delivery and central
+Intelligence ownership remain unchanged. Full visual UAT and exact-head
+quality checks are required before official staging promotion.
+
 ### Registry Analytics Overview Capacity visual UAT refinement (#4632)
 
 The **Capacity** tab retains its committed four-indicator quota/forecast

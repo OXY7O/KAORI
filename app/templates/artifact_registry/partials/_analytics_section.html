@@ -9,56 +9,7 @@
         {% set growth_detail_label = "Registry Growth" %}
         {% include "artifact_registry/partials/_analytics_growth_workspace.html" %}
     {% elif analytics.active_tab == 'capacity' %}
-        <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Capacity Outlook</p>
-        <h3 class="mt-1 text-base font-semibold text-content-primary">Project quota outlook</h3>
-        <p class="mt-1 text-xs leading-5 text-content-muted">Committed quota evidence is combined with materialized growth velocity for planning horizons.</p>
-        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {% for label, value, detail in [
-                ('Nearest Exhaustion', ('%.1f days'|format(analytics.capacity_outlook.nearest_quota_days)) if analytics.capacity_outlook.nearest_quota_days is not none else 'N/A', 'Earliest qualified project forecast'),
-                ('Highest Utilization', ('%.1f%%'|format(analytics.capacity_outlook.highest_utilization)) if analytics.capacity_outlook.highest_utilization is not none else 'N/A', 'Highest observed quota usage'),
-                ('Growth Velocity', analytics.capacity_outlook.growth_display, 'Materialized storage growth'),
-                ('Quota Headroom', analytics.capacity_outlook.quota_headroom_display, 'Qualified committed quota headroom')
-                ] %}
-                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                    <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
-                    <p class="mt-2 text-xl font-semibold text-content-primary">{{ value }}</p>
-                    <p class="mt-1 text-xs text-content-muted">{{ detail }}</p>
-                </div>
-            {% endfor %}
-        </div>
-        <div class="mt-5 overflow-x-auto rounded-xl border border-outline-subtle">
-            <table class="{{ table_ui.table_classes('min-w-[760px]') }}">
-                <thead class="{{ table_ui.head_classes() }}">
-                    <tr>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Registry / Project</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Usage / Quota</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Utilization</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Growth</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Forecast</th>
-                    </tr>
-                </thead>
-                <tbody class="{{ table_ui.body_classes() }}">
-                    {% for row in analytics.forecast_rows[:5] %}
-                        <tr class="{{ table_ui.row_classes() }}">
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="font-semibold text-content-primary">{{ row.project_name }}</p>
-                                <p class="text-xs text-content-muted">{{ row.registry_name }}</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ row.usage_display }} / {{ row.quota_display }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ row.utilization_display }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ row.growth_display }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.days_to_quota_display, 'info') }}</td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="5" class="{{ table_ui.cell_classes() }}">
-                                <p class="py-5 text-center text-content-muted">No qualified project quota forecast is available.</p>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        {% include "artifact_registry/partials/_analytics_capacity_outlook.html" %}
     {% elif analytics.active_tab == 'usage' %}
         <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Artifact Usage</p>
         <h3 class="mt-1 text-base font-semibold text-content-primary">Runtime and demand evidence</h3>
