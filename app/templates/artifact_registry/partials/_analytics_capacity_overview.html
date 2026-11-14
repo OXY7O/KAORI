@@ -101,22 +101,35 @@
         </header>
         <div class="divide-y divide-outline-subtle">
             <div class="px-4 py-3">
-                <p class="{{ analysis_surface.metric_label_classes() }}">Available Quota Headroom</p>
-                <p class="mt-1 text-base font-semibold tabular-nums text-content-primary">
-                    {{ analytics.capacity_outlook.quota_headroom_display }}
+                <p class="{{ analysis_surface.metric_label_classes() }}">Evidence Coverage</p>
+                <p class="mt-1 text-sm font-semibold text-content-primary">
+                    {{ qualified_projects|length }} qualified quota projects
                 </p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Across eligible committed quota records.</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                    Only committed nonnegative usage with a valid positive quota qualifies.
+                </p>
             </div>
             <div class="px-4 py-3">
-                <p class="{{ analysis_surface.metric_label_classes() }}">Exhaustion Forecast</p>
-                <p class="mt-1 text-sm font-semibold text-content-primary">
+                <p class="{{ analysis_surface.metric_label_classes() }}">Forecast Boundary</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">
                     {% if analytics.capacity_outlook.nearest_quota_days is not none %}
-                        {{ '%.1f days'|format(analytics.capacity_outlook.nearest_quota_days) }}
+                        A project has a qualified exhaustion horizon; review its evidence under Forecast & Evidence.
                     {% else %}
-                        No qualified forecast
+                        No qualified forecast; an exhaustion horizon cannot be inferred from missing growth evidence.
                     {% endif %}
                 </p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">No horizon is inferred without qualified growth history.</p>
+            </div>
+            <div class="px-4 py-3">
+                <p class="{{ analysis_surface.metric_label_classes() }}">Growth Interpretation</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                    {% if analytics.capacity_outlook.growth_bytes_per_day is none %}
+                        Growth history is unavailable; an unknown rate is not zero demand.
+                    {% elif analytics.capacity_outlook.growth_bytes_per_day == 0 %}
+                        Zero net growth does not prove that no intermediate workload activity occurred.
+                    {% else %}
+                        Materialized growth is an observation, not a prediction of future demand.
+                    {% endif %}
+                </p>
             </div>
         </div>
     </section>

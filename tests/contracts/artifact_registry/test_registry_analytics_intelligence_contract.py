@@ -506,7 +506,9 @@ def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> 
     assert 'never auto-cleaned' in growth_overview
     capacity_detail = (ROOT / 'app/templates/artifact_registry/partials/_analytics_capacity_outlook.html').read_text()
     assert 'Capacity Outlook' in capacity_detail
-    capacity_projects = (ROOT / 'app/templates/artifact_registry/partials/_analytics_capacity_project_quotas.html').read_text()
+    capacity_projects = (
+        ROOT / 'app/templates/artifact_registry/partials/_analytics_capacity_project_quotas.html'
+    ).read_text()
     assert 'Qualified Quota Comparison' in capacity_projects
     assert (
         'central Intelligence owns recommendation semantics, Accepted Risk, escalation, and automation control'
@@ -1644,6 +1646,8 @@ def test_registry_capacity_outlook_table_reuses_canonical_primitives() -> None:
         assert f'aria-labelledby="artifact-registry-capacity-content-tab-{key}"' in workspace
     assert 'htmx:afterSwap' in navigation
     assert 'Capacity Reading' in overview
+    assert 'Forecast Boundary' in overview
+    assert 'Evidence Coverage' in overview
     assert 'Project Quota Pressure' in overview
     assert 'Nearest Exhaustion' in overview
     assert 'Quota Headroom' in overview
