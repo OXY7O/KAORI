@@ -64,4 +64,4 @@ def test_registration_and_edit_flows_keep_distinct_validation_guidance() -> None
 def test_registration_guidance_does_not_introduce_forced_truncation_classes() -> None:
     """Reject template-level truncation, not just truncation words inside helper copy."""
     source = TEMPLATE.read_text(encoding="utf-8")
-    assert not re.search(r"(?<![\\w-])(?:whitespace-nowrap|text-ellipsis|truncate|line-clamp-\\d+)(?![\\w-])", source)
+    assert not re.search(r"(?<![\w-])(?:whitespace-nowrap|text-ellipsis|truncate|line-clamp-\d+)(?![\w-])", source)
