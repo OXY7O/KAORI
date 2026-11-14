@@ -1,6 +1,7 @@
 {% set payload = consumer_payload|default({}, true) %}
 {% set pagination = payload.pagination|default({}, true) %}
 {% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "components/info_tip.html" as info_tip %}
 <form id="top-consumers-filter-form"
       method="get"
       hx-get="{{ url_for('analytics.top_consumers') }}"
@@ -18,7 +19,12 @@
         'top-consumers-refresh-indicator',
         metrics_source_status,
         analytics_materialization,
-        eyebrow='Top Consumers'
+        eyebrow='Top Consumers',
+        title_accessory=info_tip.render('kubernetes-analytics-top_consumers-controls-guide',
+            'Consumers Controls Guide',
+            'Cluster scope uses committed cluster rankings; Namespace uses its own worker snapshot.',
+            items=['Unavailable Namespace evidence needs a refresh, not a zero-value interpretation.'],
+            placement='right', variant='guide')
         ) %}
         <div class="grid gap-4 sm:grid-cols-2">
             <label for="top-consumers-cluster-filter" class="block min-w-0">

@@ -1,4 +1,5 @@
 {% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "components/info_tip.html" as info_tip %}
 <form id="storage-analysis-filter-form"
       method="get"
       hx-get="{{ url_for('analytics.storage') }}"
@@ -20,7 +21,12 @@
         'storage-refresh-indicator',
         metrics_source_status,
         analytics_materialization,
-        eyebrow='Storage Analysis'
+        eyebrow='Storage Analysis',
+        title_accessory=info_tip.render('kubernetes-analytics-storage-controls-guide',
+            'Storage Controls Guide',
+            'Cluster and Namespace select committed PVC, PV, and filesystem evidence.',
+            items=['Filesystem node selection belongs to the Filesystem tab; unavailable measurements remain Unknown.'],
+            placement='right', variant='guide')
         ) %}
         <div class="grid gap-4 sm:grid-cols-2">
             <label for="storage-cluster-filter" class="block">
