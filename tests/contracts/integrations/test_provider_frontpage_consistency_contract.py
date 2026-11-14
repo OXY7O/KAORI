@@ -413,4 +413,3 @@ def test_overview_indicator_has_no_extra_info_trigger_on_all_provider_landings()
     assert 'data-kaori-info-tip' not in html
     assert 'data-kaori-info-tip-trigger' not in html
     assert 'data-kaori-provider-integration-overview' in html
-
