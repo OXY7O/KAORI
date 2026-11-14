@@ -129,7 +129,8 @@ def test_vault_one_line_operator_guidance_retains_canonical_safety_evidence() ->
     assert "variant='guide'" in overview
     assert 'execution_safety_short|default(definition.safety_summary)' in activity
     assert 'title="{{ definition.safety_summary }}"' in activity
-    assert 'info_tip.render(' not in activity
+    assert activity.count("info_tip.render('jobs-execution-activity-guide-'") == 1
+    assert 'items=[definition.safety_summary]' not in activity
     assert 'title="{{ active_job.progress_process }}"' in activity
     assert 'title="{{ active_job.progress_detail }}"' in activity
     assert 'xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.95fr)]' in activity
@@ -211,7 +212,8 @@ def test_selected_job_guide_is_title_level_and_execution_progress_is_one_line() 
     assert 'items=[definition.safety_summary]' in overview
     assert overview.index('jobs-selected-safety-') < overview.index('selected_description|default')
     assert 'jobs-overview-safety-' not in overview
-    assert 'info_tip.render(' not in activity
+    assert activity.count("info_tip.render('jobs-execution-activity-guide-'") == 1
+    assert 'items=[definition.safety_summary]' not in activity
     assert 'execution_safety_short|default(definition.safety_summary)' in activity
     assert 'title="{{ active_job.progress_process }}"' in activity
     assert 'title="{{ active_job.progress_detail }}"' in activity
