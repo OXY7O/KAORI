@@ -14,14 +14,14 @@
                         <h2 {% if title_id %}id="{{ title_id }}"{% endif %}
                             class="text-base font-semibold text-content-primary">{{ title }}</h2>
                         {{ info_tip.render("connection-registry-" ~ loading_id ~ "-guide",
-                                            title,
-                                            description,
-                                            [
+                                                title,
+                                                description,
+                                                [
                                                 "The external provider owns live resources and effective access; KAORI displays registered connections and committed evidence.",
                                                 "Core readiness comes from Full Validation. Runtime health, inventory and consumer binding evidence are assessed separately."
-                                            ],
-                                            placement="right",
-                                            variant="guide") }}
+                                                ],
+                                                placement="right",
+                                                variant="guide") }}
                         {% if result_count is not none %}{{ table_label.result_count(result_count) }}{% endif %}
                     </div>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">{{ description }}</p>

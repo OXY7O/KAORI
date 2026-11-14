@@ -660,7 +660,8 @@ def main() -> int:
         'app/templates/integrations/observability/metrics_source/partials/_runtime_panel.html'
     )
     require(
-        'Prometheus HTTP API v1 / PromQL core contract' in metrics_form
+        'Contract · Prometheus HTTP API v1 / PromQL' in metrics_form
+        and 'KAORI detects provider runtime independently of API compatibility.' in metrics_form
         and 'Prometheus HTTP API v2' not in metrics_form
         and 'Prometheus HTTP API v3' not in metrics_form
         and 'Provider Runtime Profile' in metrics_runtime_template

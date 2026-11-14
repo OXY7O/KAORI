@@ -306,11 +306,11 @@ def test_provider_detail_primary_titles_use_one_canonical_guide_across_seven_pro
     assert 'variant="guide"' in capsule
     assert 'Capsule Cluster RBAC Bootstrap' in capsule
 
-    # #4544 explicitly removed the duplicate Guide in the lower
-    # Integration Workspace, while retaining the provider Overview Guide.
+    # #4544 removed the lower Workspace Guide; #4666's current Visual UAT
+    # also removes the redundant Overview icon while preserving Registry Guides.
     overview = read(root + 'components/_provider_frontpage.html')
     tabs = read('app/templates/components/integration_workspace_tabs.html')
-    assert overview.count('info_tip.render(') == 1
+    assert 'info_tip.render(' not in overview
     assert 'info_tip.render(' not in tabs
 
 

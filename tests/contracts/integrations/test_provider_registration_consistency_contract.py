@@ -288,9 +288,12 @@ def test_prometheus_registration_reuses_compact_shared_guidance_and_aligned_cont
 
     # The two cards use a common grid and surface hierarchy.
     assert 'grid items-stretch gap-4 md:grid-cols-2' in metrics
-    assert metrics.count(
-        'flex h-full min-w-0 flex-col rounded-lg border border-outline-subtle bg-surface-subtle px-4 py-3'
-    ) == 3
+    assert (
+        metrics.count(
+            'flex h-full min-w-0 flex-col rounded-lg border border-outline-subtle bg-surface-subtle px-4 py-3'
+        )
+        == 3
+    )
     assert metrics.count('mt-3 border-t border-outline-subtle pt-2') == 3
     assert 'flex-1 text-xs leading-5 text-content-secondary' in metrics
     assert 'Provider identity is immutable.' in metrics
@@ -329,10 +332,7 @@ def test_provider_registration_and_metrics_validation_guidance_stays_concise() -
         'Provider identity is immutable. Bindings use the global Metrics Source contract; adapter and query-language details remain provider-defined.'
         in metrics_source
     )
-    assert (
-        'One source supports independent asset bindings.'
-        in metrics_source
-    )
+    assert 'One source supports independent asset bindings.' in metrics_source
     assert (
         'executes queries; the source owns collection and retention. KAORI governs readiness, bindings, and resolution.'
         in metrics_source
