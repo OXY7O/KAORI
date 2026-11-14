@@ -57,7 +57,7 @@
                         </span>
                         <div>
                             <h2 class="text-base font-semibold text-content-primary">{{ "MinIO Connection Configuration" if instance is defined and instance else "Connection Configuration" }}</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">{{ "Modify identity, credentials, transport trust, and request controls. Connection-sensitive changes reset readiness until Full Validation completes." if instance is defined and instance else "Define connection identity, MinIO S3 API access, compatibility contract, and operational controls." }}</p>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">{{ "Update MinIO access; Full Validation restores readiness after changes." if instance is defined and instance else "Define connection identity, MinIO S3 API access, compatibility contract, and operational controls." }}</p>
                         </div>
                     </div>
                 </header>
@@ -201,18 +201,18 @@
                     {% set minio_flow_items = [('Review Identity & Environment', 'Keep the canonical object-storage asset stable while updating its connection metadata.'), ('Adjust Endpoint Access', 'Rotate credentials or transport settings only when operationally required.'), ('Test Configuration', 'Verify the submitted S3 transport contract using the effective secret key.'), ('Run Full Validation', 'Rebuild MinIO compatibility and provider capability evidence after saving.')] %}
                     {% set flow_title = "MinIO Configuration Flow" %}
                     {% set flow_description = "How changes restore object-storage readiness." %}
-                    {% set flow_note = "Consumer bindings remain attached to the canonical object-storage asset; only provider readiness is reset when connection-sensitive settings change." %}
+                    {% set flow_note = "Bindings persist; access changes require Full Validation." %}
                 {% else %}
                     {% set minio_flow_items = [('Define Connection Identity', 'Create the reusable KAORI identity for this MinIO endpoint and object-storage asset.'), ('Configure Endpoint Access', 'Set the S3 API endpoint, credentials, TLS behavior, and supported release contract.'), ('Test Connection', 'Verify S3 API reachability, credential access, and read-only bucket discovery before registration is enabled.'), ('Register Connection', 'Register the provider before Full Validation and consumer binding.')] %}
                     {% set flow_title = "MinIO Registration Flow" %}
-                    {% set flow_description = "How KAORI registers a reusable object-storage connection." %}
-                    {% set flow_note = "Registration proves only the MinIO connection contract; metrics and alerts remain independent consumer bindings." %}
+                    {% set flow_description = "Register a reusable MinIO connection." %}
+                    {% set flow_note = "MinIO registration only; sources bind separately." %}
                 {% endif %}
                 {{ provider_registration_context.render(flow_title,
                                 flow_description,
                                 minio_flow_items,
                                 "Storage Integrations",
-                                "MinIO provides the storage API; Metrics Source and Alertmanager remain separate bindings to the same asset.",
+                                "MinIO owns storage; observability binds separately.",
                                 url_for("integrations.storage") ,
                 "Open Storage Integrations",
                 flow_icon="workflow",

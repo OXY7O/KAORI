@@ -138,12 +138,11 @@ def test_alertmanager_evidence_copy_preserves_authority_and_persisted_validation
     assert "family == 'alerts'" in validation
     assert 'Selector accepted; payload-label evidence awaits matching alerts.' in validation
     assert 'title="{{ row.validation_message }}"' in validation
-    assert '<span class="sr-only"> {{ row.validation_message }}</span>' in validation
+    assert '<span class="sr-only">{{ row.validation_message }}</span>' in validation
     fallback_message = (
-        '<p class="mt-1 max-w-4xl text-xs leading-5 text-content-secondary">'
-        '{{ row.validation_message }}</p>'
+        '<p class="mt-1 max-w-4xl text-xs leading-5 text-content-secondary">{{ row.validation_message }}</p>'
     )
     assert fallback_message in validation
-    assert 'binding_validation_result.render(row, \'alerts\')' in read(
+    assert "binding_validation_result.render(row, 'alerts')" in read(
         'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html'
     )

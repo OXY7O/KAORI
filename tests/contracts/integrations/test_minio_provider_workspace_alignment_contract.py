@@ -171,3 +171,73 @@ def test_minio_validation_runtime_and_binding_tables_match_kubernetes_workspace_
     assert "@minio_bp.get('/instances/<int:instance_id>/capabilities/registry')" in routes
     assert "@minio_bp.get('/instances/<int:instance_id>/runtime/history')" in routes
     assert "@minio_bp.get('/instances/<int:instance_id>/bindings/registry')" in routes
+
+
+def test_minio_registry_row_reuses_compact_top_aligned_provider_cells() -> None:
+    """Mirror approved Integration Registry geometry without losing provider data."""
+
+    from jinja2 import Environment
+
+    registry = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_registry_content.html')
+    Environment().parse(registry)
+    populated = registry.split('{% for row in rows %}', 1)[1].split('{% else %}', 1)[0]
+    assert populated.count('align-top') == 6
+    assert populated.count('<td class="{{ table_ui.cell_classes') == 6
+    assert "row.asset_name and row.asset_name != row.name" in populated
+    assert 'Object Storage System' in populated
+    assert '{{ row.name }}' in populated
+    assert '{{ row.endpoint }}' in populated
+    assert 'title="{{ row.endpoint }}"' in populated
+    assert "row.environment|replace('_', ' ') |title" in populated
+    assert 'integration_status(row.readiness_status' in populated
+    assert 'row.compatibility_profile' in populated
+    assert 'row.declared_release' in populated
+    assert "table_label.metadata_label(table_label.count_text(row.binding_count, 'Binding') )" in populated
+    assert 'Consumer associations' not in populated
+    assert "url_for('minio.instance_detail', instance_id=row.id)" in populated
+    assert 'provider_registry.connection_registry_colgroup()' in registry
+    assert 'provider_registry.pagination_footer(pagination,' in registry
+
+
+def test_minio_six_visual_qa_copy_requirements_and_readiness_boundaries() -> None:
+    """MinIO copy remains compact and keeps the existing operational truth."""
+
+    from jinja2 import Environment
+
+    root = 'app/templates/integrations/storage/object_storage/providers/minio/'
+    paths = {
+        'form': root + 'instance_form.html',
+        'access': root + 'partials/_minimum_validation_access.html',
+        'runtime': root + 'partials/_detail_runtime.html',
+        'lifecycle': root + 'partials/_detail_scope.html',
+    }
+    templates = {key: read(path) for key, path in paths.items()}
+    for template in templates.values():
+        Environment().parse(template)
+        assert 'whitespace-nowrap' not in template or 'aria-label' in template
+
+    form = templates['form']
+    for phrase in (
+        'Register a reusable MinIO connection.',
+        'MinIO registration only; sources bind separately.',
+        'MinIO owns storage; observability binds separately.',
+        'Update MinIO access; Full Validation restores readiness after changes.',
+        'Bindings persist; access changes require Full Validation.',
+    ):
+        assert phrase in form
+
+    assert 'Register the provider before Full Validation and consumer binding.' in form
+    assert 'Run Full Validation' in form
+    assert 'provider_registration_context.render(' in form
+    assert 'Read-only bucket listing for approved scopes; Admin API evidence stays separate.' in templates['access']
+    assert 's3:ListAllMyBuckets' in templates['access']
+    assert 'No remediation; refresh after endpoint or infrastructure changes.' in templates['runtime']
+    assert 'runtime_state.health_status in ["unhealthy", "failed"]' in templates['runtime']
+
+    lifecycle = templates['lifecycle']
+    assert 'Previous connection snapshot; revalidate and resync before use.' in lifecycle
+    assert 'Committed bucket snapshot · Synced ' in lifecycle
+    assert 'inventory_observed_at_display' in lifecycle
+    assert 'Metrics Source and Alertmanager remain independent; bindings are asset-scoped.' in lifecycle
+    assert 'inventory_source_changed' in lifecycle
+    assert 'deletion_guard.blocked' in lifecycle

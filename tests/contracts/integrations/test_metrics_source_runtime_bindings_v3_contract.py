@@ -124,7 +124,7 @@ def test_binding_technical_queries_reuse_global_copy_without_new_scripts() -> No
     assert 'check.get("query")' in template
     assert "item.get('technical_checks')" in template
     assert 'data-kaori-copy-button' in clipboard
-    assert "source?.textContent?.trim()" in clipboard
+    assert 'source?.textContent?.trim()' in clipboard
     assert 'clipboard.writeText(text)' in clipboard
     assert '<script' not in template
     assert 'onclick=' not in template

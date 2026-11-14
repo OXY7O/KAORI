@@ -169,7 +169,7 @@ def main() -> int:
         errors,
     )
     require(
-        'Open Bindings & Consumers → View More on the affected binding for exact missing capability evidence and remediation.'
+        'Open Bindings &amp; Consumers → View More for exact missing capability evidence and remediation.'
         in metrics_scope
         and 'Missing technical capability:' not in metrics_scope
         and 'Binding coverage missing:' not in metrics_scope,
