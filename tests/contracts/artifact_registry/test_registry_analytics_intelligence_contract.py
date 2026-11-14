@@ -252,9 +252,9 @@ def test_registry_growth_overview_charts_and_summary_reuse_canonical_patterns() 
         Environment().parse(template)
 
     assert 'header_badge=posture_badge' in summary
-    assert "table_label.metadata_label(analytical_metrics|length" in summary
+    assert 'table_label.metadata_label(analytical_metrics|length' in summary
     assert 'header_badge=posture_badge' in inventory
-    assert "artifact_registry/partials/_analytics_growth_charts.html" in panel
+    assert 'artifact_registry/partials/_analytics_growth_charts.html' in panel
     assert 'data-registry-growth-chart-panel' in growth
     assert 'data-registry-growth-chart-series' in growth
     assert 'data-registry-growth-chart' in growth
@@ -420,7 +420,7 @@ def test_registry_analytics_overview_panels_preserve_missing_data_and_evidence_a
     assert 'row.status_label, row.tone' in panel
     assert 'No committed snapshots for the selected Registry and Time Range.' in panel
     charts = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_charts.html').read_text()
-    assert "artifact_registry/partials/_analytics_growth_charts.html" in panel
+    assert 'artifact_registry/partials/_analytics_growth_charts.html' in panel
     assert 'data-registry-growth-chart-panel' in charts
     assert 'analytics.forecast_rows[:3]' in panel
     assert 'analytics.activity_rows[:3]' in panel
@@ -778,9 +778,7 @@ def test_registry_analytics_selector_renders_only_explicit_registry_sources() ->
             'collection_warning': None,
         },
     }
-    html = env.get_template('artifact_registry/partials/_analytics_controls_readiness.html').render(
-        analytics=page
-    )
+    html = env.get_template('artifact_registry/partials/_analytics_controls_readiness.html').render(analytics=page)
     assert 'All Registries' not in html
     assert 'Harbor X300' in html and 'Harbor X400' in html
     selector = html.split('id="artifact-registry-analytics-provider"', 1)[1].split('</select>', 1)[0]
@@ -792,9 +790,7 @@ def test_registry_analytics_selector_renders_only_explicit_registry_sources() ->
     # an implicit All Registries or a widened committed query.
     page['provider_options'] = []
     page['selected_provider_id'] = None
-    empty = env.get_template('artifact_registry/partials/_analytics_controls_readiness.html').render(
-        analytics=page
-    )
+    empty = env.get_template('artifact_registry/partials/_analytics_controls_readiness.html').render(analytics=page)
     assert 'No Registries Available' in empty
     assert 'All Registries' not in empty
 
@@ -804,9 +800,7 @@ def test_registry_analytics_risk_copy_stays_compact_without_changing_risk_semant
 
     aggregate = {'total_size_bytes': 1024, 'artifacts': 3, 'running_artifacts': 1}
     growth = {'size_per_day': 0, 'artifacts_per_day': 0, 'runtime_usage_percent': 33.3}
-    cards = _analytics_summary_cards(
-        aggregate, growth_rows=[], growth=growth, risk_candidate_count=1
-    )
+    cards = _analytics_summary_cards(aggregate, growth_rows=[], growth=growth, risk_candidate_count=1)
     risk = next(card for card in cards if card['label'] == 'Risk Candidates')
     assert risk['value'] == '1'
     assert risk['tone'] == 'warning'
@@ -991,8 +985,6 @@ def test_registry_alert_source_is_worker_materialized_and_provider_neutral() -> 
 
 def test_registry_alert_workspace_reuses_committed_alert_evidence_contract() -> None:
     template = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
-    shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
-
     overview_tabs = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_workspace.html').read_text()
     overview_panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
     assert "('alerts', 'Alerts', 'triangle-alert')" in overview_tabs
