@@ -207,10 +207,11 @@ without truncation or `whitespace-nowrap`.
 Harbor **Webhook Reconciliation** remains a provider-owned Configuration
 section, not a Registry Governance action or delivery dashboard. Its compact
 Violet hierarchy uses one header with the persisted semantic admission status,
-two responsive peer panels (admission/last event and receiver/authentication),
-and a separate credential action row with the existing HTMX one-time token
-result. The receiver URL is shown in full; loopback reachability guidance
-appears only when the request host is loopback. Admission `Ready` means
+two adjacent desktop panels (admission/last event and receiver/authentication)
+inside a single compact divided surface, and a separate credential action row.
+The receiver URL is shown in full, accepted authentication header examples use
+compact inline code labels rather than a long helper paragraph, and a short
+warning appears only when the request host is loopback. Mobile stacks naturally. Admission `Ready` means
 credential admission is configured; it does **not** claim a received event,
 successful delivery, executed Inventory refresh, or authoritative inventory
 correctness. Scheduled reconciliation remains the recovery/correctness path.
@@ -218,8 +219,11 @@ correctness. Scheduled reconciliation remains the recovery/correctness path.
 Keep the existing CSRF-protected Generate/Rotate/Disable routes, `hx-target`
 contract, redacted persisted digest, one-time display and Harbor-side
 authentication headers intact. The generated token uses the shared warning
-surface in a compact bounded card; do not log or preserve a live token in
-screenshots, issue text, tests, or admission artifacts. This is presentation
+surface in a full-width responsive two-column confirmation: explanatory
+text on the left and the one-time token field on the right at desktop widths,
+stacked on mobile. Do not reintroduce a `max-w-3xl` inner card that strands
+blank space. Do not log or preserve a live token in screenshots, issue text,
+tests, or admission artifacts. This is presentation
 only: no new webhook state, provider mutation, or delivery evidence.
 
 ## Provider Front Page Contract
