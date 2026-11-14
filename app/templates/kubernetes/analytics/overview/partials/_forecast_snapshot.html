@@ -3,9 +3,21 @@
 {% import "components/resource_series_legend.html" as resource_series_legend %}
 {% import "components/table_label.html" as table_label %}
 {% import "analytics/components/_analysis_surfaces.html" as overview_surface %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "kubernetes/analytics/components/_scoped_link.html" as scoped_link %}
+{% set overview_forecast_guide %}
+    {{ info_tip.render('kubernetes-analytics-overview-forecast-guide',
+            'Forecast & Trend Snapshot Guide',
+            'Interpret historical measurements, projected utilization, and threshold risk from qualified committed forecast evidence.',
+            items=[
+                'Historical observations and dashed projections represent different evidence types.',
+                'Validate coverage, forecast horizon, and nearest threshold timing before capacity changes.',
+                'An absent forecast remains Unknown instead of a normal-risk assertion.'
+            ],
+            placement='right', variant='guide') }}
+{% endset %}
 {% if not payload.forecast_snapshot.available|default(false) %}
-    {{ overview_surface.snapshot_unavailable('forecast', 'Forecast & Trend Snapshot', 'The Analytics worker has not committed forecast evidence for the selected cluster and forecast history window.', icon='chart-spline') }}
+    {{ overview_surface.snapshot_unavailable('forecast', 'Forecast & Trend Snapshot', 'The Analytics worker has not committed forecast evidence for the selected cluster and forecast history window.', icon='chart-spline', title_accessory=overview_forecast_guide) }}
 {% else %}
     {% set forecast = payload.forecast_snapshot %}
     {% set risk_count = forecast.risk_count|default(0)|int %}
@@ -24,6 +36,7 @@
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="text-base font-semibold text-content-primary">Forecast &amp; Trend Snapshot</h2>
+                        {{ overview_forecast_guide }}
                         {{ table_label.status_label('Unknown' if not has_forecast_evidence else ('Review Required' if risk_count > 0 else 'Normal') , risk_tone) }}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Historical direction, projected utilization, and threshold risk for core resources.</p>

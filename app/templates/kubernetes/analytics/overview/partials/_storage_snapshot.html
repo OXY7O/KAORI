@@ -2,9 +2,21 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
 {% import "analytics/components/_analysis_surfaces.html" as overview_surface %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "kubernetes/analytics/components/_scoped_link.html" as scoped_link %}
+{% set overview_storage_guide %}
+    {{ info_tip.render('kubernetes-analytics-overview-storage-guide',
+            'Persistent Storage Snapshot Guide',
+            'Compare committed PVC requested capacity, observed use, available space, and Namespace storage risk.',
+            items=[
+                'Requests indicate demand; measured volume capacity and consumption indicate utilization.',
+                'Unavailable kubelet volume observations cannot establish a normal storage pressure posture.',
+                'Check top-risk Namespace and growth evidence before planning PVC changes.'
+            ],
+            placement='right', variant='guide') }}
+{% endset %}
 {% if not payload.storage_snapshot.available|default(false) %}
-    {{ overview_surface.snapshot_unavailable('storage', 'Persistent Storage Snapshot', 'The Analytics worker has not committed storage evidence for the selected cluster.', icon='database') }}
+    {{ overview_surface.snapshot_unavailable('storage', 'Persistent Storage Snapshot', 'The Analytics worker has not committed storage evidence for the selected cluster.', icon='database', title_accessory=overview_storage_guide) }}
 {% else %}
     {% set storage = payload.storage_snapshot %}
     {% set storage_tone = table_label.semantic_tone(storage.tone or storage.status)|trim %}
@@ -21,6 +33,7 @@
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="text-base font-semibold text-content-primary">Persistent Storage Snapshot</h2>
+                        {{ overview_storage_guide }}
                         {{ table_label.status_label(storage.status|replace('_', ' ') |title, storage_tone) }}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">PVC requested, used, free capacity, and namespace storage risk.</p>
