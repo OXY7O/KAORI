@@ -512,7 +512,8 @@ def test_all_seven_connection_registries_display_filtered_results_and_refresh_he
         (
             'alertmanager',
             normal_registries[5],
-            'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_inventory_content.html',
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/'
+            '_inventory_content.html',
             'integrations/observability/alert_source/providers/alertmanager/partials/_inventory_card.html',
         ),
     ):
@@ -525,5 +526,5 @@ def test_all_seven_connection_registries_display_filtered_results_and_refresh_he
         assert f"'{card_path}'" in routes
         assert f"'#{card_target}'" in content
         assert "swap='outerHTML'" in content
-        assert f"hx-target=\"#{provider}-inventory-content\"" not in header
+        assert f'hx-target="#{provider}-inventory-content"' not in header
         assert f"'#{provider}-inventory-content'" not in content
