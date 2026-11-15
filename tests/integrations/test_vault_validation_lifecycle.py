@@ -152,6 +152,7 @@ def test_vault_validation_status_polls_scoped_snapshot_and_signals_completion(
     assert ('HX-Trigger' in response.headers) is complete
     assert feedback_users == [42]
 
+
 def test_vault_capability_fragment_reads_only_the_registered_instance(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -179,4 +180,57 @@ def test_vault_capability_fragment_reads_only_the_registered_instance(
     }
     assert len(rendered) == 1
     assert instance.capabilities == ['health', 'approle', 'token_lookup']
+
+
+def test_vault_runtime_history_fragment_is_scoped_and_read_only(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = _app(monkeypatch)
+    instance = SimpleNamespace(id=15, integration_instance_id=99)
+    monkeypatch.setattr(routes, '_instance_or_404', lambda instance_id: instance)
+    captured: list[dict[str, Any]] = []
+
+    def paginate(integration_type: str, instance_id: str, **filters: Any):
+        captured.append({'integration_type': integration_type, 'instance_id': instance_id, **filters})
+        return [], {'page': 1, 'per_page': 5, 'total_items': 0}
+
+    monkeypatch.setattr(routes, 'paginate_runtime_history', paginate)
+    monkeypatch.setattr(
+        routes, 'runtime_history_view', lambda rows, *, pagination: {'rows': rows, 'pagination': pagination}
+    )
+    monkeypatch.setattr(routes, 'render_template', lambda template, **context: {'template': template, **context})
+    url = (
+        '/integrations/secrets-management/secrets-pki/vault/instances/15/runtime/history'
+        '?page=2&per_page=10&history_trigger=scheduled&history_health=degraded'
+        '&history_readiness=degraded'
+    )
+    with app.test_request_context(url, method='GET', headers={'HX-Request': 'true'}):
+        response = unwrap(routes.runtime_history)(15)
+
+    assert captured == [
+        {
+            'integration_type': 'secrets_pki',
+            'instance_id': '15',
+            'page': 2,
+            'per_page': 10,
+            'trigger_type': 'scheduled',
+            'health_status': 'degraded',
+            'readiness': 'degraded',
+        }
+    ]
+    assert response['instance'] is instance
+    assert response['template'].endswith('vault/partials/_runtime_history.html')
+    assert response['runtime_history']['rows'] == []
+
+
+def test_vault_runtime_history_fragment_rejects_unknown_connection(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = _app(monkeypatch)
+    monkeypatch.setattr(routes, '_instance_or_404', lambda instance_id: (_ for _ in ()).throw(NotFound()))
+    with app.test_request_context(
+        '/integrations/secrets-management/secrets-pki/vault/instances/155/runtime/history'
+    ):
+        with pytest.raises(NotFound):
+            unwrap(routes.runtime_history)(155)
 

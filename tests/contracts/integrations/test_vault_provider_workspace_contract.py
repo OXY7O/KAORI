@@ -124,14 +124,24 @@ def test_vault_detail_reuses_four_domain_workspaces_without_cloning_engine():
     assert 'permission_unavailable' in capability_table
 
     runtime = _partial('_detail_runtime.html')
+    history = _partial('_runtime_history.html')
     assert 'integrations/components/_runtime_decision.html' in runtime
     assert 'runtime_decision.render(' in runtime
     assert 'latest_runtime_observation' in runtime
-    assert 'pagination_ui.numeric_pages(' in runtime
-    assert 'table_ui.inventory_block_header(' in runtime
+    assert 'runtime_state.health_score_display' in runtime
+    assert 'data-kaori-runtime-main-layout' in runtime
+    assert 'data-kaori-runtime-evidence-workspace' in runtime
+    assert 'data-kaori-runtime-lifecycle-contract' in runtime
+    assert 'data-kaori-runtime-diagnostic-list' in runtime
+    assert 'data-kaori-runtime-observation-boundary' in runtime
+    assert 'integrations/components/_provider_job_status.html' in runtime
+    assert 'Runtime task:' not in runtime
+    assert 'integrations/secrets_management/vault/partials/_runtime_history.html' in runtime
+    assert 'integrations/partials/_runtime_history.html' in history
+    assert 'runtime_history_filters_enabled=true' in history
+    assert "url_for('vault.runtime_history', instance_id=instance.id)" in history
     assert "url_for('vault.runtime_refresh', instance_id=instance.id)" in runtime
     assert 'csrf_token()' in runtime
-    assert "['unhealthy', 'sealed', 'uninitialized', 'unavailable']" in runtime
 
     inventory = _partial('_detail_inventory.html')
     assert 'KV v2 Inventory Evidence' in inventory
@@ -618,4 +628,58 @@ def test_vault_view_more_copy_line_budgets_cover_all_capabilities_and_statuses()
 
     Environment().parse(modal)
     Environment().parse(registry)
+
+
+def test_vault_runtime_history_reuses_canonical_projection_and_scoped_htmx_registry() -> None:
+    from jinja2 import Environment
+
+    runtime = _partial('_detail_runtime.html')
+    history = _partial('_runtime_history.html')
+    routes = ROUTES.read_text(encoding='utf-8')
+    shared = (ROOT / 'app/templates/integrations/partials/_runtime_history.html').read_text(encoding='utf-8')
+
+    assert 'runtime_history_view, runtime_observation_state_view' in routes
+    assert 'runtime_history=_vault_runtime_history_view(instance)' in routes
+    assert 'runtime_state=runtime_state' in routes
+    assert "paginate_runtime_history(\n        'secrets_pki',\n        str(instance.id)," in routes
+    for filter_name in ('history_trigger', 'history_health', 'history_readiness'):
+        assert filter_name in routes
+    assert "@vault_bp.get('/instances/<int:instance_id>/runtime/history')" in routes
+    assert "@permission_required('integrations.manage')\ndef runtime_history(" in routes
+    assert 'instance = _instance_or_404(instance_id)' in routes
+    assert 'runtime_history=_vault_runtime_history_view(instance)' in routes
+    assert 'integrations/partials/_runtime_history.html' in history
+    assert 'runtime_history_route_args' in history
+    assert 'runtime_history_detail_endpoint' in history
+    assert 'provider_label=' in history
+    for shared_token in (
+        'data-kaori-runtime-history-standard-v2',
+        'data-kaori-runtime-history-filters',
+        'data-kaori-runtime-history-posture-strip-v3',
+        'data-kaori-runtime-history-table',
+        'data-kaori-runtime-observation-row',
+        'data-kaori-runtime-observation-modals',
+        'record_actions.view_more(',
+        'runtime_observation_modal.render(',
+        'pagination_ui.numeric_pages(',
+        'loading_bar.render(',
+    ):
+        assert shared_token in shared
+    for evidence_token in (
+        'Runtime Evidence',
+        'Provider Contract',
+        'Detected Version',
+        'Capability Profile',
+        'Compatibility Profile',
+        'Observed Capabilities',
+        'No Diagnostic Evidence Yet',
+        'Evidence Boundary',
+        'provider_job_status.render(',
+    ):
+        assert evidence_token in runtime
+    assert 'runtime_health = runtime_state.health_status if runtime_observed' in runtime
+    assert 'Runtime task:' not in runtime
+    assert 'latest_runtime.observed_at' not in history
+    Environment().parse(runtime)
+    Environment().parse(history)
 

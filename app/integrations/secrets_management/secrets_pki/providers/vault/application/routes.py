@@ -13,6 +13,7 @@ from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
+from app.integrations.runtime.presentation import runtime_history_view, runtime_observation_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.integrations.secrets_management.secrets_pki.inventory_presentation import vault_inventory_readiness
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.forms import VaultConnectionForm
@@ -382,17 +383,31 @@ def edit_instance(instance_id: int) -> ResponseReturnValue:
     )
 
 
+def _vault_runtime_history_view(instance: VaultInstance) -> dict[str, object]:
+    """Compose only this Vault connection's immutable observations for the shared registry."""
+    rows, pagination = paginate_runtime_history(
+        'secrets_pki',
+        str(instance.id),
+        page=request.args.get('page', request.args.get('history_page', 1, type=int), type=int) or 1,
+        per_page=request.args.get('per_page', request.args.get('history_per_page', 5, type=int), type=int) or 5,
+        trigger_type=request.args.get('history_trigger', ''),
+        health_status=request.args.get('history_health', ''),
+        readiness=request.args.get('history_readiness', ''),
+    )
+    return runtime_history_view(rows, pagination=pagination)
+
+
 @vault_bp.get('/instances/<int:instance_id>')
 @permission_required('integrations.manage')
 def detail(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
-    history, history_pagination = paginate_runtime_history(
-        'secrets_pki',
-        str(instance.id),
-        page=request.args.get('history_page', 1, type=int) or 1,
-        per_page=request.args.get('history_per_page', 5, type=int) or 5,
-    )
     latest_runtime_observation = latest_vault_runtime_observation(instance.id)
+    runtime_state = runtime_observation_state_view(
+        latest_runtime_observation,
+        fallback_readiness=instance.readiness_status or 'validation_required',
+        fallback_compatibility_profile=instance.compatibility_profile,
+        fallback_capabilities=instance.capabilities,
+    )
     public_pki, stored_pki = _committed_pki_readiness(instance)
     return render_template(
         'integrations/secrets_management/vault/detail.html',
@@ -402,13 +417,25 @@ def detail(instance_id: int) -> ResponseReturnValue:
         inventory_readiness=vault_inventory_readiness(instance),
         public_pki_readiness=public_pki,
         stored_cert_readiness=stored_pki,
-        runtime_history=history,
-        runtime_history_pagination=history_pagination,
+        runtime_history=_vault_runtime_history_view(instance),
+        runtime_state=runtime_state,
         can_view_secrets_pki=current_user.has_permission('secrets_pki.view'),
         can_view_cert_analytics=(
             current_user.has_permission('secrets_pki.view') and current_user.has_permission('analytics.view')
         ),
         notification_context=_notification(),
+    )
+
+
+@vault_bp.get('/instances/<int:instance_id>/runtime/history')
+@permission_required('integrations.manage')
+def runtime_history(instance_id: int) -> ResponseReturnValue:
+    """Render the canonical HTMX history surface from this connection's committed evidence."""
+    instance = _instance_or_404(instance_id)
+    return render_template(
+        'integrations/secrets_management/vault/partials/_runtime_history.html',
+        instance=instance,
+        runtime_history=_vault_runtime_history_view(instance),
     )
 
 
