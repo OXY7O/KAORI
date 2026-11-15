@@ -93,16 +93,14 @@ def test_only_authorized_users_receive_provider_management_actions() -> None:
 
 def test_mount_approval_message_is_concise_and_steps_are_operator_friendly() -> None:
     source = _read()
-    mount_stage = source.split('{% elif not summary.approved_mount_count %}', 1)[1].split(
-        '{% else %}', 1
-    )[0]
+    mount_stage = source.split('{% elif not summary.approved_mount_count %}', 1)[1].split('{% else %}', 1)[0]
     description = 'Vault source registered. Approve a KV v2 mount to collect inventory.'
     assert len(description) <= 75
     assert f'inventory_blocker_description = "{description}"' in mount_stage
     assert '"Collect KV v2 inventory"' in mount_stage
     assert 'Run secrets_pki.inventory.sync after approval' not in mount_stage
     assert 'inventory_blocker_title = "KV v2 Mount Approval Required"' in mount_stage
-    assert 'inventory_blocker_action_url = url_for(\'vault.index\') if can_manage_integrations else none' in mount_stage
+    assert "inventory_blocker_action_url = url_for('vault.index') if can_manage_integrations else none" in mount_stage
     assert 'Run secrets_pki.inventory.sync and verify its committed evidence' in source
 
 
