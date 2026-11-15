@@ -90,6 +90,31 @@ def test_only_authorized_users_receive_provider_management_actions() -> None:
     )[-2:] == ['/secrets-pki/inventory', 'Review Inventory Readiness']
 
 
+
+def test_mount_approval_message_is_concise_and_steps_are_operator_friendly() -> None:
+    source = _read()
+    mount_stage = source.split('{% elif not summary.approved_mount_count %}', 1)[1].split(
+        '{% else %}', 1
+    )[0]
+    description = 'Vault source registered. Approve a KV v2 mount to collect inventory.'
+    assert len(description) <= 75
+    assert f'inventory_blocker_description = "{description}"' in mount_stage
+    assert '"Collect KV v2 inventory"' in mount_stage
+    assert 'Run secrets_pki.inventory.sync after approval' not in mount_stage
+    assert 'inventory_blocker_title = "KV v2 Mount Approval Required"' in mount_stage
+    assert 'inventory_blocker_action_url = url_for(\'vault.index\') if can_manage_integrations else none' in mount_stage
+    assert 'Run secrets_pki.inventory.sync and verify its committed evidence' in source
+
+
+def test_blocker_copy_keeps_shared_readiness_grammar_and_is_djlint_canonical() -> None:
+    source = _read()
+    assert '{% set inventory_blocker_title = "KV v2 Mount Approval Required" %}' in source
+    assert '{% set inventory_blocker_description = "Vault source registered.' in source
+    assert "{% set inventory_blocker_title = 'KV v2 Mount Approval Required' %}" not in source
+    assert "['Vault source registered', 'Approve explicit KV v2 metadata mounts'" not in source
+    assert 'components/states/_blocked_state.html' in source
+
+
 def test_overview_reuses_canonical_blocker_without_relaxing_inventory_gate() -> None:
     source = _read()
     Environment().parse(source)
