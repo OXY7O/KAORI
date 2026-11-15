@@ -597,7 +597,7 @@ def test_security_assets_tab_has_equal_source_cards_and_scope_guide() -> None:
 
 
 def test_security_investigation_tab_uses_qualified_metrics_and_one_handoff() -> None:
-    html = _render_workspace_page('overview', _renderable_posture(), active_tab='signals')
+    html = _render_workspace_page('overview', _renderable_posture(), active_tab='signals', can_view_intelligence=True)
     assert 'Open guide: CVE Investigation Guide' in html
     assert 'data-security-investigation-layout' in html
     assert 'data-security-investigation-boundary' in html
@@ -611,7 +611,7 @@ def test_security_investigation_tab_uses_qualified_metrics_and_one_handoff() -> 
 
     stale = _renderable_posture()
     stale['runtime_status'] = {'status': 'Inputs Changed', 'tone': 'warning'}
-    stale_html = _render_workspace_page('overview', stale, active_tab='signals')
+    stale_html = _render_workspace_page('overview', stale, active_tab='signals', can_view_intelligence=True)
     scope = stale_html.split('data-security-investigation-layout', 1)[1].split('data-security-investigation-boundary', 1)[0]
     assert 'Unknown' in scope
     assert 'Inputs Changed' not in scope
@@ -624,7 +624,7 @@ def test_security_investigation_tab_uses_qualified_metrics_and_one_handoff() -> 
 
 
 def test_security_sources_tab_combines_authorities_and_publication_boundary() -> None:
-    html = _render_workspace_page('overview', _renderable_posture(), active_tab='reporting')
+    html = _render_workspace_page('overview', _renderable_posture(), active_tab='reporting', can_view_reports=True)
     template = read('app/templates/security_posture/overview.html')
     assert 'Open guide: Evidence & Source Ownership Guide' in html
     assert 'data-security-source-authorities' in html
