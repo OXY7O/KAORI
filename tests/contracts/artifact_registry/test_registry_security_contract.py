@@ -1,4 +1,8 @@
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+
+from app.integrations.registry.providers.harbor.security import _scan_identity_changed
+from app.integrations.registry.security_contracts import RegistrySecurityTarget
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -19,6 +23,36 @@ def test_security_evidence_is_digest_oriented_and_incremental() -> None:
     assert '_scan_identity_changed' in collector
     assert 'reuse_existing_scan' in collector
     assert 'RegistryVulnerability(' in sync
+
+
+def test_new_provider_scan_generation_refreshes_even_with_same_vulnerability_counts() -> None:
+    previous = datetime.now(UTC) - timedelta(days=33)
+    current = previous + timedelta(days=32)
+    target = RegistrySecurityTarget(
+        artifact_id=7,
+        project_name='ops',
+        repository_name='sample',
+        digest='sha256:' + 'a' * 64,
+        scan_status='success',
+        scan_completed_at=previous,
+        vulnerability_summary={'critical': 2, 'high': 1},
+        signature_status=None,
+        sbom_status=None,
+        has_scan_snapshot=True,
+    )
+    unchanged_findings = {'critical': 2, 'high': 1}
+    assert _scan_identity_changed(
+        target,
+        scan_status='success',
+        scan_completed_at=current,
+        vulnerability_summary=unchanged_findings,
+    )
+    assert not _scan_identity_changed(
+        target,
+        scan_status='success',
+        scan_completed_at=previous,
+        vulnerability_summary=unchanged_findings,
+    )
 
 
 def test_security_read_model_is_committed_and_server_paginated() -> None:
