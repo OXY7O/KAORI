@@ -74,16 +74,28 @@
                 <div class="border-b border-outline-subtle px-5 py-3 md:border-b-0 md:border-r">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <span class="text-sm font-semibold text-content-primary">Scanner Evidence</span>
-                        {{ table_label.status_indicator_label(posture.scan_status.label, posture.scan_status.tone) }}
+                        {% if registry_ready %}
+                            {{ table_label.status_indicator_label(posture.scan_status.label, posture.scan_status.tone) }}
+                        {% else %}
+                            {{ table_label.status_indicator_label('Not Collected', 'unknown') }}
+                        {% endif %}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-muted">
-                        {{ posture.scan_updated_label }} · {{ posture.scanned_artifacts }} / {{ posture.artifacts_total }} usable artifact scans
+                        {% if registry_ready %}
+                            {{ posture.scan_updated_label }} · {{ posture.scanned_artifacts }} / {{ posture.artifacts_total }} usable artifact scans
+                        {% else %}
+                            No authorized committed Registry evidence is available.
+                        {% endif %}
                     </p>
                 </div>
                 <div class="px-5 py-3">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <span class="text-sm font-semibold text-content-primary">Runtime Correlation</span>
-                        {{ table_label.status_indicator_label(posture.runtime_status.status, posture.runtime_status.tone) }}
+                        {% if registry_ready %}
+                            {{ table_label.status_indicator_label(posture.runtime_status.status, posture.runtime_status.tone) }}
+                        {% else %}
+                            {{ table_label.status_indicator_label('Not Collected', 'unknown') }}
+                        {% endif %}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-muted">
                         Binding counts represent observed containers only when committed correlation is Ready.
