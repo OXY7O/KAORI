@@ -137,6 +137,30 @@ A historical degraded Vault release can still show 3/3 required APIs,
 while a denied optional `sys/mounts` check remains Limited. Empty filter
 results do not indicate missing provider capabilities.
 
+### View More evidence details and safe CLI guidance (#4860)
+
+The existing Vault Capability Registry has a Kubernetes-parity native
+**View More** modal: Capability Decision, Contract Snapshot, three-part
+Validation Evidence, Operational Decision (Impact and Recommended
+Action), Governance Boundary, and Verification Command. The three
+evidence panels explain the selected API contract, effective identity
+boundary and committed result; they are not three independently
+stored Vault check outcomes. Status is derived exclusively from
+the current, qualifying Full Validation data. Degraded release
+compatibility can coexist with three Ready required capabilities;
+optional `sys/mounts` 403/404 is Limited; absence of current
+evidence is Not Observed. No Secret inventory or runtime success
+is inferred from these facts.
+
+Operator-side CLI examples for `vault status`, `vault token lookup`
+and optional `vault read sys/mounts` require an independently approved
+Vault CLI context and suppress response output. They cannot
+reproduce the managed AppRole identity or replace KAORI worker
+evidence. **No copyable AppRole login script** is rendered: RoleID,
+SecretID and ephemeral tokens must stay in the governed connection
+and worker. The modal never executes a Vault request or grants
+additional permissions.
+
 ### Connection feedback and optional inventory scope
 
 Vault Add/Edit uses the existing KAORI top-right Operational Toast and

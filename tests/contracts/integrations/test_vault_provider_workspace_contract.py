@@ -488,3 +488,82 @@ def test_vault_policy_guide_and_capability_explorer_reuse_shared_kaori_contracts
     for template in (policy, registry, validation):
         Environment().parse(template)
 
+def test_vault_capability_modal_parity_with_kubernetes_without_invented_checks() -> None:
+    from jinja2 import Environment
+
+    registry = _partial('_capability_registry.html')
+    modal = _partial('_capability_detail_content.html')
+    adapter = (
+        ROOT / 'app/integrations/secrets_management/secrets_pki/providers/vault/adapter.py'
+    ).read_text(encoding='utf-8')
+
+    # Retain one provider-owned native modal per visible capability row.
+    assert 'integrations/components/_record_detail_modal.html' in registry
+    assert 'integrations/secrets_management/vault/partials/_capability_detail_content.html' in registry
+    assert "record_detail_modal.render(" in registry
+    assert "row.key" in registry
+    assert 'data-kaori-vault-capability-detail' not in registry
+
+    for section in (
+        'data-kaori-capability-modal-v3',
+        'data-kaori-capability-decision-summary',
+        'data-kaori-capability-contract-snapshot',
+        'data-kaori-capability-validation-evidence',
+        'data-kaori-capability-operational-decision',
+        'data-kaori-capability-governance-boundary',
+        'data-kaori-capability-verification-command',
+        'data-kaori-capability-verification-unavailable',
+    ):
+        assert section in modal
+    for title in (
+        'Capability Decision',
+        'Contract Snapshot',
+        'Validation Evidence',
+        'Operational Decision',
+        'Operational Impact',
+        'Recommended Action',
+        'Governance Boundary',
+        'Verification Command',
+    ):
+        assert title in modal
+
+    # Three evidence dimensions explain real adapter facts, not three
+    # independent persisted per-capability checks which Vault does not store.
+    assert "('01', 'API Contract'," in modal
+    assert "('02', 'Identity & Access'," in modal
+    assert "('03', 'Committed Observation'," in modal
+    assert 'not three independently stored check results' in modal
+    assert "result.status_label" in modal
+    assert 'result.observed' in modal
+    assert 'result.limited' in modal
+    assert 'result.gap' in modal
+    assert 'Capability Not Observed' in modal
+    assert "['health', 'approle', 'token_lookup']" in adapter
+    assert "'mount_metadata': capability['mount_metadata']" in adapter
+
+    # A standalone human CLI check cannot claim to validate the managed
+    # AppRole. Show copyable commands only for safe, read-only operator probes.
+    assert "row.key == 'approle'" in modal
+    assert "verification_command = ''" in modal
+    assert 'data-kaori-capability-verification-unavailable' in modal
+    assert 'Use Run Full Validation with the approved managed AppRole identity.' in modal
+    for probe in (
+        'vault status -format=json',
+        'vault token lookup -format=json',
+        'vault read -format=json sys/mounts',
+    ):
+        assert probe in modal
+    for unsafe in (
+        'VAULT_TOKEN=',
+        'role_id=',
+        'secret_id=',
+        'vault write auth/',
+        'vault kv get',
+        'vault token create',
+        'curl -k',
+    ):
+        assert unsafe not in modal
+
+    Environment().parse(registry)
+    Environment().parse(modal)
+

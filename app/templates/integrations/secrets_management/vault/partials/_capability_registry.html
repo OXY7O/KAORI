@@ -311,54 +311,7 @@
             footer_text='Read-only committed API evidence; no Secret values or live Vault request.',
             size='standard'
         ) %}
-            <div class="space-y-4" data-kaori-vault-capability-detail>
-                <dl class="grid gap-px overflow-hidden rounded-xl border border-outline-default bg-outline-subtle sm:grid-cols-2">
-                    {% for label, value in [
-                        ('API Contract', row.contract),
-                        ('Requirement', 'Required' if row.required else 'Optional'),
-                        ('Validation Status', result.status_label),
-                        ('Evidence Owner', 'Vault Full Validation')
-                    ] %}
-                        <div class="min-w-0 bg-surface-card p-4">
-                            <dt class="text-xs font-semibold text-content-muted">{{ label }}</dt>
-                            <dd class="mt-1 break-all text-sm font-semibold text-content-primary">{{ value }}</dd>
-                        </div>
-                    {% endfor %}
-                </dl>
-                <section class="rounded-xl border border-outline-default bg-surface-card p-4">
-                    <h3 class="text-sm font-semibold text-content-primary">Capability Contract</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.description }}</p>
-                </section>
-                <section class="rounded-xl border border-outline-default bg-surface-card p-4">
-                    <h3 class="text-sm font-semibold text-content-primary">Validation Evidence</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">
-                        {% if result.observed %}
-                            The latest qualifying Full Validation committed this API capability.
-                        {% elif result.limited %}
-                            Optional mount discovery was denied by Vault policy; the required API contract is independently qualified.
-                        {% elif result.gap %}
-                            Current Full Validation does not prove this required API capability.
-                        {% else %}
-                            No current qualifying API observation is available for this capability.
-                        {% endif %}
-                    </p>
-                </section>
-                <section class="rounded-xl border border-outline-subtle bg-surface-subtle p-4">
-                    <h3 class="text-sm font-semibold text-content-primary">Recommended Action &amp; Boundary</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">
-                        {% if result.observed %}
-                            Revalidate after changes to Vault release, AppRole access or endpoint trust.
-                        {% elif result.limited %}
-                            Approve a separate read-only mount-discovery policy only when operationally necessary.
-                        {% elif result.gap %}
-                            Review the approved AppRole, TLS trust and this API contract, then rerun Full Validation.
-                        {% else %}
-                            Run Full Validation to establish current provider API evidence.
-                        {% endif %}
-                        Full Validation does not authorize KV Secret reads, PKI mutation, or independent inventory collection.
-                    </p>
-                </section>
-            </div>
+            {% include "integrations/secrets_management/vault/partials/_capability_detail_content.html" %}
         {% endcall %}
     {% endfor %}
 </section>
