@@ -46,21 +46,13 @@ def overview() -> ResponseReturnValue:
     selected_installation = None
     scope = authorized_scope
     if raw_installation_id:
-        if (
-            len(raw_installation_id) > 18
-            or not raw_installation_id.isascii()
-            or not raw_installation_id.isdecimal()
-        ):
+        if len(raw_installation_id) > 18 or not raw_installation_id.isascii() or not raw_installation_id.isdecimal():
             abort(404)
         installation_id = int(raw_installation_id)
         if installation_id < 1:
             abort(404)
         selected_installation = next(
-            (
-                item
-                for item in authorized_scope['installations']
-                if item['installation'].id == installation_id
-            ),
+            (item for item in authorized_scope['installations'] if item['installation'].id == installation_id),
             None,
         )
         if selected_installation is None:
@@ -85,12 +77,8 @@ def overview() -> ResponseReturnValue:
         dashboard_active_tab=active_tab,
         authorized_installations=authorized_scope['installations'],
         authorized_scope_has_more=authorized_scope.get('has_more', False),
-        selected_installation_id=(
-            selected_installation['installation'].id if selected_installation else None
-        ),
-        selected_installation_name=(
-            selected_installation['connection'].name if selected_installation else None
-        ),
+        selected_installation_id=(selected_installation['installation'].id if selected_installation else None),
+        selected_installation_name=(selected_installation['connection'].name if selected_installation else None),
         installation_rows=installation_rows,
         installation_pagination=installation_pagination,
     )
