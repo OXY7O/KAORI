@@ -50,6 +50,10 @@ def test_real_http_form_enqueues_scoped_read_only_runner_evidence() -> None:
         session['_fresh'] = True
         session['auth_source'] = 'database'
 
+    global_catalog = client.get('/integrations/')
+    assert global_catalog.status_code == 200
+    assert b'Infrastructure Automation' in global_catalog.data
+
     overview = client.get('/integrations/orchestration')
     assert overview.status_code == 200
     assert b'Infrastructure Automation' in overview.data
