@@ -1,0 +1,42 @@
+# Ansible provider registration · Kubernetes Lifecycle (Kubespray) v1
+
+**Authority:** #556, #4796, #4799 and implementation issue #4834. Status: issue-scoped candidate in `kaori/issue-4834-ansible-kubespray-provider-lifecycle`; not production or cluster execution admission.
+
+## Product navigation
+`Integrations → Orchestration → Configuration Automation → Ansible → Choose Automation Profile → Kubernetes Lifecycle → Add Connection → Manage Connection`.
+
+Ansible is the reusable configuration-automation **provider**. Kubernetes Lifecycle is the first managed automation **profile** using Kubespray, not a second Kubernetes API provider or a second Ansible worker. Future Linux, Middleware/Database and Network profiles remain visible as *planned* without active registration until their own issues and compatibility authority are approved.
+
+## Canonical connection lifecycle
+The existing `IntegrationInstance` table owns the single canonical provider identity `configuration_automation:ansible`; `metadata_json` holds reviewed **non-secret** source and version policy, source-check evidence, and explicitly disabled operation flags. No parallel integration database tables, injected playbook inventories, plaintext host keys or custom SQL migration.
+
+- The public GitHub adapter verifies a **fixed candidate** `OXY7O/kaori-operations@831ab7c114b1c1ba777c08ab79c91415ad8d465d` by a trusted TLS request with bounded response size, timeouts, redirect rejection and ambient-proxy refusal.
+- The verifier checks a Git commit identity, exact tree SHA and expected immutable Git blob hashes for the Kubespray v2.32.0 compatibility profile, source manifest, localhost facts playbook, example inventory, and pinned Ansible/Runner dependencies. The candidate is from `kaori-operations#5` / stacked PR #6 and is **not** claimed merged to main.
+- Validate Source issues a time-limited, user-bound and full-form-fingerprint proof. Save requires that proof; rejected/missing source or stale/modified form cannot register. The form does **not** receive GitHub or SSH credentials.
+- On registration `IntegrationInstance.enabled=False`, `readiness_status=validation_required`, and `mutation_authorized=False`. Successful source-check evidence does not mark the worker, GitHub App, Kubernetes API or target asset ready.
+- Ansible Core 2.19.3 and Ansible Runner 2.4.3 are **candidate package version policy**, Kubespray v2.32.0 is a pinned release/profile, not installed runtime detection. User-provided EE digest is **reference only** until independent image build/signed provenance and runtime validation.
+- Revalidate Source is a CSRF-protected POST to the same pinned Git authority, committed to canonical metadata with an Activity Audit. There is no GET side effect. Denial keeps remote operations blocked.
+
+## UI reuse
+The Ansible provider landing uses the approved shared provider frontpage Hero/metric cards and canonical `table_registry`/pagination components. Source selection reuses existing provider registration hero and form action bar. The manage page reuses `framed_workspace_tabs`, shared posture, table and readiness components for:
+1. Configuration
+2. Validation & Capabilities
+3. Runtime & History
+4. Inventory & Lifecycle
+
+Runtime history is scoped by `JobExecution.integration_instance_id`; the previous unbound localhost pilot jobs are **not** misrepresented as Kubernetes connection jobs. Inventory lifecycle remains `not_collected` and the existing Kubernetes Cluster identity continues authoritative for actual API/node state. No live provider calls or fabricated 0 Ready results are used as evidence of an admitted cluster.
+
+## Gate boundary
+The source adapter is a deliberately narrow public *source read* seam. A future private GitHub App adapter/source-grant implementation must reuse the admitted Source Control authority rather than opening arbitrary Git URLs. No remote SSH, Kubernetes installation, node patching, upgrade, credential selection or arbitrary playbook execution is provided by these pages. More complete Ansible/Kubespray lifecycle operations remain under issues #4800/#4801/#4802 and separate child workstreams.
+
+## Focused Developer Check
+```bash
+python -m ruff check app/integrations/orchestration/configuration_automation app/integrations/source_control/source_control/providers/github/public_automation_source.py app/integrations/routes.py tests/contracts/integrations/test_ansible_configuration_automation_workspace_contract.py tests/integrations/test_ansible_public_git_source.py
+python -m ruff format --check app/integrations/orchestration/configuration_automation app/integrations/source_control/source_control/providers/github/public_automation_source.py app/integrations/routes.py tests/contracts/integrations/test_ansible_configuration_automation_workspace_contract.py tests/integrations/test_ansible_public_git_source.py
+djlint --check app/templates/integrations/orchestration/configuration_automation/providers/ansible/*.html app/templates/integrations/partials/_domain_workspace.html
+python -m pytest -q -p no:cacheprovider tests/contracts/integrations/test_ansible_configuration_automation_workspace_contract.py tests/integrations/test_ansible_public_git_source.py
+python scripts/verify_ui_reuse.py
+python scripts/verify_ui_style.py
+```
+
+The CI render/DB registration tests must be complemented with actual authenticated browser UAT on deployed KAORI, light/dark visual QA, explicit Human Acceptance and normal Full Admission before staging/main promotion.
