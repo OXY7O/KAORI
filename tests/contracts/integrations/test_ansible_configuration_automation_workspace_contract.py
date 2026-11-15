@@ -96,6 +96,9 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
                 'source_validation': {'status': 'source_checked', 'checked_files': 5},
             },
         )
+    # A detail page requires a path-bound canonical instance ID for the
+    # shared pagination component to construct its full/HTMX navigation URLs.
+    with app.test_request_context('/integrations/ansible/connections/1'):
         detail = render_template(
             DETAIL,
             connection=connection,
