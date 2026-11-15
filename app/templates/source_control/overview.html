@@ -4,11 +4,10 @@
 {% import "components/operational_signal_overview.html" as signal_overview %}
 {% import "components/operational_section_card.html" as section_card %}
 {% import "components/operational_metric_card.html" as metric_card %}
-{% import "components/operational_evidence_tile.html" as evidence_tile %}
 {% import "components/peer_content_grid.html" as peer_grid %}
 {% import "components/section_intro.html" as section_intro %}
-{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/table_registry.html" as table_registry %}
 {% import "components/table.html" as table_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% block title %}Source Control Overview · KAORI{% endblock title %}
@@ -71,12 +70,23 @@
             <div class="mt-5 space-y-5">
                 {{ dashboard_workspace.navigation('source-control-dashboard', 'Source Control Dashboard Sections') }}
                 {% call dashboard_workspace.panel('overview', active_dashboard_tab, 'source-control-dashboard') %}
-                    {{ section_intro.render('Committed Source Inventory',
-                                        'Review installation-level coverage and retained collection evidence without summing overlapping repository grants.') }}
-                    {% call section_card.render('Installation Inventory Coverage',
-                        'Each row describes one explicit installation grant. Repository totals are not summed across overlapping installations.',
-                        'folder-git-2', action_href=url_for('source_control.repositories'),
-                        action_label='Explore Repositories', body_classes='p-0') %}
+                    <div id="source-control-dashboard-section-overview" class="space-y-5">
+                        <section class="space-y-4" aria-labelledby="source-control-operational-health-title">
+                            {{ section_intro.render('Operational Health',
+                                'Review authorized GitHub installation collection readiness and committed repository evidence.',
+                                id='source-control-operational-health-title') }}
+                            {% call section_card.render(
+                                'Installation Health Summary',
+                                'Showing ' ~ installation_pagination.start_item ~ '–' ~ installation_pagination.end_item ~ ' of ' ~ installation_pagination.total_items ~ ' authorized installations. Repository grants are not summed across overlapping scopes.',
+                                'heart-pulse',
+                                id='source-control-installation-health-section',
+                                action_href=url_for('source_control.repositories'),
+                                action_label='Explore Repositories',
+                                loading_bar_id='source-control-installation-health-loading',
+                                loading_bar_label='Installation Health Loading',
+                                body_classes='p-0'
+                                ) %}
+                                <div id="source-control-installation-health" data-source-control-installation-health>
                         {% if scope.has_more %}
                             <p class="border-b border-outline-subtle p-4 text-sm text-status-warning-text"
                                role="status">
@@ -107,7 +117,7 @@
                                         </tr>
                                     </thead>
                                     <tbody class="{{ table_ui.body_classes() }}">
-                                        {% for item in scope.installations %}
+                                        {% for item in installation_rows %}
                                             <tr class="{{ table_ui.row_classes() }}">
                                                 <td class="{{ table_ui.cell_classes() }}">
                                                     {{ table_ui.title_cell(item.connection.name,
@@ -153,37 +163,36 @@
                                 </table>
                             </div>
                         {% endif %}
-                    {% endcall %}
-                    {% call section_card.render('Evidence & Analytics Boundaries',
-                        'Committed inventory, evidence freshness and engineering analytics are separate levels of confidence.',
-                        'shield-check',
-                        header_badge=info_tip.render('source-control-evidence-guide',
-                        'Source Control Evidence Guide',
-                        'The Source Control dashboard reads authorized committed KAORI evidence, not live GitHub provider health.',
-                        items=[
-                        'Installation inventory is scoped to explicit grants; overlapping repository grants cannot be summed globally.',
-                        'Latest retained collection date is not a live GitHub connectivity check.',
-                        'Engineering Flow, PR/CI outcomes, DORA and deployment lineage require their own committed collection before showing derived metrics.'
-                        ], placement='right', variant='guide')) %}
-                        <div class="{{ peer_grid.layout_classes() }}">
-                            <div class="{{ peer_grid.column_classes('primary') }}">
-                                {{ evidence_tile.freshness('Available: Repository Inventory',
-                                                                'Committed GitHub installation grants and repository metadata',
-                                                                'Committed' if scope.committed_count else 'Not Collected',
-                                                                'normal' if scope.committed_count else 'unknown',
-                                                                'database',
-                                                                description='Default branch, exact observed SHA and provenance are qualified per installation. An older retained snapshot does not prove current provider health.') }}
+                                    {{ table_registry.footer(
+                                        'source_control.overview',
+                                        'source-control-installation-health-section',
+                                        'source-control-installation-health-loading',
+                                        installation_pagination,
+                                        {'tab': 'overview'},
+                                        [5, 10, 25, 50],
+                                        resource_label='Installations',
+                                        rows_aria_label='Installation rows per page',
+                                        control_name='source-control-installation-health',
+                                        page_param='installation_page',
+                                        per_page_param='installation_per_page'
+                                    ) }}
+                                </div>
+                            {% endcall %}
+                        </section>
+                        <section class="space-y-4" aria-labelledby="source-control-committed-evidence-title">
+                            {{ section_intro.render('Committed Evidence',
+                                'Inspect installation inventory and the freshness of qualified source evidence.',
+                                id='source-control-committed-evidence-title') }}
+                            <div class="{{ peer_grid.layout_classes() }}">
+                                <div class="{{ peer_grid.column_classes('primary') }}">
+                                    {% include "source_control/partials/_dashboard_inventory_snapshot.html" %}
+                                </div>
+                                <div class="{{ peer_grid.column_classes('secondary') }}">
+                                    {% include "source_control/partials/_dashboard_data_freshness.html" %}
+                                </div>
                             </div>
-                            <div class="{{ peer_grid.column_classes('secondary') }}">
-                                {{ evidence_tile.freshness('Not Yet Qualified: Engineering Flow',
-                                                                'PR reviews, CI outcomes, DORA and source-to-deployment lineage',
-                                                                'Unavailable',
-                                                                'unknown',
-                                                                'git-pull-request',
-                                                                description='No derived score, delivery success rate or developer productivity ranking can be inferred from repository or installation counts.') }}
-                            </div>
-                        </div>
-                    {% endcall %}
+                        </section>
+                    </div>
                 {% endcall %}
                 {% call dashboard_workspace.panel('capacity', active_dashboard_tab, 'source-control-dashboard') %}
                     {% include "source_control/partials/_dashboard_capacity.html" %}
