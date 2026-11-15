@@ -26,8 +26,13 @@ def test_pagination_and_filters_have_separate_htmx_ownership():
     route = Path('app/intelligence/routes.py').read_text()
     assert "filter_results_target|default('#recommendations-results-content')" in filters
     assert 'hx-target="{{ resolved_results_target }}"' in filters
-    assert 'clear_filters_action' in results
-    assert "target='#recommendations-workspace-content'" in results
+    header_actions = Path(
+        'app/templates/intelligence/partials/_recommendation_workspace_header_actions.html'
+    ).read_text()
+    assert 'clear_filters_action' in header_actions
+    assert "target='#recommendations-workspace-content'" in header_actions
+    assert '_recommendation_workspace_header_actions.html' in results
+    assert 'hx-swap-oob="outerHTML"' in header_actions
     assert "sync='#recommendations-workspace-content:replace'" in results
     assert "target == 'recommendations-results-content'" in route
     assert 'hx-sync="{{ target }}:replace"' in pagination
