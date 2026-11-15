@@ -22,6 +22,7 @@ from app.intelligence.finding_presentation import (
     finding_scope_details,
     format_affected_summary,
     recommendation_detail_header_summary,
+    recommendation_summary_domain_metrics,
     recommendation_table_summary,
     recommendation_table_title,
 )
@@ -168,7 +169,17 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
             item['list_title'] = recommendation_table_title(item, limit=96)
             item['list_summary'] = recommendation_table_summary(item, limit=72)
 
+    domain_metrics = (
+        recommendation_summary_domain_metrics(
+            filtered,
+            {option['value']: option['label'] for option in DOMAIN_OPTIONS if option['value']},
+        )
+        if page_mode != 'catalog'
+        else []
+    )
+
     result_context = {
+        'domain_metrics': domain_metrics,
         'matching_items': total_items,
         'source_items': len(source_items),
         'active_filters': active_filter_count,
