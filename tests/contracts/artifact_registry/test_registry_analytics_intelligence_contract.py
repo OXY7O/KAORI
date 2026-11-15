@@ -991,6 +991,8 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     assert 'data-registry-capacity-quota-chart' in partial
     assert 'Project Quota Utilization Guide' in partial
     assert 'Quota Chart Not Available' in partial
+    assert "analysis_surface.empty_evidence_classes('px-5 py-6 text-center')" in partial
+    assert 'data-kaori-empty-state' in partial
     assert "project_count_label = 'Top ' ~ quota_rows|length ~ ' of ' ~ qualified_total ~ ' Projects'" in partial
     assert "table_label.metadata_label(project_count_label, 'gauge', size='compact')" in partial
     assert 'analytics.capacity_chart_rows' in partial
@@ -1073,6 +1075,7 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     assert 'data-registry-capacity-chart-height="1"' in rendered
     assert 'min-h-36 sm:min-h-40' in rendered
     assert 'Quota Chart Not Available' not in rendered
+    assert 'data-kaori-empty-state' not in rendered
     assert 'Top 1 of' not in rendered
 
     top_five = [
@@ -1121,6 +1124,10 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     )
     assert 'Quota Chart Not Available' in empty
     assert 'data-registry-capacity-quota-chart' not in empty
+    assert empty.count('data-kaori-empty-state') == 1
+    assert 'border-dashed border-outline-strong bg-surface-muted' in empty
+    assert 'role="status"' in empty
+    assert 'Missing evidence is not zero utilization.' in empty
 
 
 def test_registry_usage_chart_projection_and_rendered_evidence() -> None:
@@ -1156,6 +1163,7 @@ def test_registry_usage_chart_projection_and_rendered_evidence() -> None:
     assert 'Observed Pull Activity Guide' in rendered
     assert 'Highest observed pulls' in rendered
     assert 'Qualified projects' in rendered
+    assert 'data-kaori-empty-state' not in rendered
     assert 'demo' in rendered and 'library' in rendered and 'sandbox' in rendered
     assert '0' in rendered
     assert rendered.count('id="registry-usage-chart-title"') == 1
@@ -1165,6 +1173,9 @@ def test_registry_usage_chart_projection_and_rendered_evidence() -> None:
     empty = usage.render(analytics={'usage_chart_rows': []})
     assert 'Pull Activity Chart Not Available' in empty
     assert 'data-registry-usage-chart' not in empty
+    assert empty.count('data-kaori-empty-state') == 1
+    assert 'border-dashed border-outline-strong bg-surface-muted' in empty
+    assert 'role="status"' in empty
     assert 'Missing pull metrics are not zero demand.' in empty
 
     page = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
@@ -1365,7 +1376,9 @@ def test_kubernetes_and_registry_render_shared_readiness_without_duplicate_shell
     assert 'Latest Analytics Data Snapshot' in registry
     assert 'Analytics Controls & Data Readiness' in registry
     # The conditional belongs to Jinja source, not the rendered HTML output.
-    registry_source = (ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html').read_text()
+    registry_source = (
+        ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html'
+    ).read_text()
     assert "eyebrow='Analytics Overview' if analytics.active_tab == 'overview'" in registry_source
     assert 'Analytics Overview' in registry
     assert 'data-kaori-info-tip-variant="guide"' in registry

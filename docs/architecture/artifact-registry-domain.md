@@ -1209,6 +1209,16 @@ valid observation, never a fabricated forecast or proof of inactivity.
 Missing all eligible quotas produces a dedicated unavailable state. The
 existing detailed Capacity table and worker/provider ownership are unchanged.
 
+The Capacity and Usage Overview chart empty states reuse the existing Growth
+Analytics evidence-unavailable surface through shared
+`analysis_surface.empty_evidence_classes`: a bounded, dashed semantic border,
+muted background, centered icon and explanation, and a standard status
+announcement. When no qualified project ratios or pull counters are committed,
+the chart/evidence panels are not rendered and their Canvas/Chart.js bootstrap
+targets remain absent. Missing quota evidence is not zero utilization, and
+missing pull-counter evidence is not zero demand. No new state taxonomy, provider
+calls or visual component variants are introduced.
+
 The subsequent Capacity visual UAT refinement reuses existing semantic card
 classes to align chart and evidence-panel headers, shows project identity and
 actual **Used / Quota / Forecast** fields in an accessible definition list,
