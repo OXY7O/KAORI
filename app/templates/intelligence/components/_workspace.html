@@ -9,7 +9,7 @@
   - Nested record titles use text-sm / semibold / leading-5; supporting copy uses text-xs / leading-5.
   - Technical identifiers alone use monospace text-xs.
 #}
-{% macro section(title, description, icon='brain-circuit', badge_text='', badge_tone='info', extra='', indicator_id='', loading_label='Loading') -%}
+{% macro section(title, description, icon='brain-circuit', badge_text='', badge_tone='info', extra='', indicator_id='', loading_label='Loading', title_extra=None) -%}
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card {{ extra }}">
         <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -19,7 +19,10 @@
                         <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0">
-                        <h2 class="text-base font-semibold leading-6 text-content-primary">{{ title }}</h2>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="text-base font-semibold leading-6 text-content-primary">{{ title }}</h2>
+                            {% if title_extra %}{{ title_extra }}{% endif %}
+                        </div>
                         {% if description %}
                             <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">{{ description }}</p>
                         {% endif %}
@@ -34,7 +37,7 @@
         {{ caller() }}
     </section>
 {%- endmacro %}
-{% macro posture_panel(title, description, icon='activity', badge_text='', badge_tone='info', footer_text='', actions=(), extra='') -%}
+{% macro posture_panel(title, description, icon='activity', badge_text='', badge_tone='info', footer_text='', actions=(), extra='', title_extra=None) -%}
     <section data-kaori-intelligence-posture="reference-summary"
              class="{{ table_ui.block_classes() }} {{ extra }}">
         <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
@@ -44,7 +47,10 @@
                     <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                 </span>
                 <div class="min-w-0">
-                    <h2 class="text-base font-semibold leading-6 text-content-primary">{{ title }}</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold leading-6 text-content-primary">{{ title }}</h2>
+                        {% if title_extra %}{{ title_extra }}{% endif %}
+                    </div>
                     {% if description %}
                         <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">{{ description }}</p>
                     {% endif %}
