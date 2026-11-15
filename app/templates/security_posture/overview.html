@@ -117,7 +117,7 @@
                                                     <span class="text-3xl font-semibold tabular-nums text-content-primary">{{ total_cves }}</span>
                                                     <span class="pb-1 text-xs text-content-muted">Distinct CVEs observed</span>
                                                 </div>
-                                                {{ scan_status_badge }}
+                                                <span class="text-xs text-content-muted">{{ posture.scan_updated_label }}</span>
                                             </div>
                                             <div class="mt-4 space-y-3">
                                                 {% for severity_row in severity_rows %}
@@ -190,7 +190,7 @@
                                         <div class="flex flex-wrap items-center justify-between gap-2">
                                             <h3 id="security-evidence-confidence-heading"
                                                 class="text-sm font-semibold text-content-primary">Evidence Confidence</h3>
-                                            {{ scan_status_badge }}
+                                            
                                         </div>
                                         {% if posture.artifacts_total > 0 %}
                                             {% set scan_coverage = (posture.scanned_artifacts * 100 / posture.artifacts_total)|round|int %}
