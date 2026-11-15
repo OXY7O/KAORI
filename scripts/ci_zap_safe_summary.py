@@ -197,6 +197,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--source-sha', required=True)
     args = parser.parse_args(argv)
 
+    # Fixed phase identifiers help diagnose fail-closed evidence publication
+    # without exposing untrusted report content, filesystem paths, or errors.
+    phase = 'output-preflight'
     try:
         # Refuse publication through a symlinked parent directory. Otherwise
         # an attacker-controlled workspace alias can redirect sanitized evidence
@@ -226,6 +229,7 @@ def main(argv: list[str] | None = None) -> int:
         # parent as well, so an alias cannot redirect the report pathname.
         if args.input.parent.resolve() != args.input.parent.absolute():
             raise UnverifiedZapReport('Unsafe ZAP report input directory')
+        phase = 'input-read'
         # Open without following symlinks or blocking on a FIFO swapped in
         # after the initial path check. Validate the opened descriptor, not
         # only the pathname (which may change between stat and open).
@@ -289,6 +293,7 @@ def main(argv: list[str] | None = None) -> int:
                 raise UnverifiedZapReport('Excessive JSON object count')
             return _unique_keys(pairs)
 
+        phase = 'json-parse'
         payload = json.loads(
             raw.decode('utf-8'),
             object_pairs_hook=bounded_unique_keys,
@@ -298,6 +303,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         _check_array_budget(payload)
         summary = render_summary(payload, args.source_sha)
+        phase = 'input-revalidation'
         # A parent directory can be replaced with a symlink after the initial
         # no-follow check. Revalidate the entire input path before publication.
         if args.input.parent.resolve() != args.input.parent.absolute():
@@ -323,6 +329,7 @@ def main(argv: list[str] | None = None) -> int:
                 or current_output_parent.st_ino != original_output_parent.st_ino
             ):
                 raise UnverifiedZapReport('Evidence output directory changed during parse')
+        phase = 'output-publication'
         # Publish atomically: a symlink introduced after the initial alias check
         # must never redirect writes to the raw report or another sensitive file.
         # A failed write also must not expose a partial, verified-looking summary.
@@ -371,7 +378,7 @@ def main(argv: list[str] | None = None) -> int:
                 temporary.unlink(missing_ok=True)
     except (OSError, ValueError, UnicodeError, RecursionError):
         # Don't echo source exceptions: paths and parser context may be sensitive.
-        print('ZAP sanitized summary NOT VERIFIED; no raw fields emitted.', file=sys.stderr)
+        print(f'ZAP sanitized summary NOT VERIFIED ({phase}); no raw fields emitted.', file=sys.stderr)
         return 2
 
     print('ZAP sanitized summary available; raw fields omitted.')
