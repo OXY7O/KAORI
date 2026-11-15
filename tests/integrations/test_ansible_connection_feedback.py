@@ -17,6 +17,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.integrations import routes
 from app.platform_operations.notifications.event_catalog import event_category_key
 from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
+from app.platform_operations.notifications.service import _feedback_delivery
 
 
 @pytest.mark.parametrize(
@@ -110,6 +111,9 @@ def test_registration_action_produces_one_canonical_receipt_without_source_leak(
     assert event['queue_feedback'] is True
     assert event['metadata']['provider'] == 'ansible'
     assert event['metadata'].get('feedback_delivery', 'toast') == 'toast'
+    assert _feedback_delivery(
+        event_type=event['event_type'], status=event['status'], metadata=event['metadata']
+    ) == 'toast'
     assert diagnostic not in repr(event)
     assert 'previous-proof' not in repr(event)
 
