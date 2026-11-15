@@ -248,9 +248,7 @@ def test_concurrent_cli_invocations_have_independent_json_object_budgets(
     assert all((tmp_path / f'summary-{i}.md').exists() for i in range(2))
 
 
-def test_cli_rejects_in_place_temporary_evidence_tampering(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_cli_rejects_in_place_temporary_evidence_tampering(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A same-inode temporary rewrite must not become published evidence."""
 
     raw = tmp_path / 'baseline.json'
