@@ -738,6 +738,19 @@ def test_security_findings_hero_and_runtime_evidence_are_qualified() -> None:
     assert 'Missing, partial or stale evidence is not proof of no exposure.' in changed_html
 
 
+def test_security_findings_table_keeps_every_server_paged_row() -> None:
+    posture = _renderable_posture()
+    posture['rows'] = [{**posture['rows'][0], 'cve_id': f'CVE-2022-{2000 + index}'} for index in range(7)]
+    posture['pagination'] = pagination_payload(build_pagination_window(total_items=7, page=1, per_page=10))
+    html = _render_workspace_page('findings', posture)
+    for index in range(7):
+        assert f'CVE-2022-{2000 + index}' in html
+    assert 'Showing 1–7 of 7 CVEs' in html
+    assert re.search(r'<option value="10"\s+selected', html)
+    assert 'name="per_page"' in html
+    assert 'data-security-findings-data-table' in html
+
+
 def test_security_findings_renders_no_source_as_unqualified_not_safe() -> None:
     html = _render_workspace_page('findings', _renderable_posture(False))
     assert 'No CVE records' in html
