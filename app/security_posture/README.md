@@ -43,6 +43,28 @@ location of unknown/stale warnings or permission requirements. The original
 four-tab URL keys and scoped source RBAC remain unchanged; full table and HTMX
 loading now belong exclusively to the Findings page.
 
+## Security Findings Visual UAT polish — #4772
+
+The **Finding Highlights** region on Overview reuses three compact
+`operational_metric_card.render(..., compact=true)` cards for distinct CVEs,
+affected digests, and source-qualified runtime correlation, rather than
+page-local flat boxes. Its first three observed CVEs use the existing
+`table_ui.title_cell` identity (icon, CVE, supporting text, severity) within
+a bordered, compact preview row, with a source-qualified `View Impact`
+handoff. This is not a full table and has no filters or pagination.
+
+The Findings page **Evidence Qualification** section uses the same compact
+metric-card density for scanner coverage, committed runtime readiness, and
+scanner evidence age. Their values remain independently qualified: Stale
+follows the actual scan status and age, Inputs Changed is a correlation
+readiness status, and neither may be displayed as fresh/all-clear without
+evidence. A standard `section_intro.render` precedes the full registry,
+providing the owning workspace title and description without duplicating
+the table card's role. The CVE / Severity cell reuses
+`table_ui.title_cell` with the shared `table_label.status_indicator_label`
+instead of a page-local plain text stack. All filter, loading, pagination,
+source-RBAC, HTMX and exact-CVE impact behaviors are unchanged.
+
 ## Security Sync, scanner freshness and runtime correlation
 
 These are **three independent authorities**. `artifact_registry_security`
