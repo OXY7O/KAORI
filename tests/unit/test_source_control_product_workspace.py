@@ -311,14 +311,14 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
     assert 'scope.has_more' in overview
     assert 'scope.latest_committed_at' in overview
     assert 'No Active GitHub Installations' in overview
-    assert "source_control/partials/_dashboard_inventory_snapshot.html" in overview
-    assert "source_control/partials/_dashboard_data_freshness.html" in overview
-    assert "Installation Health Summary" in overview
-    assert "Operational Health" in overview
-    assert "Committed Evidence" in overview
-    assert "Evidence & Analytics Boundaries" not in overview
-    assert "table_registry.footer(" in overview
-    assert "for item in installation_rows" in overview
+    assert 'source_control/partials/_dashboard_inventory_snapshot.html' in overview
+    assert 'source_control/partials/_dashboard_data_freshness.html' in overview
+    assert 'Installation Health Summary' in overview
+    assert 'Operational Health' in overview
+    assert 'Committed Evidence' in overview
+    assert 'Evidence & Analytics Boundaries' not in overview
+    assert 'table_registry.footer(' in overview
+    assert 'for item in installation_rows' in overview
     assert 'MetricsConsumer' not in overview
     assert 'request.' not in overview
     assert '<script' not in overview and '<style' not in overview
@@ -403,14 +403,12 @@ def test_product_overview_installation_health_paginates_before_render(monkeypatc
             assert context['scope'] is scope
             assert context['installation_pagination']['page'] == expected_page
             assert context['installation_pagination']['per_page'] == expected_per_page
-            assert [
-                row['installation'].id for row in context['installation_rows']
-            ] == expected_ids
+            assert [row['installation'].id for row in context['installation_rows']] == expected_ids
 
     with app.test_request_context('/source-control/'):
-        monkeypatch.setattr(routes, 'build_source_control_overview', lambda: {
-            **scope, 'installations': (), 'installation_count': 0
-        })
+        monkeypatch.setattr(
+            routes, 'build_source_control_overview', lambda: {**scope, 'installations': (), 'installation_count': 0}
+        )
         routes.overview.__wrapped__()
         assert captured[-1][1]['installation_pagination']['start_item'] == 0
         assert captured[-1][1]['installation_pagination']['end_item'] == 0
@@ -454,7 +452,8 @@ def test_product_operations_overview_matches_shared_health_and_peer_evidence_con
     env.filters['user_datetime'] = lambda value: value.isoformat() if value else 'Not Collected'
     for text in (overview, snapshot, freshness):
         env.parse(text)
-    url_for = lambda endpoint: '/' + endpoint.replace('.', '/')
+    def url_for(endpoint):
+        return '/' + endpoint.replace('.', '/')
     observed = {
         'account': SimpleNamespace(last_observed_at=datetime(2026, 10, 26, tzinfo=UTC)),
         'committed': True,
@@ -479,9 +478,12 @@ def test_product_operations_overview_matches_shared_health_and_peer_evidence_con
     )
     assert 'Per Installation' in multi
     missing = inventory.render(
-        scope={**single, 'installations': ({**observed, 'committed': False,
-                                            'observed_count': None},),
-               'committed_count': 0, 'uncollected_count': 1},
+        scope={
+            **single,
+            'installations': ({**observed, 'committed': False, 'observed_count': None},),
+            'committed_count': 0,
+            'uncollected_count': 1,
+        },
         url_for=url_for,
     )
     assert 'Unknown' in missing
@@ -490,9 +492,134 @@ def test_product_operations_overview_matches_shared_health_and_peer_evidence_con
     observed_fresh = fresh.render(scope=single)
     assert '2026-10-26T00:00:00+00:00' in observed_fresh
     assert 'Engineering Flow' in observed_fresh and 'Not Qualified' in observed_fresh
-    unobserved = fresh.render(
-        scope={**single, 'latest_committed_at': None, 'installations': ()}
-    )
+    unobserved = fresh.render(scope={**single, 'latest_committed_at': None, 'installations': ()})
     assert 'Not Collected' in unobserved
     assert 'Not Observed' in unobserved
     assert 'Unavailable' in unobserved
+
+def test_product_overview_installation_scope_filter_restricts_authorized_committed_projection(monkeypatch):
+    app = Flask(__name__)
+    monkeypatch.setattr(routes, '_require_product_uat_access', lambda: None)
+    committed_at = datetime(2026, 10, 26, tzinfo=UTC)
+    installations = (
+        {
+            'installation': SimpleNamespace(id=11),
+            'connection': SimpleNamespace(name='GitHub Allowed 11'),
+            'committed': True,
+            'collection_status': 'committed',
+            'observed_count': 0,
+            'last_committed_at': committed_at,
+        },
+        {
+            'installation': SimpleNamespace(id=22),
+            'connection': SimpleNamespace(name='GitHub Allowed 22'),
+            'committed': False,
+            'collection_status': 'not_collected',
+            'observed_count': None,
+            'last_committed_at': None,
+        },
+    )
+    authorized = {
+        'installations': installations,
+        'installation_count': 2,
+        'committed_count': 1,
+        'uncollected_count': 1,
+        'has_more': True,
+        'latest_committed_at': committed_at,
+    }
+    monkeypatch.setattr(routes, 'build_source_control_overview', lambda: authorized)
+    captured = []
+
+    def capture(template, **context):
+        captured.append(context)
+        return 'rendered'
+
+    monkeypatch.setattr(routes, '_uncached_render', capture)
+    for selected_id, committed, expected_time in (
+        ('11', 1, committed_at),
+        ('22', 0, None),
+    ):
+        with app.test_request_context(
+            '/source-control/', query_string={'installation_id': selected_id, 'tab': 'capacity'}
+        ):
+            assert routes.overview.__wrapped__() == 'rendered'
+            context = captured[-1]
+            scope = context['scope']
+            assert context['dashboard_active_tab'] == 'capacity'
+            assert context['selected_installation_id'] == int(selected_id)
+            assert context['selected_installation_name'] == f'GitHub Allowed {selected_id}'
+            assert context['authorized_installations'] is installations
+            assert context['authorized_scope_has_more']
+            assert scope['installation_count'] == 1
+            assert scope['committed_count'] == committed
+            assert scope['uncollected_count'] == 1 - committed
+            assert scope['latest_committed_at'] == expected_time
+            assert not scope['has_more']
+            assert scope['installations'] == (installations[0 if committed else 1],)
+            assert context['installation_pagination']['total_items'] == 1
+            assert context['installation_rows'] == [installations[0 if committed else 1]]
+
+    with app.test_request_context('/source-control/'):
+        assert routes.overview.__wrapped__() == 'rendered'
+        context = captured[-1]
+        assert context['scope'] is authorized
+        assert context['selected_installation_id'] is None
+        assert context['installation_pagination']['total_items'] == 2
+
+
+@pytest.mark.parametrize(
+    'value',
+    ['not-an-id', '-1', '0', '23', '999', '12x', '../22', '9' * 40],
+)
+def test_product_overview_rejects_unregistered_installation_scope(monkeypatch, value):
+    app = Flask(__name__)
+    monkeypatch.setattr(routes, '_require_product_uat_access', lambda: None)
+    monkeypatch.setattr(
+        routes,
+        'build_source_control_overview',
+        lambda: {
+            'installations': ({'installation': SimpleNamespace(id=22)},),
+            'installation_count': 1,
+            'has_more': False,
+        },
+    )
+    monkeypatch.setattr(
+        routes,
+        '_uncached_render',
+        lambda *_args, **_kwargs: pytest.fail('Unauthorized installation scope rendered'),
+    )
+    with app.test_request_context('/source-control/', query_string={'installation_id': value}):
+        with pytest.raises(NotFound):
+            routes.overview.__wrapped__()
+
+
+def test_product_overview_selector_table_and_two_line_evidence_contract():
+    root = Path(__file__).resolve().parents[2]
+    folder = root / 'app/templates/source_control'
+    overview = (folder / 'overview.html').read_text()
+    inventory = (folder / 'partials/_dashboard_inventory_snapshot.html').read_text()
+    freshness = (folder / 'partials/_dashboard_data_freshness.html').read_text()
+    assert 'source-control-installation-filter' in overview
+    assert 'All Authorized Installations' in overview
+    assert 'for option in authorized_installations' in overview
+    assert 'hx-include="closest form"' in overview
+    assert 'hx-select="#source-control-overview"' in overview
+    assert 'hx-push-url="true"' in overview
+    assert 'x-bind:value="activeTab"' in overview
+    assert "{'tab': 'overview', 'installation_id': selected_installation_id or ''}" in overview
+    assert "selected_installation_name or 'All Authorized Installations'" in overview
+    assert 'table_ui.header_cell_classes(action=true)' in overview
+    assert 'table_ui.cell_classes(action=true)' in overview
+    assert "item.observed_count if item.observed_count is not none else 'Unknown'" in overview
+    assert "item.collection_status == 'committed'" in overview
+    assert 'account.last_observed_at' in overview
+    assert 'Repository observations are shown only for a single' not in inventory
+    for description in (
+        'Retained inventory; not live GitHub health.',
+        'Account observed; current access unverified.',
+        'PR, CI and DORA evidence not yet qualified.',
+        'Reports and deployment lineage not qualified.',
+    ):
+        assert description in freshness
+    assert 'operational_evidence_tile.html' in freshness
+    assert 'operational_evidence_tile.html' in inventory

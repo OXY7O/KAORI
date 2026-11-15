@@ -28,7 +28,7 @@
         'Retained' if scope.latest_committed_at else 'Unavailable',
         'info' if scope.latest_committed_at else 'unknown',
         'database-check',
-        description='Latest retained collection across the visible authorized installations, not live GitHub availability.'
+        description='Retained inventory; not live GitHub health.'
     ) }}
     {{ evidence_tile.freshness(
         'Account Observation',
@@ -36,7 +36,7 @@
         'Observed' if account_observed_at else 'Unavailable',
         'info' if account_observed_at else 'unknown',
         'users',
-        description='Latest account identity observation in the bounded installation scope; never proof of current access.'
+        description='Account observed; current access unverified.'
     ) }}
     {{ evidence_tile.freshness(
         'Engineering Flow',
@@ -44,7 +44,7 @@
         'Unavailable',
         'unknown',
         'git-pull-request',
-        description='PR reviews, CI outcomes and DORA measures require committed authorized engineering evidence.'
+        description='PR, CI and DORA evidence not yet qualified.'
     ) }}
     {{ evidence_tile.freshness(
         'Reports & Lineage',
@@ -52,6 +52,6 @@
         'Unavailable',
         'unknown',
         'file-text',
-        description='Report artifacts and source-to-deployment correlation are not inferred from repository grants.'
+        description='Reports and deployment lineage not qualified.'
     ) }}
 {% endcall %}

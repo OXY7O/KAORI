@@ -24,7 +24,4 @@
     {% for label, value, icon, role in inventory_items %}
         {{ evidence_tile.snapshot(label, value, icon, role) }}
     {% endfor %}
-    <p class="col-span-full border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">
-        Repository observations are shown only for a single qualified installation. Multiple grants can overlap, so no global repository total is inferred.
-    </p>
 {% endcall %}
