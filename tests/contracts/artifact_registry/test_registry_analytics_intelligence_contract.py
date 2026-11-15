@@ -1146,7 +1146,7 @@ def test_registry_usage_detail_reuses_kaori_evidence_and_distinguishes_missing_f
     assert "url_for('artifact_registry.runtime')" in partial
     assert "analytics.usage_chart_rows|default([], true)" in partial
     assert "usage_rows[:5]" in partial
-    assert "('%.0f'|format(analytics.aggregate.pull_activity)) if has_pulls else 'N/A'" in partial
+    assert "set pull_value = ('%.0f'|format(analytics.aggregate.pull_activity)) if has_pulls else 'N/A'" in partial
     assert "{% include \"artifact_registry/partials/_analytics_usage_detail.html\" %}" in section
 
     env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
@@ -1159,10 +1159,11 @@ def test_registry_usage_detail_reuses_kaori_evidence_and_distinguishes_missing_f
         'tag_only_bindings': 1,
     }
     common = {'aggregate': aggregate, 'snapshot_count': 1, 'snapshot_window': '24h'}
-    render = lambda rows: detail.render(
-        analytics={**common, 'usage_chart_rows': rows},
-        url_for=lambda endpoint: '/artifact-registry/runtime',
-    )
+    def render(rows: list[dict[str, object]]) -> str:
+        return detail.render(
+            analytics={**common, 'usage_chart_rows': rows},
+            url_for=lambda endpoint: '/artifact-registry/runtime',
+        )
 
     missing = render([])
     assert 'Pull Counter Evidence Not Available' in missing
@@ -1182,12 +1183,16 @@ def test_registry_usage_detail_reuses_kaori_evidence_and_distinguishes_missing_f
     assert 'data-registry-usage-project-rows' in observed_zero
     assert 'sandbox' in observed_zero
     assert 'Harbor X300' in observed_zero
-    assert '1 qualified projects' in observed_zero
+    assert '1 qualified project counter' in observed_zero
     assert 'Observed pulls</p>' in observed_zero
 
     six = [
-        {'project_name': f'project-{index}', 'registry_name': 'Harbor X300', 'pull_count': 6 - index,
-         'pull_display': str(6 - index)}
+        {
+            'project_name': f'project-{index}',
+            'registry_name': 'Harbor X300',
+            'pull_count': 6 - index,
+            'pull_display': str(6 - index),
+        }
         for index in range(6)
     ]
     five_visible = render(six)
