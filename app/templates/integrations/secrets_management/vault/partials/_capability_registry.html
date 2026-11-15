@@ -1,0 +1,87 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% set capability_contracts = [
+    {'key': 'health', 'title': 'Vault Health', 'contract': 'GET /v1/sys/health', 'required': true, 'icon': 'heart-pulse', 'description': 'Provider health and unsealed status'},
+    {'key': 'approle', 'title': 'AppRole Authentication', 'contract': 'POST /v1/auth/{mount}/login', 'required': true, 'icon': 'key-round', 'description': 'Approved AppRole identity'},
+    {'key': 'token_lookup', 'title': 'Token Self Lookup', 'contract': 'GET /v1/auth/token/lookup-self', 'required': true, 'icon': 'shield-check', 'description': 'Scoped AppRole token verification'},
+    {'key': 'mount_metadata', 'title': 'Mount Metadata', 'contract': 'GET /v1/sys/mounts', 'required': false, 'icon': 'database', 'description': 'Optional read-only mount discovery'}
+] %}
+<section class="{{ integration_ui.section_shell_classes() }}"
+         data-kaori-vault-capability-registry
+         data-kaori-capability-table-standard
+         aria-labelledby="vault-capability-registry-title">
+    <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5">
+        <div class="flex min-w-0 items-start gap-3">
+            {{ integration_ui.palette_icon('blocks', 'info', size='md') }}
+            <div class="min-w-0">
+                <h3 id="vault-capability-registry-title"
+                    class="text-base font-semibold text-content-primary">Capability Registry</h3>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Required provider APIs and optional mount discovery from the latest committed Full Validation.</p>
+            </div>
+        </div>
+        {{ table_label.metadata_label(capability_contracts|length ~ ' Capability Contracts') }}
+    </header>
+    <div class="w-full min-w-0 overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[760px] xl:min-w-0') }} table-fixed">
+            <caption class="sr-only">Vault provider API capabilities and committed validation status.</caption>
+            <colgroup>
+                <col class="w-[29%]">
+                <col class="w-[26%]">
+                <col class="w-[13%]">
+                <col class="w-[13%]">
+                <col class="w-[19%]">
+            </colgroup>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Capability</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">API Contract</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Requirement</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Status</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Evidence</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for row in capability_contracts %}
+                    {% set observed = has_current_validation and row.key in observed_capabilities %}
+                    {% set optional_limited = not row.required and has_current_validation and summary.get('mount_metadata') == 'permission_unavailable' %}
+                    {% set status_key = 'ready' if observed else ('degraded' if optional_limited else 'not_observed') %}
+                    {% set status_label = 'Ready' if observed else ('Limited' if optional_limited else 'Not Checked') %}
+                    <tr class="{{ table_ui.row_classes() }}"
+                        data-kaori-vault-capability-record>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <div class="flex min-w-0 items-start gap-3">
+                                {{ integration_ui.palette_icon(row.icon, 'normal' if observed else 'info', size='sm') }}
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">{{ row.title }}</p>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ row.description }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <span class="break-words font-mono text-xs text-content-secondary">{{ row.contract }}</span>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_label.metadata_label('Required' if row.required else 'Optional') }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(status_key, status_label, display='indicator') }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-xs leading-5 text-content-secondary">
+                                {% if observed %}
+                                    Committed provider API evidence.
+                                {% elif optional_limited %}
+                                    Optional discovery not permitted; core APIs remain separate.
+                                {% else %}
+                                    No current qualifying API evidence.
+                                {% endif %}
+                            </p>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>

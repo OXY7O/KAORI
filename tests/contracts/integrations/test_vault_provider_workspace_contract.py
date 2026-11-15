@@ -100,6 +100,28 @@ def test_vault_detail_reuses_four_domain_workspaces_without_cloning_engine():
     assert "url_for('vault.validate', instance_id=instance.id)" in validation
     assert 'csrf_token()' in validation
     assert 'instance.enabled' in validation
+    assert 'integrations/components/_validation_poller.html' in validation
+    assert 'integrations/components/_provider_job_status.html' in validation
+    assert 'integrations/components/_readiness_explanation.html' in validation
+    assert 'id="vault-core-validation"' in validation
+    assert 'hx-target="#vault-core-validation"' in validation
+    assert 'validation_poller.render(' in validation
+    assert 'provider_job_status.render(' in validation
+    assert 'readiness_explanation.render(' in validation
+    assert 'integration_status(' not in validation
+    assert "partials/_capability_registry.html" in validation
+    assert 'Validation task:' not in validation
+
+    capability_table = _partial('_capability_registry.html')
+    assert 'components/table.html' in capability_table
+    assert 'components/table_label.html' in capability_table
+    assert 'data-kaori-capability-table-standard' in capability_table
+    assert "'health'" in capability_table
+    assert "'approle'" in capability_table
+    assert "'token_lookup'" in capability_table
+    assert "'mount_metadata'" in capability_table
+    assert "GET /v1/sys/mounts" in capability_table
+    assert 'permission_unavailable' in capability_table
 
     runtime = _partial('_detail_runtime.html')
     assert 'integrations/components/_runtime_decision.html' in runtime
@@ -149,9 +171,76 @@ def test_vault_registration_reuses_actions_without_changing_proof_or_credentials
 
 def test_vault_readiness_metadata_follows_existing_integration_lock():
     validation = _partial('_detail_validation.html')
-    assert '{% set capability_metadata = [' in validation
-    assert "'Profile · Vault AppRole' if is_ready else 'No Committed Validation'" in validation
+    assert '{% set capability_metadata = ' in validation
+    assert "'No Committed Validation'" in validation
+    assert "'Profile · '" in validation
     assert 'capability_metadata,' in validation
+    # Historical Vault compatibility may be Degraded while required APIs are
+    # observed; optional mount discovery is never a required readiness gate.
+    assert "readiness in ['ready', 'degraded']" in validation
+    assert "summary.get('mount_metadata') == 'available'" in validation
+    assert "required_ready ~ ' / ' ~ required_total" in validation
+
+
+
+def test_vault_full_validation_matches_shared_htmx_job_and_evidence_contract() -> None:
+    from jinja2 import Environment
+
+    validation = _partial('_detail_validation.html')
+    registry = _partial('_capability_registry.html')
+    source = ROUTES.read_text(encoding='utf-8')
+    for component in (
+        'components/connection_validation_header.html',
+        'integrations/components/_validation_poller.html',
+        'integrations/components/_provider_job_status.html',
+        'integrations/components/_capability_readiness.html',
+        'integrations/components/_readiness_explanation.html',
+        'integrations/components/_provider_detail_posture.html',
+        'components/framed_workspace_tabs.html',
+        'components/operation_feedback_oob.html',
+    ):
+        assert component in validation
+    for marker in (
+        'id="vault-core-validation"',
+        'hx-post="{{ url_for(\'vault.validate\', instance_id=instance.id) }}"',
+        'hx-target="#vault-core-validation"',
+        'hx-swap="outerHTML"',
+        'hx-disabled-elt="button"',
+        'hx-indicator="#vault-validation-loading"',
+        "url_for('vault.validation_status'",
+        'validation_poller.render(',
+        'provider_job_status.render(',
+        'readiness_explanation.render(',
+        'capability_readiness.render(',
+        'framed_workspace_tabs.badge_oob(',
+        'provider_detail_posture.state_oob(',
+    ):
+        assert marker in validation
+    for old_fragment in (
+        'Validation task:',
+        "instance.validation_message or 'No capability",
+        'Permission Unavailable',
+    ):
+        assert old_fragment not in validation
+
+    assert 'data-kaori-capability-table-standard' in registry
+    assert 'components/table.html' in registry
+    assert registry.count("'required': true") == 3
+    assert registry.count("'required': false") == 1
+    assert 'permission_unavailable' in registry
+    assert 'get_validation_snapshot' not in registry
+    assert "summary.get('mount_metadata')" in registry
+
+    assert "def validation_status(instance_id: int, task_id: str)" in source
+    assert "validate_snapshot_access(" in source
+    assert "snapshot_feedback_for_user(snapshot, user_id=int(current_user.id))" in source
+    assert "validation_poll_response(content, snapshot=snapshot)" in source
+    assert "is_htmx = request.headers.get('HX-Request') == 'true'" in source
+    assert "queue_feedback=not is_htmx" in source
+
+    Environment().parse(validation)
+    Environment().parse(registry)
+
 
 
 def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> None:
@@ -343,10 +432,7 @@ def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> Non
     assert "autofocus=invalid_focus_field == 'secret_id'" in form
     assert form.count('autofocus=invalid_focus_field == ') == 10
     assert "autofocus=invalid_focus_field == 'auth_mount_mode', **{'x-model': 'authMountMode'}" in form
-    assert (
-        "autofocus=invalid_focus_field == 'auth_mount', **{':required': \"authMountMode === 'custom'\"}"
-        in form
-    )
+    assert "autofocus=invalid_focus_field == 'auth_mount', **{':required': \"authMountMode === 'custom'\"}" in form
     assert 'autofocus=(invalid_focus_field' not in form
 
     Environment().parse(form)
