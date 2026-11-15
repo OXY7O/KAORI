@@ -292,7 +292,6 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
         'components/operational_metric_card.html',
         'components/operational_section_card.html',
         'components/peer_content_grid.html',
-        'components/section_intro.html',
         'components/table_registry.html',
     ):
         assert reference in overview
@@ -301,7 +300,7 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
         (template_dir / 'partials/_dashboard_data_freshness.html').read_text(),
     )
     assert all('components/operational_evidence_tile.html' in partial for partial in evidence_partials)
-    assert 'components/info_tip.html' in evidence_partials[1]
+    assert 'components/info_tip.html' not in evidence_partials[1]
     for tab in ('overview', 'capacity', 'signals', 'reporting'):
         assert f"dashboard_workspace.panel('{tab}', active_dashboard_tab" in overview
     assert "dashboard_workspace.navigation('source-control-dashboard'" in overview
@@ -314,8 +313,8 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
     assert 'source_control/partials/_dashboard_inventory_snapshot.html' in overview
     assert 'source_control/partials/_dashboard_data_freshness.html' in overview
     assert 'Installation Health Summary' in overview
-    assert 'Operational Health' in overview
-    assert 'Committed Evidence' in overview
+    assert 'Operational Health' not in overview
+    assert 'Committed Evidence' not in overview
     assert 'Evidence & Analytics Boundaries' not in overview
     assert 'table_registry.footer(' in overview
     assert 'for item in installation_rows' in overview
@@ -485,8 +484,8 @@ def test_product_operations_overview_matches_shared_health_and_peer_evidence_con
     k8s = (root / 'app/templates/kubernetes/dashboard/partials/_overview.html').read_text()
 
     assert 'peer_content_grid.layout_classes()' in k8s
-    assert "section_intro.render('Operational Health'" in overview
-    assert "section_intro.render('Committed Evidence'" in overview
+    assert "section_intro.render('Operational Health'" not in overview
+    assert "section_intro.render('Committed Evidence'" not in overview
     assert 'peer_grid.layout_classes()' in overview
     assert "peer_grid.column_classes('primary')" in overview
     assert "peer_grid.column_classes('secondary')" in overview
@@ -503,7 +502,7 @@ def test_product_operations_overview_matches_shared_health_and_peer_evidence_con
     assert 'evidence_tile.snapshot(' in snapshot
     assert 'operational_evidence_tile.html' in freshness
     assert 'evidence_tile.freshness(' in freshness
-    assert 'source-control-evidence-guide' in freshness
+    assert 'source-control-evidence-guide' not in freshness
     assert 'Not Qualified' in freshness
     assert 'Evidence & Analytics Boundaries' not in overview
     assert '<style' not in overview and '<script' not in overview
@@ -778,7 +777,11 @@ def test_source_control_overview_compact_text_table_and_scope_gate_contract():
         assert caption in overview
         assert len(caption) <= 36
 
-    assert 'min-w-[1024px] table-fixed' in overview
+    assert 'min-w-[1024px]' not in overview
+    assert 'hidden table-fixed xl:table' in overview
+    assert 'data-source-control-installation-cards' in overview
+    assert 'data-source-control-installation-table' in overview
+    assert 'overflow-x-auto' not in overview
     assert '<colgroup>' in overview
     assert 'title="Observed repositories per installation"' in overview
     assert 'text-right tabular-nums' in overview
@@ -796,9 +799,42 @@ def test_source_control_overview_compact_text_table_and_scope_gate_contract():
     for name in ('capacity', 'signals', 'reporting'):
         partial = (root / 'partials' / f'_dashboard_{name}.html').read_text()
         assert '{% if not selected_scope %}' in partial
-        assert "components/states/_blocked_state.html" in partial
+        assert 'components/states/_blocked_state.html' in partial
         assert 'Installation Required' in partial
         assert 'Select Installation' in partial
         assert 'evidence_tile.freshness(' in partial
         assert 'selected_item' in partial
         assert 'Not Qualified' in partial
+
+
+def test_source_control_health_register_reflows_without_horizontal_scrolling():
+    """Wide screens use the shared table; narrower screens use the same scoped rows."""
+    root = Path(__file__).resolve().parents[2] / 'app/templates/source_control'
+    overview = (root / 'overview.html').read_text()
+    freshness = (root / 'partials/_dashboard_data_freshness.html').read_text()
+
+    assert "table_ui.table_classes('hidden table-fixed xl:table')" in overview
+    assert 'data-source-control-installation-table' in overview
+    assert 'data-source-control-installation-cards' in overview
+    assert 'xl:hidden' in overview
+    assert 'overflow-x-auto' not in overview
+    assert 'min-w-[1024px]' not in overview
+    assert overview.count('{% for item in installation_rows %}') == 2
+    assert overview.count('source_control.repositories') >= 3
+    assert overview.count("item.observed_count if item.observed_count is not none else 'Unknown'") == 2
+    assert overview.count('item.installation.native_installation_id') >= 2
+    assert overview.count('item.account.native_account_id') >= 2
+    assert 'Account Observed' in overview
+    assert 'item.account.last_observed_at|user_datetime' in overview
+    assert '<colgroup>' in overview
+    assert 'w-[13%]' in overview
+    assert 'text-right tabular-nums' in overview
+    assert 'Last Committed' in overview
+    assert 'table_registry.footer(' in overview
+    assert 'No Active GitHub Installations' in overview
+    assert 'Operational Health' not in overview
+    assert 'Committed Evidence' not in overview
+    assert 'section_intro.html' not in overview
+    assert 'components/info_tip.html' not in freshness
+    assert 'header_badge=' not in freshness
+    assert 'source-control-evidence-guide' not in freshness
