@@ -103,6 +103,14 @@ The Tenant Quota Records heading uses the established Violet `info_tip.render(..
 
 The Workload formatter `format_resource_quota_value` continues to use the existing CPU-core and memory-GiB utilities. It now treats Kubernetes quota `requests.storage`, `requests.ephemeral-storage`, and `limits.ephemeral-storage` as **raw bytes** for display using the existing `bytes_to_gib` function; for example, `107374182400` bytes renders as **`100.00 GiB`**. Recognized count-based quota keys use integer formatting, and original provider resource keys remain visible for correlation. The same representation applies independently to `hard_items` and `used_items`; underlying committed hard/used objects, quota percentages and risk are unchanged. Unknown or absent used keys remain unavailable rather than inferred zero.
 
+## Workload Detail Modal Evidence Hierarchy (#4777)
+
+The **Workload Resource Mapping → View Details** modal now opts into `record_detail_modal.render(..., evidence_context=true)`, reusing the same approved committed-snapshot header/footer as Tenant Quota. Factual Type, Namespace, and Pod count chips are provided from the committed workload row, rather than repeating a long subtitle. This retains the shared dialog, focus, Escape/backdrop/Close, responsive sizing, and read-only provenance semantics. No other modal consumer changes.
+
+The **Evidence Boundary and Request Fit Interpretation** now uses a full-width, three-part guidance surface separated with standard Analytics dividers: Interpretation, How To Read The Bars, and Current vs Selected-Window Peak. The normal/warning/critical threshold badges are preserved and the selected-window Pod Peak Sum remains an upper-bound signal. **Pod Membership** uses its own compact full-width record list with readable Pod identity, bounded overflow for many Pods, and an explicit no-evidence state, rather than occupying a tall side column beside interpretation text. All original CPU/Memory profiles and Recommended Action remain in their prior order.
+
+In the Tenant Quota modal, **Hard Boundary** and **Observed Used** use aligned tabular-value rows with a minimum value column width, full resource label, semantic `dt/dd`, and natural wrapping. Byte-based storage and integer-count resource keys remain normalized exclusively in the authoritative Workload formatter, not with a second conversion in Jinja. Source and risk semantics, including missing versus observed zero, are unchanged. UAT screenshots showing raw `2147483648.00` or integer counts as `2.00` must be checked against the actual running application SHA/data materialization; source at this issue already supports `2.00 GiB` and integer counts.
+
 ## ResourceQuota Object Semantics
 
 ResourceQuota evidence is retained per object:

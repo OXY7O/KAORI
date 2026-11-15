@@ -90,7 +90,8 @@ def test_tenant_quota_modal_uses_opt_in_kaori_committed_evidence_chrome() -> Non
     assert "context_facts=[('Active Pods', row.workloads), ('Quota Objects', row.quota_object_count)]" in tenant
     assert "'Review committed quota boundaries, observed usage, and active-Pod demand.'" in tenant
     assert "size='expanded'" in tenant
-    assert "evidence_context=true" not in mapping
+    assert "evidence_context=true" in mapping
+    assert "context_facts=[('Type', row.type), ('Namespace', row.namespace), ('Pods', row.detail.pods|length)]" in mapping
     assert "row.quota_objects|length > 1" in tenant
     assert "lg:grid-cols-2" in tenant
     assert 'class="col-span-full"' in tenant
