@@ -1188,15 +1188,18 @@ The visible companion panel preserves the full project name, Registry
 source, actual usage and quota, and independently qualified forecast label.
 For visual UAT the highest qualified project utilization and 100% quota
 reference appear in a compact horizontal context strip rather than a tall
-duplicate KPI block. The Chart.js responsive canvas height follows the
-actual preview count through existing utility classes: 1–2, 3–4, or 5
-qualified project rows. Both desktop panels use `items-start`, so the
-chart surface is not stretched to match the evidence list. The adjacent
-evidence uses divider-separated compact rows, not nested cards, retaining
-each project's identity, Registry, exact percentage, usage, quota and
-independently qualified forecast. This eliminates the large unused chart
-area seen when four projects were rendered, without hiding any of the
-five eligible Overview preview records.
+duplicate KPI block. The Chart.js canvas has a **minimum** responsive height
+tier for 1–2, 3–4, or 5 observed projects. At desktop widths the two existing
+evidence shells participate in the **same stretching grid row**, while the
+left chart shell is a flex column with its canvas area expanding to occupy
+remaining height. This keeps the two panel borders precisely aligned for
+four or five projects; a future fifth row expands the grid naturally and
+Chart.js resizes within its parent. At mobile widths, panels stack naturally
+without a forced-height relationship. The adjacent evidence uses divider-
+separated compact rows rather than nested cards, retaining project/Registry
+identity, exact percentage, usage, quota and independently qualified
+forecast. A fifth qualified record is shown on both sides; only actual
+source-qualified records are plotted, never invented placeholders.
 
 For ratios at or below 1%, 5%, or 25%, the axis still zooms to the
 explicit upper bound; values above quota preserve a zero-based axis
