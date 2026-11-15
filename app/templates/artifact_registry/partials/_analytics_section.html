@@ -13,94 +13,12 @@
     {% elif analytics.active_tab == 'usage' %}
         {% include "artifact_registry/partials/_analytics_usage_detail.html" %}
     {% elif analytics.active_tab == 'risk' %}
-        <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Risk Concentration</p>
-        <h3 class="mt-1 text-base font-semibold text-content-primary">Security × Runtime</h3>
-        <p class="mt-1 text-xs leading-5 text-content-muted">Detailed vulnerability evidence remains in Security; workload blast radius remains in Runtime.</p>
-        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {% for label, value, detail, tone in [
-                ('Critical Findings', analytics.aggregate.critical_findings, 'Committed Registry security evidence', 'info'),
-                ('Critical + Running', analytics.aggregate.critical_runtime_artifacts, 'Critical evidence intersecting runtime', 'critical' if analytics.aggregate.critical_runtime_artifacts else 'normal'),
-                ('Unsigned + Running', analytics.aggregate.unsigned_runtime_artifacts, 'Runtime artifacts without signature evidence', 'warning' if analytics.aggregate.unsigned_runtime_artifacts else 'normal'),
-                ('Unscanned + Running', analytics.aggregate.runtime_scan_gaps, 'No normalized successful scan evidence', 'warning' if analytics.aggregate.runtime_scan_gaps else 'normal')
-                ] %}
-                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                    <div class="flex items-start justify-between gap-2">
-                        <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
-                        {{ table_label.status_indicator_label('Review' if tone in ['critical', 'warning'] else 'Evidence', tone) }}
-                    </div>
-                    <p class="mt-2 text-xl font-semibold text-content-primary">{{ value }}</p>
-                    <p class="mt-1 text-xs text-content-muted">{{ detail }}</p>
-                </div>
-            {% endfor %}
-        </div>
-        <div class="mt-5 flex flex-wrap gap-2">
-            <a href="{{ url_for('artifact_registry.security') }}"
-               class="{{ table_ui.action_classes() }}">Open Security</a>
-            <a href="{{ url_for('artifact_registry.runtime') }}"
-               class="{{ table_ui.action_classes() }}">Open Runtime</a>
-        </div>
+        {% include "artifact_registry/partials/_analytics_risk_detail.html" %}
     {% elif analytics.active_tab == 'governance' %}
-        <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Governance Gaps</p>
-        <h3 class="mt-1 text-base font-semibold text-content-primary">Policy coverage concentration</h3>
-        <p class="mt-1 text-xs leading-5 text-content-muted">Analytics highlights control gaps; provider-native policy evidence remains authoritative in Governance.</p>
-        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {% for label, value, detail in [
-                ('Retention Coverage', ('%.1f%%'|format(analytics.coverage.retention)) if analytics.coverage.retention is not none else 'N/A', analytics.aggregate.retention_configured ~ '/' ~ analytics.aggregate.projects ~ ' configured'),
-                ('Retention Not Configured', analytics.aggregate.retention_not_configured, 'Explicitly observed not configured; unavailable/unknown excluded'),
-                ('Immutability Coverage', ('%.1f%%'|format(analytics.coverage.immutability)) if analytics.coverage.immutability is not none else 'N/A', analytics.aggregate.immutability_configured ~ '/' ~ analytics.aggregate.projects ~ ' configured'),
-                ('Immutability Not Configured', analytics.aggregate.immutability_not_configured, 'Explicitly observed not configured; unavailable/unknown excluded')
-                ] %}
-                <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                    <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
-                    <p class="mt-2 text-xl font-semibold text-content-primary">{{ value }}</p>
-                    <p class="mt-1 text-xs text-content-muted">{{ detail }}</p>
-                </div>
-            {% endfor %}
-        </div>
-        <a href="{{ url_for('artifact_registry.governance') }}"
-           class="mt-5 {{ table_ui.action_classes() }}">Review Governance</a>
+        {% include "artifact_registry/partials/_analytics_governance_detail.html" %}
     {% elif analytics.active_tab == 'alerts' %}
         <div id="artifact-registry-alert-records">
-            <div class="flex flex-col gap-1 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Operational Alerts</p>
-                    <h3 class="mt-1 text-base font-semibold text-content-primary">Alertmanager + Metrics Source evidence</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Alertmanager is primary. Metrics Source is fallback evidence. All records shown here came from committed Analytics materialization.</p>
-                </div>
-                {{ table_label.status_indicator_label(analytics.aggregate.alert_sources_ready ~ '/' ~ analytics.provider_count ~ ' Sources Ready',
-                                'normal' if analytics.aggregate.alert_sources_ready == analytics.provider_count and analytics.provider_count else 'warning') }}
-            </div>
-            <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {% for label, value, tone in [
-                    ('Active Alerts', analytics.aggregate.active_alerts, 'info' if analytics.aggregate.active_alerts else 'normal'),
-                    ('Critical', analytics.aggregate.critical_alerts, 'critical' if analytics.aggregate.critical_alerts else 'normal'),
-                    ('Warning', analytics.aggregate.warning_alerts, 'warning' if analytics.aggregate.warning_alerts else 'normal'),
-                    ('Suppressed', analytics.aggregate.suppressed_alerts, 'info' if analytics.aggregate.suppressed_alerts else 'normal')
-                    ] %}
-                    <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                        <div class="flex items-start justify-between gap-2">
-                            <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
-                            {{ table_label.status_indicator_label('Observed', tone) }}
-                        </div>
-                        <p class="mt-2 text-xl font-semibold text-content-primary">{{ value }}</p>
-                    </div>
-                {% endfor %}
-            </div>
-            <div class="mt-4 grid gap-3 lg:grid-cols-2">
-                {% for source in analytics.alert_source_rows %}
-                    <div class="rounded-lg border border-outline-subtle p-4">
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <p class="text-sm font-semibold text-content-primary">{{ source.registry_name }}</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ source.detail }}</p>
-                            </div>
-                            {{ table_label.status_indicator_label(source.source_label ~ (' · Fallback' if source.fallback_used else '') ,
-                            'warning' if source.fallback_used else ('normal' if source.status == 'ready' else 'unknown')
-                            ) }}
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
+            {% include "artifact_registry/partials/_analytics_alerts_detail.html" %}
             <form method="GET"
                   action="{{ url_for('artifact_registry.analytics_alerts_table') }}"
                   hx-get="{{ url_for('artifact_registry.analytics_alerts_table') }}"
@@ -190,6 +108,8 @@
                                         No committed Registry alert evidence is available. Check Analytics collection and source readiness.
                                     {% elif analytics.alert_filters.search or analytics.alert_filters.severity != 'all' or analytics.alert_filters.state != 'all' or analytics.alert_filters.source != 'all' %}
                                         No committed alert records match the active filters.
+                                    {% elif analytics.aggregate.alert_sources_ready == 0 %}
+                                        No committed ready alert source was observed. Missing source evidence is not zero active alerts.
                                     {% else %}
                                         No active alert records were observed in committed Analytics evidence.
                                     {% endif %}
@@ -218,48 +138,6 @@
                         per_page_param='alert_per_page') }}
         </div>
     {% else %}
-        <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
-            <article>
-                <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Derived Insights</p>
-                <h3 class="mt-1 text-base font-semibold text-content-primary">What deserves attention</h3>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Analytics produces facts; central Intelligence owns recommendation semantics, Accepted Risk, escalation, and automation control.</p>
-                <div class="mt-4 space-y-3">
-                    {% for insight in analytics.insights %}
-                        <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
-                            <div class="flex items-start gap-3">
-                                <i data-lucide="{{ insight.icon }}"
-                                   class="mt-0.5 h-4 w-4 text-kaori-primary dark:text-kaori-accent"
-                                   aria-hidden="true"></i>
-                                <div>
-                                    <p class="text-sm font-semibold text-content-primary">{{ insight.title }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">{{ insight.detail }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            </article>
-            <aside class="rounded-xl border border-outline-subtle p-4">
-                <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Central Intelligence</p>
-                <h3 class="mt-1 text-base font-semibold text-content-primary">Active recommendations</h3>
-                <div class="mt-4 space-y-3">
-                    {% for row in analytics.recommendations %}
-                        <div class="rounded-lg bg-surface-subtle p-3">
-                            <div class="flex items-start justify-between gap-3">
-                                <div>
-                                    <p class="text-sm font-semibold text-content-primary">{{ row.title }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">{{ row.summary }}</p>
-                                </div>
-                                {{ table_label.status_indicator_label(row.severity_label, row.severity) }}
-                            </div>
-                        </div>
-                    {% else %}
-                        <p class="text-xs text-content-muted">No active Registry recommendation is currently projected.</p>
-                    {% endfor %}
-                </div>
-                <a href="{{ url_for('intelligence.recommendations', domain='registry') }}"
-                   class="mt-4 {{ table_ui.action_classes() }}">Open Intelligence</a>
-            </aside>
-        </div>
+        {% include "artifact_registry/partials/_analytics_insights_detail.html" %}
     {% endif %}
 </div>

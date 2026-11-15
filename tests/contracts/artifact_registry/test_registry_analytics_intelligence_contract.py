@@ -484,15 +484,18 @@ def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> 
     assert 'framed_workspace_tabs.render_navigation' not in shell
     assert 'artifact-registry-analytics-workspace' in shell
     assert 'Explore Analytics' in shell
-    for title in (
-        'Registry Growth',
-        'Risk Concentration',
-        'Governance Gaps',
-        'Operational Alerts',
-        'Derived Insights',
-        'Central Intelligence',
-    ):
+    for title in ('Registry Growth',):
         assert title in section
+    detail_partials = {
+        'risk': ('Risk Concentration', 'Security × Runtime'),
+        'governance': ('Governance Gaps', 'Policy coverage concentration'),
+        'alerts': ('Operational Alerts', 'Alertmanager + Metrics Source evidence'),
+        'insights': ('Derived Insights', 'Central Intelligence'),
+    }
+    for name, titles in detail_partials.items():
+        assert f'artifact_registry/partials/_analytics_{name}_detail.html' in section
+        partial = (ROOT / f'app/templates/artifact_registry/partials/_analytics_{name}_detail.html').read_text()
+        assert all(title in partial for title in titles)
 
     for tab in ('growth', 'capacity', 'usage', 'risk', 'governance', 'alerts', 'insights'):
         assert f"('{tab}'," in overview_tabs
@@ -512,12 +515,13 @@ def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> 
         ROOT / 'app/templates/artifact_registry/partials/_analytics_capacity_project_quotas.html'
     ).read_text()
     assert 'Qualified Quota Comparison' in capacity_projects
+    insights_detail = (ROOT / 'app/templates/artifact_registry/partials/_analytics_insights_detail.html').read_text()
     assert (
         'central Intelligence owns recommendation semantics, Accepted Risk, escalation, and automation control'
-        in section
+        in insights_detail
     )
     assert "url_for('integrations.registry')" in shell
-    assert "url_for('intelligence.recommendations', domain='registry')" in section
+    assert "url_for('intelligence.recommendations', domain='registry')" in insights_detail
 
     assert "aggregate['inflight_requests'] > 100" not in presentation
     assert "aggregate['task_queue_size'] > 0" not in presentation
@@ -1835,8 +1839,9 @@ def test_registry_alert_workspace_reuses_committed_alert_evidence_contract() -> 
     overview_panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
     assert "('alerts', 'Alerts', 'triangle-alert')" in overview_tabs
     assert "url_for('artifact_registry.analytics_' ~ overview_domain" in overview_panel
-    assert 'Alertmanager is primary. Metrics Source is fallback evidence.' in template
-    assert 'committed Analytics materialization' in template
+    alerts_detail = (ROOT / 'app/templates/artifact_registry/partials/_analytics_alerts_detail.html').read_text()
+    assert 'Alertmanager is primary. Metrics Source is fallback evidence.' in alerts_detail
+    assert 'committed Analytics materialization' in alerts_detail
     assert 'alert_per_page' in template
     assert '[5, 10, 25, 50]' in template
     assert "url_for('artifact_registry.analytics_alerts_table')" in template
@@ -2038,3 +2043,128 @@ def test_registry_capacity_outlook_table_reuses_canonical_primitives() -> None:
     assert 'Snapshot Lineage Not Available' in missing
     assert 'Qualified materialized growth history is unavailable.' in missing
     assert '<progress ' not in missing
+
+
+def test_registry_analytics_four_detail_surfaces_reuse_shared_evidence_and_qualify_missing() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    folder = ROOT / 'app/templates/artifact_registry/partials'
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    fixtures = {
+        'snapshot_count': 1,
+        'provider_count': 1,
+        'snapshot_window': '24h',
+        'aggregate': {
+            'scanned_artifacts': 0,
+            'running_artifacts': 1,
+            'runtime_bindings': 2,
+            'critical_findings': 0,
+            'critical_runtime_artifacts': 0,
+            'unsigned_runtime_artifacts': 1,
+            'runtime_scan_gaps': 1,
+            'governance_projects_assessed': 1,
+            'projects': 6,
+            'retention_configured': 1,
+            'retention_not_configured': 5,
+            'immutability_configured': 1,
+            'immutability_not_configured': 5,
+            'alert_sources_ready': 0,
+            'active_alerts': 0,
+            'critical_alerts': 0,
+            'warning_alerts': 0,
+            'suppressed_alerts': 0,
+        },
+        'coverage': {'retention': 16.7, 'immutability': 16.7},
+        'alert_source_rows': [],
+        'insights': [{'title': 'No derived review signal', 'detail': '', 'icon': 'info'}],
+        'recommendations': [],
+    }
+    render_url = lambda endpoint, **kwargs: '/' + endpoint.replace('.', '/')
+
+    for domain in ('risk', 'governance', 'alerts', 'insights'):
+        source = (folder / f'_analytics_{domain}_detail.html').read_text()
+        assert '{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}' in source
+        assert 'analysis_surface.snapshot_shell_classes()' in source
+        assert 'info_tip.render(' in source
+        assert 'data-registry-' + domain + '-detail' in source
+        env.parse(source)
+
+    risk = env.get_template('artifact_registry/partials/_analytics_risk_detail.html')
+    missing_scan = risk.render(analytics=fixtures, url_for=render_url)
+    assert 'Critical Findings' in missing_scan
+    assert 'N/A' in missing_scan
+    assert 'Unscanned + Running' in missing_scan
+    assert 'Open Security' in missing_scan and 'Open Runtime' in missing_scan
+    observed_scan = risk.render(
+        analytics={**fixtures, 'aggregate': {**fixtures['aggregate'], 'scanned_artifacts': 1}},
+        url_for=render_url,
+    )
+    assert 'Scan Evidence Unavailable' not in observed_scan
+    assert '0</p>' in observed_scan
+
+    governance = env.get_template('artifact_registry/partials/_analytics_governance_detail.html')
+    observed_policy = governance.render(analytics=fixtures, url_for=render_url)
+    assert '16.7%' in observed_policy
+    assert 'Retention Not Configured' in observed_policy
+    assert '5</p>' in observed_policy
+    missing_policy = governance.render(
+        analytics={**fixtures, 'snapshot_count': 0}, url_for=render_url
+    )
+    assert 'Policy Evidence Unavailable' in missing_policy
+    assert 'N/A' in missing_policy
+
+    alerts = env.get_template('artifact_registry/partials/_analytics_alerts_detail.html')
+    missing_source = alerts.render(analytics=fixtures)
+    assert 'Alert Source Evidence Not Available' in missing_source
+    assert 'N/A' in missing_source
+    ready = {
+        'registry_name': 'Harbor X300',
+        'source_label': 'Alertmanager',
+        'status': 'ready',
+        'fallback_used': False,
+        'detail': 'Committed primary source',
+    }
+    observed_zero = alerts.render(
+        analytics={
+            **fixtures,
+            'aggregate': {**fixtures['aggregate'], 'alert_sources_ready': 1},
+            'alert_source_rows': [ready],
+        }
+    )
+    assert 'Harbor X300' in observed_zero
+    assert 'Alert Source Evidence Not Available' not in observed_zero
+    assert '0</p>' in observed_zero
+    six_sources = alerts.render(
+        analytics={
+            **fixtures,
+            'aggregate': {**fixtures['aggregate'], 'alert_sources_ready': 1},
+            'alert_source_rows': [
+                {**ready, 'registry_name': f'source-{index}'} for index in range(6)
+            ],
+        }
+    )
+    assert 'Showing 5 of 6 committed sources.' in six_sources
+    assert 'source-4' in six_sources and 'source-5' not in six_sources
+
+    insights = env.get_template('artifact_registry/partials/_analytics_insights_detail.html')
+    no_facts = insights.render(analytics=fixtures, url_for=render_url)
+    assert 'No Derived Review Facts' in no_facts
+    assert 'data-registry-insight-facts' not in no_facts
+    active = insights.render(
+        analytics={
+            **fixtures,
+            'insights': [
+                {'title': f'fact-{index}', 'detail': 'Observed', 'icon': 'shield-alert', 'tone': 'warning'}
+                for index in range(6)
+            ],
+            'recommendations': [
+                {'title': 'Investigate runtime CVE', 'summary': 'Committed finding',
+                 'severity_label': 'Critical', 'severity': 'critical'}
+            ],
+        },
+        url_for=render_url,
+    )
+    assert 'Showing 5 of 6 derived review facts.' in active
+    assert 'fact-4' in active and 'fact-5' not in active
+    assert 'Investigate runtime CVE' in active
+    assert '/intelligence/recommendations' in active

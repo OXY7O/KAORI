@@ -1573,3 +1573,15 @@ the appropriate external-host/source authority; new advisory ingestion,
 prioritization and recommendations must use central Intelligence #900.
 The design and later workstreams remain tracked under #2600, while this
 bounded read-only implementation and DevContainer UAT are governed by #2603.
+
+
+### Registry Analytics detail evidence composition — Risk, Governance, Alerts and Insights
+
+Four level-3 Analytics detail workspaces now reuse the same approved Analytics evidence shell, compact role-identified metric groups, Guide and evidence/interpretation cards as Usage. The outer canonical detail intro, selected Registry/Time Range and lazy HTMX remains owned by the existing page and section route; no new provider query, chart engine, policy mutation or Intelligence lifecycle is introduced.
+
+- **Risk:** qualify critical finding and runtime-intersection counts by observed scans and committed runtime identities; distinguish scan/signature evidence gaps from verified absence of risk. Security and Runtime own detailed investigations.
+- **Governance:** show retention and immutability configured/not-configured independently; unknown, unsupported, unavailable and not-collected states are not explicit Not Configured. Provider Governance owns enforcement and replication evidence.
+- **Alerts:** show committed Alertmanager-primary or Metrics Source fallback provenance with at most five source previews, and preserve the shared filtered/paginated alert table. Unavailable source evidence displays N/A, never a false zero.
+- **Insights:** bound factual review signals and central recommendations separately, suppress placeholder/no-signal sentinels from fact counts, and keep Accepted Risk, escalation, automation and recommendation authority in central Intelligence.
+
+User-visible evidence must be visually tested in light/dark and responsive layouts; source-level inspection alone does not constitute Dev Container UAT or Human Acceptance.
