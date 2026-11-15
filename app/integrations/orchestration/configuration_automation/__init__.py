@@ -2,6 +2,7 @@
 
 The Ansible provider remains planned for real host registration and mutation.
 """
+
 from app.integrations.kernel.registry import IntegrationModule, registry
 
 integration_module = IntegrationModule(

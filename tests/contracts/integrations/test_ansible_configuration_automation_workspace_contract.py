@@ -1,4 +1,5 @@
 """Issue #4827: registered and read-only Ansible provider workspace."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -98,7 +99,7 @@ def test_full_and_htmx_templates_render_with_existing_violet_components(monkeypa
 
 def test_no_external_or_secret_runners_in_get_workspace() -> None:
     source = (ROOT / 'app/integrations/orchestration/configuration_automation/frontpage.py').read_text()
-    assert "JobExecution.query.filter_by(job_type=_PILOT_JOB_TYPE, operation=_PILOT_OPERATION)" in source
+    assert 'JobExecution.query.filter_by(job_type=_PILOT_JOB_TYPE, operation=_PILOT_OPERATION)' in source
     for forbidden in ('ansible_runner.run', 'subprocess.run', 'requests.get(', '.apply_async(', 'ssh_private_key'):
         assert forbidden not in source
     template = (ROOT / 'app/templates/' / TEMPLATE).read_text()

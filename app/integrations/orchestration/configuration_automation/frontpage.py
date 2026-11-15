@@ -1,4 +1,5 @@
 """Committed-evidence Ansible provider workspace, no network/provider reads."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -32,7 +33,9 @@ def build_ansible_frontpage(*, status: str = '', page: int = 1, per_page: int = 
             'completed_at': job.completed_at,
             'operation': OPERATION_ID,
             'source_sha': str((job.result_summary_json or {}).get('source_sha') or '')[:40],
-            'distribution': str(((job.result_summary_json or {}).get('facts') or {}).get('ansible_distribution') or '')[:80],
+            'distribution': str(((job.result_summary_json or {}).get('facts') or {}).get('ansible_distribution') or '')[
+                :80
+            ],
             'kernel': str(((job.result_summary_json or {}).get('facts') or {}).get('ansible_kernel') or '')[:80],
         }
         for job in jobs

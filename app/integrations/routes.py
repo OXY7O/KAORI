@@ -121,8 +121,12 @@ def ansible() -> ResponseReturnValue:
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
     if is_htmx_request() and htmx_target() == 'ansible-execution-registry':
-        return render_template('integrations/orchestration/configuration_automation/providers/ansible/_execution_registry.html', **context)
-    return render_template('integrations/orchestration/configuration_automation/providers/ansible/frontpage.html', **context)
+        return render_template(
+            'integrations/orchestration/configuration_automation/providers/ansible/_execution_registry.html', **context
+        )
+    return render_template(
+        'integrations/orchestration/configuration_automation/providers/ansible/frontpage.html', **context
+    )
 
 
 @integrations_bp.get('/observability')
