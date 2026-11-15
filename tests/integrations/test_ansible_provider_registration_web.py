@@ -154,6 +154,24 @@ def test_choose_validate_save_manage_with_canonical_database(app):
     registry = client.get('/integrations/ansible')
     assert b'Kubespray Lab' in registry.data
     assert b'Validation Required' in registry.data
+
+    # The validation tab uses a CSRF-protected POST for independent source readback.
+    source_token = re.search(rb'name="csrf_token" value="([^"]+)"', detail.data)
+    assert source_token
+    denied_recheck = client.post(f'/integrations/ansible/connections/{identity}/validate-source', data={})
+    assert denied_recheck.status_code == 400
+    source_recheck = client.post(
+        f'/integrations/ansible/connections/{identity}/validate-source',
+        data={'csrf_token': source_token.group(1).decode()},
+        follow_redirects=False,
+    )
+    assert source_recheck.status_code == 302
+    assert source_recheck.location.endswith(f'/integrations/ansible/connections/{identity}#validation')
+    with app.app_context():
+        current = db.session.get(IntegrationInstance, identity)
+        assert current.metadata_json['source_validation']['checked_files'] == 5
+        assert current.metadata_json['execution_enabled'] is False
+        assert current.metadata_json['mutation_authorized'] is False
     # Reuse the existing provider-neutral navigation and detail resolver.
     orchestration = client.get('/integrations/orchestration')
     assert orchestration.status_code == 200
