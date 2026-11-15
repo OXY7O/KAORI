@@ -1,7 +1,14 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/info_tip.html" as info_tip %}
-{% set quota_rows = analytics.capacity_chart_rows %}
+{% set quota_rows = analytics.capacity_chart_rows|default([], true) %}
+{% set shown_count = quota_rows|length %}
+{% set chart_height_classes = 'h-36 sm:h-40' %}
+{% if shown_count >= 5 %}
+    {% set chart_height_classes = 'h-52 sm:h-56' %}
+{% elif shown_count >= 3 %}
+    {% set chart_height_classes = 'h-44 sm:h-48' %}
+{% endif %}
 {% set qualified_total = analytics.capacity_project_count|default(quota_rows|length) %}
 {% set project_count_label = quota_rows|length ~ ' Projects' %}
 {% if qualified_total > quota_rows|length %}
@@ -28,7 +35,7 @@
         {{ table_label.metadata_label(project_count_label, 'gauge', size='compact') }}
     </header>
     {% if quota_rows %}
-        <div class="grid gap-4 p-4 lg:grid-cols-5 sm:p-5">
+        <div class="grid items-start gap-4 p-4 lg:grid-cols-5 sm:p-5">
             <section class="{{ analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-3') }}"
                      aria-labelledby="registry-capacity-chart-title">
                 <header class="flex min-w-0 items-start justify-between gap-3 border-b border-outline-subtle px-4 py-4">
@@ -46,21 +53,18 @@
                     {{ table_label.status_label('Observed', 'normal', size='compact') }}
                 </header>
                 <div class="p-4">
-                    <div class="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 rounded-lg border border-outline-subtle bg-surface-muted px-4 py-3">
-                        <div class="min-w-0">
-                            <p class="{{ analysis_surface.metric_label_classes() }}">Peak observed utilization</p>
-                            <p class="mt-1 text-2xl font-semibold tabular-nums text-kaori-primary-dark dark:text-kaori-accent">
+                    <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border border-outline-subtle bg-surface-muted px-3 py-2">
+                        <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                            <span class="{{ analysis_surface.metric_label_classes() }}">Peak observed utilization</span>
+                            <span class="text-sm font-semibold tabular-nums text-kaori-primary-dark dark:text-kaori-accent">
                                 {{ quota_rows[0].utilization_display }}
-                            </p>
-                            <p class="mt-1 break-words text-xs text-content-secondary">{{ quota_rows[0].project_name }} · {{ quota_rows[0].registry_name }}</p>
+                            </span>
+                            <span class="truncate text-xs text-content-secondary">{{ quota_rows[0].project_name }}</span>
                         </div>
-                        <div class="min-w-0 sm:text-right">
-                            <p class="{{ analysis_surface.metric_label_classes() }}">Quota reference</p>
-                            <p class="mt-1 text-sm font-semibold text-content-primary">100% = quota limit</p>
-                            <p class="mt-1 text-xs text-content-secondary">Per-project denominator</p>
-                        </div>
+                        <p class="text-xs font-medium text-content-secondary">100% = quota limit</p>
                     </div>
-                    <div class="relative mt-4 h-40 min-w-0 sm:h-48">
+                    <div class="relative mt-3 min-w-0 {{ chart_height_classes }}"
+                         data-registry-capacity-chart-height="{{ shown_count }}">
                         <canvas data-registry-capacity-quota-chart
                                 width="720"
                                 height="200"
@@ -89,42 +93,30 @@
                         <p class="mt-1 text-xs leading-5 text-content-secondary">Committed usage, quota and forecast status.</p>
                     </div>
                 </header>
-                <div class="space-y-3 bg-surface-muted p-3 sm:p-4">
+                <div class="divide-y divide-outline-subtle">
                     {% for row in quota_rows %}
-                        <article class="{{ analysis_surface.ranked_item_classes('min-w-0 p-3 sm:p-4') }}">
+                        <article class="min-w-0 px-4 py-3 sm:px-5">
                             <div class="flex min-w-0 items-start justify-between gap-3">
-                                <div class="flex min-w-0 items-start gap-2">
-                                    <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
-                                          aria-hidden="true">
-                                        <i data-lucide="folder" class="h-3.5 w-3.5"></i>
-                                    </span>
-                                    <div class="min-w-0">
-                                        <h6 class="break-words text-sm font-semibold text-content-primary">{{ row.project_name }}</h6>
-                                        <p class="mt-0.5 break-words text-xs text-content-muted">{{ row.registry_name }}</p>
-                                    </div>
+                                <div class="min-w-0">
+                                    <h6 class="break-words text-sm font-semibold text-content-primary">{{ row.project_name }}</h6>
+                                    <p class="mt-0.5 break-words text-xs text-content-muted">{{ row.registry_name }}</p>
                                 </div>
-                                <span class="shrink-0 text-base font-semibold tabular-nums text-kaori-primary-dark dark:text-kaori-accent">
+                                <span class="shrink-0 text-sm font-semibold tabular-nums text-kaori-primary-dark dark:text-kaori-accent">
                                     {{ row.utilization_display }}
                                 </span>
                             </div>
-                            <dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-3 border-t border-outline-subtle pt-3 text-xs">
-                                <div class="min-w-0">
+                            <dl class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                                <div class="flex min-w-0 items-center gap-1.5">
                                     <dt class="text-content-muted">Used</dt>
-                                    <dd class="mt-1 break-words font-semibold tabular-nums text-content-primary">
-                                        {{ row.usage_display }}
-                                    </dd>
+                                    <dd class="font-semibold tabular-nums text-content-primary">{{ row.usage_display }}</dd>
                                 </div>
-                                <div class="min-w-0">
+                                <div class="flex min-w-0 items-center gap-1.5">
                                     <dt class="text-content-muted">Quota</dt>
-                                    <dd class="mt-1 break-words font-semibold tabular-nums text-content-primary">
-                                        {{ row.quota_display }}
-                                    </dd>
+                                    <dd class="font-semibold tabular-nums text-content-primary">{{ row.quota_display }}</dd>
                                 </div>
-                                <div class="col-span-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md bg-surface-muted px-3 py-2">
+                                <div class="flex min-w-0 items-center gap-1.5">
                                     <dt class="text-content-muted">Forecast</dt>
-                                    <dd class="font-medium text-content-secondary">
-                                        {{ row.forecast_label }}
-                                    </dd>
+                                    <dd class="font-medium text-content-secondary">{{ row.forecast_label }}</dd>
                                 </div>
                             </dl>
                         </article>
