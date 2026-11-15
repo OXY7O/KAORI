@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from flask import request
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, IntegerField, PasswordField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, ValidationError
@@ -121,8 +122,12 @@ class VaultConnectionForm(FlaskForm):
             raise ValidationError(str(exc)) from exc
 
     def validate_secret_id(self, field: PasswordField) -> None:
-        if not str(field.data or '') and self.existing is None and not self.connection_test_proof.data:
-            raise ValidationError('AppRole SecretID is required.')
+        # Testing a new connection always requires plaintext SecretID from
+        # the current form. A prior signed proof may only authorize Save.
+        if self.existing is None and not str(field.data or ''):
+            action = str(request.form.get('action') or 'test').strip().lower()
+            if action == 'test' or not self.connection_test_proof.data:
+                raise ValidationError('AppRole SecretID is required for Test Connection.')
 
     def to_input(self) -> VaultConnectionInput:
         secret_id = str(self.secret_id.data or '') or (
