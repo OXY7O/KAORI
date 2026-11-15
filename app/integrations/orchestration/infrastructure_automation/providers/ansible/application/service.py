@@ -73,12 +73,10 @@ def save_connection(form: AnsibleConnectionForm, instance: IntegrationInstance |
     existing = IntegrationInstance.query.filter_by(integration_type=INTEGRATION_TYPE, name=form.name).first()
     if existing is not None and (instance is None or existing.id != instance.id):
         raise ValueError('An Ansible connection with this name already exists.')
-    record = instance or IntegrationInstance(
-        integration_type=INTEGRATION_TYPE,
-        provider_key=PROVIDER_KEY,
-        adapter_key='ansible_runner',
-        name=form.name,
-    )
+    record = instance or IntegrationInstance()
+    record.integration_type = INTEGRATION_TYPE
+    record.provider_key = PROVIDER_KEY
+    record.adapter_key = 'ansible_runner'
     record.name = form.name
     record.description = form.description or None
     record.environment = form.environment
