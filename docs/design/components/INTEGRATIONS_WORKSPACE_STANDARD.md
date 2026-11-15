@@ -86,6 +86,33 @@ on narrow screens, and never truncate. At four contracts, one pagination
 page is expected by default; do not fabricate more rows to match Kubernetes.
 Provider release compatibility stays distinct from required API coverage.
 
+**Vault Capability View More evidence hierarchy (Human UAT #4860):**
+The Vault `Validation & Capabilities → Capability Registry → View More`
+uses the same native detail dialog and visual hierarchy as Kubernetes:
+Capability Decision with a semantic status, Contract Snapshot, a
+three-column Validation Evidence strip, Operational Decision with two
+side-by-side impact/action columns and a Governance Boundary band,
+followed by Verification Command. Reuse the existing Violet modal,
+icons, status, labels and responsive layout; do not create a new modal.
+Vault-specific evidence is strictly limited to the approved adapter
+contract and latest qualifying persisted Full Validation snapshot:
+the three displayed dimensions (API contract, identity/access, committed
+observation) are **not three separately persisted Vault checks**.
+Required API capability Ready can coexist with Degraded release
+compatibility; optional sys/mounts permission failure stays Limited,
+and missing current validation stays Not Observed. Runtime Health and
+KV v2/PKI inventory remain independent owners.
+
+The Verification Command is **operator-side guidance**, never a live
+provider call during page rendering. A Copy Script is available only
+for read-only Vault CLI probes run under an already approved operator
+context with sensitive response output suppressed; their result cannot
+be presented as the managed KAORI AppRole Full Validation. For AppRole
+login, deliberately show the non-executable guidance state instead
+of generating or copying any RoleID, SecretID or token-bearing script.
+No policy grant, credential reveal, PKI mutation or provider adapter
+extension is permitted by modal parity.
+
 **Vault provider detail post-Hero review (Human UAT #4835):** after the
 Vault connection Hero, render the shared **four-tab framed connection
 workspace** directly, matching other provider detail pages. The formerly
