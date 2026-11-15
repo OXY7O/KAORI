@@ -401,6 +401,25 @@ Do not offer Kubernetes, JWT/OIDC, or cloud-IAM authentication as
 working form options until a separate approved adapter supplies their
 credential, runtime, security and test contracts.
 
+**Vault placeholders and section-level Guides (UAT #3384):** field
+labels in Add/Edit stay concise and semantic. Use existing WTForms
+`render_kw.placeholder` defaults for Connection Name, Description,
+HTTPS Endpoint, Vault Namespace, RoleID and SecretID; existing mount
+examples stay as form placeholders. Do not use placeholder text as a
+credential or persisted value. In particular, an Edit SecretID remains
+blank and clearly indicates that blank retains the encrypted credential.
+
+The Approved KV v2 and PKI Mounts labels must **not** display
+`(comma-separated)`; move that input syntax and least-privilege
+requirements to the title-level `info_tip.render(..., variant='guide')`
+inside **Optional Evidence Scope**. The AppRole default/custom mount
+choice and SecretID lifecycle explanations belong in a separate
+**AppRole Authentication** Guide. Remove redundant helper paragraphs
+beneath those inputs while keeping inline validation errors visible,
+the opt-in stored PKI warning in the operational toggle, keyboard/touch
+Guide accessibility, and responsive natural wrapping. Do not add new
+component patterns or hide validation blockers in a Guide.
+
 **Compact Alertmanager registration guidance (UAT #4698):** keep the
 Endpoint & Access subtitle, Registration Flow note, Related Operational
 Workspace summary, and disabled-connection toggle description concise enough

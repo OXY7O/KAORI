@@ -236,7 +236,8 @@ def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> Non
     ):
         assert field in form
     assert 'autocomplete="new-password"' in form
-    assert 'Leave blank to keep the current encrypted SecretID.' in form
+    assert 'On Edit, a blank SecretID retains the encrypted credential' in form
+    assert "placeholder='Leave blank to retain stored SecretID' if instance else 'Enter AppRole SecretID'" in form
     assert 'if instance else' in form
     assert 'KV v2' in form and 'PKI' in form
     assert 'no_store/imported' in form
@@ -253,22 +254,54 @@ def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> Non
     # AppRole is the only implemented auth method. The mount path is not a
     # different auth method: default and controlled custom paths share one
     # approved provider client without an unsupported Auth API.
-    forms = (
-        ROOT / 'app/integrations/secrets_management/secrets_pki/providers/vault/application/forms.py'
-    ).read_text(encoding='utf-8')
-    assert "auth_mount_mode = SelectField(" in forms
+    forms = (ROOT / 'app/integrations/secrets_management/secrets_pki/providers/vault/application/forms.py').read_text(
+        encoding='utf-8'
+    )
+    assert 'auth_mount_mode = SelectField(' in forms
     assert "('approle', 'Default AppRole Mount (approle)')" in forms
     assert "('custom', 'Custom AppRole Mount')" in forms
-    assert "form.auth_mount_mode" in form
+    assert 'form.auth_mount_mode' in form
     assert "**{'x-model': 'authMountMode'}" in form
     assert 'x-show="authMountMode === \'custom\'"' in form
     assert 'x-cloak' in form
     assert "**{':required': \"authMountMode === 'custom'\"}" in form
     assert "validate_auth_mount(str(field.data or ''))" in forms
     assert "if self.auth_mount_mode.data == 'approle':" in forms
-    assert "if self.is_submitted() and not self.auth_mount_mode.raw_data:" in forms
+    assert 'if self.is_submitted() and not self.auth_mount_mode.raw_data:' in forms
     assert 'form.auth_mount_mode.errors' in form
     assert 'form.auth_mount.errors' in form
     assert 'AppRole Authentication' in form
+
+    # Shared form title/Guide composition replaces field-level prose.
+    assert "info_tip.render('vault-approle-auth-guide'" in form
+    assert "info_tip.render('vault-evidence-scope-guide'" in form
+    assert 'Default for most Vault installations. Custom mounts are supported.' not in form
+    assert 'Use the AppRole path configured in Vault. One segment only' not in form
+    assert 'Metadata-only KV v2; empty disables collection.' not in form
+    assert 'Public PKI issuer metadata; empty disables collection.' not in form
+    assert 'Enter mount names separated by commas.' in form
+    assert 'KV v2: up to eight mounts' in form
+    assert 'PKI: up to four mounts' in form
+    assert 'form.kv2_mounts.label.text' in form
+    assert 'form.pki_mounts.label.text' in form
+    assert "kv2_mounts = StringField('Approved KV v2 Mounts'," in forms
+    assert "pki_mounts = StringField('Approved PKI Mounts'," in forms
+    assert "'Vault Namespace'," in forms
+    assert "'Vault Namespace (optional)'" not in forms
+
+    # Placeholders are field-level render_kw defaults, so Add and Edit share
+    # them without duplicating markup or obscuring existing saved values.
+    for placeholder in (
+        'e.g. Vault X300',
+        'Describe the connection purpose (optional)',
+        'https://vault.example.internal:8200',
+        'e.g. team-platform (Enterprise only)',
+        'Paste AppRole RoleID',
+        'Enter AppRole SecretID',
+    ):
+        assert placeholder in forms
+    assert 'placeholder="secret, team-kv"' in form
+    assert 'placeholder="pki, pki-internal"' in form
+    assert 'placeholder="kaori-approle"' in form
 
     Environment().parse(form)

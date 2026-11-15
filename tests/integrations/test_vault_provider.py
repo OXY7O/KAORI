@@ -64,6 +64,28 @@ def test_mount_cannot_be_arbitrary_path():
             validate_auth_mount(value)
 
 
+def test_vault_connection_placeholders_render_without_prefilling_credentials() -> None:
+    app = Flask(__name__)
+    app.config.update(SECRET_KEY='test-only', WTF_CSRF_ENABLED=False)
+    with app.test_request_context('/'):
+        form = VaultConnectionForm()
+        expected = (
+            (form.name, 'e.g. Vault X300'),
+            (form.description, 'Describe the connection purpose (optional)'),
+            (form.endpoint, 'https://vault.example.internal:8200'),
+            (form.namespace, 'e.g. team-platform (Enterprise only)'),
+            (form.role_id, 'Paste AppRole RoleID'),
+            (form.secret_id, 'Enter AppRole SecretID'),
+        )
+        for field, placeholder in expected:
+            assert field.render_kw is not None
+            assert field.render_kw['placeholder'] == placeholder
+        assert form.namespace.label.text == 'Vault Namespace'
+        assert form.kv2_mounts.label.text == 'Approved KV v2 Mounts'
+        assert form.pki_mounts.label.text == 'Approved PKI Mounts'
+        assert form.secret_id.data in (None, '')
+
+
 def _vault_form_data(*, mode: str, mount: str) -> dict[str, str]:
     return {
         'name': 'Vault Lab',
