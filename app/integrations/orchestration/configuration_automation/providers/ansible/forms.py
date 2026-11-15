@@ -23,7 +23,11 @@ from app.kubernetes.cluster.constants import ENVIRONMENTS
 
 
 class AnsibleSourceConnectionForm(FlaskForm):
-    name = StringField('Connection Name', validators=[DataRequired(), Length(min=2, max=160)])
+    name = StringField(
+        'Connection Name',
+        render_kw={'placeholder': 'Kubespray Development'},
+        validators=[DataRequired(), Length(min=2, max=160)],
+    )
     description = TextAreaField('Description', validators=[Optional(), Length(max=1000)])
     environment = SelectField(
         'Environment',
@@ -36,10 +40,14 @@ class AnsibleSourceConnectionForm(FlaskForm):
         default=PROFILE_KEY,
         validators=[DataRequired()],
     )
-    repository = StringField('Git Repository', default=REPOSITORY, validators=[DataRequired(), Length(max=120)])
+    repository = StringField(
+        'Git Repository',
+        render_kw={'placeholder': REPOSITORY},
+        validators=[DataRequired(), Length(max=120)],
+    )
     revision = StringField(
         'Git Commit SHA',
-        default=SOURCE_CANDIDATE_SHA,
+        render_kw={'placeholder': SOURCE_CANDIDATE_SHA},
         validators=[DataRequired(), Regexp(r'^[a-f0-9]{40}$')],
     )
     ansible_core_version = SelectField(
