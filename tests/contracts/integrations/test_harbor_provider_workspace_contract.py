@@ -129,10 +129,7 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
 
     assert 'Harbor remains authoritative for native Registry state and policies.' in configuration
     assert 'Verify Harbor TLS certificates and trusted server identity.' in configuration
-    assert (
-        'Revalidate the Harbor integration after upgrades, credential rotations, permission updates, '
-        'or changes to API accessibility and configuration.' in validation
-    )
+    assert 'Rerun Full Validation after upgrades or changes to credentials, permissions or API access.' in validation
     assert (
         'Harbor API base URL used for secure, read-only discovery of Registry identity, compatibility, '
         'supported capabilities, and provider evidence.' in configuration
@@ -196,10 +193,7 @@ def test_harbor_detail_uses_shared_provider_domains_with_inventory_lifecycle() -
     assert 'Snapshot Freshness' in inventory
     assert 'Lifecycle Gate' in inventory
     assert 'inventory_status.detail|trim|trim(".")' in inventory
-    assert (
-        'No active KAORI jobs currently block removal; review dependent bindings and retained evidence '
-        'before deleting this Registry connection.' in inventory
-    )
+    assert 'No active KAORI jobs block removal. Review bindings and retained evidence before deletion.' in inventory
     assert 'Detailed artifact metadata and management remain available in Artifact Registry.' in inventory
     assert 'KAORI Operational Consumers' in inventory
     assert 'Bound Observability Sources' in read(
@@ -526,7 +520,9 @@ def test_harbor_webhook_configuration_layout_preserves_admission_and_credential_
         'Authenticated Harbor events trigger targeted Inventory refresh; '
         'scheduled reconciliation remains authoritative.'
     )
-    permission_copy = 'Harbor permission labels vary by release; grant only required read access, never broad administration.'
+    permission_copy = (
+        'Harbor permission labels vary by release; grant only required read access, never broad administration.'
+    )
     assert tls_copy in configuration and len(tls_copy) <= 65
     assert webhook_copy in configuration and len(webhook_copy) <= 120
     assert permission_copy in access_reference and len(permission_copy) <= 115
@@ -588,3 +584,45 @@ def test_harbor_webhook_configuration_layout_preserves_admission_and_credential_
 
     Environment().parse(configuration)
     Environment().parse(token_result)
+
+
+def test_harbor_accepted_visual_uat_copy_budgets_preserve_evidence_boundaries() -> None:
+    from jinja2 import Environment
+
+    validation = read('app/templates/integrations/registry/providers/harbor/partials/_detail_validation.html')
+    runtime = read('app/templates/integrations/registry/providers/harbor/partials/_detail_runtime.html')
+    lifecycle = read('app/templates/integrations/registry/providers/harbor/partials/_detail_scope.html')
+    configuration = read('app/templates/integrations/registry/providers/harbor/partials/_detail_configuration.html')
+
+    evidence = 'Full Validation: identity, compatibility, health and capabilities. Runtime Refresh: live health.'
+    ready_action = 'Rerun Full Validation after upgrades or changes to credentials, permissions or API access.'
+    healthy_action = 'No action needed; refresh runtime after Harbor or infrastructure changes.'
+    clear_guard = 'No active KAORI jobs block removal. Review bindings and retained evidence before deletion.'
+
+    # Copy budgets target natural 2 / 2 / 1 / 2 desktop lines, not forced clipping.
+    assert evidence in validation and len(evidence) <= 100
+    assert ready_action in validation and len(ready_action) <= 95
+    assert healthy_action in runtime and len(healthy_action) <= 78
+    assert clear_guard in lifecycle and len(clear_guard) <= 95
+    for source in (validation, runtime, lifecycle):
+        assert 'whitespace-nowrap' not in source
+
+    # Scoped ready/healthy/clear states: no change to alternative decisions.
+    assert '{% if readiness == "ready" %}' in validation
+    assert '{% elif readiness == "degraded" %}' in validation
+    assert '{% elif readiness == "blocked" %}' in validation
+    assert '{% elif runtime_state.readiness == "degraded" %}' in runtime
+    assert '{% elif runtime_attention %}' in runtime
+    assert 'if deletion_guard.blocked else' in lifecycle
+    assert 'deletion_guard.reasons|length' in lifecycle
+    assert 'inventory_status.detail|trim|trim(".")' in lifecycle
+
+    # Keep shared KAORI decision components, runtime source and Jinja parseability.
+    assert 'capability_readiness.render(' in validation
+    assert 'runtime_decision.render(' in runtime
+    assert 'asset_owner_delete_modal.render(' in read(
+        'app/templates/integrations/registry/providers/harbor/partials/_delete_modal.html'
+    )
+    assert 'webhook_endpoint.last_event_at|user_datetime' in configuration
+    for source in (validation, runtime, lifecycle, configuration):
+        Environment().parse(source)
