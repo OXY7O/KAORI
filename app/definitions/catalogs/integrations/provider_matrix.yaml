@@ -19,6 +19,14 @@ integration_types:
     adapter_key: kubernetes_api
     lifecycle: planned
     protocol: kubernetes_api
+- key: infrastructure_automation
+  domain_key: orchestration
+  providers:
+  - key: ansible
+    label: Ansible
+    adapter_key: ansible_runner
+    lifecycle: available
+    protocol: ansible_runner
 - key: metrics_source
   domain_key: observability
   providers:

@@ -5,6 +5,7 @@ name: Ansible Worker Pilot Preflight
 on:
   push:
     branches:
+      - kaori/issue-4817-ansible-provider-workspace
       - kaori/issue-4799-ansible-localhost-worker-pilot
 
 permissions:
@@ -32,7 +33,15 @@ jobs:
             app/infrastructure_automation \
             app/commands/__init__.py \
             app/config/default.py \
-            tests/contracts/platform_operations/test_ansible_localhost_worker_contract.py
+            app/bootstrap/blueprints.py \
+            app/integrations/kernel/registry.py \
+            app/integrations/routes.py \
+            app/integrations/orchestration/infrastructure_automation \
+            tests/contracts/platform_operations/test_ansible_localhost_worker_contract.py \
+            tests/contracts/integrations/test_ansible_provider_contract.py \
+            tests/integrations/test_ansible_provider_ui_postgres.py \
+            tests/integrations/test_ansible_provider_ui_dispatch_ci.py \
+            tests/ui/test_ansible_provider_visual.py
       - name: Ruff format
         run: |
           python -m ruff format --check \
@@ -40,12 +49,18 @@ jobs:
             app/commands/__init__.py \
             app/config/default.py \
             tests/contracts/platform_operations/test_ansible_localhost_worker_contract.py
+      - name: Reuse KAORI's standard DJLint/UI quality gates
+        run: |
+          djlint --check app/templates/integrations/orchestration/infrastructure_automation/providers/ansible
+          python scripts/verify_ui_reuse.py
+          python scripts/verify_ui_style.py
       - name: Pyright focused typing
-        run: python -m pyright app/infrastructure_automation
+        run: python -m pyright app/infrastructure_automation app/integrations/orchestration/infrastructure_automation
       - name: Focused contract tests
         run: |
           python -m pytest -q -p no:cacheprovider \
-            tests/contracts/platform_operations/test_ansible_localhost_worker_contract.py
+            tests/contracts/platform_operations/test_ansible_localhost_worker_contract.py \
+            tests/contracts/integrations/test_ansible_provider_contract.py
       - name: Validate Celery and Flask CLI registration
         run: |
           python - <<'PY'
@@ -88,6 +103,7 @@ jobs:
       TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/kaori_test
       CELERY_BROKER_URL: redis://localhost:6379/1
       CELERY_RESULT_BACKEND: redis://localhost:6379/3
+      KAORI_ANSIBLE_OPERATIONS_SOURCE_PATH: ${{ github.workspace }}/kaori-operations
       KAORI_AUTOMATION_LOCALHOST_PILOT_ENABLED: 'true'
     steps:
       - name: Checkout exact KAORI candidate
@@ -120,6 +136,25 @@ jobs:
               db.create_all()
               print('Ephemeral PostgreSQL canonical JobExecution schema ready')
           PY
+      - name: Exercise Ansible provider UI with real PostgreSQL
+        run: python -m pytest -q -p no:cacheprovider tests/integrations/test_ansible_provider_ui_postgres.py
+      - name: Build canonical KAORI frontend CSS for visual QA
+        run: |
+          npm ci
+          npm run build-css
+      - name: Capture Ansible desktop/mobile light/dark visual QA
+        run: |
+          python -m playwright install --with-deps chromium
+          python -m pytest -q -p no:cacheprovider \
+            tests/ui/test_ansible_provider_visual.py
+      - name: Publish reviewable Ansible UI screenshots
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: kaori-ansible-ui-${{ github.sha }}
+          path: tmp/ci-artifacts/test-output/ui-browser/ansible-*.png
+          if-no-files-found: warn
+          retention-days: 7
       - name: Start dedicated automation queue worker and verify registration
         run: |
           set -eu
@@ -219,6 +254,10 @@ jobs:
               assert count == 1, f'Unauthorized dispatch created additional jobs: {count}'
           print('Negative dispatch guards PASS: no extra PostgreSQL JobExecution')
           PY
+      - name: Verify real authenticated UI dispatch and committed evidence
+        run: |
+          python -m pytest -q -s -p no:cacheprovider \
+            tests/integrations/test_ansible_provider_ui_dispatch_ci.py
       - name: Show sanitized diagnostic on failure
         if: failure()
         run: |

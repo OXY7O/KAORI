@@ -1,0 +1,95 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/action_button.html" as action_button %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% block title %}Ansible Infrastructure Automation · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div class="kaori-integration-semantic space-y-6"
+         data-kaori-ansible-provider-workspace>
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro("workflow", "Integrations / Orchestration", "workflow") %}
+                        <h1 class="{{ page_hero.title_classes() }}">Ansible Infrastructure Automation</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            Register reviewed Ansible sources and inspect committed read-only execution evidence.
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('git-commit', 'Immutable Git source') }}
+                            {{ page_hero.meta_label('shield-check', 'Governed execution') }}
+                            {{ page_hero.meta_label('server', 'Worker localhost pilot') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Ansible integration posture">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Provider Posture</p>
+                                <h2 class="{{ page_hero.context_panel_title_classes() }}">Read-only Pilot</h2>
+                            </div>
+                            {{ integration_status("validation_required", "Host trust pending", display="indicator") }}
+                        </div>
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric("server-cog", "Registered", counts.total, "Canonical Integration Instances") }}
+                            {{ page_hero.context_metric("link", "Enabled", counts.enabled, "Enabled does not mean Ready") }}
+                        </div>
+                        <div class="{{ page_hero.context_actions_classes() }}">
+                            <a class="{{ page_hero.context_action_classes() }}"
+                               href="{{ url_for('integrations.orchestration') }}">
+                                <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+                                Orchestration
+                            </a>
+                            <a class="{{ page_hero.context_action_classes() }}"
+                               href="{{ url_for('jobs.executions') }}">
+                                <i data-lucide="list-checks" class="h-4 w-4" aria-hidden="true"></i>
+                                Jobs &amp; Executions
+                            </a>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+        <section class="{{ integration_ui.section_shell_classes() }}">
+            {{ integration_ui.section_header("workflow",
+                        "Ansible Integration Overview",
+                        "Ansible executes approved playbooks; KAORI correlates immutable source, job lifecycle and committed facts.",
+                        eyebrow="Infrastructure Automation") }}
+            <div class="{{ integration_ui.metric_grid_classes(3) }}">
+                {{ integration_ui.metric_card("Registered Connections", counts.total, "Canonical provider identities", "server-cog") }}
+                {{ integration_ui.metric_card("Enabled Connections", counts.enabled, "Execution requires separate authorization", "toggle-right") }}
+                {{ integration_ui.metric_card('External Host Readiness', 'Not Verified', 'SSH identity, inventory and EE approval pending', 'shield-alert') }}
+            </div>
+            <div class="grid gap-4 border-t border-outline-subtle p-5 lg:grid-cols-2">
+                {{ integration_ui.interpretation_panel("Git Defines",
+                                "Only exact reviewed Git source SHA and the localhost example inventory are eligible for this first pilot.",
+                                "git-commit") }}
+                {{ integration_ui.interpretation_panel("Evidence Proves",
+                                "The worker writes sanitized OS/kernel facts into canonical JobExecution; it does not prove remote host readiness.",
+                                "file-check") }}
+            </div>
+        </section>
+        <section class="{{ integration_ui.section_shell_classes() }}"
+                 aria-label="Ansible connections">
+            <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+                <div class="flex min-w-0 items-start gap-3">
+                    {{ integration_ui.palette_icon("server-cog", "brand", size="lg") }}
+                    <div class="min-w-0">
+                        <h2 class="text-base font-semibold text-content-primary">Connection Registry</h2>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                            Configured providers are listed here, even when external validation is still required.
+                        </p>
+                    </div>
+                </div>
+                <a href="{{ url_for('ansible.new_instance') }}"
+                   class="{{ action_button.classes('primary') }}">
+                    <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                    Add Connection
+                </a>
+            </header>
+            {% include "integrations/orchestration/infrastructure_automation/providers/ansible/partials/_registry.html" %}
+        </section>
+    </div>
+{% endblock dashboard_content %}

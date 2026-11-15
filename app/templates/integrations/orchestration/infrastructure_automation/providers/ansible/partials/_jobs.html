@@ -1,0 +1,106 @@
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/table.html" as table_ui %}
+{% import "components/pagination.html" as pagination_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+<section id="ansible-jobs-section"
+         class="{{ integration_ui.section_shell_classes() }}"
+         aria-label="Ansible read-only execution evidence"
+         data-kaori-ansible-evidence>
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+        <div class="flex min-w-0 items-start gap-3">
+            {{ integration_ui.palette_icon("list-checks", "brand", size="lg") }}
+            <div>
+                <h2 class="text-base font-semibold text-content-primary">Read-only Execution Evidence</h2>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                    Committed JobExecution records for this connection only; no direct Ansible/SSH query in this view.
+                </p>
+            </div>
+        </div>
+        <a href="{{ url_for('ansible.instance_detail', instance_id=instance.id) }}"
+           hx-get="{{ url_for('ansible.instance_detail', instance_id=instance.id) }}"
+           hx-target="#ansible-jobs-section"
+           hx-swap="outerHTML"
+           hx-indicator="#ansible-jobs-loading"
+           class="{{ table_ui.action_classes() }}">
+            <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+            Reload Evidence
+        </a>
+    </header>
+    <div class="px-5">{{ loading_bar.render("ansible-jobs-loading", label="Reloading committed execution evidence") }}</div>
+    {% if latest and latest.status == 'succeeded' and latest.result_summary_json %}
+        {% set summary = latest.result_summary_json %}
+        {% set facts = summary.facts or {} %}
+        <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4"
+             aria-label="Latest verified worker-local facts">
+            {{ integration_ui.metric_card("OS Distribution", facts.ansible_distribution or "Unverified", "Worker-local readback", "monitor") }}
+            {{ integration_ui.metric_card("OS Version", facts.ansible_distribution_version or "Unverified", "Committed by Ansible Runner", "info") }}
+            {{ integration_ui.metric_card("Kernel", facts.ansible_kernel or "Unverified", "Sanitized result only", "cpu") }}
+            {{ integration_ui.metric_card("Change Proof", "No Changes" if summary.changed == false else "Not Proven", "Never an external-host validation", "shield-check") }}
+        </div>
+    {% else %}
+        <div class="border-b border-outline-subtle px-5 py-4">
+            <p class="text-sm font-semibold text-content-primary">No verified worker-local facts yet</p>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">
+                A newly queued job may still be running, blocked, or failed. Review the canonical status before interpreting the results.
+            </p>
+        </div>
+    {% endif %}
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[760px]') }}">
+            <caption class="sr-only">Ansible worker-local read-only job execution history</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Execution</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Status</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Queue</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Target</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Evidence</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for job in jobs %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="max-w-xs break-all font-mono text-xs text-content-primary">{{ job.public_id }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ job.queued_at }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(job.status, job.status|replace('_', ' ') |title, display='indicator') }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <span class="text-xs font-semibold text-content-secondary">{{ job.queue_name }}</span>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <span class="text-xs text-content-secondary">Worker localhost</span>
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }}">
+                            <a href="{{ url_for('jobs.executions') }}"
+                               class="{{ table_ui.action_classes() }}">Open Jobs</a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="px-5 py-8 text-center">
+                            <p class="text-sm font-semibold text-content-primary">No execution history</p>
+                            <p class="mt-1 text-xs text-content-secondary">
+                                Run the permitted local read-only test to produce committed KAORI evidence.
+                            </p>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <footer class="{{ pagination_ui.footer_classes() }}">
+        <p>Showing {{ jobs_pagination.start_item }}–{{ jobs_pagination.end_item }} of {{ jobs_pagination.total_items }} executions</p>
+        {{ pagination_ui.numeric_pages(jobs_pagination.page,
+                jobs_pagination.total_pages,
+                page_param='page',
+                hx_target='#ansible-jobs-section',
+                hx_indicator='#ansible-jobs-loading',
+                endpoint='ansible.instance_detail',
+                query_params={'per_page': jobs_pagination.per_page},
+                hx_swap='outerHTML') }}
+    </footer>
+</section>

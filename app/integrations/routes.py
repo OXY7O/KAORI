@@ -143,6 +143,7 @@ def source_control() -> ResponseReturnValue:
 # The provider matrix defines which implementations may register; destinations
 # remain provider-owned routes, never a second KAORI registration implementation.
 _PROVIDER_REGISTRATION_ENDPOINTS = {
+    ('infrastructure_automation', 'ansible'): 'ansible.new_instance',
     ('container_orchestrator', 'kubernetes'): 'cluster.add_cluster',
     ('alert_source', 'alertmanager'): 'alertmanager.new_instance',
     ('object_storage', 'minio'): 'minio.new_instance',

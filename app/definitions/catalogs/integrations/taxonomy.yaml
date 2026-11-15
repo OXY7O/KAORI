@@ -45,6 +45,12 @@ capabilities:
   order: 10
   asset_types:
   - kubernetes_cluster
+- key: infrastructure_automation
+  domain_key: orchestration
+  label: Infrastructure Automation
+  description: Governed Ansible source, read-only host discovery, and execution evidence.
+  order: 20
+  asset_types: []
 - key: metrics_source
   domain_key: observability
   label: Metrics Source

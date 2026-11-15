@@ -1,0 +1,133 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/pagination.html" as pagination_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+<section id="ansible-connections-registry"
+         aria-label="Ansible connection registry results"
+         data-kaori-ansible-registry>
+    <form method="get"
+          action="{{ url_for('ansible.index') }}"
+          hx-get="{{ url_for('ansible.index') }}"
+          hx-target="#ansible-connections-registry"
+          hx-swap="outerHTML"
+          hx-push-url="true"
+          hx-indicator="#ansible-registry-loading"
+          class="grid gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 md:grid-cols-[minmax(0,1fr)_12rem_auto] md:items-end"
+          aria-label="Filter Ansible connections">
+        <div>
+            <label for="ansible-registry-search"
+                   class="{{ integration_ui.control_label_classes() }}">Search</label>
+            <input id="ansible-registry-search"
+                   name="q"
+                   type="search"
+                   value="{{ query }}"
+                   placeholder="Search connections"
+                   class="{{ integration_ui.control_classes() }}">
+        </div>
+        <div>
+            <label for="ansible-status-filter"
+                   class="{{ integration_ui.control_label_classes() }}">Lifecycle</label>
+            <select id="ansible-status-filter"
+                    name="status"
+                    class="{{ integration_ui.control_classes() }}">
+                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Connections</option>
+                <option value="enabled"
+                        {% if status_filter == 'enabled' %}selected{% endif %}>Enabled</option>
+                <option value="disabled"
+                        {% if status_filter == 'disabled' %}selected{% endif %}>Disabled</option>
+            </select>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+            <button type="submit" class="{{ table_ui.action_classes() }}">Apply Filters</button>
+            <a href="{{ url_for('ansible.index') }}"
+               class="{{ table_ui.action_classes() }}">Clear</a>
+        </div>
+    </form>
+    <div class="px-5">{{ loading_bar.render("ansible-registry-loading", label="Updating Ansible connections") }}</div>
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[760px]') }}">
+            <caption class="sr-only">Registered Ansible provider connections and readiness</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Connection</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Environment</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Lifecycle</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Readiness</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for item in rows %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ item.name }}</p>
+                            <p class="mt-1 text-xs text-content-muted">Ansible Runner · Source pinned</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <span class="text-sm text-content-secondary">{{ item.environment|replace('_', ' ') |title }}</span>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status('enabled' if item.enabled else 'disabled', 'Enabled' if item.enabled else 'Disabled', display='indicator') }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(item.readiness_status or 'validation_required', 'Validation Required', display='indicator') }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }}">
+                            <div class="flex flex-wrap justify-end gap-2">
+                                <a href="{{ url_for('ansible.instance_detail', instance_id=item.id) }}"
+                                   class="{{ table_ui.action_classes() }}">View Details</a>
+                                <a href="{{ url_for('ansible.edit_instance', instance_id=item.id) }}"
+                                   class="{{ table_ui.action_classes() }}">Edit</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="px-5 py-10 text-center">
+                            <div class="mx-auto max-w-lg">
+                                {{ integration_ui.palette_icon("search-x", "unknown", size="lg") }}
+                                <p class="mt-3 text-sm font-semibold text-content-primary">No Ansible connections found</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                    Register a connection or change the search filters. No provider instance is created automatically.
+                                </p>
+                                <a href="{{ url_for('ansible.new_instance') }}"
+                                   class="mt-3 inline-flex text-sm font-semibold text-kaori-primary hover:underline dark:text-kaori-accent">Register Ansible Connection</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <footer class="{{ pagination_ui.footer_classes() }}">
+        <p>Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} connections</p>
+        <div class="flex flex-wrap items-center gap-2">
+            <label for="ansible-page-size" class="sr-only">Rows per page</label>
+            <select id="ansible-page-size"
+                    aria-label="Rows per page"
+                    class="{{ pagination_ui.page_size_classes() }}"
+                    hx-get="{{ url_for('ansible.index') }}"
+                    hx-target="#ansible-connections-registry"
+                    hx-swap="outerHTML"
+                    hx-push-url="true"
+                    hx-indicator="#ansible-registry-loading"
+                    hx-include="#ansible-registry-search,#ansible-status-filter"
+                    name="per_page">
+                {% for option in pagination.allowed_per_page %}
+                    <option value="{{ option }}"
+                            {% if pagination.per_page == option %}selected{% endif %}>{{ option }} / page</option>
+                {% endfor %}
+            </select>
+            {{ pagination_ui.numeric_pages(pagination.page,
+                        pagination.total_pages,
+                        page_param='page',
+                        hx_target='#ansible-connections-registry',
+                        hx_indicator='#ansible-registry-loading',
+                        endpoint='ansible.index',
+                        query_params={'q': query, 'status': status_filter, 'per_page': pagination.per_page},
+                        hx_swap='outerHTML') }}
+        </div>
+    </footer>
+</section>
