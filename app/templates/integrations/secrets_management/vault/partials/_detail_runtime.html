@@ -17,19 +17,19 @@
 {% set runtime_diagnostics = runtime_state.diagnostics if runtime_observed else [] %}
 {% if not runtime_observed %}
     {% set runtime_finding = 'Vault runtime · Not Observed.' %}
-    {% set runtime_next_action = 'Run Runtime Refresh to establish committed provider health evidence.' %}
+    {% set runtime_next_action = 'Run Runtime Refresh to record Vault health evidence.' %}
 {% elif runtime_gate == 'blocked' %}
     {% set runtime_finding = 'Vault runtime · Unhealthy. Provider diagnostics require review.' %}
-    {% set runtime_next_action = 'Review the latest diagnostic evidence, restore provider reachability and refresh runtime health.' %}
+    {% set runtime_next_action = 'Restore Vault access, then refresh runtime evidence.' %}
 {% elif runtime_gate == 'degraded' %}
     {% set runtime_finding = 'Vault runtime · Attention required; review committed diagnostics.' %}
-    {% set runtime_next_action = 'Review provider health and validation context, then rerun Runtime Refresh after remediation.' %}
+    {% set runtime_next_action = 'Review Vault health, remediate, then refresh runtime.' %}
 {% elif runtime_state.readiness != 'ready' %}
     {% set runtime_finding = 'Vault runtime · Healthy; Full Validation readiness needs review.' %}
-    {% set runtime_next_action = 'Review Full Validation compatibility separately; continue scheduled runtime observations.' %}
+    {% set runtime_next_action = 'Review Full Validation; continue runtime monitoring.' %}
 {% else %}
     {% set runtime_finding = 'Vault runtime · Healthy and observed.' %}
-    {% set runtime_next_action = 'No runtime remediation required. Continue scheduled Runtime Refresh.' %}
+    {% set runtime_next_action = 'No remediation needed; continue scheduled refresh.' %}
 {% endif %}
 <section class="{{ integration_ui.section_shell_classes() }}"
          data-kaori-vault-runtime-workspace
