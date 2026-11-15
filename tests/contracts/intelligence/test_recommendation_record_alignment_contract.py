@@ -71,7 +71,10 @@ def test_evidence_and_alert_handling_stay_source_authoritative() -> None:
         assert field in desktop
     assert "table_label.metadata_label(item.logic_type_label, 'list-checks')" in desktop
     assert "table_label.metadata_label(item.evidence.provider_label, 'database')" in desktop
-    assert '<p class="mt-1 text-xs leading-5 text-content-muted">{{ item.logic_type_label }}</p>' not in desktop
+    assert (
+        '<p class="mt-1 text-xs leading-5 text-content-muted">{{ item.logic_type_label }}</p>'
+        not in desktop
+    )
     for state in (
         'escalated',
         'exception_active',
