@@ -57,7 +57,7 @@
                  aria-label="{{ domain.label }} Capability Registry">
             {{ integration_ui.section_header("layers-3",
                         "Capability Registry",
-                        "Capability boundaries define provider ownership and which managed assets may receive bindings.",
+                        "Defines provider ownership and managed asset bindings.",
                         eyebrow=domain.label ~ " Domain") }}
             <div class="divide-y divide-outline-subtle">
                 {% for item in capabilities %}
@@ -143,7 +143,7 @@
         {% endfor %}
         <div class="space-y-3" data-kaori-domain-workspace-section>
             {{ integration_ui.workspace_section_intro(domain.label ~ " Providers & Connections",
-                        "Review Source Control provider readiness and registered connections." if domain.key == "source_control" else "Review provider readiness, connections, and governed consumer bindings.",
+                        "Review Source Control provider readiness and registered connections." if domain.key == "source_control" else ("Review providers, connections, and bindings." if domain.key == "orchestration" else "Review provider readiness, connections, and governed consumer bindings."),
                         domain.label ~ " providers and connections") }}
             {% include "integrations/partials/_domain_workspace.html" %}
         </div>
@@ -153,7 +153,7 @@
                 {{ integration_ui.palette_icon("shield-check", "brand", size="sm") }}
                 <div class="min-w-0">
                     <p class="text-sm font-semibold text-content-primary">Domain Operating Boundary</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">External systems remain authoritative for native configuration and runtime state. KAORI owns provider registration, compatibility and Core Validation, asset-centric bindings, binding-specific consumer evidence, and consumer eligibility.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ "External engines own runtime state; KAORI governs connections, validation, and bindings." if domain.key == "orchestration" else "External systems remain authoritative for native configuration and runtime state. KAORI owns provider registration, compatibility and Core Validation, asset-centric bindings, binding-specific consumer evidence, and consumer eligibility." }}</p>
                 </div>
             </div>
         </div>
