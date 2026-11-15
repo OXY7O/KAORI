@@ -198,10 +198,27 @@ def recommendation_table_title(item: dict[str, Any], *, limit: int = 96) -> str:
             return f'{count} {resource} in {namespace} {verb} repeated restarts'
 
     title = ' '.join(str(item.get('title') or 'Recommendation').split())
+    if rule_key.startswith('kubernetes.tenant.') and title.startswith('Tenant allocation posture for '):
+        capacity_state = _clean(evidence.get('capacity_state'))
+        if capacity_state:
+            return f'Tenant allocation: {capacity_state.replace("_", " ")}'
     if len(title) <= limit:
         return title
     shortened = title[:limit].rsplit(' ', 1)[0].strip()
     return f'{shortened or title[:limit].strip()}…'
+
+
+
+def recommendation_table_scope_title(scope_title: str, *, limit: int = 44) -> str:
+    """Show a short scope descriptor; retain full committed identity in Review."""
+
+    scope = ' '.join(str(scope_title or 'Asset Scope').split())
+    if scope.startswith('@tenant:') and scope.endswith(':resource-quotas'):
+        return 'Tenant resource quotas'
+    if len(scope) <= limit:
+        return scope
+    return f'{scope[: limit - 1].rstrip()}…'
+
 
 
 def recommendation_table_summary(item: dict[str, Any], *, limit: int = 72) -> str:
