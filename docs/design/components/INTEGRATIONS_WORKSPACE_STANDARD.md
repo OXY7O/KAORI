@@ -103,6 +103,23 @@ compatibility; optional sys/mounts permission failure stays Limited,
 and missing current validation stays Not Observed. Runtime Health and
 KV v2/PKI inventory remain independent owners.
 
+**Vault Runtime badge and action density (Human UAT #4879):**
+The framed `Runtime & History` badge shows the **committed runtime
+observation health label** supplied by `runtime_observation_state_view`,
+exactly as Kubernetes does, rather than a generic `Jobs & Evidence`
+activity label. Show Healthy, Degraded, Unhealthy, or Not Observed
+according to the latest persisted observation. Never derive that tab badge
+from Full Validation readiness, mere connection status, or a live Vault
+request. Normal POST Runtime Refresh redirects to the detail page and
+rebinding occurs on the next committed view.
+
+For the horizontal Runtime Decision, all five state-specific
+`Next Operational Action` strings should be concise and fit naturally
+on one desktop line in the existing two-column card. The Degraded
+instruction is `Review Vault health, remediate, then refresh runtime.`
+Keep runtime vs validation semantics and natural mobile wrapping;
+do not introduce global truncation or duplicate a remediation panel.
+
 **Vault Runtime & History parity (Human UAT #4872):**
 Vault reuses the horizontal `integrations/components/_runtime_decision.html`
 for the current Runtime Decision, with committed score/posture, runtime
