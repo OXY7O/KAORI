@@ -17,7 +17,7 @@
 {% set summary = instance.validation_summary or {} %}
 {% set observed_capabilities = instance.capabilities or [] %}
 {% set has_current_validation = instance.enabled and readiness in ['ready', 'degraded'] and instance.last_validated_at is not none %}
-{% set search = request.args.get('capability_q', '')|trim|lower %}
+{% set search = (request.args.get('capability_q', '')|trim|lower)[:80] %}
 {% set requirement = request.args.get('capability_requirement', '')|trim|lower %}
 {% set requirement = requirement if requirement in ['required', 'optional'] else '' %}
 {% set status_filter = request.args.get('capability_status', '')|trim|lower %}
