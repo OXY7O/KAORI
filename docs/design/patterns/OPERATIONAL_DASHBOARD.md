@@ -122,6 +122,8 @@ Security Overview is a **source-scoped Assurance** presentation, not a global fl
 | `signals` | Findings & Investigation | Ownership handoff to canonical Findings and Intelligence |
 | `reporting` | Evidence & Sources | Scanner/runtime authority, freshness, and Reports handoff |
 
+**Scanner freshness Guide (#4711):** Security Snapshot retains one primary source-qualified scanner status badge and includes the shared Guide explaining why scanner evidence can remain stale even when an hourly Security Sync succeeds. The oldest usable snapshot in the authorized Registry scope must meet the 24-hour window; successful provider rescans with unchanged CVE totals still count as new evidence only when their completion identity changes and a subsequent sync commits the report. Read-only Refresh View never triggers a provider scan or changes freshness. The Exposure analysis avoids repeating the same Stale badge while retaining persistent dated warnings and explicit unknown/all-clear caveats.
+
 **Security Assurance peer-tab Visual UAT refinement (#4711, 2026-11-15):**
 Use the same `operational_section_card` and canonical `info_tip.render(variant='guide')`
 for the three non-Exposure perspectives. The **Assets & Impact** panel has two
