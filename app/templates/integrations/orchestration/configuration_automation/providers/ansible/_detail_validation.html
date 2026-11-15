@@ -1,0 +1,50 @@
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+<section class="{{ integration_ui.section_shell_classes() }}" aria-label="Ansible validation and capabilities">
+    {{ integration_ui.section_header("scan-search", "Validation & Capabilities", "Git source validation is only the first gate. Operational readiness requires worker, host and Kubernetes provider evidence.") }}
+    <div class="p-5 sm:p-6">
+        <div class="grid gap-3 md:grid-cols-2">
+            {% for icon, title, state, tone, description in [
+                    ("git-commit", "Immutable Git Source", "Checked", "normal", "Required Git blobs match reviewed source; this does not prove runtime access."),
+                    ("layers-3", "Toolchain Compatibility", "Candidate", "unknown", "Ansible Core, Runner and Kubespray pins recorded; EE not qualified."),
+                    ("server-cog", "Worker & SSH Identity", "Not Verified", "unknown", "No provider authorized host, SSH trust, become role or worker digest."),
+                    ("boxes", "Cluster Preflight", "Not Collected", "unknown", "Kubernetes API, topology, CNI, CRI, capacity, DNS and network evidence absent.")
+                ] %}
+                <article class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                    <div class="flex items-start gap-3">
+                        {{ integration_ui.palette_icon(icon, "brand", size="md") }}
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <h3 class="text-sm font-semibold text-content-primary">{{ title }}</h3>
+                                {{ integration_status(tone, state, display="text") }}
+                            </div>
+                            <p class="mt-2 text-xs leading-5 text-content-secondary">{{ description }}</p>
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+        <div class="mt-4 rounded-xl border border-outline-subtle bg-surface-hover p-4">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h3 class="text-sm font-semibold text-content-primary">Source Verification Evidence</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Git objects, not host access. Rechecking only reads approved public repository objects.</p>
+                    <p class="mt-2 text-xs text-content-muted">Checked files: {{ evidence.checked_files or 0 }} · Observed: {{ evidence.observed_at or "Not recorded" }}</p>
+                </div>
+                <form method="post"
+                      action="{{ url_for('integrations.ansible_revalidate_source', instance_id=connection.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit"
+                            class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary">
+                        <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                        Revalidate Source
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="mt-4 space-y-2">
+            <h3 class="text-sm font-semibold text-content-primary">Operation Eligibility</h3>
+            <p class="text-xs leading-5 text-content-secondary">Discover, Preflight, Plan, Provision, Scale, Upgrade, Node Maintenance and Recovery remain blocked for this connection until separately admitted and authorized. Source registration never enables a Run endpoint.</p>
+        </div>
+    </div>
+</section>

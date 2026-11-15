@@ -1,0 +1,82 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/framed_workspace_tabs.html" as tabs %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "integrations/components/_provider_detail_posture.html" as posture %}
+{% import "components/action_button.html" as action_button %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% block title %}{{ connection.name }} · Ansible Integration · KAORI{% endblock title %}
+{% block dashboard_content %}
+    {% set evidence = source.source_validation or {} %}
+    <div class="kaori-integration-semantic space-y-6"
+         data-kaori-ansible-connection-detail="{{ connection.id }}"
+         x-data="integrationWorkspaceTabs(['configuration', 'validation', 'runtime', 'inventory'], 'configuration', 'ansible-detail-tabs')"
+         x-on:hashchange.window="syncTab()"
+         x-on:popstate.window="syncTab()">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro("workflow", "Ansible / Kubernetes Lifecycle", "boxes") %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ connection.name }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Manage the reviewed Kubespray automation source, compatibility policy, committed execution evidence and future inventory lifecycle.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label("shield-alert", "Validation Required") }}
+                            {{ page_hero.meta_label("git-commit", "Git Source Checked") }}
+                            {{ page_hero.meta_label("server-cog", connection.environment|replace("_", " ")|title) }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ posture.render("Ansible connection readiness",
+                                "Source / Execution Readiness",
+                                "Attention",
+                                "shield-check",
+                                "Git Source",
+                                "Source Checked",
+                                "Immutable commit files verified",
+                                "lock-keyhole",
+                                "Operations",
+                                "Blocked",
+                                "No host or Kubernetes execution admitted",
+                                url_for("integrations.ansible"), posture_key="ansible") }}
+            </div>
+        </section>
+        <section id="ansible-detail-tabs"
+                 class="{{ integration_ui.section_shell_classes() }}">
+            {{ tabs.render([
+                        ("configuration", "Configuration", "settings-2", "Source & Versions"),
+                        ("validation", "Validation & Capabilities", "scan-search", "Required"),
+                        ("runtime", "Runtime & History", "activity", pagination.total_items),
+                        ("inventory", "Inventory & Lifecycle", "boxes", "Not Collected")
+                        ], prefix="ansible", aria_label="Ansible Connection Domains") }}
+            <div class="p-4 sm:p-5 lg:p-6">
+                <div id="ansible-panel-configuration"
+                     role="tabpanel"
+                     aria-labelledby="ansible-tab-configuration"
+                     x-show="activeTab === 'configuration'">
+                    {% include "integrations/orchestration/configuration_automation/providers/ansible/_detail_configuration.html" %}
+                </div>
+                <div id="ansible-panel-validation"
+                     role="tabpanel"
+                     aria-labelledby="ansible-tab-validation"
+                     x-show="activeTab === 'validation'"
+                     x-cloak>
+                    {% include "integrations/orchestration/configuration_automation/providers/ansible/_detail_validation.html" %}
+                </div>
+                <div id="ansible-panel-runtime"
+                     role="tabpanel"
+                     aria-labelledby="ansible-tab-runtime"
+                     x-show="activeTab === 'runtime'"
+                     x-cloak>
+                    {% include "integrations/orchestration/configuration_automation/providers/ansible/_detail_runtime.html" %}
+                </div>
+                <div id="ansible-panel-inventory"
+                     role="tabpanel"
+                     aria-labelledby="ansible-tab-inventory"
+                     x-show="activeTab === 'inventory'"
+                     x-cloak>
+                    {% include "integrations/orchestration/configuration_automation/providers/ansible/_detail_inventory.html" %}
+                </div>
+            </div>
+        </section>
+    </div>
+{% endblock dashboard_content %}
