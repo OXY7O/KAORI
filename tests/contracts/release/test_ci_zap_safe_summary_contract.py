@@ -318,3 +318,35 @@ def test_cli_rejects_input_parent_swapped_to_symlink_during_parse(
     assert main(['--input', str(raw), '--output', str(output), '--source-sha', SHA]) == 2
     assert not output.exists()
     assert (tmp_path / 'moved-reports' / 'baseline.json').exists()
+
+
+def test_cumulative_json_member_budget_rejects_ignored_objects(tmp_path, monkeypatch, capsys):
+    """Many individually small objects must not bypass the aggregate memory cap."""
+    from scripts import ci_zap_safe_summary as zap
+
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text(
+        '{"site":[{"alerts":[]}],"ignored":[{"a":1},{"b":2}]}',
+        encoding='utf-8',
+    )
+    output.write_text('stale verified evidence', encoding='utf-8')
+    monkeypatch.setattr(zap, 'MAX_JSON_MEMBERS_TOTAL', 4)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 2
+    assert not output.exists()
+    assert 'NOT VERIFIED' in capsys.readouterr().err
+
+
+def test_cumulative_json_member_budget_accepts_exact_limit(tmp_path, monkeypatch):
+    from scripts import ci_zap_safe_summary as zap
+
+    report = tmp_path / 'zap.json'
+    output = tmp_path / 'summary.md'
+    report.write_text(
+        '{"site":[{"alerts":[]}],"ignored":[{"a":1},{"b":2}]}',
+        encoding='utf-8',
+    )
+    # Root (2) + site (1) + two ignored objects (1 each) = 5 members.
+    monkeypatch.setattr(zap, 'MAX_JSON_MEMBERS_TOTAL', 5)
+    assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 0
+    assert 'Scanned site entries: **1**.' in output.read_text(encoding='utf-8')
