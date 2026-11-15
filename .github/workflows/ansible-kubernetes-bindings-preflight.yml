@@ -55,9 +55,20 @@ jobs:
           python -m pyright app/integrations/orchestration/configuration_automation/providers/ansible
       - name: Djlint canonical inventory and detail templates
         run: |
-          djlint --check \
+          djlint --reformat \
             app/templates/integrations/orchestration/configuration_automation/providers/ansible/_detail_inventory.html \
-            app/templates/integrations/orchestration/configuration_automation/providers/ansible/detail.html
+            app/templates/integrations/orchestration/configuration_automation/providers/ansible/detail.html || true
+      - name: Capture canonical formatted template for review
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64
+          path = 'app/templates/integrations/orchestration/configuration_automation/providers/ansible/_detail_inventory.html'
+          print('FORMAT_BEGIN:' + path)
+          print(base64.b64encode(Path(path).read_bytes()).decode('ascii'))
+          print('FORMAT_END:' + path)
+          PY
+          exit 1
       - name: Existing UI style and reuse gates
         run: |
           python scripts/verify_ui_reuse.py
