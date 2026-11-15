@@ -64,7 +64,7 @@
             {% set blocked_state_steps = inventory_blocker_steps %}
             {% set blocked_state_action_url = inventory_blocker_action_url %}
             {% set blocked_state_action_label = inventory_blocker_action_label %}
-            {% set blocked_state_permission_granted = summary.provider_count and summary.approved_mount_count and not summary.source_limit_exceeded or can_manage_integrations %}
+            {% set blocked_state_permission_granted = inventory_blocker_action_url is not none %}
             {% set blocked_state_show_admin_required = not blocked_state_permission_granted %}
             {% include "components/states/_blocked_state.html" %}
         {% else %}
