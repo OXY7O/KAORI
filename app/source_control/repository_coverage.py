@@ -10,8 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import and_, case, func, literal, or_, select
 from flask_sqlalchemy.session import Session as FlaskSession
+from sqlalchemy import and_, case, func, literal, or_, select
 from sqlalchemy.orm import Session, scoped_session
 
 from app.extensions.db import db
@@ -158,8 +158,9 @@ def read_repository_coverage(
         )
 
     grouped = session.execute(
-        scoped_statement(visibility_expr, lifecycle_expr, reference_expr, func.count(SourceRepositoryGrant.id))
-        .group_by(visibility_expr, lifecycle_expr, reference_expr)
+        scoped_statement(
+            visibility_expr, lifecycle_expr, reference_expr, func.count(SourceRepositoryGrant.id)
+        ).group_by(visibility_expr, lifecycle_expr, reference_expr)
     ).all()
     visibility_count = {'Public': 0, 'Private': 0, 'Internal': 0, 'Unknown': 0}
     lifecycle_count = {'Active': 0, 'Archived': 0, 'Unknown': 0}

@@ -181,8 +181,11 @@ def test_repository_scope_rejects_other_installation_before_read(monkeypatch):
             routes.repositories.__wrapped__()
 
 
-@pytest.mark.parametrize('endpoint', [routes.overview, routes.repositories])
-def test_product_routes_enforce_uat_guard_before_scoped_data(monkeypatch, endpoint):
+@pytest.mark.parametrize(
+    'endpoint, args',
+    [(routes.overview, ()), (routes.repositories, ()), (routes.section, ('signals',))],
+)
+def test_product_routes_enforce_uat_guard_before_scoped_data(monkeypatch, endpoint, args):
     app = Flask(__name__)
 
     def deny():
@@ -196,7 +199,7 @@ def test_product_routes_enforce_uat_guard_before_scoped_data(monkeypatch, endpoi
     )
     with app.test_request_context('/source-control/'):
         with pytest.raises(Forbidden):
-            endpoint.__wrapped__()
+            endpoint.__wrapped__(*args)
 
 
 def test_product_navigation_reuses_source_control_taxonomy_and_uat_visibility(monkeypatch):
@@ -232,16 +235,17 @@ def test_product_navigation_reuses_source_control_taxonomy_and_uat_visibility(mo
 def test_product_templates_use_existing_source_control_inventory_contract():
     root = Path(__file__).resolve().parents[2]
     overview = (root / 'app/templates/source_control/overview.html').read_text()
+    operations = (root / 'app/templates/source_control/partials/_dashboard_operations.html').read_text()
     inventory = (root / 'app/templates/source_control/repositories.html').read_text()
     reusable = (root / 'app/templates/integrations/source_control/github/_inventory_table.html').read_text()
     for text in (overview, inventory):
         assert 'components/page_hero.html' in text
         assert 'components/operational_section_card.html' in text
         assert '<style' not in text
-    assert 'GitHub Account</th>' in overview
-    assert 'item.account.native_account_id' in overview
-    assert 'item.account.last_observed_at' in overview
-    assert 'Account Not Observed' in overview
+    assert 'GitHub Account</th>' in operations
+    assert 'item.account.native_account_id' in operations
+    assert 'item.account.last_observed_at' in operations
+    assert 'Account Not Observed' in operations
     assert 'inventory.total is not none' in inventory
     assert 'integrations/source_control/github/_inventory_table.html' in inventory
     assert 'inventory_href_endpoint' in reusable
@@ -301,23 +305,27 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
     )
     assert all('components/operational_evidence_tile.html' in partial for partial in evidence_partials)
     assert 'components/info_tip.html' not in evidence_partials[1]
-    for tab in ('overview', 'capacity', 'signals', 'reporting'):
-        assert f"dashboard_workspace.panel('{tab}', active_dashboard_tab" in overview
+    assert "dashboard_workspace.panel(tab_key, active_dashboard_tab" in overview
+    assert 'hx-trigger="revealed"' in overview
+    assert "url_for('source_control.section', section=tab_key" in overview
+    assert 'section_loading.section(' in overview
+    assert 'eager_health_pagination' in overview
     assert "dashboard_workspace.navigation('source-control-dashboard'" in overview
     assert 'data-kaori-source-control-product' in overview
-    assert 'GitHub Account</th>' in overview
-    assert 'item.installation.id' in overview
+    operations = (template_dir / 'partials/_dashboard_operations.html').read_text()
+    assert 'GitHub Account</th>' in operations
+    assert 'item.installation.id' in operations
     assert 'scope.has_more' in overview
     assert 'scope.latest_committed_at' in overview
-    assert 'No Active GitHub Installations' in overview
-    assert 'source_control/partials/_dashboard_inventory_snapshot.html' in overview
-    assert 'source_control/partials/_dashboard_data_freshness.html' in overview
-    assert 'Installation Health Summary' in overview
+    assert 'No Active GitHub Installations' in operations
+    assert 'source_control/partials/_dashboard_inventory_snapshot.html' in operations
+    assert 'source_control/partials/_dashboard_data_freshness.html' in operations
+    assert 'Installation Health Summary' in operations
     assert 'Operational Health' not in overview
     assert 'Committed Evidence' not in overview
     assert 'Evidence & Analytics Boundaries' not in overview
-    assert 'table_registry.footer(' in overview
-    assert 'for item in installation_rows' in overview
+    assert 'table_registry.footer(' in operations
+    assert 'for item in installation_rows' in operations
     assert 'MetricsConsumer' not in overview
     assert 'request.' not in overview
     assert '<script' not in overview and '<style' not in overview
@@ -331,6 +339,8 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
         'reporting',
         'inventory_snapshot',
         'data_freshness',
+        'operations',
+        'dashboard_section',
         'repository_portfolio',
         'repository_composition',
         'repository_attention',
@@ -427,10 +437,14 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
     signals_selected = panels['signals'].render(
         scope=scope, selected_scope=True, selected_installation_id=11, url_for=url
     )
-    assert 'Collection Readiness' in signals_selected
-    assert 'No Visible Gap' in signals_selected
-    assert 'PR / CI Alert Evidence' in signals_selected
+    assert 'Alerts Summary' in signals_selected
+    assert 'Source Control Alerts Not Yet Qualified' in signals_selected
+    assert 'Alert Interpretation & Response' in signals_selected
+    assert 'Controlled Response Flow' in signals_selected
+    assert 'Recommended Actions' in signals_selected
+    assert 'Recommendations Not Yet Qualified' in signals_selected
     assert 'Unavailable' in signals_selected
+    assert '0 Active' not in signals_selected
 
     reporting_selected = panels['reporting'].render(
         scope=scope, selected_scope=True, selected_installation_id=11, url_for=url
@@ -506,6 +520,9 @@ def test_product_overview_installation_health_paginates_before_render(monkeypatc
             assert context['installation_pagination']['page'] == expected_page
             assert context['installation_pagination']['per_page'] == expected_per_page
             assert [row['installation'].id for row in context['installation_rows']] == expected_ids
+            assert context['eager_health_pagination'] is (
+                'installation_page' in query or 'installation_per_page' in query
+            )
 
     with app.test_request_context('/source-control/'):
         monkeypatch.setattr(
@@ -521,7 +538,7 @@ def test_product_operations_overview_matches_shared_health_and_peer_evidence_con
 
     root = Path(__file__).resolve().parents[2]
     folder = root / 'app/templates/source_control'
-    overview = (folder / 'overview.html').read_text()
+    overview = (folder / 'partials/_dashboard_operations.html').read_text()
     snapshot = (folder / 'partials/_dashboard_inventory_snapshot.html').read_text()
     freshness = (folder / 'partials/_dashboard_data_freshness.html').read_text()
     k8s = (root / 'app/templates/kubernetes/dashboard/partials/_overview.html').read_text()
@@ -536,7 +553,7 @@ def test_product_operations_overview_matches_shared_health_and_peer_evidence_con
     assert 'table_registry.footer(' in overview
     assert "'installation_page'" in overview
     assert "'installation_per_page'" in overview
-    assert 'scope.has_more' in overview
+    assert 'authorized_scope_has_more' in overview
     assert 'item.account.native_account_id' in overview
     assert 'item.observed_count if item.observed_count is not none else' in overview
     assert 'No Active GitHub Installations' in overview
@@ -670,7 +687,18 @@ def test_product_overview_installation_scope_filter_restricts_authorized_committ
             assert scope['installations'] == (installations[0 if committed else 1],)
             assert context['installation_pagination']['total_items'] == 1
             assert context['installation_rows'] == [installations[0 if committed else 1]]
-            assert context['repository_coverage'].installation_id == int(selected_id)
+            assert context['repository_coverage'] is None
+            assert not qualified_reads
+
+            # Capacity analytics are loaded only by the authorized lazy endpoint.
+            with app.test_request_context(
+                '/source-control/section/capacity',
+                query_string={'installation_id': selected_id},
+            ):
+                assert routes.section.__wrapped__('capacity') == 'rendered'
+                section_context = captured[-1]
+                assert section_context['repository_coverage'].installation_id == int(selected_id)
+                assert section_context['section_key'] == 'capacity'
 
     with app.test_request_context('/source-control/'):
         assert routes.overview.__wrapped__() == 'rendered'
@@ -712,6 +740,7 @@ def test_product_overview_selector_table_and_two_line_evidence_contract():
     root = Path(__file__).resolve().parents[2]
     folder = root / 'app/templates/source_control'
     overview = (folder / 'overview.html').read_text()
+    operations = (folder / 'partials/_dashboard_operations.html').read_text()
     inventory = (folder / 'partials/_dashboard_inventory_snapshot.html').read_text()
     freshness = (folder / 'partials/_dashboard_data_freshness.html').read_text()
     assert 'source-control-installation-filter' in overview
@@ -733,11 +762,11 @@ def test_product_overview_selector_table_and_two_line_evidence_contract():
     assert "'Visible Scope Collected'" in overview
     assert "'Selected Installation' if selected_scope" in overview
     assert "'Selected Inventory Commit' if selected_scope" in overview
-    assert "{'tab': 'overview', 'installation_id': selected_installation_id or ''}" in overview
+    assert "{'tab': 'overview', 'installation_id': selected_installation_id or ''}" in operations
     assert "selected_installation_name or 'All Authorized Installations'" in overview
-    assert 'table_ui.header_cell_classes(action=true)' in overview
-    assert 'table_ui.cell_classes(action=true)' in overview
-    assert "item.observed_count if item.observed_count is not none else 'Unknown'" in overview
+    assert 'table_ui.header_cell_classes(action=true)' in operations
+    assert 'table_ui.cell_classes(action=true)' in operations
+    assert "item.observed_count if item.observed_count is not none else 'Unknown'" in operations
     assert "item.collection_status == 'committed'" in overview
     assert 'account.last_observed_at' in overview
     assert 'Repository observations are shown only for a single' not in inventory
@@ -815,6 +844,7 @@ def test_product_overview_one_grant_all_vs_selected_are_explicitly_scoped(monkey
 def test_source_control_overview_compact_text_table_and_scope_gate_contract():
     root = Path(__file__).resolve().parents[2] / 'app/templates/source_control'
     overview = (root / 'overview.html').read_text()
+    operations = (root / 'partials/_dashboard_operations.html').read_text()
     freshness = (root / 'partials/_dashboard_data_freshness.html').read_text()
 
     for caption in (
@@ -830,16 +860,16 @@ def test_source_control_overview_compact_text_table_and_scope_gate_contract():
         assert caption in overview
         assert len(caption) <= 36
 
-    assert 'min-w-[1024px]' not in overview
-    assert 'hidden table-fixed xl:table' in overview
-    assert 'data-source-control-installation-cards' in overview
-    assert 'data-source-control-installation-table' in overview
-    assert 'overflow-x-auto' not in overview
-    assert '<colgroup>' in overview
-    assert 'title="Observed repositories per installation"' in overview
-    assert 'text-right tabular-nums' in overview
-    assert "item.observed_count if item.observed_count is not none else 'Unknown'" in overview
-    assert 'table_registry.footer(' in overview
+    assert 'min-w-[1024px]' not in operations
+    assert 'hidden table-fixed xl:table' in operations
+    assert 'data-source-control-installation-cards' in operations
+    assert 'data-source-control-installation-table' in operations
+    assert 'overflow-x-auto' not in operations
+    assert '<colgroup>' in operations
+    assert 'title="Observed repositories per installation"' in operations
+    assert 'text-right tabular-nums' in operations
+    assert "item.observed_count if item.observed_count is not none else 'Unknown'" in operations
+    assert 'table_registry.footer(' in operations
 
     for phrase in (
         'Committed inventory is retained in KAORI. Live GitHub health is not verified.',
@@ -860,15 +890,21 @@ def test_source_control_overview_compact_text_table_and_scope_gate_contract():
             assert 'source_control/partials/_dashboard_repository_composition.html' in partial
             assert 'source_control/partials/_dashboard_repository_attention.html' in partial
         else:
-            assert 'evidence_tile.freshness(' in partial
-            assert 'selected_item' in partial
-            assert 'Not Qualified' in partial
+            if name == 'signals':
+                assert 'alert_summary.render(' in partial
+                assert 'alert_response.render(' in partial
+                assert 'recommendation_cards.render(' in partial
+                assert 'source_available=false' in partial
+            else:
+                assert 'evidence_tile.freshness(' in partial
+                assert 'selected_item' in partial
+                assert 'Not Qualified' in partial
 
 
 def test_source_control_health_register_reflows_without_horizontal_scrolling():
     """Wide screens use the shared table; narrower screens use the same scoped rows."""
     root = Path(__file__).resolve().parents[2] / 'app/templates/source_control'
-    overview = (root / 'overview.html').read_text()
+    overview = (root / 'partials/_dashboard_operations.html').read_text()
     freshness = (root / 'partials/_dashboard_data_freshness.html').read_text()
 
     assert "table_ui.table_classes('hidden table-fixed xl:table')" in overview
@@ -911,7 +947,7 @@ def test_source_control_repository_coverage_reuses_dashboard_and_qualified_chart
     attention = (root / 'source_control/partials/_dashboard_repository_attention.html').read_text()
 
     assert "'capacity', 'Repository Coverage', 'folder-git-2'" in overview
-    assert "dashboard_workspace.panel('capacity'" in overview
+    assert "dashboard_workspace.panel(tab_key" in overview
     assert 'tabs=source_control_tabs' in overview
     assert 'peer_grid.layout_classes()' in capacity
     assert 'peer_content_grid.layout_classes()' in k8s
@@ -942,6 +978,7 @@ def test_source_control_repository_coverage_reuses_dashboard_and_qualified_chart
 
     def category(label, count, percent):
         return SimpleNamespace(label=label, count=count, percent=percent)
+
     common = {
         'collected': True,
         'collection_status': 'committed',
@@ -982,13 +1019,15 @@ def test_source_control_repository_coverage_reuses_dashboard_and_qualified_chart
         selected_scope=True,
         selected_installation_id=11,
         repository_coverage=SimpleNamespace(
-            **{**common,
-               'observed_count': 2,
-               'grant_count': 2,
-               'visibility': (category('Private', 1, 50), category('Public', 1, 50)),
-               'lifecycle': (category('Active', 2, 100), category('Archived', 0, 0)),
-               'references': (category('Exact SHA', 1, 50), category('Branch Only', 1, 50)),
-               'single_repository': None}
+            **{
+                **common,
+                'observed_count': 2,
+                'grant_count': 2,
+                'visibility': (category('Private', 1, 50), category('Public', 1, 50)),
+                'lifecycle': (category('Active', 2, 100), category('Archived', 0, 0)),
+                'references': (category('Exact SHA', 1, 50), category('Branch Only', 1, 50)),
+                'single_repository': None,
+            }
         ),
         url_for=url,
     )
@@ -1011,10 +1050,223 @@ def test_source_control_repository_coverage_reuses_dashboard_and_qualified_chart
     zero = panel.render(
         selected_scope=True,
         selected_installation_id=11,
-        repository_coverage=SimpleNamespace(
-            **{**common, 'observed_count': 0, 'grant_count': 0, 'attention_count': 0}
-        ),
+        repository_coverage=SimpleNamespace(**{**common, 'observed_count': 0, 'grant_count': 0, 'attention_count': 0}),
         url_for=url,
     )
     assert 'No Repositories in the Retained Grant' in zero
     assert 'Zero repository grants were observed' in zero
+
+
+def test_source_control_lazy_sections_match_shared_dashboard_and_keep_pagination():
+    """Each tab is fetched once revealed, while the scope filter retains the active tab."""
+    root = Path(__file__).resolve().parents[2] / 'app/templates'
+    shell = (root / 'source_control/overview.html').read_text()
+    section = (root / 'source_control/partials/_dashboard_section.html').read_text()
+    operations = (root / 'source_control/partials/_dashboard_operations.html').read_text()
+    k8s = (root / 'kubernetes/dashboard/partials/_content.html').read_text()
+    object_storage = (root / 'storage/object_storage/dashboard/partials/_content.html').read_text()
+    footer = (root / 'components/table_registry.html').read_text()
+    pagination = (root / 'components/pagination.html').read_text()
+
+    for standard in (shell, k8s, object_storage):
+        assert 'hx-trigger="revealed"' in standard
+        assert 'hx-target="this"' in standard
+        assert 'hx-swap="outerHTML"' in standard
+        assert 'section_loading.section(' in standard
+    assert 'hx-sync="this:replace"' in shell
+    assert "url_for('source_control.section', section=tab_key" in shell
+    assert "dashboard_workspace.panel(tab_key, active_dashboard_tab" in shell
+    assert 'source-control-dashboard-active-tab' in shell
+    assert 'hx-include="#source-control-dashboard-active-tab"' in shell
+    assert 'hx-select="#source-control-overview"' in shell
+    assert 'hx-push-url="true"' in shell
+    assert 'eager_health_pagination' in shell
+    assert 'source_control/partials/_dashboard_operations.html' in shell
+    assert 'section_key == ' in section
+    assert 'source_control/partials/_dashboard_signals.html' in section
+    assert 'source_control/partials/_dashboard_reporting.html' in section
+    assert 'source_control/partials/_dashboard_capacity.html' in section
+    assert 'source-control-dashboard-section-overview' in operations
+    assert "table_registry.footer('source_control.overview'" in operations
+    assert 'path_params={}' in operations
+    assert "path_params=none" in footer
+    assert "path_params if path_params is not none" in footer
+    assert "path_params.copy() if path_params is not none" in pagination
+    assert "path_params=path_params" in footer
+    assert 'source_control.section' not in footer
+    assert 'section_intro.render(' not in shell
+    assert 'section_intro.render(' not in section
+
+
+@pytest.mark.parametrize('tab', ['overview', 'capacity', 'signals', 'reporting'])
+def test_source_control_lazy_section_authorizes_scope_and_follows_selected_tab(monkeypatch, tab):
+    """No installation projection is read before the independent section scope check."""
+    app = Flask(__name__)
+    monkeypatch.setattr(routes, '_require_product_uat_access', lambda: None)
+    now = datetime(2026, 10, 26, tzinfo=UTC)
+    allowed = {
+        'installation': SimpleNamespace(id=11),
+        'connection': SimpleNamespace(name='GitHub authorized 11'),
+        'committed': True,
+        'last_committed_at': now,
+    }
+    authorized = {
+        'installations': (allowed,),
+        'installation_count': 1,
+        'committed_count': 1,
+        'uncollected_count': 0,
+        'has_more': False,
+        'latest_committed_at': now,
+    }
+    monkeypatch.setattr(routes, 'build_source_control_overview', lambda: authorized)
+    projection_ids = []
+
+    def read_coverage(*, authorized_installation_id):
+        projection_ids.append(authorized_installation_id)
+        return SimpleNamespace(installation_id=authorized_installation_id)
+
+    monkeypatch.setattr(routes, 'read_repository_coverage_for_current_session', read_coverage)
+    captured = []
+
+    def render(template, **context):
+        captured.append((template, context))
+        return 'rendered'
+
+    monkeypatch.setattr(routes, '_uncached_render', render)
+
+    with app.test_request_context(
+        f'/source-control/section/{tab}',
+        query_string={'installation_id': '11', 'installation_page': '1'},
+        headers={'HX-Request': 'true'},
+    ):
+        assert routes.section.__wrapped__(tab) == 'rendered'
+    template, context = captured[-1]
+    assert template == 'source_control/partials/_dashboard_section.html'
+    assert context['section_key'] == tab
+    assert context['dashboard_active_tab'] == tab
+    assert context['selected_installation_id'] == 11
+    assert context['selected_scope']
+    assert context['scope']['installations'] == (allowed,)
+    if tab == 'capacity':
+        assert context['repository_coverage'].installation_id == 11
+    else:
+        assert context['repository_coverage'] is None
+    assert projection_ids == ([11] if tab == 'capacity' else [])
+
+    with app.test_request_context(f'/source-control/section/{tab}', headers={'HX-Request': 'true'}):
+        assert routes.section.__wrapped__(tab) == 'rendered'
+        _, context = captured[-1]
+        assert not context['selected_scope']
+        assert context['selected_installation_id'] is None
+        assert context['scope'] is authorized
+    assert projection_ids == ([11] if tab == 'capacity' else [])
+
+
+@pytest.mark.parametrize('value', ['12', '0', '-1', 'a', '../11', '9' * 40])
+def test_source_control_lazy_section_denies_out_of_scope_or_invalid_installation(monkeypatch, value):
+    app = Flask(__name__)
+    monkeypatch.setattr(routes, '_require_product_uat_access', lambda: None)
+    monkeypatch.setattr(
+        routes,
+        'build_source_control_overview',
+        lambda: {'installations': ({'installation': SimpleNamespace(id=11)},), 'has_more': False},
+    )
+    monkeypatch.setattr(
+        routes,
+        'read_repository_coverage_for_current_session',
+        lambda **_kwargs: pytest.fail('Unauthorized installation analytics read'),
+    )
+    with app.test_request_context(
+        '/source-control/section/capacity',
+        query_string={'installation_id': value},
+        headers={'HX-Request': 'true'},
+    ):
+        with pytest.raises(NotFound):
+            routes.section.__wrapped__('capacity')
+
+
+def test_source_control_lazy_section_rejects_unapproved_tab_before_data(monkeypatch):
+    app = Flask(__name__)
+    monkeypatch.setattr(
+        routes,
+        'build_source_control_overview',
+        lambda: pytest.fail('Unapproved lazy section queried committed data'),
+    )
+    with app.test_request_context('/source-control/section/unapproved'):
+        with pytest.raises(NotFound):
+            routes.section.__wrapped__('unapproved')
+
+
+def test_source_control_signals_reuses_intelligence_and_never_invents_alerts():
+    """Source Control uses the admitted K8s signal composition with explicit unqualified evidence."""
+    from jinja2 import Environment, FileSystemLoader
+
+    root = Path(__file__).resolve().parents[2] / 'app/templates'
+    signals = (root / 'source_control/partials/_dashboard_signals.html').read_text()
+    k8s_signals = (root / 'kubernetes/dashboard/partials/_signals.html').read_text()
+    recommendation_macro = (root / 'components/operational_recommendation_cards.html').read_text()
+    for required in (
+        'peer_grid.layout_classes()',
+        'alert_summary.render(',
+        'alert_response.render(',
+        'recommendation_cards.render(',
+        'source_available=false',
+        "components/states/_blocked_state.html",
+    ):
+        assert required in signals
+    assert 'peer_content_grid.layout_classes()' in k8s_signals
+    assert 'Collection Readiness' not in signals
+    assert 'section_intro.render(' not in signals
+    assert 'info_tip.render(' not in signals
+    assert 'recommendation_count ~ ' in recommendation_macro
+    assert "if source_available else 'Not Qualified'" in recommendation_macro
+    assert "Recommendations Not Yet Qualified" in recommendation_macro
+    assert '0 Active' not in signals
+
+    env = Environment(loader=FileSystemLoader(str(root)))
+    env.filters['user_datetime'] = lambda d: d.isoformat() if d else 'Not Collected'
+    panel = env.get_template('source_control/partials/_dashboard_signals.html')
+
+    def url(endpoint, **_kwargs):
+        return '/' + endpoint.replace('.', '/')
+
+    blocked = panel.render(selected_scope=False, url_for=url)
+    assert 'data-kaori-blocked-state' in blocked
+    assert 'Select Installation' in blocked
+    assert 'Alerts Summary' not in blocked
+
+    selected = panel.render(selected_scope=True, selected_installation_id=11, url_for=url)
+    assert 'Alerts Summary' in selected
+    assert 'Alert Interpretation & Response' in selected
+    assert 'Recommended Actions' in selected
+    assert 'Source Control Alerts Not Yet Qualified' in selected
+    assert 'Recommendations Not Yet Qualified' in selected
+    assert '0 Active' not in selected
+    assert 'No Active Recommendations' not in selected
+    assert '0 Active Alert' not in selected
+    assert 'Critical' in selected and 'Warning' in selected and 'Info' in selected
+    assert 'Validate' in selected and 'Record' in selected
+    assert 'Not Qualified' in selected
+    assert '<script' not in signals and '<style' not in signals
+
+    macro = env.get_template('components/operational_recommendation_cards.html').module.render
+    default = macro(
+        [],
+        'Qualified recommendations',
+        'test-recommendations',
+        'No qualified recommendations in an admitted source.',
+    )
+    assert 'No Active Recommendations' in default
+    assert '0 Active' in default
+    unavailable = macro(
+        [],
+        'Unqualified source',
+        'test-unqualified',
+        'Not to be mistaken for an empty healthy source.',
+        source_available=False,
+        unavailable_description='Source mapping is not admitted.',
+    )
+    assert 'Recommendations Not Yet Qualified' in unavailable
+    assert 'Source mapping is not admitted.' in unavailable
+    assert '0 Active' not in unavailable
+

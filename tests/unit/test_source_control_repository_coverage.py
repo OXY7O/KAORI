@@ -294,9 +294,7 @@ def test_projection_requires_previously_authorized_positive_installation_id(cove
 
 
 def test_coverage_projection_is_read_only_and_never_calls_provider():
-    text = (
-        Path(__file__).resolve().parents[2] / 'app/source_control/repository_coverage.py'
-    ).read_text()
+    text = (Path(__file__).resolve().parents[2] / 'app/source_control/repository_coverage.py').read_text()
     assert 'GitHubAppClient' not in text
     assert 'requests.get' not in text
     assert 'session.commit(' not in text

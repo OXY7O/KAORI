@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/operational_dashboard_workspace.html" as dashboard_workspace %}
+{% import "components/operational_section_loading.html" as section_loading %}
 {% import "components/operational_signal_overview.html" as signal_overview %}
 {% import "components/operational_section_card.html" as section_card %}
 {% import "components/operational_metric_card.html" as metric_card %}
@@ -103,194 +104,28 @@
             <div class="mt-5 space-y-5">
                 {% set source_control_tabs = [('overview', 'Operations Overview', 'activity'), ('capacity', 'Repository Coverage', 'folder-git-2'), ('signals', 'Signals & Actions', 'bell-ring'), ('reporting', 'Reporting', 'file-text')] %}
                 {{ dashboard_workspace.navigation('source-control-dashboard', 'Source Control Dashboard Sections', tabs=source_control_tabs) }}
-                {% call dashboard_workspace.panel('overview', active_dashboard_tab, 'source-control-dashboard') %}
-                    <div id="source-control-dashboard-section-overview" class="space-y-5">
-                        {% call section_card.render(
-                            'Installation Health Summary',
-                            ('Selected installation — retained collection and account evidence.' if selected_scope else 'Showing ' ~ installation_pagination.start_item ~ '–' ~ installation_pagination.end_item ~ ' of ' ~ installation_pagination.total_items ~ ' authorized installations. Repository counts remain installation-scoped.'),
-                            'heart-pulse',
-                            id='source-control-installation-health-section',
-                            action_href=url_for('source_control.repositories'),
-                            action_label='Explore Repositories',
-                            loading_bar_id='source-control-installation-health-loading',
-                            loading_bar_label='Installation Health Loading',
-                            body_classes='p-0'
-                            ) %}
-                            <div id="source-control-installation-health"
-                                 data-source-control-installation-health>
-                                {% if authorized_scope_has_more and not selected_installation_id %}
-                                    <p class="border-b border-outline-subtle px-5 py-3 text-xs text-status-warning-text"
-                                       role="status">
-                                        Showing the first 50 authorized installations; other grants are outside this bounded UAT view.
-                                    </p>
-                                {% endif %}
-                                {% if not scope.installations %}
-                                    {% set empty_state_icon = "folder-git-2" %}
-                                    {% set empty_state_label = "No Connections" %}
-                                    {% set empty_state_title = "No Active GitHub Installations" %}
-                                    {% set empty_state_description = "Register an authorized GitHub App connection in Integrations. Missing collection evidence is not zero repositories." %}
-                                    {% set empty_state_action_url = url_for('integrations.source_control') %}
-                                    {% set empty_state_action_label = "Open Source Control Integrations" %}
-                                    {% include "components/states/_empty_state.html" %}
-                                {% else %}
-                                    <div class="divide-y divide-outline-subtle xl:hidden"
-                                         data-source-control-installation-cards>
-                                        {% for item in installation_rows %}
-                                            <article class="space-y-3 px-4 py-4">
-                                                <div class="flex min-w-0 flex-wrap items-start justify-between gap-3">
-                                                    <div class="min-w-0 flex-1">
-                                                        {{ table_ui.title_cell(item.connection.name,
-                                                                                                                    'Installation #' ~ item.installation.native_installation_id,
-                                                                                                                    'git-branch') }}
-                                                    </div>
-                                                    <a href="{{ url_for('source_control.repositories', installation_id=item.installation.id) }}"
-                                                       class="{{ table_ui.action_classes() }}"
-                                                       aria-label="View inventory for {{ item.connection.name }}">View Inventory</a>
-                                                </div>
-                                                <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-xs sm:grid-cols-3">
-                                                    <div class="min-w-0">
-                                                        <dt class="font-medium text-content-muted">GitHub Account</dt>
-                                                        <dd class="mt-1 break-words font-semibold text-content-primary">
-                                                            {{ item.account.login if item.account and item.account.login else 'Account Not Observed' }}
-                                                        </dd>
-                                                        {% if item.account %}
-                                                            <dd class="mt-0.5 break-words text-content-muted">
-                                                                {{ item.account.account_type or 'Type Unknown' }} · #{{ item.account.native_account_id }}
-                                                            </dd>
-                                                        {% endif %}
-                                                    </div>
-                                                    <div class="min-w-0">
-                                                        <dt class="font-medium text-content-muted">Collection</dt>
-                                                        <dd class="mt-1">
-                                                            {{ integration_status('ready' if item.committed and item.collection_status == 'committed' else item.collection_status,
-                                                                                                                    item.collection_status|replace('_', ' ') |title,
-                                                            display='indicator') }}
-                                                        </dd>
-                                                    </div>
-                                                    <div class="min-w-0">
-                                                        <dt class="font-medium text-content-muted">Coverage</dt>
-                                                        <dd class="mt-1 break-words text-content-secondary">{{ item.coverage|replace('_', ' ') |title }}</dd>
-                                                    </div>
-                                                    <div class="min-w-0">
-                                                        <dt class="font-medium text-content-muted">Repositories</dt>
-                                                        <dd class="mt-1 font-semibold tabular-nums text-content-primary">
-                                                            {{ item.observed_count if item.observed_count is not none else 'Unknown' }}
-                                                        </dd>
-                                                    </div>
-                                                    <div class="min-w-0">
-                                                        <dt class="font-medium text-content-muted">Last Committed</dt>
-                                                        <dd class="mt-1 break-words tabular-nums text-content-secondary">
-                                                            {{ item.last_committed_at|user_datetime if item.last_committed_at else 'Not Collected' }}
-                                                        </dd>
-                                                    </div>
-                                                    <div class="min-w-0">
-                                                        <dt class="font-medium text-content-muted">Account Observed</dt>
-                                                        <dd class="mt-1 break-words tabular-nums text-content-secondary">
-                                                            {{ item.account.last_observed_at|user_datetime if item.account and item.account.last_observed_at else 'Not Observed' }}
-                                                        </dd>
-                                                    </div>
-                                                </dl>
-                                            </article>
-                                        {% endfor %}
-                                    </div>
-                                    <table class="{{ table_ui.table_classes('hidden table-fixed xl:table') }}"
-                                           data-source-control-installation-table>
-                                        <caption class="sr-only">Committed installation-scoped GitHub inventory coverage.</caption>
-                                        <colgroup>
-                                            <col class="w-[17%]">
-                                            <col class="w-[20%]">
-                                            <col class="w-[12%]">
-                                            <col class="w-[15%]">
-                                            <col class="w-[8%]">
-                                            <col class="w-[15%]">
-                                            <col class="w-[13%]">
-                                        </colgroup>
-                                        <thead class="{{ table_ui.head_classes() }}">
-                                            <tr>
-                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Installation</th>
-                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">GitHub Account</th>
-                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Collection</th>
-                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Coverage</th>
-                                                <th scope="col" class="{{ table_ui.header_cell_classes() }} text-right"
-                                                    title="Observed repositories per installation">Repos</th>
-                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Last Committed</th>
-                                                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="{{ table_ui.body_classes() }}">
-                                            {% for item in installation_rows %}
-                                                <tr class="{{ table_ui.row_classes() }}">
-                                                    <td class="{{ table_ui.cell_classes() }}">
-                                                        {{ table_ui.title_cell(item.connection.name,
-                                                                                                                    'Installation #' ~ item.installation.native_installation_id,
-                                                                                                                    'git-branch') }}
-                                                    </td>
-                                                    <td class="{{ table_ui.cell_classes() }}"
-                                                        title="{{ 'Account observed ' ~ (item.account.last_observed_at|user_datetime) if item.account and item.account.last_observed_at else 'Account observation unavailable' }}">
-                                                        {% if item.account %}
-                                                            {{ table_ui.title_cell(item.account.login if item.account.login else 'Account Name Unknown',
-                                                                                                                            (item.account.account_type or 'Type Unknown') ~ ' · #' ~ item.account.native_account_id,
-                                                            'users') }}
-                                                        {% else %}
-                                                            <span class="text-xs text-content-secondary">Account Not Observed</span>
-                                                        {% endif %}
-                                                    </td>
-                                                    <td class="{{ table_ui.cell_classes() }}">
-                                                        {{ integration_status('ready' if item.committed and item.collection_status == 'committed' else item.collection_status,
-                                                                                                                    item.collection_status|replace('_', ' ') |title,
-                                                        display='indicator') }}
-                                                    </td>
-                                                    <td class="{{ table_ui.cell_classes() }}">
-                                                        <span class="break-words text-xs leading-4 text-content-secondary">{{ item.coverage|replace('_', ' ') |title }}</span>
-                                                    </td>
-                                                    <td class="{{ table_ui.cell_classes() }} text-right tabular-nums">
-                                                        <span class="font-semibold text-content-primary">{{ item.observed_count if item.observed_count is not none else 'Unknown' }}</span>
-                                                    </td>
-                                                    <td class="{{ table_ui.cell_classes() }} break-words text-xs leading-4 tabular-nums">
-                                                        {{ item.last_committed_at|user_datetime if item.last_committed_at else 'Not Collected' }}
-                                                    </td>
-                                                    <td class="{{ table_ui.cell_classes(action=true) }}">
-                                                        <a href="{{ url_for('source_control.repositories', installation_id=item.installation.id) }}"
-                                                           class="{{ table_ui.action_classes() }}"
-                                                           aria-label="View inventory for {{ item.connection.name }}">View</a>
-                                                    </td>
-                                                </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                {% endif %}
-                                {{ table_registry.footer('source_control.overview',
-                                                                    'source-control-installation-health-section',
-                                                                    'source-control-installation-health-loading',
-                                                                    installation_pagination,
-                                                                    {'tab': 'overview', 'installation_id': selected_installation_id or ''},
-                                                                    [5, 10, 25, 50],
-                                                                    resource_label='Installations',
-                                                                    rows_aria_label='Installation rows per page',
-                                                                    control_name='source-control-installation-health',
-                                                                    page_param='installation_page',
-                                                                    per_page_param='installation_per_page') }}
+                {% for tab_key, tab_label, tab_icon in source_control_tabs %}
+                    {% call dashboard_workspace.panel(tab_key, active_dashboard_tab, 'source-control-dashboard') %}
+                        {% if tab_key == 'overview' and eager_health_pagination %}
+                            {% include "source_control/partials/_dashboard_operations.html" %}
+                        {% else %}
+                            <div id="source-control-dashboard-section-{{ tab_key }}"
+                                 class="space-y-5"
+                                 hx-get="{{ url_for('source_control.section', section=tab_key, installation_id=selected_installation_id or '', installation_page=installation_pagination.page, installation_per_page=installation_pagination.per_page) }}"
+                                 hx-trigger="revealed"
+                                 hx-target="this"
+                                 hx-swap="outerHTML"
+                                 hx-sync="this:replace"
+                                 data-source-control-lazy-section="{{ tab_key }}">
+                                {{ section_loading.section(
+                                    tab_label,
+                                    'Preparing committed Source Control dashboard evidence.',
+                                    tab_icon
+                                ) }}
                             </div>
-                        {% endcall %}
-                        <div class="{{ peer_grid.layout_classes() }}">
-                            <div class="{{ peer_grid.column_classes('primary') }}">
-                                {% include "source_control/partials/_dashboard_inventory_snapshot.html" %}
-                            </div>
-                            <div class="{{ peer_grid.column_classes('secondary') }}">
-                                {% include "source_control/partials/_dashboard_data_freshness.html" %}
-                            </div>
-                        </div>
-                    </div>
-                {% endcall %}
-                {% call dashboard_workspace.panel('capacity', active_dashboard_tab, 'source-control-dashboard') %}
-                    {% include "source_control/partials/_dashboard_capacity.html" %}
-                {% endcall %}
-                {% call dashboard_workspace.panel('signals', active_dashboard_tab, 'source-control-dashboard') %}
-                    {% include "source_control/partials/_dashboard_signals.html" %}
-                {% endcall %}
-                {% call dashboard_workspace.panel('reporting', active_dashboard_tab, 'source-control-dashboard') %}
-                    {% include "source_control/partials/_dashboard_reporting.html" %}
-                {% endcall %}
+                        {% endif %}
+                    {% endcall %}
+                {% endfor %}
             </div>
         {% endcall %}
     </div>

@@ -1,52 +1,61 @@
-{% import "components/operational_section_card.html" as section_card %}
-{% import "components/operational_evidence_tile.html" as evidence_tile %}
-{% import "components/section_intro.html" as section_intro %}
-{% import "components/info_tip.html" as info_tip %}
+{% import "components/peer_content_grid.html" as peer_grid %}
+{% import "components/operational_alert_summary.html" as alert_summary %}
+{% import "components/operational_alert_response.html" as alert_response %}
+{% import "components/operational_recommendation_cards.html" as recommendation_cards %}
 {% if not selected_scope %}
     {% set blocked_state_icon = "bell-ring" %}
     {% set blocked_state_label = "Installation Required" %}
     {% set blocked_state_title = "Select Installation" %}
-    {% set blocked_state_description = "Select an authorized GitHub App installation to review committed collection signals and evidence boundaries." %}
+    {% set blocked_state_description = "Select an authorized GitHub App installation to review source-qualified Alert Intelligence and controlled actions." %}
     {% set blocked_state_tone = "warning" %}
     {% include 'components/states/_blocked_state.html' %}
 {% else %}
-    {% set selected_items = scope.installations|default([], true) %}
-    {% set selected_item = selected_items[0] if selected_items else none %}
-    {% set has_collection = selected_item and selected_item.committed %}
-    {{ section_intro.render('Signals & Actions',
-        'Review evidence-backed collection status for the selected installation, not live GitHub alerts.') }}
-    {% call section_card.render('Collection Readiness',
-        'Committed inventory state and collection gaps for the selected GitHub App installation.',
-        'bell-ring',
-        action_href=url_for('integrations.source_control'),
-        action_label='Manage GitHub Integrations',
-        header_badge=info_tip.render('source-control-signals-guide',
-        'Source Control Signals Guide',
-        'Collection readiness does not represent provider health, CI alerts or incident severity.',
-        items=[
-        'Not Collected means no successful retained inventory generation for the selected installation.',
-        'A committed snapshot can become stale; its existence does not verify live GitHub access.',
-        'PR failures, security alerts and intelligence recommendations require their own committed evidence.'
-        ], placement='right', variant='guide')) %}
-        <div class="grid gap-3 sm:grid-cols-3">
-            {{ evidence_tile.freshness('Inventory Collection',
-                        selected_item.collection_status|replace('_', ' ') |title if selected_item else 'Not Collected',
-            'Retained' if has_collection else 'Review Collection',
-            'info' if has_collection else 'warning',
-            'database-zap',
-            description='Collection status is committed KAORI state, not provider availability.') }}
-            {{ evidence_tile.freshness('Uncollected Scope',
-                        scope.uncollected_count,
-                        'Collection Gap' if scope.uncollected_count else 'No Visible Gap',
-                        'warning' if scope.uncollected_count else 'info',
-                        'scan-search',
-                        description='A verified zero is valid only for this selected installation.') }}
-            {{ evidence_tile.freshness('PR / CI Alert Evidence',
-                        'Not Qualified',
-                        'Unavailable',
-                        'unknown',
-                        'shield-alert',
-                        description='No alerts or remediation actions are inferred from inventory counts.') }}
+    {# No admitted Source Control AlertCase or recommendation collector exists yet.
+       Collection counts are inventory facts, never invented security/CI alerts. #}
+    {% set response_steps = [
+        ('scan-search', 'Validate', 'Verify the installation, committed snapshot, and source qualification before interpreting a signal.'),
+        ('list-filter', 'Triage', 'Confirm whether an actual AlertCase exists, then assess its severity, owner, and affected repository.'),
+        ('chart-no-axes-combined', 'Investigate', 'Correlate source references, collection history, artifact and runtime evidence where committed.'),
+        ('shield-check', 'Respond', 'Use only an approved provider-side or KAORI-governed action; GitHub remains execution authority.'),
+        ('circle-check-big', 'Verify', 'Confirm the accepted change and re-collect authoritative evidence for the same installation.'),
+        ('clipboard-check', 'Record', 'Retain evidence, operator decisions, and follow-up in the owning Intelligence workflow.')
+    ] %}
+    <div class="{{ peer_grid.layout_classes() }}">
+        <div class="{{ peer_grid.column_classes('primary') }}">
+            {{ alert_summary.render(
+                description='Installation-scoped committed KAORI AlertCase posture; repository counts are not alerts.',
+                section_id='source-control-dashboard-alerts-summary',
+                action_href=url_for('alert_intelligence.index'),
+                critical=0,
+                warning=0,
+                info=0,
+                rows=[],
+                source_available=false,
+                unavailable_title='Source Control Alerts Not Yet Qualified',
+                unavailable_description='No committed installation-scoped Source Control AlertCase source is admitted. Inventory collection does not establish active alerts or a healthy zero.',
+                insight_unavailable='Alert Intelligence is authoritative; source inventory cannot infer incident severity.',
+                status_unavailable_label='Source Control Alert Evidence Unavailable'
+            ) }}
         </div>
-    {% endcall %}
+        <div class="{{ peer_grid.column_classes('secondary') }}">
+            {{ alert_response.render(
+                'Source-qualified severity interpretation and controlled response guidance, not active alert evidence.',
+                response_steps,
+                'Source Control Controlled Response Flow',
+                'If a confirmed critical case emerges, establish an owner and prioritize impact and security triage.',
+                'If a confirmed warning emerges, assess repository impact and collect supporting provider evidence.',
+                'If a qualified informational signal emerges, verify relevance before creating a response action.',
+                source_description='Source Control AlertCase mapping is not yet qualified. Follow this process only when a real Intelligence case is committed.'
+            ) }}
+        </div>
+    </div>
+    {{ recommendation_cards.render(
+        [],
+        'Installation-scoped recommendations are owned by central Intelligence.',
+        'source-control-dashboard-recommended-actions',
+        'No catalog-backed recommendations match the selected installation.',
+        source_icon='database-zap',
+        source_available=false,
+        unavailable_description='No admitted Source Control recommendation evidence or asset correlation is available for this installation. Do not infer a healthy zero or create actions from repository counts.'
+    ) }}
 {% endif %}

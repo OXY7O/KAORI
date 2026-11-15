@@ -19,38 +19,30 @@
         {% include "components/states/_empty_state.html" %}
     {% else %}
         <div class="grid gap-3 sm:grid-cols-2">
-            {{ evidence_tile.freshness(
-                'Observed Repositories',
-                repository_coverage.observed_count if repository_coverage.observed_count is not none else 'Unknown',
-                'Retained' if repository_coverage.observed_count is not none else 'Unavailable',
-                'info' if repository_coverage.observed_count is not none else 'unknown',
-                'folder-git-2',
-                description='Collector-reported count for this installation.'
-            ) }}
-            {{ evidence_tile.freshness(
-                'Current Grant Rows',
-                repository_coverage.grant_count,
-                'Committed',
-                'info',
-                'git-branch',
-                description='Current retained grants, not an organization total.'
-            ) }}
-            {{ evidence_tile.freshness(
-                'Active Repositories',
-                repository_coverage.lifecycle[0].count,
-                'Observed',
-                'info',
-                'folder-open',
-                description='Repositories observed as not archived.'
-            ) }}
-            {{ evidence_tile.freshness(
-                'Archived Repositories',
-                repository_coverage.lifecycle[1].count,
-                'Observed',
-                'info',
-                'archive',
-                description='Archived metadata within this installation.'
-            ) }}
+            {{ evidence_tile.freshness('Observed Repositories',
+                        repository_coverage.observed_count if repository_coverage.observed_count is not none else 'Unknown',
+                        'Retained' if repository_coverage.observed_count is not none else 'Unavailable',
+                        'info' if repository_coverage.observed_count is not none else 'unknown',
+                        'folder-git-2',
+                        description='Collector-reported count for this installation.') }}
+            {{ evidence_tile.freshness('Current Grant Rows',
+                        repository_coverage.grant_count,
+                        'Committed',
+                        'info',
+                        'git-branch',
+                        description='Current retained grants, not an organization total.') }}
+            {{ evidence_tile.freshness('Active Repositories',
+                        repository_coverage.lifecycle[0].count,
+                        'Observed',
+                        'info',
+                        'folder-open',
+                        description='Repositories observed as not archived.') }}
+            {{ evidence_tile.freshness('Archived Repositories',
+                        repository_coverage.lifecycle[1].count,
+                        'Observed',
+                        'info',
+                        'archive',
+                        description='Archived metadata within this installation.') }}
         </div>
         <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-content-muted">
             {{ table_label.metadata_label('Collection: ' ~ repository_coverage.collection_status|replace('_', ' ') |title, icon='database-check') }}

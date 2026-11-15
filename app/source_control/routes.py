@@ -34,14 +34,11 @@ def _uncached_render(template: str, **context) -> ResponseReturnValue:
     return response
 
 
-@source_control_bp.get('/')
-@permission_required('integrations.manage')
-def overview() -> ResponseReturnValue:
-    """UAT-only until production installation-scoped authorization is admitted."""
-    _require_product_uat_access()
-    active_tab = request.args.get('tab', 'overview', type=str)
-    if active_tab not in {'overview', 'capacity', 'signals', 'reporting'}:
-        active_tab = 'overview'
+_DASHBOARD_TABS = frozenset({'overview', 'capacity', 'signals', 'reporting'})
+
+
+def _dashboard_context(*, active_tab: str, include_coverage: bool = False) -> dict:
+    """Build retained scope after the caller has passed the UAT permission gate."""
     authorized_scope = build_source_control_overview()
     raw_installation_id = request.args.get('installation_id', '').strip()
     selected_installation = None
@@ -76,21 +73,49 @@ def overview() -> ResponseReturnValue:
         read_repository_coverage_for_current_session(
             authorized_installation_id=selected_installation['installation'].id
         )
-        if selected_installation is not None and active_tab == 'capacity'
+        if include_coverage and selected_installation is not None and active_tab == 'capacity'
         else None
     )
-    return _uncached_render(
-        'source_control/overview.html',
-        scope=scope,
-        dashboard_active_tab=active_tab,
-        authorized_installations=authorized_scope['installations'],
-        authorized_scope_has_more=authorized_scope.get('has_more', False),
-        selected_installation_id=(selected_installation['installation'].id if selected_installation else None),
-        selected_installation_name=(selected_installation['connection'].name if selected_installation else None),
-        installation_rows=installation_rows,
-        installation_pagination=installation_pagination,
-        repository_coverage=repository_coverage,
+    return {
+        'scope': scope,
+        'dashboard_active_tab': active_tab,
+        'authorized_installations': authorized_scope['installations'],
+        'authorized_scope_has_more': authorized_scope.get('has_more', False),
+        'selected_installation_id': selected_installation['installation'].id if selected_installation else None,
+        'selected_installation_name': selected_installation['connection'].name if selected_installation else None,
+        'selected_scope': selected_installation is not None,
+        'installation_rows': installation_rows,
+        'installation_pagination': installation_pagination,
+        'repository_coverage': repository_coverage,
+    }
+
+
+@source_control_bp.get('/')
+@permission_required('integrations.manage')
+def overview() -> ResponseReturnValue:
+    """Fast dashboard shell; selected tab evidence loads via lazy sections."""
+    _require_product_uat_access()
+    active_tab = request.args.get('tab', 'overview', type=str)
+    if active_tab not in _DASHBOARD_TABS:
+        active_tab = 'overview'
+    context = _dashboard_context(active_tab=active_tab)
+    # Registry footer HTMX selects an eager source-control health section from
+    # the full overview response, preserving canonical Rows/pagination URLs.
+    context['eager_health_pagination'] = active_tab == 'overview' and (
+        'installation_page' in request.args or 'installation_per_page' in request.args
     )
+    return _uncached_render('source_control/overview.html', **context)
+
+
+@source_control_bp.get('/section/<string:section>')
+@permission_required('integrations.manage')
+def section(section: str) -> ResponseReturnValue:
+    """HTMX lazy section; do not let its URL bypass scope authorization."""
+    if section not in _DASHBOARD_TABS:
+        abort(404)
+    _require_product_uat_access()
+    context = _dashboard_context(active_tab=section, include_coverage=True)
+    return _uncached_render('source_control/partials/_dashboard_section.html', section_key=section, **context)
 
 
 @source_control_bp.get('/repositories')
