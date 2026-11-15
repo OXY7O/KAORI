@@ -80,12 +80,13 @@ def test_vault_detail_reuses_four_domain_workspaces_without_cloning_engine():
         assert f'partials/_detail_{tab}.html' in detail
     assert "['configuration', 'validation', 'runtime', 'inventory']" in detail
     assert 'components/framed_workspace_tabs.html' in detail
-    assert 'id="vault-operational-evidence-title"' in detail
-    assert '{% if can_view_secrets_pki %}' in detail
-    assert '{% if can_view_cert_analytics %}' in detail
+    assert 'id="vault-operational-evidence-title"' not in detail
+    assert 'id="vault-detail-tabs"' in detail
+    assert "url_for('secrets_pki." not in detail
 
     configuration = _partial('_detail_configuration.html')
     assert 'integrations/components/_provider_configuration_contract.html' in configuration
+    assert 'Requires approved scope and read-only metadata access.' in configuration
     assert 'provider_configuration_contract.render(' in configuration
     assert "url_for('vault.edit_instance', instance_id=instance.id)" in configuration
     assert 'SecretID · Encrypted / Not Displayed' in configuration
