@@ -122,7 +122,8 @@ def test_security_pages_use_approved_dashboard_and_registry_components() -> None
     assert 'data-security-runtime-impact' in overview
     assert 'data-security-evidence-confidence' in overview
     assert 'components/resource_posture_grid.html' in overview
-    assert 'components/operational_metric_card.html' not in overview
+    assert 'components/operational_metric_card.html' in overview
+    assert overview.count('metric_card.render(') == 3  # Finding Highlights, not Security Snapshot
     assert 'components/operational_section_card.html' in overview
     assert 'data-security-finding-highlights' in overview
     assert 'posture.rows[:3]' in overview
@@ -326,7 +327,10 @@ def test_security_snapshot_replaces_four_independent_kpi_cards() -> None:
     html = _render_workspace_page('overview', _renderable_posture())
     assert 'Security Snapshot' in html
     assert 'data-security-snapshot-grid' in html
-    assert 'data-kaori-metric-density="compact"' not in html
+    snapshot_region = html.split('data-security-snapshot-grid', 1)[1]
+    snapshot_region = snapshot_region.split('data-security-posture-insights', 1)[0]
+    assert 'data-kaori-metric-density="compact"' not in snapshot_region
+    assert html.count('data-kaori-metric-density="compact"') == 3  # Overview highlights
     assert 'data-security-exposure-signals' not in html
     assert 'Security Exposure Signals' not in html
     assert 'Scan Coverage' in html
@@ -341,7 +345,7 @@ def test_security_snapshot_replaces_four_independent_kpi_cards() -> None:
     snapshot = read('app/templates/security_posture/overview.html')
     assert 'posture_grid.render(snapshot_metrics, columns=4)' in snapshot
     assert 'columns=4' in snapshot
-    assert 'metric_card.render(' not in snapshot
+    assert snapshot.count('metric_card.render(') == 3  # The separate Finding Highlights panel
     assert 'components/resource_posture_grid.html' in snapshot
     # The canonical component remains available to other operational dashboards.
     metric = read('app/templates/components/operational_metric_card.html')
@@ -725,7 +729,7 @@ def test_security_findings_hero_and_runtime_evidence_are_qualified() -> None:
     assert 'Evidence Boundary' in html
     assert 'Back to Overview' in html
     assert 'Evidence Qualification' in html
-    assert 'Scanner Evidence' in html
+    assert 'Scanner Coverage' in html
     assert 'Runtime Correlation' in html
     assert 'Open guide: Findings Evidence Guide' in html
     assert 'Open guide: CVE Finding Registry Guide' in html
@@ -759,13 +763,21 @@ def test_security_findings_table_keeps_every_server_paged_row() -> None:
     assert 'data-security-findings-data-table' in html
 
 
-def test_security_visual_polish_reuses_shared_cards_and_cve_identity() -> None:
+def test_security_visual_polish_reuses_shared_identity_and_inventory_dividers() -> None:
     overview_template = read('app/templates/security_posture/overview.html')
     findings_template = read('app/templates/security_posture/findings.html')
     assert 'components/operational_metric_card.html' in overview_template
-    assert 'components/operational_metric_card.html' in findings_template
+    assert 'components/operational_metric_card.html' not in findings_template
     assert overview_template.count('metric_card.render(') == 3
-    assert findings_template.count('metric_card.render(') == 3
+    assert 'metric_card.render(' not in findings_template
+    qualification = findings_template.split("{% call section_card.render('Evidence Qualification'", 1)[1]
+    qualification = qualification.split('{% endcall %}', 1)[0]
+    assert 'grid gap-px bg-outline-subtle md:grid-cols-3' in qualification
+    assert qualification.count('data-security-findings-signal=') == 3
+    assert 'rounded-lg border border-outline-subtle' not in qualification
+    assert '<dl ' in qualification
+    assert qualification.count('<dt ') == 3
+    assert qualification.count('<dd ') == 3
     assert 'table_ui.title_cell(row.cve_id' in overview_template
     assert 'table_ui.title_cell(row.cve_id' in findings_template
     assert 'components/section_intro.html' in findings_template
@@ -775,7 +787,10 @@ def test_security_visual_polish_reuses_shared_cards_and_cve_identity() -> None:
     overview_html = _render_workspace_page('overview', _renderable_posture())
     findings_html = _render_workspace_page('findings', _renderable_posture())
     assert overview_html.count('data-kaori-metric-density="compact"') == 3
-    assert findings_html.count('data-kaori-metric-density="compact"') == 3
+    assert 'data-kaori-metric-density="compact"' not in findings_html
+    assert 'data-security-findings-signal="scanner"' in findings_html
+    assert 'data-security-findings-signal="runtime"' in findings_html
+    assert 'data-security-findings-signal="freshness"' in findings_html
     assert 'data-security-finding-highlights' in overview_html
     assert 'data-security-finding-highlight' in overview_html
     assert 'Investigation Workspace' in findings_html
@@ -786,7 +801,7 @@ def test_security_visual_polish_reuses_shared_cards_and_cve_identity() -> None:
     assert 'data-kaori-canonical-registry-footer="security-posture-findings-registry"' in findings_html
 
 
-def test_security_findings_readiness_cards_do_not_fabricate_freshness() -> None:
+def test_security_findings_flat_readiness_does_not_fabricate_freshness() -> None:
     posture = _renderable_posture()
     posture['scan_status'] = {'label': 'Stale', 'tone': 'warning'}
     posture['runtime_status'] = {'status': 'Inputs Changed', 'tone': 'warning'}
@@ -797,6 +812,10 @@ def test_security_findings_readiness_cards_do_not_fabricate_freshness() -> None:
     assert 'Inputs Changed' in html
     assert 'Stale' in html
     assert 'Unknown' in html
+    assert 'data-security-findings-signal="scanner"' in html
+    assert 'data-security-findings-signal="runtime"' in html
+    assert 'data-security-findings-signal="freshness"' in html
+    assert 'data-kaori-metric-density="compact"' not in html
     assert 'Age of qualified scanner observations; freshness window is 24 hours.' in html
     assert 'Missing, partial or stale evidence is not proof of no exposure.' in html
 

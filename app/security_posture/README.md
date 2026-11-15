@@ -53,12 +53,17 @@ page-local flat boxes. Its first three observed CVEs use the existing
 a bordered, compact preview row, with a source-qualified `View Impact`
 handoff. This is not a full table and has no filters or pagination.
 
-The Findings page **Evidence Qualification** section uses the same compact
-metric-card density for scanner coverage, committed runtime readiness, and
-scanner evidence age. Their values remain independently qualified: Stale
-follows the actual scan status and age, Inputs Changed is a correlation
-readiness status, and neither may be displayed as fresh/all-clear without
-evidence. A standard `section_intro.render` precedes the full registry,
+The Findings page **Evidence Qualification** section now follows the
+existing **Inventory-style flat evidence layout**: one canonical
+`operational_section_card` shell containing a responsive three-column
+definition list for scanner coverage, committed runtime readiness, and
+scanner evidence age. Use a thin `gap-px bg-outline-subtle` divider,
+`bg-surface-card` cells and no nested mini-card borders or shadows.
+Source labels and compact source-derived status indicators remain attached
+to their respective columns, with one continuous semantic warning footer.
+Stale follows the actual scan status and age, Inputs Changed is a
+correlation-readiness status, and neither may be displayed as fresh/all-clear
+without evidence. A standard `section_intro.render` precedes the full registry,
 providing the owning workspace title and description without duplicating
 the table card's role. The CVE / Severity cell reuses
 `table_ui.title_cell` with the shared `table_label.status_indicator_label`
