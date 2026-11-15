@@ -7,8 +7,7 @@ from types import SimpleNamespace
 from flask import render_template
 
 from app import create_app
-from app.integrations.orchestration.configuration_automation import integration_module
-from app.integrations.orchestration.configuration_automation import frontpage
+from app.integrations.orchestration.configuration_automation import frontpage, integration_module
 from app.integrations.provider_matrix import provider_kind
 from app.integrations.taxonomy import get_capability_definition
 
