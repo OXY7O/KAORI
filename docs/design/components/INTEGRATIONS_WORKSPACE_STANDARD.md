@@ -384,6 +384,23 @@ TLS, existing KV/PKI opt-in semantics and Full Validation as a separate
 post-save gate.
 
 
+**Vault AppRole mount selection (UAT #3384):** the Add/Edit form must
+distinguish an **authentication method** from its **mount path**. The
+current Vault adapter supports AppRole only; changing the AppRole
+mount's name does not enable a new auth backend. Reuse the native
+`SelectField` / KAORI input pattern to offer `Default AppRole Mount
+(approle)` and `Custom AppRole Mount`. The default needs no editable
+path; choosing Custom reveals one labeled path field via the shared
+Alpine `x-show` / `x-cloak` pattern, with server-side
+`validate_auth_mount` still enforcing a single approved segment.
+Existing connections with a custom mount reselect Custom on Edit; the
+app must not decrypt SecretID for rendering. Switching back to Default
+must ignore stale hidden custom path input and invalidate connection
+proof; custom paths remain bound to the exact-input signed proof.
+Do not offer Kubernetes, JWT/OIDC, or cloud-IAM authentication as
+working form options until a separate approved adapter supplies their
+credential, runtime, security and test contracts.
+
 **Compact Alertmanager registration guidance (UAT #4698):** keep the
 Endpoint & Access subtitle, Registration Flow note, Related Operational
 Workspace summary, and disabled-connection toggle description concise enough
