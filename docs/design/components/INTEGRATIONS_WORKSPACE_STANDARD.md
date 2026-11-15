@@ -360,6 +360,30 @@ Rules:
 
 The retired sentence `Run Test Connection successfully before KAORI enables Register Connection.` must not be reintroduced as registration-footer UI copy.
 
+**Vault provider Add/Edit parity (Human UAT #3384):** the HashiCorp
+Vault connection form uses the same existing 8/4 responsive KAORI form
+composition as Harbor and GitHub: Connection Identity, Endpoint & Access
+with the canonical `connection_validation_header`, optional KV v2/PKI
+metadata scope, and a shared `operational_toggle` for stored certificates
+and enablement. The right column reuses
+`_provider_registration_context.html` (workflow + related workspace),
+not a stretched bullet-list card containing the form actions.
+
+Vault's Test Connection still uses its **existing synchronous POST**
+`action=test` route and produces an encrypted, requester/field-bound,
+10-minute proof; it must not be silently replaced with an HTMX event
+contract from another provider. Register uses the existing
+`_provider_registration_actions.html` gate in the main form footer;
+edit uses `components/form_action_bar.html`. Both prevent Save while
+unverified, and any input/change clears the in-form proof and verified UI
+state. Server-side `verified_secret` remains authoritative for expiry,
+scope and tamper protection; the client UI is only an affordance.
+Never prefill, echo or persist decrypted SecretID or transient Vault
+access tokens. Preserve AppRole auth, allowed HTTPS origin, verified
+TLS, existing KV/PKI opt-in semantics and Full Validation as a separate
+post-save gate.
+
+
 **Compact Alertmanager registration guidance (UAT #4698):** keep the
 Endpoint & Access subtitle, Registration Flow note, Related Operational
 Workspace summary, and disabled-connection toggle description concise enough
