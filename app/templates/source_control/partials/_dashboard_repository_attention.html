@@ -19,7 +19,9 @@
         <p class="text-sm text-content-muted">Zero repository grants were observed in a committed collection. No individual repository can be assessed.</p>
     {% elif repository_coverage.attention_count == 0 %}
         <div class="flex items-center gap-3 rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-            <i data-lucide="circle-check" class="h-5 w-5 shrink-0 text-status-normal" aria-hidden="true"></i>
+            <i data-lucide="circle-check"
+               class="h-5 w-5 shrink-0 text-status-normal"
+               aria-hidden="true"></i>
             <p class="text-sm text-content-secondary">
                 No missing visibility, lifecycle or default-branch revision evidence was observed in the retained grant rows. This is not a provider health or governance assessment.
             </p>

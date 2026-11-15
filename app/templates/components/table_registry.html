@@ -70,7 +70,7 @@
         marker=registry_id,
         lead=lead) }}
 {%- endmacro %}
-{% macro footer(endpoint, registry_id, loading_id, pagination, query_params, per_page_options, resource_label='Records', rows_aria_label='Records per page', control_name='registry', page_param='page', per_page_param='per_page') -%}
+{% macro footer(endpoint, registry_id, loading_id, pagination, query_params, per_page_options, resource_label='Records', rows_aria_label='Records per page', control_name='registry', page_param='page', per_page_param='per_page', path_params=none) -%}
     {% set canonical_query = query_params.copy() if query_params else {} %}
     {% set _ = canonical_query.update({per_page_param: pagination.per_page}) %}
     <footer class="{{ pagination_ui.footer_classes() }}"
@@ -81,8 +81,8 @@
                 {{ pagination_ui.resource_name(resource_label, pagination.total_items) }}
             </span>
             <form method="GET"
-                  action="{{ url_for(endpoint, **(request.view_args or {}) ) }}"
-                  hx-get="{{ url_for(endpoint, **(request.view_args or {}) ) }}"
+                  action="{{ url_for(endpoint, **(path_params if path_params is not none else (request.view_args or {})) ) }}"
+                  hx-get="{{ url_for(endpoint, **(path_params if path_params is not none else (request.view_args or {})) ) }}"
                   hx-target="#{{ registry_id }}"
                   hx-select="#{{ registry_id }}"
                   hx-swap="outerHTML"
@@ -141,7 +141,8 @@
                         endpoint=endpoint,
                         query_params=canonical_query,
                         hx_swap='outerHTML',
-                        href_endpoint=endpoint) }}
+                        href_endpoint=endpoint,
+                        path_params=path_params) }}
             {% set next_query = canonical_query.copy() %}
             {% set _ = next_query.update({page_param: pagination.next_page}) %}
             {% if pagination.has_next %}

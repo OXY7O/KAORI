@@ -55,11 +55,9 @@
                                         <span class="text-content-secondary">{{ bucket.label }}</span>
                                         <span class="shrink-0 font-semibold tabular-nums text-content-primary">{{ bucket.count }} ({{ bucket.percent }}%)</span>
                                     </div>
-                                    {{ progress_bar.semantic_bar(
-                                        bucket.percent,
-                                        'unknown' if bucket.label in ['Unknown', 'Missing Branch'] else 'info',
-                                        label=title ~ ': ' ~ bucket.label ~ ' (' ~ bucket.count ~ ' of ' ~ repository_coverage.grant_count ~ ')'
-                                    ) }}
+                                    {{ progress_bar.semantic_bar(bucket.percent,
+                                                                        'unknown' if bucket.label in ['Unknown', 'Missing Branch'] else 'info',
+                                                                        label=title ~ ': ' ~ bucket.label ~ ' (' ~ bucket.count ~ ' of ' ~ repository_coverage.grant_count ~ ')') }}
                                 </div>
                             {% endif %}
                         {% endfor %}
