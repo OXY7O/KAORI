@@ -1,7 +1,7 @@
 # Ansible execution and self-managed Kubernetes lifecycle — first pilot contract
 
 > **Scope:** design/decision contract for #4796, building on approved Infrastructure Automation foundation #556 and proposed hybrid execution-boundary context #1907.  
-> **Stage:** bounded architecture and pilot decomposition; **not an implemented Ansible provider, not a runnable playbook, and not infrastructure-mutation authorization**.  
+> **Stage:** approved execution/repository direction; first localhost-only worker and read-only playbook are on bounded Draft PRs (`KAORI#4807`, `kaori-operations#2`) and are **not yet accepted real-provider UAT or infrastructure mutation authority**.  
 > **Admission:** Dev Container pre-admission / Human UAT review; official admission **HOLD**.
 
 ## 1. Authority and ownership
@@ -55,7 +55,7 @@ Existing Linux hosts → self-managed Kubernetes
 Independent native API/provider read-back → committed verification / Activity Audit
 ```
 
-`ansible-runner` is a library/CLI; it is **not itself a VM or scheduling service**. MVP recommendation is a dedicated logical KAORI worker/container with a separate queue and controlled container execution environment. An isolated worker VM is an optional deployment placement if network segmentation, volume, blast-radius or privilege isolation requires it; do not require one for the initial pilot.
+`ansible-runner` is a library/CLI; it is **not itself a VM or scheduling service**. **Accepted long-term default:** dedicated logical KAORI Celery automation worker/container with a separate queue and controlled pinned execution environment. An isolated worker VM is an optional deployment placement if network segmentation, volume, blast-radius or privilege isolation requires it; do not require one for the initial pilot.
 
 Use existing canonical queue/worker registration, retry/lease, JobExecution and audit contracts; **do not create a second scheduler, generic shell endpoint, private job-state model or synchronous web-request mutation**. Exact queue identifier, resource limits, container runtime security and registered operations must be accepted in a bounded worker implementation issue, not inferred from this document.
 
@@ -63,7 +63,7 @@ Runner process exit code and native Ansible `successful` are **execution outcome
 
 ## 4. Automation repository proposal
 
-**Candidate name:** `OXY7O/kaori-operations`. Naming and repository creation remain **pending explicit operator decision**. This is not permission to initialize a remote repository.
+**Accepted operator decision (2026-11-15):** `OXY7O/kaori-operations` is the dedicated Git authority for operational automation source; the repository exists. Its current visibility is **public**, so real infrastructure inventory, secrets, credentials, kubeconfig, private topology or sensitive internal procedures must not be committed. The initial read-only source and tests are tracked by `OXY7O/kaori-operations#1` / Draft PR #2. This decision is not authorization to create a production cluster.
 
 ```text
 kaori-operations/
