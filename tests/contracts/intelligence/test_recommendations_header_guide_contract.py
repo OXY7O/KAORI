@@ -22,13 +22,14 @@ def test_recommendation_header_markup_is_valid_jinja_and_reuses_shared_component
     assert 'components/table_label.html' in summary
     assert "table_label.metadata_label('5 Indicators', icon='layout-dashboard')" in summary
     assert 'title_extra=summary_title_label' in summary
-    assert 'title_extra=workspace_guides' in page
+    assert 'title_extra=workspace_title_extra' in page
+    assert "table_label.metadata_label('Filtered Review', 'list-filter')" in page
     assert 'header_actions=workspace_header_actions' in page
     assert 'header_actions=None' in workspace
     assert '{% if header_actions %}{{ header_actions }}{% endif %}' in workspace
 
 
-def test_recommendations_review_intro_and_two_independent_guides() -> None:
+def test_recommendations_review_intro_metadata_label_and_single_guide() -> None:
     page = read('app/templates/intelligence/recommendations.html')
     summary_index = page.index('_recommendation_workspace_info.html')
     intro_index = page.index('section_intro.render(')
@@ -36,12 +37,12 @@ def test_recommendations_review_intro_and_two_independent_guides() -> None:
     assert summary_index < intro_index < workspace_index
     assert "'Recommendation Review'" in page
     assert 'Review committed findings by scope, evidence, and priority' in page
-    assert page.count("variant='guide'") == 2
+    assert page.count("variant='guide'") == 1
+    assert "metadata_label('Filtered Review', 'list-filter')" in page
     assert "'recommendation-workspace-guide'" in page
-    assert "'recommendation-filters-guide'" in page
-    assert "'Recommendation Workspace Guide'" in page
-    assert "'Recommendation Filters Guide'" in page
-    assert 'committed KAORI evidence' in page
+    assert "'recommendation-filters-guide'" not in page
+    assert "'Recommendations Guide'" in page
+    assert 'committed findings' in page
     assert 'updates the browser URL' in page
 
 
