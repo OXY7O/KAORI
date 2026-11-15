@@ -27,23 +27,23 @@
         'Retained' if scope.latest_committed_at else 'Unavailable',
         'info' if scope.latest_committed_at else 'unknown',
         'database-check',
-        description='Retained inventory; not live GitHub health.') }}
+        description='Committed inventory is retained in KAORI. Live GitHub health is not verified.') }}
     {{ evidence_tile.freshness('Account Observation',
         account_observed_at|user_datetime if account_observed_at else 'Not Observed',
         'Observed' if account_observed_at else 'Unavailable',
         'info' if account_observed_at else 'unknown',
         'users',
-        description='Account observed; current access unverified.') }}
+        description='Account identity was observed in KAORI. Current access is not verified.') }}
     {{ evidence_tile.freshness('Engineering Flow',
         'Not Qualified',
         'Unavailable',
         'unknown',
         'git-pull-request',
-        description='PR, CI and DORA evidence not yet qualified.') }}
+        description='PR, CI and DORA measurements need their own committed evidence source.') }}
     {{ evidence_tile.freshness('Reports & Lineage',
         'Not Qualified',
         'Unavailable',
         'unknown',
         'file-text',
-        description='Reports and deployment lineage not qualified.') }}
+        description='Reports and deployment lineage require separately qualified source evidence.') }}
 {% endcall %}

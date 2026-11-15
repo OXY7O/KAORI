@@ -329,41 +329,101 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
     for name in ('capacity', 'signals', 'reporting', 'inventory_snapshot', 'data_freshness'):
         env.parse((template_dir / 'partials' / f'_dashboard_{name}.html').read_text())
 
+    committed_at = datetime(2026, 10, 26, tzinfo=UTC)
+    installation = {
+        'committed': True,
+        'observed_count': 0,
+        'coverage': 'exhaustive_installation_grants',
+        'collection_status': 'committed',
+        'account': SimpleNamespace(last_observed_at=committed_at),
+        'last_committed_at': committed_at,
+    }
     scope = {
+        'installations': (installation,),
         'installation_count': 1,
         'committed_count': 1,
         'uncollected_count': 0,
         'has_more': False,
-        'latest_committed_at': None,
+        'latest_committed_at': committed_at,
     }
 
-    def url(endpoint):
-        return '/' + endpoint.replace('.', '/')
+    def url(endpoint, **kwargs):
+        path = '/' + endpoint.replace('.', '/')
+        if 'installation_id' in kwargs:
+            path += f'?installation_id={kwargs["installation_id"]}'
+        return path
 
-    capacity = env.get_template('source_control/partials/_dashboard_capacity.html')
-    observed = capacity.render(scope=scope, url_for=url)
-    assert '1 authorized installation scope' in observed
-    assert 'Engineering Demand' in observed
-    assert 'Not Qualified' in observed
-    assert 'No committed history' in observed
+    panels = {
+        name: env.get_template(f'source_control/partials/_dashboard_{name}.html')
+        for name in ('capacity', 'signals', 'reporting')
+    }
+    for name, panel in panels.items():
+        blocked = panel.render(
+            scope=scope,
+            selected_scope=False,
+            selected_installation_id=None,
+            url_for=url,
+        )
+        assert 'data-kaori-blocked-state' in blocked, name
+        assert 'Select Installation' in blocked, name
+        assert 'Installation Required' in blocked, name
+        assert 'Not Qualified' not in blocked, name
 
-    signals = env.get_template('source_control/partials/_dashboard_signals.html')
-    collected = signals.render(scope=scope, url_for=url)
-    assert 'No Visible Collection Gap' in collected
-    assert 'Unavailable' in collected
-    not_collected = signals.render(scope={**scope, 'uncollected_count': 1}, url_for=url)
-    assert 'Review Collection' in not_collected
-    assert '1 visible installation(s) without committed inventory' in not_collected
-    bounded = signals.render(scope={**scope, 'has_more': True}, url_for=url)
-    assert 'first 50 authorized active installations' in bounded
+        selected = panel.render(
+            scope=scope,
+            selected_scope=True,
+            selected_installation_id=11,
+            url_for=url,
+        )
+        assert 'data-kaori-blocked-state' not in selected, name
+        assert 'Select Installation' not in selected, name
+        assert 'Not Qualified' in selected, name
 
-    reporting = env.get_template('source_control/partials/_dashboard_reporting.html')
-    not_reported = reporting.render(scope=scope, url_for=url)
-    assert 'Not Collected' in not_reported
-    assert 'Engineering Reports' in not_reported
-    assert 'Not Qualified' in not_reported
-    assert '/source_control/repositories' in not_reported
+    capacity_selected = panels['capacity'].render(
+        scope=scope, selected_scope=True, selected_installation_id=11, url_for=url
+    )
+    assert 'Repository Collection Footprint' in capacity_selected
+    assert 'Observed Repositories' in capacity_selected
+    assert 'Exhaustive Installation Grants' in capacity_selected
+    assert 'Engineering Demand' in capacity_selected
 
+    signals_selected = panels['signals'].render(
+        scope=scope, selected_scope=True, selected_installation_id=11, url_for=url
+    )
+    assert 'Collection Readiness' in signals_selected
+    assert 'No Visible Gap' in signals_selected
+    assert 'PR / CI Alert Evidence' in signals_selected
+    assert 'Unavailable' in signals_selected
+
+    reporting_selected = panels['reporting'].render(
+        scope=scope, selected_scope=True, selected_installation_id=11, url_for=url
+    )
+    assert '2026-10-26T00:00:00+00:00' in reporting_selected
+    assert 'Account Observation' in reporting_selected
+    assert 'Engineering Reports' in reporting_selected
+    assert '?installation_id=11' in reporting_selected
+
+    no_collection = {
+        **scope,
+        'committed_count': 0,
+        'uncollected_count': 1,
+        'latest_committed_at': None,
+        'installations': (
+            {
+                **installation,
+                'committed': False,
+                'observed_count': None,
+                'collection_status': 'not_collected',
+                'last_committed_at': None,
+            },
+        ),
+    }
+    absent = panels['capacity'].render(
+        scope=no_collection, selected_scope=True, selected_installation_id=11, url_for=url
+    )
+    assert 'Unknown' in absent
+    assert 'Not Collected' in absent
+    assert 'Unavailable' in absent
 
 def test_product_overview_installation_health_paginates_before_render(monkeypatch):
     """Overview rows follow canonical 5/10/25/50 without altering scoped evidence."""
@@ -615,7 +675,7 @@ def test_product_overview_selector_table_and_two_line_evidence_contract():
     assert '<button type="submit"' not in overview
     assert 'hx-include="closest form"' not in overview
     assert "input_id='source-control-dashboard-active-tab'" in overview
-    assert "selected_scope = selected_installation_id is not none" in overview
+    assert 'selected_scope = selected_installation_id is not none' in overview
     assert "'Selected Inventory Retained'" in overview
     assert "'Selected Inventory Not Collected'" in overview
     assert "'Visible Scope Collected'" in overview
@@ -630,10 +690,10 @@ def test_product_overview_selector_table_and_two_line_evidence_contract():
     assert 'account.last_observed_at' in overview
     assert 'Repository observations are shown only for a single' not in inventory
     for description in (
-        'Retained inventory; not live GitHub health.',
-        'Account observed; current access unverified.',
-        'PR, CI and DORA evidence not yet qualified.',
-        'Reports and deployment lineage not qualified.',
+        'Committed inventory is retained in KAORI. Live GitHub health is not verified.',
+        'Account identity was observed in KAORI. Current access is not verified.',
+        'PR, CI and DORA measurements need their own committed evidence source.',
+        'Reports and deployment lineage require separately qualified source evidence.',
     ):
         assert description in freshness
     assert 'operational_evidence_tile.html' in freshness
@@ -687,9 +747,7 @@ def test_product_overview_one_grant_all_vs_selected_are_explicitly_scoped(monkey
     assert all_context['selected_installation_name'] is None
     assert all_context['dashboard_active_tab'] == 'reporting'
 
-    with app.test_request_context(
-        '/source-control/', query_string={'tab': 'reporting', 'installation_id': '11'}
-    ):
+    with app.test_request_context('/source-control/', query_string={'tab': 'reporting', 'installation_id': '11'}):
         assert routes.overview.__wrapped__() == 'rendered'
     selected = contexts[-1]
     assert selected['selected_installation_id'] == 11
@@ -700,3 +758,47 @@ def test_product_overview_one_grant_all_vs_selected_are_explicitly_scoped(monkey
     assert selected['scope']['committed_count'] == scope['committed_count']
     assert selected['scope']['installation_count'] == scope['installation_count']
     assert selected['installation_rows'] == all_context['installation_rows']
+
+
+def test_source_control_overview_compact_text_table_and_scope_gate_contract():
+    root = Path(__file__).resolve().parents[2] / 'app/templates/source_control'
+    overview = (root / 'overview.html').read_text()
+    freshness = (root / 'partials/_dashboard_data_freshness.html').read_text()
+
+    for caption in (
+        'Authorized GitHub installations.',
+        'Committed installation scopes.',
+        'Uncollected installation scopes.',
+        'Latest retained inventory date.',
+        'Selected authorized installation.',
+        'Inventory retained for this grant.',
+        'Grant awaiting collection.',
+        'Selected inventory commit date.',
+    ):
+        assert caption in overview
+        assert len(caption) <= 36
+
+    assert 'min-w-[1024px] table-fixed' in overview
+    assert '<colgroup>' in overview
+    assert 'title="Observed repositories per installation"' in overview
+    assert 'text-right tabular-nums' in overview
+    assert "item.observed_count if item.observed_count is not none else 'Unknown'" in overview
+    assert 'table_registry.footer(' in overview
+
+    for phrase in (
+        'Committed inventory is retained in KAORI. Live GitHub health is not verified.',
+        'Account identity was observed in KAORI. Current access is not verified.',
+        'PR, CI and DORA measurements need their own committed evidence source.',
+        'Reports and deployment lineage require separately qualified source evidence.',
+    ):
+        assert phrase in freshness
+
+    for name in ('capacity', 'signals', 'reporting'):
+        partial = (root / 'partials' / f'_dashboard_{name}.html').read_text()
+        assert '{% if not selected_scope %}' in partial
+        assert "components/states/_blocked_state.html" in partial
+        assert 'Installation Required' in partial
+        assert 'Select Installation' in partial
+        assert 'evidence_tile.freshness(' in partial
+        assert 'selected_item' in partial
+        assert 'Not Qualified' in partial

@@ -85,19 +85,19 @@
                      class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     {{ metric_card.render('Selected Installation' if selected_scope else 'Registered Installations',
                                         scope.installation_count ~ ('+' if scope.has_more else '') ,
-                    'This authorized GitHub App installation only.' if selected_scope else 'Active GitHub.com connections in the bounded authorized UAT scope.',
+                    'Selected authorized installation.' if selected_scope else 'Authorized GitHub installations.',
                     'git-branch', source_label='KAORI Integration Registry') }}
                     {{ metric_card.render('Committed Inventory Scopes',
                                         scope.committed_count,
-                                        'Retained inventory for this installation.' if selected_scope else 'Installations with a retained successful inventory generation.',
+                                        'Inventory retained for this grant.' if selected_scope else 'Committed installation scopes.',
                                         'database-zap', source_label='SC-03 Collection Evidence') }}
                     {{ metric_card.render('Uncollected Scopes',
                                         scope.uncollected_count,
-                                        'No retained collection for this installation.' if selected_scope else 'No successful committed collection for these visible installations.',
+                                        'Grant awaiting collection.' if selected_scope else 'Uncollected installation scopes.',
                                         'circle-help', source_label='SC-03 Collection Evidence') }}
                     {{ metric_card.render('Selected Inventory Commit' if selected_scope else 'Latest Inventory Commit',
                                         scope.latest_committed_at|user_date if scope.latest_committed_at else 'Unknown',
-                                        'Retained collection for the selected installation; not live GitHub health.' if selected_scope else 'Latest retained collection among listed installations; not live GitHub health.',
+                                        'Selected inventory commit date.' if selected_scope else 'Latest retained inventory date.',
                                         'clock-3', source_label='KAORI Committed State') }}
                 </div>
             {% endcall %}
@@ -139,15 +139,26 @@
                                         {% include "components/states/_empty_state.html" %}
                                     {% else %}
                                         <div class="w-full min-w-0 overflow-x-auto">
-                                            <table class="{{ table_ui.table_classes('min-w-[1100px]') }}">
+                                            <table class="{{ table_ui.table_classes('min-w-[1024px] table-fixed') }}">
                                                 <caption class="sr-only">Committed installation-scoped GitHub inventory coverage.</caption>
+                                                <colgroup>
+                                                    <col class="w-[19%]">
+                                                    <col class="w-[23%]">
+                                                    <col class="w-[12%]">
+                                                    <col class="w-[17%]">
+                                                    <col class="w-[9%]">
+                                                    <col class="w-[13%]">
+                                                    <col class="w-[7%]">
+                                                </colgroup>
                                                 <thead class="{{ table_ui.head_classes() }}">
                                                     <tr>
                                                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Installation</th>
                                                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">GitHub Account</th>
                                                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Collection</th>
                                                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Coverage</th>
-                                                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed Repositories</th>
+                                                        <th scope="col"
+                                                            class="{{ table_ui.header_cell_classes() }} text-right"
+                                                            title="Observed repositories per installation">Repositories</th>
                                                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Last Committed</th>
                                                         <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Action</th>
                                                     </tr>
@@ -155,7 +166,7 @@
                                                 <tbody class="{{ table_ui.body_classes() }}">
                                                     {% for item in installation_rows %}
                                                         <tr class="{{ table_ui.row_classes() }}">
-                                                            <td class="{{ table_ui.cell_classes() }} min-w-[190px]">
+                                                            <td class="{{ table_ui.cell_classes() }} min-w-0">
                                                                 {{ table_ui.title_cell(item.connection.name,
                                                                                                                                 'Installation #' ~ item.installation.native_installation_id,
                                                                                                                                 'git-branch') }}
@@ -181,15 +192,15 @@
                                                                                                                                 item.collection_status|replace('_', ' ') |title,
                                                                 display='indicator') }}
                                                             </td>
-                                                            <td class="{{ table_ui.cell_classes() }} max-w-[200px] break-words">
+                                                            <td class="{{ table_ui.cell_classes() }} break-words">
                                                                 <span class="text-xs leading-5 text-content-secondary">{{ item.coverage|replace('_', ' ') |title }}</span>
                                                             </td>
-                                                            <td class="{{ table_ui.cell_classes() }} tabular-nums">
+                                                            <td class="{{ table_ui.cell_classes() }} text-right tabular-nums">
                                                                 <p class="text-sm font-semibold text-content-primary">
                                                                     {{ item.observed_count if item.observed_count is not none else 'Unknown' }}
                                                                 </p>
                                                             </td>
-                                                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap text-xs">
+                                                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap text-xs tabular-nums">
                                                                 {{ item.last_committed_at|user_datetime if item.last_committed_at else 'Not Collected' }}
                                                             </td>
                                                             <td class="{{ table_ui.cell_classes(action=true) }} whitespace-nowrap">
