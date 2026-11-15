@@ -333,6 +333,7 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
         'committed': True,
         'observed_count': 0,
         'coverage': 'exhaustive_installation_grants',
+        'selection_scope': 'all_repositories',
         'collection_status': 'committed',
         'account': SimpleNamespace(last_observed_at=committed_at),
         'last_committed_at': committed_at,
@@ -381,10 +382,14 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
     capacity_selected = panels['capacity'].render(
         scope=scope, selected_scope=True, selected_installation_id=11, url_for=url
     )
-    assert 'Repository Collection Footprint' in capacity_selected
+    assert 'Repository Grant Snapshot' in capacity_selected
+    assert 'Engineering Demand Evidence' in capacity_selected
     assert 'Observed Repositories' in capacity_selected
     assert 'Exhaustive Installation Grants' in capacity_selected
-    assert 'Engineering Demand' in capacity_selected
+    assert 'All Repositories' in capacity_selected
+    assert 'Inventory Committed' in capacity_selected
+    assert 'Engineering Demand Not Qualified' in capacity_selected
+    assert 'data-kaori-empty-state' in capacity_selected
 
     signals_selected = panels['signals'].render(
         scope=scope, selected_scope=True, selected_installation_id=11, url_for=url
@@ -423,6 +428,7 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
     assert 'Unknown' in absent
     assert 'Not Collected' in absent
     assert 'Unavailable' in absent
+
 
 def test_product_overview_installation_health_paginates_before_render(monkeypatch):
     """Overview rows follow canonical 5/10/25/50 without altering scoped evidence."""
@@ -838,3 +844,80 @@ def test_source_control_health_register_reflows_without_horizontal_scrolling():
     assert 'components/info_tip.html' not in freshness
     assert 'header_badge=' not in freshness
     assert 'source-control-evidence-guide' not in freshness
+
+
+def test_source_control_repository_coverage_uses_shared_peer_cards_and_selected_evidence():
+    """Capacity tab is a source-qualified Repository Coverage view, not a synthetic forecast."""
+    from jinja2 import Environment, FileSystemLoader
+
+    root = Path(__file__).resolve().parents[2] / 'app/templates'
+    overview = (root / 'source_control/overview.html').read_text()
+    capacity = (root / 'source_control/partials/_dashboard_capacity.html').read_text()
+    framework = (root / 'components/operational_dashboard_workspace.html').read_text()
+
+    assert "'capacity', 'Repository Coverage', 'folder-git-2'" in overview
+    assert 'tabs=source_control_tabs' in overview
+    assert "'capacity', 'Capacity & Demand', 'gauge'" in framework
+    assert "dashboard_workspace.panel('capacity'" in overview
+    assert "section_intro.render('Capacity & Demand'" not in capacity
+    assert 'components/section_intro.html' not in capacity
+    assert 'Repository Collection Footprint' not in capacity
+    assert 'peer_grid.layout_classes()' in capacity
+    assert "peer_grid.column_classes('primary')" in capacity
+    assert "peer_grid.column_classes('secondary')" in capacity
+    assert 'components/states/_blocked_state.html' in capacity
+    assert 'components/states/_empty_state.html' in capacity
+    assert "source_control.repositories', installation_id=selected_installation_id" in capacity
+    assert 'scope.installations|sum' not in capacity
+    assert 'selected_item.observed_count' in capacity
+    assert 'selected_item.selection_scope' in capacity
+    assert 'has_count = has_collection and selected_item.observed_count is not none' in capacity
+    assert 'Actions usage' in capacity and 'forecasts' in capacity
+
+    env = Environment(loader=FileSystemLoader(str(root)))
+    env.filters['user_datetime'] = lambda dt: dt.isoformat() if dt else 'Not Collected'
+    panel = env.get_template('source_control/partials/_dashboard_capacity.html')
+
+    def url(endpoint, **kwargs):
+        suffix = f'?installation_id={kwargs["installation_id"]}' if 'installation_id' in kwargs else ''
+        return '/' + endpoint.replace('.', '/') + suffix
+
+    observation = {
+        'committed': True,
+        'observed_count': 0,
+        'coverage': 'exhaustive_installation_grants',
+        'selection_scope': 'selected_repositories',
+        'last_committed_at': datetime(2026, 10, 26, tzinfo=UTC),
+    }
+    scope = {'installations': (observation,)}
+    blocked = panel.render(scope=scope, selected_scope=False, selected_installation_id=None, url_for=url)
+    assert 'data-kaori-blocked-state' in blocked
+    assert 'Select Installation' in blocked
+    assert 'Repository Grant Snapshot' not in blocked
+
+    selected = panel.render(scope=scope, selected_scope=True, selected_installation_id=11, url_for=url)
+    assert 'data-kaori-blocked-state' not in selected
+    assert selected.count('data-kaori-empty-state') == 1
+    assert 'Selected Repositories' in selected
+    assert 'Exhaustive Installation Grants' in selected
+    assert '>0</p>' in selected
+    assert 'Observed' in selected
+    assert '2026-10-26T00:00:00+00:00' in selected
+    assert '?installation_id=11' in selected
+    assert 'Engineering Demand Not Qualified' in selected
+    assert 'Repository Grant Snapshot' in selected
+
+    missing = panel.render(
+        scope={
+            'installations': (
+                {**observation, 'committed': False, 'observed_count': None, 'last_committed_at': None},
+            )
+        },
+        selected_scope=True,
+        selected_installation_id=11,
+        url_for=url,
+    )
+    assert 'Unknown' in missing
+    assert 'Not Collected' in missing
+    assert 'Unavailable' in missing
+    assert 'Engineering Demand Not Qualified' in missing
