@@ -1,6 +1,6 @@
 # Ansible provider registration · Kubernetes Lifecycle (Kubespray) v1
 
-**Authority:** #556, #4796, #4799 and implementation issue #4834. Status: issue-scoped candidate in `kaori/issue-4834-ansible-kubespray-provider-lifecycle`; not production or cluster execution admission.
+**Authority:** #556, #4796, #4799, implementation #4834 and UI follow-up #4858. Status: reviewed candidate in `kaori/review/staging-uat`; awaiting Dev Container UAT/Human Acceptance. Not official `kaori/staging`, production or cluster execution admission.
 
 ## Product navigation
 `Integrations → Orchestration → Configuration Automation → Ansible → Choose Automation Profile → Kubernetes Lifecycle → Add Connection → Manage Connection`.
@@ -18,7 +18,11 @@ The existing `IntegrationInstance` table owns the single canonical provider iden
 - Revalidate Source is a CSRF-protected POST to the same pinned Git authority, committed to canonical metadata with an Activity Audit. There is no GET side effect. Denial keeps remote operations blocked.
 
 ## UI reuse
-The Ansible provider landing uses the approved shared provider frontpage Hero/metric cards and canonical `table_registry`/pagination components. Source selection reuses existing provider registration hero and form action bar. The manage page reuses `framed_workspace_tabs`, shared posture, table and readiness components for:
+The Ansible provider landing uses the approved shared provider frontpage Hero/metric cards and canonical `table_registry`/pagination components. The Add Connection page follows the existing MinIO-style **Form + Right Context** registration pattern: Connection Identity; a bordered Git Source & Validation section using the shared `connection_validation_header` with **Validate Source** as the source-owned pre-save POST action; Compatibility & Execution References; and the shared `_provider_registration_actions` footer with reactive **Source Validation Required / Source Validated** status, Cancel and gated **Save Connection**. The context rail uses the shared `_provider_registration_context` for ordered registration steps and the Orchestration operational workspace. The shared footer's default Test Connection language remains unchanged for Kubernetes, MinIO and other connection-based integrations; Ansible passes source-specific copy without a new component.
+
+`connectionVerified` represents only the current signed **source proof**, not execution readiness. The input/change handlers clear the user-bound hidden proof and disable Save if any registration field changes. Source verification submits `action=test`; Save submits `action=save` only with valid proof. The server is authoritative for validation and CSRF/RBAC regardless of browser state. This first slice offers **Add** only and does not invent an Edit route.
+
+The manage page reuses `framed_workspace_tabs`, shared posture, table and readiness components for:
 1. Configuration
 2. Validation & Capabilities
 3. Runtime & History

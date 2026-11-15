@@ -204,6 +204,36 @@ def test_provider_registration_actions_and_placeholders_are_consistent() -> None
     assert "'placeholder': 'Enter secret key'" in minio_form
 
 
+def test_ansible_registration_uses_existing_actions_with_source_specific_copy() -> None:
+    actions = read('app/templates/integrations/components/_provider_registration_actions.html')
+    ansible = read('app/templates/integrations/orchestration/configuration_automation/providers/ansible/form.html')
+    minio = read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html')
+
+    # Existing providers retain their default Test Connection wording and proof state.
+    for default in (
+        'required_title="Connection Test Required"',
+        'verified_title="Connection Verified"',
+        'required_description="Complete Test Connection before registration."',
+        'verified_description="Verified connection payload is ready to register."',
+        'x-bind:disabled="!connectionVerified"',
+    ):
+        assert default in actions
+    assert 'provider_registration_actions.render(' in minio
+
+    # Ansible supplies truthful source-check wording without creating a separate footer.
+    assert 'integrations/components/_provider_registration_actions.html' in ansible
+    assert 'registration_actions.render(' in ansible
+    assert 'required_title="Source Validation Required"' in ansible
+    assert 'verified_title="Source Validated"' in ansible
+    assert 'register_label="Save Connection"' in ansible
+    assert 'submit_name="action"' in ansible
+    assert 'submit_value="save"' in ansible
+    assert 'connectionVerified:' in ansible
+    assert "this.$refs.connectionProof.value = ''" in ansible
+    assert 'connection_validation_header.render(' in ansible
+    assert 'registration_context.render(' in ansible
+
+
 def test_minio_connection_test_separates_s3_access_from_product_identity() -> None:
     client = read('app/integrations/storage/object_storage/providers/minio/client.py')
     s3_adapter = read('app/integrations/storage/object_storage/adapters/s3/client.py')
