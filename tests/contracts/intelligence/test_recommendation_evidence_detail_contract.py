@@ -114,7 +114,11 @@ def test_modal_header_keeps_full_context_when_restart_evidence_is_incomplete() -
         },
     }
     assert summary(finding) == original
-    assert summary({**finding, 'evidence': {**finding['evidence'], 'max_restart_count': 100}}) == original
+    conflicting = {
+        **finding,
+        'evidence': {**finding['evidence'], 'max_restart_count': 100},
+    }
+    assert summary(conflicting) == original
     assert summary({**finding, 'rule_key': 'registry.image.scan'}) == original
 
     template = read('app/templates/intelligence/partials/_recommendation_detail_content.html')
