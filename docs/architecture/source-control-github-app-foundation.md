@@ -149,3 +149,14 @@ Later #559 workstreams handle PR/review/check, Actions/CI, governance, contribut
 - GitHub.com API-specific acceptance and real integration UAT; GHES is **not** counted as tested or supported.
 
 Documentation changes do not bypass Developer Check, Full Admission, human review, or later real-environment UAT. Registry UAT remains separately held. This documentation-only work commits on its issue-scoped branch; a Draft PR may target the temporary review holding branch, but neither integration/UAT nor official admission is implied.
+
+## Source Control Overview — canonical Operational Dashboard composition (#4029)
+
+Source Control Overview consumes the same operational dashboard presentation family as Kubernetes, Object Storage and Artifact Registry: shared Operational Dashboard Hero, Operational Signal Overview with four metric indicators, four-tab dashboard controller, operational section cards, evidence tiles, peer grid and section intros. The tabs use the canonical `overview`, `capacity`, `signals`, `reporting` keys and a route-level whitelist for tab selection. The existing installation coverage table, scoped repository actions, empty state, 50-installation bound and UAT authorization remain unchanged.
+
+- Operations Overview: committed installation and GitHub account coverage, last retained collection, and qualified inventory/evidence boundaries. Never sum overlapping repository grants.
+- Capacity & Demand: only bounded authorized installation counts are observed. Growth, PR throughput, Actions demand and forecasts remain Not Qualified until collected.
+- Signals & Actions: collection readiness gaps only; a missing snapshot is not a provider outage, CI alert, security finding or Intelligence recommendation.
+- Reporting: retained collection identity and the installation-scoped Repositories handoff; generated engineering reports, DORA and deployment lineage are unavailable without their own collector.
+
+This read-only composition adds no GitHub provider GET, collector, worker, score, reporting generator, deployment action or infrastructure mutation. The local super-admin and `integrations.manage` UAT guard remains until #724 resource-scoped access is admitted. Visual QA, keyboard interaction, light/dark, responsive and exact-candidate verification are required before human acceptance.

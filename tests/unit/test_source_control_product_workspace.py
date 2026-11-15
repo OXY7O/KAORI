@@ -250,3 +250,105 @@ def test_product_templates_use_existing_source_control_inventory_contract():
     assert 'inventory.total == 0' in reusable
     assert '[5, 10, 25, 50]' in reusable
     assert 'exact_default_branch_sha' in reusable
+
+
+
+def test_product_overview_dashboard_tabs_use_shared_contract_without_live_provider_calls(monkeypatch):
+    """Only reviewed dashboard perspective keys enter the shared controller."""
+    app = Flask(__name__)
+    monkeypatch.setattr(routes, '_require_product_uat_access', lambda: None)
+    monkeypatch.setattr(routes, 'build_source_control_overview', lambda: {'installations': ()})
+    captured = []
+
+    def capture(template, **context):
+        captured.append((template, context))
+        return 'rendered'
+
+    monkeypatch.setattr(routes, '_uncached_render', capture)
+    for value, expected in (
+        ('overview', 'overview'),
+        ('capacity', 'capacity'),
+        ('signals', 'signals'),
+        ('reporting', 'reporting'),
+        ('unknown', 'overview'),
+        ("'; alert(1); //", 'overview'),
+    ):
+        with app.test_request_context('/source-control/', query_string={'tab': value}):
+            assert routes.overview.__wrapped__() == 'rendered'
+            template, context = captured[-1]
+            assert template == 'source_control/overview.html'
+            assert context['dashboard_active_tab'] == expected
+            assert context['scope'] == {'installations': ()}
+
+
+def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_inventory():
+    from jinja2 import Environment, FileSystemLoader
+
+    root = Path(__file__).resolve().parents[2]
+    template_dir = root / 'app/templates/source_control'
+    overview = (template_dir / 'overview.html').read_text()
+    for reference in (
+        'components/operational_dashboard_workspace.html',
+        'components/operational_signal_overview.html',
+        'components/operational_metric_card.html',
+        'components/operational_section_card.html',
+        'components/operational_evidence_tile.html',
+        'components/peer_content_grid.html',
+        'components/section_intro.html',
+        'components/info_tip.html',
+    ):
+        assert reference in overview
+    for tab in ('overview', 'capacity', 'signals', 'reporting'):
+        assert f"dashboard_workspace.panel('{tab}', active_dashboard_tab" in overview
+    assert "dashboard_workspace.navigation('source-control-dashboard'" in overview
+    assert 'data-kaori-source-control-product' in overview
+    assert 'GitHub Account</th>' in overview
+    assert 'item.installation.id' in overview
+    assert 'scope.has_more' in overview
+    assert 'scope.latest_committed_at' in overview
+    assert 'No Active GitHub Installations' in overview
+    assert 'No derived score, delivery success rate or developer productivity ranking' in overview
+    assert 'MetricsConsumer' not in overview
+    assert 'request.' not in overview
+    assert '<script' not in overview and '<style' not in overview
+
+    env = Environment(loader=FileSystemLoader(str(root / 'app/templates')))
+    env.filters['user_datetime'] = lambda dt: dt.isoformat() if dt else 'Not Collected'
+    env.parse(overview)
+    for name in ('capacity', 'signals', 'reporting'):
+        env.parse((template_dir / 'partials' / f'_dashboard_{name}.html').read_text())
+
+    scope = {
+        'installation_count': 1,
+        'committed_count': 1,
+        'uncollected_count': 0,
+        'has_more': False,
+        'latest_committed_at': None,
+    }
+
+    def url(endpoint):
+        return '/' + endpoint.replace('.', '/')
+
+    capacity = env.get_template('source_control/partials/_dashboard_capacity.html')
+    observed = capacity.render(scope=scope, url_for=url)
+    assert '1 authorized installation scope' in observed
+    assert 'Engineering Demand' in observed
+    assert 'Not Qualified' in observed
+    assert 'No committed history' in observed
+
+    signals = env.get_template('source_control/partials/_dashboard_signals.html')
+    collected = signals.render(scope=scope, url_for=url)
+    assert 'No Visible Collection Gap' in collected
+    assert 'Unavailable' in collected
+    not_collected = signals.render(scope={**scope, 'uncollected_count': 1}, url_for=url)
+    assert 'Review Collection' in not_collected
+    assert '1 visible installation(s) without committed inventory' in not_collected
+    bounded = signals.render(scope={**scope, 'has_more': True}, url_for=url)
+    assert 'first 50 authorized active installations' in bounded
+
+    reporting = env.get_template('source_control/partials/_dashboard_reporting.html')
+    not_reported = reporting.render(scope=scope, url_for=url)
+    assert 'Not Collected' in not_reported
+    assert 'Engineering Reports' in not_reported
+    assert 'Not Qualified' in not_reported
+    assert '/source_control/repositories' in not_reported
