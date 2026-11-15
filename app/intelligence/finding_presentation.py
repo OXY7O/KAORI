@@ -107,7 +107,6 @@ def compact_recommendation_summary(value: Any, *, limit: int = 180) -> str:
     return ' '.join(words).rstrip(' ,;:-') + '.'
 
 
-
 def recommendation_detail_header_summary(item: dict[str, Any]) -> str:
     """Keep the review header concise using committed restart evidence only."""
 
