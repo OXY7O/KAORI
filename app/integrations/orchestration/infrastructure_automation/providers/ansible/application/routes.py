@@ -194,6 +194,7 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
 
 @ansible_bp.post('/instances/<int:instance_id>/probe')
 @permission_required('integrations.manage')
+@permission_required('jobs.execute')
 def probe(instance_id: int) -> ResponseReturnValue:
     instance = instance_or_none(instance_id)
     if instance is None:

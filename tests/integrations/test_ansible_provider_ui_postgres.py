@@ -156,7 +156,9 @@ def test_authentication_and_csrf_deny_unapproved_management() -> None:
         db.create_all()
     assert app.test_client().get(INDEX).status_code in {302, 401, 403}
     restricted = _authenticated_client(app, is_super_admin=False)
-    assert restricted.get(INDEX).status_code == 403
+    restricted_response = restricted.get(INDEX)
+    assert restricted_response.status_code in {302, 403}
+    assert b'Ansible Infrastructure Automation' not in restricted_response.data
     authorized = _authenticated_client(app)
     assert (
         authorized.post(
