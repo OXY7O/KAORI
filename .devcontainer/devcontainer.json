@@ -2,7 +2,8 @@
   "name": "KAORI Development",
   "dockerComposeFile": [
     "../compose.yml",
-    "compose.devcontainer.yml"
+    "compose.devcontainer.yml",
+    "../secrets/devcontainer/compose.host-overrides.yml"
   ],
   "service": "workspace",
   "runServices": [
