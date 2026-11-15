@@ -31,6 +31,21 @@ display numeric badges only when they are materially actionable and not
 already represented by canonical table result counts; Notification Channels
 tabs intentionally have no count badges.
 
+**Vault provider detail post-Hero review (Human UAT #4835):** after the
+Vault connection Hero, render the shared **four-tab framed connection
+workspace** directly, matching other provider detail pages. The formerly
+injected `Operational Evidence` four-link panel to capability-wide
+Overview / Inventory / Lifecycle / Certificate Analytics was rejected by
+Human Visual UAT as a nonstandard page-local middle tier. Those
+independent Secrets & PKI capability workspaces retain their canonical
+navigation and authorization; Vault provider configuration access must
+not grant `secrets_pki.view` or `analytics.view`. This Human UAT decision
+supersedes the panel presentation requested by older open navigation
+issue #2775; it does not supersede its security boundary. The shared
+Configuration `Approved KV v2 Mounts` evidence helper remains concise
+(`Requires approved scope and read-only metadata access.`) and wraps
+naturally without forced two-line CSS.
+
 Primary source, runtime, validation, capability, binding, and coverage evidence uses `bg-surface-card`. `bg-surface-hover` is reserved for interpretation, warning context, remediation, attention strips, and destructive-boundary guidance.
 
 ## Shared Components
