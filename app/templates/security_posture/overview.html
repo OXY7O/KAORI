@@ -67,6 +67,19 @@
             {% call dashboard_workspace.controller(active_tab, 'security-posture-overview') %}
                 <div class="space-y-5" data-security-overview-layout>
                     {% set scan_status_badge = table_label.status_indicator_label(posture.scan_status.label, posture.scan_status.tone) %}
+                    {% set snapshot_freshness_header %}
+                        <span class="flex flex-wrap items-center gap-2">
+                            {{ scan_status_badge }}
+                            {{ info_tip.render('security-snapshot-freshness-guide', 'Scanner Evidence Freshness Guide',
+                                'Stale describes the age of committed scanner evidence, not job health.',
+                                items=[
+                                    'Security uses a 24-hour freshness window for the oldest qualified artifact scan in scope.',
+                                    'A new Harbor scan completion timestamp is evidence of a new scan even if the CVE count is unchanged.',
+                                    'Sync Security Evidence must collect the new provider report before KAORI freshness changes.',
+                                    'Refresh View reads committed state only; runtime correlation Ready is independent.'
+                                ], variant='guide', placement='left') }}
+                        </span>
+                    {% endset %}
                     {% set runtime_status_badge = table_label.status_indicator_label(posture.runtime_status.status, posture.runtime_status.tone) %}
                     {% set coverage_metric = ('scan-search', 'Scan Coverage', posture.scanned_artifacts ~ ' / ' ~ posture.artifacts_total, 'Usable scanner snapshots', posture.scan_status.tone) %}
                     {% set affected_metric = ('package-search', 'Affected Artifact Digests', posture.affected_artifacts if posture.scanned_artifacts else 'Not Collected', 'Distinct observed digests', 'info' if posture.scanned_artifacts else 'unknown') %}
@@ -76,7 +89,7 @@
                     {% call section_card.render('Security Snapshot',
                         'Observed Registry scanner and Kubernetes evidence in the authorized scope.',
                         'shield-check',
-                        header_badge=scan_status_badge,
+                        header_badge=snapshot_freshness_header,
                         body_classes='p-0') %}
                         <div data-security-snapshot-grid>{{ posture_grid.render(snapshot_metrics, columns=4) }}</div>
                     {% endcall %}
