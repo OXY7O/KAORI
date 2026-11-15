@@ -631,7 +631,8 @@ def test_security_investigation_tab_uses_qualified_metrics_and_one_handoff() -> 
     stale = _renderable_posture()
     stale['runtime_status'] = {'status': 'Inputs Changed', 'tone': 'warning'}
     stale_html = _render_workspace_page('overview', stale, active_tab='signals', can_view_intelligence=True)
-    scope = stale_html.split('data-security-investigation-layout', 1)[1].split('data-security-investigation-boundary', 1)[0]
+    scope = stale_html.split('data-security-investigation-layout', 1)[1]
+    scope = scope.split('data-security-investigation-boundary', 1)[0]
     assert 'Unknown' in scope
     assert 'Inputs Changed' not in scope
     assert 'Review governed recommendations' in scope
