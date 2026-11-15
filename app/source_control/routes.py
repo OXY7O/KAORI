@@ -7,6 +7,7 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
+from app.common.pagination import paginate_sequence
 from app.integrations.source_control.repository_inventory import read_installation_inventory_for_current_session
 from app.integrations.source_control.uat_access import local_super_admin
 from app.source_control.presentation import build_source_control_overview
@@ -40,10 +41,18 @@ def overview() -> ResponseReturnValue:
     active_tab = request.args.get('tab', 'overview', type=str)
     if active_tab not in {'overview', 'capacity', 'signals', 'reporting'}:
         active_tab = 'overview'
+    scope = build_source_control_overview()
+    installation_rows, installation_pagination = paginate_sequence(
+        scope['installations'],
+        page=request.args.get('installation_page'),
+        per_page=request.args.get('installation_per_page'),
+    )
     return _uncached_render(
         'source_control/overview.html',
-        scope=build_source_control_overview(),
+        scope=scope,
         dashboard_active_tab=active_tab,
+        installation_rows=installation_rows,
+        installation_pagination=installation_pagination,
     )
 
 

@@ -1,0 +1,30 @@
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/operational_evidence_tile.html" as evidence_tile %}
+{% set qualified_account_grants = scope.installations|selectattr('account')|list|length %}
+{% set one_installation = scope.installation_count == 1 and not scope.has_more %}
+{% set one_observation = scope.installations[0] if one_installation else none %}
+{% set observed_repositories = one_observation.observed_count if one_observation and one_observation.committed and one_observation.observed_count is not none else ('Unknown' if one_installation else 'N/A' if not scope.installation_count else 'Per Installation') %}
+{% call section_card.render(
+    'Inventory Snapshot',
+    'Latest committed installation-grant counts and qualified inventory scope.',
+    'package-search',
+    action_href=url_for('source_control.repositories'),
+    action_label='View Repositories',
+    body_classes='grid grid-cols-2 gap-3 p-5 sm:grid-cols-3',
+    extra_classes='h-full'
+    ) %}
+    {% set inventory_items = [
+        ('Installations', scope.installation_count ~ ('+' if scope.has_more else ''), 'git-branch', 'Scope'),
+        ('Committed Scopes', scope.committed_count, 'database-check', 'Evidence'),
+        ('Uncollected', scope.uncollected_count, 'database-zap', 'Coverage Gap'),
+        ('Observed Account Grants', qualified_account_grants, 'users', 'Identity'),
+        ('Collection Coverage', scope.committed_count ~ '/' ~ scope.installation_count ~ ('+' if scope.has_more else ''), 'scan-search', 'Visible Scope'),
+        ('Repository Observations', observed_repositories, 'folder-git-2', 'Scoped')
+    ] %}
+    {% for label, value, icon, role in inventory_items %}
+        {{ evidence_tile.snapshot(label, value, icon, role) }}
+    {% endfor %}
+    <p class="col-span-full border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">
+        Repository observations are shown only for a single qualified installation. Multiple grants can overlap, so no global repository total is inferred.
+    </p>
+{% endcall %}

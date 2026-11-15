@@ -291,12 +291,17 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
         'components/operational_signal_overview.html',
         'components/operational_metric_card.html',
         'components/operational_section_card.html',
-        'components/operational_evidence_tile.html',
         'components/peer_content_grid.html',
         'components/section_intro.html',
-        'components/info_tip.html',
+        'components/table_registry.html',
     ):
         assert reference in overview
+    evidence_partials = (
+        (template_dir / 'partials/_dashboard_inventory_snapshot.html').read_text(),
+        (template_dir / 'partials/_dashboard_data_freshness.html').read_text(),
+    )
+    assert all('components/operational_evidence_tile.html' in partial for partial in evidence_partials)
+    assert 'components/info_tip.html' in evidence_partials[1]
     for tab in ('overview', 'capacity', 'signals', 'reporting'):
         assert f"dashboard_workspace.panel('{tab}', active_dashboard_tab" in overview
     assert "dashboard_workspace.navigation('source-control-dashboard'" in overview
@@ -306,7 +311,14 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
     assert 'scope.has_more' in overview
     assert 'scope.latest_committed_at' in overview
     assert 'No Active GitHub Installations' in overview
-    assert 'No derived score, delivery success rate or developer productivity ranking' in overview
+    assert "source_control/partials/_dashboard_inventory_snapshot.html" in overview
+    assert "source_control/partials/_dashboard_data_freshness.html" in overview
+    assert "Installation Health Summary" in overview
+    assert "Operational Health" in overview
+    assert "Committed Evidence" in overview
+    assert "Evidence & Analytics Boundaries" not in overview
+    assert "table_registry.footer(" in overview
+    assert "for item in installation_rows" in overview
     assert 'MetricsConsumer' not in overview
     assert 'request.' not in overview
     assert '<script' not in overview and '<style' not in overview
@@ -314,7 +326,7 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
     env = Environment(loader=FileSystemLoader(str(root / 'app/templates')))
     env.filters['user_datetime'] = lambda dt: dt.isoformat() if dt else 'Not Collected'
     env.parse(overview)
-    for name in ('capacity', 'signals', 'reporting'):
+    for name in ('capacity', 'signals', 'reporting', 'inventory_snapshot', 'data_freshness'):
         env.parse((template_dir / 'partials' / f'_dashboard_{name}.html').read_text())
 
     scope = {
@@ -351,3 +363,136 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
     assert 'Engineering Reports' in not_reported
     assert 'Not Qualified' in not_reported
     assert '/source_control/repositories' in not_reported
+
+
+def test_product_overview_installation_health_paginates_before_render(monkeypatch):
+    """Overview rows follow canonical 5/10/25/50 without altering scoped evidence."""
+    app = Flask(__name__)
+    monkeypatch.setattr(routes, '_require_product_uat_access', lambda: None)
+    scoped = tuple({'installation': SimpleNamespace(id=index)} for index in range(1, 13))
+    scope = {
+        'installations': scoped,
+        'installation_count': len(scoped),
+        'committed_count': 0,
+        'uncollected_count': 12,
+        'has_more': False,
+        'latest_committed_at': None,
+    }
+    monkeypatch.setattr(routes, 'build_source_control_overview', lambda: scope)
+    captured = []
+
+    def capture(template, **context):
+        captured.append((template, context))
+        return 'rendered'
+
+    monkeypatch.setattr(routes, '_uncached_render', capture)
+    for query, expected_ids, expected_page, expected_per_page in (
+        ({}, [1, 2, 3, 4, 5], 1, 5),
+        ({'tab': 'overview', 'installation_page': '2'}, [6, 7, 8, 9, 10], 2, 5),
+        ({'tab': 'overview', 'installation_page': '3'}, [11, 12], 3, 5),
+        ({'installation_page': '999'}, [11, 12], 3, 5),
+        ({'installation_per_page': '10'}, list(range(1, 11)), 1, 10),
+        ({'installation_per_page': '99'}, [1, 2, 3, 4, 5], 1, 5),
+        ({'installation_page': '-4'}, [1, 2, 3, 4, 5], 1, 5),
+        ({'installation_page': 'bad'}, [1, 2, 3, 4, 5], 1, 5),
+    ):
+        with app.test_request_context('/source-control/', query_string=query):
+            assert routes.overview.__wrapped__() == 'rendered'
+            template, context = captured[-1]
+            assert template == 'source_control/overview.html'
+            assert context['scope'] is scope
+            assert context['installation_pagination']['page'] == expected_page
+            assert context['installation_pagination']['per_page'] == expected_per_page
+            assert [
+                row['installation'].id for row in context['installation_rows']
+            ] == expected_ids
+
+    with app.test_request_context('/source-control/'):
+        monkeypatch.setattr(routes, 'build_source_control_overview', lambda: {
+            **scope, 'installations': (), 'installation_count': 0
+        })
+        routes.overview.__wrapped__()
+        assert captured[-1][1]['installation_pagination']['start_item'] == 0
+        assert captured[-1][1]['installation_pagination']['end_item'] == 0
+
+
+def test_product_operations_overview_matches_shared_health_and_peer_evidence_contract():
+    from jinja2 import Environment, FileSystemLoader
+
+    root = Path(__file__).resolve().parents[2]
+    folder = root / 'app/templates/source_control'
+    overview = (folder / 'overview.html').read_text()
+    snapshot = (folder / 'partials/_dashboard_inventory_snapshot.html').read_text()
+    freshness = (folder / 'partials/_dashboard_data_freshness.html').read_text()
+    k8s = (root / 'app/templates/kubernetes/dashboard/partials/_overview.html').read_text()
+
+    assert 'peer_content_grid.layout_classes()' in k8s
+    assert "section_intro.render('Operational Health'" in overview
+    assert "section_intro.render('Committed Evidence'" in overview
+    assert 'peer_grid.layout_classes()' in overview
+    assert "peer_grid.column_classes('primary')" in overview
+    assert "peer_grid.column_classes('secondary')" in overview
+    assert 'section_card.render(' in overview
+    assert 'table_registry.footer(' in overview
+    assert "'installation_page'" in overview
+    assert "'installation_per_page'" in overview
+    assert 'scope.has_more' in overview
+    assert 'item.account.native_account_id' in overview
+    assert 'item.observed_count if item.observed_count is not none else' in overview
+    assert 'No Active GitHub Installations' in overview
+    assert 'operational_evidence_tile.html' in snapshot
+    assert 'body_classes=' in snapshot and 'extra_classes=' in snapshot
+    assert 'evidence_tile.snapshot(' in snapshot
+    assert 'operational_evidence_tile.html' in freshness
+    assert 'evidence_tile.freshness(' in freshness
+    assert 'source-control-evidence-guide' in freshness
+    assert 'Not Qualified' in freshness
+    assert 'Evidence & Analytics Boundaries' not in overview
+    assert '<style' not in overview and '<script' not in overview
+
+    env = Environment(loader=FileSystemLoader(str(root / 'app/templates')))
+    env.filters['user_datetime'] = lambda value: value.isoformat() if value else 'Not Collected'
+    for text in (overview, snapshot, freshness):
+        env.parse(text)
+    url_for = lambda endpoint: '/' + endpoint.replace('.', '/')
+    observed = {
+        'account': SimpleNamespace(last_observed_at=datetime(2026, 10, 26, tzinfo=UTC)),
+        'committed': True,
+        'observed_count': 0,
+    }
+    single = {
+        'installations': (observed,),
+        'installation_count': 1,
+        'committed_count': 1,
+        'uncollected_count': 0,
+        'has_more': False,
+        'latest_committed_at': datetime(2026, 10, 26, tzinfo=UTC),
+    }
+    inventory = env.get_template('source_control/partials/_dashboard_inventory_snapshot.html')
+    qualified_zero = inventory.render(scope=single, url_for=url_for)
+    assert 'Repository Observations' in qualified_zero
+    assert '0</p>' in qualified_zero
+    assert 'Per Installation</p>' not in qualified_zero
+    multi = inventory.render(
+        scope={**single, 'installations': (observed, observed), 'installation_count': 2},
+        url_for=url_for,
+    )
+    assert 'Per Installation' in multi
+    missing = inventory.render(
+        scope={**single, 'installations': ({**observed, 'committed': False,
+                                            'observed_count': None},),
+               'committed_count': 0, 'uncollected_count': 1},
+        url_for=url_for,
+    )
+    assert 'Unknown' in missing
+
+    fresh = env.get_template('source_control/partials/_dashboard_data_freshness.html')
+    observed_fresh = fresh.render(scope=single)
+    assert '2026-10-26T00:00:00+00:00' in observed_fresh
+    assert 'Engineering Flow' in observed_fresh and 'Not Qualified' in observed_fresh
+    unobserved = fresh.render(
+        scope={**single, 'latest_committed_at': None, 'installations': ()}
+    )
+    assert 'Not Collected' in unobserved
+    assert 'Not Observed' in unobserved
+    assert 'Unavailable' in unobserved

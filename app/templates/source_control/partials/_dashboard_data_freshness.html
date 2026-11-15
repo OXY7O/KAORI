@@ -1,0 +1,57 @@
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/operational_evidence_tile.html" as evidence_tile %}
+{% import "components/info_tip.html" as info_tip %}
+{% set observed_account_times = scope.installations|selectattr('account')|map(attribute='account.last_observed_at')|select|list %}
+{% set account_observed_at = observed_account_times|max if observed_account_times else none %}
+{% call section_card.render(
+    'Data Freshness',
+    'Age and availability of committed inventory, account, engineering and reporting evidence.',
+    'clock-3',
+    header_badge=info_tip.render(
+        'source-control-evidence-guide',
+        'Source Control Evidence Guide',
+        'Retained committed observations are not equivalent to live GitHub health or current authorization.',
+        items=[
+            'Installations and repository grants remain scoped by the authorized GitHub App installation.',
+            'Older committed inventory and account observations retain their timestamps; neither implies a current provider check.',
+            'PR/CI, DORA, reports and deployment lineage need dedicated collectors before derived metrics can be published.'
+        ],
+        placement='right',
+        variant='guide'
+    ),
+    body_classes='grid gap-3 p-5 sm:grid-cols-2',
+    extra_classes='h-full'
+    ) %}
+    {{ evidence_tile.freshness(
+        'Inventory Snapshot',
+        scope.latest_committed_at|user_datetime if scope.latest_committed_at else 'Not Collected',
+        'Retained' if scope.latest_committed_at else 'Unavailable',
+        'info' if scope.latest_committed_at else 'unknown',
+        'database-check',
+        description='Latest retained collection across the visible authorized installations, not live GitHub availability.'
+    ) }}
+    {{ evidence_tile.freshness(
+        'Account Observation',
+        account_observed_at|user_datetime if account_observed_at else 'Not Observed',
+        'Observed' if account_observed_at else 'Unavailable',
+        'info' if account_observed_at else 'unknown',
+        'users',
+        description='Latest account identity observation in the bounded installation scope; never proof of current access.'
+    ) }}
+    {{ evidence_tile.freshness(
+        'Engineering Flow',
+        'Not Qualified',
+        'Unavailable',
+        'unknown',
+        'git-pull-request',
+        description='PR reviews, CI outcomes and DORA measures require committed authorized engineering evidence.'
+    ) }}
+    {{ evidence_tile.freshness(
+        'Reports & Lineage',
+        'Not Qualified',
+        'Unavailable',
+        'unknown',
+        'file-text',
+        description='Report artifacts and source-to-deployment correlation are not inferred from repository grants.'
+    ) }}
+{% endcall %}
