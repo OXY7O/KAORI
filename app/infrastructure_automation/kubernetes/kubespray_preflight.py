@@ -4,6 +4,7 @@ This module does not retrieve credentials, contact hosts, or authorize a Run.
 A valid static specification always requires trusted provider read-back,
 approved inventory, source/EE digest and independent human governance.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -71,9 +72,14 @@ def assess_static_kubespray_pilot(spec: Mapping[str, Any]) -> StaticKubesprayPla
     """
     findings: list[str] = []
     allowed = {
-        'management', 'environment', 'kubespray_commit',
-        'kubespray_release', 'kubernetes_minor',
-        'pod_cidr', 'service_cidr', 'nodes',
+        'management',
+        'environment',
+        'kubespray_commit',
+        'kubespray_release',
+        'kubernetes_minor',
+        'pod_cidr',
+        'service_cidr',
+        'nodes',
     }
     if set(spec) - allowed:
         findings.append('UNRECOGNIZED_OR_SENSITIVE_INPUT')
@@ -103,8 +109,14 @@ def assess_static_kubespray_pilot(spec: Mapping[str, Any]) -> StaticKubesprayPla
         addresses: set[str] = set()
         for node in nodes:
             if not isinstance(node, dict) or set(node) != {
-                'asset_id', 'role', 'os_distribution', 'os_version',
-                'cpu_count', 'memory_mib', 'disk_gib', 'address',
+                'asset_id',
+                'role',
+                'os_distribution',
+                'os_version',
+                'cpu_count',
+                'memory_mib',
+                'disk_gib',
+                'address',
             }:
                 findings.append('NODE_SCHEMA_INVALID')
                 continue
