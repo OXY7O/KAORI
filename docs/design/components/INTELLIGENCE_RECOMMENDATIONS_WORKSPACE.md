@@ -50,13 +50,16 @@ may break only when needed to prevent overflow. Never invent display fields,
 execute provider reads, change AlertCase lifecycle or duplicate a recommendation
 engine to solve a presentation issue.
 
-**Evidence type chips and concise review heading (#4833, follow-up UAT
-2026-11-15):** In the desktop Evidence cell, render committed source
-`logic_type_label` (for example Recommendation or Governance Check) as a
-shared `table_label.metadata_label`, consistently with an optional provider
-label such as Harbor. Reuse one compact flex-wrapped metadata group and preserve
-the source title, rule type and provider identity; do not render a new
-status family or colored surface.
+**Single Evidence type label and concise review heading (#4833,
+follow-up UAT 2026-11-15):** In the desktop Evidence cell, display **exactly
+one** shared `table_label.metadata_label` representing the source-backed
+`logic_type_label` (Recommendation or Governance Check). Do not add an
+additional provider chip, including Harbor, in the table. Keep the source title
+as the primary field and retain an optional provider identity in the source
+title tooltip and full Review modal evidence. This preserves consistent
+one-label-per-record density without conflating the rule type with its provider.
+Keep the canonical compact label component; do not introduce a new status family
+or colored surface.
 
 For high-Pod-restart recommendations only, the Recommendation Review modal
 header uses a one-line-at-desktop summary derived from the existing committed

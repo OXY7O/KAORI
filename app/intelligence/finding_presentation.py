@@ -127,10 +127,7 @@ def recommendation_detail_header_summary(item: dict[str, Any]) -> str:
 
     source = _clean(evidence.get('evidence_window')) or 'Committed Kubernetes evidence'
     pod_label = 'pod' if affected_count == 1 else 'pods'
-    return (
-        f'{source} · {affected_count} affected {pod_label} · '
-        f'{total_restarts} total restarts · peak {peak_restarts}'
-    )
+    return f'{source} · {affected_count} affected {pod_label} · {total_restarts} total restarts · peak {peak_restarts}'
 
 
 def recommendation_table_title(item: dict[str, Any], *, limit: int = 96) -> str:

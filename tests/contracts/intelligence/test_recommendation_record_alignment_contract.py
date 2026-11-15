@@ -70,11 +70,14 @@ def test_evidence_and_alert_handling_stay_source_authoritative() -> None:
     ):
         assert field in desktop
     assert "table_label.metadata_label(item.logic_type_label, 'list-checks')" in desktop
-    assert "table_label.metadata_label(item.evidence.provider_label, 'database')" in desktop
-    assert (
-        '<p class="mt-1 text-xs leading-5 text-content-muted">{{ item.logic_type_label }}</p>'
-        not in desktop
-    )
+    evidence_cell = desktop.split('title="{{ item.signal_source_label }}', 1)[1].split(
+        '<td class="{{ table_ui.cell_classes() }}">', 1
+    )[0]
+    assert evidence_cell.count('table_label.metadata_label(') == 1
+    assert "table_label.metadata_label(item.logic_type_label, 'list-checks')" in evidence_cell
+    assert 'item.evidence.provider_label' in evidence_cell
+    assert "table_label.metadata_label(item.evidence.provider_label, 'database')" not in evidence_cell
+    assert '<p class="mt-1 text-xs leading-5 text-content-muted">{{ item.logic_type_label }}</p>' not in desktop
     for state in (
         'escalated',
         'exception_active',
