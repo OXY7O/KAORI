@@ -182,6 +182,63 @@ def test_vault_readiness_metadata_follows_existing_integration_lock():
     assert "required_ready ~ ' / ' ~ required_total" in validation
 
 
+
+def test_vault_full_validation_matches_shared_htmx_job_and_evidence_contract() -> None:
+    from jinja2 import Environment
+
+    validation = _partial('_detail_validation.html')
+    registry = _partial('_capability_registry.html')
+    source = ROUTES.read_text(encoding='utf-8')
+    for component in (
+        'components/connection_validation_header.html',
+        'integrations/components/_validation_poller.html',
+        'integrations/components/_provider_job_status.html',
+        'integrations/components/_capability_readiness.html',
+        'integrations/components/_readiness_explanation.html',
+        'integrations/components/_provider_detail_posture.html',
+        'components/framed_workspace_tabs.html',
+        'components/operation_feedback_oob.html',
+    ):
+        assert component in validation
+    for marker in (
+        'id="vault-core-validation"',
+        'hx-post="{{ url_for(\'vault.validate\', instance_id=instance.id) }}"',
+        'hx-target="#vault-core-validation"',
+        'hx-swap="outerHTML"',
+        'hx-disabled-elt="button"',
+        'hx-indicator="#vault-validation-loading"',
+        "url_for('vault.validation_status'",
+        'validation_poller.render(',
+        'provider_job_status.render(',
+        'readiness_explanation.render(',
+        'capability_readiness.render(',
+        'framed_workspace_tabs.badge_oob(',
+        'provider_detail_posture.state_oob(',
+    ):
+        assert marker in validation
+    for old_fragment in ('Validation task:', "instance.validation_message or 'No capability", 'Permission Unavailable'):
+        assert old_fragment not in validation
+
+    assert 'data-kaori-capability-table-standard' in registry
+    assert 'components/table.html' in registry
+    assert registry.count("'required': true") == 3
+    assert registry.count("'required': false") == 1
+    assert 'permission_unavailable' in registry
+    assert 'get_validation_snapshot' not in registry
+    assert "summary.get('mount_metadata')" in registry
+
+    assert "def validation_status(instance_id: int, task_id: str)" in source
+    assert "validate_snapshot_access(" in source
+    assert "snapshot_feedback_for_user(snapshot, user_id=int(current_user.id))" in source
+    assert "validation_poll_response(content, snapshot=snapshot)" in source
+    assert "is_htmx = request.headers.get('HX-Request') == 'true'" in source
+    assert "queue_feedback=not is_htmx" in source
+
+    Environment().parse(validation)
+    Environment().parse(registry)
+
+
+
 def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> None:
     from jinja2 import Environment
 
