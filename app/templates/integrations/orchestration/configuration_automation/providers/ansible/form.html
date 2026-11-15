@@ -7,7 +7,6 @@
 {% import "components/form_field.html" as form_field %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/info_tip.html" as info_tip %}
-{% import "components/operational_callout.html" as operational_callout %}
 {% import "components/action_button.html" as action_button %}
 {% block title %}Add Ansible Kubernetes Connection · KAORI{% endblock title %}
 {% block dashboard_content %}
@@ -115,9 +114,6 @@
                             </button>
                         {% endcall %}
                         <div class="space-y-4 p-4 sm:p-5">
-                            {% if feedback %}
-                                {{ operational_callout.render("Source Registration", feedback, icon="info", tone=feedback_tone, variant="semantic") }}
-                            {% endif %}
                             <div class="grid gap-4 md:grid-cols-2">
                                 {% for field in [form.profile_key, form.repository] %}
                                     <div class="min-w-0">

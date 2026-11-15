@@ -161,6 +161,10 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
     assert 'Optional reference only. Runtime use requires independently approved' not in form
     assert 'Source Validation Required' in form
     assert 'Source Validated' in form
+    assert 'operational_callout.render(' not in form
+    assert 'Source Registration</' not in form
+    assert 'data-operational-toast' not in form  # No feedback queued during initial GET.
+    assert 'id="operational-toast-stack"' in form  # Shared layout owns presentation.
     assert 'x-ref="connectionProof"' in form
     assert 'connectionVerified: false' in form
     assert 'x-on:input.capture="invalidate($event)"' in form

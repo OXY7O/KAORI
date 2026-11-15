@@ -32,6 +32,14 @@ The manage page reuses `framed_workspace_tabs`, shared posture, table and readin
 
 Runtime history is scoped by `JobExecution.integration_instance_id`; the previous unbound localhost pilot jobs are **not** misrepresented as Kubernetes connection jobs. Inventory lifecycle remains `not_collected` and the existing Kubernetes Cluster identity continues authoritative for actual API/node state. No live provider calls or fabricated 0 Ready results are used as evidence of an admitted cluster.
 
+## Operational feedback and Notification Deck
+
+Ansible source registration uses the canonical KAORI Operational Toast in the authenticated shell; the previous full-width, form-local Source Registration alert has been retired. **Validate Source** success/failure, invalid inputs, unsupported actions, rejected candidate Git policy, stale/changed/expired proof and failed registration each emit one sanitized `record_operational_activity(..., queue_feedback=True, delivery_policy='audit_only')` result. These user-triggered synchronous outcomes explicitly set the existing `feedback_delivery='toast'` metadata override, because the generic background-event classifier treats event names containing `validation` as Activity Center progress. They appear in a top-right toast and in Activity Audit, **not** as new Notification Deck items. Field-specific WTForms errors remain under the affected control; source-proof invalidation and the persistent **Source Validation Required** footer are independent state, not another toast.
+
+Successful **Save Connection** retains its existing single `ansible_source_connection_registered` persisted Activity Audit event and redirect toast; the existing Integrations event delivery policy controls Notification Deck visibility. Connection detail **Revalidate Source** still commits validation evidence and uses its existing Action Audit/Deck feedback path; never emit two receipts for one action. Ansible `ansible_source_` notification events are categorized as **Integrations** through the approved event category registry. Validation errors expose bounded approved field labels and safe fixed messages only, never raw verifier/DB diagnostics or signed proof tokens.
+
+Source-only verification remains distinct from Full Validation, inventory/worker admission, Ansible execution and Kubernetes mutation. No operation gains authority because a success toast appeared.
+
 ## Gate boundary
 The source adapter is a deliberately narrow public *source read* seam. A future private GitHub App adapter/source-grant implementation must reuse the admitted Source Control authority rather than opening arbitrary Git URLs. No remote SSH, Kubernetes installation, node patching, upgrade, credential selection or arbitrary playbook execution is provided by these pages. More complete Ansible/Kubespray lifecycle operations remain under issues #4800/#4801/#4802 and separate child workstreams.
 
