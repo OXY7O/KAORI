@@ -47,7 +47,9 @@ def test_choose_profile_renders_canonical_provider_selection_pattern(monkeypatch
     assert 'href="/integrations/ansible/connections/new"' in rendered
     assert rendered.count('Registration is not yet available.') == 3
 
-    cards = re.findall(r'<article\b[^>]*data-kaori-(?:ansible-profile|provider-lifecycle)[^>]*>.*?</article>', rendered, re.S)
+    cards = re.findall(
+        r'<article\b[^>]*data-kaori-(?:ansible-profile|provider-lifecycle)[^>]*>.*?</article>', rendered, re.S
+    )
     assert len(cards) == 4
     assert 'data-kaori-provider-register' in cards[0]
     for card in cards[1:]:
@@ -82,9 +84,7 @@ def test_choose_page_reuses_existing_provider_card_primitives() -> None:
 def test_orchestration_compact_copy_does_not_change_provider_ownership() -> None:
     taxonomy = (ROOT / 'app/definitions/catalogs/integrations/taxonomy.yaml').read_text(encoding='utf-8')
     domain = (ROOT / 'app/templates/integrations/domain.html').read_text(encoding='utf-8')
-    workspace = (ROOT / 'app/templates/integrations/partials/_domain_workspace.html').read_text(
-        encoding='utf-8'
-    )
+    workspace = (ROOT / 'app/templates/integrations/partials/_domain_workspace.html').read_text(encoding='utf-8')
     assert 'Git automation, provenance, and governance.' in taxonomy
     assert 'Cluster API access, inventory, and control-plane operations.' in taxonomy
     assert 'Defines provider ownership and managed asset bindings.' in domain
