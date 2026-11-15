@@ -142,7 +142,7 @@
                                     <div>
                                         <label for="{{ form.auth_mount_mode.id }}"
                                                class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.auth_mount_mode.label.text }}</label>
-                                        {{ form.auth_mount_mode(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", **{'x-model': 'authMountMode'}, autofocus=(invalid_focus_field == 'auth_mount_mode')) }}
+                                        {{ form.auth_mount_mode(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autofocus=(invalid_focus_field == 'auth_mount_mode'), **{'x-model': 'authMountMode'}) }}
                                         {% for error in form.auth_mount_mode.errors %}
                                             <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                                         {% endfor %}
