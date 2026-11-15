@@ -52,6 +52,12 @@ def test_choose_profile_renders_canonical_provider_selection_pattern(monkeypatch
     )
     assert len(cards) == 4
     assert 'data-kaori-provider-register' in cards[0]
+    assert 'Register a Kubespray Git source.' in cards[0]
+    assert 'Register Kubespray source for Kubernetes lifecycle management.' not in rendered
+    assert 'Linux Hosts' in cards[1]
+    assert 'title="Linux Host Management"' in cards[1]
+    assert 'data-kaori-ansible-profile="linux_host_management"' in cards[1]
+    assert 'aria-label="Linux Host Management registration not available"' in cards[1]
     for card in cards[1:]:
         assert 'data-kaori-provider-disabled' in card
         assert re.search(r'<button\b[^>]*\bdisabled\b', card)
