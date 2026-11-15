@@ -11,6 +11,7 @@ from app.integrations.orchestration.infrastructure_automation.providers.ansible.
     parse_connection_form,
 )
 from app.integrations.provider_matrix import provider_kind
+from app.models.integration import IntegrationInstance
 from app.integrations.taxonomy import get_capability_definition
 
 
@@ -68,3 +69,19 @@ def test_unsupported_and_sensitive_registration_fields_are_rejected(field: str, 
 def test_unsafe_or_invalid_lifecycle_payload_fails_closed(data: dict[str, str]) -> None:
     with pytest.raises(ValueError):
         parse_connection_form(data)
+
+
+def test_canonical_only_provider_resolves_detail_without_shadow_record() -> None:
+    instance = IntegrationInstance()
+    instance.id = 44
+    instance.integration_type = 'infrastructure_automation'
+    instance.provider_key = 'ansible'
+    instance.name = 'Synthetic local worker'
+    module = get_integration('infrastructure_automation')
+    assert module.detail_url_for_record(instance, section='') == (
+        '/integrations/orchestration/ansible/instances/44'
+    )
+    assert module.implementation_for_record(instance).provider_key == 'ansible'
+    instance.integration_type = 'alert_source'
+    with pytest.raises(Exception, match='matching canonical integration'):
+        module.implementation_for_record(instance)

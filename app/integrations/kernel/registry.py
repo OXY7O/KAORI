@@ -114,7 +114,15 @@ class IntegrationModule:
     def implementation_for_record(self, record: Any) -> IntegrationImplementation:
         canonical = getattr(record, 'integration_instance', None)
         if canonical is None:
-            raise IntegrationInstanceNotFound('Provider record has no canonical integration identity.')
+            # Canonical-only providers do not own a second implementation table.
+            # Preserve the existing provider-record contract while accepting the
+            # authoritative IntegrationInstance directly for those capabilities.
+            from app.models.integration import IntegrationInstance
+
+            if isinstance(record, IntegrationInstance):
+                canonical = record
+        if canonical is None or canonical.integration_type != self.integration_type:
+            raise IntegrationInstanceNotFound('Provider record has no matching canonical integration identity.')
         return self.implementation(str(canonical.provider_key))
 
     def implementation_for_canonical(self, integration_instance_id: int) -> IntegrationImplementation:
