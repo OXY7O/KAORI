@@ -19,6 +19,30 @@ Security Posture is an Assurance workspace that **consumes** source-qualified co
 - `Artifact Registry → Security` continues as authoritative source-domain workspace. Exact CVE rows link to its existing `/artifact-registry/security/cve/<CVE>/impact` drill-down; Security does **not** duplicate that detail view.
 - The **Assurance** sidebar contains a two-level Security parent with only real route-backed Overview/Findings children. Planned capabilities remain hidden; no new renderer/CSS family.
 
+## Security Assurance perspective tabs — Human Visual UAT #4711
+
+The non-Exposure perspectives reuse existing `operational_section_card`,
+`action_button.classes`, and `info_tip.render(..., variant='guide')`:
+- **Assets & Impact**: two equal-height source-qualified digest/runtime
+  readiness cards, footer-aligned owning-domain links and a compact persistent
+  interpretation boundary. An individually Ready runtime generation does not
+  make scanner evidence fresh.
+- **Findings & Investigation**: one bounded summary of distinct CVEs, affected
+  digests and observed container bindings, plus a single primary Findings
+  handoff and permission-filtered Intelligence link. When correlation is not
+  Ready, binding totals display **Unknown**, never fabricated zero.
+- **Evidence & Sources**: two balanced provider-authority cards and an
+  integrated publication boundary. The `Open Reports` link remains gated by
+  `can_view_reports`; a read-only boundary stays visible without that permission.
+
+Security Snapshot also exposes a shared **Scanner Evidence Freshness Guide** next to its source-derived scanner-status badge. It explains the 24-hour window for the oldest qualified scan, why an unchanged CVE count is not evidence that a rescanning event did not happen, and why Security Sync/Refresh View/Runtime Correlation are different operations. Keep scanner Stale and provenance text persistent outside the Guide.
+
+All three tabs have a canonical header-level **Guide** explaining the source
+ownership and evidence limitations. Guides are supplemental, never the sole
+location of unknown/stale warnings or permission requirements. The original
+four-tab URL keys, scoped source RBAC, canonical CVE table and content
+loading behavior remain unchanged.
+
 ## Security Sync, scanner freshness and runtime correlation
 
 These are **three independent authorities**. `artifact_registry_security`
