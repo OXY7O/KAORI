@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -120,24 +121,41 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
     assert 'Kubernetes Lifecycle' in choose
     assert 'Linux Host Management' in choose
     assert 'Validate Source' in form
-    assert 'Test Connection' not in form  # Shared Hero shows this provider's real pre-save action.
+    assert 'Test Connection' not in form  # Source admission is not a provider connectivity check.
     assert 'source_test_proof' in form
     assert 'grid gap-6 xl:grid-cols-12 xl:items-start' in form
     assert 'min-w-0 xl:col-span-8' in form
     assert 'min-w-0 space-y-4 xl:col-span-4 xl:sticky xl:top-5' in form
-    assert 'Kubernetes Source Registration' in form
-    assert 'Source Validation Gates' in form
+    assert 'Kubernetes Source Registration Flow' in form
+    assert 'Orchestration Integrations' in form
+    assert 'Source Validation Gates' not in form
+    assert 'data-kaori-provider-registration-context' in form
+    assert 'data-kaori-provider-registration-actions' in form
     assert 'id="ansible-identity-heading"' in form
-    assert 'id="ansible-source-heading"' in form
+    assert 'aria-label="Git Source and Validation"' in form
     assert 'id="ansible-compatibility-heading"' in form
+    assert 'Source Validation Required' in form
+    assert 'Source Validated' in form
+    assert 'x-ref="connectionProof"' in form
+    assert 'connectionVerified: false' in form
     assert 'x-on:input.capture="invalidate($event)"' in form
     assert 'x-on:change.capture="invalidate($event)"' in form
+    assert 'x-bind:disabled="!connectionVerified"' in form
     assert 'name="action"' in form
     assert 'value="test"' in form
     assert 'value="save"' in form
     assert 'Ansible Connection Actions' in form
-    assert form.index('id="ansible-identity-heading"') < form.index('id="ansible-source-heading"')
-    assert form.index('id="ansible-source-heading"') < form.index('id="ansible-compatibility-heading"')
+    assert re.search(r'<button\b[^>]*value="test"[^>]*>.*?Validate Source.*?</button>', form, re.S)
+    assert re.search(
+        r'<footer\b[^>]*data-kaori-provider-registration-actions[^>]*>.*?'
+        r'<button\b[^>]*value="save"[^>]*>.*?Save Connection.*?</button>',
+        form,
+        re.S,
+    )
+    assert form.index('id="ansible-identity-heading"') < form.index('aria-label="Git Source and Validation"')
+    assert form.index('aria-label="Git Source and Validation"') < form.index('id="ansible-compatibility-heading"')
+    assert form.index('aria-label="Git Source and Validation"') < form.index('value="test"')
+    assert form.index('value="test"') < form.index('data-kaori-provider-registration-actions')
     for name in (
         'Configuration',
         'Validation &amp; Capabilities',
