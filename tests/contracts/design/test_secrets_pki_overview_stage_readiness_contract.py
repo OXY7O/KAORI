@@ -26,8 +26,8 @@ def _state(
     result = Environment().from_string(
         stage
         + '\n{{ inventory_blocker_title }}|{{ inventory_blocker_label }}'
-        + '|{{ inventory_blocker_info }}|{{ inventory_blocker_action_url }}'
-        + '|{{ inventory_blocker_action_label }}'
+        + "|{{ inventory_blocker_info }}|{{ inventory_blocker_action_url|default('', true) }}"
+        + "|{{ inventory_blocker_action_label|default('', true) }}"
     ).render(
         summary={
             'provider_count': provider_count,
