@@ -1,6 +1,11 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/pagination.html" as pagination_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "integrations/components/_record_actions.html" as record_actions %}
+{% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set capability_contracts = [
     {'key': 'health', 'title': 'Vault Health', 'contract': 'GET /v1/sys/health', 'required': true, 'icon': 'heart-pulse', 'description': 'Provider health and unsealed status'},
@@ -8,30 +13,146 @@
     {'key': 'token_lookup', 'title': 'Token Self Lookup', 'contract': 'GET /v1/auth/token/lookup-self', 'required': true, 'icon': 'shield-check', 'description': 'Scoped AppRole token verification'},
     {'key': 'mount_metadata', 'title': 'Mount Metadata', 'contract': 'GET /v1/sys/mounts', 'required': false, 'icon': 'database', 'description': 'Optional read-only mount discovery'}
 ] %}
-<section class="{{ integration_ui.section_shell_classes() }}"
+{% set readiness = instance.readiness_status or 'validation_required' %}
+{% set summary = instance.validation_summary or {} %}
+{% set observed_capabilities = instance.capabilities or [] %}
+{% set has_current_validation = instance.enabled and readiness in ['ready', 'degraded'] and instance.last_validated_at is not none %}
+{% set search = request.args.get('capability_q', '')|trim|lower %}
+{% set requirement = request.args.get('capability_requirement', '')|trim|lower %}
+{% set requirement = requirement if requirement in ['required', 'optional'] else '' %}
+{% set status_filter = request.args.get('capability_status', '')|trim|lower %}
+{% set status_filter = status_filter if status_filter in ['ready', 'limited', 'blocked', 'not_observed'] else '' %}
+{% set requested_page = [1, request.args.get('capability_page', 1, type=int) or 1]|max %}
+{% set requested_page_size = request.args.get('capability_per_page', 5, type=int) or 5 %}
+{% set page_size = requested_page_size if requested_page_size in [5, 10, 25, 50] else 5 %}
+{% set filtered = namespace(rows=[]) %}
+{% for row in capability_contracts %}
+    {% set observed = has_current_validation and row.key in observed_capabilities %}
+    {% set optional_limited = not row.required and has_current_validation and summary.get('mount_metadata') == 'permission_unavailable' %}
+    {% set required_gap = row.required and has_current_validation and not observed %}
+    {% set status_key = 'ready' if observed else ('degraded' if optional_limited else ('blocked' if required_gap else 'not_observed')) %}
+    {% set status_label = 'Ready' if observed else ('Limited' if optional_limited else ('Required Gap' if required_gap else 'Not Observed')) %}
+    {% set filter_status = 'ready' if observed else ('limited' if optional_limited else ('blocked' if required_gap else 'not_observed')) %}
+    {% set search_text = (row.title ~ ' ' ~ row.description ~ ' ' ~ row.contract)|lower %}
+    {% if (not search or search in search_text) and (not requirement or requirement == ('required' if row.required else 'optional')) and (not status_filter or status_filter == filter_status) %}
+        {% set filtered.rows = filtered.rows + [{'contract': row, 'status_key': status_key, 'status_label': status_label, 'observed': observed, 'limited': optional_limited, 'gap': required_gap}] %}
+    {% endif %}
+{% endfor %}
+{% set total_filtered = filtered.rows|length %}
+{% set total_pages = [1, (total_filtered + page_size - 1) // page_size]|max %}
+{% set page = [requested_page, total_pages]|min %}
+{% set page_rows = filtered.rows[(page - 1) * page_size:page * page_size] %}
+{% set start_item = (page - 1) * page_size + 1 if total_filtered else 0 %}
+{% set end_item = [page * page_size, total_filtered]|min %}
+{% set filter_params = {
+    'capability_q': search,
+    'capability_requirement': requirement,
+    'capability_status': status_filter,
+    'capability_per_page': page_size
+} %}
+<section id="vault-capability-registry"
+         class="{{ integration_ui.section_shell_classes() }} min-w-0"
          data-kaori-vault-capability-registry
+         data-kaori-capability-layout
+         data-kaori-capability-explorer
          data-kaori-capability-table-standard
+         data-kaori-capability-server-filtered
          aria-labelledby="vault-capability-registry-title">
-    <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5">
-        <div class="flex min-w-0 items-start gap-3">
-            {{ integration_ui.palette_icon('blocks', 'info', size='md') }}
-            <div class="min-w-0">
-                <h3 id="vault-capability-registry-title"
-                    class="text-base font-semibold text-content-primary">Capability Registry</h3>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Required provider APIs and optional mount discovery from the latest committed Full Validation.</p>
+    <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                {{ integration_ui.palette_icon('blocks', 'info', size='md') }}
+                <div class="min-w-0">
+                    <h3 id="vault-capability-registry-title"
+                        class="text-base font-semibold text-content-primary">Capability Registry</h3>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Review required Vault APIs, optional discovery, and committed validation state. Inspect evidence through View More.</p>
+                </div>
+            </div>
+            <div class="flex shrink-0 flex-wrap items-center gap-2">
+                {% if search or requirement or status_filter %}
+                    {% set clear_href = url_for('vault.detail', instance_id=instance.id, _anchor='validation') %}
+                    {% set clear_fragment = url_for('vault.capability_registry', instance_id=instance.id, capability_per_page=page_size) %}
+                    {{ registry_ui.clear_filters_action(
+                        clear_href,
+                        table_ui.action_classes(),
+                        hx_get=clear_fragment,
+                        target='#vault-capability-registry',
+                        indicator='#vault-capability-loading',
+                        swap='outerHTML',
+                        marker='vault-capability-registry'
+                    ) }}
+                {% endif %}
+                {{ table_label.metadata_label(capability_contracts|length ~ ' Capability Contracts') }}
             </div>
         </div>
-        {{ table_label.metadata_label(capability_contracts|length ~ ' Capability Contracts') }}
+        <div data-kaori-capability-loading-region>
+            {{ loading_bar.render('vault-capability-loading', label='Refreshing Vault capabilities') }}
+        </div>
     </header>
-    <div class="w-full min-w-0 overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[760px] xl:min-w-0') }} table-fixed">
-            <caption class="sr-only">Vault provider API capabilities and committed validation status.</caption>
+    <form method="get"
+          action="{{ url_for('vault.detail', instance_id=instance.id, _anchor='validation') }}"
+          hx-get="{{ url_for('vault.capability_registry', instance_id=instance.id) }}"
+          hx-target="#vault-capability-registry"
+          hx-swap="outerHTML"
+          hx-indicator="#vault-capability-loading"
+          hx-sync="closest section:replace"
+          hx-trigger="input changed delay:350ms from:#vault-capability-search, change from:select"
+          class="{{ integration_ui.filter_region_classes() }}"
+          data-kaori-capability-filters>
+        <input type="hidden" name="capability_page" value="1">
+        <input type="hidden" name="capability_per_page" value="{{ page_size }}">
+        <div class="{{ table_ui.filter_layout_classes() }}">
+            <label class="block min-w-0">
+                <span class="{{ integration_ui.control_label_classes() }}">Search Capability</span>
+                <span class="relative block">
+                    <i data-lucide="search"
+                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+                       aria-hidden="true"></i>
+                    <input id="vault-capability-search"
+                           type="search"
+                           name="capability_q"
+                           value="{{ search }}"
+                           placeholder="Search capability or API..."
+                           autocomplete="off"
+                           class="{{ integration_ui.search_classes() }}">
+                </span>
+            </label>
+            <label class="block">
+                <span class="{{ integration_ui.control_label_classes() }}">Requirement</span>
+                <select name="capability_requirement"
+                        class="{{ integration_ui.control_classes() }}">
+                    <option value="" {% if not requirement %}selected{% endif %}>All Requirements</option>
+                    <option value="required"
+                            {% if requirement == 'required' %}selected{% endif %}>Required</option>
+                    <option value="optional"
+                            {% if requirement == 'optional' %}selected{% endif %}>Optional</option>
+                </select>
+            </label>
+            <label class="block">
+                <span class="{{ integration_ui.control_label_classes() }}">Validation Status</span>
+                <select name="capability_status"
+                        class="{{ integration_ui.control_classes() }}">
+                    <option value="" {% if not status_filter %}selected{% endif %}>All Statuses</option>
+                    <option value="ready" {% if status_filter == 'ready' %}selected{% endif %}>Ready</option>
+                    <option value="limited"
+                            {% if status_filter == 'limited' %}selected{% endif %}>Limited</option>
+                    <option value="blocked"
+                            {% if status_filter == 'blocked' %}selected{% endif %}>Required Gap</option>
+                    <option value="not_observed"
+                            {% if status_filter == 'not_observed' %}selected{% endif %}>Not Observed</option>
+                </select>
+            </label>
+        </div>
+    </form>
+    <div class="w-full min-w-0 overflow-x-auto" data-kaori-capability-records>
+        <table class="{{ table_ui.table_classes('min-w-[700px] xl:min-w-0') }} table-fixed">
+            <caption class="sr-only">Vault provider API capabilities from committed Full Validation evidence.</caption>
             <colgroup>
-                <col class="w-[29%]">
-                <col class="w-[26%]">
+                <col class="w-[31%]">
+                <col class="w-[30%]">
+                <col class="w-[15%]">
                 <col class="w-[13%]">
-                <col class="w-[13%]">
-                <col class="w-[19%]">
+                <col class="w-[11%]">
             </colgroup>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
@@ -39,49 +160,177 @@
                     <th scope="col" class="{{ table_ui.header_cell_classes() }}">API Contract</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }}">Requirement</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }}">Status</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Evidence</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
-                {% for row in capability_contracts %}
-                    {% set observed = has_current_validation and row.key in observed_capabilities %}
-                    {% set optional_limited = not row.required and has_current_validation and summary.get('mount_metadata') == 'permission_unavailable' %}
-                    {% set status_key = 'ready' if observed else ('degraded' if optional_limited else 'not_observed') %}
-                    {% set status_label = 'Ready' if observed else ('Limited' if optional_limited else 'Not Checked') %}
+                {% for result in page_rows %}
+                    {% set row = result.contract %}
+                    {% set dialog_id = 'vault-capability-detail-' ~ row.key %}
                     <tr class="{{ table_ui.row_classes() }}"
-                        data-kaori-vault-capability-record>
+                        data-kaori-vault-capability-record
+                        data-kaori-capability-matrix-row>
                         <td class="{{ table_ui.cell_classes() }}">
                             <div class="flex min-w-0 items-start gap-3">
-                                {{ integration_ui.palette_icon(row.icon, 'normal' if observed else 'info', size='sm') }}
+                                {{ integration_ui.palette_icon(row.icon, 'normal' if result.observed else ('warning' if result.limited else 'info'), size='sm') }}
                                 <div class="min-w-0">
                                     <p class="text-sm font-semibold text-content-primary">{{ row.title }}</p>
-                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ row.description }}</p>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ 'Core Contract' if row.required else 'Optional Contract' }}</p>
                                 </div>
                             </div>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <span class="break-words font-mono text-xs text-content-secondary">{{ row.contract }}</span>
+                            <p class="text-xs font-semibold text-content-primary">{{ row.contract.split(' ', 1)[0] }}</p>
+                            <p class="mt-0.5 break-all font-mono text-xs leading-5 text-content-muted">{{ row.contract.split(' ', 1)[1] }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            {{ table_label.metadata_label('Required' if row.required else 'Optional') }}
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            {{ integration_status(status_key, status_label, display='indicator') }}
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-xs leading-5 text-content-secondary">
-                                {% if observed %}
-                                    Committed provider API evidence.
-                                {% elif optional_limited %}
-                                    Optional discovery not permitted; core APIs remain separate.
-                                {% else %}
-                                    No current qualifying API evidence.
-                                {% endif %}
-                            </p>
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label('Required' if row.required else 'Optional') }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ integration_status(result.status_key, result.status_label, display='indicator') }}</td>
+                        <td class="{{ table_ui.cell_classes(action=true) }}">{{ record_actions.view_more(dialog_id, role='capability') }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="p-0">
+                            {% set empty_state_icon = 'scan-search' %}
+                            {% set empty_state_label = 'No Results' %}
+                            {% set empty_state_tone = 'unknown' %}
+                            {% set empty_state_title = 'No Capability Records Match the Current Filters' %}
+                            {% set empty_state_description = 'Adjust Search Capability, Requirement, or Validation Status to broaden results.' %}
+                            {% set empty_state_min_height = 'min-h-[160px]' %}
+                            {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    <footer class="{{ pagination_ui.footer_classes() }}" data-kaori-capability-pagination>
+        <div class="{{ pagination_ui.summary_group_classes() }}">
+            <p>Showing <span class="font-semibold text-content-primary">{{ start_item }}</span>–<span class="font-semibold text-content-primary">{{ end_item }}</span> of <span class="font-semibold text-content-primary">{{ total_filtered }}</span> {{ pagination_ui.resource_name('Capabilities', total_filtered)|trim }}</p>
+            <form method="get"
+                  action="{{ url_for('vault.detail', instance_id=instance.id, _anchor='validation') }}"
+                  hx-get="{{ url_for('vault.capability_registry', instance_id=instance.id) }}"
+                  hx-target="#vault-capability-registry"
+                  hx-swap="outerHTML"
+                  hx-indicator="#vault-capability-loading"
+                  hx-sync="closest section:replace"
+                  class="{{ pagination_ui.rows_group_classes() }}">
+                <input type="hidden" name="capability_page" value="1">
+                <input type="hidden" name="capability_q" value="{{ search }}">
+                <input type="hidden" name="capability_requirement" value="{{ requirement }}">
+                <input type="hidden" name="capability_status" value="{{ status_filter }}">
+                <label for="vault-capability-page-size"
+                       class="font-semibold text-content-secondary">Rows</label>
+                <select id="vault-capability-page-size"
+                        name="capability_per_page"
+                        aria-label="Vault capabilities per page"
+                        data-kaori-auto-submit
+                        class="{{ pagination_ui.page_size_classes() }}">
+                    {% for option in [5, 10, 25, 50] %}
+                        <option value="{{ option }}"
+                                {% if option == page_size %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        <nav class="{{ pagination_ui.navigation_group_classes() }}"
+             aria-label="Vault Capability Registry pagination">
+            {% if page > 1 %}
+                {% set previous_href = url_for('vault.detail', instance_id=instance.id, capability_page=page - 1, **filter_params) %}
+                {% set previous_fragment = url_for('vault.capability_registry', instance_id=instance.id, capability_page=page - 1, **filter_params) %}
+                <a href="{{ previous_href }}"
+                   hx-get="{{ previous_fragment }}"
+                   hx-target="#vault-capability-registry"
+                   hx-swap="outerHTML"
+                   hx-indicator="#vault-capability-loading"
+                   class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</span>
+            {% endif %}
+            {{ pagination_ui.numeric_pages(page,
+                total_pages,
+                page_param='capability_page',
+                endpoint='vault.capability_registry',
+                href_endpoint='vault.detail',
+                query_params=filter_params,
+                hx_target='#vault-capability-registry',
+                hx_indicator='#vault-capability-loading',
+                hx_swap='outerHTML') }}
+            {% if page < total_pages %}
+                {% set next_href = url_for('vault.detail', instance_id=instance.id, capability_page=page + 1, **filter_params) %}
+                {% set next_fragment = url_for('vault.capability_registry', instance_id=instance.id, capability_page=page + 1, **filter_params) %}
+                <a href="{{ next_href }}"
+                   hx-get="{{ next_fragment }}"
+                   hx-target="#vault-capability-registry"
+                   hx-swap="outerHTML"
+                   hx-indicator="#vault-capability-loading"
+                   class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></span>
+            {% endif %}
+        </nav>
+    </footer>
+    {% for result in page_rows %}
+        {% set row = result.contract %}
+        {% call record_detail_modal.render(
+            'vault-capability-detail-' ~ row.key,
+            row.key,
+            'Vault API Capability',
+            row.title,
+            'Committed provider contract and independent operational boundaries.',
+            icon=row.icon,
+            footer_text='Read-only committed API evidence; no Secret values or live Vault request.',
+            size='standard'
+        ) %}
+            <div class="space-y-4" data-kaori-vault-capability-detail>
+                <dl class="grid gap-px overflow-hidden rounded-xl border border-outline-default bg-outline-subtle sm:grid-cols-2">
+                    {% for label, value in [
+                        ('API Contract', row.contract),
+                        ('Requirement', 'Required' if row.required else 'Optional'),
+                        ('Validation Status', result.status_label),
+                        ('Evidence Owner', 'Vault Full Validation')
+                    ] %}
+                        <div class="min-w-0 bg-surface-card p-4">
+                            <dt class="text-xs font-semibold text-content-muted">{{ label }}</dt>
+                            <dd class="mt-1 break-all text-sm font-semibold text-content-primary">{{ value }}</dd>
+                        </div>
+                    {% endfor %}
+                </dl>
+                <section class="rounded-xl border border-outline-default bg-surface-card p-4">
+                    <h3 class="text-sm font-semibold text-content-primary">Capability Contract</h3>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.description }}</p>
+                </section>
+                <section class="rounded-xl border border-outline-default bg-surface-card p-4">
+                    <h3 class="text-sm font-semibold text-content-primary">Validation Evidence</h3>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">
+                        {% if result.observed %}
+                            The latest qualifying Full Validation committed this API capability.
+                        {% elif result.limited %}
+                            Optional mount discovery was denied by Vault policy; the required API contract is independently qualified.
+                        {% elif result.gap %}
+                            Current Full Validation does not prove this required API capability.
+                        {% else %}
+                            No current qualifying API observation is available for this capability.
+                        {% endif %}
+                    </p>
+                </section>
+                <section class="rounded-xl border border-outline-subtle bg-surface-subtle p-4">
+                    <h3 class="text-sm font-semibold text-content-primary">Recommended Action &amp; Boundary</h3>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">
+                        {% if result.observed %}
+                            Revalidate after changes to Vault release, AppRole access or endpoint trust.
+                        {% elif result.limited %}
+                            Approve a separate read-only mount-discovery policy only when operationally necessary.
+                        {% elif result.gap %}
+                            Review the approved AppRole, TLS trust and this API contract, then rerun Full Validation.
+                        {% else %}
+                            Run Full Validation to establish current provider API evidence.
+                        {% endif %}
+                        Full Validation does not authorize KV Secret reads, PKI mutation, or independent inventory collection.
+                    </p>
+                </section>
+            </div>
+        {% endcall %}
+    {% endfor %}
 </section>
