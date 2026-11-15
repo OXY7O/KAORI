@@ -117,9 +117,6 @@ def test_bounded_cluster_readback_is_connection_scoped_and_never_authorizes_run(
         assert b'Cluster identity missing' in page.data
         assert b'No infrastructure mutation controls are enabled' in page.data
         assert b'Blocked' in page.data
-        assert b'lab-kubernetes' not in app.test_client().get(
-            f'/integrations/ansible/connections/{second.id}'
-        ).data or True
 
         partial = app.test_client().get(
             f'/integrations/ansible/connections/{first.id}',
