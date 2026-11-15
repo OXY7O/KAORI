@@ -23,7 +23,15 @@ class VaultConnectionForm(FlaskForm):
     description = TextAreaField('Description', validators=[Optional(), Length(max=2000)])
     endpoint = StringField('HTTPS Endpoint', validators=[DataRequired(), Length(max=500)])
     namespace = StringField('Vault Namespace (optional)', validators=[Optional(), Length(max=255)])
-    auth_mount = StringField('AppRole Auth Mount', default='approle', validators=[DataRequired(), Length(max=160)])
+    # The mount path is not the authentication method. Limit the normal UI
+    # to the default AppRole mount; retain a controlled custom-path escape hatch.
+    auth_mount_mode = SelectField(
+        'AppRole Mount',
+        choices=[('approle', 'Default AppRole Mount (approle)'), ('custom', 'Custom AppRole Mount')],
+        default='approle',
+        validators=[DataRequired()],
+    )
+    auth_mount = StringField('Custom AppRole Mount', default='approle')
     role_id = StringField('AppRole RoleID', validators=[DataRequired(), Length(max=255)])
     secret_id = PasswordField('AppRole SecretID', validators=[Length(max=4096)])
     timeout = IntegerField(
@@ -38,8 +46,16 @@ class VaultConnectionForm(FlaskForm):
     def __init__(self, *args, existing: VaultInstance | None = None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.existing = existing
+        # Compatibility for Vault forms opened before the selector was added:
+        # retain their custom AppRole mount rather than silently using default.
+        if self.is_submitted() and not self.auth_mount_mode.raw_data:
+            submitted_mount = str(self.auth_mount.data or '').strip('/')
+            self.auth_mount_mode.data = 'custom' if submitted_mount not in {'', 'approle'} else 'approle'
         # Never hydrate a decrypted AppRole SecretID into rendered form data.
         if not self.is_submitted():
+            self.auth_mount_mode.data = (
+                'custom' if existing is not None and existing.auth_mount != 'approle' else 'approle'
+            )
             self.secret_id.data = ''
             self.kv2_mounts.data = ', '.join(existing.kv2_mounts or ()) if existing is not None else ''
             self.pki_mounts.data = ', '.join(existing.pki_mounts or ()) if existing is not None else ''
@@ -59,6 +75,10 @@ class VaultConnectionForm(FlaskForm):
             raise ValidationError('Vault namespace contains invalid characters.')
 
     def validate_auth_mount(self, field: StringField) -> None:
+        if self.auth_mount_mode.data == 'approle':
+            # Ignore stale hidden custom input when switching back to default.
+            field.data = 'approle'
+            return
         try:
             field.data = validate_auth_mount(str(field.data or ''))
         except ValueError as exc:
@@ -90,7 +110,11 @@ class VaultConnectionForm(FlaskForm):
             description=str(self.description.data or '').strip() or None,
             endpoint=str(self.endpoint.data or '').strip(),
             namespace=str(self.namespace.data or '').strip('/') or None,
-            auth_mount=str(self.auth_mount.data or 'approle').strip('/'),
+            auth_mount=(
+                'approle'
+                if self.auth_mount_mode.data == 'approle'
+                else str(self.auth_mount.data or '').strip('/')
+            ),
             role_id=str(self.role_id.data or '').strip(),
             secret_id=secret_id,
             timeout=int(self.timeout.data or 5),

@@ -43,6 +43,25 @@ INTEGRATION_VAULT_ALLOWED_ORIGINS=https://vault.internal.example:8200
 INTEGRATION_VAULT_CA_BUNDLE=/etc/ssl/approved/vault-root-ca.pem  # optional if system trusted
 ```
 
+### Authentication method versus mount path
+
+The KAORI Vault provider currently implements **AppRole authentication
+only**. The Add/Edit form's AppRole Mount dropdown is **not** a choice of
+authentication methods: `Default AppRole Mount (approle)` sends the
+`/v1/auth/approle/login` path, while `Custom AppRole Mount`
+reveals the existing single-segment, server-validated mount path
+(for example `team-approle`). Both use the same RoleID and encrypted
+SecretID and preserve the 10-minute Test Connection proof, Full Validation
+and runtime evidence boundaries. On Edit, existing custom mounts remain
+selected and plaintext SecretID is never hydrated.
+
+A future Kubernetes workload-identity, JWT/OIDC or cloud-IAM
+authentication method requires its own reviewed connection schema,
+credential/token acquisition and renewal contract, least-privilege
+policy, isolation/security gates and staging UAT. Do not select an
+unsupported method or interpret a renamed AppRole mount as an auth-method
+change.
+
 ### Governed production provider trust
 
 Production does **not** use the DevContainer's ignored `secrets/trust/`

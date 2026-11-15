@@ -225,6 +225,7 @@ def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> Non
         'form.endpoint',
         'form.namespace',
         'form.timeout',
+        'form.auth_mount_mode',
         'form.auth_mount',
         'form.role_id',
         'form.secret_id',
@@ -248,5 +249,26 @@ def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> Non
     assert 'Vault owns Secrets; KAORI governs evidence.' in form
     assert 'Disabled connections stay registered, not used.' in form
     assert 'whitespace-nowrap' not in form
+
+    # AppRole is the only implemented auth method. The mount path is not a
+    # different auth method: default and controlled custom paths share one
+    # approved provider client without an unsupported Auth API.
+    forms = (
+        ROOT / 'app/integrations/secrets_management/secrets_pki/providers/vault/application/forms.py'
+    ).read_text(encoding='utf-8')
+    assert "auth_mount_mode = SelectField(" in forms
+    assert "('approle', 'Default AppRole Mount (approle)')" in forms
+    assert "('custom', 'Custom AppRole Mount')" in forms
+    assert "form.auth_mount_mode" in form
+    assert "**{'x-model': 'authMountMode'}" in form
+    assert 'x-show="authMountMode === \'custom\'"' in form
+    assert 'x-cloak' in form
+    assert "**{':required': \"authMountMode === 'custom'\"}" in form
+    assert "validate_auth_mount(str(field.data or ''))" in forms
+    assert "if self.auth_mount_mode.data == 'approle':" in forms
+    assert "if self.is_submitted() and not self.auth_mount_mode.raw_data:" in forms
+    assert 'form.auth_mount_mode.errors' in form
+    assert 'form.auth_mount.errors' in form
+    assert 'AppRole Authentication' in form
 
     Environment().parse(form)
