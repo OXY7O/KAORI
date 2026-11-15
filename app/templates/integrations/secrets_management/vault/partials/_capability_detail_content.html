@@ -4,32 +4,32 @@
 {% set status_tone = result.status_key %}
 {% set decision_title = 'Capability Available' if result.observed else ('Optional Discovery Limited' if result.limited else ('Required Capability Gap' if result.gap else 'Capability Not Observed')) %}
 {% if result.observed %}
-    {% set decision_message = 'The latest qualifying Vault Full Validation committed this API capability. Release compatibility and runtime health remain independent.' %}
+    {% set decision_message = 'Full Validation verified this API; runtime and compatibility stay independent.' %}
 {% elif result.limited %}
-    {% set decision_message = 'Vault denied optional mount discovery. Core required API readiness remains independent and does not require broader policy.' %}
+    {% set decision_message = 'Optional mount discovery is denied; core API readiness is unaffected.' %}
 {% elif result.gap %}
-    {% set decision_message = 'Current Full Validation does not prove this required Vault API contract. Resolve the provider check before relying on it.' %}
+    {% set decision_message = 'Required API evidence is missing; provider readiness is unqualified.' %}
 {% else %}
-    {% set decision_message = 'No current qualifying Full Validation evidence is available for this API capability.' %}
+    {% set decision_message = 'No qualifying Full Validation evidence exists for this API.' %}
 {% endif %}
 {% if row.key == 'health' %}
-    {% set auth_boundary = 'Unauthenticated root health probe' %}
-    {% set auth_description = 'Vault sys/health is checked without a client token against the root namespace. It does not grant Secret access.' %}
+    {% set auth_boundary = 'Root health · no token' %}
+    {% set auth_description = 'Root health needs no token and grants no Secret access.' %}
     {% set impact_ready = 'Vault health was qualified during Full Validation; separately collected Runtime Health may change afterward.' %}
     {% set verification_command = 'set -euo pipefail\n# Operator CLI context; output suppressed. Not KAORI worker evidence.\nvault status -format=json >/dev/null' %}
 {% elif row.key == 'approle' %}
-    {% set auth_boundary = 'Approved AppRole credentials' %}
-    {% set auth_description = 'The validation worker authenticates with its encrypted SecretID and configured auth mount; the temporary token is not persisted.' %}
+    {% set auth_boundary = 'Approved AppRole' %}
+    {% set auth_description = 'The worker uses an encrypted SecretID; its token is temporary.' %}
     {% set impact_ready = 'AppRole login succeeded during Full Validation. No Secret read, lifecycle privilege, or inventory permission is implied.' %}
     {% set verification_command = '' %}
 {% elif row.key == 'token_lookup' %}
-    {% set auth_boundary = 'Transient AppRole client token' %}
-    {% set auth_description = 'The worker inspects its own authenticated token. Neither the token nor its raw response is committed as evidence.' %}
+    {% set auth_boundary = 'AppRole token' %}
+    {% set auth_description = 'The worker checks its token without persisting its value.' %}
     {% set impact_ready = 'The required token identity check succeeded during Full Validation. Access to individual Secrets is not established.' %}
     {% set verification_command = 'set -euo pipefail\n# Uses an independently authorized operator CLI identity.\n# It does not verify the managed KAORI AppRole identity.\nvault token lookup -format=json >/dev/null' %}
 {% else %}
-    {% set auth_boundary = 'Separate optional sys/mounts read policy' %}
-    {% set auth_description = 'Optional mount discovery uses the transient AppRole token. A 403/404 is Limited and does not block core checks.' %}
+    {% set auth_boundary = 'Optional mount read' %}
+    {% set auth_description = 'Optional mount read uses scoped access; 403/404 is Limited.' %}
     {% set impact_ready = 'Optional mount names were discoverable during Full Validation; this does not qualify KV v2 or PKI inventory.' %}
     {% set verification_command = 'set -euo pipefail\n# Requires approved optional discovery access for the operator identity.\n# Suppress mount metadata output; this is not KAORI worker evidence.\nvault read -format=json sys/mounts >/dev/null' %}
 {% endif %}
@@ -46,10 +46,19 @@
     {% set operational_impact = 'The present connection has no qualifying observation for this capability; an earlier result must not be treated as current.' %}
     {% set next_action = 'Run Full Validation for this connection, then inspect newly committed capability evidence.' %}
 {% endif %}
+{% if result.observed %}
+    {% set observation_description = 'This API was observed in the latest Full Validation.' %}
+{% elif result.limited %}
+    {% set observation_description = 'Optional mount discovery was denied; core readiness is unaffected.' %}
+{% elif result.gap %}
+    {% set observation_description = 'Required API was not qualified by the current validation.' %}
+{% else %}
+    {% set observation_description = 'No current Full Validation observation exists for this API.' %}
+{% endif %}
 {% set evidence_steps = [
-    ('01', 'API Contract', row.contract, 'The approved adapter selects this request contract; a configured API path alone does not prove a successful check.'),
+    ('01', 'API Contract', row.contract, 'The adapter declares this API; validation proves its status.'),
     ('02', 'Identity & Access', auth_boundary, auth_description),
-    ('03', 'Committed Observation', result.status_label, decision_message)
+    ('03', 'Committed Observation', result.status_label, observation_description)
 ] %}
 <div class="space-y-4"
      data-kaori-vault-capability-detail
@@ -65,7 +74,7 @@
                     <div class="min-w-0">
                         <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Capability Decision</p>
                         <h3 class="mt-1 text-lg font-semibold text-content-primary">{{ decision_title }}</h3>
-                        <p class="mt-2 max-w-3xl text-sm leading-6 text-content-secondary">{{ decision_message }}</p>
+                        <p class="mt-2 max-w-3xl text-sm leading-6 text-content-secondary lg:line-clamp-1" title="{{ decision_message }}">{{ decision_message }}</p>
                     </div>
                 </div>
                 <span class="shrink-0">{{ integration_status(status_tone, result.status_label, display='indicator') }}</span>
@@ -87,7 +96,7 @@
                 {% for label, value in context_rows %}
                     <div class="min-w-0 bg-surface-card px-4 py-3">
                         <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
-                        <dd class="mt-1 break-words text-xs font-semibold text-content-primary [overflow-wrap:anywhere]">
+                        <dd class="mt-1 break-words text-xs font-semibold text-content-primary [overflow-wrap:anywhere] {% if label == 'Identity Boundary' %}lg:line-clamp-1{% endif %}" title="{{ value }}">
                             {{ value }}
                         </dd>
                     </div>
@@ -116,7 +125,7 @@
                             <p class="mt-1 break-words text-xs font-semibold text-content-secondary [overflow-wrap:anywhere]">{{ evidence }}</p>
                         </div>
                     </div>
-                    <p class="mt-3 text-xs leading-5 text-content-muted">{{ description }}</p>
+                    <p class="mt-3 text-xs leading-5 text-content-muted lg:line-clamp-2" title="{{ description }}">{{ description }}</p>
                 </li>
             {% endfor %}
         </ol>
@@ -172,7 +181,7 @@
                     {{ integration_ui.palette_icon('terminal-square', 'info', size='md') }}
                     <div class="min-w-0">
                         <h3 class="text-sm font-semibold text-content-primary">Verification Command</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Optional, read-only operator-side check in an already approved Vault CLI context; it does not replace the KAORI AppRole worker result.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary lg:line-clamp-1">Read-only CLI check; not proof of the KAORI AppRole.</p>
                     </div>
                 </div>
                 <button type="button"
@@ -199,7 +208,7 @@
                     {{ integration_ui.palette_icon('terminal-square', 'neutral', size='md') }}
                     <div class="min-w-0">
                         <h3 class="text-sm font-semibold text-content-primary">Verification Command</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">AppRole login requires sensitive credentials that must not be placed into terminal examples.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary lg:line-clamp-1">AppRole login is verified securely by the KAORI worker.</p>
                     </div>
                 </div>
             </header>
