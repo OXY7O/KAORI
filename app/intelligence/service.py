@@ -20,8 +20,8 @@ from app.intelligence.finding_presentation import (
     build_fix_steps,
     compact_recommendation_summary,
     finding_scope_details,
-    recommendation_detail_header_summary,
     format_affected_summary,
+    recommendation_detail_header_summary,
     recommendation_table_summary,
     recommendation_table_title,
 )
