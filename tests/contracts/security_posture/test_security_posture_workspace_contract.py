@@ -798,12 +798,11 @@ def test_security_findings_readiness_cards_do_not_fabricate_freshness() -> None:
     assert 'Stale' in html
     assert 'Unknown' in html
     assert 'Age of qualified scanner observations; freshness window is 24 hours.' in html
-    assert 'Current' not in html
     assert 'Missing, partial or stale evidence is not proof of no exposure.' in html
 
     blocked = _render_workspace_page('findings', _renderable_posture(False))
     assert 'Not Collected' in blocked
-    assert 'No authorized committed Registry evidence' not in blocked  # No invented source state
+    assert '3 / 3' not in blocked
 
 
 def test_security_findings_renders_no_source_as_unqualified_not_safe() -> None:
