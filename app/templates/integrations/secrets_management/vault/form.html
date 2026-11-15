@@ -42,12 +42,12 @@
                             <div class="flex flex-wrap items-center gap-2">
                                 <h2 class="text-base font-semibold text-content-primary">Connection Configuration</h2>
                                 {{ info_tip.render('vault-registration-guide', 'Vault Connection Configuration',
-                                                'AppRole credentials and optional scope are governed separately from Full Validation.',
-                                                [
-                                                'SecretID is encrypted at rest and Vault tokens are transient.',
-                                                'Test Connection verifies the submitted configuration before Save.',
-                                                'KV v2 and PKI evidence require separate authorization.'
-                                                ], placement='right', variant='guide') }}
+                                                                'AppRole credentials and optional scope are governed separately from Full Validation.',
+                                                                [
+                                                                'SecretID is encrypted at rest and Vault tokens are transient.',
+                                                                'Test Connection verifies the submitted configuration before Save.',
+                                                                'KV v2 and PKI evidence require separate authorization.'
+                                                                ], placement='right', variant='guide') }}
                             </div>
                             <p class="mt-1 text-sm leading-6 text-content-secondary">Configure identity, verified HTTPS, AppRole access and optional metadata scope.</p>
                         </div>
@@ -55,7 +55,8 @@
                 </header>
                 <div class="space-y-6 p-5 sm:p-6">
                     {% if message %}
-                        <div role="status" aria-live="polite"
+                        <div role="status"
+                             aria-live="polite"
                              {% if proof %}x-show="connectionVerified"{% endif %}>
                             {{ operational_callout.render('Vault Connection Test', message, tone='info' if proof else 'critical', variant='semantic') }}
                         </div>
@@ -210,7 +211,7 @@
                                 <p class="text-sm font-semibold text-content-primary">TLS Verification · Required</p>
                                 <p class="mt-1 text-xs leading-5 text-content-secondary">HTTPS must use an approved origin and trusted CA.</p>
                             </div>
-                            {% call operational_toggle.render("Allow KAORI to Use This Connection", "Disabled connections stay registered but cannot serve operational reads.") %}
+                            {% call operational_toggle.render("Allow KAORI to Use This Connection", "Disabled connections stay registered, not used.") %}
                                 {{ form.enabled(class_="h-4 w-4 rounded border-outline-strong accent-kaori-primary focus:ring-outline-focus") }}
                             {% endcall %}
                         </div>
@@ -233,7 +234,7 @@
                         </button>
                     {% endcall %}
                 {% else %}
-                    {{ provider_registration_actions.render(url_for('vault.index'),
+                    {{ provider_registration_actions.render(url_for('vault.index') ,
                     aria_label='Vault Connection Actions',
                     register_label='Register Connection',
                     loading_label='Registering Connection...',
@@ -245,36 +246,26 @@
                 {% if instance %}
                     {% set vault_flow_title = "Vault Configuration Flow" %}
                     {% set vault_flow_description = "Revalidate an existing Vault connection safely." %}
-                    {% set vault_flow_items = [
-                    ("Review Identity & Scope", "Preserve canonical provider identity and authorized metadata boundaries."),
-                    ("Adjust Endpoint & AppRole", "Change credentials and TLS settings only when required."),
-                    ("Test Configuration", "Verify the exact submitted form before saving."),
-                    ("Run Full Validation", "Rebuild committed provider readiness after saving.")
-                    ] %}
+                    {% set vault_flow_items = [('Review Identity & Scope', 'Preserve canonical provider identity and authorized metadata boundaries.'), ('Adjust Endpoint & AppRole', 'Change credentials and TLS settings only when required.'), ('Test Configuration', 'Verify the exact submitted form before saving.'), ('Run Full Validation', 'Rebuild committed provider readiness after saving.')] %}
                     {% set vault_flow_note = "Changes require a fresh connection test and Full Validation." %}
                 {% else %}
                     {% set vault_flow_title = "Vault Registration Flow" %}
                     {% set vault_flow_description = "Register approved AppRole access without Secret reads." %}
-                    {% set vault_flow_items = [
-                    ("Define Connection Identity", "Name the connection and set its environment."),
-                    ("Configure Endpoint & AppRole", "Use verified HTTPS, a permitted origin and non-root credentials."),
-                    ("Test Connection", "Obtain a signed 10-minute proof for the submitted configuration."),
-                    ("Register & Validate", "Save the connection, then run Full Validation.")
-                    ] %}
+                    {% set vault_flow_items = [('Define Connection Identity', 'Name the connection and set its environment.'), ('Configure Endpoint & AppRole', 'Use verified HTTPS, a permitted origin and non-root credentials.'), ('Test Connection', 'Obtain a signed 10-minute proof for the submitted configuration.'), ('Register & Validate', 'Save the connection, then run Full Validation.')] %}
                     {% set vault_flow_note = "Reusable SecretID is required for test, save and worker validation." %}
                 {% endif %}
                 {{ provider_registration_context.render(vault_flow_title,
                                 vault_flow_description,
                                 vault_flow_items,
                                 "Vault Connections",
-                                "Vault controls Secret values and access; KAORI governs connection evidence.",
-                                url_for("vault.index"),
-                                "Open Vault Connections",
+                                "Vault owns Secrets; KAORI governs evidence.",
+                                url_for("vault.index") ,
+                "Open Vault Connections",
                 flow_icon="workflow",
                 flow_note=vault_flow_note,
                 related_icon="key-round",
                 authority_boundary="Vault remains authoritative for policies, tokens, leases and native Secret lifecycle.") }}
             </aside>
         </form>
-</div>
+    </div>
 {% endblock dashboard_content %}
