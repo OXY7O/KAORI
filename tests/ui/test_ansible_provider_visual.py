@@ -52,7 +52,13 @@ def test_ansible_provider_reviewable_visual_surfaces(
         (
             href
             for link in candidates.all()
-            if (href := link.get_attribute('href')) and re.search(r'/instances/\d+
+            if (href := link.get_attribute('href')) and re.search(r'/instances/\d+$', href)
+        ),
+        None,
+    )
+    assert detail_href is not None, 'Expected the registered CI Ansible instance in the registry'
+    _assert_no_document_overflow(page)
+
     EVIDENCE_ROOT.mkdir(parents=True, exist_ok=True)
     page.screenshot(
         path=str(EVIDENCE_ROOT / f'ansible-overview-{theme}-{viewport_name}.png'),
@@ -79,46 +85,10 @@ def test_ansible_provider_reviewable_visual_surfaces(
     assert detail is not None and detail.ok
     expect(page.get_by_role('heading', name='Read-only Execution Evidence')).to_be_visible()
     expect(page.get_by_role('button', name='Run Local Read-only Test')).to_be_visible()
-    expect(page.get_by_text('External Host Validation')).to_be_visible()
+    expect(page.get_by_role('heading', name='External Host Validation')).to_be_visible()
     _assert_no_document_overflow(page)
     page.screenshot(
         path=str(EVIDENCE_ROOT / f'ansible-detail-{theme}-{viewport_name}.png'),
-        full_page=True,
-        animations='disabled',
-    )
-
-
-def _assert_no_document_overflow(page: Page) -> None:
-    size = page.evaluate(
-        '() => ({ scrollWidth: document.documentElement.scrollWidth, '
-        'clientWidth: document.documentElement.clientWidth })'
-    )
-    assert size['scrollWidth'] <= size['clientWidth'] + 1, f'Horizontal overflow: {size}'
-, href)
-        ),
-        None,
-    )
-    assert detail_href is not None, 'Expected the registered CI Ansible instance in the registry'
-    _assert_no_document_overflow(page)
-
-    EVIDENCE_ROOT.mkdir(parents=True, exist_ok=True)
-    page.screenshot(
-        path=str(EVIDENCE_ROOT / f'ansible-overview-{theme}-{viewport_name}.png'),
-        full_page=True,
-        animations='disabled',
-    )
-
-    register = page.goto(
-        f'{kaori_authenticated_base_url}{BASE_PATH}instances/new', wait_until='domcontentloaded'
-    )
-    assert register is not None and register.ok
-    expect(page.get_by_role('heading', name='Register Ansible Connection')).to_be_visible()
-    expect(page.locator('form[action*="instances/new"] input[name="csrf_token"]')).to_have_count(1)
-    expect(page.locator('input[name="ssh_private_key"]')).to_have_count(0)
-    expect(page.get_by_role('button', name='Register Connection')).to_be_visible()
-    _assert_no_document_overflow(page)
-    page.screenshot(
-        path=str(EVIDENCE_ROOT / f'ansible-register-{theme}-{viewport_name}.png'),
         full_page=True,
         animations='disabled',
     )
