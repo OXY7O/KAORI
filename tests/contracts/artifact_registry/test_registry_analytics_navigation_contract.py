@@ -127,6 +127,48 @@ def test_registry_analytics_legacy_links_redirect_and_preserve_alert_filters() -
     assert '[5, 10, 25, 50]' in sections
 
 
+def test_registry_analytics_detail_pages_reuse_external_section_intro() -> None:
+    """All seven detail routes share the Overview's plain section-intro archetype."""
+    from jinja2 import Environment
+
+    shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    intro = (ROOT / 'app/templates/components/section_intro.html').read_text()
+    Environment().parse(shell)
+    Environment().parse(intro)
+
+    assert '{% import "components/section_intro.html" as section_intro %}' in shell
+    assert "section_intro.render('Explore Analytics'," in shell
+    assert "section_intro.render(detail_intro[0]," in shell
+    assert "'artifact-registry-analytics-detail-heading')" in shell
+    assert 'aria-labelledby="artifact-registry-analytics-detail-heading"' in shell
+
+    expected = {
+        'growth': 'Registry Growth Analysis',
+        'capacity': 'Registry Capacity Analysis',
+        'usage': 'Registry Usage Analysis',
+        'risk': 'Registry Risk Analysis',
+        'governance': 'Registry Governance Analysis',
+        'alerts': 'Registry Alerts & Anomalies',
+        'insights': 'Registry Insights & Intelligence',
+    }
+    for domain, heading in expected.items():
+        assert f"'{domain}': ('{heading}'," in shell
+    detail_block = shell.split('{% set detail_section_intros = {', 1)[1]
+    detail_block = detail_block.split('} %}', 1)[0]
+    assert detail_block.count("': (") == len(expected)
+    assert "'overview':" not in detail_block
+    assert "'evidence':" not in detail_block
+
+    # The shared intro stays outside the existing owning workspace shell,
+    # leaving lazy HTMX fragments, nested detail headers, and routes intact.
+    assert shell.index('section_intro.render(detail_intro[0]') < shell.index(
+        'id="artifact-registry-analytics-workspace"'
+    )
+    assert 'id="artifact-registry-analytics-active-section"' in shell
+    assert "hx-get=\"{{ url_for('artifact_registry.analytics_section'" in shell
+    assert "class=\"space-y-3\"" in shell
+
+
 def test_analytics_overview_uses_shared_intro_and_level_three_navigation() -> None:
     from jinja2 import Environment
 
