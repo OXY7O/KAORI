@@ -154,7 +154,7 @@ def test_intelligence_posture_signals_align_titles_values_and_supporting_copy() 
     assert 'data-intelligence-posture-signals' in template
     assert template.count('data-intelligence-posture-signal>') == 1
     region = template.split('data-intelligence-posture-signals', 1)[1].split('{% endfor %}', 1)[0]
-    assert 'group flex h-full min-w-0 flex-col' in region
+    assert 'group flex min-w-0 flex-col px-4 py-4' in region
     assert 'flex min-h-10 items-center justify-between' in region
     assert 'min-h-12 text-base font-semibold leading-6' in region
     assert 'data-intelligence-posture-value' in region
@@ -162,8 +162,11 @@ def test_intelligence_posture_signals_align_titles_values_and_supporting_copy() 
     assert region.index('<h3 ') < region.index('data-intelligence-posture-value')
     assert region.index('data-intelligence-posture-value') < region.index('data-intelligence-posture-supporting')
     assert 'focus-visible:ring-outline-focus' in region
-    assert 'border-outline-subtle bg-surface-card' in region
-    assert 'hover:border-outline-strong hover:bg-surface-hover' in region
+    assert 'grid divide-y divide-outline-subtle lg:grid-cols-3 lg:divide-x lg:divide-y-0' in region
+    assert 'hover:bg-surface-hover' in region
+    assert 'focus-visible:ring-inset' in region
+    assert 'rounded-xl border' not in region
+    assert 'bg-surface-card' not in region
     assert 'bg-surface-muted {{ icon_tone_classes }}' in region
     assert 'text-content-primary' in region
     assert 'text-content-muted' in region
@@ -174,8 +177,9 @@ def test_intelligence_posture_signals_align_titles_values_and_supporting_copy() 
     assert 'url_for(item.href_endpoint)' in region
 
     assert 'critical signals need operator review.' in source
-    assert '24h committed Inventory threshold only;' in source
-    assert 'evidence require separate qualification.' in source
+    assert '24h committed Inventory only.' in source
+    assert 'Evidence Freshness describes qualified committed Inventory coverage' in template
+    assert 'not a guarantee of scanner, metrics, or rule-evaluator freshness' in template
     assert "'tone': 'normal' if evidence and evidence['complete'] else 'warning'" in source
     assert "else automation['execution_label']" in source
 
