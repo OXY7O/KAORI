@@ -820,7 +820,7 @@ def test_source_control_health_register_reflows_without_horizontal_scrolling():
     assert 'overflow-x-auto' not in overview
     assert 'min-w-[1024px]' not in overview
     assert overview.count('{% for item in installation_rows %}') == 2
-    assert overview.count('source_control.repositories' ) >= 3
+    assert overview.count('source_control.repositories') >= 3
     assert overview.count("item.observed_count if item.observed_count is not none else 'Unknown'") == 2
     assert overview.count('item.installation.native_installation_id') >= 2
     assert overview.count('item.account.native_account_id') >= 2
