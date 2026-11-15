@@ -56,6 +56,8 @@ def test_vault_form_actions_use_canonical_feedback_without_secrets(
     )
 
     class FakeForm:
+        errors = {'secret_id': ['AppRole SecretID is required.']} if outcome == 'invalid_fields' else {}
+
         def validate_on_submit(self) -> bool:
             return outcome != 'invalid_fields'
 
@@ -115,6 +117,9 @@ def test_vault_form_actions_use_canonical_feedback_without_secrets(
     assert 'not-for-ui-or-audit' not in repr(feedback)
     assert 'raw-provider-error-must-not-be-exposed' not in repr(feedback)
     assert 'raw-storage-error-must-not-be-exposed' not in repr(feedback)
+    if outcome == 'invalid_fields':
+        assert 'AppRole SecretID' in feedback['message']
+        assert 'not-for-ui-or-audit' not in feedback['message']
     if outcome == 'save_success':
         assert result.status_code == 302
         assert feedback['event_type'] in {'vault_connection_registered', 'vault_connection_updated'}
@@ -124,3 +129,44 @@ def test_vault_form_actions_use_canonical_feedback_without_secrets(
         assert 'message' not in result
         assert feedback['delivery_policy'] == 'audit_only'
         assert feedback['action_url'].endswith(url)
+
+
+@pytest.mark.parametrize(
+    ('errors', 'action', 'expected_message'),
+    [
+        (
+            {'secret_id': ['Private value must not be exposed']},
+            'test',
+            'AppRole SecretID is required to test a new Vault connection.',
+        ),
+        (
+            {'role_id': ['Unsafe raw role value']},
+            'test',
+            'Correct AppRole RoleID before continuing.',
+        ),
+        (
+            {'name': ['Unsafe name'], 'secret_id': ['Unsafe secret']},
+            'save',
+            'Correct Connection Name, AppRole SecretID before continuing.',
+        ),
+        (
+            {'csrf_token': ['CSRF value must not be exposed']},
+            'test',
+            'Form session expired. Reload the page and retry Test Connection.',
+        ),
+        (
+            {'unexpected': ['Raw untrusted validator error']},
+            'test',
+            'Review the form validation errors before continuing.',
+        ),
+    ],
+)
+def test_vault_rejected_form_toast_names_only_safe_fields(
+    errors: dict[str, list[str]],
+    action: str,
+    expected_message: str,
+) -> None:
+    form = SimpleNamespace(errors=errors)
+    message = routes._form_validation_message(form, action=action)
+    assert message == expected_message
+    assert not any(error in message for messages in errors.values() for error in messages)

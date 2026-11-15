@@ -86,6 +86,38 @@ def _form_feedback(
     )
 
 
+def _form_validation_message(form: VaultConnectionForm, *, action: str) -> str:
+    """Name safe field labels, never user-supplied values or raw exceptions."""
+    errors = getattr(form, 'errors', {})
+    if 'csrf_token' in errors:
+        return 'Form session expired. Reload the page and retry Test Connection.'
+
+    field_labels = {
+        'name': 'Connection Name',
+        'environment': 'Environment',
+        'description': 'Description',
+        'endpoint': 'HTTPS Endpoint',
+        'namespace': 'Vault Namespace',
+        'timeout': 'Request Timeout',
+        'auth_mount_mode': 'AppRole Mount',
+        'auth_mount': 'Custom AppRole Mount',
+        'role_id': 'AppRole RoleID',
+        'secret_id': 'AppRole SecretID',
+        'kv2_mounts': 'Approved KV v2 Mounts',
+        'pki_mounts': 'Approved PKI Mounts',
+        'pki_stored_certs_enabled': 'Stored PKI Certificate Collection',
+    }
+    invalid_labels = [label for key, label in field_labels.items() if key in errors]
+    if not invalid_labels:
+        return 'Review the form validation errors before continuing.'
+    if invalid_labels == ['AppRole SecretID'] and action == 'test':
+        return 'AppRole SecretID is required to test a new Vault connection.'
+    visible = ', '.join(invalid_labels[:3])
+    remainder = len(invalid_labels) - 3
+    suffix = f' (+{remainder} other fields)' if remainder > 0 else ''
+    return f'Correct {visible}{suffix} before continuing.'
+
+
 def _evidence(instance: VaultInstance) -> dict:
     validation_id = get_active_validation_task_id(
         integration_type='secrets_pki',
@@ -236,7 +268,7 @@ def new_instance() -> ResponseReturnValue:
             event_type='vault_registration_input_rejected',
             status='warning',
             title='Vault Registration Needs Attention',
-            message='Review the highlighted fields before testing or registering.',
+            message=_form_validation_message(form, action=str(request.form.get('action') or 'test').lower()),
         )
     return render_template(
         'integrations/secrets_management/vault/form.html',
@@ -331,7 +363,7 @@ def edit_instance(instance_id: int) -> ResponseReturnValue:
             event_type='vault_connection_update_input_rejected',
             status='warning',
             title='Vault Configuration Needs Attention',
-            message='Review the highlighted fields before testing or saving.',
+            message=_form_validation_message(form, action=str(request.form.get('action') or 'test').lower()),
         )
     return render_template(
         'integrations/secrets_management/vault/form.html',

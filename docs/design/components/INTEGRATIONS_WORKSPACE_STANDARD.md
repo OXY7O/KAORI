@@ -422,6 +422,20 @@ submission. Test Connection proves AppRole identity, **not** Full Validation.
 Async Full Validation/Runtime progress belongs to the established
 Jobs/Activity Center contract, not another synchronous success toast.
 
+**Vault rejected form diagnosis (UAT #3384):** a Test Connection POST
+that fails WTForms validation has **not** attempted the Vault API.
+The shared Operational Toast must name only approved, human-readable
+invalid field labels (for example `AppRole SecretID`), never raw submitted
+values or validator/proxy error payloads. CSRF errors instruct the operator
+to reload the form; unknown errors retain generic safe fallback. The
+server keeps inline field validation errors and the Jinja form uses native
+`autofocus` on the first invalid visible field after full-page POST.
+Do not add a large inline notification or a new JavaScript-only error
+component. For new connections, Test Connection always requires a fresh
+SecretID even if a prior signed proof is submitted; only Save may reuse
+the 10-minute user/field-bound proof without reposting a SecretID. Error
+feedback does not assert that TLS or AppRole failed before Vault is called.
+
 **Vault placeholders and section-level Guides (UAT #3384):** field
 labels in Add/Edit stay concise and semantic. Use existing WTForms
 `render_kw.placeholder` defaults for Connection Name, Description,
