@@ -6,6 +6,7 @@
 {% import "components/form_with_context_rail.html" as form_context %}
 {% import "components/form_field.html" as form_field %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/action_button.html" as action_button %}
 {% block title %}Add Ansible Kubernetes Connection · KAORI{% endblock title %}
@@ -48,8 +49,20 @@
                         <div class="mb-4 flex min-w-0 items-start gap-3">
                             {{ integration_ui.palette_icon("fingerprint", "brand", size="sm") }}
                             <div class="min-w-0">
-                                <h3 id="ansible-identity-heading"
-                                    class="text-sm font-semibold text-content-primary">Connection Identity</h3>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h3 id="ansible-identity-heading"
+                                        class="text-sm font-semibold text-content-primary">Connection Identity</h3>
+                                    {{ info_tip.render("ansible-connection-identity-guide",
+                                                    "Connection Identity",
+                                                    "Define the reusable non-production source identity owned by KAORI.",
+                                                    [
+                                                    "Choose a stable connection name and its approved non-production environment.",
+                                                    "Description is optional and records operational purpose and ownership.",
+                                                    "Source registration does not grant host or Kubernetes execution permission."
+                                                    ],
+                                                    placement="right",
+                                                    variant="guide") }}
+                                </div>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">A reusable KAORI source identity, limited to non-production environments.</p>
                             </div>
                         </div>
@@ -77,8 +90,21 @@
                              aria-label="Git Source and Validation">
                         {% call connection_validation_header.render(
                             "Git Source & Validation",
-                            "Verify the reviewed Git commit, required Kubespray files and pinned dependencies before registration.",
-                            icon="git-commit"
+                            "Verify the reviewed Git source before registration.",
+                            icon="git-commit",
+                            title_extra=info_tip.render(
+                                "ansible-git-source-validation-guide",
+                                "Git Source & Validation",
+                                "Validate the immutable Git source before Save Connection is permitted.",
+                                [
+                                "This pilot accepts only the reviewed OXY7O/kaori-operations revision; the server enforces the source policy.",
+                                "Validate Source checks commit, tree, expected blob hashes, Kubespray files and pinned dependencies.",
+                                "The signed proof is bound to the current operator and exact inputs. Editing the form requires revalidation.",
+                                "Source validation never authorizes SSH, playbook execution or Kubernetes changes."
+                                ],
+                                placement="right",
+                                variant="guide")
+
                             ) %}
                             <button type="submit"
                                     name="action"
@@ -111,16 +137,27 @@
                                     {% endfor %}
                                 </div>
                             </div>
-                            <p class="text-xs leading-5 text-content-muted">This pilot accepts OXY7O/kaori-operations at the reviewed candidate SHA only. Changing the source requires an admitted compatibility profile.</p>
-                        </div>
+                                                    </div>
                     </section>
                     <section class="border-t border-outline-subtle pt-6"
                              aria-labelledby="ansible-compatibility-heading">
                         <div class="mb-4 flex min-w-0 items-start gap-3">
                             {{ integration_ui.palette_icon("badge-check", "brand", size="sm") }}
                             <div class="min-w-0">
-                                <h3 id="ansible-compatibility-heading"
-                                    class="text-sm font-semibold text-content-primary">Compatibility &amp; Execution References</h3>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h3 id="ansible-compatibility-heading"
+                                        class="text-sm font-semibold text-content-primary">Compatibility &amp; Execution References</h3>
+                                    {{ info_tip.render("ansible-compatibility-policy-guide",
+                                                    "Compatibility & Execution References",
+                                                    "Candidate version policy is separate from runtime and infrastructure admission.",
+                                                    [
+                                                    "Ansible Core, Ansible Runner and Kubespray versions are approved source compatibility candidates, not detected runtime versions.",
+                                                    "The optional Execution Environment digest is a reference only, not proof of image admission.",
+                                                    "Runtime use requires separately approved image provenance, trusted inventory and worker evidence."
+                                                    ],
+                                                    placement="right",
+                                                    variant="guide") }}
+                                </div>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">Candidate versions do not establish image, inventory, worker or cluster readiness.</p>
                             </div>
                         </div>
@@ -139,8 +176,7 @@
                             <label for="{{ form.execution_environment_digest.id }}"
                                    class="block">{{ form_field.label_row(form.execution_environment_digest.label.text) }}</label>
                             {{ form.execution_environment_digest(class=form_field.input_classes() ~ ' font-mono', placeholder="sha256:... (optional; not proof of image admission)", aria_invalid="true" if form.execution_environment_digest.errors else "false") }}
-                            <p class="mt-2 text-xs leading-5 text-content-muted">Optional reference only. Runtime use requires independently approved image provenance, trusted inventory and worker evidence.</p>
-                            {% for error in form.execution_environment_digest.errors %}
+                                                        {% for error in form.execution_environment_digest.errors %}
                                 <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                             {% endfor %}
                         </div>
@@ -171,7 +207,7 @@
                                 "Register a reusable, source-validated Ansible connection.",
                                 registration_steps,
                                 "Orchestration Integrations",
-                                "Ansible source registration and operational readiness are governed separately.",
+                                "Source registration is not runtime readiness.",
                                 url_for('integrations.orchestration') ,
                                 "Open Orchestration Integrations",
                                 flow_icon="workflow",
