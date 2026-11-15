@@ -11,6 +11,9 @@
 <div id="recommendation-summary-section"
      {% if recommendation_summary_oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}>
     {% set summary_footer = payload.scope_label ~ ' · ' ~ ((active_filters ~ ' active filters') if active_filters else 'no active filters') ~ ' · Committed Evidence only.' %}
+    {% set summary_title_label %}
+        {{ table_label.metadata_label('5 Indicators', icon='layout-dashboard') }}
+    {% endset %}
     {% call intelligence_ui.posture_panel(
         'Recommendation Summary',
         'Current evidence-backed recommendation posture for the active filter scope.',
@@ -21,7 +24,8 @@
         actions=[
         ('book-open-check', 'Rule Catalog', url_for('intelligence.catalog')),
         ('siren', 'Alert Intelligence', url_for('alert_intelligence.index'))
-        ]
+        ],
+        title_extra=summary_title_label
         ) %}
         <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-5">
             {{ intelligence_ui.posture_metric('scan-search', 'Matching Findings', matching_items, source_items ~ ' active finding(s) before filters') }}
