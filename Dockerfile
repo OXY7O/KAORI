@@ -123,7 +123,7 @@ RUN groupadd --system kaori \
     && useradd --system --gid kaori --create-home --home-dir /app kaori
 COPY --chown=kaori:kaori app /app/app
 COPY --chown=kaori:kaori celery_worker.py /app/
-COPY --chown=kaori:kaori scripts/__init__.py scripts/wait_for_db.py /app/scripts/
+COPY --chown=kaori:kaori scripts/wait_for_db.py /app/scripts/wait_for_db.py
 RUN mkdir -p /app/instance \
     && chown -R kaori:kaori /app/instance
 
