@@ -51,9 +51,7 @@ def test_vault_validation_uses_canonical_job_admission_with_page_fallback(
     monkeypatch.setattr(routes, 'enqueue_instance_validation', enqueue)
     monkeypatch.setattr(routes, 'render_template', lambda template, **context: {'template': template, **context})
     url = '/integrations/secrets-management/secrets-pki/vault/instances/15/validate'
-    with app.test_request_context(
-        url, method='POST', headers={'HX-Request': 'true'} if is_htmx else {}
-    ):
+    with app.test_request_context(url, method='POST', headers={'HX-Request': 'true'} if is_htmx else {}):
         result = unwrap(routes.validate)(15)
 
     assert queued == [
