@@ -30,6 +30,23 @@ Reset is the only operation that replaces the complete `#recommendations-workspa
 
 The primary Recommendation column shows a concise operational summary. Examples, long technical identifiers, and supporting evidence remain in the detail modal. The service owns summary compaction so desktop and mobile records use the same wording.
 
+**Concise row projections (#4833, November 2026 Visual UAT):** Table titles and
+supporting sentences are limited to a compact presentation budget (64 characters
+before existing word-boundary compaction), independent of the full recommendation
+`title`, `summary`, `recommended_action`, immutable rule and source evidence.
+For committed Kubernetes Tenant Allocation capacity findings with a verified
+`capacity_state`, use semantic copy such as **Tenant allocation: Overcommitted**
+instead of repeating a long namespace in Recommendation; shorten the associated
+`@tenant:...:resource-quotas` scope to **Tenant resource quotas**. Never infer
+capacity posture when the committed state is missing. Unrecognized long asset
+scope strings use a bounded display projection, not changes to their source
+identity. The complete original title/scope remain accessible through native
+cell title attributes and the owning Review modal. Keep semantic source names,
+evidence-kind labels, priority and AlertCase lifecycle unchanged, with no
+deduplication or aggregation of underlying findings. Apply the same display
+projection on desktop and mobile, and keep paginator/default 5 rows unchanged.
+
+
 **Recommendation record visual alignment (#4833, operator UAT 2026-11-15):**
 Retain the canonical shared `table_ui` row, cell and label primitives,
 vertically centered cells, accessible caption/column headers, right-aligned
