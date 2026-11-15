@@ -92,5 +92,5 @@ def test_orchestration_compact_copy_does_not_change_provider_ownership() -> None
     assert 'Manage connections and asset bindings.' in workspace
     assert 'Open Kubernetes' in workspace
     assert 'Open {{ item.runtime_label }}' in workspace  # Other domains retain their labels.
-    assert "url_for(item.workspace_endpoint)" in workspace
+    assert 'url_for(item.workspace_endpoint)' in workspace
     assert "url_for('integrations.choose_integration_provider', integration_type=item.key)" in workspace
