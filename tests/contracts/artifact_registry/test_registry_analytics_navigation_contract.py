@@ -153,9 +153,9 @@ def test_registry_analytics_detail_pages_reuse_external_section_intro() -> None:
     }
     for domain, heading in expected.items():
         assert f"'{domain}': ('{heading}'," in shell
-    detail_block = shell.split('{% set detail_section_intros = {', 1)[1].split(
-        '}}', 1
-    )[0]
+    detail_block = shell.split('{% set detail_section_intros = {', 1)[1]
+    detail_block = detail_block.split('} %}', 1)[0]
+    assert detail_block.count("': (") == len(expected)
     assert "'overview':" not in detail_block
     assert "'evidence':" not in detail_block
 
