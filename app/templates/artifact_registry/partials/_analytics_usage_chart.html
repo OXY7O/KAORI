@@ -63,7 +63,10 @@
                                 aria-label="Observed project pull count bar chart; horizontal axis begins at zero"></canvas>
                     </div>
                     <p id="registry-usage-chart-note"
-                       class="mt-3 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">Zero is a valid observed count; exact source values are listed beside the chart. No pull-demand forecast is inferred.</p>
+                       class="mt-3 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">
+                        Zero is a valid observed count; exact source values are listed beside the chart.
+                        No pull-demand forecast is inferred.
+                    </p>
                 </div>
             </section>
             <section class="{{ analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-2') }}"
@@ -107,12 +110,17 @@
             </section>
         </div>
     {% else %}
-        <div class="flex min-h-52 flex-col items-center justify-center gap-2 px-5 py-6 text-center">
+        <div class="m-4 flex min-h-52 flex-col items-center justify-center gap-2 {{ analysis_surface.empty_evidence_classes('px-5 py-6 text-center') }}"
+             data-kaori-empty-state
+             role="status">
             <i data-lucide="activity"
                class="h-5 w-5 text-content-muted"
                aria-hidden="true"></i>
             <p class="text-sm font-semibold text-content-primary">Pull Activity Chart Not Available</p>
-            <p class="max-w-lg text-xs leading-5 text-content-secondary">A committed nonnegative project pull counter with a Registry source is required. Missing pull metrics are not zero demand.</p>
+            <p class="max-w-md text-xs leading-5 text-content-secondary">
+                A committed nonnegative project pull counter with a Registry source is required.
+                Missing pull metrics are not zero demand.
+            </p>
         </div>
     {% endif %}
 </section>
