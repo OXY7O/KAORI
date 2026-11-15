@@ -581,6 +581,14 @@ def test_security_overview_table_renders_complete_server_paged_results() -> None
     assert 'posture.rows[:5]' not in read('app/templates/security_posture/overview.html')
 
 
+def test_security_exposure_avoids_repeating_stale_status_badges() -> None:
+    template = read('app/templates/security_posture/overview.html')
+    assert 'header_badge=scan_status_badge' in template
+    assert '{{ scan_status_badge }}' not in template
+    assert 'Stale evidence may not reflect current exposure.' in template
+    assert 'Partial, stale or unavailable evidence cannot establish an all-clear.' in template
+
+
 def test_security_assets_tab_has_equal_source_cards_and_scope_guide() -> None:
     html = _render_workspace_page('overview', _renderable_posture(), active_tab='capacity')
     template = read('app/templates/security_posture/overview.html')
