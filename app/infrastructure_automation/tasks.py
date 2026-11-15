@@ -14,6 +14,7 @@ from app.infrastructure_automation.source import (
     AutomationPilotDenied,
     normalize_facts,
     verify_localhost_source,
+    verify_read_only_runner_stats,
 )
 from app.platform_operations.jobs.execution import JobExecutionContext, JobExecutionUnavailable
 
@@ -56,9 +57,7 @@ def collect_localhost_facts(
             )
             if runner.status != 'successful' or runner.rc != 0:
                 raise AutomationPilotDenied('Runner did not complete the read-only operation')
-            changes = (runner.stats or {}).get('changed')
-            if not isinstance(changes, dict) or changes.get('localhost') != 0:
-                raise AutomationPilotDenied('Ansible did not prove unchanged localhost execution')
+            verify_read_only_runner_stats(runner.stats)
             facts = normalize_facts(list(runner.events))
         context.succeed(
             result_type='automation_read_only_host_facts',

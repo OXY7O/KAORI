@@ -121,3 +121,28 @@ def normalize_facts(events: list[dict[str, Any]]) -> dict[str, str]:
         if 'ansible_distribution' in observed and 'ansible_kernel' in observed:
             return observed
     raise AutomationPilotDenied('Required source-backed Linux OS/kernel facts were not observed')
+
+
+def verify_read_only_runner_stats(stats: object) -> None:
+    """Prove exactly one successful localhost task and no changed remote hosts.
+
+    Ansible may omit hosts from the changed map when the count is zero.
+    Empty/missing stats or a missing successful localhost task are not proof.
+    """
+    if not isinstance(stats, dict):
+        raise AutomationPilotDenied('Ansible play recap statistics are unavailable')
+    changed = stats.get('changed')
+    ok = stats.get('ok')
+    if not isinstance(changed, dict) or not isinstance(ok, dict):
+        raise AutomationPilotDenied('Ansible play recap lacks changed/ok host evidence')
+    if set(ok) != {'localhost'} or type(ok.get('localhost')) is not int or ok['localhost'] < 1:
+        raise AutomationPilotDenied('Read-only execution was not limited to successful localhost tasks')
+    if any(type(count) is not int or count != 0 for count in changed.values()):
+        raise AutomationPilotDenied('Read-only operation reported an infrastructure change')
+    if set(changed) - {'localhost'}:
+        raise AutomationPilotDenied('Unexpected host appeared in execution change evidence')
+    for bucket in ('failures', 'dark', 'unreachable'):
+        values = stats.get(bucket, {})
+        if not isinstance(values, dict) or any(type(count) is not int or count != 0 for count in values.values()):
+            raise AutomationPilotDenied('Read-only execution contains failed or unreachable hosts')
+

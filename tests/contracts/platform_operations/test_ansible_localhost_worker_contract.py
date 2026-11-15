@@ -63,3 +63,28 @@ def test_runner_ok_without_facts_is_not_verified() -> None:
 
 def test_source_revision_is_immutable_sha() -> None:
     assert len(SOURCE_SHA) == 40
+
+from app.infrastructure_automation.source import verify_read_only_runner_stats
+
+
+@pytest.mark.parametrize(
+    'stats',
+    [
+        None,
+        {},
+        {'ok': {'localhost': 1}},
+        {'changed': {}, 'ok': {'worker-01': 1}},
+        {'changed': {'localhost': 1}, 'ok': {'localhost': 1}},
+        {'changed': {'localhost': 0}, 'ok': {'localhost': 1, 'other': 1}},
+        {'changed': {}, 'ok': {'localhost': 1}, 'failures': {'localhost': 1}},
+        {'changed': {}, 'ok': {'localhost': 1}, 'dark': {'localhost': 1}},
+    ],
+)
+def test_runner_stats_reject_unsafe_or_unproven_execution(stats: object) -> None:
+    with pytest.raises(AutomationPilotDenied):
+        verify_read_only_runner_stats(stats)
+
+
+@pytest.mark.parametrize('changed', ({}, {'localhost': 0}))
+def test_runner_stats_accept_successful_unchanged_localhost(changed: dict[str, int]) -> None:
+    verify_read_only_runner_stats({'changed': changed, 'ok': {'localhost': 1}, 'failures': {}, 'dark': {}})
