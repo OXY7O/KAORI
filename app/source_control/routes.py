@@ -11,6 +11,7 @@ from app.common.pagination import paginate_sequence
 from app.integrations.source_control.repository_inventory import read_installation_inventory_for_current_session
 from app.integrations.source_control.uat_access import local_super_admin
 from app.source_control.presentation import build_source_control_overview
+from app.source_control.repository_coverage import read_repository_coverage_for_current_session
 
 source_control_bp = Blueprint('source_control', __name__, url_prefix='/source-control')
 
@@ -71,6 +72,13 @@ def overview() -> ResponseReturnValue:
         page=request.args.get('installation_page'),
         per_page=request.args.get('installation_per_page'),
     )
+    repository_coverage = (
+        read_repository_coverage_for_current_session(
+            authorized_installation_id=selected_installation['installation'].id
+        )
+        if selected_installation is not None and active_tab == 'capacity'
+        else None
+    )
     return _uncached_render(
         'source_control/overview.html',
         scope=scope,
@@ -81,6 +89,7 @@ def overview() -> ResponseReturnValue:
         selected_installation_name=(selected_installation['connection'].name if selected_installation else None),
         installation_rows=installation_rows,
         installation_pagination=installation_pagination,
+        repository_coverage=repository_coverage,
     )
 
 
