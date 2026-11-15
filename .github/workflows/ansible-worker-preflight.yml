@@ -40,7 +40,8 @@ jobs:
             tests/contracts/platform_operations/test_ansible_localhost_worker_contract.py \
             tests/contracts/integrations/test_ansible_provider_contract.py \
             tests/integrations/test_ansible_provider_ui_postgres.py \
-            tests/integrations/test_ansible_provider_ui_dispatch_ci.py
+            tests/integrations/test_ansible_provider_ui_dispatch_ci.py \
+            tests/ui/test_ansible_provider_visual.py
       - name: Ruff format
         run: |
           python -m ruff format --check \
@@ -137,6 +138,19 @@ jobs:
           PY
       - name: Exercise Ansible provider UI with real PostgreSQL
         run: python -m pytest -q -p no:cacheprovider tests/integrations/test_ansible_provider_ui_postgres.py
+      - name: Capture Ansible desktop/mobile light/dark visual QA
+        run: |
+          python -m playwright install --with-deps chromium
+          python -m pytest -q -p no:cacheprovider \
+            tests/ui/test_ansible_provider_visual.py
+      - name: Publish reviewable Ansible UI screenshots
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: kaori-ansible-ui-${{ github.sha }}
+          path: tmp/ci-artifacts/test-output/ui-browser/ansible-*.png
+          if-no-files-found: warn
+          retention-days: 7
       - name: Start dedicated automation queue worker and verify registration
         run: |
           set -eu
