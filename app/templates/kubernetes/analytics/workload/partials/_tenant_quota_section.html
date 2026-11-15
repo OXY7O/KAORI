@@ -328,9 +328,11 @@
                                                         </header>
                                                         <dl class="divide-y divide-outline-subtle px-3">
                                                             {% for item in quota.hard_items %}
-                                                                <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-2">
-                                                                    <dt class="min-w-0 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ item.label }}</dt>
-                                                                    <dd class="max-w-full text-right text-xs font-semibold tabular-nums text-content-primary [overflow-wrap:anywhere]">{{ item.value }}</dd>
+                                                                <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(6rem,auto)] items-center gap-3 py-2.5">
+                                                                    <dt class="min-w-0 break-words text-xs font-medium text-content-secondary [overflow-wrap:anywhere]"
+                                                                        title="{{ item.label }}">{{ item.label }}</dt>
+                                                                    <dd class="min-w-0 text-right text-xs font-semibold tabular-nums text-content-primary [overflow-wrap:anywhere]"
+                                                                        title="{{ item.value }}">{{ item.value }}</dd>
                                                                 </div>
                                                             {% else %}
                                                                 <div class="py-3 text-xs text-content-muted">No hard quota keys observed.</div>
@@ -350,9 +352,11 @@
                                                         </header>
                                                         <dl class="divide-y divide-outline-subtle px-3">
                                                             {% for item in quota.used_items %}
-                                                                <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-2">
-                                                                    <dt class="min-w-0 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ item.label }}</dt>
-                                                                    <dd class="max-w-full text-right text-xs font-semibold tabular-nums text-content-primary [overflow-wrap:anywhere]">{{ item.value }}</dd>
+                                                                <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(6rem,auto)] items-center gap-3 py-2.5">
+                                                                    <dt class="min-w-0 break-words text-xs font-medium text-content-secondary [overflow-wrap:anywhere]"
+                                                                        title="{{ item.label }}">{{ item.label }}</dt>
+                                                                    <dd class="min-w-0 text-right text-xs font-semibold tabular-nums text-content-primary [overflow-wrap:anywhere]"
+                                                                        title="{{ item.value }}">{{ item.value }}</dd>
                                                                 </div>
                                                             {% else %}
                                                                 <div class="py-3 text-xs text-content-muted">Used-value evidence is unavailable.</div>
