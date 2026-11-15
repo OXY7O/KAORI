@@ -152,6 +152,16 @@ optional `sys/mounts` 403/404 is Limited; absence of current
 evidence is Not Observed. No Secret inventory or runtime success
 is inferred from these facts.
 
+Human Visual UAT copy-density rule (#4864): all four Vault capability
+View More dialogs share a one-line desktop summary for Capability Decision,
+Verification Command guidance and Identity Boundary. Their three Validation
+Evidence descriptions are concise, at most two lines at desktop width, and
+wrap naturally on mobile. Committed Observation has its own short,
+status-specific explanation rather than reusing the summary; this avoids
+overlong evidence cards while preserving Ready, optional Limited,
+Required Gap and Not Observed semantics. UI text limits do not reduce
+provider evidence, add Vault permissions or hide a credential.
+
 Operator-side CLI examples for `vault status`, `vault token lookup`
 and optional `vault read sys/mounts` require an independently approved
 Vault CLI context and suppress response output. They cannot
