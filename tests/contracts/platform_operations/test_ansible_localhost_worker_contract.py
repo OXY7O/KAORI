@@ -39,20 +39,22 @@ def test_unapproved_source_denied_before_checkout(monkeypatch: pytest.MonkeyPatc
 
 def test_result_redaction_drops_unapproved_sensitive_facts() -> None:
     result = normalize_facts(
-        [{
-            'event': 'runner_on_ok',
-            'event_data': {
-                'task_action': 'ansible.builtin.setup',
-                'res': {
-                    'ansible_facts': {
-                        'ansible_distribution': 'OracleLinux',
-                        'ansible_kernel': '5.15.0',
-                        'ansible_env': {'PASSWORD': 'not-for-evidence'},
-                        'ansible_password': 'secret',
-                    }
+        [
+            {
+                'event': 'runner_on_ok',
+                'event_data': {
+                    'task_action': 'ansible.builtin.setup',
+                    'res': {
+                        'ansible_facts': {
+                            'ansible_distribution': 'OracleLinux',
+                            'ansible_kernel': '5.15.0',
+                            'ansible_env': {'PASSWORD': 'not-for-evidence'},
+                            'ansible_password': 'secret',
+                        }
+                    },
                 },
-            },
-        }]
+            }
+        ]
     )
     assert result == {'ansible_distribution': 'OracleLinux', 'ansible_kernel': '5.15.0'}
 
@@ -64,7 +66,6 @@ def test_runner_ok_without_facts_is_not_verified() -> None:
 
 def test_source_revision_is_immutable_sha() -> None:
     assert len(SOURCE_SHA) == 40
-
 
 
 @pytest.mark.parametrize(

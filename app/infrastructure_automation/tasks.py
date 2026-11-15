@@ -1,4 +1,5 @@
 """Dedicated automation-queue localhost facts task; no remote or mutation path."""
+
 from __future__ import annotations
 
 from importlib import import_module
@@ -27,9 +28,7 @@ AUTOMATION_QUEUE = 'automation'
     acks_late=True,
     reject_on_worker_lost=True,
 )
-def collect_localhost_facts(
-    self: Any, *, source_path: str, source_sha: str, job_execution_id: int
-) -> dict[str, str]:
+def collect_localhost_facts(self: Any, *, source_path: str, source_sha: str, job_execution_id: int) -> dict[str, str]:
     context = JobExecutionContext(task_id=str(self.request.id), job_execution_id=job_execution_id)
     try:
         root = verify_localhost_source(source_path, source_sha)

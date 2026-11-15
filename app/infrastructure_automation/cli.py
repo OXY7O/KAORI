@@ -1,4 +1,5 @@
 """Opt-in developer-only local pilot, routed through canonical JobExecution."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -43,4 +44,4 @@ def automation_localhost_probe(source_path: Path, source_sha: str) -> None:
         )
     except Exception as exc:
         raise click.ClickException(f'Read-only pilot blocked: {type(exc).__name__}') from exc
-    click.echo(f"JobExecution {job.public_id}: {'queued' if created else 'attached'}")
+    click.echo(f'JobExecution {job.public_id}: {"queued" if created else "attached"}')

@@ -2,6 +2,7 @@
 
 This is not an arbitrary-playbook executor or a remote host authorization system.
 """
+
 from __future__ import annotations
 
 import json
@@ -52,9 +53,7 @@ def require_local_pilot_enabled() -> None:
 
 def _git(root: Path, *args: str) -> str:
     try:
-        result = subprocess.run(
-            ['git', '-C', str(root), *args], capture_output=True, text=True, timeout=8, check=True
-        )
+        result = subprocess.run(['git', '-C', str(root), *args], capture_output=True, text=True, timeout=8, check=True)
     except (OSError, subprocess.SubprocessError) as exc:
         raise AutomationPilotDenied('Unable to verify immutable automation source') from exc
     return result.stdout.strip()
@@ -145,4 +144,3 @@ def verify_read_only_runner_stats(stats: object) -> None:
         values = stats.get(bucket, {})
         if not isinstance(values, dict) or any(type(count) is not int or count != 0 for count in values.values()):
             raise AutomationPilotDenied('Read-only execution contains failed or unreachable hosts')
-
