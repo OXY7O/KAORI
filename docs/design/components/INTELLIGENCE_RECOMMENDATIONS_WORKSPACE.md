@@ -53,6 +53,33 @@ Recommendations use a two-row desktop filter layout. The first row owns Search, 
 
 The Recommendation Workspace continues to own filters, records, and pagination. Filter and pagination requests replace only `#recommendations-results-content`; the standalone Summary is refreshed with an HTMX out-of-band swap so it remains synchronized without rerendering the filter form or collapsing the workspace hierarchy. Reset may replace the complete workspace while refreshing the standalone Summary through the same OOB contract.
 
+### Recommendations header, Guides, and filter actions (#4819)
+
+The standalone **Recommendation Summary** header includes the shared `5 Indicators`
+metadata label adjacent to its title. The full five-metric strip and source-derived
+posture badge remain unchanged. A plain shared section intro, **Recommendation
+Review**, appears between the Summary and the owning Workspace card; do not
+add another container or duplicate summary statistics.
+
+**Recommendation Workspace** keeps its own title and description, with two
+distinct accessible title-level Info Tip Guides: **Recommendation Workspace
+Guide** explains committed finding ownership and Alert Intelligence/Rule Catalog
+handoffs; **Recommendation Filters Guide** explains filter/pagination semantics,
+reset behavior and evidence qualification. Both reuse the shared `info_tip`
+`variant='guide'`; no page-local popover implementation is permitted.
+
+The owning Workspace header groups source-derived status on the right and the
+canonical `registry_ui.clear_filters_action` immediately before it when filters
+are active. The legacy results strip (`Recommendations / N Results`) is removed
+because Summary metrics and canonical pagination already communicate counts.
+Clear Filters must retain its full-workspace reset target; filter/pagination
+requests must not rerender the filter form. Result HTMX responses update the
+right-side header action/status group out of band alongside the established
+Hero and Summary OOB updates, preventing stale status or a stranded reset
+button. Reset requests similarly refresh this header through their results
+partial. Keep non-HTMX GET fallback, URL sync, default pagination 5,
+light/dark responsive layout, keyboard focus and no infrastructure mutations.
+
 Recommendations remain evidence-backed findings. The workspace may describe live-validation and remediation steps, but it must not expose a direct infrastructure execution control; live validation remains with the owning operational workspace and governed execution remains with Automation Control.
 
 
