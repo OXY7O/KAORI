@@ -154,6 +154,15 @@ def test_choose_validate_save_manage_with_canonical_database(app):
     registry = client.get('/integrations/ansible')
     assert b'Kubespray Lab' in registry.data
     assert b'Validation Required' in registry.data
+    # Reuse the existing provider-neutral navigation and detail resolver.
+    orchestration = client.get('/integrations/orchestration')
+    assert orchestration.status_code == 200
+    assert b'Kubespray Lab' in orchestration.data
+    assert f'/integrations/ansible/connections/{identity}'.encode() in orchestration.data
+    provider_choose = client.get('/integrations/providers/configuration_automation')
+    assert provider_choose.status_code == 200
+    assert b'Ansible' in provider_choose.data
+    assert b'/integrations/ansible/profiles' in provider_choose.data
 
     duplicate = client.post(
         '/integrations/ansible/connections/new',
