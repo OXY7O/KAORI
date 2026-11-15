@@ -35,6 +35,8 @@ The non-Exposure perspectives reuse existing `operational_section_card`,
   integrated publication boundary. The `Open Reports` link remains gated by
   `can_view_reports`; a read-only boundary stays visible without that permission.
 
+Security Snapshot also exposes a shared **Scanner Evidence Freshness Guide** next to its source-derived scanner-status badge. It explains the 24-hour window for the oldest qualified scan, why an unchanged CVE count is not evidence that a rescanning event did not happen, and why Security Sync/Refresh View/Runtime Correlation are different operations. Keep scanner Stale and provenance text persistent outside the Guide.
+
 All three tabs have a canonical header-level **Guide** explaining the source
 ownership and evidence limitations. Guides are supplemental, never the sole
 location of unknown/stale warnings or permission requirements. The original
