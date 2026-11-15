@@ -109,7 +109,7 @@ def test_vault_detail_reuses_four_domain_workspaces_without_cloning_engine():
     assert 'provider_job_status.render(' in validation
     assert 'readiness_explanation.render(' in validation
     assert 'integration_status(' not in validation
-    assert "partials/_capability_registry.html" in validation
+    assert 'partials/_capability_registry.html' in validation
     assert 'Validation task:' not in validation
 
     capability_table = _partial('_capability_registry.html')
@@ -120,7 +120,7 @@ def test_vault_detail_reuses_four_domain_workspaces_without_cloning_engine():
     assert "'approle'" in capability_table
     assert "'token_lookup'" in capability_table
     assert "'mount_metadata'" in capability_table
-    assert "GET /v1/sys/mounts" in capability_table
+    assert 'GET /v1/sys/mounts' in capability_table
     assert 'permission_unavailable' in capability_table
 
     runtime = _partial('_detail_runtime.html')
@@ -182,7 +182,6 @@ def test_vault_readiness_metadata_follows_existing_integration_lock():
     assert "required_ready ~ ' / ' ~ required_total" in validation
 
 
-
 def test_vault_full_validation_matches_shared_htmx_job_and_evidence_contract() -> None:
     from jinja2 import Environment
 
@@ -231,16 +230,15 @@ def test_vault_full_validation_matches_shared_htmx_job_and_evidence_contract() -
     assert 'get_validation_snapshot' not in registry
     assert "summary.get('mount_metadata')" in registry
 
-    assert "def validation_status(instance_id: int, task_id: str)" in source
-    assert "validate_snapshot_access(" in source
-    assert "snapshot_feedback_for_user(snapshot, user_id=int(current_user.id))" in source
-    assert "validation_poll_response(content, snapshot=snapshot)" in source
+    assert 'def validation_status(instance_id: int, task_id: str)' in source
+    assert 'validate_snapshot_access(' in source
+    assert 'snapshot_feedback_for_user(snapshot, user_id=int(current_user.id))' in source
+    assert 'validation_poll_response(content, snapshot=snapshot)' in source
     assert "is_htmx = request.headers.get('HX-Request') == 'true'" in source
-    assert "queue_feedback=not is_htmx" in source
+    assert 'queue_feedback=not is_htmx' in source
 
     Environment().parse(validation)
     Environment().parse(registry)
-
 
 
 def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> None:
@@ -436,3 +434,57 @@ def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> Non
     assert 'autofocus=(invalid_focus_field' not in form
 
     Environment().parse(form)
+
+def test_vault_policy_guide_and_capability_explorer_reuse_shared_kaori_contracts() -> None:
+    from jinja2 import Environment
+
+    configuration = _partial('_detail_configuration.html')
+    policy = _partial('_minimum_validation_policy.html')
+    validation = _partial('_detail_validation.html')
+    registry = _partial('_capability_registry.html')
+    routes = ROUTES.read_text(encoding='utf-8')
+
+    assert 'partials/_minimum_validation_policy.html' in configuration
+    assert 'Minimum Vault Permission &amp; Policy Example' in policy
+    assert 'integrations/components/_record_detail_modal.html' in policy
+    assert 'integrations/components/_record_actions.html' in policy
+    for endpoint in ('auth/token/lookup-self', 'sys/mounts', 'approved-kv-mount/metadata'):
+        assert endpoint in policy
+    assert 'capabilities = ["read", "list"]' in policy or 'capabilities = ["read", "list"]' in policy
+    assert 'capabilities = ["read"]' in policy
+    assert 'capabilities = ["list"]' in policy
+    assert 'path "approved-kv-mount/data' not in policy
+    assert 'Core API readiness is independent of Secret and PKI inventory.' in validation
+
+    for shared in (
+        'components/table_registry.html',
+        'components/pagination.html',
+        'components/loading_bar.html',
+        'integrations/components/_record_actions.html',
+        'integrations/components/_record_detail_modal.html',
+        'components/states/_empty_state.html',
+        'data-kaori-capability-server-filtered',
+        'data-kaori-capability-table-standard',
+        'data-kaori-vault-capability-record',
+        "hx-target=\"#vault-capability-registry\"",
+        'capability_page',
+        'capability_per_page',
+        'capability_q',
+        'capability_requirement',
+        'capability_status',
+        'record_actions.view_more(',
+        'pagination_ui.numeric_pages(',
+    ):
+        assert shared in registry
+    assert registry.count("'required': true") == 3
+    assert registry.count("'required': false") == 1
+    assert "readiness in ['ready', 'degraded']" in registry
+    assert 'permission_unavailable' in registry
+    assert 'page_size = requested_page_size if requested_page_size in [5, 10, 25, 50] else 5' in registry
+    assert "@vault_bp.get('/instances/<int:instance_id>/capabilities')" in routes
+    assert "@permission_required('integrations.manage')\ndef capability_registry(" in routes
+    assert "instance = _instance_or_404(instance_id)" in routes
+
+    for template in (policy, registry, validation):
+        Environment().parse(template)
+
