@@ -10,7 +10,6 @@ def test_shared_summary_surfaces_follow_reporting_posture_pattern() -> None:
     catalog = read('app/templates/intelligence/partials/_catalog_summary.html')
     alert_summary = read('app/templates/intelligence/partials/_alert_intelligence_summary.html')
     for template, metric_columns in (
-        (recommendation, 'xl:grid-cols-5'),
         (catalog, 'xl:grid-cols-4'),
         (alert_summary, 'xl:grid-cols-4'),
     ):
@@ -18,6 +17,12 @@ def test_shared_summary_surfaces_follow_reporting_posture_pattern() -> None:
         assert 'intelligence_ui.posture_metric(' in template
         assert 'grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0' in template
         assert metric_columns in template
+
+    assert 'intelligence_ui.posture_panel(' in recommendation
+    assert 'intelligence_ui.posture_metric(' in recommendation
+    assert 'grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0' in recommendation
+    assert "'xl:grid-cols-5' if indicator_count == 5" in recommendation
+    assert "'xl:grid-cols-6' if indicator_count == 6" in recommendation
 
 
 def test_operator_direction_uses_clear_surface() -> None:
