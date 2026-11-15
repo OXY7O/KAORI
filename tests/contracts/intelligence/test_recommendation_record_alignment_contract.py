@@ -46,11 +46,12 @@ def test_long_titles_scopes_and_evidence_keep_full_hover_text() -> None:
     source = read()
     desktop = source.split('<div class="grid gap-3 p-4 lg:hidden">', 1)[0]
     assert 'line-clamp-2 break-words text-sm font-semibold' in desktop
-    assert 'title="{{ item.list_title|default(item.title, true) }}"' in source
+    assert 'title="{{ item.title }}"' in source
     assert 'title="{{ item.scope_title|default(\'Asset Scope\', true) }}"' in source
-    assert 'title="{{ item.signal_source_label }}"' in desktop
+    assert 'title="{{ item.signal_source_label }}{% if item.evidence and item.evidence.provider_label %}' in desktop
     assert "item.scope_title|default('Asset Scope', true)" in source
     assert 'item.scope_supporting|default(item.source_kind_label, true)' in source
+    assert 'item.list_scope_title|default(item.scope_title|' in source
     assert 'item.list_summary|default(item.summary, true)' in source
     assert 'line-clamp-1' in desktop
     assert '[overflow-wrap:anywhere]' in desktop

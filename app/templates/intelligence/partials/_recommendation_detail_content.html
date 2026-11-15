@@ -4,7 +4,7 @@
 {% import "components/details/_detail_content.html" as detail %}
 {% set remediation_phases = ["Review Evidence", "Validate Live State", "Apply Remediation", "Verify & Close"] %}
 {% set remediation_icons = ["scan-search", "activity", "wrench", "badge-check"] %}
-{% set review_title = item.list_title|default(item.title, true) %}
+{% set review_title = item.title|default(item.list_title, true) %}
 {% set review_priority = item.priority|default(item.severity_label, true) %}
 {% set review_scope = item.scope_title|default('Asset Scope', true) %}
 {% if item.recommended_action %}

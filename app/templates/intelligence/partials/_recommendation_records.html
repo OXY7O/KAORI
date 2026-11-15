@@ -33,7 +33,7 @@
                                       aria-hidden="true"><i data-lucide="sparkles" class="h-5 w-5"></i></span>
                                 <div class="min-w-0 flex-1">
                                     <p class="line-clamp-2 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]"
-                                       title="{{ item.list_title|default(item.title, true) }}">{{ item.list_title|default(item.title, true) }}</p>
+                                       title="{{ item.title }}">{{ item.list_title|default(item.title, true) }}</p>
                                     <p class="mt-1 line-clamp-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]"
                                        title="{{ item.summary }}">{{ item.list_summary|default(item.summary, true) }}</p>
                                     <div class="mt-2 flex flex-wrap items-center gap-1.5">
@@ -46,8 +46,9 @@
                         <td class="{{ table_ui.cell_classes() }}">
                             <div class="flex min-h-24 min-w-0 flex-col justify-center">
                                 <p class="line-clamp-2 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]"
-                                   title="{{ item.scope_title|default('Asset Scope', true) }}">{{ item.scope_title|default('Asset Scope', true) }}</p>
-                                <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ item.scope_supporting|default(item.source_kind_label, true) }}</p>
+                                   title="{{ item.scope_title|default('Asset Scope', true) }}">{{ item.list_scope_title|default(item.scope_title|default('Asset Scope', true), true) }}</p>
+                                <p class="mt-1 line-clamp-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]"
+                                   title="{{ item.scope_supporting|default(item.source_kind_label, true) }}">{{ item.scope_supporting|default(item.source_kind_label, true) }}</p>
                             </div>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
@@ -114,7 +115,7 @@
                               aria-hidden="true"><i data-lucide="sparkles" class="h-4 w-4"></i></span>
                         <div class="min-w-0">
                             <h3 class="line-clamp-2 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]"
-                                title="{{ item.list_title|default(item.title, true) }}">{{ item.list_title|default(item.title, true) }}</h3>
+                                title="{{ item.title }}">{{ item.list_title|default(item.title, true) }}</h3>
                             <p class="mt-1 line-clamp-2 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]"
                                title="{{ item.summary }}">{{ item.list_summary|default(item.summary, true) }}</p>
                         </div>
@@ -126,7 +127,7 @@
                         <dt class="text-xs text-content-muted">Affected Scope</dt>
                         <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]"
                             title="{{ item.scope_title|default('Asset Scope', true) }}">
-                            {{ item.scope_title|default('Asset Scope', true) }}
+                            {{ item.list_scope_title|default(item.scope_title|default('Asset Scope', true), true) }}
                         </dd>
                     </div>
                     <div>

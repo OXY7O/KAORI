@@ -23,6 +23,7 @@ from app.intelligence.finding_presentation import (
     format_affected_summary,
     recommendation_detail_header_summary,
     recommendation_summary_domain_metrics,
+    recommendation_table_scope_title,
     recommendation_table_summary,
     recommendation_table_title,
 )
@@ -165,9 +166,10 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
         for item in items:
             scope_title, scope_supporting = finding_scope_details(item)
             item['scope_title'] = scope_title
+            item['list_scope_title'] = recommendation_table_scope_title(scope_title)
             item['scope_supporting'] = scope_supporting
-            item['list_title'] = recommendation_table_title(item, limit=96)
-            item['list_summary'] = recommendation_table_summary(item, limit=72)
+            item['list_title'] = recommendation_table_title(item, limit=64)
+            item['list_summary'] = recommendation_table_summary(item, limit=64)
 
     domain_metrics = (
         recommendation_summary_domain_metrics(
