@@ -190,9 +190,12 @@ applying this mapping to all workers.
 
 ```bash
 docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml \
-  -f secrets/devcontainer/compose.host-overrides.yml config
+  -f secrets/devcontainer/compose.host-overrides.yml config --format json \
+  | jq '.services.workspace.extra_hosts'
 ```
 
+This prints **only** the workspace host aliases, not the full Compose
+configuration that can include environment credentials. Requires `jq`.
 Confirm the `workspace.extra_hosts` entry is the intended
 `adds.kaori.cloud` hostname and actual AD address, without changes to DB or
 Redis services. `dockerComposeFile` paths are loaded by VS Code DevContainer
