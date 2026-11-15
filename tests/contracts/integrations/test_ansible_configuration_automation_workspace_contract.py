@@ -133,10 +133,10 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
         ('repository', 'OXY7O/kaori-operations'),
         ('revision', '831ab7c114b1c1ba777c08ab79c91415ad8d465d'),
     ):
-        rendered_input = re.search(rf'<input\\b[^>]*\\bid="{field_name}"[^>]*>', form)
+        rendered_input = re.search(rf'<input\b[^>]*\bid="{field_name}"[^>]*>', form)
         assert rendered_input is not None, field_name
         assert f'placeholder="{placeholder}"' in rendered_input.group()
-        assert not re.search(r'\\bvalue="[^"]+"', rendered_input.group()), field_name
+        assert not re.search(r'\bvalue="[^"]+"', rendered_input.group()), field_name
     assert 'grid gap-6 xl:grid-cols-12 xl:items-start' in form
     assert 'min-w-0 xl:col-span-8' in form
     assert 'min-w-0 space-y-4 xl:col-span-4 xl:sticky xl:top-5' in form
