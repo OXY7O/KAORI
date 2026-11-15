@@ -1,4 +1,5 @@
 {% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/table.html" as table_ui %}
 {% import "integrations/components/_record_actions.html" as record_actions %}
 {% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
 <section class="{{ integration_ui.section_shell_classes() }}"
@@ -45,7 +46,7 @@
                         <p class="mt-1 text-xs leading-5 text-content-secondary">AppRole login is the authentication step. A self-lookup read is the required authenticated token check.</p>
                     </div>
                     <button type="button"
-                            class="{{ integration_ui.action_classes() }}"
+                            class="{{ table_ui.action_classes() }}"
                             @click="navigator.clipboard.writeText($refs.vaultBaselinePolicy.textContent.trim()).then(() => copied = true)">
                         <i data-lucide="copy" class="h-3.5 w-3.5" aria-hidden="true"></i>
                         <span x-text="copied ? 'Copied' : 'Copy HCL'">Copy HCL</span>
@@ -66,7 +67,7 @@ path "auth/token/lookup-self" {
                         <p class="mt-1 text-xs leading-5 text-content-secondary">Only if approved for `GET /v1/sys/mounts`. A denied optional check is Limited, not a required validation failure.</p>
                     </div>
                     <button type="button"
-                            class="{{ integration_ui.action_classes() }}"
+                            class="{{ table_ui.action_classes() }}"
                             @click="navigator.clipboard.writeText($refs.vaultMountPolicy.textContent.trim()).then(() => copied = true)">
                         <i data-lucide="copy" class="h-3.5 w-3.5" aria-hidden="true"></i>
                         <span x-text="copied ? 'Copied' : 'Copy HCL'">Copy HCL</span>
@@ -86,7 +87,7 @@ path "sys/mounts" {
                         <p class="mt-1 text-xs leading-5 text-content-secondary">Replace the mount placeholder with a narrowly approved KV v2 mount; this is separate inventory authorization, not Full Validation.</p>
                     </div>
                     <button type="button"
-                            class="{{ integration_ui.action_classes() }}"
+                            class="{{ table_ui.action_classes() }}"
                             @click="navigator.clipboard.writeText($refs.vaultKvMetadataPolicy.textContent.trim()).then(() => copied = true)">
                         <i data-lucide="copy" class="h-3.5 w-3.5" aria-hidden="true"></i>
                         <span x-text="copied ? 'Copied' : 'Copy HCL'">Copy HCL</span>
