@@ -1,0 +1,46 @@
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+<section class="{{ integration_ui.section_shell_classes() }}"
+         aria-label="Ansible source configuration">
+    {{ integration_ui.section_header('settings-2', 'Connection Configuration', 'Immutable source registration and pinned automation toolchain. No credentials or raw inventory are stored in this connection.') }}
+    <div class="grid gap-px bg-outline-subtle md:grid-cols-2">
+        <div class="space-y-4 bg-surface-card p-5">
+            <h3 class="text-sm font-semibold text-content-primary">Identity &amp; Git Source</h3>
+            {% for label, value in [
+                ("Connection", connection.name),
+                ("Environment", connection.environment|replace("_", " ")|title),
+                ("Automation Profile", "Kubernetes Lifecycle / Kubespray"),
+                ("Repository", source.source_repository or "Not Set"),
+                ("Commit SHA", source.source_sha or "Not Set"),
+                ("Git Tree SHA", evidence.tree_sha or "Not Checked")
+                ] %}
+                <div class="grid gap-1 border-b border-outline-subtle pb-3 last:border-0">
+                    <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
+                    <p class="break-all text-sm font-medium text-content-primary {{ 'font-mono text-xs' if 'SHA' in label else '' }}">{{ value }}</p>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="space-y-4 bg-surface-card p-5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h3 class="text-sm font-semibold text-content-primary">Version &amp; Execution Policy</h3>
+                {{ integration_status("blocked", "Runtime Not Admitted", display="text") }}
+            </div>
+            {% for label, value, note in [
+                ("Ansible Core", source.ansible_core_version or "Unknown", "Candidate version; runtime installation not independently qualified"),
+                ("Ansible Runner", source.ansible_runner_version or "Unknown", "Dedicated automation worker version target"),
+                ("Kubespray", source.kubespray_release or "Unknown", "Upstream immutable profile / Kubernetes 1.36 default"),
+                ("Execution Environment", source.execution_environment_digest or "Not provided", "OCI image digest is a reference, not a verified runtime"),
+                ("Worker Queue", "automation", "Isolated queue, no granted remote job capability")
+                ] %}
+                <div class="grid gap-1 border-b border-outline-subtle pb-3 last:border-0">
+                    <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
+                    <p class="break-all text-sm font-semibold text-content-primary {{ 'font-mono text-xs' if label == 'Execution Environment' else '' }}">{{ value }}</p>
+                    <p class="text-xs leading-5 text-content-secondary">{{ note }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 text-xs leading-5 text-content-secondary">
+        Version changes require a new reviewed source profile and independent Execution Environment qualification; the initial registration is intentionally immutable.
+    </div>
+</section>

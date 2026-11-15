@@ -2,10 +2,12 @@ from flask import Blueprint, abort, current_app, redirect, render_template, requ
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
+from sqlalchemy.exc import SQLAlchemyError
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import permission_required
 from app.common.http import htmx_target, is_htmx_request
+from app.extensions.db import db
 from app.integrations.binding_web import binding_response as _binding_response
 from app.integrations.domain_service import (
     BindingRegistryFilters,
@@ -18,6 +20,16 @@ from app.integrations.observability.metrics_source.application.registration_web 
 )
 from app.integrations.observability.metrics_source.providers import provider_definitions
 from app.integrations.orchestration.configuration_automation.frontpage import build_ansible_frontpage
+from app.integrations.orchestration.configuration_automation.providers.ansible.forms import AnsibleSourceConnectionForm
+from app.integrations.orchestration.configuration_automation.providers.ansible.proof import (
+    issue_source_proof,
+    verified_source_proof,
+)
+from app.integrations.orchestration.configuration_automation.providers.ansible.service import (
+    connection_jobs,
+    get_connection,
+    save_source_connection,
+)
 from app.integrations.orchestration.container_orchestrator.frontpage import (
     KubernetesCoverageFilters,
     KubernetesFrontPageFilters,
@@ -38,6 +50,10 @@ from app.integrations.service import (
     build_kubernetes_capability_registry,
     build_kubernetes_detail,
     build_metrics_source_page,
+)
+from app.integrations.source_control.source_control.providers.github.public_automation_source import (
+    AutomationSourceRejected,
+    verify_public_kubespray_source,
 )
 from app.integrations.taxonomy import get_domain_definition
 from app.integrations.validation.state import (
@@ -114,19 +130,172 @@ def orchestration() -> ResponseReturnValue:
 @integrations_bp.get('/ansible')
 @permission_required('integrations.manage')
 def ansible() -> ResponseReturnValue:
-    """Governed, committed-evidence-only Ansible workspace (no runner on GET)."""
+    """Connection-first Ansible provider landing backed by canonical state."""
     context = build_ansible_frontpage(
-        status=request.args.get('status', '').strip(),
+        query=request.args.get('q', '').strip()[:80],
+        environment=request.args.get('environment', '').strip(),
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
-    if is_htmx_request() and htmx_target() == 'ansible-execution-registry':
+    if is_htmx_request() and htmx_target() == 'ansible-connection-registry':
         return render_template(
-            'integrations/orchestration/configuration_automation/providers/ansible/_execution_registry.html', **context
+            'integrations/orchestration/configuration_automation/providers/ansible/_connection_registry.html', **context
         )
     return render_template(
         'integrations/orchestration/configuration_automation/providers/ansible/frontpage.html', **context
     )
+
+
+@integrations_bp.get('/ansible/profiles')
+@permission_required('integrations.manage')
+def ansible_choose() -> ResponseReturnValue:
+    """Reusable automation profile selection; future profiles remain disabled."""
+    return render_template('integrations/orchestration/configuration_automation/providers/ansible/choose.html')
+
+
+@integrations_bp.route('/ansible/connections/new', methods=['GET', 'POST'])
+@permission_required('integrations.manage')
+def ansible_new_connection() -> ResponseReturnValue:
+    """Validate exact reviewed public Git objects before source-only registration."""
+    from flask_login import current_user
+
+    form = AnsibleSourceConnectionForm()
+    proof = ''
+    feedback = None
+    feedback_tone = 'warning'
+    if request.method == 'POST':
+        action = str(request.form.get('action') or '').strip()
+        if form.validate_on_submit() and action in {'test', 'save'}:
+            try:
+                values = form.to_input()
+                if action == 'test':
+                    evidence = verify_public_kubespray_source(values.repository, values.revision)
+                    proof = issue_source_proof(values, evidence, int(current_user.id))
+                    feedback = (
+                        'Reviewed Git files and version policy match the immutable source. '
+                        'This checks source only; worker and cluster readiness remain blocked.'
+                    )
+                    feedback_tone = 'normal'
+                elif action == 'save':
+                    evidence = verified_source_proof(
+                        str(form.source_test_proof.data or ''), values, int(current_user.id)
+                    )
+                    if evidence is None:
+                        feedback = (
+                            'Re-run Validate Source after changes; a verified source proof is required to register.'
+                        )
+                    else:
+                        connection = save_source_connection(values, evidence=evidence)
+                        record_operational_activity(
+                            user_id=int(current_user.id),
+                            event_type='ansible_source_connection_registered',
+                            status='success',
+                            title='Ansible Source Connection Registered',
+                            message='Git source was checked; remote execution and provider readiness are not enabled.',
+                            action_url=url_for('integrations.ansible_connection_detail', instance_id=connection.id),
+                            action_label='Open Ansible Connection',
+                            action_icon='workflow',
+                            metadata={'provider': 'ansible', 'instance_id': connection.id},
+                            queue_feedback=True,
+                        )
+                        return redirect(url_for('integrations.ansible_connection_detail', instance_id=connection.id))
+            except (AutomationSourceRejected, SQLAlchemyError, ValueError) as exc:
+                if isinstance(exc, SQLAlchemyError):
+                    current_app.logger.exception('Ansible source connection registration failed.')
+                    feedback = 'Unable to commit the Ansible connection. Review registry state and retry.'
+                else:
+                    feedback = str(exc)
+        else:
+            feedback = 'Review required fields and the current form session before continuing.'
+    return render_template(
+        'integrations/orchestration/configuration_automation/providers/ansible/form.html',
+        form=form,
+        source_test_proof=proof,
+        feedback=feedback,
+        feedback_tone=feedback_tone,
+    )
+
+
+@integrations_bp.get('/ansible/connections/<int:instance_id>')
+@permission_required('integrations.manage')
+def ansible_connection_detail(instance_id: int) -> ResponseReturnValue:
+    """Four reusable provider tabs; only committed facts, no host/provider calls."""
+    connection = get_connection(instance_id)
+    if connection is None:
+        abort(404)
+    jobs, pagination = connection_jobs(
+        connection,
+        page=request.args.get('page', 1, type=int) or 1,
+        per_page=request.args.get('per_page', 5, type=int) or 5,
+    )
+    return render_template(
+        'integrations/orchestration/configuration_automation/providers/ansible/detail.html',
+        connection=connection,
+        source=connection.metadata_json or {},
+        jobs=jobs,
+        pagination=pagination,
+    )
+
+
+@integrations_bp.post('/ansible/connections/<int:instance_id>/validate-source')
+@permission_required('integrations.manage')
+def ansible_revalidate_source(instance_id: int) -> ResponseReturnValue:
+    """Re-read only approved GitHub objects; never execute Ansible or probe hosts."""
+    from flask_login import current_user
+
+    connection = get_connection(instance_id)
+    if connection is None:
+        abort(404)
+    try:
+        validate_csrf(str(request.form.get('csrf_token') or ''))
+    except ValidationError:
+        abort(400)
+    values = connection.metadata_json or {}
+    try:
+        evidence = verify_public_kubespray_source(
+            str(values.get('source_repository') or ''), str(values.get('source_sha') or '')
+        )
+    except AutomationSourceRejected:
+        connection.readiness_status = 'validation_required'
+        connection.health_status = None
+        connection.metadata_json = {
+            **values,
+            'source_validation': {
+                'status': 'blocked',
+                'operation_authorized': False,
+                'checked_files': 0,
+            },
+            'execution_enabled': False,
+            'mutation_authorized': False,
+        }
+        db.session.commit()
+        state = 'warning'
+        message = 'Pinned source could not be reverified. Remote execution remains blocked.'
+    else:
+        connection.metadata_json = {
+            **values,
+            'source_validation': evidence.as_dict(),
+            'execution_enabled': False,
+            'mutation_authorized': False,
+        }
+        connection.readiness_status = 'validation_required'
+        connection.health_status = None
+        db.session.commit()
+        state = 'success'
+        message = 'Git source files reverified. Host access and execution remain blocked.'
+    record_operational_activity(
+        user_id=int(current_user.id),
+        event_type='ansible_source_revalidated',
+        status=state,
+        title='Ansible Source Validation',
+        message=message,
+        action_url=url_for('integrations.ansible_connection_detail', instance_id=connection.id) + '#validation',
+        action_label='Review Validation',
+        action_icon='scan-search',
+        metadata={'provider': 'ansible', 'instance_id': connection.id},
+        queue_feedback=True,
+    )
+    return redirect(url_for('integrations.ansible_connection_detail', instance_id=connection.id) + '#validation')
 
 
 @integrations_bp.get('/observability')
@@ -163,6 +332,7 @@ def source_control() -> ResponseReturnValue:
 # remain provider-owned routes, never a second KAORI registration implementation.
 _PROVIDER_REGISTRATION_ENDPOINTS = {
     ('container_orchestrator', 'kubernetes'): 'cluster.add_cluster',
+    ('configuration_automation', 'ansible'): 'integrations.ansible_choose',
     ('alert_source', 'alertmanager'): 'alertmanager.new_instance',
     ('object_storage', 'minio'): 'minio.new_instance',
     ('registry', 'harbor'): 'harbor.new_instance',
