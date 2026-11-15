@@ -69,20 +69,22 @@ authorized by this visual refinement.
 
 
 
-**Intelligence Posture card typography refinement (#4791, Human Visual
-UAT 2026-11-15):** The three source-qualified posture links retain their
-existing semantic critical/warning/normal status surfaces and ownership
-destinations. Within each existing card, use one consistent vertical rhythm:
-icon + short card title + chevron in the header, prominent source-derived
-value below it, and one concise supporting sentence beneath. Allocate a
-two-line value region so differing numbers and labels do not misalign the
-supporting text at desktop widths. Maintain full-card keyboard-focus
-visibility, responsive column stacking and no extra nested card surfaces.
-Shorten verbose supporting text without changing critical counts, committed
-24-hour Inventory qualification, separate security/metrics/analytics evidence
-authority, automation execution status or worker-owned collection. The Guide
-remains the canonical explanation of those detailed operational boundaries.
-No new component family, application state or provider queries are implied.
+**Intelligence Posture card neutral-surface refinement (#4791, Human Visual
+UAT 2026-11-15):** The three source-qualified links use the same neutral
+`bg-surface-card` and `border-outline-subtle` surfaces, without large
+critical/warning/normal tinted backgrounds or semantic-colored card borders.
+Source-derived status remains legible through the explicit status title and
+small semantic icon, never through color alone. Each link keeps the same
+header geometry (icon, title, chevron) and aligned title/value/supporting-copy
+hierarchy. A minimum two-line value region aligns the start of supporting
+descriptions across desktop columns while allowing text to wrap naturally
+at narrow breakpoints. Preserve full-card focus, hover affordances, ownership
+destinations and responsive stacking; do not introduce nested cards or local
+CSS. Critical counts, committed 24-hour Inventory qualification, separate
+security/metrics/analytics evidence authority, automation execution state
+and worker-owned collection remain unchanged. The existing Guide explains
+the detailed evidence and execution boundaries. No new component family,
+application state or provider queries are implied.
 
 ### Intelligence Overview committed-evidence posture and alert semantics (#1490–#1492)
 
