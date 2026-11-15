@@ -216,7 +216,11 @@ def test_vault_full_validation_matches_shared_htmx_job_and_evidence_contract() -
         'provider_detail_posture.state_oob(',
     ):
         assert marker in validation
-    for old_fragment in ('Validation task:', "instance.validation_message or 'No capability", 'Permission Unavailable'):
+    for old_fragment in (
+        'Validation task:',
+        "instance.validation_message or 'No capability",
+        'Permission Unavailable',
+    ):
         assert old_fragment not in validation
 
     assert 'data-kaori-capability-table-standard' in registry
