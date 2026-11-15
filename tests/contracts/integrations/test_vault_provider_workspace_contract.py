@@ -240,7 +240,7 @@ def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> Non
     assert 'KV v2' in form and 'PKI' in form
     assert 'no_store/imported' in form
     assert 'Full Validation' in form
-    assert 'url_for(\'vault.detail\', instance_id=instance.id)' in form
-    assert 'url_for(\'vault.index\')' in form
+    assert 'url_for("vault.detail", instance_id=instance.id)' in form
+    assert 'url_for("vault.index")' in form
 
     Environment().parse(form)
