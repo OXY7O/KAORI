@@ -30,6 +30,7 @@ MAX_ALERT_FAMILIES = 100_000
 MAX_SITE_ENTRIES = 100_000
 MAX_OBJECT_MEMBERS = 10_000
 MAX_JSON_OBJECTS = 100_000
+MAX_JSON_MEMBERS_TOTAL = 200_000
 MAX_JSON_ARRAY_ITEMS = 100_000
 MAX_ALERT_INSTANCES = 1_000_000
 
@@ -276,9 +277,13 @@ def main(argv: list[str] | None = None) -> int:
         # Keep the object budget invocation-local: concurrent summary renders
         # must not share or reset one another's parser counters.
         objects_seen = 0
+        members_seen = 0
 
         def bounded_unique_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-            nonlocal objects_seen
+            nonlocal objects_seen, members_seen
+            members_seen += len(pairs)
+            if members_seen > MAX_JSON_MEMBERS_TOTAL:
+                raise UnverifiedZapReport('Excessive cumulative JSON members')
             objects_seen += 1
             if objects_seen > MAX_JSON_OBJECTS:
                 raise UnverifiedZapReport('Excessive JSON object count')
