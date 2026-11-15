@@ -366,3 +366,28 @@ def test_invalid_source_sha_clears_stale_evidence_without_reading_report(
     assert 'NOT VERIFIED' in captured.err
     for sensitive in SENSITIVE:
         assert sensitive not in captured.out + captured.err
+
+
+@pytest.mark.parametrize(
+    'raw_json',
+    [
+        '{"site":[{"alerts":[]}],"site":[{"alerts":[],"ignored":"private"}]}',
+        '{"site":[{"alerts":[{"riskcode":"0","riskcode":"3"}]}]}',
+    ],
+)
+def test_duplicate_json_keys_fail_closed_and_remove_stale_evidence(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], raw_json: str
+) -> None:
+    """Ambiguous JSON must never overwrite previously published evidence."""
+    raw = tmp_path / 'baseline.json'
+    raw.write_text(raw_json, encoding='utf-8')
+    output = tmp_path / 'summary.md'
+    output.write_text('stale verified evidence', encoding='utf-8')
+
+    assert main(['--input', str(raw), '--output', str(output), '--source-sha', SHA]) == 2
+    assert raw.read_text(encoding='utf-8') == raw_json
+    assert not output.exists()
+    captured = capsys.readouterr()
+    assert 'NOT VERIFIED' in captured.err
+    assert 'private' not in captured.out + captured.err
+    assert raw_json not in captured.out + captured.err
