@@ -450,7 +450,7 @@ def test_vault_policy_guide_and_capability_explorer_reuse_shared_kaori_contracts
     assert 'integrations/components/_record_actions.html' in policy
     for endpoint in ('auth/token/lookup-self', 'sys/mounts', 'approved-kv-mount/metadata'):
         assert endpoint in policy
-    assert 'capabilities = ["read", "list"]' in policy or 'capabilities = ["read", "list"]' in policy
+    assert 'capabilities = ["read", "list"]' in policy
     assert 'capabilities = ["read"]' in policy
     assert 'capabilities = ["list"]' in policy
     assert 'path "approved-kv-mount/data' not in policy
