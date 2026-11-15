@@ -9,7 +9,7 @@
   - Nested record titles use text-sm / semibold / leading-5; supporting copy uses text-xs / leading-5.
   - Technical identifiers alone use monospace text-xs.
 #}
-{% macro section(title, description, icon='brain-circuit', badge_text='', badge_tone='info', extra='', indicator_id='', loading_label='Loading', title_extra=None) -%}
+{% macro section(title, description, icon='brain-circuit', badge_text='', badge_tone='info', extra='', indicator_id='', loading_label='Loading', title_extra=None, header_actions=None) -%}
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card {{ extra }}">
         <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -28,8 +28,11 @@
                         {% endif %}
                     </div>
                 </div>
-                {% if badge_text %}
-                    <div class="shrink-0">{{ table_label.status_label(badge_text, badge_tone, size='compact') }}</div>
+                {% if badge_text or header_actions %}
+                    <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                        {% if header_actions %}{{ header_actions }}{% endif %}
+                        {% if badge_text %}{{ table_label.status_label(badge_text, badge_tone, size='compact') }}{% endif %}
+                    </div>
                 {% endif %}
             </div>
             {% if indicator_id %}{{ loading_bar.render(indicator_id, label=loading_label) }}{% endif %}
