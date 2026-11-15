@@ -325,4 +325,17 @@ def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> Non
     assert "event_type='vault_connection_update_failed'" in source
     assert "message=message,\n        notification_context=_notification()" not in source
 
+    # A rejected form must identify safe invalid field names, without a
+    # generic no-context toast or a new page-local error notification.
+    assert 'def _form_validation_message(' in source
+    assert 'form = VaultConnectionForm()' in source
+    assert "'secret_id': 'AppRole SecretID'" in source
+    assert "'csrf_token' in errors" in source
+    assert "_form_validation_message(form, action=" in source
+    assert 'Review the highlighted fields before testing or registering.' not in source
+    assert 'Review the highlighted fields before testing or saving.' not in source
+    assert "if action == 'test' or not self.connection_test_proof.data:" in forms
+    assert "{% set invalid_focus_field = (form.errors|list|first) if form.errors else '' %}" in form
+    assert "autofocus=(invalid_focus_field == 'secret_id')" in form
+
     Environment().parse(form)

@@ -64,6 +64,46 @@ def test_mount_cannot_be_arbitrary_path():
             validate_auth_mount(value)
 
 
+@pytest.mark.parametrize(
+    ('action', 'secret', 'proof', 'is_valid'),
+    [
+        ('test', '', '', False),
+        ('test', '', 'stale-proof', False),
+        ('test', 'fresh-test-secret', '', True),
+        ('save', '', '', False),
+        ('save', '', 'signed-proof', True),
+    ],
+)
+def test_vault_registration_requires_secret_id_for_test_but_allows_signed_save(
+    monkeypatch: pytest.MonkeyPatch,
+    action: str,
+    secret: str,
+    proof: str,
+    is_valid: bool,
+) -> None:
+    monkeypatch.setenv('INTEGRATION_VAULT_ALLOWED_ORIGINS', 'https://vault.example.internal:8200')
+    app = Flask(__name__)
+    app.config.update(SECRET_KEY='test-only', WTF_CSRF_ENABLED=False)
+    data = {
+        'name': 'Vault Lab',
+        'environment': 'development',
+        'endpoint': 'https://vault.example.internal:8200',
+        'auth_mount_mode': 'approle',
+        'auth_mount': 'approle',
+        'role_id': 'test-role',
+        'secret_id': secret,
+        'connection_test_proof': proof,
+        'timeout': '5',
+        'action': action,
+    }
+    with app.test_request_context('/', method='POST', data=data):
+        form = VaultConnectionForm()
+        assert form.validate() is is_valid, form.errors
+        if not is_valid:
+            assert 'secret_id' in form.errors
+            assert 'AppRole SecretID is required for Test Connection.' in form.errors['secret_id']
+
+
 def test_vault_connection_placeholders_render_without_prefilling_credentials() -> None:
     app = Flask(__name__)
     app.config.update(SECRET_KEY='test-only', WTF_CSRF_ENABLED=False)
