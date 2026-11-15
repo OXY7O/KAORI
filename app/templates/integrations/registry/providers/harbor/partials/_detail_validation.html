@@ -13,7 +13,7 @@
     {% set gate_label = "Registry Provider Eligible" %}
     {% set gate_body = "Required Harbor contracts are usable." %}
     {% set gate_tone = "normal" %}
-    {% set next_action = "Rerun Full Validation after Harbor upgrades or changes to credentials, permissions or API access." %}
+    {% set next_action = "Rerun Full Validation after upgrades or changes to credentials, permissions or API access." %}
 {% elif readiness == "degraded" %}
     {% set readiness_label = "Degraded" %}
     {% set gate_label = "Eligible with Attention" %}
@@ -102,7 +102,7 @@
                 gate_label,
                 gate_body,
                 gate_tone,
-                "Full Validation verifies identity, compatibility, health and capabilities; Runtime Refresh checks live health.",
+                "Full Validation: identity, compatibility, health and capabilities. Runtime Refresh: live health.",
                 next_action) }}
         {% if readiness == "ready" %}
             {% set readiness_decision_title = "Provider Readiness Is Ready" %}
