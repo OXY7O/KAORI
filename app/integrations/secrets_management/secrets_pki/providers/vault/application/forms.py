@@ -31,7 +31,7 @@ class VaultConnectionForm(FlaskForm):
         default='approle',
         validators=[DataRequired()],
     )
-    auth_mount = StringField('Custom AppRole Mount', default='approle', validators=[Length(max=160)])
+    auth_mount = StringField('Custom AppRole Mount', default='approle')
     role_id = StringField('AppRole RoleID', validators=[DataRequired(), Length(max=255)])
     secret_id = PasswordField('AppRole SecretID', validators=[Length(max=4096)])
     timeout = IntegerField(
@@ -46,6 +46,11 @@ class VaultConnectionForm(FlaskForm):
     def __init__(self, *args, existing: VaultInstance | None = None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.existing = existing
+        # Compatibility for Vault forms opened before the selector was added:
+        # retain their custom AppRole mount rather than silently using default.
+        if self.is_submitted() and not self.auth_mount_mode.raw_data:
+            submitted_mount = str(self.auth_mount.data or '').strip('/')
+            self.auth_mount_mode.data = 'custom' if submitted_mount not in {'', 'approle'} else 'approle'
         # Never hydrate a decrypted AppRole SecretID into rendered form data.
         if not self.is_submitted():
             self.auth_mount_mode.data = (
