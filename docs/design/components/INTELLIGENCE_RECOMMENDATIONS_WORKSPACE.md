@@ -50,6 +50,26 @@ may break only when needed to prevent overflow. Never invent display fields,
 execute provider reads, change AlertCase lifecycle or duplicate a recommendation
 engine to solve a presentation issue.
 
+**Evidence type chips and concise review heading (#4833, follow-up UAT
+2026-11-15):** In the desktop Evidence cell, render committed source
+`logic_type_label` (for example Recommendation or Governance Check) as a
+shared `table_label.metadata_label`, consistently with an optional provider
+label such as Harbor. Reuse one compact flex-wrapped metadata group and preserve
+the source title, rule type and provider identity; do not render a new
+status family or colored surface.
+
+For high-Pod-restart recommendations only, the Recommendation Review modal
+header uses a one-line-at-desktop summary derived from the existing committed
+Kubernetes evidence (`evidence_window`, `affected_count`,
+`total_restart_count`, `max_restart_count`). The full original source summary
+remains on the native title and the detailed counts/asset identities remain
+in the Case Brief, Affected Resources, and Evidence Ledger. If measured fields
+are absent or inconsistent, retain the full source summary instead of
+fabricating or inferring a zero. On narrower widths the headline can wrap
+normally; avoid horizontal page overflow and do not truncate source fields
+in the evidence/detail area. No live provider requests or AlertCase semantics
+change.
+
 ## Detail Modal Contract
 
 Recommendation evidence is rendered through the shared resource-detail modal system with an Intelligence context label. The modal uses:
