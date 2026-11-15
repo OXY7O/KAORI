@@ -120,7 +120,24 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
     assert 'Kubernetes Lifecycle' in choose
     assert 'Linux Host Management' in choose
     assert 'Validate Source' in form
+    assert 'Test Connection' not in form  # Shared Hero shows this provider's real pre-save action.
     assert 'source_test_proof' in form
+    assert 'grid gap-6 xl:grid-cols-12 xl:items-start' in form
+    assert 'min-w-0 xl:col-span-8' in form
+    assert 'min-w-0 space-y-4 xl:col-span-4 xl:sticky xl:top-5' in form
+    assert 'Kubernetes Source Registration' in form
+    assert 'Source Validation Gates' in form
+    assert 'id="ansible-identity-heading"' in form
+    assert 'id="ansible-source-heading"' in form
+    assert 'id="ansible-compatibility-heading"' in form
+    assert 'x-on:input.capture="invalidate($event)"' in form
+    assert 'x-on:change.capture="invalidate($event)"' in form
+    assert 'name="action"' in form
+    assert 'value="test"' in form
+    assert 'value="save"' in form
+    assert 'Ansible Connection Actions' in form
+    assert form.index('id="ansible-identity-heading"') < form.index('id="ansible-source-heading"')
+    assert form.index('id="ansible-source-heading"') < form.index('id="ansible-compatibility-heading"')
     for name in (
         'Configuration',
         'Validation &amp; Capabilities',
