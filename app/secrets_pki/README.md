@@ -42,6 +42,24 @@ The Vault provider connection remains under
 ## Evidence and blocked states
 
 A successful Vault API check does not prove KV v2 inventory readability.
+
+A saved Vault connection must be distinguished from domain readiness.
+Secrets & PKI Overview reads eligible **active, enabled** Vault integrations
+(`secrets_pki`/`vault`), their explicitly approved `kv2_mounts`, and
+`SecretInventoryCollectionState.last_committed_at` for exact permitted
+instance/namespace/mount scopes, without a live Vault call. Its prerequisite
+message follows the earliest missing stage: no eligible Vault source;
+registered Vault with no approved KV v2 mount; source/mount configured but
+no successful committed inventory; or a bounded scope-limit violation.
+The final stage requires the canonical governed manual job
+`secrets_pki.inventory.sync`, its completed JobExecution, and committed
+inventory evidence. The Overview remains Blocked before that evidence is
+present, while the blocker itself accurately shows `Collection Required`
+instead of sending an already-configured operator back to re-register Vault.
+Read-only viewers may open Inventory readiness; only `integrations.manage`
+may configure sources or approve mounts. No credential, Secret path or
+runtime provider call is introduced into page rendering.
+
 A valid **zero** is shown only after an actual committed snapshot; missing
 snapshots are `Not Collected`. Counts from stale or partial committed sources
 remain explicitly labelled stale/partial; absent source is not deletion.
