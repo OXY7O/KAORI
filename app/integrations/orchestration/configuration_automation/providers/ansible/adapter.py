@@ -9,6 +9,7 @@ from app.integrations.contracts import CapabilitySnapshot, HealthState, RuntimeS
 from app.integrations.contracts.exceptions import IntegrationOperationNotSupported
 from app.integrations.orchestration.configuration_automation.providers.ansible.service import (
     AnsibleConnectionRecord,
+    source_validation_posture,
 )
 
 
@@ -20,7 +21,7 @@ class AnsibleSourceAdapter:
 
     def get_state(self, instance: AnsibleConnectionRecord, *, validation_result: Any | None = None) -> RuntimeState:
         canonical = instance.integration_instance
-        evidence = (canonical.metadata_json or {}).get('source_validation') or {}
+        posture = source_validation_posture(canonical)
         observed_at = canonical.created_at or datetime.now(UTC)
         return RuntimeState(
             integration_type=self.integration_type,
@@ -37,9 +38,9 @@ class AnsibleSourceAdapter:
                 compatibility_profile=None,
                 capabilities=(),
                 observed_at=observed_at,
-                metadata={'source_status': str(evidence.get('status') or 'not_checked')},
+                metadata={'source_status': posture['source_state']},
             ),
-            message='Source checked only. Remote operation and infrastructure readiness are not admitted.',
+            message=f'{posture["source_label"]}. Remote operation and infrastructure readiness are not admitted.',
         )
 
     def execute(self, operation: str, instance: AnsibleConnectionRecord, **kwargs: Any) -> Any:

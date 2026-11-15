@@ -13,6 +13,14 @@ from app.integrations.orchestration.configuration_automation.providers.ansible.c
     AnsibleConnectionInput,
     require_registration_policy,
 )
+from app.integrations.source_control.source_control.providers.github.public_automation_source import (
+    ANSIBLE_CORE_VERSION,
+    ANSIBLE_RUNNER_VERSION,
+    KUBESPRAY_RELEASE,
+    PROFILE_KEY,
+    REPOSITORY,
+    SOURCE_CANDIDATE_SHA,
+)
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
 
@@ -114,3 +122,64 @@ def connection_jobs(connection: IntegrationInstance, *, page: int = 1, per_page:
         integration_instance_id=connection.id,
     ).order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
     return paginate_query(statement, page=page, per_page=per_page)
+
+
+def source_validation_posture(connection: IntegrationInstance) -> dict[str, Any]:
+    """Present committed source evidence without inferring runtime readiness.
+
+    Fail closed on missing, superseded or malformed evidence, including older
+    source checks that do not match the currently committed exact version policy.
+    """
+    metadata = connection.metadata_json if isinstance(connection.metadata_json, dict) else {}
+    evidence = metadata.get('source_validation')
+    evidence = evidence if isinstance(evidence, dict) else {}
+    observed = str(evidence.get('status') or '').strip()
+    matches_source = (
+        evidence.get('repository') == metadata.get('source_repository') == REPOSITORY
+        and evidence.get('revision') == metadata.get('source_sha') == SOURCE_CANDIDATE_SHA
+        and evidence.get('profile_key') == metadata.get('profile_key') == PROFILE_KEY
+        and evidence.get('checked_files') == 5
+        and evidence.get('operation_authorized') is False
+        and metadata.get('ansible_core_version') == ANSIBLE_CORE_VERSION
+        and metadata.get('ansible_runner_version') == ANSIBLE_RUNNER_VERSION
+        and metadata.get('kubespray_release') == KUBESPRAY_RELEASE
+    )
+    checked = observed == 'source_checked' and matches_source
+    blocked = observed in {'blocked', 'rejected', 'failed'} or (observed == 'source_checked' and not checked)
+    source_state = 'checked' if checked else ('blocked' if blocked else 'not_checked')
+    status_labels = {
+        'checked': 'Source Checked',
+        'blocked': 'Source Blocked',
+        'not_checked': 'Not Checked',
+    }
+    description = {
+        'checked': 'Exact reviewed Git source and version metadata match committed evidence. Execution is still disabled.',
+        'blocked': 'Source validation failed or its evidence no longer matches the approved revision and version policy.',
+        'not_checked': 'There is no qualifying committed Git verification evidence for this connection.',
+    }
+    capabilities = (
+        ('Discover', 'Host inventory is not admitted'),
+        ('Preflight', 'Trusted SSH and host facts are not verified'),
+        ('Plan', 'No approved provider-backed infrastructure Plan'),
+        ('Provision', 'No approved target, credentials or mutation authority'),
+        ('Verify', 'No independent Kubernetes API read-back'),
+        ('Scale', 'No approved scaling plan or cluster binding'),
+        ('Upgrade', 'No supported version and change window qualification'),
+        ('Node Maintenance', 'No safe cordon, drain and recovery authority'),
+        ('Recovery', 'No provider-verified restoration and rollback plan'),
+    )
+    return {
+        'source_state': source_state,
+        'source_label': status_labels[source_state],
+        'source_tone': 'normal' if checked else ('critical' if blocked else 'unknown'),
+        'source_description': description[source_state],
+        'source_checked': checked,
+        'checked_files': evidence.get('checked_files') if checked else 0,
+        'observed_at': evidence.get('observed_at') if checked else None,
+        'toolchain_label': 'Pinned · Not Verified',
+        'worker_label': 'Not Verified',
+        'cluster_label': 'Not Collected',
+        'capabilities': capabilities,
+        'runtime_authorized': False,
+        'mutation_authorized': False,
+    }
