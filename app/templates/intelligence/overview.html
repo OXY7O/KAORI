@@ -1,6 +1,9 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/operational_callout.html" as operational_callout %}
+{% import "components/info_tip.html" as info_tip %}
+{% import "components/section_intro.html" as section_intro %}
+{% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% block title %}Intelligence Overview{% endblock title %}
@@ -35,6 +38,9 @@
                 ) }}
             </div>
         </section>
+        {% set summary_title_label %}
+            {{ table_label.metadata_label('4 Indicators', icon='layout-dashboard') }}
+        {% endset %}
         {% call intelligence_ui.posture_panel(
             'Intelligence Summary',
             'Current cross-workspace posture for recommendations, alert operations, rule coverage, and governed automation.',
@@ -45,7 +51,8 @@
             actions=[
             ('sparkles', 'Recommendations', url_for('intelligence.recommendations')),
             ('siren', 'Alert Intelligence', url_for('alert_intelligence.index'))
-            ]
+            ],
+            title_extra=summary_title_label
             ) %}
             <div aria-label="Intelligence key metrics"
                  class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
@@ -54,10 +61,25 @@
                 {% endfor %}
             </div>
         {% endcall %}
-        {% call intelligence_ui.section(
+        <div class="space-y-3" data-intelligence-assessment-section>
+            {{ section_intro.render('Intelligence Assessment',
+                                    'Prioritize operational attention, evidence freshness, and automation readiness.',
+                                    'intelligence-overview-assessment') }}
+            {% set posture_guide %}
+                {{ info_tip.render('intelligence-posture-guide', 'Intelligence Posture Guide',
+                                    'These three signals are committed evidence summaries, not live provider health.',
+                                    items=[
+                                    'Critical attention combines relevant recommendations and active alert operations; review the owning workspace before remediation.',
+                                    'Evidence Freshness describes qualified committed Inventory coverage, not a guarantee of scanner, metrics, or rule-evaluator freshness.',
+                                    'Automation Readiness reflects governed decisions and controls, not permission to execute infrastructure changes.',
+                                    'Provider collection and refresh are worker-owned; this Overview reads committed KAORI state only.'
+                                    ], variant='guide', placement='left') }}
+            {% endset %}
+            {% call intelligence_ui.section(
             'Intelligence Posture',
             'Three signals summarize what needs attention, how evidence is served, and whether governed automation needs review.',
-            'activity'
+            'activity',
+            title_extra=posture_guide
             ) %}
             <div class="grid gap-3 p-4 sm:p-5 lg:grid-cols-3">
                 {% for item in payload.posture_items %}
@@ -79,11 +101,27 @@
                     </a>
                 {% endfor %}
             </div>
-        {% endcall %}
-        {% call intelligence_ui.section(
+            {% endcall %}
+        </div>
+        <div class="space-y-3" data-intelligence-navigation-section>
+            {{ section_intro.render('Workspace Navigation',
+                                    'Open the owning workspace for detailed review, evidence, and governed actions.',
+                                    'intelligence-overview-navigation') }}
+            {% set workspace_guide %}
+                {{ info_tip.render('intelligence-workspaces-guide', 'Intelligence Workspaces Guide',
+                                    'Overview provides aggregate posture; detailed actions belong to their owning workspaces.',
+                                    items=[
+                                    'Recommendations owns finding evidence, affected assets, priority and remediation guidance.',
+                                    'Alert Intelligence owns alert-case operations and notification evidence; Rule Catalog owns detection definitions.',
+                                    'Automation Control owns decision review, approvals, readiness and execution governance.',
+                                    'No live provider collection, notification delivery or infrastructure mutation is initiated by this Overview.'
+                                    ], variant='guide', placement='left') }}
+            {% endset %}
+            {% call intelligence_ui.section(
             'Intelligence Workspaces',
             'Navigate to the workspace you need. Overview stays focused on aggregate posture and does not duplicate record-level operations.',
-            'layout-dashboard'
+            'layout-dashboard',
+            title_extra=workspace_guide
             ) %}
             <div class="divide-y divide-outline-subtle">
                 {% for workspace in payload.workspaces %}
@@ -115,15 +153,7 @@
                     </article>
                 {% endfor %}
             </div>
-        {% endcall %}
-        {% call operational_callout.render(
-            'Operational Boundary',
-            'Overview only presents aggregate Intelligence posture. Open a dedicated workspace for affected assets, alert-case actions, notification evidence, rule logic, remediation detail, or execution controls.',
-            'info',
-            'info',
-            'semantic'
-            ) %}
-            <p class="text-xs leading-5 text-content-muted">Provider collection and refresh remain worker-owned; this page reads committed KAORI state only.</p>
-        {% endcall %}
+            {% endcall %}
+        </div>
     </div>
 {% endblock dashboard_content %}
