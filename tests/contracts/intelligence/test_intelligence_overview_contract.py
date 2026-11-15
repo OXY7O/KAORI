@@ -142,9 +142,34 @@ def test_intelligence_overview_posture_is_compact_and_cross_workspace() -> None:
 
     assert 'current Intelligence findings may be incomplete.' in overview
     assert (
-        'Provider collection and refresh are worker-owned; this Overview reads committed KAORI state only.'
-        in template
+        'Provider collection and refresh are worker-owned; this Overview reads committed KAORI state only.' in template
     )
+
+
+def test_intelligence_posture_signals_align_titles_values_and_supporting_copy() -> None:
+    template = read('app/templates/intelligence/overview.html')
+    source = read('app/intelligence/overview.py')
+    Environment().parse(template)
+
+    assert 'data-intelligence-posture-signals' in template
+    assert template.count('data-intelligence-posture-signal>') == 1
+    region = template.split('data-intelligence-posture-signals', 1)[1].split('{% endfor %}', 1)[0]
+    assert 'group flex h-full min-w-0 flex-col' in region
+    assert 'flex min-h-10 items-start justify-between' in region
+    assert 'min-h-12 text-base font-semibold leading-6' in region
+    assert 'data-intelligence-posture-value' in region
+    assert 'data-intelligence-posture-supporting' in region
+    assert region.index('<h3 ') < region.index('data-intelligence-posture-value')
+    assert region.index('data-intelligence-posture-value') < region.index('data-intelligence-posture-supporting')
+    assert 'focus-visible:ring-outline-focus' in region
+    assert 'operational_callout.semantic_border_classes(item.tone)' in region
+    assert 'url_for(item.href_endpoint)' in region
+
+    assert 'critical signals need operator review.' in source
+    assert '24h committed Inventory threshold only;' in source
+    assert 'evidence require separate qualification.' in source
+    assert "'tone': 'normal' if evidence and evidence['complete'] else 'warning'" in source
+    assert "else automation['execution_label']" in source
 
 
 def test_intelligence_overview_exposes_four_owned_workspaces_as_simple_rows() -> None:
@@ -185,7 +210,7 @@ def test_intelligence_overview_reuses_section_intros_and_title_guides() -> None:
     assert 'title_extra=posture_guide' in template
     assert 'title_extra=workspace_guide' in template
     assert 'title_extra=None' in shared
-    assert shared.count("{% if title_extra %}{{ title_extra }}{% endif %}") == 2
+    assert shared.count('{% if title_extra %}{{ title_extra }}{% endif %}') == 2
     assert "table_label.status_label(badge_text, badge_tone, size='compact')" in shared
 
 
