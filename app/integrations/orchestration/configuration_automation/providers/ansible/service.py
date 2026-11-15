@@ -9,6 +9,10 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.common.pagination import paginate_query
 from app.extensions.db import db
+from app.integrations.orchestration.configuration_automation.providers.ansible.contract import (
+    AnsibleConnectionInput,
+    require_registration_policy,
+)
 from app.integrations.source_control.source_control.providers.github.public_automation_source import (
     ANSIBLE_CORE_VERSION,
     ANSIBLE_RUNNER_VERSION,
@@ -18,10 +22,6 @@ from app.integrations.source_control.source_control.providers.github.public_auto
     SOURCE_CANDIDATE_SHA,
 )
 
-from app.integrations.orchestration.configuration_automation.providers.ansible.contract import (
-    AnsibleConnectionInput,
-    require_registration_policy,
-)
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
 
