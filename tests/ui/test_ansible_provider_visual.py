@@ -60,11 +60,7 @@ def test_ansible_provider_reviewable_visual_surfaces(
     _assert_no_document_overflow(page)
 
     EVIDENCE_ROOT.mkdir(parents=True, exist_ok=True)
-    page.screenshot(
-        path=str(EVIDENCE_ROOT / f'ansible-overview-{theme}-{viewport_name}.png'),
-        full_page=True,
-        animations='disabled',
-    )
+    _capture(page, 'overview', theme, viewport_name, width, height)
 
     register = page.goto(
         f'{kaori_authenticated_base_url}{BASE_PATH}instances/new', wait_until='domcontentloaded'
@@ -75,11 +71,7 @@ def test_ansible_provider_reviewable_visual_surfaces(
     expect(page.locator('input[name="ssh_private_key"]')).to_have_count(0)
     expect(page.get_by_role('button', name='Register Connection')).to_be_visible()
     _assert_no_document_overflow(page)
-    page.screenshot(
-        path=str(EVIDENCE_ROOT / f'ansible-register-{theme}-{viewport_name}.png'),
-        full_page=True,
-        animations='disabled',
-    )
+    _capture(page, 'register', theme, viewport_name, width, height)
 
     detail = page.goto(f'{kaori_authenticated_base_url}{detail_href}', wait_until='domcontentloaded')
     assert detail is not None and detail.ok
@@ -87,11 +79,28 @@ def test_ansible_provider_reviewable_visual_surfaces(
     expect(page.get_by_role('button', name='Run Local Read-only Test')).to_be_visible()
     expect(page.get_by_role('heading', name='External Host Validation')).to_be_visible()
     _assert_no_document_overflow(page)
-    page.screenshot(
-        path=str(EVIDENCE_ROOT / f'ansible-detail-{theme}-{viewport_name}.png'),
-        full_page=True,
-        animations='disabled',
-    )
+    _capture(page, 'detail', theme, viewport_name, width, height)
+
+
+def _capture(page: Page, surface: str, theme: str, viewport_name: str, width: int, height: int) -> None:
+    # KAORI's app workspace scrolls internally, while Playwright full_page
+    # captures document scrolling. Expand height for review evidence only,
+    # preserving the mobile-width responsive layout and original geometry tests.
+    root = page.locator(
+        '[data-kaori-ansible-provider-workspace], '
+        '[data-kaori-ansible-registration], '
+        '[data-kaori-ansible-instance-detail]'
+    ).first
+    content_height = int(root.evaluate('(element) => element.scrollHeight'))
+    page.set_viewport_size({'width': width, 'height': min(3600, max(height, content_height + 130))})
+    try:
+        page.screenshot(
+            path=str(EVIDENCE_ROOT / f'ansible-{surface}-{theme}-{viewport_name}.png'),
+            full_page=True,
+            animations='disabled',
+        )
+    finally:
+        page.set_viewport_size({'width': width, 'height': height})
 
 
 def _assert_no_document_overflow(page: Page) -> None:
