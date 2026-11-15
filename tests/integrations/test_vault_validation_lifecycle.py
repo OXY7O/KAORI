@@ -152,6 +152,7 @@ def test_vault_validation_status_polls_scoped_snapshot_and_signals_completion(
     assert ('HX-Trigger' in response.headers) is complete
     assert feedback_users == [42]
 
+
 def test_vault_capability_fragment_reads_only_the_registered_instance(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -179,6 +180,7 @@ def test_vault_capability_fragment_reads_only_the_registered_instance(
     }
     assert len(rendered) == 1
     assert instance.capabilities == ['health', 'approle', 'token_lookup']
+
 
 def test_vault_runtime_history_fragment_is_scoped_and_read_only(
     monkeypatch: pytest.MonkeyPatch,
