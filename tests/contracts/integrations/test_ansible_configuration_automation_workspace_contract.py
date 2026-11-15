@@ -134,6 +134,17 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
     assert 'id="ansible-identity-heading"' in form
     assert 'aria-label="Git Source and Validation"' in form
     assert 'id="ansible-compatibility-heading"' in form
+    assert form.count('data-kaori-info-tip-variant="guide"') == 3
+    assert 'aria-label="Open guide: Connection Identity"' in form
+    assert 'aria-label="Open guide: Git Source &amp; Validation"' in form
+    assert 'aria-label="Open guide: Compatibility &amp; Execution References"' in form
+    assert 'Verify the reviewed Git source before registration.' in form
+    assert 'Source registration is not runtime readiness.' in form
+    assert 'The optional Execution Environment digest is a reference only' in form
+    assert 'This pilot accepts only the reviewed OXY7O/kaori-operations revision' in form
+    assert 'Verify the reviewed Git commit, required Kubespray files' not in form
+    assert 'This pilot accepts OXY7O/kaori-operations at the reviewed candidate SHA only.' not in form
+    assert 'Optional reference only. Runtime use requires independently approved' not in form
     assert 'Source Validation Required' in form
     assert 'Source Validated' in form
     assert 'x-ref="connectionProof"' in form
