@@ -53,6 +53,39 @@ def _notification() -> dict:
     return get_navigation_notification_context(user_id=int(current_user.id))
 
 
+def _form_feedback(
+    *,
+    instance: VaultInstance | None,
+    event_type: str,
+    status: str,
+    title: str,
+    message: str,
+) -> None:
+    """Use the shared operational toast and Activity Audit for form actions.
+
+    Test Connection never establishes Full Validation readiness. No Vault
+    token, SecretID, endpoint query or raw provider exception is recorded.
+    """
+    action_url = (
+        url_for('vault.edit_instance', instance_id=instance.id)
+        if instance is not None
+        else url_for('vault.new_instance')
+    )
+    record_operational_activity(
+        user_id=int(current_user.id),
+        event_type=event_type,
+        status=status,
+        title=title,
+        message=message,
+        action_url=action_url,
+        action_label='Review Vault Connection',
+        action_icon='key-round',
+        metadata={'provider': 'vault', **({'instance_id': instance.id} if instance is not None else {})},
+        queue_feedback=True,
+        delivery_policy='audit_only',
+    )
+
+
 def _evidence(instance: VaultInstance) -> dict:
     validation_id = get_active_validation_task_id(
         integration_type='secrets_pki',
@@ -124,32 +157,57 @@ def index() -> ResponseReturnValue:
 @permission_required('integrations.manage')
 def new_instance() -> ResponseReturnValue:
     form = VaultConnectionForm()
-    message = None
     proof = request.form.get('connection_test_proof', '')
     if form.validate_on_submit():
         values = form.to_input()
-        action = str(request.form.get('action') or 'save')
+        action = str(request.form.get('action') or 'save').strip().lower()
         if action == 'test':
             try:
                 test_connection(values)
                 proof = issue_proof(values, int(current_user.id))
-                message = 'Vault identity and AppRole token lookup verified. Save then run Full Validation.'
-            except (VaultProviderError, ValueError, CredentialEncryptionError) as exc:
-                message = str(exc)
+            except (VaultProviderError, ValueError, CredentialEncryptionError):
                 proof = ''
+                _form_feedback(
+                    instance=None,
+                    event_type='vault_connection_test_failed',
+                    status='error',
+                    title='Vault Connection Test Failed',
+                    message='Check the approved HTTPS endpoint, TLS trust and AppRole credentials.',
+                )
+            else:
+                _form_feedback(
+                    instance=None,
+                    event_type='vault_connection_test',
+                    status='success',
+                    title='Vault Connection Verified',
+                    message='Vault identity and AppRole token lookup passed. Register, then run Full Validation.',
+                )
         elif action == 'save':
             try:
                 credential = verified_secret(proof, values, int(current_user.id))
             except CredentialEncryptionError:
                 credential = None
             if credential is None:
-                message = 'Test this exact connection successfully before saving.'
+                proof = ''
+                _form_feedback(
+                    instance=None,
+                    event_type='vault_registration_proof_rejected',
+                    status='warning',
+                    title='Vault Registration Requires Verification',
+                    message='Test the current connection settings again before registering.',
+                )
             else:
                 try:
                     instance = save_connection(replace(values, secret_id=credential))
                 except (SQLAlchemyError, CredentialEncryptionError, ValueError):
                     logger.exception('Vault registration failed.')
-                    message = 'Vault registration failed; review endpoint, encryption key and connection name.'
+                    _form_feedback(
+                        instance=None,
+                        event_type='vault_connection_registration_failed',
+                        status='error',
+                        title='Vault Registration Failed',
+                        message='Check the connection name and encryption configuration before retrying.',
+                    )
                 else:
                     record_operational_activity(
                         user_id=int(current_user.id),
@@ -162,12 +220,29 @@ def new_instance() -> ResponseReturnValue:
                         queue_feedback=True,
                     )
                     return redirect(url_for('vault.detail', instance_id=instance.id))
+        else:
+            proof = ''
+            _form_feedback(
+                instance=None,
+                event_type='vault_registration_action_rejected',
+                status='warning',
+                title='Vault Registration Action Rejected',
+                message='Use Test Connection before registering the Vault provider.',
+            )
+    elif request.method == 'POST':
+        proof = ''
+        _form_feedback(
+            instance=None,
+            event_type='vault_registration_input_rejected',
+            status='warning',
+            title='Vault Registration Needs Attention',
+            message='Review the highlighted fields before testing or registering.',
+        )
     return render_template(
         'integrations/secrets_management/vault/form.html',
         form=form,
         proof=proof,
         instance=None,
-        message=message,
         notification_context=_notification(),
     )
 
@@ -178,31 +253,56 @@ def edit_instance(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     form = VaultConnectionForm(existing=instance, obj=instance)
     proof = request.form.get('connection_test_proof', '')
-    message = None
     if form.validate_on_submit():
         values = form.to_input()
-        action = str(request.form.get('action') or 'save')
+        action = str(request.form.get('action') or 'save').strip().lower()
         if action == 'test':
             try:
                 test_connection(values)
                 proof = issue_proof(values, int(current_user.id))
-                message = 'Connection verified. Save the configuration to apply changes.'
-            except (VaultProviderError, ValueError, CredentialEncryptionError) as exc:
+            except (VaultProviderError, ValueError, CredentialEncryptionError):
                 proof = ''
-                message = str(exc)
+                _form_feedback(
+                    instance=instance,
+                    event_type='vault_connection_update_test_failed',
+                    status='error',
+                    title='Vault Configuration Test Failed',
+                    message='Check the submitted HTTPS, TLS trust and AppRole settings.',
+                )
+            else:
+                _form_feedback(
+                    instance=instance,
+                    event_type='vault_connection_update_test',
+                    status='success',
+                    title='Vault Configuration Verified',
+                    message='The submitted connection is verified. Save, then run Full Validation.',
+                )
         elif action == 'save':
             try:
                 credential = verified_secret(proof, values, int(current_user.id))
             except CredentialEncryptionError:
                 credential = None
             if credential is None:
-                message = 'Test this exact configuration successfully before saving.'
+                proof = ''
+                _form_feedback(
+                    instance=instance,
+                    event_type='vault_connection_update_proof_rejected',
+                    status='warning',
+                    title='Vault Update Requires Verification',
+                    message='Test the current configuration again before saving changes.',
+                )
             else:
                 try:
                     save_connection(replace(values, secret_id=credential), existing=instance)
                 except (SQLAlchemyError, CredentialEncryptionError, ValueError):
                     logger.exception('Vault configuration update failed.')
-                    message = 'Could not save Vault configuration; review the required encryption key.'
+                    _form_feedback(
+                        instance=instance,
+                        event_type='vault_connection_update_failed',
+                        status='error',
+                        title='Vault Configuration Not Saved',
+                        message='Review the connection settings and encryption configuration.',
+                    )
                 else:
                     record_operational_activity(
                         user_id=int(current_user.id),
@@ -215,12 +315,29 @@ def edit_instance(instance_id: int) -> ResponseReturnValue:
                         queue_feedback=True,
                     )
                     return redirect(url_for('vault.detail', instance_id=instance.id))
+        else:
+            proof = ''
+            _form_feedback(
+                instance=instance,
+                event_type='vault_connection_update_action_rejected',
+                status='warning',
+                title='Vault Update Action Rejected',
+                message='Use Test Connection before saving Vault configuration changes.',
+            )
+    elif request.method == 'POST':
+        proof = ''
+        _form_feedback(
+            instance=instance,
+            event_type='vault_connection_update_input_rejected',
+            status='warning',
+            title='Vault Configuration Needs Attention',
+            message='Review the highlighted fields before testing or saving.',
+        )
     return render_template(
         'integrations/secrets_management/vault/form.html',
         form=form,
         instance=instance,
         proof=proof,
-        message=message,
         notification_context=_notification(),
     )
 

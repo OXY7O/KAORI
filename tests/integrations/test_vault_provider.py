@@ -120,6 +120,25 @@ def test_vault_approle_mount_selector_normalizes_existing_connection_input(
         assert form.to_input().auth_mount == expected_mount
 
 
+def test_vault_blank_optional_evidence_scopes_remain_disabled(monkeypatch) -> None:
+    monkeypatch.setenv('INTEGRATION_VAULT_ALLOWED_ORIGINS', 'https://vault.example.internal:8200')
+    app = Flask(__name__)
+    app.config.update(SECRET_KEY='test-only', WTF_CSRF_ENABLED=False)
+    with app.test_request_context(
+        '/',
+        method='POST',
+        data=_vault_form_data(mode='approle', mount='approle'),
+    ):
+        form = VaultConnectionForm()
+        assert form.validate(), form.errors
+        values = form.to_input()
+        assert values.kv2_mounts == ()
+        assert values.pki_mounts == ()
+        assert values.pki_stored_certs_enabled is False
+        assert values.enabled is True
+        assert values.auth_mount == 'approle'
+
+
 def test_vault_legacy_form_post_keeps_existing_custom_approle_mount(monkeypatch) -> None:
     monkeypatch.setenv('INTEGRATION_VAULT_ALLOWED_ORIGINS', 'https://vault.example.internal:8200')
     app = Flask(__name__)
