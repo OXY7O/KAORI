@@ -11,12 +11,12 @@ def register_blueprints(app: Flask) -> None:
     from app.access.users.routes import bp as users_bp
     from app.analytics.routes import analytics_bp
     from app.artifact_registry.routes import artifact_registry_bp
-    from app.integrations.orchestration.infrastructure_automation.providers.ansible.application.routes import (
-        ansible_bp,
-    )
     from app.integrations.delivery.notification_channels.routes import notification_channels_bp
     from app.integrations.observability.alert_source.providers.alertmanager.application.routes import alertmanager_bp
     from app.integrations.observability.metrics_source.application.routes import metrics_bp
+    from app.integrations.orchestration.infrastructure_automation.providers.ansible.application.routes import (
+        ansible_bp,
+    )
     from app.integrations.registry.providers.harbor.application.routes import harbor_bp
     from app.integrations.routes import integrations_bp
     from app.integrations.secrets_management.secrets_pki.providers.vault.application.routes import vault_bp
