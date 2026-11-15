@@ -583,10 +583,21 @@ def test_security_overview_table_renders_complete_server_paged_results() -> None
 
 def test_security_exposure_avoids_repeating_stale_status_badges() -> None:
     template = read('app/templates/security_posture/overview.html')
-    assert 'header_badge=scan_status_badge' in template
-    assert '{{ scan_status_badge }}' not in template
+    assert 'header_badge=snapshot_freshness_header' in template
+    assert template.count('{{ scan_status_badge }}') == 1
+    assert 'Scanner Evidence Freshness Guide' in template
+    assert '24-hour freshness window' in template
     assert 'Stale evidence may not reflect current exposure.' in template
     assert 'Partial, stale or unavailable evidence cannot establish an all-clear.' in template
+
+
+def test_scanner_freshness_guide_does_not_misstate_security_sync_as_new_scan() -> None:
+    html = _render_workspace_page('overview', _renderable_posture())
+    assert 'Open guide: Scanner Evidence Freshness Guide' in html
+    assert 'Stale describes the age of committed scanner evidence, not job health.' in html
+    assert 'A new Harbor scan completion timestamp is evidence of a new scan' in html
+    assert 'Sync Security Evidence must collect the new provider report' in html
+    assert 'Refresh View reads committed state only' in html
 
 
 def test_security_assets_tab_has_equal_source_cards_and_scope_guide() -> None:
