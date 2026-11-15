@@ -268,8 +268,8 @@ beside their **four primary tab section titles**: Connection Contract,
 Full Validation, Runtime Health & Diagnostics, and the provider-owned
 Inventory & Lifecycle or Bindings & Consumers. Kubernetes also guides the
 separately governed Capsule Cluster RBAC Bootstrap header. The shared
-`_provider_configuration_contract.html` owns the five-provider Configuration
-Guide; validation/runtime call the existing
+`_provider_configuration_contract.html` owns the six-provider Configuration
+Guide (including immutable Ansible source connections); validation/runtime call the existing
 `connection_validation_header.html::render(title_extra=...)`; hand-owned
 headers retain the same adjacent title layout. Do not duplicate the
 provider Overview Guide in the inner Integration Workspace header (#4544),
