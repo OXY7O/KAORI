@@ -104,3 +104,18 @@ def test_initial_connection_proof_requires_non_whitespace_value() -> None:
     assert "registration_proof is defined and registration_proof|string|trim" in source
     assert "registration_proof|string|trim if registration_proof is defined" in source
     assert 'name="connection_test_proof"' in source
+
+
+def test_connection_retest_invalidates_previous_proof_before_request() -> None:
+    """A new connectivity attempt must not reuse an earlier successful proof."""
+    source = TEMPLATE.read_text(encoding="utf-8")
+    button = re.search(
+        r'<button[^>]+hx-post="{{ alertmanager_test_url }}"(?P<attrs>.*?)</button>',
+        source,
+        re.DOTALL,
+    )
+    assert button is not None
+    attrs = button.group("attrs")
+    assert 'form.reportValidity()' in attrs
+    assert "else { connectionVerified = false; $refs.connectionProof.value = ''; }" in attrs
+    assert 'hx-include="#alertmanager-instance-form"' in attrs
