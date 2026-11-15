@@ -6,10 +6,10 @@
     <div class="p-5 sm:p-6">
         <div class="grid gap-3 md:grid-cols-2">
             {% for icon, title, state, tone, description in [
-                ("git-commit", "Immutable Git Source", "Checked", "normal", "Required Git blobs match reviewed source; this does not prove runtime access."),
-                ("layers-3", "Toolchain Compatibility", "Candidate", "unknown", "Ansible Core, Runner and Kubespray pins recorded; EE not qualified."),
-                ("server-cog", "Worker & SSH Identity", "Not Verified", "unknown", "No provider authorized host, SSH trust, become role or worker digest."),
-                ("boxes", "Cluster Preflight", "Not Collected", "unknown", "Kubernetes API, topology, CNI, CRI, capacity, DNS and network evidence absent.")
+                ("git-commit", "Immutable Git Source", source_posture.source_label, source_posture.source_tone, source_posture.source_description),
+                ("layers-3", "Toolchain Compatibility", source_posture.toolchain_label, "unknown", "Ansible Core, Runner and Kubespray pins are recorded; a verified EE image is not available."),
+                ("server-cog", "Worker & SSH Identity", source_posture.worker_label, "unknown", "No admitted SSH trust, privilege or worker digest evidence is committed."),
+                ("boxes", "Cluster Preflight", source_posture.cluster_label, "unknown", "No authoritative Kubernetes API, topology, CNI, CRI, capacity or network evidence is committed.")
                 ] %}
                 <article class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
                     <div class="flex items-start gap-3">
@@ -30,7 +30,7 @@
                 <div>
                     <h3 class="text-sm font-semibold text-content-primary">Source Verification Evidence</h3>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Git objects, not host access. Rechecking only reads approved public repository objects.</p>
-                    <p class="mt-2 text-xs text-content-muted">Checked files: {{ evidence.checked_files or 0 }} · Observed: {{ evidence.observed_at or "Not recorded" }}</p>
+                    <p class="mt-2 text-xs text-content-muted">Verified files: {{ source_posture.checked_files }} · Observed: {{ source_posture.observed_at or "Not recorded" }} · Status: {{ source_posture.source_label }}</p>
                 </div>
                 <form method="post"
                       action="{{ url_for('integrations.ansible_revalidate_source', instance_id=connection.id) }}">
@@ -45,7 +45,27 @@
         </div>
         <div class="mt-4 space-y-2">
             <h3 class="text-sm font-semibold text-content-primary">Operation Eligibility</h3>
-            <p class="text-xs leading-5 text-content-secondary">Discover, Preflight, Plan, Provision, Scale, Upgrade, Node Maintenance and Recovery remain blocked for this connection until separately admitted and authorized. Source registration never enables a Run endpoint.</p>
+            <p class="text-xs leading-5 text-content-secondary">Source verification does not enable execution. Each operation requires separately admitted provider, target, policy and evidence.</p>
+            <div class="mt-3 overflow-x-auto rounded-lg border border-outline-subtle">
+                <table class="w-full min-w-[540px] text-left text-xs">
+                    <thead class="bg-surface-hover text-content-muted">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 font-semibold">Operation</th>
+                            <th scope="col" class="px-4 py-3 font-semibold">Eligibility</th>
+                            <th scope="col" class="px-4 py-3 font-semibold">Required Evidence</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-outline-subtle">
+                        {% for operation, reason in source_posture.capabilities %}
+                            <tr>
+                                <th scope="row" class="px-4 py-3 font-semibold text-content-primary">{{ operation }}</th>
+                                <td class="px-4 py-3">{{ integration_status("blocked", "Blocked", display="text") }}</td>
+                                <td class="px-4 py-3 text-content-secondary">{{ reason }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </section>
