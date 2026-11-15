@@ -9,8 +9,9 @@ from __future__ import annotations
 import hashlib
 import ipaddress
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any
 
 KUBESPRAY_REPOSITORY = 'kubernetes-sigs/kubespray'
 KUBESPRAY_RELEASE = 'v2.32.0'
