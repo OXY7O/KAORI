@@ -177,12 +177,19 @@ states, trend charts, business risk scores and provider calls are excluded.
 The two Security routes retain independent `security_posture.view` and
 `artifact_registry.view` source-authorization boundaries.
 
-**Security Highlights and Findings visual density (#4772, 2026-11-15):**
-The bounded Overview `Finding Highlights` section renders three compact
-`operational_metric_card` values and a maximum of three source-qualified
-CVE identity preview rows. These rows use the existing `table_ui.title_cell`
-identity and row-level standard action classes, but do **not** form a second
-searchable full registry. **Findings Evidence Qualification human
+**Security Overview Finding Highlights human Visual UAT refinement (#4711,
+2026-11-15):** The earlier nested three-metric-card plus three-row-card
+design is superseded. Inside **one** `operational_section_card`, present
+three source-derived values in a flat responsive `dl` using a thin
+`gap-px bg-outline-subtle` divider and `bg-surface-card` column surfaces.
+Follow with **one** compact ordered CVE list, using only horizontal
+`divide-y` separators, concise inline CVE/severity identity, observed
+digest/finding counts and existing permission-qualified View Impact action.
+Do not wrap each finding in an additional rounded, bordered or shadowed
+card. The section header owns Guide and `Open Findings`, while the footer
+retains the source-evidence interpretation boundary. At most three
+severity-ordered CVEs are previewed; full query/filter/loading/pagination
+remain exclusively on Security Findings. **Findings Evidence Qualification human
 Visual UAT update (#4772, 2026-11-15):** replace the interim nested
 three-card layout with an **Inventory-style flat three-column evidence strip**
 inside the one existing `operational_section_card` shell. Use the approved

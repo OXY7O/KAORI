@@ -45,13 +45,18 @@ loading now belong exclusively to the Findings page.
 
 ## Security Findings Visual UAT polish — #4772
 
-The **Finding Highlights** region on Overview reuses three compact
-`operational_metric_card.render(..., compact=true)` cards for distinct CVEs,
-affected digests, and source-qualified runtime correlation, rather than
-page-local flat boxes. Its first three observed CVEs use the existing
-`table_ui.title_cell` identity (icon, CVE, supporting text, severity) within
-a bordered, compact preview row, with a source-qualified `View Impact`
-handoff. This is not a full table and has no filters or pagination.
+The **Finding Highlights** region on Overview follows the established
+Inventory-style flat evidence rhythm rather than independent cards inside
+a card. A single divided three-column `dl` shows distinct qualified CVEs,
+affected digests and source-qualified runtime correlation. The supporting
+copy remains compact, with no separate metric card border, shadow or source
+footer. Below it, a single unboxed `ol` lists a maximum of three
+severity-ordered CVEs: compact CVE identity with the shared severity label,
+observed digest/scanner counts, and the permission-qualified `View Impact`
+action. Rows use canonical subtle dividers without repeated mini-card
+surfaces. The standard section header still owns Guide and `Open Findings`.
+This is **not** a full table, filter or pagination surface; the full
+registry belongs exclusively to Security → Findings.
 
 The Findings page **Evidence Qualification** section now follows the
 existing **Inventory-style flat evidence layout**: one canonical

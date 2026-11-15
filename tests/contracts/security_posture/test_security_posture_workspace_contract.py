@@ -122,8 +122,10 @@ def test_security_pages_use_approved_dashboard_and_registry_components() -> None
     assert 'data-security-runtime-impact' in overview
     assert 'data-security-evidence-confidence' in overview
     assert 'components/resource_posture_grid.html' in overview
-    assert 'components/operational_metric_card.html' in overview
-    assert overview.count('metric_card.render(') == 3  # Finding Highlights, not Security Snapshot
+    assert 'components/operational_metric_card.html' not in overview
+    assert 'metric_card.render(' not in overview
+    assert 'grid gap-px bg-outline-subtle sm:grid-cols-3' in overview
+    assert 'data-security-finding-highlights' in overview
     assert 'components/operational_section_card.html' in overview
     assert 'data-security-finding-highlights' in overview
     assert 'posture.rows[:3]' in overview
@@ -330,7 +332,7 @@ def test_security_snapshot_replaces_four_independent_kpi_cards() -> None:
     snapshot_region = html.split('data-security-snapshot-grid', 1)[1]
     snapshot_region = snapshot_region.split('data-security-posture-insights', 1)[0]
     assert 'data-kaori-metric-density="compact"' not in snapshot_region
-    assert html.count('data-kaori-metric-density="compact"') == 3  # Overview highlights
+    assert 'data-kaori-metric-density="compact"' not in html
     assert 'data-security-exposure-signals' not in html
     assert 'Security Exposure Signals' not in html
     assert 'Scan Coverage' in html
@@ -345,7 +347,7 @@ def test_security_snapshot_replaces_four_independent_kpi_cards() -> None:
     snapshot = read('app/templates/security_posture/overview.html')
     assert 'posture_grid.render(snapshot_metrics, columns=4)' in snapshot
     assert 'columns=4' in snapshot
-    assert snapshot.count('metric_card.render(') == 3  # The separate Finding Highlights panel
+    assert 'metric_card.render(' not in snapshot
     assert 'components/resource_posture_grid.html' in snapshot
     # The canonical component remains available to other operational dashboards.
     metric = read('app/templates/components/operational_metric_card.html')
@@ -400,7 +402,9 @@ def test_security_overview_finding_highlights_are_compact_and_not_a_registry() -
     template = read('app/templates/security_posture/overview.html')
     assert 'data-security-findings-summary' in html
     assert 'data-security-finding-highlights' in html
-    assert html.count('data-security-finding-highlight') == 2  # container + one CVE
+    assert 'Highest-severity CVEs' in html
+    assert 'Up to 1 observed' in html
+    assert html.count('data-security-finding-highlight') == 2  # list + one CVE
     assert 'Open guide: Finding Highlights Guide' in html
     assert 'Open Findings' in html
     assert 'View Impact' in html
@@ -763,12 +767,23 @@ def test_security_findings_table_keeps_every_server_paged_row() -> None:
     assert 'data-security-findings-data-table' in html
 
 
-def test_security_visual_polish_reuses_shared_identity_and_inventory_dividers() -> None:
+def test_security_flat_highlights_and_findings_qualification_use_inventory_dividers() -> None:
     overview_template = read('app/templates/security_posture/overview.html')
     findings_template = read('app/templates/security_posture/findings.html')
-    assert 'components/operational_metric_card.html' in overview_template
+    assert 'components/operational_metric_card.html' not in overview_template
     assert 'components/operational_metric_card.html' not in findings_template
-    assert overview_template.count('metric_card.render(') == 3
+    assert 'metric_card.render(' not in overview_template
+    preview = overview_template.split("section_card.render('Finding Highlights'", 1)[1]
+    preview = preview.split('{% endcall %}', 1)[0]
+    assert 'grid gap-px bg-outline-subtle sm:grid-cols-3' in preview
+    assert '<dl ' in preview
+    assert preview.count('<dt ') == 3
+    assert preview.count('<dd ') == 3
+    assert 'rounded-lg border border-outline-subtle' not in preview
+    assert 'shadow-sm' not in preview
+    assert 'divide-y divide-outline-subtle' in preview
+    assert 'Highest-severity CVEs' in preview
+    assert 'posture.rows[:3]' in preview
     assert 'metric_card.render(' not in findings_template
     qualification = findings_template.split("{% call section_card.render('Evidence Qualification'", 1)[1]
     qualification = qualification.split('{% endcall %}', 1)[0]
@@ -778,7 +793,7 @@ def test_security_visual_polish_reuses_shared_identity_and_inventory_dividers() 
     assert '<dl ' in qualification
     assert qualification.count('<dt ') == 3
     assert qualification.count('<dd ') == 3
-    assert 'table_ui.title_cell(row.cve_id' in overview_template
+    assert 'table_ui.title_cell(row.cve_id' not in overview_template
     assert 'table_ui.title_cell(row.cve_id' in findings_template
     assert 'components/section_intro.html' in findings_template
     assert "section_intro.render('Investigation Workspace'" in findings_template
@@ -786,7 +801,10 @@ def test_security_visual_polish_reuses_shared_identity_and_inventory_dividers() 
 
     overview_html = _render_workspace_page('overview', _renderable_posture())
     findings_html = _render_workspace_page('findings', _renderable_posture())
-    assert overview_html.count('data-kaori-metric-density="compact"') == 3
+    assert 'data-kaori-metric-density="compact"' not in overview_html
+    assert 'data-security-findings-summary' in overview_html
+    assert 'Highest-severity CVEs' in overview_html
+    assert 'Up to 1 observed' in overview_html
     assert 'data-kaori-metric-density="compact"' not in findings_html
     assert 'data-security-findings-signal="scanner"' in findings_html
     assert 'data-security-findings-signal="runtime"' in findings_html
