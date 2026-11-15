@@ -124,7 +124,6 @@ def connection_jobs(connection: IntegrationInstance, *, page: int = 1, per_page:
     return paginate_query(statement, page=page, per_page=per_page)
 
 
-
 def source_validation_posture(connection: IntegrationInstance) -> dict[str, Any]:
     """Present committed source evidence without inferring runtime readiness.
 
