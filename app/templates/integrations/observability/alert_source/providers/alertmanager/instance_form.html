@@ -135,7 +135,7 @@
                                             hx-swap="innerHTML"
                                             hx-indicator="#alertmanager-connection-test-loading"
                                             hx-disabled-elt="this"
-                                            x-on:click="const form = $el.closest('form'); if (!form.reportValidity()) { $event.preventDefault(); $event.stopImmediatePropagation(); }"
+                                            x-on:click="const form = $el.closest('form'); if (!form.reportValidity()) { $event.preventDefault(); $event.stopImmediatePropagation(); } else { connectionVerified = false; $refs.connectionProof.value = ''; }"
                                             class="group {{ action_button.classes('secondary') }} disabled:cursor-wait disabled:opacity-70">
                                         <i data-lucide="plug-zap"
                                            class="h-4 w-4 group-[.htmx-request]:animate-pulse"></i>
