@@ -53,6 +53,7 @@
                      x-show="activeTab === 'validation'"
                      x-cloak
                      class="space-y-4">
+                    {% set validation_job = evidence.validation_job %}
                     {% include "integrations/secrets_management/vault/partials/_detail_validation.html" %}
                 </div>
                 <div id="vault-panel-runtime"
