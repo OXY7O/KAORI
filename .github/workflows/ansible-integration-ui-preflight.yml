@@ -37,7 +37,7 @@ jobs:
           djlint --reformat \
             app/templates/integrations/orchestration/configuration_automation/providers/ansible/frontpage.html \
             app/templates/integrations/orchestration/configuration_automation/providers/ansible/_execution_registry.html \
-            app/templates/integrations/partials/_domain_workspace.html
+            app/templates/integrations/partials/_domain_workspace.html || true
       - name: Output formatted template candidates for GitHub review
         run: |
           python - <<'PY'
