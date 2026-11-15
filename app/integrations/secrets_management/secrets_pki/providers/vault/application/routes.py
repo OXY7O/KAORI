@@ -232,6 +232,7 @@ def new_instance() -> ResponseReturnValue:
                 try:
                     instance = save_connection(replace(values, secret_id=credential))
                 except (SQLAlchemyError, CredentialEncryptionError, ValueError):
+                    proof = ''
                     logger.exception('Vault registration failed.')
                     _form_feedback(
                         instance=None,
@@ -327,6 +328,7 @@ def edit_instance(instance_id: int) -> ResponseReturnValue:
                 try:
                     save_connection(replace(values, secret_id=credential), existing=instance)
                 except (SQLAlchemyError, CredentialEncryptionError, ValueError):
+                    proof = ''
                     logger.exception('Vault configuration update failed.')
                     _form_feedback(
                         instance=instance,
