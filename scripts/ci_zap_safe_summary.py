@@ -345,6 +345,10 @@ def main(argv: list[str] | None = None) -> int:
             ) as stream:
                 temporary = Path(stream.name)
                 stream.write(summary)
+                # Flush Python's text buffer before snapshotting descriptor size.
+                # Otherwise the post-close pathname stat sees different bytes
+                # and incorrectly rejects every valid publication.
+                stream.flush()
                 temporary_stat = os.fstat(stream.fileno())
             # Never publish a swapped temporary symlink or a replacement file.
             # os.replace() would otherwise install the attacker's pathname as
