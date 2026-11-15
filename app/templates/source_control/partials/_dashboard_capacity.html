@@ -1,0 +1,41 @@
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/operational_evidence_tile.html" as evidence_tile %}
+{% import "components/peer_content_grid.html" as peer_grid %}
+{% import "components/section_intro.html" as section_intro %}
+{% import "components/info_tip.html" as info_tip %}
+{% set bounded_installations = scope.installation_count ~ ('+' if scope.has_more else '') %}
+{{ section_intro.render('Capacity & Demand',
+    'Collection scope is observed; engineering throughput and repository growth require dedicated source evidence.') }}
+{% call section_card.render('Collection Capacity Evidence',
+    'Separate the bounded authorized installation scope from unavailable usage, growth and delivery measurements.',
+    'gauge',
+    header_badge=info_tip.render('source-control-capacity-guide',
+        'Source Control Capacity Guide',
+        'Installation grants are not a time-series demand or throughput measure.',
+        items=[
+        'Counts refer only to authorized GitHub.com App installations visible to this UAT session.',
+        'Overlapping repository grants are not summed into a global repository total.',
+        'Storage growth, Actions usage, PR throughput and capacity forecasts are not derived from installation inventory.'
+        ], placement='right', variant='guide')) %}
+    <div class="{{ peer_grid.layout_classes() }}">
+        <div class="{{ peer_grid.column_classes('primary') }}">
+            {{ evidence_tile.freshness('Visible Installation Grants',
+                bounded_installations ~ (' authorized installation scope' if scope.installation_count == 1 and not scope.has_more else ' authorized installation scopes'),
+                'Bounded' if scope.has_more else 'Observed',
+                'warning' if scope.has_more else 'info',
+                'git-branch',
+                description='Explicit GitHub App grants in the active local UAT scope. A 50-installation bound is disclosed rather than presenting an organization-wide total.') }}
+        </div>
+        <div class="{{ peer_grid.column_classes('secondary') }}">
+            {{ evidence_tile.freshness('Engineering Demand & Forecast',
+                'Not Qualified',
+                'Unavailable',
+                'unknown',
+                'chart-no-axes-combined',
+                description='No committed history for repository growth, PR review throughput, Actions demand or capacity forecasting has been qualified by this view.') }}
+        </div>
+    </div>
+    <p class="mt-4 border-t border-outline-subtle pt-4 text-xs leading-5 text-content-secondary">
+        Capacity and demand are evidence-dependent perspectives. Missing measurements remain unavailable, never zero utilization or a forecast.
+    </p>
+{% endcall %}

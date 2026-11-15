@@ -37,9 +37,13 @@ def _uncached_render(template: str, **context) -> ResponseReturnValue:
 def overview() -> ResponseReturnValue:
     """UAT-only until production installation-scoped authorization is admitted."""
     _require_product_uat_access()
+    active_tab = request.args.get('tab', 'overview', type=str)
+    if active_tab not in {'overview', 'capacity', 'signals', 'reporting'}:
+        active_tab = 'overview'
     return _uncached_render(
         'source_control/overview.html',
         scope=build_source_control_overview(),
+        dashboard_active_tab=active_tab,
     )
 
 
