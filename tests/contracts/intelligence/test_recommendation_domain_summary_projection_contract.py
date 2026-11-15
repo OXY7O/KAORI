@@ -10,7 +10,7 @@ def source(path: str) -> str:
     return (ROOT / path).read_text(encoding='utf-8')
 
 
-def domain_metrics(findings: list[dict]) -> list[dict]:
+def domain_metrics(findings: list[dict[str, str]]) -> list[dict[str, str | int]]:
     presentation = runpy.run_path(str(ROOT / 'app/intelligence/finding_presentation.py'))
     options = runpy.run_path(str(ROOT / 'app/intelligence/rule_presentation.py'))['DOMAIN_OPTIONS']
     labels = {option['value']: option['label'] for option in options if option['value']}
