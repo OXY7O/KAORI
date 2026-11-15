@@ -38,6 +38,12 @@ domains:
   workspace_endpoint: integrations.source_control
   order: 60
 capabilities:
+- key: configuration_automation
+  domain_key: orchestration
+  label: Configuration Automation
+  description: Git-defined automation operations, source provenance, execution evidence, and governed targets.
+  order: 20
+  asset_types: []
 - key: container_orchestrator
   domain_key: orchestration
   label: Container Orchestrator
