@@ -1159,9 +1159,15 @@ def test_registry_usage_detail_reuses_kaori_evidence_and_distinguishes_missing_f
         'tag_only_bindings': 1,
     }
     common = {'aggregate': aggregate, 'snapshot_count': 1, 'snapshot_window': '24h'}
+
     def render(rows: list[dict[str, object]]) -> str:
+        total = sum(float(row['pull_count']) for row in rows)
         return detail.render(
-            analytics={**common, 'usage_chart_rows': rows},
+            analytics={
+                **common,
+                'aggregate': {**aggregate, 'pull_activity': total},
+                'usage_chart_rows': rows,
+            },
             url_for=lambda endpoint: '/artifact-registry/runtime',
         )
 
@@ -1174,6 +1180,13 @@ def test_registry_usage_detail_reuses_kaori_evidence_and_distinguishes_missing_f
     assert 'N/A' in missing
     assert 'data-registry-usage-project-rows' not in missing
     assert missing.count('Observed pulls</p>') == 0
+
+    no_snapshot = detail.render(
+        analytics={**common, 'snapshot_count': 0, 'usage_chart_rows': []},
+        url_for=lambda endpoint: '/artifact-registry/runtime',
+    )
+    assert 'Pull Counter Evidence Not Available' in no_snapshot
+    assert no_snapshot.count('N/A') >= 4
 
     observed_zero = render(
         [{'project_name': 'sandbox', 'registry_name': 'Harbor X300', 'pull_count': 0, 'pull_display': '0'}]

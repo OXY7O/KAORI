@@ -107,8 +107,9 @@
                     {% endif %}
                 </div>
             {% else %}
+                {% set empty_classes = 'flex min-h-44 w-full flex-col items-center justify-center gap-2 p-5 text-center' %}
                 <div class="flex flex-1 p-4 sm:p-5">
-                    <div class="{{ analysis_surface.empty_evidence_classes('flex min-h-44 w-full flex-col items-center justify-center gap-2 px-5 py-6 text-center') }}"
+                    <div class="{{ analysis_surface.empty_evidence_classes(empty_classes) }}"
                          data-kaori-empty-state
                          role="status">
                         <i data-lucide="activity"
