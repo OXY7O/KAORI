@@ -1,0 +1,103 @@
+{% extends "layouts/app.html" %}
+{% import "integrations/components/_provider_registration_hero.html" as registration_hero %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/form_action_bar.html" as form_action_bar %}
+{% import "components/action_button.html" as action_button %}
+{% block title %}Add Ansible Kubernetes Connection · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div class="kaori-integration-semantic space-y-6" data-kaori-ansible-connection-form>
+        {{ registration_hero.render("workflow",
+                    "Configuration Automation",
+                    "boxes",
+                    "Add Kubernetes Lifecycle Connection",
+                    "Register reviewed Ansible and Kubespray Git source before any operational preflight.",
+                    "git-commit",
+                    "Pinned Public Git Source",
+                    url_for("integrations.ansible"),
+                    "Ansible source registration",
+                    binding_label="Runtime & Inventory Governed Separately",
+                    after_save_label="Host Preflight",
+                    after_save_description="Requires separate approval") }}
+        <form method="post"
+              action="{{ url_for('integrations.ansible_new_connection') }}"
+              class="grid gap-5 xl:grid-cols-12"
+              x-data="{ verified: {{ 'true' if source_test_proof else 'false' }}, invalidate(event) { const key = event.target.name; if (key === 'csrf_token' || key === 'source_test_proof' || key === 'action') return; this.verified = false; document.getElementById('ansible-proof-field').value = ''; } }"
+              x-on:input.capture="invalidate($event)"
+              x-on:change.capture="invalidate($event)">
+            {{ form.csrf_token }}
+            <input id="ansible-proof-field" type="hidden" name="source_test_proof" value="{{ source_test_proof or '' }}">
+            <section class="{{ integration_ui.section_shell_classes() }} xl:col-span-8">
+                {{ integration_ui.section_header("settings-2",
+                            "Connection Configuration",
+                            "Identity, approved Git source and exact compatibility versions. No credentials are requested.") }}
+                <div class="space-y-5 p-5 sm:p-6">
+                    {% if feedback %}
+                        {{ operational_callout.render("Source Registration", feedback, icon="info", tone=feedback_tone, variant="semantic") }}
+                    {% endif %}
+                    {% for field in [form.name, form.environment, form.description] %}
+                        <div>
+                            <label for="{{ field.id }}" class="{{ integration_ui.control_label_classes() }}">{{ field.label.text }}</label>
+                            {{ field(class=integration_ui.control_classes(), aria_invalid="true" if field.errors else "false") }}
+                            {% for error in field.errors %}<p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>{% endfor %}
+                        </div>
+                    {% endfor %}
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        {% for field in [form.profile_key, form.repository, form.revision] %}
+                            <div class="{{ 'sm:col-span-2' if field.name == 'revision' else '' }}">
+                                <label for="{{ field.id }}" class="{{ integration_ui.control_label_classes() }}">{{ field.label.text }}</label>
+                                {{ field(class=integration_ui.control_classes(), aria_invalid="true" if field.errors else "false") }}
+                                {% for error in field.errors %}<p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>{% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <p class="text-xs leading-5 text-content-muted">The first pilot accepts only OXY7O/kaori-operations at the reviewed candidate SHA. Source revision may be changed only after a new compatibility profile has been admitted.</p>
+                    <div class="grid gap-4 sm:grid-cols-3">
+                        {% for field in [form.ansible_core_version, form.ansible_runner_version, form.kubespray_release] %}
+                            <div>
+                                <label for="{{ field.id }}" class="{{ integration_ui.control_label_classes() }}">{{ field.label.text }}</label>
+                                {{ field(class=integration_ui.control_classes()) }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div>
+                        <label for="{{ form.execution_environment_digest.id }}" class="{{ integration_ui.control_label_classes() }}">{{ form.execution_environment_digest.label.text }}</label>
+                        {{ form.execution_environment_digest(class=integration_ui.control_classes(), placeholder="sha256:... (optional; not proof of image admission)") }}
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Optional reference only. Runtime validation still requires approved image provenance, trusted inventory and worker evidence.</p>
+                        {% for error in form.execution_environment_digest.errors %}<p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>{% endfor %}
+                    </div>
+                </div>
+                {% call form_action_bar.render("Validate Git objects before Save. Registration never enables host or Kubernetes operations.", embedded=true) %}
+                    <button type="submit" name="action" value="test" class="{{ action_button.classes('secondary') }}">
+                        <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
+                        Validate Source
+                    </button>
+                    <button type="submit" name="action" value="save" class="{{ action_button.classes('primary') }}"
+                            :disabled="!verified" :class="!verified ? 'cursor-not-allowed opacity-50' : ''">
+                        <i data-lucide="check" class="h-4 w-4" aria-hidden="true"></i>
+                        Save Connection
+                    </button>
+                {% endcall %}
+            </section>
+            <aside class="{{ integration_ui.section_shell_classes() }} xl:col-span-4">
+                {{ integration_ui.section_header("shield-check", "Source Validation Gates", "Source checks are separate from execution and cluster readiness.") }}
+                <div class="space-y-4 p-5">
+                    {% for item in [
+                        ("git-commit", "Immutable Git Revision", "Commit SHA, tree and expected blob hashes must match."),
+                        ("list-checks", "Required Kubespray Files", "Profile, manifest, playbook and pinned dependencies must be present."),
+                        ("shield-alert", "Blocked Execution", "No SSH secrets, inventory, cluster changes or arbitrary playbooks."),
+                        ("clock", "Short-Lived Save Proof", "Validation proof belongs to this user and exact form payload.")
+                    ] %}
+                        <div class="flex gap-3">
+                            {{ integration_ui.palette_icon(item[0], "brand", size="sm") }}
+                            <div>
+                                <p class="text-xs font-semibold text-content-primary">{{ item[1] }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item[2] }}</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </aside>
+        </form>
+    </div>
+{% endblock dashboard_content %}

@@ -1,0 +1,132 @@
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/info_tip.html" as info_tip %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+<div id="ansible-connection-registry"
+     data-kaori-ansible-connection-registry
+     aria-label="Ansible connection registry">
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-wrap items-center gap-2">
+            <h3 class="text-sm font-semibold text-content-primary">Registered Sources</h3>
+            {{ info_tip.render("ansible-registry-source-guide",
+                        "Ansible Source Registry",
+                        "A source-verified Git revision is not proof of worker runtime, inventory eligibility or cluster readiness. All connections remain blocked for infrastructure mutation until independent admission.",
+                        variant="guide",
+                        placement="right") }}
+        </div>
+        <a href="{{ url_for('integrations.ansible_choose') }}"
+           class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-brand-outline bg-kaori-soft px-3 text-xs font-semibold text-kaori-primary transition hover:bg-surface-elevated dark:text-kaori-accent">
+            <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+            Add Connection
+        </a>
+    </div>
+    {{ loading_bar.render("ansible-registry-loading", label="Loading Ansible connections") }}
+    <div class="{{ table_ui.filter_bar_classes() }}">
+        {% call registry_ui.filter_form("integrations.ansible",
+                    "ansible-connection-registry",
+                    "ansible-registry-loading",
+                    pagination.per_page,
+                    aria_label="Filter Ansible connections") %}
+            <div class="grid w-full gap-3 md:grid-cols-2">
+                <div>
+                    <label for="ansible-connection-search"
+                           class="{{ table_ui.filter_label_classes() }}">Search Connections</label>
+                    <input id="ansible-connection-search"
+                           name="q"
+                           type="search"
+                           value="{{ selected_query }}"
+                           placeholder="Search connection name"
+                           class="{{ table_ui.filter_input_classes() }}">
+                </div>
+                <div>
+                    <label for="ansible-connection-environment"
+                           class="{{ table_ui.filter_label_classes() }}">Environment</label>
+                    <select id="ansible-connection-environment"
+                            name="environment"
+                            class="{{ table_ui.filter_select_classes() }}">
+                        <option value="">All environments</option>
+                        {% for value, label in environment_options %}
+                            <option value="{{ value }}" {% if value == selected_environment %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            {% if selected_query or selected_environment %}
+                {{ registry_ui.clear_filters_link("integrations.ansible",
+                                    "ansible-connection-registry",
+                                    "ansible-registry-loading",
+                                    pagination.per_page,
+                                    "inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary",
+                                    label="Clear Filters") }}
+            {% endif %}
+        {% endcall %}
+    </div>
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[820px]') }}">
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Connection</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Automation Profile</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Git Source</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Readiness</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Environment</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Action</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for connection in rows %}
+                    {% set meta = connection.metadata_json or {} %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_ui.title_cell(connection.name, connection.description or "Ansible source connection", "workflow") }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <span class="text-sm font-medium text-content-primary">Kubernetes Lifecycle</span>
+                            <span class="block text-xs text-content-muted">Kubespray {{ meta.kubespray_release or "Unverified" }}</span>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <span class="block text-xs text-content-secondary">{{ meta.source_repository or "Not configured" }}</span>
+                            <span class="font-mono text-xs text-content-muted">{{ (meta.source_sha or "")[:12] }}</span>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status("blocked", "Validation Required", display="text") }}
+                            <span class="mt-1 block text-xs text-content-muted">Source only · No remote execution</span>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <span class="text-xs text-content-secondary">{{ connection.environment|replace("_", " ")|title }}</span>
+                        </td>
+                        <td class="{{ table_ui.cell_classes(true) }}">
+                            <a href="{{ url_for('integrations.ansible_connection_detail', instance_id=connection.id) }}"
+                               class="{{ table_ui.action_classes() }}">Manage</a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="px-5 py-12 text-center">
+                            <div class="mx-auto flex max-w-sm flex-col items-center gap-3">
+                                {{ integration_ui.palette_icon("workflow", "unknown", size="lg") }}
+                                <h3 class="text-sm font-semibold text-content-primary">No Ansible Connections</h3>
+                                <p class="text-xs leading-5 text-content-secondary">Choose Kubernetes Lifecycle to register the first reviewed Git source. No infrastructure operations are enabled during registration.</p>
+                                <a href="{{ url_for('integrations.ansible_choose') }}"
+                                   class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-brand-outline bg-kaori-soft px-3 text-xs font-semibold text-kaori-primary dark:text-kaori-accent">
+                                    <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                                    Choose Automation Profile
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {{ registry_ui.footer("integrations.ansible",
+                "ansible-connection-registry",
+                "ansible-registry-loading",
+                pagination,
+                {"q": selected_query, "environment": selected_environment},
+                pagination.allowed_per_page,
+                resource_label="Connections",
+                control_name="ansible") }}
+</div>

@@ -1,95 +1,32 @@
 {% extends "layouts/app.html" %}
-{% import "components/page_hero.html" as page_hero %}
-{% import "components/action_button.html" as action_button %}
-{% import "components/info_tip.html" as info_tip %}
+{% import "integrations/components/_provider_frontpage.html" as provider_front %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
-{% block title %}Ansible · Configuration Automation · KAORI{% endblock title %}
+{% import "components/action_button.html" as action_button %}
+{% block title %}Ansible Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
-    <div class="kaori-integration-semantic space-y-6"
-         data-kaori-ansible-workspace
-         data-kaori-provider-readiness="not_configured">
-        <section class="{{ page_hero.shell_classes() }}">
-            <div class="{{ page_hero.layout_classes() }}">
-                <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro("workflow", "Integrations / Orchestration", "terminal-square") %}
-                        <h1 class="{{ page_hero.title_classes() }}">Ansible</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Git-defined infrastructure automation with governed execution, immutable source provenance, and committed evidence.</p>
-                        <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('git-commit-horizontal', 'Pinned Git Source') }}
-                            {{ page_hero.meta_label("shield-check", source_mode) }}
-                            {{ page_hero.meta_label('layers-3', 'Configuration Automation') }}
-                        </div>
-                    {% endcall %}
-                </div>
-                <aside class="{{ page_hero.aside_classes() }}"
-                       aria-label="Ansible readiness">
-                    <div class="{{ page_hero.context_panel_classes() }}">
-                        {{ page_hero.context_header('Provider Posture', 'Ansible Runner', 'workflow') }}
-                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                            {{ page_hero.context_metric("server-cog", "Registered Targets", registered_targets, "No remote execution instance admitted") }}
-                            {{ page_hero.context_metric("list-checks", "Committed Jobs", total_executions, "Local-only pilot evidence") }}
-                        </div>
-                        {{ page_hero.context_info('shield-check', 'Not Configured for external hosts. Review-only workspace; production and Kubernetes mutations are disabled.') }}
-                    </div>
-                </aside>
-            </div>
-        </section>
+    <div class="kaori-integration-semantic space-y-6" data-kaori-ansible-workspace>
+        {{ provider_front.hero("workflow", "terminal-square",
+                    "Ansible Integrations",
+                    "Register governed automation sources and manage Kubernetes Lifecycle profiles. Runtime and infrastructure execution remain separate authorities.",
+                    stats.total,
+                    stats.ready,
+                    0,
+                    "Attention" if stats.attention else "Not Configured",
+                    url_for("integrations.ansible_choose"),
+                    register_label="Add Connection",
+                    association_label="Qualified Targets",
+                    association_description="Validated cluster asset bindings") }}
         <section class="{{ integration_ui.section_shell_classes() }}"
-                 aria-label="Automation overview">
-            {{ integration_ui.section_header("layout-dashboard",
-                        "Automation Overview",
-                        "Operational evidence is read from committed KAORI JobExecution records. Ansible remains authoritative for execution and Git for source.") }}
-            <div class="{{ integration_ui.metric_grid_classes(4) }}">
-                {{ integration_ui.metric_card("Registered Instances", registered_targets, "No production or remote instance", "server-cog") }}
-                {{ integration_ui.metric_card("Executed Jobs", total_executions, "Read-only localhost pilot", "list-checks") }}
-                {{ integration_ui.metric_card("Succeeded", successful_executions, "Committed terminal execution", "check-circle-2") }}
-                {{ integration_ui.metric_card("In Progress", active_executions, "Queued or running jobs", "clock-3") }}
+                 aria-label="Ansible source connection registry">
+            {{ integration_ui.section_header("server-cog",
+                        "Connection Registry",
+                        "Review Ansible automation profiles, source qualification, and registration readiness. No live host requests are performed.") }}
+            <div class="{{ integration_ui.metric_grid_classes(3) }}">
+                {{ integration_ui.metric_card("Registered Connections", stats.total, "Canonical automation identities", "server-cog") }}
+                {{ integration_ui.metric_card("Operationally Ready", stats.ready, "Requires provider and target validation", "badge-check") }}
+                {{ integration_ui.metric_card("Needs Admission", stats.attention, "Source check is not runtime readiness", "shield-alert") }}
             </div>
-            <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-2">
-                <div class="bg-surface-card px-5 py-4 sm:px-6">
-                    <div class="flex items-start gap-3">
-                        {{ integration_ui.palette_icon("git-branch", "brand", size="sm") }}
-                        <div class="min-w-0 space-y-2">
-                            <h3 class="text-sm font-semibold text-content-primary">Source &amp; Execution</h3>
-                            <p class="text-xs leading-5 text-content-secondary">Repository <span class="font-semibold text-content-primary">{{ source_repository }}</span></p>
-                            <p class="break-all font-mono text-xs leading-5 text-content-secondary"
-                               title="{{ source_sha }}">{{ source_sha }}</p>
-                            <p class="text-xs leading-5 text-content-secondary">Allowlisted operation: <span class="font-mono text-content-primary">{{ operation_id }}</span></p>
-                            <p class="text-xs leading-5 text-content-secondary">Dedicated worker queue: <span class="font-mono text-content-primary">{{ worker_queue }}</span></p>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-surface-card px-5 py-4 sm:px-6">
-                    <div class="flex items-start gap-3">
-                        {{ integration_ui.palette_icon("shield-check", "brand", size="sm") }}
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <h3 class="text-sm font-semibold text-content-primary">Governance &amp; Readiness</h3>
-                                {{ info_tip.render("ansible-execution-boundary",
-                                                                "Execution Boundary",
-                                                                "The read-only pilot can only run against the automation worker localhost when explicitly enabled in development/testing. CI evidence is not real-host qualification. Host registration, SSH authority, privileged operations and Kubespray provisioning require separate approval.",
-                                                                placement="right",
-                                                                variant="guide") }}
-                            </div>
-                            <p class="mt-2 text-xs leading-5 text-content-secondary">Provider registration: <span class="font-semibold text-content-primary">{{ provider_readiness }}</span>. No automatic promotion of CI smoke evidence to operational readiness.</p>
-                            <p class="mt-2 text-xs leading-5 text-content-secondary">Kubernetes self-managed provisioning remains Plan-only and requires provider preflight, approved inventory, credentials and real UAT.</p>
-                            <div class="mt-3 flex flex-wrap gap-2">
-                                <a href="{{ url_for('integrations.orchestration') }}"
-                                   class="{{ action_button.classes('secondary') }}">
-                                    <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
-                                    Orchestration
-                                </a>
-                                <a href="{{ url_for('jobs.executions') }}"
-                                   class="{{ action_button.classes('secondary') }}">
-                                    <i data-lucide="list-checks" class="h-4 w-4" aria-hidden="true"></i>
-                                    Jobs &amp; Executions
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            {% include "integrations/orchestration/configuration_automation/providers/ansible/_connection_registry.html" %}
         </section>
-        {% include "integrations/orchestration/configuration_automation/providers/ansible/_execution_registry.html" %}
     </div>
 {% endblock dashboard_content %}
