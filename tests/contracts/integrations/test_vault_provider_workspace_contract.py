@@ -151,3 +151,96 @@ def test_vault_readiness_metadata_follows_existing_integration_lock():
     assert '{% set capability_metadata = [' in validation
     assert "'Profile · Vault AppRole' if is_ready else 'No Committed Validation'" in validation
     assert 'capability_metadata,' in validation
+
+
+def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> None:
+    from jinja2 import Environment
+
+    form = FORM.read_text(encoding='utf-8')
+    source = ROUTES.read_text(encoding='utf-8')
+    shared_actions = (
+        ROOT / 'app/templates/integrations/components/_provider_registration_actions.html'
+    ).read_text(encoding='utf-8')
+    shared_context = (
+        ROOT / 'app/templates/integrations/components/_provider_registration_context.html'
+    ).read_text(encoding='utf-8')
+
+    for component in (
+        'integrations/components/_provider_registration_context.html',
+        'integrations/components/_provider_registration_actions.html',
+        'components/connection_validation_header.html',
+        'components/form_action_bar.html',
+        'components/operational_toggle.html',
+        'integrations/components/_workspace.html',
+    ):
+        assert component in form
+
+    for structure in (
+        'id="vault-connection-form"',
+        'xl:grid-cols-12 xl:items-start',
+        'xl:col-span-8',
+        'xl:col-span-4 xl:sticky',
+        'Connection Identity',
+        'Endpoint & Access',
+        'AppRole Authentication',
+        'Optional Evidence Scope',
+        'Transport &amp; Operational Controls',
+        'connection_validation_header.render(',
+        'operational_toggle.render(',
+        'provider_registration_context.render(',
+        'provider_registration_actions.render(',
+        'form_action_bar.render(',
+        'info_tip.render(',
+    ):
+        assert structure in form
+    assert 'list-inside list-disc' not in form
+    assert 'mt-auto flex flex-wrap gap-2' not in form
+    assert 'components/info_flow.html' in shared_context
+    assert 'components/related_page_card.html' in shared_context
+    assert 'data-kaori-provider-registration-actions' in shared_actions
+
+    # Vault submits synchronously, unlike Harbor's HTMX form test.
+    # Reuse the verified registration footer without changing server routes.
+    assert 'name="action"' in form
+    assert 'value="test"' in form
+    assert 'value="save"' in form
+    assert "connectionVerified: {{ 'true' if proof else 'false' }}" in form
+    assert 'x-ref' in form and 'connectionProof' in form
+    assert 'x-on:input.capture="invalidateConnectionTest($event)"' in form
+    assert 'x-on:change.capture="invalidateConnectionTest($event)"' in form
+    assert "this.$refs.connectionProof.value = ''" in form
+    assert 'x-bind:disabled="!connectionVerified"' in form
+    assert 'disabled\n' in shared_actions
+    assert "form.connection_test_proof(value=proof or \"\"" in form
+    assert 'verified_secret(proof, values, int(current_user.id))' in source
+    assert 'issue_proof(values, int(current_user.id))' in source
+    assert "action == 'test'" in source
+    assert "action == 'save'" in source
+
+    # Credential and optional collection semantics stay explicit in both modes.
+    for field in (
+        'form.name',
+        'form.environment',
+        'form.description',
+        'form.endpoint',
+        'form.namespace',
+        'form.timeout',
+        'form.auth_mount',
+        'form.role_id',
+        'form.secret_id',
+        'form.kv2_mounts',
+        'form.pki_mounts',
+        'form.pki_stored_certs_enabled',
+        'form.enabled',
+    ):
+        assert field in form
+    assert 'autocomplete="new-password"' in form
+    assert 'Leave blank to keep the current encrypted SecretID.' in form
+    assert "if instance else" in form
+    assert 'KV v2' in form and 'PKI' in form
+    assert 'no_store/imported' in form
+    assert 'Full Validation' in form
+    assert 'url_for(\'vault.detail\', instance_id=instance.id)' in form
+    assert 'url_for(\'vault.index\')' in form
+
+    Environment().parse(form)
