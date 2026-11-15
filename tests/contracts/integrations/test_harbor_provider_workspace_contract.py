@@ -129,10 +129,7 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
 
     assert 'Harbor remains authoritative for native Registry state and policies.' in configuration
     assert 'Verify Harbor TLS certificates and trusted server identity.' in configuration
-    assert (
-        'Rerun Full Validation after Harbor upgrades or changes to credentials, permissions or API access.'
-        in validation
-    )
+    assert 'Rerun Full Validation after upgrades or changes to credentials, permissions or API access.' in validation
     assert (
         'Harbor API base URL used for secure, read-only discovery of Registry identity, compatibility, '
         'supported capabilities, and provider evidence.' in configuration
@@ -196,10 +193,7 @@ def test_harbor_detail_uses_shared_provider_domains_with_inventory_lifecycle() -
     assert 'Snapshot Freshness' in inventory
     assert 'Lifecycle Gate' in inventory
     assert 'inventory_status.detail|trim|trim(".")' in inventory
-    assert (
-        'No active KAORI jobs block removal. Review bindings and retained evidence before deletion.'
-        in inventory
-    )
+    assert 'No active KAORI jobs block removal. Review bindings and retained evidence before deletion.' in inventory
     assert 'Detailed artifact metadata and management remain available in Artifact Registry.' in inventory
     assert 'KAORI Operational Consumers' in inventory
     assert 'Bound Observability Sources' in read(
@@ -600,21 +594,14 @@ def test_harbor_accepted_visual_uat_copy_budgets_preserve_evidence_boundaries() 
     lifecycle = read('app/templates/integrations/registry/providers/harbor/partials/_detail_scope.html')
     configuration = read('app/templates/integrations/registry/providers/harbor/partials/_detail_configuration.html')
 
-    evidence = (
-        'Full Validation verifies identity, compatibility, health and capabilities; '
-        'Runtime Refresh checks live health.'
-    )
-    ready_action = (
-        'Rerun Full Validation after Harbor upgrades or changes to credentials, permissions or API access.'
-    )
+    evidence = 'Full Validation: identity, compatibility, health and capabilities. Runtime Refresh: live health.'
+    ready_action = 'Rerun Full Validation after upgrades or changes to credentials, permissions or API access.'
     healthy_action = 'No action needed; refresh runtime after Harbor or infrastructure changes.'
-    clear_guard = (
-        'No active KAORI jobs block removal. Review bindings and retained evidence before deletion.'
-    )
+    clear_guard = 'No active KAORI jobs block removal. Review bindings and retained evidence before deletion.'
 
     # Copy budgets target natural 2 / 2 / 1 / 2 desktop lines, not forced clipping.
-    assert evidence in validation and len(evidence) <= 115
-    assert ready_action in validation and len(ready_action) <= 100
+    assert evidence in validation and len(evidence) <= 100
+    assert ready_action in validation and len(ready_action) <= 95
     assert healthy_action in runtime and len(healthy_action) <= 78
     assert clear_guard in lifecycle and len(clear_guard) <= 95
     for source in (validation, runtime, lifecycle):
