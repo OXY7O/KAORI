@@ -111,7 +111,9 @@
                             <h3 class="min-w-0 break-words text-lg font-semibold leading-7 text-content-primary [overflow-wrap:anywhere]">{{ review_title }}</h3>
                             {{ table_label.status_label(item.severity_label, item.tone, size='compact') }}
                         </div>
-                        <p class="mt-1 max-w-7xl break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ item.summary }}</p>
+                        <p class="mt-1 max-w-7xl break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere] {% if item.detail_header_summary is defined and item.detail_header_summary != item.summary %}xl:whitespace-nowrap{% endif %}"
+                           title="{{ item.summary }}"
+                           data-kaori-recommendation-header-summary>{{ item.detail_header_summary|default(item.summary, true) }}</p>
                         <div class="mt-2 flex flex-wrap items-center gap-1.5">
                             {{ table_label.metadata_label(item.domain_label, 'boxes') }}
                             {{ table_label.metadata_label(item.category_label, 'tag') }}
