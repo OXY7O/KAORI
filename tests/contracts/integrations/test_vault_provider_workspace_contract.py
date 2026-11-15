@@ -629,15 +629,14 @@ def test_vault_view_more_copy_line_budgets_cover_all_capabilities_and_statuses()
     Environment().parse(modal)
     Environment().parse(registry)
 
+
 def test_vault_runtime_history_reuses_canonical_projection_and_scoped_htmx_registry() -> None:
     from jinja2 import Environment
 
     runtime = _partial('_detail_runtime.html')
     history = _partial('_runtime_history.html')
     routes = ROUTES.read_text(encoding='utf-8')
-    shared = (
-        ROOT / 'app/templates/integrations/partials/_runtime_history.html'
-    ).read_text(encoding='utf-8')
+    shared = (ROOT / 'app/templates/integrations/partials/_runtime_history.html').read_text(encoding='utf-8')
 
     assert 'runtime_history_view, runtime_observation_state_view' in routes
     assert 'runtime_history=_vault_runtime_history_view(instance)' in routes
@@ -649,9 +648,7 @@ def test_vault_runtime_history_reuses_canonical_projection_and_scoped_htmx_regis
     assert "@permission_required('integrations.manage')\ndef runtime_history(" in routes
     assert 'instance = _instance_or_404(instance_id)' in routes
     assert 'runtime_history=_vault_runtime_history_view(instance)' in routes
-    assert 'integrations/secrets_management/vault/partials/_runtime_history.html' in history or (
-        'integrations/partials/_runtime_history.html' in history
-    )
+    assert 'integrations/partials/_runtime_history.html' in history
     assert 'runtime_history_route_args' in history
     assert 'runtime_history_detail_endpoint' in history
     assert 'provider_label=' in history
