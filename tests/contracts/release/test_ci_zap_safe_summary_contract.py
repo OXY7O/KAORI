@@ -348,3 +348,21 @@ def test_cumulative_json_member_budget_accepts_exact_limit(tmp_path, monkeypatch
     monkeypatch.setattr(zap, 'MAX_JSON_MEMBERS_TOTAL', 5)
     assert zap.main(['--input', str(report), '--output', str(output), '--source-sha', SHA]) == 0
     assert 'Scanned site entries: **1**.' in output.read_text(encoding='utf-8')
+
+
+def test_invalid_source_sha_clears_stale_evidence_without_reading_report(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Invalid provenance must never leave a prior verified-looking summary."""
+    raw = tmp_path / 'baseline.json'
+    raw.write_text(json.dumps(_report()), encoding='utf-8')
+    output = tmp_path / 'summary.md'
+    output.write_text('stale verified evidence', encoding='utf-8')
+
+    assert main(['--input', str(raw), '--output', str(output), '--source-sha', 'invalid']) == 2
+    assert not output.exists()
+    assert raw.exists()
+    captured = capsys.readouterr()
+    assert 'NOT VERIFIED' in captured.err
+    for sensitive in SENSITIVE:
+        assert sensitive not in captured.out + captured.err
