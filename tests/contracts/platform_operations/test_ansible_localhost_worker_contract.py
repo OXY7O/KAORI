@@ -9,6 +9,7 @@ from app.infrastructure_automation.source import (
     normalize_facts,
     require_local_pilot_enabled,
     verify_localhost_source,
+    verify_read_only_runner_stats,
 )
 
 
@@ -64,7 +65,6 @@ def test_runner_ok_without_facts_is_not_verified() -> None:
 def test_source_revision_is_immutable_sha() -> None:
     assert len(SOURCE_SHA) == 40
 
-from app.infrastructure_automation.source import verify_read_only_runner_stats
 
 
 @pytest.mark.parametrize(
