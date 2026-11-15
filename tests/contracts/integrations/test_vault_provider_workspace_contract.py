@@ -337,5 +337,6 @@ def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> Non
     assert "if action == 'test' or not self.connection_test_proof.data:" in forms
     assert "{% set invalid_focus_field = (form.errors|list|first) if form.errors else '' %}" in form
     assert "autofocus=(invalid_focus_field == 'secret_id')" in form
+    assert "autofocus=(invalid_focus_field == 'auth_mount_mode'), **{'x-model': 'authMountMode'}" in form
 
     Environment().parse(form)
