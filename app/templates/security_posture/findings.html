@@ -5,6 +5,8 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry %}
 {% import "components/info_tip.html" as info_tip %}
+{% import "components/operational_metric_card.html" as metric_card %}
+{% import "components/section_intro.html" as section_intro %}
 {% block title %}Security Findings · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div id="security-posture-findings-workspace" class="space-y-5">
@@ -70,43 +72,39 @@
         {% call section_card.render('Evidence Qualification',
             'Read the source status before interpreting CVE results and workload impact.',
             'shield-check', header_badge=readiness_guide, body_classes='p-0') %}
-            <div class="grid gap-0 md:grid-cols-2" data-security-findings-readiness>
-                <div class="border-b border-outline-subtle px-5 py-3 md:border-b-0 md:border-r">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <span class="text-sm font-semibold text-content-primary">Scanner Evidence</span>
-                        {% if registry_ready %}
-                            {{ table_label.status_indicator_label(posture.scan_status.label, posture.scan_status.tone) }}
-                        {% else %}
-                            {{ table_label.status_indicator_label('Not Collected', 'unknown') }}
-                        {% endif %}
-                    </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">
-                        {% if registry_ready %}
-                            {{ posture.scan_updated_label }} · {{ posture.scanned_artifacts }} / {{ posture.artifacts_total }} usable artifact scans
-                        {% else %}
-                            No authorized committed Registry evidence is available.
-                        {% endif %}
-                    </p>
-                </div>
-                <div class="px-5 py-3">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <span class="text-sm font-semibold text-content-primary">Runtime Correlation</span>
-                        {% if registry_ready %}
-                            {{ table_label.status_indicator_label(posture.runtime_status.status, posture.runtime_status.tone) }}
-                        {% else %}
-                            {{ table_label.status_indicator_label('Not Collected', 'unknown') }}
-                        {% endif %}
-                    </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">
-                        Binding counts represent observed containers only when committed correlation is Ready.
-                    </p>
-                </div>
+            <div class="grid gap-3 p-4 md:grid-cols-3" data-security-findings-readiness>
+                {{ metric_card.render('Scanner Coverage',
+                                    (posture.scanned_artifacts ~ ' / ' ~ posture.artifacts_total) if registry_ready else 'Not Collected',
+                                    'Usable scanner snapshots from the authorized Registry scope.',
+                                    'scan-search',
+                                    source_label='Registry Scanner',
+                                    compact=true,
+                                    status_label=posture.scan_status.label if registry_ready else 'Not Collected',
+                                    status_tone=posture.scan_status.tone if registry_ready else 'unknown') }}
+                {{ metric_card.render('Runtime Correlation',
+                                    ('Ready' if posture.runtime_status.status == 'Ready' else 'Unknown') if registry_ready else 'Not Collected',
+                                    'Committed Kubernetes binding readiness; not an application count.',
+                                    'waypoints',
+                                    source_label='Registry × Kubernetes',
+                                    compact=true,
+                                    status_label=posture.runtime_status.status if registry_ready else 'Not Collected',
+                                    status_tone=posture.runtime_status.tone if registry_ready else 'unknown') }}
+                {{ metric_card.render('Evidence Freshness',
+                                    posture.scan_updated_label if registry_ready and posture.scanned_artifacts else 'Not Collected',
+                                    'Age of qualified scanner observations; freshness window is 24 hours.',
+                                    'clock-3',
+                                    source_label='Registry Scan',
+                                    compact=true) }}
             </div>
             <p role="note"
                class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs leading-5 text-content-secondary">
                 Missing, partial or stale evidence is not proof of no exposure. All results use authorized committed sources.
             </p>
         {% endcall %}
+        <div class="space-y-3" data-security-findings-registry-workspace>
+            {{ section_intro.render('Investigation Workspace',
+                                    'Search qualified CVEs and inspect committed artifact and runtime evidence.',
+                                    'security-findings-registry-intro') }}
         <section id="security-posture-findings-registry"
                  class="{{ table_ui.block_classes() }}"
                  aria-label="Security CVE Finding Registry"
@@ -195,11 +193,15 @@
                             <tr class="{{ table_ui.row_classes() }}">
                                 <td class="{{ table_ui.cell_classes() }}">
                                     {% set severity_tone = 'critical' if row.severity == 'Critical' else ('warning' if row.severity in ['High', 'Medium'] else 'unknown') %}
-                                    <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                                        <span class="text-sm font-semibold text-content-primary">{{ row.cve_id }}</span>
+                                    {% set cve_severity_badge %}
                                         {{ table_label.status_indicator_label(row.severity, severity_tone) }}
+                                    {% endset %}
+                                    <div data-security-cve-identity>
+                                        {{ table_ui.title_cell(row.cve_id,
+                                                            'Latest usable scanner findings',
+                                                            'shield-alert',
+                                                            cve_severity_badge) }}
                                     </div>
-                                    <p class="mt-1 text-xs text-content-muted">Latest usable scanner findings</p>
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }}">
                                     <span class="font-medium tabular-nums text-content-primary">{{ row.finding_count }}</span>
@@ -250,5 +252,6 @@
                                 posture.pagination, {'q': posture.search, 'severity': posture.severity},
                                 [5, 10, 25, 50], resource_label='CVEs', control_name='security-posture-findings') }}
         </section>
+        </div>
     </div>
 {% endblock dashboard_content %}
