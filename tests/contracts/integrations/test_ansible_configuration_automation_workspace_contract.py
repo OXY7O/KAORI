@@ -79,6 +79,16 @@ def test_empty_persisted_workspace_does_not_claim_ready_or_run(monkeypatch) -> N
 
 def test_full_and_htmx_templates_render_with_existing_violet_components(monkeypatch) -> None:
     _stub_job_query(monkeypatch)
+    # The shared app layout expects an authenticated user with the KAORI RBAC contract.
+    # Rendering directly in a request context bypasses route auth, so supply a
+    # synthetic principal only for this template test (no DB user or real login).
+    principal = SimpleNamespace(
+        is_authenticated=True,
+        username='ui-test',
+        role_name='Viewer',
+        has_permission=lambda permission: False,
+    )
+    monkeypatch.setattr('flask_login.utils._get_user', lambda: principal)
     app = create_app('testing')
     with app.test_request_context('/integrations/ansible'):
         context = frontpage.build_ansible_frontpage()
