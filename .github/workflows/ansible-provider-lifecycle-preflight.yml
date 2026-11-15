@@ -24,6 +24,17 @@ jobs:
           python-version: '3.12'
       - name: Existing KAORI QA dependencies
         run: python -m pip install --disable-pip-version-check -r requirements/dev.txt
+      - name: Verify actual public GitHub source commit and reviewed blobs
+        run: |
+          python - <<'PY'
+          from app.integrations.source_control.source_control.providers.github.public_automation_source import (
+              REPOSITORY, SOURCE_CANDIDATE_SHA, verify_public_kubespray_source,
+          )
+          result = verify_public_kubespray_source(REPOSITORY, SOURCE_CANDIDATE_SHA)
+          assert result.checked_files == 5
+          assert result.as_dict()['operation_authorized'] is False
+          print('Real GitHub source readback PASS: immutable commit and five reviewed blobs')
+          PY
       - name: Ruff lint
         run: |
           python -m ruff check \
