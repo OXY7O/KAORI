@@ -31,6 +31,37 @@ display numeric badges only when they are materially actionable and not
 already represented by canonical table result counts; Notification Channels
 tabs intentionally have no count badges.
 
+**Vault Full Validation parity (Human UAT #4836):** the Vault
+`Validation & Capabilities` tab must use the same shared
+`connection_validation_header` (with loading), `_validation_poller`,
+`_provider_job_status`, `_capability_readiness`, and
+`_readiness_explanation` contracts as Harbor and Metrics Source.
+`Run Full Validation` POSTs via HTMX to the **validation workspace
+child**, replacing only that child and polling the canonical
+`JobExecution` task until terminal; JavaScript-disabled POST retains
+PRG fallback. Polling checks the integration type and canonical instance
+identity, while terminal feedback is user/subscriber scoped and
+no-store; the shared tab badge and provider posture update via OOB.
+Never render a full raw task UUID or one-off status paragraph above
+the decision panel. Pending jobs show shared, concise job status and
+disable duplicate mutation actions; async job success never substitutes
+for committed Vault readiness evidence.
+
+The Vault Capability Registry contains **four** API contracts from
+the existing Vault adapter: `health`, `approle`, and `token_lookup`
+are Required; `mount_metadata` is Optional. Three committed required
+APIs can be observed even when an older Vault release is
+`degraded` for compatibility: display honest 3/3 required coverage
+and a separate compatibility warning, not an empty/not-ready API
+score. The optional `sys/mounts` discovery may be unavailable
+because of AppRole permissions; it must not appear as a giant
+`Permission Unavailable` KPI or block core validation. Reuse the
+shared capability table geometry and semantic statuses for API
+contracts and evidence, with the independent KV v2/PKI Inventory
+and Runtime Freshness responsibilities unchanged. When a current
+validation is blocked or not observed, do not display stale prior
+capability records as newly Ready.
+
 **Vault provider detail post-Hero review (Human UAT #4835):** after the
 Vault connection Hero, render the shared **four-tab framed connection
 workspace** directly, matching other provider detail pages. The formerly
