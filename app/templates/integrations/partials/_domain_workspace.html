@@ -112,7 +112,7 @@
                         {% endif %}
                     </div>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">
-                        {{ ('Review GitHub App installations and committed repository evidence.' if integration_types else 'Review Source Control provider requirements and readiness.') if domain.key == 'source_control' else '{{ 'Manage connections and asset bindings.' if domain.key == 'orchestration' else 'Review provider connections and cross-domain consumer bindings for assets in this domain.' }}' }}
+                        {{ ('Review GitHub App installations and committed repository evidence.' if integration_types else 'Review Source Control provider requirements and readiness.') if domain.key == 'source_control' else ('Manage connections and asset bindings.' if domain.key == 'orchestration' else 'Review provider connections and cross-domain consumer bindings for assets in this domain.') }}
                     </p>
                 </div>
             </div>
