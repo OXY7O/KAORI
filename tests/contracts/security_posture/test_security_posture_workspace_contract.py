@@ -595,7 +595,9 @@ def test_security_overview_highlights_max_three_even_when_many_cves_exist() -> N
     assert 'CVE-2022-2003' not in html
     assert 'CVE-2022-2006' not in html
     assert html.count('data-security-finding-highlight') == 4  # container + three CVEs
-    assert '7 CVEs' in html
+    assert '3 Highlights' in html
+    assert 'Distinct CVEs' in html
+    assert '7' in html  # Source-wide aggregate remains independent of the three-row preview.
     assert 'name="per_page"' not in html
     assert 'registry.footer(' not in read('app/templates/security_posture/overview.html')
 
