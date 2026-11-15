@@ -11,6 +11,7 @@ from app import create_app
 from app.common.pagination import build_pagination_window, pagination_payload
 from app.integrations.orchestration.configuration_automation import frontpage, integration_module
 from app.integrations.orchestration.configuration_automation.providers.ansible import provider_implementation
+from app.integrations.orchestration.configuration_automation.providers.ansible.service import source_validation_posture
 from app.integrations.provider_matrix import provider_kind
 from app.integrations.taxonomy import get_capability_definition
 
@@ -103,10 +104,7 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
             DETAIL,
             connection=connection,
             source=connection.metadata_json,
-            source_posture=__import__(
-                'app.integrations.orchestration.configuration_automation.providers.ansible.service',
-                fromlist=['source_validation_posture'],
-            ).source_validation_posture(connection),
+            source_posture=source_validation_posture(connection),
             jobs=[],
             pagination=pagination_payload(build_pagination_window(total_items=0)),
         )
