@@ -95,11 +95,33 @@ def test_choose_validate_save_manage_with_canonical_database(app):
     registration = client.get('/integrations/ansible/connections/new')
     assert registration.status_code == 200
     assert b'Validate Source' in registration.data
+    # The reviewed source appears as a hint, never as a submitted default.
+    for field_name, placeholder in (
+        (b'name', b'Kubespray Development'),
+        (b'repository', REPOSITORY.encode()),
+        (b'revision', SOURCE_CANDIDATE_SHA.encode()),
+    ):
+        field = re.search(rb'<input\b[^>]*\bid="' + field_name + rb'"[^>]*>', registration.data)
+        assert field is not None, field_name
+        assert b'placeholder="' + placeholder + b'"' in field.group()
+        assert not re.search(rb'\bvalue="[^"]+"', field.group()), field_name
+
+    missing_source = client.post(
+        '/integrations/ansible/connections/new',
+        data={**_input(repository='', revision=''), 'action': 'test'},
+    )
+    assert missing_source.status_code == 200
+    assert b'Review required fields' in missing_source.data
+    assert b'id="ansible-proof-field"' in missing_source.data
+
     invalid = client.post(
         '/integrations/ansible/connections/new', data={**_input(repository='evil/secret'), 'action': 'test'}
     )
     assert invalid.status_code == 200
     assert b'outside the reviewed' in invalid.data or b'does not match' in invalid.data
+    rejected_repository = re.search(rb'<input\b[^>]*\bid="repository"[^>]*>', invalid.data)
+    assert rejected_repository is not None
+    assert b'value="evil/secret"' in rejected_repository.group()
 
     checked = client.post('/integrations/ansible/connections/new', data={**_input(), 'action': 'test'})
     assert checked.status_code == 200

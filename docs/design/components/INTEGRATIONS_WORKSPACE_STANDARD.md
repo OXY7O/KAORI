@@ -103,6 +103,37 @@ compatibility; optional sys/mounts permission failure stays Limited,
 and missing current validation stays Not Observed. Runtime Health and
 KV v2/PKI inventory remain independent owners.
 
+**Vault Runtime & History parity (Human UAT #4872):**
+Vault reuses the horizontal `integrations/components/_runtime_decision.html`
+for the current Runtime Decision, with committed score/posture, runtime
+gate, historical validation readiness and observation context; never
+render a raw runtime task UUID. Use the existing provider job-status
+indicator when a refresh worker job is active, without introducing an
+independent queue state or falsely claiming completion.
+
+Immediately below the decision, Vault follows the Kubernetes full-width
+`Runtime Evidence` presentation: one persisted Provider Contract band
+with detected version, observed capability/compatibility profiles and
+observed count; compact diagnostic rows derived only from persisted
+`IntegrationRuntimeObservation`; and an explicit Evidence Boundary.
+Missing observations must show Not Observed, not live provider health
+or stale Full Validation identity. Do not fabricate Kubernetes lifecycle
+bands or per-check evidence for Vault.
+
+The separate local four-column `Committed Runtime History` table is
+retired. Vault must include the existing
+`integrations/partials/_runtime_history.html`, with common
+`runtime_history_view` projection and existing repository pagination.
+The authorized `vault.runtime_history` GET endpoint returns only the
+selected Vault connection's immutable observations to the canonical
+HTMX/normal-GET registry. It supports trigger/health/readiness filters,
+page-size 5/10/25/50, posture strip, six columns, shared View More
+evidence modal, loading/empty states and numeric pagination.
+Runtime observation browsing never causes a live Vault API request;
+Full Validation, provider runtime and Secrets/PKI inventory retain
+independent evidence ownership. The temporary UAT holding branch
+still needs executable QA and Human Acceptance before official admission.
+
 **Vault View More copy-density refinement (Human UAT #4864):**
 Across all four Vault capability View More dialogs, the Capability Decision
 summary, Verification Command helper and Contract Snapshot Identity Boundary

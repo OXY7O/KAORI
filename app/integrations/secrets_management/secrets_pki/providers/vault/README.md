@@ -137,6 +137,32 @@ A historical degraded Vault release can still show 3/3 required APIs,
 while a denied optional `sys/mounts` check remains Limited. Empty filter
 results do not indicate missing provider capabilities.
 
+### Runtime & History workspace parity (#4872)
+
+Vault's Runtime & History follows the approved Kubernetes-style
+horizontal Runtime Decision, full-width Runtime Evidence and shared
+Recent Runtime Observations registry. Current decision facts, provider
+contract/version/capability context and lightweight diagnostic rows
+are projected from the most recent committed Vault runtime observation.
+A missing observation is Not Observed; validation or registration
+does not imply current health. `provider_job_status` replaces raw
+runtime task identifiers, and the existing POST Refresh Runtime operation
+keeps the same worker/CSRF boundary.
+
+The shared registry uses
+`integrations/partials/_runtime_history.html` and the provider-neutral
+`runtime_history_view` projector. The read-only, authorized
+`GET /instances/<id>/runtime/history` fragment is explicitly
+Vault-connection-scoped; Search/filters are not live Vault requests.
+Observation Type, Runtime Health and Validation Readiness filters,
+5/10/25/50 Rows, the posture strip and native View More modal are
+provided by the same shared partial as Kubernetes, including its
+evidence and diagnostic drill-down. Historic observation records
+remain immutable and independent of current Full Validation and
+KV v2/PKI collection. Older `history_page`/`history_per_page`
+GET parameters retain fallback support while canonical links use
+`page`/`per_page`.
+
 ### View More evidence details and safe CLI guidance (#4860)
 
 The existing Vault Capability Registry has a Kubernetes-parity native

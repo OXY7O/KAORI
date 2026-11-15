@@ -26,6 +26,7 @@ from app.models.secrets_pki import (
     SecretVersionObservation,
 )
 from app.models.vault import VaultInstance
+from app.secrets_pki.presentation import build_secrets_pki_operational_summary
 
 
 @pytest.fixture
@@ -225,6 +226,47 @@ def test_admin_readiness_projection_reads_committed_state_without_provider_calls
     disabled = vault_inventory_readiness(instance)
     assert disabled['state'] == 'not_configured'
     assert disabled['observed_secret_count'] is None
+
+
+
+def test_operational_overview_requires_approved_mount_and_committed_kv2_snapshot(store):
+    # The connection is already registered, enabled and validated by the fixture.
+    connected = build_secrets_pki_operational_summary()
+    assert connected['provider_count'] == 1
+    assert connected['approved_mount_count'] == 1
+    assert connected['committed_mount_count'] == 0
+    assert connected['state'] == 'not_collected'
+    assert connected['has_evidence'] is False
+    assert connected['observed_secret_count'] is None
+
+    instance = VaultInstance.query.filter_by(integration_instance_id=store).one()
+    instance.kv2_mounts = []
+    db.session.commit()
+    no_mount = build_secrets_pki_operational_summary()
+    assert no_mount['provider_count'] == 1
+    assert no_mount['approved_mount_count'] == 0
+    assert no_mount['state'] == 'blocked'
+    assert no_mount['has_evidence'] is False
+
+    instance.kv2_mounts = ['secret']
+    db.session.commit()
+    commit_kv2_inventory(store, _snapshot(datetime(2026, 10, 22, tzinfo=UTC)))
+    committed = build_secrets_pki_operational_summary()
+    assert committed['provider_count'] == 1
+    assert committed['approved_mount_count'] == 1
+    assert committed['committed_mount_count'] == 1
+    assert committed['state'] == 'committed'
+    assert committed['has_evidence'] is True
+    assert committed['observed_secret_count'] == 1
+
+    identity = db.session.get(IntegrationInstance, store)
+    identity.enabled = False
+    db.session.commit()
+    ineligible = build_secrets_pki_operational_summary()
+    assert ineligible['provider_count'] == 0
+    assert ineligible['state'] == 'blocked'
+    assert ineligible['has_evidence'] is False
+
 
 
 def test_version_counter_regression_does_not_reassign_existing_secret_identity(store):
