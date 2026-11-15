@@ -14,18 +14,18 @@
     {% set selected_item = selected_items[0] if selected_items else none %}
     {% set has_collection = selected_item and selected_item.committed %}
     {{ section_intro.render('Capacity & Demand',
-                'Review committed repository observations for this installation; engineering demand remains a separate evidence source.') }}
+        'Review committed repository observations for this installation; engineering demand remains a separate evidence source.') }}
     {% call section_card.render('Repository Collection Footprint',
         'Selected installation grants and collection coverage, not storage utilization or delivery throughput.',
         'gauge',
         header_badge=info_tip.render('source-control-capacity-guide',
-            'Source Control Capacity Guide',
-            'Repository counts belong to the selected GitHub App installation only.',
-            items=[
-            'Overlapping GitHub App installation grants cannot be summed into a unique repository total.',
-            'Only successful retained collection evidence can qualify an observed repository count, including zero.',
-            'Actions usage, PR throughput, repository growth and demand forecasts are not available from this collection.'
-            ], placement='right', variant='guide')) %}
+        'Source Control Capacity Guide',
+        'Repository counts belong to the selected GitHub App installation only.',
+        items=[
+        'Overlapping GitHub App installation grants cannot be summed into a unique repository total.',
+        'Only successful retained collection evidence can qualify an observed repository count, including zero.',
+        'Actions usage, PR throughput, repository growth and demand forecasts are not available from this collection.'
+        ], placement='right', variant='guide')) %}
         <div class="grid gap-3 sm:grid-cols-3">
             {{ evidence_tile.freshness('Observed Repositories',
                         selected_item.observed_count if has_collection and selected_item.observed_count is not none else 'Unknown',
@@ -34,11 +34,11 @@
                         'folder-git-2',
                         description='Observed in the selected grant; not a global unique repository count.') }}
             {{ evidence_tile.freshness('Grant Coverage',
-                        selected_item.coverage|replace('_', ' ')|title if has_collection else 'Not Collected',
-                        'Observed' if has_collection else 'Unavailable',
-                        'info' if has_collection else 'unknown',
-                        'scan-search',
-                        description='Explicit repository grant coverage in the retained collection.') }}
+                        selected_item.coverage|replace('_', ' ') |title if has_collection else 'Not Collected',
+            'Observed' if has_collection else 'Unavailable',
+            'info' if has_collection else 'unknown',
+            'scan-search',
+            description='Explicit repository grant coverage in the retained collection.') }}
             {{ evidence_tile.freshness('Engineering Demand',
                         'Not Qualified',
                         'Unavailable',

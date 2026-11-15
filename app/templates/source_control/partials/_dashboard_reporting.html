@@ -15,20 +15,20 @@
     {% set has_collection = selected_item and selected_item.committed %}
     {% set account_observed = selected_item.account.last_observed_at if selected_item and selected_item.account and selected_item.account.last_observed_at else none %}
     {{ section_intro.render('Reporting',
-                'Review selected installation evidence lineage; engineering reports require qualified source data.') }}
+        'Review selected installation evidence lineage; engineering reports require qualified source data.') }}
     {% call section_card.render('Retained Inventory Evidence',
         'Committed repository collection and account identity observations for the selected installation.',
         'file-text',
         action_href=url_for('source_control.repositories', installation_id=selected_installation_id),
         action_label='View Repositories',
         header_badge=info_tip.render('source-control-reporting-guide',
-            'Source Control Reporting Guide',
-            'Repository inventory is an evidence source, not a generated delivery report.',
-            items=[
-            'Retained collection timestamps are not a live provider health assessment.',
-            'A qualified repository count belongs to this installation grant only.',
-            'DORA, release/deployment lineage and formal reports need separate committed collection.'
-            ], placement='right', variant='guide')) %}
+        'Source Control Reporting Guide',
+        'Repository inventory is an evidence source, not a generated delivery report.',
+        items=[
+        'Retained collection timestamps are not a live provider health assessment.',
+        'A qualified repository count belongs to this installation grant only.',
+        'DORA, release/deployment lineage and formal reports need separate committed collection.'
+        ], placement='right', variant='guide')) %}
         <div class="grid gap-3 sm:grid-cols-2">
             {{ evidence_tile.freshness('Inventory Committed',
                         scope.latest_committed_at|user_datetime if scope.latest_committed_at else 'Not Collected',
