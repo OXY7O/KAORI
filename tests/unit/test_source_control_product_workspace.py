@@ -305,7 +305,7 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
     )
     assert all('components/operational_evidence_tile.html' in partial for partial in evidence_partials)
     assert 'components/info_tip.html' not in evidence_partials[1]
-    assert "dashboard_workspace.panel(tab_key, active_dashboard_tab" in overview
+    assert 'dashboard_workspace.panel(tab_key, active_dashboard_tab' in overview
     assert 'hx-trigger="revealed"' in overview
     assert "url_for('source_control.section', section=tab_key" in overview
     assert 'section_loading.section(' in overview
@@ -337,10 +337,12 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
         'capacity',
         'signals',
         'reporting',
+        'reporting_summary',
+        'reporting_guidance',
         'inventory_snapshot',
         'data_freshness',
         'operations',
-        'dashboard_section',
+        'section',
         'repository_portfolio',
         'repository_composition',
         'repository_attention',
@@ -450,8 +452,19 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
         scope=scope, selected_scope=True, selected_installation_id=11, url_for=url
     )
     assert '2026-10-26T00:00:00+00:00' in reporting_selected
+    assert 'Reporting Summary' in reporting_selected
+    assert 'Reporting Workflow' in reporting_selected
+    assert 'Recent Evidence Activity' in reporting_selected
     assert 'Account Observation' in reporting_selected
-    assert 'Engineering Reports' in reporting_selected
+    assert 'Reporting Boundary' in reporting_selected
+    assert 'PR, CI, DORA' in reporting_selected
+    assert 'Scope Bound' in reporting_selected
+    assert 'Governed Flow' in reporting_selected
+    assert 'Manual Review' in reporting_selected
+    assert 'Recurring' in reporting_selected and 'Not Qualified' in reporting_selected
+    assert 'Generated Reports' not in reporting_selected
+    assert 'Report Templates' not in reporting_selected
+    assert '0 Active' not in reporting_selected
     assert '?installation_id=11' in reporting_selected
 
     no_collection = {
@@ -668,6 +681,7 @@ def test_product_overview_installation_scope_filter_restricts_authorized_committ
         ('11', 1, committed_at),
         ('22', 0, None),
     ):
+        initial_read_count = len(qualified_reads)
         with app.test_request_context(
             '/source-control/', query_string={'installation_id': selected_id, 'tab': 'capacity'}
         ):
@@ -688,7 +702,7 @@ def test_product_overview_installation_scope_filter_restricts_authorized_committ
             assert context['installation_pagination']['total_items'] == 1
             assert context['installation_rows'] == [installations[0 if committed else 1]]
             assert context['repository_coverage'] is None
-            assert not qualified_reads
+            assert len(qualified_reads) == initial_read_count
 
             # Capacity analytics are loaded only by the authorized lazy endpoint.
             with app.test_request_context(
@@ -767,7 +781,7 @@ def test_product_overview_selector_table_and_two_line_evidence_contract():
     assert 'table_ui.header_cell_classes(action=true)' in operations
     assert 'table_ui.cell_classes(action=true)' in operations
     assert "item.observed_count if item.observed_count is not none else 'Unknown'" in operations
-    assert "item.collection_status == 'committed'" in overview
+    assert "item.collection_status == 'committed'" in operations
     assert 'account.last_observed_at' in overview
     assert 'Repository observations are shown only for a single' not in inventory
     for description in (
@@ -889,16 +903,17 @@ def test_source_control_overview_compact_text_table_and_scope_gate_contract():
             assert 'source_control/partials/_dashboard_repository_portfolio.html' in partial
             assert 'source_control/partials/_dashboard_repository_composition.html' in partial
             assert 'source_control/partials/_dashboard_repository_attention.html' in partial
+        elif name == 'signals':
+            assert 'alert_summary.render(' in partial
+            assert 'alert_response.render(' in partial
+            assert 'recommendation_cards.render(' in partial
+            assert 'source_available=false' in partial
         else:
-            if name == 'signals':
-                assert 'alert_summary.render(' in partial
-                assert 'alert_response.render(' in partial
-                assert 'recommendation_cards.render(' in partial
-                assert 'source_available=false' in partial
-            else:
-                assert 'evidence_tile.freshness(' in partial
-                assert 'selected_item' in partial
-                assert 'Not Qualified' in partial
+            assert 'peer_content_grid.layout_classes()' in partial
+            assert 'source_control/partials/_dashboard_reporting_summary.html' in partial
+            assert 'source_control/partials/_dashboard_reporting_guidance.html' in partial
+            assert 'section_intro.render(' not in partial
+            assert 'info_tip.render(' not in partial
 
 
 def test_source_control_health_register_reflows_without_horizontal_scrolling():
@@ -947,7 +962,7 @@ def test_source_control_repository_coverage_reuses_dashboard_and_qualified_chart
     attention = (root / 'source_control/partials/_dashboard_repository_attention.html').read_text()
 
     assert "'capacity', 'Repository Coverage', 'folder-git-2'" in overview
-    assert "dashboard_workspace.panel(tab_key" in overview
+    assert 'dashboard_workspace.panel(tab_key' in overview
     assert 'tabs=source_control_tabs' in overview
     assert 'peer_grid.layout_classes()' in capacity
     assert 'peer_content_grid.layout_classes()' in k8s
@@ -1075,7 +1090,7 @@ def test_source_control_lazy_sections_match_shared_dashboard_and_keep_pagination
         assert 'section_loading.section(' in standard
     assert 'hx-sync="this:replace"' in shell
     assert "url_for('source_control.section', section=tab_key" in shell
-    assert "dashboard_workspace.panel(tab_key, active_dashboard_tab" in shell
+    assert 'dashboard_workspace.panel(tab_key, active_dashboard_tab' in shell
     assert 'source-control-dashboard-active-tab' in shell
     assert 'hx-include="#source-control-dashboard-active-tab"' in shell
     assert 'hx-select="#source-control-overview"' in shell
@@ -1089,10 +1104,10 @@ def test_source_control_lazy_sections_match_shared_dashboard_and_keep_pagination
     assert 'source-control-dashboard-section-overview' in operations
     assert "table_registry.footer('source_control.overview'" in operations
     assert 'path_params={}' in operations
-    assert "path_params=none" in footer
-    assert "path_params if path_params is not none" in footer
-    assert "path_params.copy() if path_params is not none" in pagination
-    assert "path_params=path_params" in footer
+    assert 'path_params=none' in footer
+    assert 'path_params if path_params is not none' in footer
+    assert 'path_params.copy() if path_params is not none' in pagination
+    assert 'path_params=path_params' in footer
     assert 'source_control.section' not in footer
     assert 'section_intro.render(' not in shell
     assert 'section_intro.render(' not in section
@@ -1211,7 +1226,7 @@ def test_source_control_signals_reuses_intelligence_and_never_invents_alerts():
         'alert_response.render(',
         'recommendation_cards.render(',
         'source_available=false',
-        "components/states/_blocked_state.html",
+        'components/states/_blocked_state.html',
     ):
         assert required in signals
     assert 'peer_content_grid.layout_classes()' in k8s_signals
@@ -1220,7 +1235,7 @@ def test_source_control_signals_reuses_intelligence_and_never_invents_alerts():
     assert 'info_tip.render(' not in signals
     assert 'recommendation_count ~ ' in recommendation_macro
     assert "if source_available else 'Not Qualified'" in recommendation_macro
-    assert "Recommendations Not Yet Qualified" in recommendation_macro
+    assert 'Recommendations Not Yet Qualified' in recommendation_macro
     assert '0 Active' not in signals
 
     env = Environment(loader=FileSystemLoader(str(root)))
@@ -1269,4 +1284,95 @@ def test_source_control_signals_reuses_intelligence_and_never_invents_alerts():
     assert 'Recommendations Not Yet Qualified' in unavailable
     assert 'Source mapping is not admitted.' in unavailable
     assert '0 Active' not in unavailable
+
+
+def test_source_control_reporting_matches_shared_peer_workflow_and_qualified_evidence():
+    """Source Control reporting is inventory evidence, not synthetic generated report output."""
+    from jinja2 import Environment, FileSystemLoader
+
+    root = Path(__file__).resolve().parents[2] / 'app/templates'
+    reporting = (root / 'source_control/partials/_dashboard_reporting.html').read_text()
+    summary = (root / 'source_control/partials/_dashboard_reporting_summary.html').read_text()
+    guidance = (root / 'source_control/partials/_dashboard_reporting_guidance.html').read_text()
+    shared = (root / 'components/reporting_dashboard_workspace.html').read_text()
+    k8s = (root / 'kubernetes/dashboard/partials/_reporting.html').read_text()
+
+    assert 'peer_content_grid.layout_classes()' in k8s
+    assert 'peer_content_grid.layout_classes()' in reporting
+    assert "column_classes('primary', 'seven-five')" in reporting
+    assert "column_classes('secondary', 'seven-five')" in reporting
+    assert 'source_control/partials/_dashboard_reporting_summary.html' in reporting
+    assert 'source_control/partials/_dashboard_reporting_guidance.html' in reporting
+    assert 'section_intro.render(' not in reporting
+    assert 'info_tip.render(' not in reporting
+    assert 'reporting_workspace.evidence_summary(' in summary
+    assert 'reporting_workspace.guidance(' in guidance
+    assert 'evidence_only=true' in guidance
+    assert 'evidence_only=false' in shared
+    assert 'Generated Reports' not in summary
+    assert 'Report Templates' not in summary
+
+    env = Environment(loader=FileSystemLoader(str(root)))
+    env.filters['user_datetime'] = lambda dt: dt.isoformat() if dt else 'Not Collected'
+    panel = env.get_template('source_control/partials/_dashboard_reporting.html')
+    def url(endpoint, **kwargs):
+        return '/' + endpoint.replace('.', '/') + '?installation_id=' + str(kwargs.get('installation_id', ''))
+    recorded = datetime(2026, 10, 26, tzinfo=UTC)
+    selected = {
+        'account': SimpleNamespace(last_observed_at=recorded),
+        'committed': True,
+        'observed_count': 0,
+    }
+    scope = {'installations': (selected,), 'latest_committed_at': recorded}
+    blocked = panel.render(scope=scope, selected_scope=False, url_for=url)
+    assert 'data-kaori-blocked-state' in blocked
+    assert 'Select Installation' in blocked
+    assert 'Reporting Summary' not in blocked
+
+    qualified_zero = panel.render(
+        scope=scope,
+        selected_scope=True,
+        selected_installation_id=11,
+        selected_installation_name='GitHub Grant 11',
+        url_for=url,
+    )
+    assert 'Reporting Summary' in qualified_zero
+    assert 'Reporting Workflow' in qualified_zero
+    assert 'Evidence Only' in qualified_zero
+    assert 'Repository Evidence' in qualified_zero
+    assert '0</p>' in qualified_zero
+    assert 'Recent Evidence Activity' in qualified_zero
+    assert 'Retained Installation Inventory' in qualified_zero
+    assert 'Report Source Not Qualified' in qualified_zero
+    assert 'Manual Review' in qualified_zero
+    assert 'Recurring' in qualified_zero and 'Not Qualified' in qualified_zero
+    assert 'Generate Report Request' not in qualified_zero
+    assert 'Generated Reports' not in qualified_zero
+    assert '?installation_id=11' in qualified_zero
+
+    no_collection = panel.render(
+        scope={
+            **scope,
+            'installations': ({**selected, 'committed': False, 'observed_count': None},),
+            'latest_committed_at': None,
+        },
+        selected_scope=True,
+        selected_installation_id=11,
+        selected_installation_name='GitHub Grant 11',
+        url_for=url,
+    )
+    assert 'No Retained Inventory Activity' in no_collection
+    assert 'Inventory Not Collected' in no_collection
+    assert 'Repository Evidence' in no_collection
+    assert 'Unknown' in no_collection
+    assert 'Evidence Pending' in no_collection
+    assert 'Not Qualified' in no_collection
+    assert 'Available' not in no_collection
+
+    # Legacy operational dashboards keep their existing qualified reporting workflow.
+    workflow = env.get_template('components/reporting_dashboard_workspace.html').module.guidance
+    standard = workflow('Selected Cluster', 'Committed cluster evidence', 'cluster')
+    assert 'One-time' in standard
+    assert 'Recurring' in standard and 'Schedule' in standard
+    assert 'Report Source Not Qualified' not in standard
 

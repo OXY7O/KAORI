@@ -12,50 +12,38 @@
 {% else %}
     {# No admitted Source Control AlertCase or recommendation collector exists yet.
        Collection counts are inventory facts, never invented security/CI alerts. #}
-    {% set response_steps = [
-        ('scan-search', 'Validate', 'Verify the installation, committed snapshot, and source qualification before interpreting a signal.'),
-        ('list-filter', 'Triage', 'Confirm whether an actual AlertCase exists, then assess its severity, owner, and affected repository.'),
-        ('chart-no-axes-combined', 'Investigate', 'Correlate source references, collection history, artifact and runtime evidence where committed.'),
-        ('shield-check', 'Respond', 'Use only an approved provider-side or KAORI-governed action; GitHub remains execution authority.'),
-        ('circle-check-big', 'Verify', 'Confirm the accepted change and re-collect authoritative evidence for the same installation.'),
-        ('clipboard-check', 'Record', 'Retain evidence, operator decisions, and follow-up in the owning Intelligence workflow.')
-    ] %}
+    {% set response_steps = [('scan-search', 'Validate', 'Verify the installation, committed snapshot, and source qualification before interpreting a signal.'), ('list-filter', 'Triage', 'Confirm whether an actual AlertCase exists, then assess its severity, owner, and affected repository.'), ('chart-no-axes-combined', 'Investigate', 'Correlate source references, collection history, artifact and runtime evidence where committed.'), ('shield-check', 'Respond', 'Use only an approved provider-side or KAORI-governed action; GitHub remains execution authority.'), ('circle-check-big', 'Verify', 'Confirm the accepted change and re-collect authoritative evidence for the same installation.'), ('clipboard-check', 'Record', 'Retain evidence, operator decisions, and follow-up in the owning Intelligence workflow.')] %}
     <div class="{{ peer_grid.layout_classes() }}">
         <div class="{{ peer_grid.column_classes('primary') }}">
-            {{ alert_summary.render(
-                description='Installation-scoped committed KAORI AlertCase posture; repository counts are not alerts.',
-                section_id='source-control-dashboard-alerts-summary',
-                action_href=url_for('alert_intelligence.index'),
-                critical=0,
-                warning=0,
-                info=0,
-                rows=[],
-                source_available=false,
-                unavailable_title='Source Control Alerts Not Yet Qualified',
-                unavailable_description='No committed installation-scoped Source Control AlertCase source is admitted. Inventory collection does not establish active alerts or a healthy zero.',
-                insight_unavailable='Alert Intelligence is authoritative; source inventory cannot infer incident severity.',
-                status_unavailable_label='Source Control Alert Evidence Unavailable'
+            {{ alert_summary.render(description='Installation-scoped committed KAORI AlertCase posture; repository counts are not alerts.',
+                        section_id='source-control-dashboard-alerts-summary',
+                        action_href=url_for('alert_intelligence.index') ,
+            critical=0,
+            warning=0,
+            info=0,
+            rows=[],
+            source_available=false,
+            unavailable_title='Source Control Alerts Not Yet Qualified',
+            unavailable_description='No committed installation-scoped Source Control AlertCase source is admitted. Inventory collection does not establish active alerts or a healthy zero.',
+            insight_unavailable='Alert Intelligence is authoritative; source inventory cannot infer incident severity.',
+            status_unavailable_label='Source Control Alert Evidence Unavailable'
             ) }}
         </div>
         <div class="{{ peer_grid.column_classes('secondary') }}">
-            {{ alert_response.render(
-                'Source-qualified severity interpretation and controlled response guidance, not active alert evidence.',
-                response_steps,
-                'Source Control Controlled Response Flow',
-                'If a confirmed critical case emerges, establish an owner and prioritize impact and security triage.',
-                'If a confirmed warning emerges, assess repository impact and collect supporting provider evidence.',
-                'If a qualified informational signal emerges, verify relevance before creating a response action.',
-                source_description='Source Control AlertCase mapping is not yet qualified. Follow this process only when a real Intelligence case is committed.'
-            ) }}
+            {{ alert_response.render('Source-qualified severity interpretation and controlled response guidance, not active alert evidence.',
+                        response_steps,
+                        'Source Control Controlled Response Flow',
+                        'If a confirmed critical case emerges, establish an owner and prioritize impact and security triage.',
+                        'If a confirmed warning emerges, assess repository impact and collect supporting provider evidence.',
+                        'If a qualified informational signal emerges, verify relevance before creating a response action.',
+                        source_description='Source Control AlertCase mapping is not yet qualified. Follow this process only when a real Intelligence case is committed.') }}
         </div>
     </div>
-    {{ recommendation_cards.render(
-        [],
+    {{ recommendation_cards.render([],
         'Installation-scoped recommendations are owned by central Intelligence.',
         'source-control-dashboard-recommended-actions',
         'No catalog-backed recommendations match the selected installation.',
         source_icon='database-zap',
         source_available=false,
-        unavailable_description='No admitted Source Control recommendation evidence or asset correlation is available for this installation. Do not infer a healthy zero or create actions from repository counts.'
-    ) }}
+        unavailable_description='No admitted Source Control recommendation evidence or asset correlation is available for this installation. Do not infer a healthy zero or create actions from repository counts.') }}
 {% endif %}

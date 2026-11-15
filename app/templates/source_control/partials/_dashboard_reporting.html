@@ -1,12 +1,9 @@
-{% import "components/operational_section_card.html" as section_card %}
-{% import "components/operational_evidence_tile.html" as evidence_tile %}
-{% import "components/section_intro.html" as section_intro %}
-{% import "components/info_tip.html" as info_tip %}
+{% import "components/peer_content_grid.html" as peer_content_grid %}
 {% if not selected_scope %}
     {% set blocked_state_icon = "file-text" %}
     {% set blocked_state_label = "Installation Required" %}
     {% set blocked_state_title = "Select Installation" %}
-    {% set blocked_state_description = "Select an authorized GitHub App installation to review its retained inventory lineage and reporting evidence." %}
+    {% set blocked_state_description = "Select an authorized GitHub App installation to review committed reporting evidence and its qualification boundaries." %}
     {% set blocked_state_tone = "warning" %}
     {% include 'components/states/_blocked_state.html' %}
 {% else %}
@@ -14,46 +11,12 @@
     {% set selected_item = selected_items[0] if selected_items else none %}
     {% set has_collection = selected_item and selected_item.committed %}
     {% set account_observed = selected_item.account.last_observed_at if selected_item and selected_item.account and selected_item.account.last_observed_at else none %}
-    {{ section_intro.render('Reporting',
-        'Review selected installation evidence lineage; engineering reports require qualified source data.') }}
-    {% call section_card.render('Retained Inventory Evidence',
-        'Committed repository collection and account identity observations for the selected installation.',
-        'file-text',
-        action_href=url_for('source_control.repositories', installation_id=selected_installation_id),
-        action_label='View Repositories',
-        header_badge=info_tip.render('source-control-reporting-guide',
-        'Source Control Reporting Guide',
-        'Repository inventory is an evidence source, not a generated delivery report.',
-        items=[
-        'Retained collection timestamps are not a live provider health assessment.',
-        'A qualified repository count belongs to this installation grant only.',
-        'DORA, release/deployment lineage and formal reports need separate committed collection.'
-        ], placement='right', variant='guide')) %}
-        <div class="grid gap-3 sm:grid-cols-2">
-            {{ evidence_tile.freshness('Inventory Committed',
-                        scope.latest_committed_at|user_datetime if scope.latest_committed_at else 'Not Collected',
-                        'Retained' if has_collection else 'Unavailable',
-                        'info' if has_collection else 'unknown',
-                        'clock-3',
-                        description='Retained collection timestamp; not a live GitHub health check.') }}
-            {{ evidence_tile.freshness('Account Observation',
-                        account_observed|user_datetime if account_observed else 'Not Observed',
-                        'Observed' if account_observed else 'Unavailable',
-                        'info' if account_observed else 'unknown',
-                        'users',
-                        description='Latest observed identity; current authorization is not verified.') }}
-            {{ evidence_tile.freshness('Repository Evidence',
-                        selected_item.observed_count if has_collection and selected_item.observed_count is not none else 'Unknown',
-                        'Committed' if has_collection else 'Unavailable',
-                        'info' if has_collection else 'unknown',
-                        'folder-git-2',
-                        description='Observed repository count within this installation grant.') }}
-            {{ evidence_tile.freshness('Engineering Reports',
-                        'Not Qualified',
-                        'Unavailable',
-                        'unknown',
-                        'file-warning',
-                        description='PR, CI, DORA and deployment lineage have no qualified report evidence.') }}
+    <div class="{{ peer_content_grid.layout_classes() }}">
+        <div class="{{ peer_content_grid.column_classes('primary', 'seven-five') }}">
+            {% include "source_control/partials/_dashboard_reporting_summary.html" %}
         </div>
-    {% endcall %}
+        <div class="{{ peer_content_grid.column_classes('secondary', 'seven-five') }}">
+            {% include "source_control/partials/_dashboard_reporting_guidance.html" %}
+        </div>
+    </div>
 {% endif %}

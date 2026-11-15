@@ -117,11 +117,9 @@
                                  hx-swap="outerHTML"
                                  hx-sync="this:replace"
                                  data-source-control-lazy-section="{{ tab_key }}">
-                                {{ section_loading.section(
-                                    tab_label,
-                                    'Preparing committed Source Control dashboard evidence.',
-                                    tab_icon
-                                ) }}
+                                {{ section_loading.section(tab_label,
+                                                                'Preparing committed Source Control dashboard evidence.',
+                                                                tab_icon) }}
                             </div>
                         {% endif %}
                     {% endcall %}

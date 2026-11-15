@@ -1,0 +1,15 @@
+{% import "components/reporting_dashboard_workspace.html" as reporting_workspace %}
+{% set reporting_metrics = [
+    ('Inventory Committed', scope.latest_committed_at|user_datetime if has_collection and scope.latest_committed_at else 'Not Collected', 'Retained' if has_collection else 'Unavailable', 'info' if has_collection else 'unknown', 'database-zap', 'Committed KAORI snapshot, not a generated report.'),
+    ('Account Observation', account_observed|user_datetime if account_observed else 'Not Observed', 'Observed' if account_observed else 'Unavailable', 'info' if account_observed else 'unknown', 'users', 'Observed account identity; current provider access not verified.'),
+    ('Repository Evidence', selected_item.observed_count if has_collection and selected_item.observed_count is not none else 'Unknown', 'Committed' if has_collection and selected_item.observed_count is not none else 'Unavailable', 'info' if has_collection and selected_item.observed_count is not none else 'unknown', 'folder-git-2', 'Collector count scoped to the selected installation.')
+] %}
+{{ reporting_workspace.evidence_summary(
+    reporting_metrics,
+    'Retained Installation Inventory',
+    'A collection is committed in KAORI; this is not a generated engineering report.',
+    scope.latest_committed_at|user_datetime if scope.latest_committed_at else 'Not Collected',
+    url_for('source_control.repositories', installation_id=selected_installation_id),
+    evidence_available=has_collection,
+    boundary_description='PR, CI, DORA, report templates, schedules and deployment lineage require separately qualified evidence. No report count or delivery status is inferred from repository inventory.'
+) }}

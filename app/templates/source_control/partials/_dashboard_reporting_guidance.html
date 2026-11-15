@@ -1,0 +1,8 @@
+{% import "components/reporting_dashboard_workspace.html" as reporting_workspace %}
+{{ reporting_workspace.guidance(
+    selected_installation_name or 'Selected GitHub App Installation',
+    'Committed inventory evidence' if has_collection else 'Inventory Not Collected',
+    'installation grant or observed repository',
+    evidence_only=true,
+    evidence_available=has_collection
+) }}
