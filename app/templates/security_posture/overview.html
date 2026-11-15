@@ -71,13 +71,13 @@
                         <span class="flex flex-wrap items-center gap-2">
                             {{ scan_status_badge }}
                             {{ info_tip.render('security-snapshot-freshness-guide', 'Scanner Evidence Freshness Guide',
-                                'Stale describes the age of committed scanner evidence, not job health.',
-                                items=[
-                                    'Security uses a 24-hour freshness window for the oldest qualified artifact scan in scope.',
-                                    'A new Harbor scan completion timestamp is evidence of a new scan even if the CVE count is unchanged.',
-                                    'Sync Security Evidence must collect the new provider report before KAORI freshness changes.',
-                                    'Refresh View reads committed state only; runtime correlation Ready is independent.'
-                                ], variant='guide', placement='left') }}
+                                                        'Stale describes the age of committed scanner evidence, not job health.',
+                                                        items=[
+                                                        'Security uses a 24-hour freshness window for the oldest qualified artifact scan in scope.',
+                                                        'A new Harbor scan completion timestamp is evidence of a new scan even if the CVE count is unchanged.',
+                                                        'Sync Security Evidence must collect the new provider report before KAORI freshness changes.',
+                                                        'Refresh View reads committed state only; runtime correlation Ready is independent.'
+                                                        ], variant='guide', placement='left') }}
                         </span>
                     {% endset %}
                     {% set runtime_status_badge = table_label.status_indicator_label(posture.runtime_status.status, posture.runtime_status.tone) %}
@@ -130,7 +130,6 @@
                                                     <span class="text-3xl font-semibold tabular-nums text-content-primary">{{ total_cves }}</span>
                                                     <span class="pb-1 text-xs text-content-muted">Distinct CVEs observed</span>
                                                 </div>
-                                                
                                             </div>
                                             <div class="mt-4 space-y-3">
                                                 {% for severity_row in severity_rows %}
@@ -203,7 +202,6 @@
                                         <div class="flex flex-wrap items-center justify-between gap-2">
                                             <h3 id="security-evidence-confidence-heading"
                                                 class="text-sm font-semibold text-content-primary">Evidence Confidence</h3>
-                                            
                                         </div>
                                         {% if posture.artifacts_total > 0 %}
                                             {% set scan_coverage = (posture.scanned_artifacts * 100 / posture.artifacts_total)|round|int %}
@@ -310,7 +308,6 @@
                                                 {% endfor %}
                                             </select>
                                         </label>
-
                                     {% endcall %}
                                     <div class="overflow-x-auto" data-security-posture-cve-table>
                                         <table class="{{ table_ui.table_classes('min-w-[48rem]') }}">
@@ -406,33 +403,33 @@
                                                                         control_name='security-posture-overview-cve') }}
                                 </section>
                             {% endcall %}
-
                             {% call dashboard_workspace.panel('capacity', active_tab, 'security-posture-overview') %}
                                 {% set assets_guide %}
                                     {{ info_tip.render('security-assets-guide', 'Assets & Runtime Impact Guide',
-                                        'Registry and Kubernetes observations have separate sources of authority.',
-                                        items=[
-                                            'Affected digests count qualified Registry artifacts, not applications.',
-                                            'Runtime correlation readiness is independent of scanner freshness.',
-                                            'Unknown correlation never proves there are no affected applications.',
-                                            'Neither source infers Service/Team or host ownership.'
-                                        ], variant='guide', placement='left') }}
+                                                                        'Registry and Kubernetes observations have separate sources of authority.',
+                                                                        items=[
+                                                                        'Affected digests count qualified Registry artifacts, not applications.',
+                                                                        'Runtime correlation readiness is independent of scanner freshness.',
+                                                                        'Unknown correlation never proves there are no affected applications.',
+                                                                        'Neither source infers Service/Team or host ownership.'
+                                                                        ], variant='guide', placement='left') }}
                                 {% endset %}
                                 {% call section_card.render('Assets & Runtime Impact',
                                     'Source-qualified affected digests and Kubernetes correlation readiness.',
                                     'waypoints', header_badge=assets_guide, body_classes='p-0') %}
-                                    <div class="grid gap-3 p-4 md:grid-cols-2" data-security-assets-impact-grid>
+                                    <div class="grid gap-3 p-4 md:grid-cols-2"
+                                         data-security-assets-impact-grid>
                                         <article class="flex h-full min-w-0 flex-col rounded-lg border border-outline-subtle bg-surface-subtle p-4">
                                             <div class="flex items-center gap-2">
-                                                <i data-lucide="package-search" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                                <i data-lucide="package-search"
+                                                   class="h-4 w-4 text-kaori-primary"
+                                                   aria-hidden="true"></i>
                                                 <h3 class="text-sm font-semibold text-content-primary">Affected Artifact Digests</h3>
                                             </div>
                                             <p class="mt-3 text-3xl font-semibold tabular-nums text-content-primary">
                                                 {{ posture.affected_artifacts if posture.scanned_artifacts else 'Not Collected' }}
                                             </p>
-                                            <p class="mt-1 text-xs leading-5 text-content-secondary">
-                                                Distinct digests in qualified committed Registry scans.
-                                            </p>
+                                            <p class="mt-1 text-xs leading-5 text-content-secondary">Distinct digests in qualified committed Registry scans.</p>
                                             <div class="mt-auto border-t border-outline-subtle pt-3">
                                                 <a href="{{ url_for('artifact_registry.security') }}"
                                                    class="text-xs font-semibold text-kaori-primary hover:underline">Open Registry Security</a>
@@ -441,7 +438,9 @@
                                         <article class="flex h-full min-w-0 flex-col rounded-lg border border-outline-subtle bg-surface-subtle p-4">
                                             <div class="flex flex-wrap items-center justify-between gap-2">
                                                 <div class="flex items-center gap-2">
-                                                    <i data-lucide="waypoints" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                                    <i data-lucide="waypoints"
+                                                       class="h-4 w-4 text-kaori-primary"
+                                                       aria-hidden="true"></i>
                                                     <h3 class="text-sm font-semibold text-content-primary">Runtime Binding Readiness</h3>
                                                 </div>
                                                 {{ runtime_status_badge }}
@@ -468,13 +467,13 @@
                             {% call dashboard_workspace.panel('signals', active_tab, 'security-posture-overview') %}
                                 {% set findings_guide %}
                                     {{ info_tip.render('security-investigation-guide', 'CVE Investigation Guide',
-                                        'Use qualified CVEs, source evidence and binding confidence for triage.',
-                                        items=[
-                                            'Distinct CVE identifiers are not the number of individual scanner findings.',
-                                            'Findings owns CVE search, severity filtering and exact-CVE impact evidence.',
-                                            'Binding counts require Ready committed runtime correlation.',
-                                            'Remediation actions must use their governed owning workflows.'
-                                        ], variant='guide', placement='left') }}
+                                                                        'Use qualified CVEs, source evidence and binding confidence for triage.',
+                                                                        items=[
+                                                                        'Distinct CVE identifiers are not the number of individual scanner findings.',
+                                                                        'Findings owns CVE search, severity filtering and exact-CVE impact evidence.',
+                                                                        'Binding counts require Ready committed runtime correlation.',
+                                                                        'Remediation actions must use their governed owning workflows.'
+                                                                        ], variant='guide', placement='left') }}
                                 {% endset %}
                                 {% call section_card.render('CVE Investigation Scope',
                                     'Prioritize observed CVEs and hand off to source-owned investigation.',
@@ -483,7 +482,8 @@
                                     {% set binding_ready = posture.runtime_status.status == 'Ready' and posture.scanned_artifacts %}
                                     <div class="grid gap-4 p-4 lg:grid-cols-3"
                                          data-security-investigation-layout>
-                                        <section class="min-w-0 lg:col-span-2" aria-label="Observed CVE investigation summary">
+                                        <section class="min-w-0 lg:col-span-2"
+                                                 aria-label="Observed CVE investigation summary">
                                             <h3 class="text-sm font-semibold text-content-primary">Observed Investigation Scope</h3>
                                             <div class="mt-3 grid gap-2 sm:grid-cols-3">
                                                 <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
@@ -539,21 +539,24 @@
                             {% call dashboard_workspace.panel('reporting', active_tab, 'security-posture-overview') %}
                                 {% set sources_guide %}
                                     {{ info_tip.render('security-source-guide', 'Evidence & Source Ownership Guide',
-                                        'Source providers remain authoritative; KAORI reads committed evidence.',
-                                        items=[
-                                            'Artifact Registry owns scanner CVEs, digests, scan generations and freshness.',
-                                            'Kubernetes correlation owns committed runtime bindings and confidence.',
-                                            'Neither source confirms organization-wide host, network or Service/Team coverage.',
-                                            'Canonical Reports owns publication, not this read-only dashboard.'
-                                        ], variant='guide', placement='left') }}
+                                                                        'Source providers remain authoritative; KAORI reads committed evidence.',
+                                                                        items=[
+                                                                        'Artifact Registry owns scanner CVEs, digests, scan generations and freshness.',
+                                                                        'Kubernetes correlation owns committed runtime bindings and confidence.',
+                                                                        'Neither source confirms organization-wide host, network or Service/Team coverage.',
+                                                                        'Canonical Reports owns publication, not this read-only dashboard.'
+                                                                        ], variant='guide', placement='left') }}
                                 {% endset %}
                                 {% call section_card.render('Evidence & Source Ownership',
                                     'Scanner and runtime evidence remain authoritative in their originating domains.',
                                     'database', header_badge=sources_guide, body_classes='p-0') %}
-                                    <div class="grid gap-3 p-4 md:grid-cols-2" data-security-source-authorities>
+                                    <div class="grid gap-3 p-4 md:grid-cols-2"
+                                         data-security-source-authorities>
                                         <article class="flex min-w-0 flex-col rounded-lg border border-outline-subtle bg-surface-subtle p-4">
                                             <div class="flex items-center gap-2">
-                                                <i data-lucide="database" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                                <i data-lucide="database"
+                                                   class="h-4 w-4 text-kaori-primary"
+                                                   aria-hidden="true"></i>
                                                 <h3 class="text-sm font-semibold text-content-primary">Artifact Registry Scanners</h3>
                                             </div>
                                             <p class="mt-2 text-xs leading-5 text-content-secondary">
@@ -566,7 +569,9 @@
                                         </article>
                                         <article class="flex min-w-0 flex-col rounded-lg border border-outline-subtle bg-surface-subtle p-4">
                                             <div class="flex items-center gap-2">
-                                                <i data-lucide="waypoints" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                                <i data-lucide="waypoints"
+                                                   class="h-4 w-4 text-kaori-primary"
+                                                   aria-hidden="true"></i>
                                                 <h3 class="text-sm font-semibold text-content-primary">Kubernetes Runtime</h3>
                                             </div>
                                             <p class="mt-2 text-xs leading-5 text-content-secondary">
