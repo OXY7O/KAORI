@@ -39,7 +39,8 @@ jobs:
             app/integrations/orchestration/infrastructure_automation \
             tests/contracts/platform_operations/test_ansible_localhost_worker_contract.py \
             tests/contracts/integrations/test_ansible_provider_contract.py \
-            tests/integrations/test_ansible_provider_ui_postgres.py
+            tests/integrations/test_ansible_provider_ui_postgres.py \
+            tests/integrations/test_ansible_provider_ui_dispatch_ci.py
       - name: Ruff format
         run: |
           python -m ruff format --check \
@@ -235,6 +236,10 @@ jobs:
               assert count == 1, f'Unauthorized dispatch created additional jobs: {count}'
           print('Negative dispatch guards PASS: no extra PostgreSQL JobExecution')
           PY
+      - name: Verify real authenticated UI dispatch and committed evidence
+        run: |
+          python -m pytest -q -s -p no:cacheprovider \
+            tests/integrations/test_ansible_provider_ui_dispatch_ci.py
       - name: Show sanitized diagnostic on failure
         if: failure()
         run: |
