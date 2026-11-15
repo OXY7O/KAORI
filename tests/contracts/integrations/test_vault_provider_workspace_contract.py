@@ -567,3 +567,54 @@ def test_vault_capability_modal_parity_with_kubernetes_without_invented_checks()
     Environment().parse(registry)
     Environment().parse(modal)
 
+def test_vault_view_more_copy_line_budgets_cover_all_capabilities_and_statuses() -> None:
+    import re
+
+    from jinja2 import Environment
+
+    modal = _partial('_capability_detail_content.html')
+    registry = _partial('_capability_registry.html')
+
+    # All four Vault API rows use this one partial and keep semantic status
+    # distinctions. No individual capability gets an independent modal layout.
+    assert '{% for result in page_rows %}' in registry
+    assert 'partials/_capability_detail_content.html' in registry
+    for key in ("'health'", "'approle'", "'token_lookup'", "'mount_metadata'"):
+        assert key in registry
+    for state in ('result.observed', 'result.limited', 'result.gap'):
+        assert state in modal
+    assert 'Capability Not Observed' in modal
+
+    # Desktop line budgets are backed by concise provider-aware copy rather
+    # than truncating meaningful operational facts. Mobile retains wrapping.
+    for name, expected_count, max_chars in (
+        ('decision_message', 4, 80),
+        ('auth_boundary', 4, 24),
+        ('auth_description', 4, 64),
+        ('observation_description', 4, 64),
+    ):
+        variants = re.findall(r"\\{% set " + name + r" = '([^']*)' %\\}", modal)
+        assert len(variants) == expected_count, name
+        assert max(map(len, variants)) <= max_chars, name
+
+    assert 'lg:line-clamp-1" title="{{ decision_message }}"' in modal
+    assert "{% if label == 'Identity Boundary' %}lg:line-clamp-1{% endif %}" in modal
+    assert 'lg:line-clamp-2" title="{{ description }}"' in modal
+    assert "('03', 'Committed Observation', result.status_label, observation_description)" in modal
+    assert "('03', 'Committed Observation', result.status_label, decision_message)" not in modal
+
+    contract_copy = re.search(r"\\('01', 'API Contract', row.contract, '([^']*)'\\)", modal)
+    assert contract_copy is not None
+    assert len(contract_copy.group(1)) <= 64
+
+    verification_headers = re.findall(
+        r'<p class="mt-1 text-xs leading-5 text-content-secondary lg:line-clamp-1">([^<]+)</p>',
+        modal,
+    )
+    assert len(verification_headers) == 2  # CLI example and AppRole safe fallback
+    assert all(len(line) <= 64 for line in verification_headers)
+    assert 'No copyable login command or SecretID is provided.' in modal
+
+    Environment().parse(modal)
+    Environment().parse(registry)
+
