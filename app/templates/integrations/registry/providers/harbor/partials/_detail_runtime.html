@@ -37,7 +37,7 @@
 {% elif runtime_attention %}
     {% set runtime_next_action = "Review the active runtime finding, remediate it, then refresh persisted runtime evidence." %}
 {% else %}
-    {% set runtime_next_action = "No immediate remediation is required. Refresh runtime evidence after Harbor or infrastructure changes." %}
+    {% set runtime_next_action = "No action needed; refresh runtime after Harbor or infrastructure changes." %}
 {% endif %}
 {% set observation_rows = [
     ("Observed", runtime_state.observed_at_display),
