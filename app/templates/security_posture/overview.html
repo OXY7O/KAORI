@@ -117,7 +117,7 @@
                                                     <span class="text-3xl font-semibold tabular-nums text-content-primary">{{ total_cves }}</span>
                                                     <span class="pb-1 text-xs text-content-muted">Distinct CVEs observed</span>
                                                 </div>
-                                                <span class="text-xs text-content-muted">{{ posture.scan_updated_label }}</span>
+                                                
                                             </div>
                                             <div class="mt-4 space-y-3">
                                                 {% for severity_row in severity_rows %}
@@ -468,9 +468,9 @@
                                     'shield-alert', header_badge=findings_guide, body_classes='p-0') %}
                                     {% set unique_cves = posture.severity_distribution|sum(attribute='count') %}
                                     {% set binding_ready = posture.runtime_status.status == 'Ready' and posture.scanned_artifacts %}
-                                    <div class="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_17rem]"
+                                    <div class="grid gap-4 p-4 lg:grid-cols-3"
                                          data-security-investigation-layout>
-                                        <section class="min-w-0" aria-label="Observed CVE investigation summary">
+                                        <section class="min-w-0 lg:col-span-2" aria-label="Observed CVE investigation summary">
                                             <h3 class="text-sm font-semibold text-content-primary">Observed Investigation Scope</h3>
                                             <div class="mt-3 grid gap-2 sm:grid-cols-3">
                                                 <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
