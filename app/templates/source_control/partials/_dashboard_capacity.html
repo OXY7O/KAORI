@@ -1,41 +1,50 @@
 {% import "components/operational_section_card.html" as section_card %}
 {% import "components/operational_evidence_tile.html" as evidence_tile %}
-{% import "components/peer_content_grid.html" as peer_grid %}
 {% import "components/section_intro.html" as section_intro %}
 {% import "components/info_tip.html" as info_tip %}
-{% set bounded_installations = scope.installation_count ~ ('+' if scope.has_more else '') %}
-{{ section_intro.render('Capacity & Demand',
-'Collection scope is observed; engineering throughput and repository growth require dedicated source evidence.') }}
-{% call section_card.render('Collection Capacity Evidence',
-    'Separate the bounded authorized installation scope from unavailable usage, growth and delivery measurements.',
-    'gauge',
-    header_badge=info_tip.render('source-control-capacity-guide',
-    'Source Control Capacity Guide',
-    'Installation grants are not a time-series demand or throughput measure.',
-    items=[
-    'Counts refer only to authorized GitHub.com App installations visible to this UAT session.',
-    'Overlapping repository grants are not summed into a global repository total.',
-    'Storage growth, Actions usage, PR throughput and capacity forecasts are not derived from installation inventory.'
-    ], placement='right', variant='guide')) %}
-    <div class="{{ peer_grid.layout_classes() }}">
-        <div class="{{ peer_grid.column_classes('primary') }}">
-            {{ evidence_tile.freshness('Visible Installation Grants',
-                        bounded_installations ~ (' authorized installation scope' if scope.installation_count == 1 and not scope.has_more else ' authorized installation scopes') ,
-            'Bounded' if scope.has_more else 'Observed',
-            'warning' if scope.has_more else 'info',
-            'git-branch',
-            description='Explicit GitHub App grants in the active local UAT scope. A 50-installation bound is disclosed rather than presenting an organization-wide total.') }}
-        </div>
-        <div class="{{ peer_grid.column_classes('secondary') }}">
-            {{ evidence_tile.freshness('Engineering Demand & Forecast',
+{% if not selected_scope %}
+    {% set blocked_state_icon = "gauge" %}
+    {% set blocked_state_label = "Installation Required" %}
+    {% set blocked_state_title = "Select Installation" %}
+    {% set blocked_state_description = "Select an authorized GitHub App installation to review its committed repository footprint and source-qualified demand evidence." %}
+    {% set blocked_state_tone = "warning" %}
+    {% include 'components/states/_blocked_state.html' %}
+{% else %}
+    {% set selected_items = scope.installations|default([], true) %}
+    {% set selected_item = selected_items[0] if selected_items else none %}
+    {% set has_collection = selected_item and selected_item.committed %}
+    {{ section_intro.render('Capacity & Demand',
+                'Review committed repository observations for this installation; engineering demand remains a separate evidence source.') }}
+    {% call section_card.render('Repository Collection Footprint',
+        'Selected installation grants and collection coverage, not storage utilization or delivery throughput.',
+        'gauge',
+        header_badge=info_tip.render('source-control-capacity-guide',
+            'Source Control Capacity Guide',
+            'Repository counts belong to the selected GitHub App installation only.',
+            items=[
+            'Overlapping GitHub App installation grants cannot be summed into a unique repository total.',
+            'Only successful retained collection evidence can qualify an observed repository count, including zero.',
+            'Actions usage, PR throughput, repository growth and demand forecasts are not available from this collection.'
+            ], placement='right', variant='guide')) %}
+        <div class="grid gap-3 sm:grid-cols-3">
+            {{ evidence_tile.freshness('Observed Repositories',
+                        selected_item.observed_count if has_collection and selected_item.observed_count is not none else 'Unknown',
+                        'Committed' if has_collection else 'Unavailable',
+                        'info' if has_collection else 'unknown',
+                        'folder-git-2',
+                        description='Observed in the selected grant; not a global unique repository count.') }}
+            {{ evidence_tile.freshness('Grant Coverage',
+                        selected_item.coverage|replace('_', ' ')|title if has_collection else 'Not Collected',
+                        'Observed' if has_collection else 'Unavailable',
+                        'info' if has_collection else 'unknown',
+                        'scan-search',
+                        description='Explicit repository grant coverage in the retained collection.') }}
+            {{ evidence_tile.freshness('Engineering Demand',
                         'Not Qualified',
                         'Unavailable',
                         'unknown',
                         'chart-no-axes-combined',
-                        description='No committed history for repository growth, PR review throughput, Actions demand or capacity forecasting has been qualified by this view.') }}
+                        description='PR throughput, Actions usage and growth need independent committed sources.') }}
         </div>
-    </div>
-    <p class="mt-4 border-t border-outline-subtle pt-4 text-xs leading-5 text-content-secondary">
-        Capacity and demand are evidence-dependent perspectives. Missing measurements remain unavailable, never zero utilization or a forecast.
-    </p>
-{% endcall %}
+    {% endcall %}
+{% endif %}
