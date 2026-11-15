@@ -5,40 +5,41 @@
 {% import "components/info_tip.html" as info_tip %}
 {% set collection_pending = scope.uncollected_count > 0 or scope.has_more %}
 {{ section_intro.render('Signals & Actions',
-    'Review verified collection gaps and follow the owning integration workflow; no independent alert or recommendation lifecycle.') }}
+'Review verified collection gaps and follow the owning integration workflow; no independent alert or recommendation lifecycle.') }}
 {% call section_card.render('Collection Readiness',
     'The only actionable signals here are committed inventory-collection coverage and bounded scope limitations.',
     'bell-ring',
     action_href=url_for('integrations.source_control'),
     action_label='Manage GitHub Integrations',
     header_badge=info_tip.render('source-control-signals-guide',
-        'Source Control Signals Guide',
-        'A collection gap is not a GitHub outage or an observed CI alert.',
-        items=[
-        'Uncollected means no successful committed repository inventory generation for a visible installation.',
-        'The first 50 authorized installations are shown when more grants exist.',
-        'PR review, CI failure and automated remediation signals require their own qualified collector and central Intelligence decision authority.'
-        ], placement='right', variant='guide')) %}
+    'Source Control Signals Guide',
+    'A collection gap is not a GitHub outage or an observed CI alert.',
+    items=[
+    'Uncollected means no successful committed repository inventory generation for a visible installation.',
+    'The first 50 authorized installations are shown when more grants exist.',
+    'PR review, CI failure and automated remediation signals require their own qualified collector and central Intelligence decision authority.'
+    ], placement='right', variant='guide')) %}
     <div class="{{ peer_grid.layout_classes() }}">
         <div class="{{ peer_grid.column_classes('primary') }}">
             {{ evidence_tile.freshness('Uncollected Installation Scopes',
-                scope.uncollected_count ~ ' visible installation(s) without committed inventory',
-                'Review Collection' if scope.uncollected_count else 'No Visible Collection Gap',
-                'warning' if scope.uncollected_count else 'info',
-                'database-zap',
-                description='This indicates a committed-data gap in the authorized view, not current GitHub availability.') }}
+                        scope.uncollected_count ~ ' visible installation(s) without committed inventory',
+                        'Review Collection' if scope.uncollected_count else 'No Visible Collection Gap',
+                        'warning' if scope.uncollected_count else 'info',
+                        'database-zap',
+                        description='This indicates a committed-data gap in the authorized view, not current GitHub availability.') }}
         </div>
         <div class="{{ peer_grid.column_classes('secondary') }}">
             {{ evidence_tile.freshness('Engineering Signals',
-                'Not Qualified',
-                'Unavailable',
-                'unknown',
-                'shield-alert',
-                description='No incident, failed check, SLA breach, repository policy violation or action recommendation is inferred from installation counts.') }}
+                        'Not Qualified',
+                        'Unavailable',
+                        'unknown',
+                        'shield-alert',
+                        description='No incident, failed check, SLA breach, repository policy violation or action recommendation is inferred from installation counts.') }}
         </div>
     </div>
     {% if collection_pending %}
-        <p class="mt-4 border-t border-outline-subtle pt-4 text-xs leading-5 text-content-secondary" role="status">
+        <p class="mt-4 border-t border-outline-subtle pt-4 text-xs leading-5 text-content-secondary"
+           role="status">
             {% if scope.has_more %}
                 The first 50 authorized active installations are visible; undisplayed grants are not included in this signal count.
             {% else %}

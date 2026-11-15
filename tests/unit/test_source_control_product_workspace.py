@@ -252,7 +252,6 @@ def test_product_templates_use_existing_source_control_inventory_contract():
     assert 'exact_default_branch_sha' in reusable
 
 
-
 def test_product_overview_dashboard_tabs_use_shared_contract_without_live_provider_calls(monkeypatch):
     """Only reviewed dashboard perspective keys enter the shared controller."""
     app = Flask(__name__)
