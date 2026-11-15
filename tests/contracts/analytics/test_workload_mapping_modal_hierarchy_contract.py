@@ -69,6 +69,5 @@ def test_pod_membership_is_compact_full_width_list_with_unavailable_state() -> N
     assert "row.detail.pods|length" in source
     assert "[overflow-wrap:anywhere]" in source
     assert "No Pod Evidence in the committed workload snapshot." in source
-    assert "data-analytics-tab-panel" not in source or "record_filter." in source
     assert "record_filter.form(" in source
     assert "evidence_list.shell('Workload Resource Mapping Records', embedded=true)" in source
