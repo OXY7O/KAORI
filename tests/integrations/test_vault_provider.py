@@ -98,6 +98,19 @@ def test_vault_approle_mount_selector_normalizes_existing_connection_input(
         assert form.to_input().auth_mount == expected_mount
 
 
+def test_vault_legacy_form_post_keeps_existing_custom_approle_mount(monkeypatch) -> None:
+    monkeypatch.setenv('INTEGRATION_VAULT_ALLOWED_ORIGINS', 'https://vault.example.internal:8200')
+    app = Flask(__name__)
+    app.config.update(SECRET_KEY='test-only', WTF_CSRF_ENABLED=False)
+    payload = _vault_form_data(mode='approle', mount='team-approle')
+    del payload['auth_mount_mode']
+    with app.test_request_context('/', method='POST', data=payload):
+        form = VaultConnectionForm()
+        assert form.validate(), form.errors
+        assert form.auth_mount_mode.data == 'custom'
+        assert form.to_input().auth_mount == 'team-approle'
+
+
 @pytest.mark.parametrize(
     ('mode', 'mount'),
     [
