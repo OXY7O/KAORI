@@ -135,17 +135,36 @@
                                         <p class="mt-1 text-xs leading-5 text-content-muted">Use read-oriented AppRole credentials, not a Vault root token.</p>
                                     </div>
                                 </div>
-                                <div class="grid gap-4 md:grid-cols-2">
-                                    {% for field in [form.auth_mount, form.role_id] %}
-                                        <div>
-                                            <label for="{{ field.id }}"
-                                                   class="mb-1.5 block text-sm font-semibold text-content-primary">{{ field.label.text }}</label>
-                                            {{ field(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="off") }}
-                                            {% for error in field.errors %}
-                                                <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
-                                            {% endfor %}
-                                        </div>
-                                    {% endfor %}
+                                <div class="grid gap-4 md:grid-cols-2"
+                                     x-data="{ authMountMode: {{ (form.auth_mount_mode.data or 'approle')|tojson|forceescape }} }">
+                                    <div>
+                                        <label for="{{ form.auth_mount_mode.id }}"
+                                               class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.auth_mount_mode.label.text }}</label>
+                                        {{ form.auth_mount_mode(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", **{'x-model': 'authMountMode'}) }}
+                                        <p class="mt-1.5 text-xs leading-5 text-content-muted">Default for most Vault installations. Custom mounts are supported.</p>
+                                        {% for error in form.auth_mount_mode.errors %}
+                                            <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
+                                        {% endfor %}
+                                    </div>
+                                    <div>
+                                        <label for="{{ form.role_id.id }}"
+                                               class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.role_id.label.text }}</label>
+                                        {{ form.role_id(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="off") }}
+                                        {% for error in form.role_id.errors %}
+                                            <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="md:col-span-2"
+                                         x-show="authMountMode === 'custom'"
+                                         x-cloak>
+                                        <label for="{{ form.auth_mount.id }}"
+                                               class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.auth_mount.label.text }}</label>
+                                        {{ form.auth_mount(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", placeholder="kaori-approle", autocomplete="off", **{':required': "authMountMode === 'custom'"}) }}
+                                        <p class="mt-1.5 text-xs leading-5 text-content-muted">Use the AppRole path configured in Vault. One segment only, without auth/ or slashes.</p>
+                                        {% for error in form.auth_mount.errors %}
+                                            <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
+                                        {% endfor %}
+                                    </div>
                                 </div>
                                 <div class="mt-4">
                                     <label for="{{ form.secret_id.id }}"
