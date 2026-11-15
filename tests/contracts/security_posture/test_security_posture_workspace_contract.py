@@ -753,10 +753,56 @@ def test_security_findings_table_keeps_every_server_paged_row() -> None:
     html = _render_workspace_page('findings', posture)
     for index in range(7):
         assert f'CVE-2022-{2000 + index}' in html
-    assert 'Showing 1–7 of 7 CVEs' in html
+    assert re.search(r'Showing\s+1\s*–\s*7\s+of\s+7\s+CVEs', html)
     assert re.search(r'<option value="10"\s+selected', html)
     assert 'name="per_page"' in html
     assert 'data-security-findings-data-table' in html
+
+
+def test_security_visual_polish_reuses_shared_cards_and_cve_identity() -> None:
+    overview_template = read('app/templates/security_posture/overview.html')
+    findings_template = read('app/templates/security_posture/findings.html')
+    assert 'components/operational_metric_card.html' in overview_template
+    assert 'components/operational_metric_card.html' in findings_template
+    assert overview_template.count('metric_card.render(') == 3
+    assert findings_template.count('metric_card.render(') == 3
+    assert 'table_ui.title_cell(row.cve_id' in overview_template
+    assert 'table_ui.title_cell(row.cve_id' in findings_template
+    assert 'components/section_intro.html' in findings_template
+    assert "section_intro.render('Investigation Workspace'" in findings_template
+    assert 'data-security-cve-identity' in findings_template
+
+    overview_html = _render_workspace_page('overview', _renderable_posture())
+    findings_html = _render_workspace_page('findings', _renderable_posture())
+    assert overview_html.count('data-kaori-metric-density="compact"') == 3
+    assert findings_html.count('data-kaori-metric-density="compact"') == 3
+    assert 'data-security-finding-highlights' in overview_html
+    assert 'data-security-finding-highlight' in overview_html
+    assert 'Investigation Workspace' in findings_html
+    assert 'security-findings-registry-intro' in findings_html
+    assert 'data-security-cve-identity' in findings_html
+    assert 'CVE-2022-1586' in findings_html
+    assert 'Latest usable scanner findings' in findings_html
+    assert 'data-kaori-canonical-registry-footer="security-posture-findings-registry"' in findings_html
+
+
+def test_security_findings_readiness_cards_do_not_fabricate_freshness() -> None:
+    posture = _renderable_posture()
+    posture['scan_status'] = {'label': 'Stale', 'tone': 'warning'}
+    posture['runtime_status'] = {'status': 'Inputs Changed', 'tone': 'warning'}
+    html = _render_workspace_page('findings', posture)
+    assert 'Scanner Coverage' in html
+    assert 'Runtime Correlation' in html
+    assert 'Evidence Freshness' in html
+    assert 'Inputs Changed' in html
+    assert 'Stale' in html
+    assert 'Unknown' in html
+    assert 'Age of qualified scanner observations; freshness window is 24 hours.' in html
+    assert 'Missing, partial or stale evidence is not proof of no exposure.' in html
+
+    blocked = _render_workspace_page('findings', _renderable_posture(False))
+    assert 'Not Collected' in blocked
+    assert '3 / 3' not in blocked
 
 
 def test_security_findings_renders_no_source_as_unqualified_not_safe() -> None:
