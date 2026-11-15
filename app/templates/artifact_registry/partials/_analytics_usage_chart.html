@@ -107,12 +107,17 @@
             </section>
         </div>
     {% else %}
-        <div class="flex min-h-52 flex-col items-center justify-center gap-2 px-5 py-6 text-center">
+        <div class="m-4 flex min-h-52 flex-col items-center justify-center gap-2 {{ analysis_surface.empty_evidence_classes('px-5 py-6 text-center') }}"
+             data-kaori-empty-state
+             role="status">
             <i data-lucide="activity"
                class="h-5 w-5 text-content-muted"
                aria-hidden="true"></i>
             <p class="text-sm font-semibold text-content-primary">Pull Activity Chart Not Available</p>
-            <p class="max-w-lg text-xs leading-5 text-content-secondary">A committed nonnegative project pull counter with a Registry source is required. Missing pull metrics are not zero demand.</p>
+            <p class="max-w-md text-xs leading-5 text-content-secondary">
+                A committed nonnegative project pull counter with a Registry source is required.
+                Missing pull metrics are not zero demand.
+            </p>
         </div>
     {% endif %}
 </section>

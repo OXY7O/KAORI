@@ -125,12 +125,14 @@
             </section>
         </div>
     {% else %}
-        <div class="flex min-h-52 flex-col items-center justify-center gap-2 px-5 py-6 text-center">
+        <div class="m-4 flex min-h-52 flex-col items-center justify-center gap-2 {{ analysis_surface.empty_evidence_classes('px-5 py-6 text-center') }}"
+             data-kaori-empty-state
+             role="status">
             <i data-lucide="gauge"
                class="h-5 w-5 text-content-muted"
                aria-hidden="true"></i>
             <p class="text-sm font-semibold text-content-primary">Quota Chart Not Available</p>
-            <p class="max-w-lg text-xs leading-5 text-content-secondary">
+            <p class="max-w-md text-xs leading-5 text-content-secondary">
                 A committed project with valid storage usage and a positive configured quota is required.
                 Missing evidence is not zero utilization.
             </p>
