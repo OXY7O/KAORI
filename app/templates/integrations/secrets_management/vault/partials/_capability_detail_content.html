@@ -49,7 +49,7 @@
 {% if result.observed %}
     {% set observation_description = 'This API was observed in the latest Full Validation.' %}
 {% elif result.limited %}
-    {% set observation_description = 'Optional mount discovery was denied; core readiness is unaffected.' %}
+    {% set observation_description = 'Mount discovery denied; core checks remain unaffected.' %}
 {% elif result.gap %}
     {% set observation_description = 'Required API was not qualified by the current validation.' %}
 {% else %}
