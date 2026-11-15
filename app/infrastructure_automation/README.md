@@ -21,3 +21,18 @@ Authority: #556, #4796, #4799, and OXY7O/kaori-operations#1. **Non-production re
 7. Record actual case IDs/commands/SHA, sanitized results and explicit Human Acceptance on issue #4799; stop the worker and disable the pilot flag afterward.
 
 **Not a production-ready feature:** no remote provider identity, credential authority, image digest, trusted SSH inventory, managed Kubernetes capability or real infrastructure mutation. Do not treat localhost UAT as cluster provisioning evidence. See #4800–#4802 for subsequent gated workstreams.
+
+## Focused pre-UAT quality checks (in existing Dev Container)
+
+Run against this exact work-branch source before asking for Human UAT:
+
+```bash
+python -m ruff check app/infrastructure_automation app/commands/__init__.py app/config/default.py tests/contracts/platform_operations/test_ansible_localhost_worker_contract.py
+python -m ruff format --check app/infrastructure_automation/*.py app/commands/__init__.py app/config/default.py tests/contracts/platform_operations/test_ansible_localhost_worker_contract.py
+python -m pytest -q -p no:cacheprovider tests/contracts/platform_operations/test_ansible_localhost_worker_contract.py
+```
+
+Optional **image build-only** smoke (no deployment/runner execution) for the isolated pinned worker target:
+`docker build --target automation-worker --tag kaori-automation-worker:uat .`
+
+The default Dockerfile final target remains `production`; this opt-in `automation-worker` target is not part of current production Compose services. A successful build is not equivalent to runtime/Dev Container/real-provider UAT. Record all command results, SHA, environment and any blocker; do not mark NOT RUN as PASS.
