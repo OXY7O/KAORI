@@ -43,6 +43,64 @@ INTEGRATION_VAULT_ALLOWED_ORIGINS=https://vault.internal.example:8200
 INTEGRATION_VAULT_CA_BUNDLE=/etc/ssl/approved/vault-root-ca.pem  # optional if system trusted
 ```
 
+### Persistent Vault CA in DevContainer (Docker Desktop Kubernetes)
+
+The root `secrets/` directory is already ignored by `.gitignore` and
+`.dockerignore` and shared as `/workspace/kaori/secrets/` through the
+existing DevContainer worktree bind mount. Keep the approved **public CA** on
+the **host checkout** so container recreate/rebuild does not remove it.
+No extra Compose volume or CA baked into a Docker image is needed.
+
+For the reviewed local Docker Desktop Vault (namespace `vault`, TLS secret
+`vault-tls` containing `ca.crt`, HTTPS origin
+`https://host.docker.internal:29820`), from WSL at the **actual repository
+checkout root**:
+
+```bash
+mkdir -p secrets/trust/vault
+kubectl --context docker-desktop -n vault get secret vault-tls \
+  -o jsonpath='{.data.ca\\.crt}' | base64 -d > secrets/trust/vault/ca.pem
+chmod 0644 secrets/trust/vault/ca.pem
+git check-ignore -v secrets/trust/vault/ca.pem
+openssl x509 -in secrets/trust/vault/ca.pem -noout -subject -issuer -dates
+```
+
+The current lab CA is `CN=kaori-vault-ca` with notAfter
+`2027-01-08 15:30:02 UTC`; schedule renewal and CA distribution before
+expiry. Never extract `tls.key`, include the private key in the repository,
+or reuse this CA for LDAP unless the LDAP certificate shares the issuer.
+
+Set in the **ignored local** `.env` (not in the tracked example defaults):
+
+```dotenv
+INTEGRATION_VAULT_ALLOWED_ORIGINS=https://host.docker.internal:29820
+INTEGRATION_VAULT_CA_BUNDLE=/workspace/kaori/secrets/trust/vault/ca.pem
+```
+
+Both the Flask web process (Test Connection) and `validation-worker` /
+`runtime-worker` must load the same environment and be able to read this
+path and resolve/reach the approved endpoint. In the DevContainer:
+
+```bash
+test -r /workspace/kaori/secrets/trust/vault/ca.pem
+openssl x509 -in /workspace/kaori/secrets/trust/vault/ca.pem -noout -dates
+```
+
+Verify HTTPS from the actual container network with its approved CA bundle
+(e.g., `curl --cacert /workspace/kaori/secrets/trust/vault/ca.pem
+https://host.docker.internal:29820/v1/sys/health` if curl is installed).
+WSL success alone does not prove that web/workers have the same DNS or egress.
+Changes to `.env` require a Flask F5 process restart or a controlled Compose
+service recreate (web and validation/runtime workers) to reload environment;
+the bind-mounted CA itself persists. Never remove PostgreSQL/Redis volumes.
+
+`vault status` from WSL confirms the operator's local Vault server is
+initialized and unsealed but does **not** prove KAORI AppRole identity or
+worker Full Validation. The reviewed Vault `2.0.4` falls in KAORI's
+`>=1.9,<2.1` **extended** qualification band, not the `v2.1.x`
+current-qualified band. Provider readiness evidence remains committed by
+Full Validation, independently of HTTPS reachability.
+
 Do not commit real values or CA private material. The origins list contains exact HTTPS
 origins and is fail-closed when missing. HTTPS verification is always enabled, proxy/netrc
 inheritance and redirects are disabled, and a short request timeout is enforced.
