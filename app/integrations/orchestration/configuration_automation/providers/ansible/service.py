@@ -58,32 +58,31 @@ def save_source_connection(values: AnsibleConnectionInput, *, evidence: dict[str
         raise ValueError('Source has not passed the reviewed Git validation contract.')
     if IntegrationInstance.query.filter_by(integration_type=INTEGRATION_TYPE, name=values.name).first():
         raise ValueError('An automation connection with this name already exists.')
-    instance = IntegrationInstance(
-        integration_type=INTEGRATION_TYPE,
-        provider_key=PROVIDER_KEY,
-        adapter_key=ADAPTER_KEY,
-        name=values.name,
-        description=values.description,
-        environment=values.environment,
-        enabled=False,
-        lifecycle_status='active',
-        readiness_status='validation_required',
-        health_status=None,
-        metadata_json={
-            'profile_key': values.profile_key,
-            'source_provider': 'github',
-            'source_repository': values.repository,
-            'source_sha': values.revision,
-            'ansible_core_version': values.ansible_core_version,
-            'ansible_runner_version': values.ansible_runner_version,
-            'kubespray_release': values.kubespray_release,
-            'execution_environment_digest': values.execution_environment_digest,
-            'source_validation': evidence,
-            'execution_enabled': False,
-            'mutation_authorized': False,
-            'inventory_status': 'not_collected',
-        },
-    )
+    instance = IntegrationInstance()
+    instance.integration_type = INTEGRATION_TYPE
+    instance.provider_key = PROVIDER_KEY
+    instance.adapter_key = ADAPTER_KEY
+    instance.name = values.name
+    instance.description = values.description
+    instance.environment = values.environment
+    instance.enabled = False
+    instance.lifecycle_status = 'active'
+    instance.readiness_status = 'validation_required'
+    instance.health_status = None
+    instance.metadata_json = {
+        'profile_key': values.profile_key,
+        'source_provider': 'github',
+        'source_repository': values.repository,
+        'source_sha': values.revision,
+        'ansible_core_version': values.ansible_core_version,
+        'ansible_runner_version': values.ansible_runner_version,
+        'kubespray_release': values.kubespray_release,
+        'execution_environment_digest': values.execution_environment_digest,
+        'source_validation': evidence,
+        'execution_enabled': False,
+        'mutation_authorized': False,
+        'inventory_status': 'not_collected',
+    },
     try:
         db.session.add(instance)
         db.session.commit()
