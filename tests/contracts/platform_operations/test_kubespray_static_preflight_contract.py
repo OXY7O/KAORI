@@ -114,3 +114,28 @@ def test_fingerprint_is_deterministic_and_never_full_inventory() -> None:
     two = assess_static_kubespray_pilot(_pilot())
     assert one.inventory_fingerprint == two.inventory_fingerprint
     assert '192.0.2.' not in repr(one)
+
+
+@pytest.mark.parametrize(
+    ('field', 'invalid'),
+    [
+        ('environment', ['uat']),
+        ('pod_cidr', {'cidr': '10.244.0.0/16'}),
+    ],
+)
+def test_invalid_container_values_fail_closed(field: str, invalid: object) -> None:
+    spec = _pilot()
+    spec[field] = invalid
+    plan = assess_static_kubespray_pilot(spec)
+    assert plan.status == 'blocked'
+    assert plan.mutation_authorized is False
+
+
+def test_unhashable_node_fields_fail_closed_without_provider_call() -> None:
+    spec = _pilot()
+    spec['nodes'][0]['role'] = ['control_plane']
+    spec['nodes'][0]['os_distribution'] = ['OracleLinux']
+    plan = assess_static_kubespray_pilot(spec)
+    assert plan.status == 'blocked'
+    assert 'NODE_ROLE_UNSUPPORTED' in plan.findings
+    assert 'NODE_OS_UNQUALIFIED' in plan.findings
