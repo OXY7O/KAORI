@@ -155,66 +155,153 @@ def ansible_choose() -> ResponseReturnValue:
     return render_template('integrations/orchestration/configuration_automation/providers/ansible/choose.html')
 
 
+def _ansible_registration_feedback(*, event_type: str, status: str, title: str, message: str) -> None:
+    """Emit canonical toast/Audit; source checks must not spam Notification Deck."""
+    record_operational_activity(
+        user_id=int(current_user.id),
+        event_type=event_type,
+        status=status,
+        title=title,
+        message=message,
+        action_url=url_for('integrations.ansible_new_connection'),
+        action_label='Review Ansible Source',
+        action_icon='git-commit',
+        metadata={'provider': 'ansible', 'registration_phase': 'source_only', 'feedback_delivery': 'toast'},
+        queue_feedback=True,
+        delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY,
+    )
+
+
+def _ansible_registration_validation_message(form: AnsibleSourceConnectionForm) -> str:
+    """Return safe labels, never user-entered values or raw validation errors."""
+    if 'csrf_token' in form.errors:
+        return 'Form session expired. Reload the page and retry Validate Source.'
+    labels = {
+        'name': 'Connection Name',
+        'environment': 'Environment',
+        'description': 'Description',
+        'profile_key': 'Automation Profile',
+        'repository': 'Git Repository',
+        'revision': 'Git Commit SHA',
+        'ansible_core_version': 'Ansible Core Version',
+        'ansible_runner_version': 'Ansible Runner Version',
+        'kubespray_release': 'Kubespray Release',
+        'execution_environment_digest': 'Execution Environment Digest',
+    }
+    invalid = [label for field, label in labels.items() if field in form.errors]
+    if not invalid:
+        return 'Review required fields before continuing.'
+    visible = ', '.join(invalid[:3])
+    suffix = f' (+{len(invalid) - 3} other fields)' if len(invalid) > 3 else ''
+    return f'Review required fields: {visible}{suffix} before continuing.'
+
+
 @integrations_bp.route('/ansible/connections/new', methods=['GET', 'POST'])
 @permission_required('integrations.manage')
 def ansible_new_connection() -> ResponseReturnValue:
-    """Validate exact reviewed public Git objects before source-only registration."""
-    from flask_login import current_user
-
+    """Register only after immutable Git source proof; use shared operational feedback."""
     form = AnsibleSourceConnectionForm()
     proof = ''
-    feedback = None
-    feedback_tone = 'warning'
     if request.method == 'POST':
         action = str(request.form.get('action') or '').strip()
-        if form.validate_on_submit() and action in {'test', 'save'}:
+        if not form.validate_on_submit():
+            _ansible_registration_feedback(
+                event_type='ansible_source_registration_input_rejected',
+                status='warning',
+                title='Ansible Source Registration Needs Attention',
+                message=_ansible_registration_validation_message(form),
+            )
+        elif action not in {'test', 'save'}:
+            _ansible_registration_feedback(
+                event_type='ansible_source_registration_action_rejected',
+                status='warning',
+                title='Ansible Registration Action Rejected',
+                message='Use Validate Source before saving this connection.',
+            )
+        else:
             try:
                 values = form.to_input()
+            except ValueError:
+                _ansible_registration_feedback(
+                    event_type='ansible_source_registration_policy_rejected',
+                    status='warning',
+                    title='Ansible Source Policy Rejected',
+                    message='The automation profile, Git source or version does not match the reviewed candidate.',
+                )
+            else:
                 if action == 'test':
-                    evidence = verify_public_kubespray_source(values.repository, values.revision)
-                    proof = issue_source_proof(values, evidence, int(current_user.id))
-                    feedback = (
-                        'Reviewed Git files and version policy match the immutable source. '
-                        'This checks source only; worker and cluster readiness remain blocked.'
-                    )
-                    feedback_tone = 'normal'
-                elif action == 'save':
+                    try:
+                        evidence = verify_public_kubespray_source(values.repository, values.revision)
+                        proof = issue_source_proof(values, evidence, int(current_user.id))
+                    except (AutomationSourceRejected, ValueError):
+                        _ansible_registration_feedback(
+                            event_type='ansible_source_validation_failed',
+                            status='error',
+                            title='Ansible Source Validation Failed',
+                            message='Unable to verify the reviewed Git source. Check the approved revision and retry.',
+                        )
+                    else:
+                        _ansible_registration_feedback(
+                            event_type='ansible_source_validation_checked',
+                            status='success',
+                            title='Ansible Source Validated',
+                            message='Git objects and version policy match the reviewed candidate. '
+                            'Host and cluster readiness remain blocked.',
+                        )
+                else:
                     evidence = verified_source_proof(
                         str(form.source_test_proof.data or ''), values, int(current_user.id)
                     )
                     if evidence is None:
-                        feedback = (
-                            'Re-run Validate Source after changes; a verified source proof is required to register.'
+                        _ansible_registration_feedback(
+                            event_type='ansible_source_registration_proof_rejected',
+                            status='warning',
+                            title='Ansible Source Verification Required',
+                            message='Re-run Validate Source after changes; a current proof is required to register.',
                         )
                     else:
-                        connection = save_source_connection(values, evidence=evidence)
-                        record_operational_activity(
-                            user_id=int(current_user.id),
-                            event_type='ansible_source_connection_registered',
-                            status='success',
-                            title='Ansible Source Connection Registered',
-                            message='Git source was checked; remote execution and provider readiness are not enabled.',
-                            action_url=url_for('integrations.ansible_connection_detail', instance_id=connection.id),
-                            action_label='Open Ansible Connection',
-                            action_icon='workflow',
-                            metadata={'provider': 'ansible', 'instance_id': connection.id},
-                            queue_feedback=True,
-                        )
-                        return redirect(url_for('integrations.ansible_connection_detail', instance_id=connection.id))
-            except (AutomationSourceRejected, SQLAlchemyError, ValueError) as exc:
-                if isinstance(exc, SQLAlchemyError):
-                    current_app.logger.exception('Ansible source connection registration failed.')
-                    feedback = 'Unable to commit the Ansible connection. Review registry state and retry.'
-                else:
-                    feedback = str(exc)
-        else:
-            feedback = 'Review required fields and the current form session before continuing.'
+                        try:
+                            connection = save_source_connection(values, evidence=evidence)
+                        except SQLAlchemyError:
+                            current_app.logger.exception('Ansible source connection registration failed.')
+                            _ansible_registration_feedback(
+                                event_type='ansible_source_registration_failed',
+                                status='error',
+                                title='Ansible Source Registration Failed',
+                                message='Unable to commit the connection. Review the registry and retry.',
+                            )
+                        except ValueError as exc:
+                            duplicate = str(exc) == 'An automation connection with this name already exists.'
+                            _ansible_registration_feedback(
+                                event_type='ansible_source_registration_rejected',
+                                status='warning',
+                                title='Ansible Source Registration Rejected',
+                                message=(
+                                    'An automation connection with this name already exists. Choose another name.'
+                                    if duplicate
+                                    else 'Registration was rejected by the reviewed source policy. '
+                                    'Run Validate Source again.'
+                                ),
+                            )
+                        else:
+                            record_operational_activity(
+                                user_id=int(current_user.id),
+                                event_type='ansible_source_connection_registered',
+                                status='success',
+                                title='Ansible Source Connection Registered',
+                                message='Git source was checked; remote execution and provider readiness are not enabled.',
+                                action_url=url_for('integrations.ansible_connection_detail', instance_id=connection.id),
+                                action_label='Open Ansible Connection',
+                                action_icon='workflow',
+                                metadata={'provider': 'ansible', 'instance_id': connection.id},
+                                queue_feedback=True,
+                            )
+                            return redirect(url_for('integrations.ansible_connection_detail', instance_id=connection.id))
     return render_template(
         'integrations/orchestration/configuration_automation/providers/ansible/form.html',
         form=form,
         source_test_proof=proof,
-        feedback=feedback,
-        feedback_tone=feedback_tone,
+        notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
     )
 
 

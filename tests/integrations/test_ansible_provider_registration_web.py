@@ -25,6 +25,7 @@ from app.integrations.source_control.source_control.providers.github.public_auto
     PublicSourceEvidence,
 )
 from app.models.integration import IntegrationInstance
+from app.platform_operations.notifications.service import queue_transient_feedback
 
 pytestmark = pytest.mark.skipif(
     not os.environ.get('TEST_DATABASE_URL', '').startswith('postgresql://'),
@@ -46,7 +47,17 @@ def app(monkeypatch):
         has_permission=lambda _: True,
     )
     monkeypatch.setattr('flask_login.utils._get_user', lambda: principal)
-    monkeypatch.setattr(routes, 'record_operational_activity', lambda **_: None)
+    def fake_activity(**payload):
+        # Use the real toast transport while isolating Audit persistence from
+        # this database-backed registration test; policy is asserted separately.
+        if payload.get('queue_feedback'):
+            queue_transient_feedback(
+                status=payload['status'],
+                title=payload['title'],
+                message=payload['message'],
+            )
+
+    monkeypatch.setattr(routes, 'record_operational_activity', fake_activity)
     monkeypatch.setattr(
         routes,
         'verify_public_kubespray_source',
@@ -112,19 +123,23 @@ def test_choose_validate_save_manage_with_canonical_database(app):
     )
     assert missing_source.status_code == 200
     assert b'Review required fields' in missing_source.data
+    assert b'data-operational-toast' in missing_source.data
     assert b'id="ansible-proof-field"' in missing_source.data
 
     invalid = client.post(
         '/integrations/ansible/connections/new', data={**_input(repository='evil/secret'), 'action': 'test'}
     )
     assert invalid.status_code == 200
-    assert b'outside the reviewed' in invalid.data or b'does not match' in invalid.data
+    assert b'does not match' in invalid.data
+    assert b'data-operational-toast' in invalid.data
     rejected_repository = re.search(rb'<input\b[^>]*\bid="repository"[^>]*>', invalid.data)
     assert rejected_repository is not None
     assert b'value="evil/secret"' in rejected_repository.group()
 
     checked = client.post('/integrations/ansible/connections/new', data={**_input(), 'action': 'test'})
     assert checked.status_code == 200
+    assert b'data-operational-toast' in checked.data
+    assert b'Ansible Source Validated' in checked.data
     match = re.search(rb'id="ansible-proof-field"[^>]*value="([^"]+)"', checked.data)
     assert match, 'source validation must render a signed proof for Save'
     token = match.group(1).decode()
@@ -139,6 +154,7 @@ def test_choose_validate_save_manage_with_canonical_database(app):
     )
     assert altered.status_code == 200
     assert b'Re-run Validate Source' in altered.data
+    assert b'data-operational-toast' in altered.data
 
     saved = client.post(
         '/integrations/ansible/connections/new',
@@ -214,6 +230,7 @@ def test_choose_validate_save_manage_with_canonical_database(app):
     )
     assert duplicate.status_code == 200
     assert b'already exists' in duplicate.data
+    assert b'data-operational-toast' in duplicate.data
     with app.app_context():
         assert IntegrationInstance.query.filter_by(integration_type='configuration_automation').count() == 1
 
