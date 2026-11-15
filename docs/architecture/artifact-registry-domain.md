@@ -928,9 +928,18 @@ Page-level Integrated Workspace Tabs still use the
 `artifact_registry_analytics` capability-view catalog and the same layout
 owner as Kubernetes Analytics. Each of Growth, Capacity, Usage, Risk,
 Governance, Alerts & Anomalies and Insights retains its canonical
-`/artifact-registry/analytics/<domain>` route. Each deep route shares the fast
-shell and lazy loads only its active committed analytical section; it does not
-repeat the Overview estate summary. The legacy `?tab=<domain>` bookmark shape
+`/artifact-registry/analytics/<domain>` route. Each detail route now uses
+the same **external plain section intro** as the Overview's Registry
+Analytical Posture (#4787). The common `components/section_intro.html`
+macro renders a domain-specific section title and short explanation after
+Analytics Controls & Data Readiness and before the existing detail workspace
+card. It is not another card, nested Hero, tab, or copied surface; the
+inner Growth/Capacity child-tab headers and other focused workspace titles
+remain authoritative. Overview alone keeps its existing Registry Analytical
+Posture and Explore Analytics intros; its extra Data & Evidence tab is not
+a page-level detail route. Each deep route shares the fast shell and lazy
+loads only its active committed analytical section; it does not repeat the
+Overview estate summary. The legacy `?tab=<domain>` bookmark shape
 redirects to the corresponding route and preserves bounded Alerts search,
 severity, state, source and pagination query parameters. Alerts HTMX table
 updates push its canonical page URL. No additional materialization models,

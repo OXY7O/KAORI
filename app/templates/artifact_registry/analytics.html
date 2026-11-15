@@ -86,9 +86,24 @@
                     {% include "artifact_registry/partials/_analytics_overview_workspace.html" %}
                 </section>
             {% else %}
-                <section id="artifact-registry-analytics-workspace"
-                         class="{{ section_card.shell_classes() }}"
-                         aria-label="{{ analytics.page_title }} workspace">
+                {% set detail_section_intros = {
+                    'growth': ('Registry Growth Analysis', 'Review committed artifact and storage deltas, source comparisons, and measured history.'),
+                    'capacity': ('Registry Capacity Analysis', 'Review project quota pressure, qualified headroom, and evidence-backed forecast horizons.'),
+                    'usage': ('Registry Usage Analysis', 'Correlate committed pull counters with artifact usage in Kubernetes runtime.'),
+                    'risk': ('Registry Risk Analysis', 'Review committed security findings, runtime exposure, and scan coverage gaps.'),
+                    'governance': ('Registry Governance Analysis', 'Examine provider-observed retention, immutability, and replication control evidence.'),
+                    'alerts': ('Registry Alerts & Anomalies', 'Review committed alert lifecycle, source readiness, and qualified fallback evidence.'),
+                    'insights': ('Registry Insights & Intelligence', 'Review factual cross-domain signals; Intelligence retains recommendation and decision authority.')
+                } %}
+                {% set detail_intro = detail_section_intros[analytics.active_tab] %}
+                <section class="space-y-3"
+                         aria-labelledby="artifact-registry-analytics-detail-heading">
+                    {{ section_intro.render(detail_intro[0],
+                                        detail_intro[1],
+                                        'artifact-registry-analytics-detail-heading') }}
+                    <section id="artifact-registry-analytics-workspace"
+                             class="{{ section_card.shell_classes() }}"
+                             aria-label="{{ analytics.page_title }} workspace">
                     <div id="artifact-registry-analytics-active-section"
                          data-analytics-lazy-section="true"
                          data-analytics-load-state="idle"
@@ -100,6 +115,7 @@
                                                 'Preparing committed Analytics evidence for the active workspace.',
                                                 analytics.page_icon) }}
                     </div>
+                    </section>
                 </section>
             {% endif %}
         {% endif %}
