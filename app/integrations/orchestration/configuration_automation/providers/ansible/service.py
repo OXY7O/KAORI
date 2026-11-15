@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.common.pagination import paginate_query
@@ -21,7 +22,8 @@ from app.integrations.source_control.source_control.providers.github.public_auto
     REPOSITORY,
     SOURCE_CANDIDATE_SHA,
 )
-from app.models.integration import IntegrationInstance
+from app.models.cluster import Cluster
+from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.job import JobExecution
 
 INTEGRATION_TYPE = 'configuration_automation'
@@ -183,3 +185,47 @@ def source_validation_posture(connection: IntegrationInstance) -> dict[str, Any]
         'runtime_authorized': False,
         'mutation_authorized': False,
     }
+
+
+def bound_kubernetes_targets(
+    connection: IntegrationInstance, *, page: int = 1, per_page: int = 5
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Read a connection's canonical cluster bindings only; never infer Run authority.
+
+    The Cluster model is authoritative for identity; Git inventory and arbitrary
+    asset_key text are not accepted as an alternative target registry.
+    """
+    statement = (
+        IntegrationBinding.query.filter_by(
+            integration_instance_id=connection.id,
+            asset_type='kubernetes_cluster',
+        )
+        .order_by(IntegrationBinding.priority.asc(), IntegrationBinding.id.asc())
+    )
+    bindings, pagination = paginate_query(statement, page=page, per_page=per_page)
+    ids = {str(binding.asset_key) for binding in bindings}
+    clusters = (
+        {
+            cluster.id: cluster
+            for cluster in db.session.scalars(select(Cluster).where(Cluster.id.in_(ids))).all()
+        }
+        if ids
+        else {}
+    )
+    rows = []
+    for binding in bindings:
+        cluster = clusters.get(str(binding.asset_key))
+        rows.append(
+            {
+                'binding_id': binding.id,
+                'cluster_name': cluster.name if cluster is not None else 'Cluster identity missing',
+                'environment': cluster.environment if cluster is not None else None,
+                'cluster_id': cluster.id if cluster is not None else None,
+                'binding_enabled': bool(binding.enabled),
+                'validation_status': str(binding.validation_status or 'validation_required'),
+                'last_validated_at': binding.last_validated_at,
+                'identity_resolved': cluster is not None,
+                'execution_authorized': False,
+            }
+        )
+    return rows, pagination
