@@ -30,8 +30,9 @@ jobs:
       - name: Emit source-owned formatting preview (temporary diagnostic)
         run: |
           python -m ruff format app/integrations/orchestration/infrastructure_automation tests/contracts/integrations/test_ansible_provider_contract.py tests/integrations/test_ansible_provider_ui_postgres.py
-          djlint --reformat app/templates/integrations/orchestration/infrastructure_automation/providers/ansible
           python - <<'PY'
+          import subprocess
+          subprocess.run(['djlint', '--reformat', 'app/templates/integrations/orchestration/infrastructure_automation/providers/ansible'], check=False)
           import json
           import subprocess
           from pathlib import Path
