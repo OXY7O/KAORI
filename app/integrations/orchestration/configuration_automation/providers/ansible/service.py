@@ -82,7 +82,7 @@ def save_source_connection(values: AnsibleConnectionInput, *, evidence: dict[str
         'execution_enabled': False,
         'mutation_authorized': False,
         'inventory_status': 'not_collected',
-    },
+    }
     try:
         db.session.add(instance)
         db.session.commit()
