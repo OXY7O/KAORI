@@ -93,7 +93,7 @@
             {% elif summary.priority_summary.critical > 0 %}
                 {{ overview_surface.interpretation_callout('Operational Triage',
                                 'Resolve Critical Recommendations First',
-                                'Validate service impact, ownership, evidence freshness, and rollback options before planned optimization work.',
+                                'Check impact, owner, fresh evidence, and rollback.',
                                 icon='siren',
                                 role='brand',
                                 tone='critical',
@@ -128,8 +128,8 @@
                 <div class="mt-3 space-y-2.5">
                     {% for icon, title, description in [
                         ('user-round-check', 'Confirm Accountable Owner', 'Identify who approves and performs the change.'),
-                        ('badge-check', 'Validate Current Evidence', 'Confirm the source snapshot and affected resource are still current.'),
-                        ('rotate-ccw', 'Prepare Change And Rollback', 'Define the execution window, validation step, and rollback condition.')
+                        ('badge-check', 'Validate Current Evidence', 'Confirm snapshot and resource are current.'),
+                        ('rotate-ccw', 'Prepare Change And Rollback', 'Set change window, validation, and rollback.')
                         ] %}
                         <div class="flex items-start gap-2.5">
                             <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-outline-subtle bg-surface-muted text-content-secondary">

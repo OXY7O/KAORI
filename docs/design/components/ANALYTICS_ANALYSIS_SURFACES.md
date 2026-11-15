@@ -44,6 +44,10 @@ Kubernetes Analytics Overview separates Controls & Data Readiness from Operation
 
 **Operational Health Review** appears in the committed Health Summary lazy partial after the controls form and before its existing six-signal card. **Explore Analytics Domains** appears in the parent Overview template after the Health Summary lazy target and before the original tabbed workspace. Each explains the purpose of the next card without repeating its own heading. HTMX lazy loading, filter scope, tab IDs, evidence authority, and existing Guide/status controls remain unchanged.
 
+## Concise Action and Capacity Guidance (#4763)
+
+The Overview Actions **Operational Triage / Before Execution** descriptions, Capacity **Commitment Profile** healthy rationale, **Measurement Standard** units note, and Capacity Risk **Governance Findings** caption use shorter, meaningful copy to target one desktop line at normal viewport. Jinja templates retain their established semantic labels; healthy rationale originates in the Capacity domain, not a duplicated template override. No CSS `truncate` or `whitespace-nowrap` is introduced to conceal information, and warning/critical/Unknown guidance and explicit ownership/recovery procedures remain intact. Mobile can wrap naturally. Desktop one-line geometry requires Visual QA on the exact UAT candidate.
+
 ## Focused Analytics Section Intro Hierarchy and Capacity Copy (#4761)
 
 The existing **Overview** plain-text `section_intro.render(title, description, id)` hierarchy is now shared by all seven focused Kubernetes Analytics pages: Utilization, Capacity, Workload, Storage, Top Consumers, Forecast, and Alerts & Anomalies. Each page presents an independent posture introduction **before the existing summary/overview** and a domain-workspace introduction **before the existing tabbed workspace**, using `space-y-4` and matching `aria-labelledby`. The original Guides, status semantics, evidence cards, action controls, dependencies, source-readiness boundaries, HTMX tab IDs and lazy loading remain unchanged.

@@ -91,6 +91,12 @@ ResourceQuota            : namespace + ResourceQuota object + resource + type
 
 Do not sum duplicate scrape copies.
 
+## Tenant Quota Record Detail Modal (Visual UAT #4763)
+
+The Tenant Quota View Details modal reuses `kubernetes/analytics/components/_record_detail_modal.html` with its opt-in `evidence_context=true`, leaving existing record modal callers unchanged. The header follows the standard KAORI hierarchy: domain label, **Committed Snapshot** chip, Namespace title, short description, and factual **Active Pods / Quota Objects** metadata. The footer uses the established evidence icon/source pattern, explicitly indicates **Read Only**, retains committed Workload Analysis provenance, and keeps the Close action accessible on mobile and desktop. Modal interaction, focus, Escape, backdrop dismissal, and content-sized scrolling remain owned by the shared macro.
+
+The ResourceQuota Object Evidence grid uses full available width when a single object is committed, and two columns only for multiple quota objects at desktop sizes. Hard and used keys, missing-key warnings, runtime interpretation, and recommendations remain unchanged. This is presentation only; it cannot manufacture quota usage or runtime demand from unavailable evidence.
+
 ## ResourceQuota Object Semantics
 
 ResourceQuota evidence is retained per object:
