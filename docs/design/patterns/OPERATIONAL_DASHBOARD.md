@@ -182,10 +182,16 @@ The bounded Overview `Finding Highlights` section renders three compact
 `operational_metric_card` values and a maximum of three source-qualified
 CVE identity preview rows. These rows use the existing `table_ui.title_cell`
 identity and row-level standard action classes, but do **not** form a second
-searchable full registry. Findings `Evidence Qualification` uses the same
-three-card information density for **Scanner Coverage**, **Runtime
-Correlation**, and **Evidence Freshness**, with authentic Stale/Inputs Changed
-statuses and no fabricated `Current` state. Add the shared
+searchable full registry. **Findings Evidence Qualification human
+Visual UAT update (#4772, 2026-11-15):** replace the interim nested
+three-card layout with an **Inventory-style flat three-column evidence strip**
+inside the one existing `operational_section_card` shell. Use the approved
+neutral `gap-px` divider and `bg-surface-card` column surfaces, no separate
+rounded borders/shadows per metric, and responsive stacked columns on mobile.
+Columns retain Scanner Coverage, Runtime Correlation, and Evidence Freshness,
+compact source labels and status pills, with authentic Stale/Inputs Changed,
+Unknown when not Ready, and no fabricated `Current` state. Keep one muted
+semantic evidence boundary footer outside the divided columns. Add the shared
 `section_intro.render` title and description directly above the canonical
 Findings registry. The first table column uses `table_ui.title_cell` and
 shared severity status labels, not custom HTML/CSS. Retain the canonical
