@@ -97,6 +97,12 @@ The Tenant Quota View Details modal reuses `kubernetes/analytics/components/_rec
 
 The ResourceQuota Object Evidence grid uses full available width when a single object is committed, and two columns only for multiple quota objects at desktop sizes. Hard and used keys, missing-key warnings, runtime interpretation, and recommendations remain unchanged. This is presentation only; it cannot manufacture quota usage or runtime demand from unavailable evidence.
 
+## ResourceQuota Evidence Readability and Guide (#4769)
+
+The Tenant Quota Records heading uses the established Violet `info_tip.render(..., variant='guide', placement='right')` beside its title; this is distinct from the Tenant Quota Analysis Guide. The read-only `ResourceQuota Object Evidence` card retains the object name and Hard Key count while organizing **Hard Boundary** and **Observed Used** in bordered evidence panels with aligned semantic `dl/dt/dd` rows, visible row dividers, and readable numeric units. A single quota object spans the full detail region and shows the two evidence panels side by side on desktop. Multiple object cards retain the compact two-column outer layout with vertically stacked inner evidence panels. No quota observations are hidden.
+
+The Workload formatter `format_resource_quota_value` continues to use the existing CPU-core and memory-GiB utilities. It now treats Kubernetes quota `requests.storage`, `requests.ephemeral-storage`, and `limits.ephemeral-storage` as **raw bytes** for display using the existing `bytes_to_gib` function; for example, `107374182400` bytes renders as **`100.00 GiB`**. Recognized count-based quota keys use integer formatting, and original provider resource keys remain visible for correlation. The same representation applies independently to `hard_items` and `used_items`; underlying committed hard/used objects, quota percentages and risk are unchanged. Unknown or absent used keys remain unavailable rather than inferred zero.
+
 ## ResourceQuota Object Semantics
 
 ResourceQuota evidence is retained per object:
