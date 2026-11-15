@@ -17,6 +17,7 @@ from app.integrations.observability.metrics_source.application.registration_web 
     test_new_instance_connection_response,
 )
 from app.integrations.observability.metrics_source.providers import provider_definitions
+from app.integrations.orchestration.configuration_automation.frontpage import build_ansible_frontpage
 from app.integrations.orchestration.container_orchestrator.frontpage import (
     KubernetesCoverageFilters,
     KubernetesFrontPageFilters,
@@ -108,6 +109,24 @@ def _render_domain_page(domain_key: str) -> ResponseReturnValue:
 @permission_required('integrations.manage')
 def orchestration() -> ResponseReturnValue:
     return _render_domain_page('orchestration')
+
+
+@integrations_bp.get('/ansible')
+@permission_required('integrations.manage')
+def ansible() -> ResponseReturnValue:
+    """Governed, committed-evidence-only Ansible workspace (no runner on GET)."""
+    context = build_ansible_frontpage(
+        status=request.args.get('status', '').strip(),
+        page=request.args.get('page', 1, type=int) or 1,
+        per_page=request.args.get('per_page', 5, type=int) or 5,
+    )
+    if is_htmx_request() and htmx_target() == 'ansible-execution-registry':
+        return render_template(
+            'integrations/orchestration/configuration_automation/providers/ansible/_execution_registry.html', **context
+        )
+    return render_template(
+        'integrations/orchestration/configuration_automation/providers/ansible/frontpage.html', **context
+    )
 
 
 @integrations_bp.get('/observability')
