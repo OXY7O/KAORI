@@ -86,20 +86,36 @@
                     {% include "artifact_registry/partials/_analytics_overview_workspace.html" %}
                 </section>
             {% else %}
-                <section id="artifact-registry-analytics-workspace"
-                         class="{{ section_card.shell_classes() }}"
-                         aria-label="{{ analytics.page_title }} workspace">
-                    <div id="artifact-registry-analytics-active-section"
-                         data-analytics-lazy-section="true"
-                         data-analytics-load-state="idle"
-                         hx-get="{{ url_for('artifact_registry.analytics_section', section=analytics.active_tab, provider_id=analytics.selected_provider_id, snapshot_window=analytics.snapshot_window, alert_q=analytics.alert_filters.search if analytics.active_tab == 'alerts' else none, alert_severity=analytics.alert_filters.severity if analytics.active_tab == 'alerts' else none, alert_state=analytics.alert_filters.state if analytics.active_tab == 'alerts' else none, alert_source=analytics.alert_filters.source if analytics.active_tab == 'alerts' else none, alert_page=analytics.alert_filters.page if analytics.active_tab == 'alerts' else none, alert_per_page=analytics.alert_filters.per_page if analytics.active_tab == 'alerts' else none, capacity_page=request.args.get('capacity_page', 1, type=int) if analytics.active_tab == 'capacity' else none, capacity_per_page=request.args.get('capacity_per_page', 5, type=int) if analytics.active_tab == 'capacity' else none) }}"
-                         hx-trigger="load"
-                         hx-target="this"
-                         hx-swap="outerHTML">
-                        {{ section_loading.section(analytics.page_title,
-                                                'Preparing committed Analytics evidence for the active workspace.',
-                                                analytics.page_icon) }}
-                    </div>
+                {% set detail_section_intros = {
+                    'growth': ('Registry Growth Analysis', 'Review committed artifact and storage deltas, source comparisons, and measured history.'),
+                    'capacity': ('Registry Capacity Analysis', 'Review project quota pressure, qualified headroom, and evidence-backed forecast horizons.'),
+                    'usage': ('Registry Usage Analysis', 'Correlate committed pull counters with artifact usage in Kubernetes runtime.'),
+                    'risk': ('Registry Risk Analysis', 'Review committed security findings, runtime exposure, and scan coverage gaps.'),
+                    'governance': ('Registry Governance Analysis', 'Examine provider-observed retention, immutability, and replication control evidence.'),
+                    'alerts': ('Registry Alerts & Anomalies', 'Review committed alert lifecycle, source readiness, and qualified fallback evidence.'),
+                    'insights': ('Registry Insights & Intelligence', 'Review factual cross-domain signals; Intelligence retains recommendation and decision authority.')
+                } %}
+                {% set detail_intro = detail_section_intros[analytics.active_tab] %}
+                <section class="space-y-3"
+                         aria-labelledby="artifact-registry-analytics-detail-heading">
+                    {{ section_intro.render(detail_intro[0],
+                                        detail_intro[1],
+                                        'artifact-registry-analytics-detail-heading') }}
+                    <section id="artifact-registry-analytics-workspace"
+                             class="{{ section_card.shell_classes() }}"
+                             aria-label="{{ analytics.page_title }} workspace">
+                        <div id="artifact-registry-analytics-active-section"
+                             data-analytics-lazy-section="true"
+                             data-analytics-load-state="idle"
+                             hx-get="{{ url_for('artifact_registry.analytics_section', section=analytics.active_tab, provider_id=analytics.selected_provider_id, snapshot_window=analytics.snapshot_window, alert_q=analytics.alert_filters.search if analytics.active_tab == 'alerts' else none, alert_severity=analytics.alert_filters.severity if analytics.active_tab == 'alerts' else none, alert_state=analytics.alert_filters.state if analytics.active_tab == 'alerts' else none, alert_source=analytics.alert_filters.source if analytics.active_tab == 'alerts' else none, alert_page=analytics.alert_filters.page if analytics.active_tab == 'alerts' else none, alert_per_page=analytics.alert_filters.per_page if analytics.active_tab == 'alerts' else none, capacity_page=request.args.get('capacity_page', 1, type=int) if analytics.active_tab == 'capacity' else none, capacity_per_page=request.args.get('capacity_per_page', 5, type=int) if analytics.active_tab == 'capacity' else none) }}"
+                             hx-trigger="load"
+                             hx-target="this"
+                             hx-swap="outerHTML">
+                            {{ section_loading.section(analytics.page_title,
+                                                    'Preparing committed Analytics evidence for the active workspace.',
+                                                    analytics.page_icon) }}
+                        </div>
+                    </section>
                 </section>
             {% endif %}
         {% endif %}
