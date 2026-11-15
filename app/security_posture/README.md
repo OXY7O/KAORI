@@ -14,8 +14,8 @@ Security Posture is an Assurance workspace that **consumes** source-qualified co
 
 ## Routes / navigation
 
-- `/security/` → **Security → Overview**. Shared **Kubernetes Governance-style Violet Hero** (normal `page_hero.context_card`, blocked `blocked_context_body`) with explicit Provider Authority / Evidence Boundary, scanner-qualified status and a CVE Findings CTA; one grouped **Security Snapshot** containing four source-qualified metrics; one Exposure & Runtime Evidence analysis card; and a full canonical **Findings & Investigation** registry with server-filtered CVE rows, HTMX loading/refresh, standard five-row default pagination, and the Investigation Handoff inside the same table card. The canonical four URL panel keys are retained; scoped Security labels are **Exposure Analysis**, **Assets & Impact**, **Findings & Investigation** and **Evidence & Sources** (see approved design pattern #4711).
-- `/security/findings` → **Security → Findings**. Server-backed grouped CVEs, scanner finding counts, distinct immutable artifact digest counts, existing Kubernetes binding counts, search/severity filters and 5/10/25/50 pagination.
+- `/security/` → **Security → Overview**: approved Governance-style Violet Hero and committed source context; grouped Security Snapshot; one Exposure & Runtime Evidence analysis; four integrated perspectives. The **Exposure Analysis** panel presents **Finding Highlights**: three severity-ordered qualified CVEs and compact source-wide counters, not a full registry. `Open Findings` owns detailed search, filters, loading, pagination and investigation. The canonical four tab keys and their Security-specific labels remain unchanged (see #4711).
+- `/security/findings` → **Security → Findings**: full source-backed grouped CVE registry with the same approved Governance-style Hero, source-qualified Evidence Qualification, canonical header/Guide/loading bar, Search CVE and Severity filters, read-only `Refresh View`, 5/10/25/50 server pagination, clear-filter and empty states, plus exact-CVE impact links. This is the full investigation surface (#4772); the page does not initiate scans or provider calls.
 - `Artifact Registry → Security` continues as authoritative source-domain workspace. Exact CVE rows link to its existing `/artifact-registry/security/cve/<CVE>/impact` drill-down; Security does **not** duplicate that detail view.
 - The **Assurance** sidebar contains a two-level Security parent with only real route-backed Overview/Findings children. Planned capabilities remain hidden; no new renderer/CSS family.
 
@@ -35,13 +35,13 @@ The non-Exposure perspectives reuse existing `operational_section_card`,
   integrated publication boundary. The `Open Reports` link remains gated by
   `can_view_reports`; a read-only boundary stays visible without that permission.
 
-Security Snapshot also exposes a shared **Scanner Evidence Freshness Guide** next to its source-derived scanner-status badge. It explains the 24-hour window for the oldest qualified scan, why an unchanged CVE count is not evidence that a rescanning event did not happen, and why Security Sync/Refresh View/Runtime Correlation are different operations. Keep scanner Stale and provenance text persistent outside the Guide.
+Security Snapshot also exposes a shared **Scanner Evidence Freshness Guide** next to its source-derived scanner-status badge. It explains the 24-hour window for the oldest qualified scan, why an unchanged CVE count is not evidence that a rescanning event did not happen, and why Security Sync / Findings Refresh View / Runtime Correlation are different operations. Keep scanner Stale and provenance text persistent outside the Guide.
 
 All three tabs have a canonical header-level **Guide** explaining the source
 ownership and evidence limitations. Guides are supplemental, never the sole
 location of unknown/stale warnings or permission requirements. The original
-four-tab URL keys, scoped source RBAC, canonical CVE table and content
-loading behavior remain unchanged.
+four-tab URL keys and scoped source RBAC remain unchanged; full table and HTMX
+loading now belong exclusively to the Findings page.
 
 ## Security Sync, scanner freshness and runtime correlation
 
@@ -85,7 +85,42 @@ Both Security routes require `security_posture.view`; `flask seed-rbac` (in a co
 
 The read model consumes only active/enabled Registry integrations with committed inventory. CVE rows come from the latest usable successful scanner snapshot per artifact. Failed scan refresh preserves last-good evidence, but freshness can become stale; a newer successful scan supersedes old findings. Deduplicated artifact and runtime binding counters are *observations* and are never a normalized application owner count. The oldest usable scanner observation and missing inventory scan coverage qualify scanner readiness; mixed partial/stale evidence is **Partial / Stale**. The canonical Runtime Correlation readiness reflects input changes and failures separately. Missing, unsupported, stale or denied sources must not be described as remediated or 'no exposure'.
 
-The Security Overview distinct-CVE severity breakdown aggregates **all authorized latest usable scanner CVEs** independently of the local table's search/severity/page state. The Overview's Findings & Investigation block is a full server-backed CVE registry reusing the same qualified read model as canonical Security Findings. It supports normalized CVE search, severity, **Refresh View** (header action, rereads committed state only), default five-row pagination (5/10/25/50), HTMX scoped replacement, and source-qualified exact-CVE impact links. The header keeps at most two actions (conditional Clear Filters plus Refresh View); the full Findings handoff is in the integrated Investigation Handoff footer. Filter controls stay full-width. Security Findings remains the owning full investigation workspace; no second scanner, source provider call, or invented remediation lifecycle has been introduced. The Security-specific layout reuses the **Governance Overview Hero** composition: shared Violet shell and context card, source-authority/evidence-boundary metrics, source-qualified status, and a `Review CVE Findings` CTA instead of a Registry Integrations shortcut. It renders one grouped Security Snapshot without an unboxed section intro, then a single analysis section card with a 7/5 internal desktop grid: Exposure by Severity on the left; Runtime Impact and Evidence Confidence as internally separated right-hand sections. An explicit shared `space-y-5` workspace rhythm prevents Snapshot, analysis and tabs from touching. The analysis has its own shared `section_intro` heading and concise scope description above the card, and the card header embeds a keyboard/touch-accessible `info_tip.render(..., variant='guide')` explaining scanner authority, runtime-binding confidence, freshness and why missing evidence never means zero exposure. The normal Hero Evidence Boundary helper is shortened to a single line; non-Ready runtime correlation shows one compact unknown-exposure statement without publishing binding totals. The server-paginated CVE table and Investigation Handoff share one canonical `table_ui.block_classes()` registry with shared `inventory_block_header`, `table_registry.filter_form/clear_filters_link/footer` and a header loading bar; inline CVE severity, row-level impact links, and canonical pagination follow the approved Table & Label standard. Search/severity change only the table rows and filtered result count, never the Security Snapshot, severity chart or runtime-impact aggregates. Source permissions are unchanged. Severity proportion bars reuse shared KAORI progress visualization. Runtime Impact deduplicates observed digest/reference binding identities across scoped CVE artifacts, and suppresses binding totals unless correlation is Ready. No trend chart appears until a trustworthy historical time-series contract exists. Missing scanner evidence, a stale scan, or a Ready runtime binding do not independently imply safe or remediated applications.
+The Security Overview distinct-CVE severity distribution aggregates **all
+authorized latest usable scanner CVEs**. Summary counts remain independent of
+the local highlight bound and of any search on the full Findings page. The
+Overview's `Finding Highlights` card shows only the **first three**
+severity-ordered source-qualified grouped CVEs, two relevant scope counts,
+runtime-correlation readiness, and a canonical `Open Findings` handoff. It
+contains **no filter form, loading bar, table header or pagination**.
+A small immutable-digest/source note and a source-qualified empty state make
+clear that an absent highlight is not an all-clear. The sibling
+`Findings & Investigation` perspective remains a separate, governed handoff,
+not a duplicate registry.
+
+The **Findings** page owns the complete normalized CVE query workflow and
+reuses `table_ui.block_classes`, `inventory_block_header`,
+`table_registry.filter_form/clear_filters_link/footer`, shared loading bar,
+`info_tip.render(variant='guide')`, and existing authorized CVE impact links.
+Its Hero follows the Kubernetes Governance composition with Provider Authority
+(Artifact Registry), Evidence Boundary (Committed) and the actual scanner
+status; the context action returns to Overview. One compact
+`Evidence Qualification` section presents scanner freshness and runtime
+binding generation **separately**. Runtime-binding totals inside the Findings
+table are shown only when the committed correlation status is `Ready`;
+otherwise they are `Unknown`, never fabricated zero. Header actions are
+limited to conditional Clear Filters and committed-only Refresh View.
+The table uses search/severity, default five rows and sizes 5/10/25/50;
+an HTMX refresh replaces **only** its own canonical table region.
+No provider request, scan, remediation, new source record or claimed
+application ownership is created by this read-only view.
+
+The Security-specific Overview Hero, Security Snapshot, `section_intro`,
+shared 7/5 Exposure & Runtime analysis, severity progress bars and four URL
+panel keys remain unchanged. Runtime Impact still deduplicates observed
+digest/reference binding identities across scoped CVE artifacts and suppresses
+binding totals unless correlation is Ready. No trend chart appears until a
+trustworthy historical time-series contract exists. A stale scan or a Ready
+runtime binding does not independently imply safe or remediated applications.
 
 The Findings registry differentiates **strong digest bindings** from weaker
 **mutable/reference bindings** using the same correlation identity distinction
