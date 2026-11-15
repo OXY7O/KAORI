@@ -20,6 +20,7 @@ from app.intelligence.finding_presentation import (
     build_fix_steps,
     compact_recommendation_summary,
     finding_scope_details,
+    recommendation_detail_header_summary,
     format_affected_summary,
     recommendation_table_summary,
     recommendation_table_title,
@@ -586,6 +587,7 @@ def get_recommendation_finding(recommendation_key: str) -> dict[str, Any] | None
         finding['scope_supporting'] = scope_supporting
         finding['list_title'] = recommendation_table_title(finding, limit=96)
         finding['list_summary'] = recommendation_table_summary(finding, limit=72)
+        finding['detail_header_summary'] = recommendation_detail_header_summary(finding)
         decorate_recommendation_findings([finding])
         return finding
 
