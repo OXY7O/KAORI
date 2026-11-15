@@ -105,6 +105,8 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
             connection=connection,
             source=connection.metadata_json,
             source_posture=source_validation_posture(connection),
+            inventory_targets=[],
+            inventory_pagination=pagination_payload(build_pagination_window(total_items=0)),
             jobs=[],
             pagination=pagination_payload(build_pagination_window(total_items=0)),
         )
