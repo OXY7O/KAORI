@@ -6,10 +6,13 @@ network access, credentials, provider mutation, or disabled TLS verification.
 
 from __future__ import annotations
 
+import ssl
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import pytest
 
+from app.access.authentication.identity_provider.adapters.ldap import client as ldap_client
 from app.access.authentication.identity_provider.adapters.ldap.client import (
     ExternalProviderError,
     LdapDirectoryClient,
@@ -98,3 +101,55 @@ def test_starttls_failure_fails_closed_without_bind(monkeypatch: pytest.MonkeyPa
     with pytest.raises(ExternalProviderError, match='LDAP StartTLS negotiation failed'):
         client._bound_connection(user='CN=svc-kaori,DC=kaori,DC=cloud', password='test-only')
     assert connection.calls == ['open', 'start_tls', 'unbind']
+
+
+def _transport_for_tls_test(*, start_tls: bool) -> LdapDirectoryClient:
+    client = object.__new__(LdapDirectoryClient)
+    client.transport = LdapTransport(
+        host='adds.kaori.cloud',
+        port=389 if start_tls else 636,
+        use_ssl=not start_tls,
+        start_tls=start_tls,
+    )
+    client.config = {'connect_timeout_seconds': 5}
+    return client
+
+
+@pytest.mark.parametrize('start_tls', [False, True])
+def test_configured_ldap_ca_bundle_is_used_with_required_verification(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, *, start_tls: bool
+) -> None:
+    # This is a wiring test; a real TLS certificate chain is verified during UAT.
+    bundle = tmp_path / 'ca.pem'
+    bundle.write_text('test-only CA fixture, never a real certificate', encoding='utf-8')
+    monkeypatch.setenv('KAORI_LDAP_CA_BUNDLE', str(bundle))
+    monkeypatch.setattr(ldap_client, 'Tls', lambda **options: options)
+    monkeypatch.setattr(ldap_client, 'Server', lambda host, **options: {'host': host, **options})
+
+    server = _transport_for_tls_test(start_tls=start_tls)._server()
+
+    assert server['host'] == 'adds.kaori.cloud'
+    assert server['use_ssl'] is not start_tls
+    assert server['tls']['validate'] == ssl.CERT_REQUIRED
+    assert server['tls']['ca_certs_file'] == str(bundle)
+
+
+def test_no_ldap_ca_override_preserves_system_trust(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv('KAORI_LDAP_CA_BUNDLE', raising=False)
+    monkeypatch.setattr(ldap_client, 'Tls', lambda **options: options)
+    monkeypatch.setattr(ldap_client, 'Server', lambda host, **options: {'host': host, **options})
+
+    server = _transport_for_tls_test(start_tls=False)._server()
+
+    assert server['tls']['validate'] == ssl.CERT_REQUIRED
+    assert server['tls']['ca_certs_file'] is None
+
+
+@pytest.mark.parametrize('invalid_path', ['relative-ca.pem', '/nonexistent/kaori/ldap/ca.pem'])
+def test_invalid_configured_ldap_ca_fails_closed_without_network(
+    monkeypatch: pytest.MonkeyPatch, invalid_path: str
+) -> None:
+    monkeypatch.setenv('KAORI_LDAP_CA_BUNDLE', invalid_path)
+
+    with pytest.raises(ExternalProviderError, match='LDAP CA bundle is unavailable or unreadable'):
+        _transport_for_tls_test(start_tls=False)._server()
