@@ -166,7 +166,7 @@ def _ansible_registration_feedback(*, event_type: str, status: str, title: str, 
         action_url=url_for('integrations.ansible_new_connection'),
         action_label='Review Ansible Source',
         action_icon='git-commit',
-        metadata={'provider': 'ansible', 'registration_phase': 'source_only'},
+        metadata={'provider': 'ansible', 'registration_phase': 'source_only', 'feedback_delivery': 'toast'},
         queue_feedback=True,
         delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY,
     )
