@@ -81,6 +81,31 @@ defect, **not** evidence that Alembic migrations are pending. Check
 disable constraints, stamp Alembic, or clear DevContainer PostgreSQL
 volumes as a workaround.
 
+### Full Validation and committed capability evidence
+
+Vault connection Detail uses the canonical KAORI provider-validation
+lifecycle: **Run Full Validation** submits the approved operation to
+the shared `integration-validation` worker; the HTMX workspace shows
+the active JobExecution state and polls an instance-bound task route.
+Once terminal, it refreshes committed readiness, the tab badge and
+the provider posture, and emits only user-authorized feedback.
+Standard non-JavaScript form submission redirects back to Validation.
+
+The API contract has **three required** observations: health,
+AppRole login, and authenticated token `lookup-self`. The fourth
+observation, `GET /v1/sys/mounts`, is **optional** mount discovery.
+When AppRole cannot read optional `sys/mounts`, this is represented
+as limited optional coverage, not missing core API evidence or a
+permission to read Secret payloads.
+
+A historical Vault release can have complete required API evidence
+while compatibility remains `degraded`. Show required core coverage
+accurately (e.g., `3 / 3`) alongside separate compatibility attention.
+Vault remains authoritative for runtime status, policies, tokens,
+Secret contents and PKI; provider Full Validation does not prove
+separately committed KV v2 / public PKI / stored certificate inventory
+or grant scoped Secret access. Runtime Refresh is independent.
+
 ### Connection feedback and optional inventory scope
 
 Vault Add/Edit uses the existing KAORI top-right Operational Toast and
