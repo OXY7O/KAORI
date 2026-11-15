@@ -113,7 +113,7 @@
     {{ provider_job_status.render(validation_job, 'Vault validation running in worker', 'Vault') }}
     <div class="space-y-4 p-4 sm:p-5">
         {{ capability_readiness.render('Vault Capability Readiness',
-                'Required API evidence is independent from committed Secret and PKI inventory.',
+                'Core API readiness is independent of Secret and PKI inventory.',
                 readiness if instance.enabled else 'disabled',
                 readiness|replace('_', ' ')|title if instance.enabled else 'Disabled',
                 'Required Capability Coverage',
