@@ -9,8 +9,7 @@ from flask import render_template
 
 from app import create_app
 from app.common.pagination import build_pagination_window, pagination_payload
-from app.integrations.orchestration.configuration_automation import integration_module
-from app.integrations.orchestration.configuration_automation import frontpage
+from app.integrations.orchestration.configuration_automation import frontpage, integration_module
 from app.integrations.orchestration.configuration_automation.providers.ansible import provider_implementation
 from app.integrations.provider_matrix import provider_kind
 from app.integrations.taxonomy import get_capability_definition

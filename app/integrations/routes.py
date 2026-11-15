@@ -2,11 +2,12 @@ from flask import Blueprint, abort, current_app, redirect, render_template, requ
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
+from sqlalchemy.exc import SQLAlchemyError
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import permission_required
-from app.extensions.db import db
 from app.common.http import htmx_target, is_htmx_request
+from app.extensions.db import db
 from app.integrations.binding_web import binding_response as _binding_response
 from app.integrations.domain_service import (
     BindingRegistryFilters,
@@ -29,11 +30,6 @@ from app.integrations.orchestration.configuration_automation.providers.ansible.s
     get_connection,
     save_source_connection,
 )
-from app.integrations.source_control.source_control.providers.github.public_automation_source import (
-    AutomationSourceRejected,
-    verify_public_kubespray_source,
-)
-from sqlalchemy.exc import SQLAlchemyError
 from app.integrations.orchestration.container_orchestrator.frontpage import (
     KubernetesCoverageFilters,
     KubernetesFrontPageFilters,
@@ -54,6 +50,10 @@ from app.integrations.service import (
     build_kubernetes_capability_registry,
     build_kubernetes_detail,
     build_metrics_source_page,
+)
+from app.integrations.source_control.source_control.providers.github.public_automation_source import (
+    AutomationSourceRejected,
+    verify_public_kubespray_source,
 )
 from app.integrations.taxonomy import get_domain_definition
 from app.integrations.validation.state import (

@@ -7,8 +7,8 @@ from wtforms import SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length, Optional, Regexp
 
 from app.integrations.orchestration.configuration_automation.providers.ansible.contract import (
-    AnsibleConnectionInput,
     _NONPRODUCTION,
+    AnsibleConnectionInput,
     require_registration_policy,
 )
 from app.integrations.source_control.source_control.providers.github.public_automation_source import (
