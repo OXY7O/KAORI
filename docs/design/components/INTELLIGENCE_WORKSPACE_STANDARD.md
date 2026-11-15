@@ -69,6 +69,21 @@ authorized by this visual refinement.
 
 
 
+**Intelligence Posture card typography refinement (#4791, Human Visual
+UAT 2026-11-15):** The three source-qualified posture links retain their
+existing semantic critical/warning/normal status surfaces and ownership
+destinations. Within each existing card, use one consistent vertical rhythm:
+icon + short card title + chevron in the header, prominent source-derived
+value below it, and one concise supporting sentence beneath. Allocate a
+two-line value region so differing numbers and labels do not misalign the
+supporting text at desktop widths. Maintain full-card keyboard-focus
+visibility, responsive column stacking and no extra nested card surfaces.
+Shorten verbose supporting text without changing critical counts, committed
+24-hour Inventory qualification, separate security/metrics/analytics evidence
+authority, automation execution status or worker-owned collection. The Guide
+remains the canonical explanation of those detailed operational boundaries.
+No new component family, application state or provider queries are implied.
+
 ### Intelligence Overview committed-evidence posture and alert semantics (#1490–#1492)
 
 - **Active AlertCase** is the source-qualified recommendation-origin condition `workflow_state != closed` **and** `source_state in (firing, unknown)`; resolved-source cases remain available in Alert Intelligence history, not Active. Critical and warning counts require **firing** evidence. Source-unknown remains an attention state and must not become false critical or green.
