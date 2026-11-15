@@ -137,6 +137,18 @@ A historical degraded Vault release can still show 3/3 required APIs,
 while a denied optional `sys/mounts` check remains Limited. Empty filter
 results do not indicate missing provider capabilities.
 
+### Runtime tab status and concise operator action (#4879)
+
+The Runtime & History tab badge reflects the latest **committed runtime
+health** (Healthy, Degraded, Unhealthy, or Not Observed) using the
+same `runtime_state.health_status_label` as Kubernetes; it no longer
+says `Jobs & Evidence`. It is not a validation-readiness or job-progress
+indicator. The Runtime Decision's Next Operational Action has short
+state-specific instructions for desktop readability, with natural mobile
+wrapping, and distinguishes a runtime health issue from release/API
+validation readiness. No new runtime observation, live provider request,
+credential permission, or status transition is introduced.
+
 ### Runtime & History workspace parity (#4872)
 
 Vault's Runtime & History follows the approved Kubernetes-style
