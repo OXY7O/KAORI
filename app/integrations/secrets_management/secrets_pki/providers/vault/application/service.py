@@ -50,12 +50,24 @@ def save_connection(values: VaultConnectionInput, *, existing: VaultInstance | N
     if duplicate.first() is not None:
         raise ValueError('A Secrets & PKI connection with this name already exists.')
     if existing is None:
+        # Registry identity has NOT NULL columns. Populate them before flush
+        # obtains the generated canonical id; metadata_json follows the id.
         identity = IntegrationInstance()
         identity.integration_type = 'secrets_pki'
         identity.provider_key = 'vault'
         identity.adapter_key = 'vault_http_v1'
+        identity.name = values.name
+        identity.description = values.description
+        identity.environment = values.environment
+        identity.enabled = values.enabled
         db.session.add(identity)
-        db.session.flush()
+        try:
+            db.session.flush()
+        except SQLAlchemyError:
+            # A failed flush leaves the scoped Session in PendingRollback.
+            # Recover it before the route writes its Activity Audit feedback.
+            db.session.rollback()
+            raise
         instance = VaultInstance()
         instance.integration_instance_id = identity.id
         db.session.add(instance)
