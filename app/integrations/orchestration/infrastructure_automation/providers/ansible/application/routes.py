@@ -11,6 +11,7 @@ from wtforms.validators import ValidationError
 from app.access.rbac.decorators import permission_required
 from app.common.http import htmx_target, is_htmx_request
 from app.common.pagination import paginate_query
+from app.infrastructure_automation.source import SOURCE_SHA
 from app.integrations.kernel.registry import get_integration
 from app.integrations.orchestration.infrastructure_automation.providers.ansible import INTEGRATION_TYPE
 from app.integrations.orchestration.infrastructure_automation.providers.ansible.application.service import (
@@ -21,7 +22,6 @@ from app.integrations.orchestration.infrastructure_automation.providers.ansible.
     save_connection,
 )
 from app.models.integration import IntegrationInstance
-from app.models.job import JobExecution
 from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 from app.platform_operations.notifications.service import record_operational_activity
 
@@ -108,7 +108,7 @@ def _render_form(
         instance=instance,
         form=form,
         error=error,
-        source_commit=__import__('app.infrastructure_automation.source', fromlist=['SOURCE_SHA']).SOURCE_SHA,
+        source_commit=SOURCE_SHA,
     ), (400 if error else 200)
 
 
