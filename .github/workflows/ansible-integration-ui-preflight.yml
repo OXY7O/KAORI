@@ -34,7 +34,7 @@ jobs:
             tests/contracts/integrations/test_ansible_configuration_automation_workspace_contract.py
       - name: Djlint shared template contract
         run: |
-          djlint --check \
+          djlint --check --diff \
             app/templates/integrations/orchestration/configuration_automation/providers/ansible/frontpage.html \
             app/templates/integrations/orchestration/configuration_automation/providers/ansible/_execution_registry.html \
             app/templates/integrations/partials/_domain_workspace.html
