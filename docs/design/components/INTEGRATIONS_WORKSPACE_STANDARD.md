@@ -103,6 +103,41 @@ compatibility; optional sys/mounts permission failure stays Limited,
 and missing current validation stays Not Observed. Runtime Health and
 KV v2/PKI inventory remain independent owners.
 
+**Vault Inventory & Lifecycle parity (Human UAT #4884):**
+Vault uses the same full-width MinIO/Kubernetes hierarchy for its
+fourth connection-detail domain: Inventory & Lifecycle header and Guide,
+horizontal **Inventory & Lifecycle Decision**, four decision facts,
+authority/retention boundaries, Next Lifecycle Action, **KAORI Operational
+Consumers**, and a compact full-width **Committed Evidence Sources**
+registry followed by Evidence Ownership. Use existing Violet shared
+table/status/record-action/native modal primitives.
+
+Vault has **three separately committed evidence streams**, not three
+guaranteed ready/active bindings: KV v2 metadata, public PKI issuers,
+and optional stored PKI certificates. The tab badge reflects the count
+of streams that actually have committed timestamps (or `Not Collected`),
+not a static `Committed Evidence` label or provider Full Validation.
+Each stream retains its own approved mount count, committed coverage,
+observed count, collection state, and latest committed timestamp.
+Missing observed data must say `Not Collected`, never a fabricated
+zero. Aggregated evidence stream count is informational, **not**
+a source readiness score or consumer-grant claim. Metadata-only
+View More is available via the existing Integration native dialog,
+and any Jobs handoff retains `jobs.view` authorization.
+
+**Do not clone MinIO asset lifecycle into Vault**: the Vault connection
+provider has no approved asset-owner binding table, deletion route,
+or proven removal guardrail. The Lifecycle Gate must say
+`Not Evaluated`, and the supported action is permission-gated
+`Configure Connection` plus existing independently governed collection
+jobs. Do not show `Delete Connection` or `Guardrails Passed`; never
+invent bound observability sources. Vault remains authoritative for
+Secret payloads, ACLs, tokens, issuer keys, and issuance. Operational
+consumers describe read-only ownership boundaries, not proof of actual
+active consumers, issued certificates, or automatic source bindings.
+Source collection, Full Validation, runtime evidence and lifecycle
+retention are independent. No live Vault requests during rendering.
+
 **Vault Runtime badge and action density (Human UAT #4879):**
 The framed `Runtime & History` badge shows the **committed runtime
 observation health label** supplied by `runtime_observation_state_view`,

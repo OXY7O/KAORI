@@ -144,12 +144,16 @@ def test_vault_detail_reuses_four_domain_workspaces_without_cloning_engine():
     assert 'csrf_token()' in runtime
 
     inventory = _partial('_detail_inventory.html')
-    assert 'KV v2 Inventory Evidence' in inventory
-    assert 'PKI Public Issuer Evidence' in inventory
+    assert 'Inventory &amp; Lifecycle Decision' in inventory
+    assert 'KAORI Operational Consumers' in inventory
+    assert 'Committed Evidence Sources' in inventory
+    assert 'KV v2 Metadata' in inventory
+    assert 'PKI Public Issuers' in inventory
     assert 'PKI Stored Certificates' in inventory
     assert 'inventory_readiness.observed_secret_count' in inventory
     assert "current_user.has_permission('jobs.view')" in inventory
-    assert 'No Secret values or private key material' in inventory
+    assert 'Secret values' in inventory
+    assert 'private-key access' in inventory
 
 
 def test_vault_registration_reuses_actions_without_changing_proof_or_credentials():
@@ -719,4 +723,90 @@ def test_vault_runtime_badge_and_next_action_match_committed_runtime_posture() -
 
     Environment().parse(detail)
     Environment().parse(runtime)
+
+def test_vault_inventory_uses_minio_hierarchy_without_invented_asset_mutations() -> None:
+    from jinja2 import Environment
+
+    source = _partial('_detail_inventory.html')
+    detail = DETAIL.read_text(encoding='utf-8')
+    minio = (
+        ROOT / 'app/templates/integrations/storage/object_storage/providers/minio/'
+        'partials/_detail_scope.html'
+    ).read_text(encoding='utf-8')
+    route = ROUTES.read_text(encoding='utf-8')
+    for structural_token in (
+        'data-kaori-inventory-lifecycle-v5',
+        'data-kaori-inventory-lifecycle-decision',
+        'data-kaori-inventory-snapshot-strip',
+        'data-kaori-inventory-decision',
+        'data-kaori-inventory-lifecycle-boundary',
+        'data-kaori-inventory-lifecycle-content',
+        'data-kaori-consumer-list',
+    ):
+        assert structural_token in source
+        assert structural_token in minio
+    for shared_component in (
+        'components/table.html',
+        'components/table_label.html',
+        'integrations/components/_workspace.html',
+        'integrations/components/_semantic_status.html',
+        'integrations/components/_record_actions.html',
+        'integrations/components/_record_detail_modal.html',
+        'components/pagination.html',
+    ):
+        assert shared_component in source
+    for header in (
+        'Inventory &amp; Lifecycle Decision',
+        'Snapshot Freshness',
+        'Evidence Coverage',
+        'Approved Scopes',
+        'Lifecycle Gate',
+        'Vault Authority Boundary',
+        'Evidence &amp; Retention Boundary',
+        'Next Lifecycle Action',
+        'KAORI Operational Consumers',
+        'Committed Evidence Sources',
+        'Evidence Ownership',
+    ):
+        assert header in source
+    assert "('inventory', 'Inventory & Lifecycle', 'database', inventory_tab_badge)" in detail
+    assert 'inventory_committed_streams' in detail
+    assert 'inventory_readiness.last_committed_at' in detail
+    assert 'public_pki_readiness.last_committed_at' in detail
+    assert 'stored_cert_readiness.last_committed_at' in detail
+    assert "'Committed Evidence')" not in detail
+
+    # Three independently persisted producer streams, never three guaranteed
+    # active/qualified consumers or a fake Vault asset binding registry.
+    for key in ("'key': 'kv2'", "'key': 'pki-public'", "'key': 'pki-stored'"):
+        assert key in source
+    assert source.count("'job_key': 'secrets_pki.") == 3
+    assert 'data-kaori-vault-evidence-source' in source
+    assert 'data-kaori-vault-evidence-source-detail' in source
+    assert 'record_actions.view_more(' in source
+    assert 'record_detail_modal.render(' in source
+    assert 'current_user.has_permission(\'jobs.view\')' in source
+    assert "url_for('jobs.configuration', job_key=source.job_key)" in source
+    assert "url_for('vault.edit_instance', instance_id=instance.id)" in source
+    assert "current_user.has_permission('integrations.manage')" in source
+    assert 'No Committed Inventory' in source
+    assert "'Not Collected'" in source
+    assert 'source.observed is not none' in source
+    assert 'source.timestamp|user_datetime if source.timestamp else' in source
+    assert 'not a readiness score' in source
+    assert 'Removal Not Evaluated' in source
+    assert 'No Vault connection removal guardrail is qualified' in source
+    assert 'No Secret values' in source or 'no Vault live request or Secret payload' in source
+    for unsafe in (
+        'url_for(\'vault.delete',
+        'openDelete(',
+        'Delete Connection',
+        'Bound Observability Sources',
+        'binding_rows',
+        'source.secret_id',
+    ):
+        assert unsafe not in source
+    assert "def delete_instance(" not in route
+    Environment().parse(source)
+    Environment().parse(detail)
 
