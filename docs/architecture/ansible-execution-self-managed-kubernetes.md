@@ -129,3 +129,11 @@ Each workstream needs an issue-first branch, tests mapped to existing Gherkin/py
 - Track exact Git SHA / worker image digest / candidate environment, sanitized logs/events, real provider read-back, committed evidence, Activity Audit and scenario-to-test mapping.
 
 Architecture assessment alone is not a test PASS. Official Developer Check, Full Admission, production activation and deployment remain **HOLD** until separately authorized.
+
+## Public source licensing and access authority
+
+Operator decision: keep `OXY7O/kaori-operations` public as reusable **source** only. A public repository does not confer a reusable open-source license. Current `OXY7O/KAORI` `LICENSE` is the proprietary **KAORI INTERNAL USE LICENSE**. Rights-holder approval is required before introducing an Apache-2.0 (recommended for broad reusable community automation) or other license, accepting external contributions under a defined license, or copying KAORI proprietary source into the public repo. No license change is authorized by this design document.
+
+Public source security baseline: `OXY7O/kaori-operations#3` / Draft PR #4. Public Kubespray compatibility-only profile: `OXY7O/kaori-operations#5` / stacked Draft PR #6, pinned upstream `v2.32.0` at `9751ea6f63244e433a7a6263d9ecf381e57bb8e9`; `execution_enabled=false`, `mutation_authorized=false`. KAORI static Plan qualification: #4800 / Draft PR #4811. Current development-only read-only localhost Celery/Runner source: #4799 / Draft PR #4807. These review candidates are not admitted production capabilities and not evidence of real Kubernetes UAT.
+
+Never place credential material, real inventory, private network topology, cluster kubeconfig, or runtime event artifacts in the public source repository. The secrets/inventory and operator RBAC authority remains external to Git, and an approved Kubernetes execution remains a separately governed `JobExecution` with independent provider read-back.
