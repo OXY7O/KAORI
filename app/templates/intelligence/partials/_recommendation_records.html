@@ -54,10 +54,12 @@
                             <div class="flex min-h-24 min-w-0 flex-col justify-center">
                                 <p class="line-clamp-2 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]"
                                    title="{{ item.signal_source_label }}">{{ item.signal_source_label }}</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.logic_type_label }}</p>
-                                {% if item.evidence and item.evidence.provider_label %}
-                                    <div class="mt-2 flex flex-wrap">{{ table_label.metadata_label(item.evidence.provider_label, 'database') }}</div>
-                                {% endif %}
+                                <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                                    {{ table_label.metadata_label(item.logic_type_label, 'list-checks') }}
+                                    {% if item.evidence and item.evidence.provider_label %}
+                                        {{ table_label.metadata_label(item.evidence.provider_label, 'database') }}
+                                    {% endif %}
+                                </div>
                             </div>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
@@ -94,7 +96,7 @@
                         <td class="{{ table_ui.cell_classes(true) }}">
                             <div class="flex min-h-24 items-center justify-end">
                                 {{ resource_detail_modal.detail_button(item.rule_key,
-                                                            url_for('intelligence.recommendation_details', recommendation_key=item.rule_key) ,
+                                                                url_for('intelligence.recommendation_details', recommendation_key=item.rule_key) ,
                                 item.title,
                                 'Recommendation',
                                 label='Review'

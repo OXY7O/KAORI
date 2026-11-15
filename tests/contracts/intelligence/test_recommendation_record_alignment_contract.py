@@ -25,7 +25,7 @@ def test_recommendation_records_keep_canonical_table_and_modal_semantics() -> No
     assert 'table_ui.cell_classes(true)' in source
     assert '<caption class="sr-only">' in source
     assert source.count('scope="col"') == 6
-    assert "resource_detail_modal.detail_button(item.rule_key" in source
+    assert 'resource_detail_modal.detail_button(item.rule_key' in source
     assert 'data-detail-toggle' not in source
 
 
@@ -49,7 +49,7 @@ def test_long_titles_scopes_and_evidence_keep_full_hover_text() -> None:
     assert 'title="{{ item.list_title|default(item.title, true) }}"' in source
     assert 'title="{{ item.scope_title|default(\'Asset Scope\', true) }}"' in source
     assert 'title="{{ item.signal_source_label }}"' in desktop
-    assert 'item.scope_title|default(\'Asset Scope\', true)' in source
+    assert "item.scope_title|default('Asset Scope', true)" in source
     assert 'item.scope_supporting|default(item.source_kind_label, true)' in source
     assert 'item.list_summary|default(item.summary, true)' in source
     assert 'line-clamp-1' in desktop
@@ -69,6 +69,12 @@ def test_evidence_and_alert_handling_stay_source_authoritative() -> None:
         'item.tone',
     ):
         assert field in desktop
+    assert "table_label.metadata_label(item.logic_type_label, 'list-checks')" in desktop
+    assert "table_label.metadata_label(item.evidence.provider_label, 'database')" in desktop
+    assert (
+        '<p class="mt-1 text-xs leading-5 text-content-muted">{{ item.logic_type_label }}</p>'
+        not in desktop
+    )
     for state in (
         'escalated',
         'exception_active',
@@ -90,7 +96,7 @@ def test_mobile_cards_and_empty_states_remain_intact() -> None:
     assert 'line-clamp-2 break-words text-sm font-semibold' in source
     assert 'title="{{ item.scope_title|default(\'Asset Scope\', true) }}"' in source
     assert 'sm:grid-cols-2' in source
-    assert "resource_detail_modal.detail_button(item.rule_key" in source
+    assert 'resource_detail_modal.detail_button(item.rule_key' in source
     for state in ('unavailable', 'not_collected', 'partial'):
         assert f"'{state}'" in source
     assert 'No Matching Findings' in source

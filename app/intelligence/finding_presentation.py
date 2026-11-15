@@ -107,6 +107,32 @@ def compact_recommendation_summary(value: Any, *, limit: int = 180) -> str:
     return ' '.join(words).rstrip(' ,;:-') + '.'
 
 
+def recommendation_detail_header_summary(item: dict[str, Any]) -> str:
+    """Keep the review header concise using committed restart evidence only."""
+
+    summary = ' '.join(str(item.get('summary') or '').split())
+    if not _clean(item.get('rule_key')).startswith('kubernetes.pod.high_restart_count'):
+        return summary
+
+    evidence = _mapping(item.get('evidence'))
+    try:
+        affected_count = int(evidence['affected_count'])
+        total_restarts = int(evidence['total_restart_count'])
+        peak_restarts = int(evidence['max_restart_count'])
+    except (KeyError, TypeError, ValueError):
+        return summary
+
+    if affected_count < 1 or peak_restarts < 0 or total_restarts < peak_restarts:
+        return summary
+
+    source = _clean(evidence.get('evidence_window')) or 'Committed Kubernetes evidence'
+    pod_label = 'pod' if affected_count == 1 else 'pods'
+    return (
+        f'{source} · {affected_count} affected {pod_label} · '
+        f'{total_restarts} total restarts · peak {peak_restarts}'
+    )
+
+
 def recommendation_table_title(item: dict[str, Any], *, limit: int = 96) -> str:
     """Return a compact finding title for recommendation list and review surfaces."""
 
