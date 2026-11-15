@@ -1,4 +1,4 @@
-"""Issue #4827: registered and read-only Ansible provider workspace."""
+"""Issue #4834: canonical Ansible registration workspace, not a worker dashboard."""
 
 from __future__ import annotations
 
@@ -8,111 +8,124 @@ from types import SimpleNamespace
 from flask import render_template
 
 from app import create_app
-from app.integrations.orchestration.configuration_automation import frontpage, integration_module
+from app.common.pagination import build_pagination_window, pagination_payload
+from app.integrations.orchestration.configuration_automation import integration_module
+from app.integrations.orchestration.configuration_automation import frontpage
+from app.integrations.orchestration.configuration_automation.providers.ansible import provider_implementation
 from app.integrations.provider_matrix import provider_kind
 from app.integrations.taxonomy import get_capability_definition
 
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATE = 'integrations/orchestration/configuration_automation/providers/ansible/frontpage.html'
-PARTIAL = 'integrations/orchestration/configuration_automation/providers/ansible/_execution_registry.html'
+PARTIAL = 'integrations/orchestration/configuration_automation/providers/ansible/_connection_registry.html'
+DETAIL = 'integrations/orchestration/configuration_automation/providers/ansible/detail.html'
 
 
-class _Query:
-    def __init__(self, records):
-        self.records = records
+def _empty_context(monkeypatch):
+    def empty_registry(**kwargs):
+        return (
+            [],
+            pagination_payload(build_pagination_window(total_items=0, page=kwargs['page'], per_page=kwargs['per_page'])),
+            {'total': 0, 'ready': 0, 'attention': 0},
+        )
 
-    def filter_by(self, **fields):
-        return _Query([job for job in self.records if all(getattr(job, k) == v for k, v in fields.items())])
-
-    def filter(self, expression):
-        # This minimal test double verifies no accidental ORM access beyond filter_by for empty records.
-        return _Query(self.records)
-
-    def count(self):
-        return len(self.records)
-
-    def order_by(self, *args):
-        return self
-
-    def offset(self, n):
-        return _Query(self.records[n:])
-
-    def limit(self, n):
-        return _Query(self.records[:n])
-
-    def all(self):
-        return list(self.records)
+    monkeypatch.setattr(frontpage, 'list_connections', empty_registry)
+    return frontpage.build_ansible_frontpage(page=100, per_page=700)
 
 
-def _stub_job_query(monkeypatch):
-    fake = SimpleNamespace(
-        query=_Query([]),
-        status=SimpleNamespace(in_=lambda values: values, __eq__=lambda other: other),
-        created_at=SimpleNamespace(desc=lambda: None),
-        id=SimpleNamespace(desc=lambda: None),
-    )
-    monkeypatch.setattr(frontpage, 'JobExecution', fake)
-
-
-def test_canonical_taxonomy_matrix_and_navigation_are_provider_first() -> None:
+def test_an_ansible_provider_is_registration_available_but_not_runnable() -> None:
     capability = get_capability_definition('orchestration', 'configuration_automation')
     kind = provider_kind('configuration_automation', 'ansible')
     assert capability.label == 'Configuration Automation'
-    assert kind.lifecycle == 'planned'
+    assert kind.available
     assert kind.adapter_key == 'ansible_runner'
     assert integration_module.workspace_endpoint == 'integrations.ansible'
     assert integration_module.operations == frozenset()
-    assert integration_module.worker_queue == 'automation'
+    assert provider_implementation.adapter.integration_type == 'configuration_automation'
 
 
-def test_empty_persisted_workspace_does_not_claim_ready_or_run(monkeypatch) -> None:
-    _stub_job_query(monkeypatch)
-    context = frontpage.build_ansible_frontpage(status='invalid', page=100, per_page=800)
-    assert context['registered_targets'] == 0
-    assert context['provider_readiness'] == 'Not Configured'
-    assert context['total_executions'] == 0
-    assert context['successful_executions'] == 0
+def test_empty_registry_clamps_pagination_and_never_claims_readiness(monkeypatch) -> None:
+    context = _empty_context(monkeypatch)
     assert context['pagination']['per_page'] == 5
     assert context['pagination']['page'] == 1
-    assert context['executions'] == []
+    assert context['stats'] == {'total': 0, 'ready': 0, 'attention': 0}
+    assert not context['rows']
 
 
-def test_full_and_htmx_templates_render_with_existing_violet_components(monkeypatch) -> None:
-    _stub_job_query(monkeypatch)
-    # The shared navbar expects KAORI's RBAC shape even for an anonymous principal.
-    # Keep this render contract anonymous so navigation never queries user jobs;
-    # authenticated authorization is independently enforced on the GET route.
+def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components(monkeypatch) -> None:
+    _empty_context(monkeypatch)
+    app = create_app('testing')
+    app.config['WTF_CSRF_ENABLED'] = False
     principal = SimpleNamespace(
-        is_authenticated=False,
         id=None,
+        is_authenticated=False,
         username='ui-test',
         role_name='Viewer',
-        has_permission=lambda permission: False,
+        has_permission=lambda _: False,
     )
     monkeypatch.setattr('flask_login.utils._get_user', lambda: principal)
-    app = create_app('testing')
+    from app.integrations.orchestration.configuration_automation.providers.ansible.forms import (
+        AnsibleSourceConnectionForm,
+    )
+
     with app.test_request_context('/integrations/ansible'):
         context = frontpage.build_ansible_frontpage()
         full = render_template(TEMPLATE, **context)
         partial = render_template(PARTIAL, **context)
+        choose = render_template('integrations/orchestration/configuration_automation/providers/ansible/choose.html')
+        form = render_template(
+            'integrations/orchestration/configuration_automation/providers/ansible/form.html',
+            form=AnsibleSourceConnectionForm(),
+            source_test_proof='',
+            feedback=None,
+            feedback_tone='warning',
+        )
+        connection = SimpleNamespace(
+            id=1, name='Kubespray Lab', environment='laboratory',
+            description=None,
+            metadata_json={
+                'profile_key': 'kubernetes_lifecycle',
+                'source_repository': 'OXY7O/kaori-operations',
+                'source_sha': 'a' * 40,
+                'ansible_core_version': '2.19.3',
+                'ansible_runner_version': '2.4.3',
+                'kubespray_release': 'v2.32.0',
+                'source_validation': {'status': 'source_checked', 'checked_files': 5},
+            },
+        )
+        detail = render_template(
+            DETAIL,
+            connection=connection,
+            source=connection.metadata_json,
+            jobs=[],
+            pagination=pagination_payload(build_pagination_window(total_items=0)),
+        )
     assert 'data-kaori-ansible-workspace' in full
-    assert 'Configuration Automation' in full
-    assert 'data-kaori-ansible-execution-registry' in full
-    assert 'No committed Ansible executions' in full
-    assert 'ansible-execution-registry' in partial
+    assert 'Connection Registry' in full
+    assert 'No Ansible Connections' in full
+    assert 'data-kaori-ansible-connection-registry' in partial
     assert 'data-kaori-canonical-registry-filter' in partial
     assert 'data-kaori-canonical-registry-footer' in partial
-    assert 'hx-select="#ansible-execution-registry"' in partial
-    assert 'Not Configured' in full
-    assert 'ansible-runner' not in full.lower() or 'Ansible Runner' in full
-    assert 'No remote execution instance admitted' in full
+    assert 'Choose Automation Profile' in choose
+    assert 'Kubernetes Lifecycle' in choose
+    assert 'Linux Host Management' in choose
+    assert 'Validate Source' in form
+    assert 'source_test_proof' in form
+    for name in ('Configuration', 'Validation &amp; Capabilities', 'Runtime &amp; History', 'Inventory &amp; Lifecycle'):
+        assert name in detail
+    assert 'No committed execution history' in detail
+    assert 'No infrastructure mutation controls are enabled' in detail
 
 
-def test_no_external_or_secret_runners_in_get_workspace() -> None:
-    source = (ROOT / 'app/integrations/orchestration/configuration_automation/frontpage.py').read_text()
-    assert 'JobExecution.query.filter_by(job_type=_PILOT_JOB_TYPE, operation=_PILOT_OPERATION)' in source
-    for forbidden in ('ansible_runner.run', 'subprocess.run', 'requests.get(', '.apply_async(', 'ssh_private_key'):
-        assert forbidden not in source
-    template = (ROOT / 'app/templates/' / TEMPLATE).read_text()
-    assert 'run-playbook' not in template
-    assert 'method="POST"' not in template
+def test_registry_does_not_read_live_runner_or_fabricate_inventory() -> None:
+    front = (ROOT / 'app/integrations/orchestration/configuration_automation/frontpage.py').read_text()
+    service = (
+        ROOT / 'app/integrations/orchestration/configuration_automation/providers/ansible/service.py'
+    ).read_text()
+    for source in (front, service):
+        for banned in ('ansible_runner.run', 'requests.get(', 'subprocess.run', '.apply_async('):
+            assert banned not in source
+    assert "integration_instance_id=connection.id" in service
+    detail = (ROOT / 'app/templates/' / DETAIL).read_text()
+    assert 'framed_workspace_tabs' in detail
+    assert 'integrationWorkspaceTabs' in detail
