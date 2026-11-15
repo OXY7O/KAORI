@@ -192,9 +192,59 @@ jobs:
               else:
                   raise SystemExit('Canonical JobExecution did not reach a terminal state')
           PY
+      - name: Reject disabled and unapproved source without creating a job
+        run: |
+          set -eu
+          if KAORI_AUTOMATION_LOCALHOST_PILOT_ENABLED=false \
+            flask --app run:app automation-localhost-probe \
+            --source-path "$GITHUB_WORKSPACE/kaori-operations" \
+            --source-sha a182ddd04b353497021b3a089d3289128e999f78 \
+            >/tmp/disabled-probe.out 2>&1; then
+            echo 'Blocked: disabled pilot unexpectedly enqueued a job' >&2
+            exit 1
+          fi
+          if flask --app run:app automation-localhost-probe \
+            --source-path "$GITHUB_WORKSPACE/kaori-operations" \
+            --source-sha 0000000000000000000000000000000000000000 \
+            >/tmp/invalid-source-probe.out 2>&1; then
+            echo 'Blocked: invalid Git SHA unexpectedly enqueued a job' >&2
+            exit 1
+          fi
+          python - <<'PY'
+          from app import create_app
+          from app.models.job import JobExecution
+          app = create_app('testing')
+          with app.app_context():
+              count = JobExecution.query.filter_by(operation='automation_localhost_host_facts').count()
+              assert count == 1, f'Unauthorized dispatch created additional jobs: {count}'
+          print('Negative dispatch guards PASS: no extra PostgreSQL JobExecution')
+          PY
       - name: Show sanitized diagnostic on failure
         if: failure()
         run: |
           echo 'Worker test did not complete; showing bounded error categories only.'
           tail -n 30 /tmp/kaori-automation-worker.log 2>/dev/null \
             | sed -E 's/(password|token|secret|key)=([^ ]+)/\1=REDACTED/gi' || true
+
+  automation-worker-image:
+    name: Build isolated non-production worker image
+    needs: focused-checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build pinned automation worker Docker target
+        run: docker build --target automation-worker --tag kaori-automation-worker:preflight .
+      - name: Check Ansible, Celery and non-root image identity
+        run: |
+          docker run --rm --entrypoint python kaori-automation-worker:preflight -c "
+          import os
+          import ansible_runner
+          import ansible
+          from app import create_app
+          assert os.geteuid() != 0, 'Automation worker must not run as root'
+          print('Pinned image dependencies and non-root identity PASS')
+          "
