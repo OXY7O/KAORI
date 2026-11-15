@@ -106,6 +106,37 @@ Secret contents and PKI; provider Full Validation does not prove
 separately committed KV v2 / public PKI / stored certificate inventory
 or grant scoped Secret access. Runtime Refresh is independent.
 
+### Minimum permission example and capability explorer (#4849)
+
+The Configuration tab adds a read-only, provider-owned example next to the
+canonical Connection Contract. **Minimum Full Validation** requires an
+approved AppRole and a token able to read `auth/token/lookup-self`; the Vault
+health and AppRole-login probes do not require broad token policy grants.
+Separate optional examples illustrate:
+
+- `read` on `sys/mounts` for optional engine discovery (a denial remains
+  Limited, not a core Full Validation block).
+- `list` on the root of a specifically approved KV v2 `metadata` mount
+  and `read`/`list` below that metadata path. Replace the example mount
+  placeholder with the reviewed real mount and narrow prefixes as needed.
+
+Never grant KV `data/*`, Vault policy writes, token administration, or PKI
+issuance through the baseline. A Vault administrator must approve and attach
+the policies; viewing/copying the examples does not perform Vault mutations.
+Policy source of truth is Vault; KAORI retains only authorized connection,
+committed validation and independent inventory evidence. Verify requested
+paths against actual Vault edition, namespace, mount path and AppRole settings.
+
+The Validation tab's four factual API contracts are a server-filtered
+Capability Registry with Search Capability, Requirement, Validation Status,
+five-row default and a native View More evidence dialog. The dedicated
+`GET /instances/<id>/capabilities` read-only fragment uses the same
+`integrations.manage` authorization as Vault detail and only persisted
+instance evidence; no new provider request or Secret records are returned.
+A historical degraded Vault release can still show 3/3 required APIs,
+while a denied optional `sys/mounts` check remains Limited. Empty filter
+results do not indicate missing provider capabilities.
+
 ### Connection feedback and optional inventory scope
 
 Vault Add/Edit uses the existing KAORI top-right Operational Toast and
