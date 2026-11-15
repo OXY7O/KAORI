@@ -71,13 +71,13 @@
                         <span class="flex flex-wrap items-center gap-2">
                             {{ scan_status_badge }}
                             {{ info_tip.render('security-snapshot-freshness-guide', 'Scanner Evidence Freshness Guide',
-                                'Stale describes the age of committed scanner evidence, not job health.',
-                                items=[
-                                    'Security uses a 24-hour freshness window for the oldest qualified artifact scan in scope.',
-                                    'A new Harbor scan completion timestamp is evidence of a new scan even if the CVE count is unchanged.',
-                                    'Sync Security Evidence must collect the new provider report before KAORI freshness changes.',
-                                    'Refresh View reads committed state only; runtime correlation Ready is independent.'
-                                ], variant='guide', placement='left') }}
+                                                        'Stale describes the age of committed scanner evidence, not job health.',
+                                                        items=[
+                                                        'Security uses a 24-hour freshness window for the oldest qualified artifact scan in scope.',
+                                                        'A new Harbor scan completion timestamp is evidence of a new scan even if the CVE count is unchanged.',
+                                                        'Sync Security Evidence must collect the new provider report before KAORI freshness changes.',
+                                                        'Refresh View reads committed state only; runtime correlation Ready is independent.'
+                                                        ], variant='guide', placement='left') }}
                         </span>
                     {% endset %}
                     {% set runtime_status_badge = table_label.status_indicator_label(posture.runtime_status.status, posture.runtime_status.tone) %}
@@ -410,13 +410,13 @@
                             {% call dashboard_workspace.panel('capacity', active_tab, 'security-posture-overview') %}
                                 {% set assets_guide %}
                                     {{ info_tip.render('security-assets-guide', 'Assets & Runtime Impact Guide',
-                                        'Registry and Kubernetes observations have separate sources of authority.',
-                                        items=[
-                                            'Affected digests count qualified Registry artifacts, not applications.',
-                                            'Runtime correlation readiness is independent of scanner freshness.',
-                                            'Unknown correlation never proves there are no affected applications.',
-                                            'Neither source infers Service/Team or host ownership.'
-                                        ], variant='guide', placement='left') }}
+                                                                        'Registry and Kubernetes observations have separate sources of authority.',
+                                                                        items=[
+                                                                        'Affected digests count qualified Registry artifacts, not applications.',
+                                                                        'Runtime correlation readiness is independent of scanner freshness.',
+                                                                        'Unknown correlation never proves there are no affected applications.',
+                                                                        'Neither source infers Service/Team or host ownership.'
+                                                                        ], variant='guide', placement='left') }}
                                 {% endset %}
                                 {% call section_card.render('Assets & Runtime Impact',
                                     'Source-qualified affected digests and Kubernetes correlation readiness.',
@@ -468,13 +468,13 @@
                             {% call dashboard_workspace.panel('signals', active_tab, 'security-posture-overview') %}
                                 {% set findings_guide %}
                                     {{ info_tip.render('security-investigation-guide', 'CVE Investigation Guide',
-                                        'Use qualified CVEs, source evidence and binding confidence for triage.',
-                                        items=[
-                                            'Distinct CVE identifiers are not the number of individual scanner findings.',
-                                            'Findings owns CVE search, severity filtering and exact-CVE impact evidence.',
-                                            'Binding counts require Ready committed runtime correlation.',
-                                            'Remediation actions must use their governed owning workflows.'
-                                        ], variant='guide', placement='left') }}
+                                                                        'Use qualified CVEs, source evidence and binding confidence for triage.',
+                                                                        items=[
+                                                                        'Distinct CVE identifiers are not the number of individual scanner findings.',
+                                                                        'Findings owns CVE search, severity filtering and exact-CVE impact evidence.',
+                                                                        'Binding counts require Ready committed runtime correlation.',
+                                                                        'Remediation actions must use their governed owning workflows.'
+                                                                        ], variant='guide', placement='left') }}
                                 {% endset %}
                                 {% call section_card.render('CVE Investigation Scope',
                                     'Prioritize observed CVEs and hand off to source-owned investigation.',
@@ -539,13 +539,13 @@
                             {% call dashboard_workspace.panel('reporting', active_tab, 'security-posture-overview') %}
                                 {% set sources_guide %}
                                     {{ info_tip.render('security-source-guide', 'Evidence & Source Ownership Guide',
-                                        'Source providers remain authoritative; KAORI reads committed evidence.',
-                                        items=[
-                                            'Artifact Registry owns scanner CVEs, digests, scan generations and freshness.',
-                                            'Kubernetes correlation owns committed runtime bindings and confidence.',
-                                            'Neither source confirms organization-wide host, network or Service/Team coverage.',
-                                            'Canonical Reports owns publication, not this read-only dashboard.'
-                                        ], variant='guide', placement='left') }}
+                                                                        'Source providers remain authoritative; KAORI reads committed evidence.',
+                                                                        items=[
+                                                                        'Artifact Registry owns scanner CVEs, digests, scan generations and freshness.',
+                                                                        'Kubernetes correlation owns committed runtime bindings and confidence.',
+                                                                        'Neither source confirms organization-wide host, network or Service/Team coverage.',
+                                                                        'Canonical Reports owns publication, not this read-only dashboard.'
+                                                                        ], variant='guide', placement='left') }}
                                 {% endset %}
                                 {% call section_card.render('Evidence & Source Ownership',
                                     'Scanner and runtime evidence remain authoritative in their originating domains.',
