@@ -10,8 +10,8 @@ def test_recommendation_list_uses_presentation_owned_compact_summary():
     assert 'def recommendation_table_title' in presentation
     assert 'def recommendation_table_summary' in presentation
     assert "for marker in (' Examples:', ' Example:', ' Examples include:')" in presentation
-    assert "item['list_title'] = recommendation_table_title(item, limit=96)" in service
-    assert "item['list_summary'] = recommendation_table_summary(item, limit=72)" in service
+    assert "item['list_title'] = recommendation_table_title(item, limit=64)" in service
+    assert "item['list_summary'] = recommendation_table_summary(item, limit=64)" in service
     assert 'item.list_title|default(item.title, true)' in records
     assert 'item.list_summary|default(item.summary, true)' in records
     assert 'line-clamp-1' in records
