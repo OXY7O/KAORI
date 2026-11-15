@@ -5,6 +5,8 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/resource_posture_grid.html" as posture_grid %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/table.html" as table_ui %}
+{% import "components/operational_metric_card.html" as metric_card %}
 {% import "components/section_intro.html" as section_intro %}
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/action_button.html" as action_button %}
@@ -256,46 +258,50 @@
                                     body_classes='p-0') %}
                                     <div class="grid gap-3 border-b border-outline-subtle p-4 sm:grid-cols-3"
                                          data-security-findings-summary>
-                                        <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
-                                            <p class="text-xs text-content-secondary">Distinct CVEs</p>
-                                            <p class="mt-1 text-2xl font-semibold tabular-nums text-content-primary">
-                                                {{ posture.pagination.total_items if posture.scanned_artifacts else 'Not Collected' }}
-                                            </p>
-                                        </div>
-                                        <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
-                                            <p class="text-xs text-content-secondary">Affected Digests</p>
-                                            <p class="mt-1 text-2xl font-semibold tabular-nums text-content-primary">
-                                                {{ posture.affected_artifacts if posture.scanned_artifacts else 'Not Collected' }}
-                                            </p>
-                                        </div>
-                                        <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
-                                            <p class="text-xs text-content-secondary">Runtime Correlation</p>
-                                            <div class="mt-2">
-                                                {{ runtime_status_badge }}
-                                            </div>
-                                            <p class="mt-1 text-xs text-content-muted">Committed binding readiness</p>
-                                        </div>
+                                        {{ metric_card.render('Distinct CVEs',
+                                                            posture.pagination.total_items if posture.scanned_artifacts else 'Not Collected',
+                                                            'Distinct qualified scanner CVEs in the authorized source scope.',
+                                                            'shield-alert',
+                                                            source_label='Registry Scanner',
+                                                            compact=true) }}
+                                        {{ metric_card.render('Affected Digests',
+                                                            posture.affected_artifacts if posture.scanned_artifacts else 'Not Collected',
+                                                            'Distinct artifact digests with observed scanner findings.',
+                                                            'package-search',
+                                                            source_label='Registry Security',
+                                                            compact=true) }}
+                                        {{ metric_card.render('Runtime Correlation',
+                                                            posture.runtime_status.status if registry_ready else 'Not Collected',
+                                                            'Committed binding readiness; not a scanner freshness verdict.',
+                                                            'waypoints',
+                                                            source_label='Registry × Kubernetes',
+                                                            compact=true) }}
                                     </div>
-                                    <div data-security-finding-highlights>
+                                    <div class="space-y-2 p-4" data-security-finding-highlights>
                                         {% for row in posture.rows[:3] %}
                                             {% set row_tone = 'critical' if row.severity == 'Critical' else ('warning' if row.severity in ['High', 'Medium'] else 'unknown') %}
-                                            <article class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
+                                            {% set severity_badge %}
+                                                {{ table_label.status_indicator_label(row.severity, row_tone) }}
+                                            {% endset %}
+                                            <article class="flex min-w-0 flex-col gap-3 rounded-lg border border-outline-subtle bg-surface-subtle p-3 shadow-sm sm:flex-row sm:items-center"
                                                      data-security-finding-highlight>
-                                                <div class="min-w-0">
-                                                    <div class="flex flex-wrap items-center gap-2">
-                                                        <span class="text-sm font-semibold text-content-primary">{{ row.cve_id }}</span>
-                                                        {{ table_label.status_indicator_label(row.severity, row_tone) }}
-                                                    </div>
-                                                    <p class="mt-1 text-xs text-content-muted">
-                                                        {{ row.artifact_count }} affected {{ 'digest' if row.artifact_count == 1 else 'digests' }} ·
+                                                <div class="min-w-0 flex-1">
+                                                    {{ table_ui.title_cell(row.cve_id,
+                                                                        'Qualified scanner evidence',
+                                                                        'shield-alert',
+                                                                        severity_badge) }}
+                                                </div>
+                                                <div class="flex min-w-0 flex-wrap gap-x-4 gap-y-1 text-xs text-content-secondary">
+                                                    <span class="tabular-nums">
+                                                        {{ row.artifact_count }} affected {{ 'digest' if row.artifact_count == 1 else 'digests' }}
+                                                    </span>
+                                                    <span class="tabular-nums">
                                                         {{ row.finding_count }} scanner {{ 'finding' if row.finding_count == 1 else 'findings' }}
-                                                    </p>
+                                                    </span>
                                                 </div>
                                                 {% if posture.authorized_registry and row.impact_available %}
                                                     <a href="{{ url_for('artifact_registry.security_cve_impact', cve_id=row.cve_id) }}"
-                                                       class="shrink-0 text-xs font-semibold text-kaori-primary hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                                                        View Impact
-                                                    </a>
+                                                       class="{{ table_ui.action_classes() }} shrink-0">View Impact</a>
                                                 {% else %}
                                                     {{ table_label.status_indicator_label('Unqualified', 'unknown') }}
                                                 {% endif %}
