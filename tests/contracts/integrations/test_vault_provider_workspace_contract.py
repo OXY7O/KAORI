@@ -158,12 +158,12 @@ def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> Non
 
     form = FORM.read_text(encoding='utf-8')
     source = ROUTES.read_text(encoding='utf-8')
-    shared_actions = (
-        ROOT / 'app/templates/integrations/components/_provider_registration_actions.html'
-    ).read_text(encoding='utf-8')
-    shared_context = (
-        ROOT / 'app/templates/integrations/components/_provider_registration_context.html'
-    ).read_text(encoding='utf-8')
+    shared_actions = (ROOT / 'app/templates/integrations/components/_provider_registration_actions.html').read_text(
+        encoding='utf-8'
+    )
+    shared_context = (ROOT / 'app/templates/integrations/components/_provider_registration_context.html').read_text(
+        encoding='utf-8'
+    )
 
     for component in (
         'integrations/components/_provider_registration_context.html',
@@ -211,7 +211,7 @@ def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> Non
     assert "this.$refs.connectionProof.value = ''" in form
     assert 'x-bind:disabled="!connectionVerified"' in form
     assert 'disabled\n' in shared_actions
-    assert "form.connection_test_proof(value=proof or \"\"" in form
+    assert 'form.connection_test_proof(value=proof or ""' in form
     assert 'verified_secret(proof, values, int(current_user.id))' in source
     assert 'issue_proof(values, int(current_user.id))' in source
     assert "action == 'test'" in source
@@ -236,11 +236,17 @@ def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> Non
         assert field in form
     assert 'autocomplete="new-password"' in form
     assert 'Leave blank to keep the current encrypted SecretID.' in form
-    assert "if instance else" in form
+    assert 'if instance else' in form
     assert 'KV v2' in form and 'PKI' in form
     assert 'no_store/imported' in form
     assert 'Full Validation' in form
-    assert 'url_for("vault.detail", instance_id=instance.id)' in form
+    assert "url_for('vault.detail', instance_id=instance.id)" in form
     assert 'url_for("vault.index")' in form
+
+    # Keep the user-visible descriptions concise at the canonical desktop width
+    # without clipping or altering the shared responsive layout.
+    assert 'Vault owns Secrets; KAORI governs evidence.' in form
+    assert 'Disabled connections stay registered, not used.' in form
+    assert 'whitespace-nowrap' not in form
 
     Environment().parse(form)
