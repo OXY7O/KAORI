@@ -56,17 +56,15 @@
                             {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <span class="text-xs text-content-secondary">{{ target.environment|replace('_', ' ')|title if target.environment else 'Unknown' }}</span>
+                            <span class="text-xs text-content-secondary">{{ target.environment|replace('_', ' ') |title if target.environment else 'Unknown' }}</span>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             {{ integration_status("not_observed", "Recorded" if target.binding_enabled else "Disabled", display="text") }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <span class="text-xs text-content-secondary">{{ target.validation_status|replace('_', ' ')|title }}</span>
+                            <span class="text-xs text-content-secondary">{{ target.validation_status|replace('_', ' ') |title }}</span>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            {{ integration_status("blocked", "Blocked", display="text") }}
-                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ integration_status("blocked", "Blocked", display="text") }}</td>
                     </tr>
                 {% else %}
                     <tr>
@@ -81,13 +79,13 @@
         </table>
     </div>
     {{ registry_ui.footer("integrations.ansible_connection_detail",
-                            "ansible-inventory-registry",
-                            "ansible-inventory-loading",
-                            inventory_pagination,
-                            {"page": pagination.page, "per_page": pagination.per_page},
-                            inventory_pagination.allowed_per_page,
-                            resource_label="Cluster Associations",
-                            control_name="ansible-inventory",
-                            page_param="inventory_page",
-                            per_page_param="inventory_per_page") }}
+        "ansible-inventory-registry",
+        "ansible-inventory-loading",
+        inventory_pagination,
+        {"page": pagination.page, "per_page": pagination.per_page},
+        inventory_pagination.allowed_per_page,
+        resource_label="Cluster Associations",
+        control_name="ansible-inventory",
+        page_param="inventory_page",
+        per_page_param="inventory_per_page") }}
 </section>
