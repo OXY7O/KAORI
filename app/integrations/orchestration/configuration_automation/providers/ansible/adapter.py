@@ -40,7 +40,7 @@ class AnsibleSourceAdapter:
                 observed_at=observed_at,
                 metadata={'source_status': posture['source_state']},
             ),
-            message=f\"{posture['source_label']}. Remote operation and infrastructure readiness are not admitted.\",
+            message=f"{posture['source_label']}. Remote operation and infrastructure readiness are not admitted.",
         )
 
     def execute(self, operation: str, instance: AnsibleConnectionRecord, **kwargs: Any) -> Any:
