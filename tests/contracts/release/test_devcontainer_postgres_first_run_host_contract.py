@@ -228,7 +228,7 @@ def test_native_windows_docker_command_checks_actual_db_volume() -> None:
     assert 'db-bootstrap' not in spec['runServices']
     compose = (ROOT / '.devcontainer/compose.devcontainer.yml').read_text()
     assert 'postgres-bootstrap.env' in compose
-    assert config['dockerComposeFile'][-1] == '../secrets/devcontainer/compose.host-overrides.yml'
+    assert spec['dockerComposeFile'][-1] == '../secrets/devcontainer/compose.host-overrides.yml'
     assert 'postgres-migrate.env' in compose
     assert 'external: true' in compose
     assert 'kaori-dev_kaori_postgres_data' in compose

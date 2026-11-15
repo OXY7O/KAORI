@@ -229,6 +229,53 @@ leave **Enable provider authentication** disabled, run **Test Connection**,
 and proceed to service-bind, scoped directory-provisioning and separate login
 UAT. No `ssl.CERT_NONE`, raw LDAP transport, or TLS trust bypass.
 
+### DNS resolution for production KAORI deployments
+
+The ignored `secrets/devcontainer/compose.host-overrides.yml` extension is
+**development-only** and is not a production service-discovery source.
+A successful LDAPS handshake in Docker Desktop does not prove hostname
+resolution from a production application or worker.
+
+**Preferred:** The operator of the external identity directory maintains the
+authoritative AD DNS A/AAAA record for its approved stable FQDN. Infrastructure
+DNS forwarding/resolver configuration makes this record resolvable from the
+networks running KAORI. Confirm network/firewall access to TCP 636, certificate
+hostname match, and the independently managed issuing CA trust bundle.
+The external DNS/AD systems remain authoritative; do not duplicate their
+record inventory or configuration into the KAORI application.
+
+**If KAORI runs on Kubernetes:** Confirm resolution in the actual KAORI web
+and any consumer worker pods. When a private AD zone is not known to cluster
+DNS, an infrastructure-owned CoreDNS **conditional forward/stub domain**
+can direct that approved zone to the organization's authoritative internal
+resolver, using its already-adopted GitOps/cluster change workflow. Do not
+replace the cluster's general DNS resolver or forward all traffic to AD
+without an approved network design. Changes to CoreDNS may affect unrelated
+workloads and require cluster-level validation and rollback evidence.
+For a tightly scoped exception where DNS cannot be provided, Kubernetes
+`spec.hostAliases` on **only the necessary Pod templates** can supply a
+fixed FQDN-to-IP mapping. Declare it in managed Deployment/Helm/GitOps
+configuration and roll out the affected pods; never patch a running pod's
+`/etc/hosts` by hand. Changes to directory IPs then require deployment
+updates and may cause stale mappings.
+
+**If KAORI runs in production Docker Compose:** The production host/container
+resolver should use the approved internal DNS service. As a temporary,
+documented exception for a stable private endpoint, put `extra_hosts` on
+the **relevant production service** in its deployment-managed Compose
+configuration, not in the ignored DevContainer extension. Recreate only
+affected services to apply updates; retain data volumes and verify all
+application instances that use the directory.
+
+For **either** runtime, verify the complete chain from each relevant
+application instance: expected FQDN → approved resolver/IP → TCP reachability
+→ LDAPS certificate path and SAN → service bind → scoped directory search
+→ KAORI provider validation and authentication UAT. Prefer the hostname,
+not a direct IP URI, so TLS hostname verification remains meaningful.
+Record changes, approvals, rollback plan and operational evidence under the
+existing deployment/change procedure. Never disable TLS verification to
+work around DNS or trust failures.
+
 ## Service account requirements
 
 Create a dedicated read-only directory account. It needs only:
