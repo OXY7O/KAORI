@@ -1,5 +1,18 @@
 {% import "components/action_button.html" as action_button %}
-{% macro render(cancel_url, aria_label="Registration Actions", register_label="Register Connection", loading_label="Registering Connection...", submit_name=None, submit_value=None, required_title="Connection Test Required", verified_title="Connection Verified", required_description="Complete Test Connection before registration.", verified_description="Verified connection payload is ready to register.", disabled_title="Complete Test Connection before registration", enabled_title="Register this verified connection") -%}
+{% macro render(
+    cancel_url,
+    aria_label="Registration Actions",
+    register_label="Register Connection",
+    loading_label="Registering Connection...",
+    submit_name=None,
+    submit_value=None,
+    required_title="Connection Test Required",
+    verified_title="Connection Verified",
+    required_description="Complete Test Connection before registration.",
+    verified_description="Verified connection payload is ready to register.",
+    disabled_title="Complete Test Connection before registration",
+    enabled_title="Register this verified connection"
+    ) -%}
     <footer class="border-t border-outline-subtle bg-surface-subtle px-5 py-4 sm:px-6"
             aria-label="{{ aria_label }}"
             data-kaori-provider-registration-actions>
