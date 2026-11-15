@@ -62,6 +62,43 @@ policy, isolation/security gates and staging UAT. Do not select an
 unsupported method or interpret a renamed AppRole mount as an auth-method
 change.
 
+### Connection feedback and optional inventory scope
+
+Vault Add/Edit uses the existing KAORI top-right Operational Toast and
+Activity Audit for **Test Connection**, rejected input/proof, failed
+registration/update, and successful Register/Update. Read-only
+Test Connection creates audit-only feedback (no Notification Deck spam);
+successful Register/Update uses the persisted event and redirects to
+Vault detail. The former full-width form success banner is retired.
+Feedback never embeds SecretID, Vault tokens, raw provider error payloads
+or database exception messages. The 10-minute, exact-field/user-bound
+Test Connection proof is still required for Register and Save.
+Full Validation and Runtime Refresh remain separate asynchronous
+admission/committed-evidence workflows with their own Activity Center
+lifecycle; queue success is not proof of completion.
+
+Three independent optional collection controls on the connection form:
+
+- **Approved KV v2 Mounts empty:** no approved KV v2 metadata inventory
+  target; the inventory job skips the connection, and committed
+  inventory readiness indicates `not_configured`. Vault Secret values
+  are never read through this collector.
+- **Approved PKI Mounts empty:** no approved public issuer inventory
+  target, even when core AppRole readiness succeeds. Empty does not
+  mean Vault has no issuers; it means KAORI has no collection scope.
+- **Collect Stored PKI Certificates OFF:** authenticated certificate
+  serial listing and safe public certificate metadata collection are
+  not admitted. This is **separate** from Approved PKI Mounts; turning
+  the checkbox OFF suppresses active coverage but preserves earlier
+  committed historical evidence. Opt-in requires an approved PKI mount
+  and additional read-only LIST/read capability.
+
+All three may remain empty/OFF for initial registration and
+Full Validation. Configuring scope later requires a fresh connection
+test/proof and Full Validation; the source-specific inventory/PKI
+Jobs & Executions remain separate. No source setting alters the native
+Vault Secret engine or issues/revokes certificates.
+
 ### Governed production provider trust
 
 Production does **not** use the DevContainer's ignored `secrets/trust/`
