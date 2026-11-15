@@ -161,7 +161,7 @@ The operator-owned file is never overwritten on subsequent starts.
 ```bash
 mkdir -p secrets/devcontainer
 if [ ! -e secrets/devcontainer/compose.host-overrides.yml ]; then
-  cp .devcontainer/examples/compose.host-overrides.yml.example \\
+  cp .devcontainer/examples/compose.host-overrides.yml.example \
     secrets/devcontainer/compose.host-overrides.yml
 fi
 git check-ignore -v secrets/devcontainer/compose.host-overrides.yml
