@@ -5,6 +5,7 @@ from flask_wtf.csrf import validate_csrf
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import permission_required
+from app.extensions.db import db
 from app.common.http import htmx_target, is_htmx_request
 from app.integrations.binding_web import binding_response as _binding_response
 from app.integrations.domain_service import (
@@ -232,6 +233,67 @@ def ansible_connection_detail(instance_id: int) -> ResponseReturnValue:
         jobs=jobs,
         pagination=pagination,
     )
+
+
+@integrations_bp.post('/ansible/connections/<int:instance_id>/validate-source')
+@permission_required('integrations.manage')
+def ansible_revalidate_source(instance_id: int) -> ResponseReturnValue:
+    """Re-read only approved GitHub objects; never execute Ansible or probe hosts."""
+    from flask_login import current_user
+
+    connection = get_connection(instance_id)
+    if connection is None:
+        abort(404)
+    try:
+        validate_csrf(str(request.form.get('csrf_token') or ''))
+    except ValidationError:
+        abort(400)
+    values = connection.metadata_json or {}
+    try:
+        evidence = verify_public_kubespray_source(
+            str(values.get('source_repository') or ''), str(values.get('source_sha') or '')
+        )
+    except AutomationSourceRejected:
+        connection.readiness_status = 'validation_required'
+        connection.health_status = None
+        connection.metadata_json = {
+            **values,
+            'source_validation': {
+                'status': 'blocked',
+                'operation_authorized': False,
+                'checked_files': 0,
+            },
+            'execution_enabled': False,
+            'mutation_authorized': False,
+        }
+        db.session.commit()
+        state = 'warning'
+        message = 'Pinned source could not be reverified. Remote execution remains blocked.'
+    else:
+        connection.metadata_json = {
+            **values,
+            'source_validation': evidence.as_dict(),
+            'execution_enabled': False,
+            'mutation_authorized': False,
+        }
+        connection.readiness_status = 'validation_required'
+        connection.health_status = None
+        db.session.commit()
+        state = 'success'
+        message = 'Git source files reverified. Host access and execution remain blocked.'
+    record_operational_activity(
+        user_id=int(current_user.id),
+        event_type='ansible_source_revalidated',
+        status=state,
+        title='Ansible Source Validation',
+        message=message,
+        action_url=url_for('integrations.ansible_connection_detail', instance_id=connection.id) + '#validation',
+        action_label='Review Validation',
+        action_icon='scan-search',
+        metadata={'provider': 'ansible', 'instance_id': connection.id},
+        queue_feedback=True,
+    )
+    return redirect(url_for('integrations.ansible_connection_detail', instance_id=connection.id) + '#validation')
 
 
 @integrations_bp.get('/observability')
