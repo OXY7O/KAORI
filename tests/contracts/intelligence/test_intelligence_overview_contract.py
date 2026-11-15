@@ -155,14 +155,22 @@ def test_intelligence_posture_signals_align_titles_values_and_supporting_copy() 
     assert template.count('data-intelligence-posture-signal>') == 1
     region = template.split('data-intelligence-posture-signals', 1)[1].split('{% endfor %}', 1)[0]
     assert 'group flex h-full min-w-0 flex-col' in region
-    assert 'flex min-h-10 items-start justify-between' in region
+    assert 'flex min-h-10 items-center justify-between' in region
     assert 'min-h-12 text-base font-semibold leading-6' in region
     assert 'data-intelligence-posture-value' in region
     assert 'data-intelligence-posture-supporting' in region
     assert region.index('<h3 ') < region.index('data-intelligence-posture-value')
     assert region.index('data-intelligence-posture-value') < region.index('data-intelligence-posture-supporting')
     assert 'focus-visible:ring-outline-focus' in region
-    assert 'operational_callout.semantic_border_classes(item.tone)' in region
+    assert 'border-outline-subtle bg-surface-card' in region
+    assert 'hover:border-outline-strong hover:bg-surface-hover' in region
+    assert 'bg-surface-muted {{ icon_tone_classes }}' in region
+    assert 'text-content-primary' in region
+    assert 'text-content-muted' in region
+    assert 'bg-status-' not in region
+    assert 'text-status-critical' in region
+    assert 'text-status-warning' in region
+    assert 'text-status-normal' in region
     assert 'url_for(item.href_endpoint)' in region
 
     assert 'critical signals need operator review.' in source
@@ -228,7 +236,8 @@ def test_intelligence_overview_guides_replace_redundant_operational_boundary() -
     assert 'Provider collection and refresh are worker-owned' in template
     assert 'operational_callout.render(' not in template
     assert 'Operational Boundary' not in template
-    assert 'operational_callout.semantic_border_classes(item.tone)' in template
+    assert 'operational_callout.semantic_border_classes(item.tone)' not in template
+    assert 'operational_callout.html' not in template
     assert 'Evidence Boundary' not in template
     assert 'Automation Boundary' not in template
 
