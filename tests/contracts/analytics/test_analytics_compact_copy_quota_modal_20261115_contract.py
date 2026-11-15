@@ -17,9 +17,9 @@ def test_operational_action_copy_is_compact_and_keeps_decision_gates() -> None:
     template = read(ANALYTICS / "overview/partials/_actionable_recommendation_summary.html")
     Environment(autoescape=True).parse(template)
     statements = [
-        "Check impact, ownership, current evidence, and rollback before changes.",
-        "Confirm the snapshot and affected resource are current.",
-        "Set the change window, validation, and rollback conditions.",
+        "Check impact, owner, fresh evidence, and rollback.",
+        "Confirm snapshot and resource are current.",
+        "Set change window, validation, and rollback.",
     ]
     for statement in statements:
         assert statement in template
@@ -51,14 +51,14 @@ def test_capacity_healthy_copy_and_source_scope_remain_precise() -> None:
         assert len(statement) <= 50
 
     assert "CPU cores · Memory GiB · Pod count · FS GiB (reference)." in summary
-    assert "Allocation and policy signals affecting capacity risk." in risk
+    assert "Policy and allocation signals that raise risk." in risk
     assert "'scheduling_resource': False" in domain
     assert "Ready-worker allocatable" in domain
     assert "if percentages['requests'] is not None and percentages['requests'] >= 100" in domain
     assert "if percentages['actual'] is not None and percentages['actual'] >= 95" in domain
     assert "if missing:" in domain
     assert "analysis_surface.interpretation_callout('Measurement Standard'" in summary
-    assert "'Governance Findings'" not in risk or "Governance Findings" in risk
+    assert "Governance Findings" in risk
 
 
 def test_tenant_quota_modal_uses_opt_in_kaori_committed_evidence_chrome() -> None:
@@ -73,7 +73,7 @@ def test_tenant_quota_modal_uses_opt_in_kaori_committed_evidence_chrome() -> Non
     assert "if evidence_context" in modal
     assert "Committed Snapshot" in modal
     assert "Evidence Source · Read Only" in modal
-    assert "components/" not in modal or "analysis_surfaces" in modal
+    assert 'analytics/components/_analysis_surfaces.html' in modal
     assert "aria-labelledby=\"{{ modal_id }}-title\"" in modal
     assert "aria-describedby=\"{{ modal_id }}-description\"" in modal
     assert 'role="dialog"' in modal
