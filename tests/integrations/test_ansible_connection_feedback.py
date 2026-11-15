@@ -109,6 +109,7 @@ def test_registration_action_produces_one_canonical_receipt_without_source_leak(
     assert event['status'] == expected_status
     assert event['queue_feedback'] is True
     assert event['metadata']['provider'] == 'ansible'
+    assert event['metadata'].get('feedback_delivery', 'toast') == 'toast'
     assert diagnostic not in repr(event)
     assert 'previous-proof' not in repr(event)
 
