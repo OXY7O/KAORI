@@ -104,6 +104,38 @@ RUN mkdir -p app/static/css app/static/vendor app/static/fonts \
     && npm run verify-frontend
 
 
+# Dedicated, unprivileged Ansible execution image; build only by explicit target.
+# The default build target remains production (defined below).
+FROM base AS automation-worker
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git \
+        openssh-client \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements/automation-worker.txt /tmp/requirements/automation-worker.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    PIP_NO_CACHE_DIR=0 python -m pip install -r /tmp/requirements/automation-worker.txt \
+    && rm -f /tmp/requirements/automation-worker.txt
+
+RUN groupadd --system kaori \
+    && useradd --system --gid kaori --create-home --home-dir /app kaori
+COPY --chown=kaori:kaori app /app/app
+COPY --chown=kaori:kaori celery_worker.py /app/
+COPY --chown=kaori:kaori scripts/wait_for_db.py /app/scripts/wait_for_db.py
+RUN mkdir -p /app/instance \
+    && chown -R kaori:kaori /app/instance
+
+RUN python -m pip uninstall --yes pip \
+    && rm -rf /usr/local/lib/python3.12/ensurepip /root/.cache/pip \
+    && ! python -c 'import pip' >/dev/null 2>&1 \
+    && ! python -c 'import ensurepip' >/dev/null 2>&1
+
+USER kaori
+CMD ["celery", "--app", "celery_worker:celery_app", "worker", "--queues=automation", "--loglevel=INFO", "--concurrency=1", "--prefetch-multiplier=1", "--hostname=automation@%h"]
+
+
 FROM base AS production
 
 ARG OCI_SOURCE=""

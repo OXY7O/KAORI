@@ -323,6 +323,7 @@ class Config:
             'app.integrations.runtime.notification_delivery_task',
             'app.integrations.validation.tasks',
             'app.platform_operations.jobs.tasks',
+            'app.infrastructure_automation.tasks',
             'app.platform_operations.jobs.notification_delivery_task',
             'app.reports.schedules.tasks',
             'app.reports.jobs.tasks',
