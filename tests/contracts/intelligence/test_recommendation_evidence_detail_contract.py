@@ -84,10 +84,7 @@ def test_restart_review_header_uses_measured_counts_without_losing_original_evid
         },
     }
 
-    assert summary(finding) == (
-        'Latest fast Kubernetes alert signal · 2 affected pods · '
-        '91 total restarts · peak 70'
-    )
+    assert summary(finding) == ('Latest fast Kubernetes alert signal · 2 affected pods · 91 total restarts · peak 70')
     assert finding['summary'] == 'Full source summary with highest pod name and measured counts.'
 
     one_pod = {
