@@ -151,3 +151,32 @@ def test_vault_validation_status_polls_scoped_snapshot_and_signals_completion(
     assert response.headers['Cache-Control'] == 'no-store, max-age=0'
     assert ('HX-Trigger' in response.headers) is complete
     assert feedback_users == [42]
+
+def test_vault_capability_fragment_reads_only_the_registered_instance(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = _app(monkeypatch)
+    rendered: list[dict[str, Any]] = []
+    instance = SimpleNamespace(id=15, readiness_status='degraded', capabilities=['health', 'approle', 'token_lookup'])
+    monkeypatch.setattr(routes, '_instance_or_404', lambda instance_id: instance)
+
+    def render(template: str, **context: Any) -> dict[str, Any]:
+        rendered.append({'template': template, **context})
+        return rendered[-1]
+
+    monkeypatch.setattr(routes, 'render_template', render)
+    with app.test_request_context(
+        '/integrations/secrets-management/secrets-pki/vault/instances/15/capabilities'
+        '?capability_q=token&capability_requirement=required',
+        method='GET',
+        headers={'HX-Request': 'true'},
+    ):
+        result = unwrap(routes.capability_registry)(15)
+
+    assert result == {
+        'template': 'integrations/secrets_management/vault/partials/_capability_registry.html',
+        'instance': instance,
+    }
+    assert len(rendered) == 1
+    assert instance.capabilities == ['health', 'approle', 'token_lookup']
+
