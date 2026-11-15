@@ -30,7 +30,9 @@ def test_recommendation_header_markup_is_valid_jinja_and_reuses_shared_component
 
 def test_recommendations_review_intro_and_two_independent_guides() -> None:
     page = read('app/templates/intelligence/recommendations.html')
-    assert page.index("'_recommendation_workspace_info.html'") < page.index('section_intro.render(')
+    assert page.index("include 'intelligence/partials/_recommendation_workspace_info.html'") < page.index(
+        'section_intro.render('
+    )
     assert page.index('section_intro.render(') < page.index("intelligence_ui.section(")
     assert "'Recommendation Review'" in page
     assert 'Review committed findings by scope, evidence, and priority' in page
