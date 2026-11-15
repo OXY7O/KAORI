@@ -29,7 +29,13 @@ from app.integrations.secrets_management.secrets_pki.providers.vault.application
 )
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import VaultProviderError
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
-from app.integrations.validation.web import enqueue_instance_validation, enqueue_runtime_health_refresh
+from app.integrations.validation.web import (
+    enqueue_instance_validation,
+    enqueue_runtime_health_refresh,
+    snapshot_feedback_for_user,
+    validate_snapshot_access,
+    validation_poll_response,
+)
 from app.kubernetes.cluster.constants import ENVIRONMENTS
 from app.models.vault import VaultInstance
 from app.platform_operations.notifications.service import (
@@ -412,25 +418,55 @@ def validate(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     if not instance.enabled:
         abort(409)
+    is_htmx = request.headers.get('HX-Request') == 'true'
+    validation_job: dict[str, Any] | None = None
+    feedback: dict[str, Any] | None = None
     try:
-        enqueue_instance_validation(
+        validation_job, _created = enqueue_instance_validation(
             integration_type='secrets_pki',
             integration_instance_id=instance.integration_instance_id,
             requested_by_user_id=int(current_user.id),
         )
     except (CeleryError, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError, ValueError):
         logger.exception('Vault validation could not be queued.')
-        record_operational_activity(
+        feedback = record_operational_activity(
             user_id=int(current_user.id),
             event_type='vault_validation_queue_failed',
             status='error',
             title='Vault Validation Not Queued',
             message='Verify Redis and the integration-validation worker.',
             detail='No Vault Full Validation job was admitted.',
-            action_url=url_for('vault.detail', instance_id=instance.id),
-            queue_feedback=True,
+            action_url=url_for('vault.detail', instance_id=instance.id, _anchor='validation'),
+            queue_feedback=not is_htmx,
+        )
+    if is_htmx:
+        return render_template(
+            'integrations/secrets_management/vault/partials/_detail_validation.html',
+            instance=instance,
+            validation_job=validation_job,
+            operation_feedback=feedback,
         )
     return redirect(url_for('vault.detail', instance_id=instance.id, _anchor='validation'))
+
+
+@vault_bp.get('/instances/<int:instance_id>/validation/status/<string:task_id>')
+@permission_required('integrations.manage')
+def validation_status(instance_id: int, task_id: str) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    snapshot = build_validation_snapshot(task_id)
+    if not validate_snapshot_access(
+        snapshot,
+        integration_type='secrets_pki',
+        integration_instance_id=instance.integration_instance_id,
+    ):
+        abort(404)
+    content = render_template(
+        'integrations/secrets_management/vault/partials/_detail_validation.html',
+        instance=instance,
+        validation_job=snapshot,
+        operation_feedback=snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
+    )
+    return validation_poll_response(content, snapshot=snapshot)
 
 
 @vault_bp.post('/instances/<int:instance_id>/runtime/refresh')
