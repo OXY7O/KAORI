@@ -3,7 +3,7 @@ kind: integration_taxonomy
 domains:
 - key: orchestration
   label: Orchestration
-  description: Connect cluster providers through governed orchestration contracts.
+  description: Connect infrastructure automation and cluster providers.
   icon: boxes
   workspace_endpoint: integrations.orchestration
   order: 10
@@ -41,13 +41,13 @@ capabilities:
 - key: configuration_automation
   domain_key: orchestration
   label: Configuration Automation
-  description: Git-defined automation operations, source provenance, execution evidence, and governed targets.
+  description: Git automation, provenance, and governance.
   order: 20
   asset_types: []
 - key: container_orchestrator
   domain_key: orchestration
   label: Container Orchestrator
-  description: Cluster API connectivity, inventory discovery, and control-plane operations.
+  description: Cluster API access, inventory, and control-plane operations.
   order: 10
   asset_types:
   - kubernetes_cluster
