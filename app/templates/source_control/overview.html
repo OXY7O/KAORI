@@ -250,7 +250,8 @@
                                                         </td>
                                                         <td class="{{ table_ui.cell_classes(action=true) }}">
                                                             <a href="{{ url_for('source_control.repositories', installation_id=item.installation.id) }}"
-                                                               class="{{ table_ui.action_classes() }}">View Inventory</a>
+                                                               class="{{ table_ui.action_classes() }}"
+                                                               aria-label="View inventory for {{ item.connection.name }}">View</a>
                                                         </td>
                                                     </tr>
                                                 {% endfor %}
