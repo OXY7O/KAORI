@@ -1,6 +1,6 @@
 # Ansible provider registration · Kubernetes Lifecycle (Kubespray) v1
 
-**Authority:** #556, #4796, #4799 and implementation issue #4834. Status: issue-scoped candidate in `kaori/issue-4834-ansible-kubespray-provider-lifecycle`; not production or cluster execution admission.
+**Authority:** #556, #4796, #4799, implementation #4834 and UI follow-up #4858. Status: reviewed candidate in `kaori/review/staging-uat`; awaiting Dev Container UAT/Human Acceptance. Not official `kaori/staging`, production or cluster execution admission.
 
 ## Product navigation
 `Integrations → Orchestration → Configuration Automation → Ansible → Choose Automation Profile → Kubernetes Lifecycle → Add Connection → Manage Connection`.
