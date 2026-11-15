@@ -103,6 +103,22 @@ compatibility; optional sys/mounts permission failure stays Limited,
 and missing current validation stays Not Observed. Runtime Health and
 KV v2/PKI inventory remain independent owners.
 
+**Vault View More copy-density refinement (Human UAT #4864):**
+Across all four Vault capability View More dialogs, the Capability Decision
+summary, Verification Command helper and Contract Snapshot Identity Boundary
+value should occupy **one desktop line**. The API Contract, Identity & Access
+and Committed Observation descriptions in the three-column Validation Evidence
+strip should occupy **at most two desktop lines** each. Use concise,
+provider-aware English and existing responsive typography utilities; the
+complete approved copy stays available through the element text/tooltip,
+while narrow/mobile layouts wrap naturally instead of overflowing. Distinct
+Ready, Limited, Required Gap and Not Observed messages remain accurate,
+and the short modal summary must not replace the separately governed
+runtime, compatibility, inventory or credential boundaries. Apply changes
+in the existing shared Vault capability-detail partial so each View More
+record inherits the same hierarchy; do not apply a blanket global
+truncate rule to unrelated provider dialogs.
+
 The Verification Command is **operator-side guidance**, never a live
 provider call during page rendering. A Copy Script is available only
 for read-only Vault CLI probes run under an already approved operator
