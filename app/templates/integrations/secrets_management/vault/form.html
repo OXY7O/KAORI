@@ -4,7 +4,6 @@
 {% import "integrations/components/_provider_edit_hero.html" as edit_hero %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/info_tip.html" as info_tip %}
-{% import "components/operational_callout.html" as operational_callout %}
 {% import "components/operational_toggle.html" as operational_toggle %}
 {% import "components/form_action_bar.html" as form_action_bar %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
@@ -54,13 +53,6 @@
                     </div>
                 </header>
                 <div class="space-y-6 p-5 sm:p-6">
-                    {% if message %}
-                        <div role="status"
-                             aria-live="polite"
-                             {% if proof %}x-show="connectionVerified"{% endif %}>
-                            {{ operational_callout.render('Vault Connection Test', message, tone='info' if proof else 'critical', variant='semantic') }}
-                        </div>
-                    {% endif %}
                     <section aria-labelledby="vault-connection-identity-heading">
                         <div class="mb-4 flex items-start gap-3">
                             {{ integration_ui.palette_icon("fingerprint", "brand", size="sm") }}
@@ -191,13 +183,14 @@
                                     <h3 id="vault-evidence-scope-heading"
                                         class="text-sm font-semibold text-content-primary">Optional Evidence Scope</h3>
                                     {{ info_tip.render('vault-evidence-scope-guide', 'Optional Evidence Scope',
-                                                                            'Collection is opt-in for approved metadata; KAORI never reads Secret values or private keys.',
-                                                                            [
-                                                                            'Enter mount names separated by commas. Leave a field empty to disable that collection.',
-                                                                            'KV v2: up to eight mounts; the AppRole requires LIST/read metadata access.',
-                                                                            'PKI: up to four mounts; the AppRole requires issuer LIST and public certificate read access.',
-                                                                            'Stored PKI certificates require a separate explicit opt-in and Full Validation.'
-                                                                            ], placement='right', variant='guide') }}
+                                                                        'Collection is opt-in for approved metadata; KAORI never reads Secret values or private keys.',
+                                                                        [
+                                                                        'Enter mount names separated by commas. Leave a field empty to disable that collection.',
+                                                                        'KV v2: up to eight mounts; the AppRole requires LIST/read metadata access.',
+                                                                        'PKI: up to four mounts; the AppRole requires issuer LIST and public certificate read access.',
+                                                                        'Stored PKI certificates require a separate explicit opt-in and Full Validation.',
+                                                                        'With empty mount lists and stored-certificate collection off, core connection validation and runtime checks still work. No optional inventory is collected.'
+                                                                        ], placement='right', variant='guide') }}
                                 </div>
                             </div>
                         </div>
