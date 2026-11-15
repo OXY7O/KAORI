@@ -68,7 +68,7 @@
                                 <div>
                                     <label for="{{ field.id }}"
                                            class="mb-1.5 block text-sm font-semibold text-content-primary">{{ field.label.text }}</label>
-                                    {{ field(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autofocus=(invalid_focus_field == field.name)) }}
+                                    {{ field(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autofocus=invalid_focus_field == field.name) }}
                                     {% for error in field.errors %}
                                         <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                                     {% endfor %}
@@ -78,7 +78,7 @@
                         <div class="mt-4">
                             <label for="{{ form.description.id }}"
                                    class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.description.label.text }}</label>
-                            {{ form.description(class_="min-h-24 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 py-2.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autofocus=(invalid_focus_field == 'description')) }}
+                            {{ form.description(class_="min-h-24 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 py-2.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autofocus=invalid_focus_field == 'description') }}
                             {% for error in form.description.errors %}
                                 <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                             {% endfor %}
@@ -103,7 +103,7 @@
                             <div>
                                 <label for="{{ form.endpoint.id }}"
                                        class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.endpoint.label.text }}</label>
-                                {{ form.endpoint(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autofocus=(invalid_focus_field == 'endpoint')) }}
+                                {{ form.endpoint(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autofocus=invalid_focus_field == 'endpoint') }}
                                 {% for error in form.endpoint.errors %}
                                     <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                                 {% endfor %}
@@ -113,7 +113,7 @@
                                     <div>
                                         <label for="{{ field.id }}"
                                                class="mb-1.5 block text-sm font-semibold text-content-primary">{{ field.label.text }}</label>
-                                        {{ field(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autofocus=(invalid_focus_field == field.name)) }}
+                                        {{ field(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autofocus=invalid_focus_field == field.name) }}
                                         {% for error in field.errors %}
                                             <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                                         {% endfor %}
@@ -142,7 +142,7 @@
                                     <div>
                                         <label for="{{ form.auth_mount_mode.id }}"
                                                class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.auth_mount_mode.label.text }}</label>
-                                        {{ form.auth_mount_mode(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", **{'x-model': 'authMountMode'}, autofocus=(invalid_focus_field == 'auth_mount_mode')) }}
+                                        {{ form.auth_mount_mode(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autofocus=invalid_focus_field == 'auth_mount_mode', **{'x-model': 'authMountMode'}) }}
                                         {% for error in form.auth_mount_mode.errors %}
                                             <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                                         {% endfor %}
@@ -150,7 +150,7 @@
                                     <div>
                                         <label for="{{ form.role_id.id }}"
                                                class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.role_id.label.text }}</label>
-                                        {{ form.role_id(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="off", autofocus=(invalid_focus_field == 'role_id')) }}
+                                        {{ form.role_id(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="off", autofocus=invalid_focus_field == 'role_id') }}
                                         {% for error in form.role_id.errors %}
                                             <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                                         {% endfor %}
@@ -158,7 +158,7 @@
                                     <div class="md:col-span-2" x-show="authMountMode === 'custom'" x-cloak>
                                         <label for="{{ form.auth_mount.id }}"
                                                class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.auth_mount.label.text }}</label>
-                                        {{ form.auth_mount(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", placeholder="kaori-approle", autocomplete="off", **{':required': "authMountMode === 'custom'"}, autofocus=(invalid_focus_field == 'auth_mount')) }}
+                                        {{ form.auth_mount(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", placeholder="kaori-approle", autocomplete="off", autofocus=invalid_focus_field == 'auth_mount', **{':required': "authMountMode === 'custom'"}) }}
                                         {% for error in form.auth_mount.errors %}
                                             <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                                         {% endfor %}
@@ -167,7 +167,7 @@
                                 <div class="mt-4">
                                     <label for="{{ form.secret_id.id }}"
                                            class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.secret_id.label.text }}</label>
-                                    {{ form.secret_id(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", placeholder='Leave blank to retain stored SecretID' if instance else 'Enter AppRole SecretID', autocomplete="new-password", autofocus=(invalid_focus_field == 'secret_id')) }}
+                                    {{ form.secret_id(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", placeholder='Leave blank to retain stored SecretID' if instance else 'Enter AppRole SecretID', autocomplete="new-password", autofocus=invalid_focus_field == 'secret_id') }}
                                     {% for error in form.secret_id.errors %}
                                         <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                                     {% endfor %}
@@ -199,7 +199,7 @@
                             <div>
                                 <label for="{{ form.kv2_mounts.id }}"
                                        class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.kv2_mounts.label.text }}</label>
-                                {{ form.kv2_mounts(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", placeholder="secret, team-kv", autofocus=(invalid_focus_field == 'kv2_mounts')) }}
+                                {{ form.kv2_mounts(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", placeholder="secret, team-kv", autofocus=invalid_focus_field == 'kv2_mounts') }}
                                 {% for error in form.kv2_mounts.errors %}
                                     <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                                 {% endfor %}
@@ -207,7 +207,7 @@
                             <div>
                                 <label for="{{ form.pki_mounts.id }}"
                                        class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.pki_mounts.label.text }}</label>
-                                {{ form.pki_mounts(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", placeholder="pki, pki-internal", autofocus=(invalid_focus_field == 'pki_mounts')) }}
+                                {{ form.pki_mounts(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", placeholder="pki, pki-internal", autofocus=invalid_focus_field == 'pki_mounts') }}
                                 {% for error in form.pki_mounts.errors %}
                                     <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                                 {% endfor %}
