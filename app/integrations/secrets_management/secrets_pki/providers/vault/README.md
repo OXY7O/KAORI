@@ -59,7 +59,7 @@ checkout root**:
 ```bash
 mkdir -p secrets/trust/vault
 kubectl --context docker-desktop -n vault get secret vault-tls \
-  -o jsonpath='{.data.ca\\.crt}' | base64 -d > secrets/trust/vault/ca.pem
+  -o jsonpath='{.data.ca\.crt}' | base64 -d > secrets/trust/vault/ca.pem
 chmod 0644 secrets/trust/vault/ca.pem
 git check-ignore -v secrets/trust/vault/ca.pem
 openssl x509 -in secrets/trust/vault/ca.pem -noout -subject -issuer -dates
