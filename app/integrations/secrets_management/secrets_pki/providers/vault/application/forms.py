@@ -35,7 +35,7 @@ class VaultConnectionForm(FlaskForm):
         render_kw={'placeholder': 'https://vault.example.internal:8200'},
     )
     namespace = StringField(
-        'Vault Namespace (optional)',
+        'Vault Namespace',
         validators=[Optional(), Length(max=255)],
         render_kw={'placeholder': 'e.g. team-platform (Enterprise only)'},
     )
