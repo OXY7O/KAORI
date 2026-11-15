@@ -455,8 +455,8 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
     assert 'Reporting Summary' in reporting_selected
     assert 'Reporting Workflow' in reporting_selected
     assert 'Recent Evidence Activity' in reporting_selected
-    assert 'Account Observation' in reporting_selected
-    assert 'Reporting Boundary' in reporting_selected
+    assert 'Account Observed' in reporting_selected
+    assert 'Reporting Tip' in reporting_selected
     assert 'PR, CI, DORA' in reporting_selected
     assert 'Scope Bound' in reporting_selected
     assert 'Governed Flow' in reporting_selected
@@ -1305,18 +1305,27 @@ def test_source_control_reporting_matches_shared_peer_workflow_and_qualified_evi
     assert 'source_control/partials/_dashboard_reporting_guidance.html' in reporting
     assert 'section_intro.render(' not in reporting
     assert 'info_tip.render(' not in reporting
-    assert 'reporting_workspace.evidence_summary(' in summary
+    assert 'reporting_workspace.summary(' in summary
+    assert 'evidence=reporting_evidence' in summary
+    assert 'macro evidence_summary(' not in shared
     assert 'reporting_workspace.guidance(' in guidance
     assert 'evidence_only=true' in guidance
     assert 'evidence_only=false' in shared
     assert 'Generated Reports' not in summary
     assert 'Report Templates' not in summary
+    assert 'reporting_metrics = evidence.metrics if evidence_only else [' in shared
+    assert 'Recent Evidence Activity' in shared
+    assert 'Reporting Tip' in shared
+    assert 'rounded-xl border border-outline-subtle bg-surface-elevated p-3.5' in shared
+    assert 'if not evidence_only' in shared
 
     env = Environment(loader=FileSystemLoader(str(root)))
     env.filters['user_datetime'] = lambda dt: dt.isoformat() if dt else 'Not Collected'
     panel = env.get_template('source_control/partials/_dashboard_reporting.html')
+
     def url(endpoint, **kwargs):
         return '/' + endpoint.replace('.', '/') + '?installation_id=' + str(kwargs.get('installation_id', ''))
+
     recorded = datetime(2026, 10, 26, tzinfo=UTC)
     selected = {
         'account': SimpleNamespace(last_observed_at=recorded),
@@ -1339,16 +1348,22 @@ def test_source_control_reporting_matches_shared_peer_workflow_and_qualified_evi
     assert 'Reporting Summary' in qualified_zero
     assert 'Reporting Workflow' in qualified_zero
     assert 'Evidence Only' in qualified_zero
-    assert 'Repository Evidence' in qualified_zero
+    assert 'Repositories Observed' in qualified_zero
     assert '0</p>' in qualified_zero
     assert 'Recent Evidence Activity' in qualified_zero
     assert 'Retained Installation Inventory' in qualified_zero
-    assert 'Report Source Not Qualified' in qualified_zero
+    assert 'Reporting Tip' in qualified_zero
+    assert 'Report Source Not Qualified' not in qualified_zero
     assert 'Manual Review' in qualified_zero
     assert 'Recurring' in qualified_zero and 'Not Qualified' in qualified_zero
     assert 'Generate Report Request' not in qualified_zero
     assert 'Generated Reports' not in qualified_zero
     assert '?installation_id=11' in qualified_zero
+    assert 'Retained Inventory' in qualified_zero
+    assert 'Account Observed' in qualified_zero
+    assert '1 Record' in qualified_zero
+    assert qualified_zero.count('rounded-xl border border-outline-subtle bg-surface-elevated p-3.5') >= 3
+    assert 'Create Report Request' not in qualified_zero
 
     no_collection = panel.render(
         scope={
@@ -1363,11 +1378,14 @@ def test_source_control_reporting_matches_shared_peer_workflow_and_qualified_evi
     )
     assert 'No Retained Inventory Activity' in no_collection
     assert 'Inventory Not Collected' in no_collection
-    assert 'Repository Evidence' in no_collection
+    assert 'Repositories Observed' in no_collection
     assert 'Unknown' in no_collection
     assert 'Evidence Pending' in no_collection
     assert 'Not Qualified' in no_collection
     assert 'Available' not in no_collection
+    assert 'Create Report Request' not in no_collection
+    assert 'Recent Evidence Activity' in no_collection
+    assert 'Reporting Tip' in no_collection
 
     # Legacy operational dashboards keep their existing qualified reporting workflow.
     workflow = env.get_template('components/reporting_dashboard_workspace.html').module.guidance
@@ -1375,4 +1393,23 @@ def test_source_control_reporting_matches_shared_peer_workflow_and_qualified_evi
     assert 'One-time' in standard
     assert 'Recurring' in standard and 'Schedule' in standard
     assert 'Report Source Not Qualified' not in standard
+
+    # Default shared Summary contract remains unchanged for Kubernetes / Object Storage.
+    env.globals['url_for'] = url
+    reporting_snapshot = SimpleNamespace(
+        source_status='Available',
+        generated_reports=0,
+        templates=0,
+        schedules=0,
+        latest_reports=[],
+    )
+    summary_macro = env.get_template('components/reporting_dashboard_workspace.html').module.summary
+    standard_summary = summary_macro(reporting_snapshot, 'Object Storage', 'System')
+    assert 'Generated Reports' in standard_summary
+    assert 'Report Templates' in standard_summary
+    assert 'Report Schedules' in standard_summary
+    assert 'Recent Report Activity' in standard_summary
+    assert 'Create Report Request' in standard_summary
+    assert 'Reporting Tip' in standard_summary
+    assert 'Evidence Only' not in standard_summary
 
