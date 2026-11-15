@@ -61,12 +61,13 @@ posture badge remain unchanged. A plain shared section intro, **Recommendation
 Review**, appears between the Summary and the owning Workspace card; do not
 add another container or duplicate summary statistics.
 
-**Recommendation Workspace** keeps its own title and description, with two
-distinct accessible title-level Info Tip Guides: **Recommendation Workspace
-Guide** explains committed finding ownership and Alert Intelligence/Rule Catalog
-handoffs; **Recommendation Filters Guide** explains filter/pagination semantics,
-reset behavior and evidence qualification. Both reuse the shared `info_tip`
-`variant='guide'`; no page-local popover implementation is permitted.
+**Recommendation Workspace** keeps its own title and description, with one
+title-adjacent shared neutral metadata label, **Filtered Review**, followed by
+exactly one accessible **Recommendations Guide**. The Guide explains
+committed finding ownership, Alert Intelligence/Rule Catalog handoffs,
+filter/pagination semantics, reset behavior and evidence qualification.
+Reuse `table_label.metadata_label` and `info_tip.render(variant='guide')`;
+do not display two adjacent Guide badges or implement a page-local popover.
 
 The owning Workspace header groups source-derived status on the right and the
 canonical `registry_ui.clear_filters_action` immediately before it when filters

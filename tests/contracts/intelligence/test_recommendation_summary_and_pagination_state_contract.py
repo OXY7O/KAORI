@@ -33,7 +33,7 @@ def test_pagination_and_filters_have_separate_htmx_ownership():
     assert "target='#recommendations-workspace-content'" in header_actions
     assert '_recommendation_workspace_header_actions.html' in results
     assert 'hx-swap-oob="outerHTML"' in header_actions
-    assert "sync='#recommendations-workspace-content:replace'" in results
+    assert "sync='#recommendations-workspace-content:replace'" in header_actions
     assert "target == 'recommendations-results-content'" in route
     assert 'hx-sync="{{ target }}:replace"' in pagination
     assert "hx_swap='innerHTML show:none focus-scroll:false'" in pagination

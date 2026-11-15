@@ -2,6 +2,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 {% import "components/info_tip.html" as info_tip %}
+{% import "components/table_label.html" as table_label %}
 {% import "components/section_intro.html" as section_intro %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% block title %}Recommendations{% endblock title %}
@@ -25,21 +26,17 @@
         </section>
         {% include 'intelligence/partials/_recommendation_workspace_info.html' %}
         {{ section_intro.render('Recommendation Review',
-            'Review committed findings by scope, evidence, and priority before operational follow-up.',
-        'recommendation-review') }}
-        {% set workspace_guides %}
-            {{ info_tip.render('recommendation-workspace-guide', 'Recommendation Workspace Guide',
-                        'Findings come from committed KAORI evidence; provider validation and changes remain in owning operational workspaces.',
+                'Review committed findings by scope, evidence, and priority before operational follow-up.',
+                'recommendation-review') }}
+        {% set workspace_title_extra %}
+            {{ table_label.metadata_label('Filtered Review', 'list-filter') }}
+            {{ info_tip.render('recommendation-workspace-guide', 'Recommendations Guide',
+                        'Review committed findings by scope, priority, and evidence. Search and filters refresh matching results automatically.',
                         items=[
-                        'Recommendations owns matching findings, affected assets, and evidence; Rule Catalog owns detection definitions.',
-                        'Alert Intelligence owns related AlertCase investigation and lifecycle. A recommendation does not execute remediation.'
-                        ], variant='guide', placement='left') }}
-            {{ info_tip.render('recommendation-filters-guide', 'Recommendation Filters Guide',
-                        'Search and scope filters refresh results automatically, with pagination and the Summary remaining consistent.',
-                        items=[
-                        'Filtered counts reflect matching findings across the full result set, not just the current table page.',
-                        'Clear Filters restores default filter values, refreshes source-backed posture, and updates the browser URL.',
-                        'Evidence availability and recent committed Inventory do not guarantee live provider or scanner health.'
+                        'Recommendations owns findings and affected assets. Rule Catalog owns detection definitions.',
+                        'Alert Intelligence owns related AlertCase investigation and lifecycle. Recommendations do not execute remediation.',
+                        'Filtered counts cover all matching findings, not just the current page; pagination and Summary remain synchronized.',
+                        'Clear Filters restores default values and updates the browser URL. Current committed evidence does not guarantee live provider or scanner health.'
                         ], variant='guide', placement='left') }}
         {% endset %}
         {% set workspace_header_actions %}
@@ -51,7 +48,7 @@
             'sparkles',
             indicator_id='recommendations-loading-bar',
             loading_label='Refreshing Recommendations',
-            title_extra=workspace_guides,
+            title_extra=workspace_title_extra,
             header_actions=workspace_header_actions
             ) %}
             {% include 'intelligence/partials/_recommendations_workspace.html' %}
