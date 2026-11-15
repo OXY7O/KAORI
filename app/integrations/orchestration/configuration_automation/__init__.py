@@ -4,6 +4,7 @@ The Ansible provider remains planned for real host registration and mutation.
 """
 
 from app.integrations.kernel.registry import IntegrationModule, registry
+from app.integrations.orchestration.configuration_automation.providers.ansible import provider_implementation
 
 integration_module = IntegrationModule(
     integration_type='configuration_automation',
@@ -23,3 +24,4 @@ integration_module = IntegrationModule(
 )
 
 registry.register(integration_module)
+registry.register_implementation(provider_implementation)

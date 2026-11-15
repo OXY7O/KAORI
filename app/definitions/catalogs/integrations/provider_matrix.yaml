@@ -7,7 +7,7 @@ integration_types:
   - key: ansible
     label: Ansible
     adapter_key: ansible_runner
-    lifecycle: planned
+    lifecycle: available
     protocol: ansible_runner
 - key: container_orchestrator
   domain_key: orchestration

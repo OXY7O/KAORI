@@ -33,11 +33,12 @@ class AnsibleConnectionRecord:
 
 
 def get_connection(instance_id: int) -> IntegrationInstance | None:
-    return db.session.get(IntegrationInstance, int(instance_id)) if instance_id > 0 and (
-        (record := db.session.get(IntegrationInstance, int(instance_id))) is not None
-        and record.integration_type == INTEGRATION_TYPE
-        and record.provider_key == PROVIDER_KEY
-    ) else None
+    if instance_id <= 0:
+        return None
+    record = db.session.get(IntegrationInstance, int(instance_id))
+    if record is None or record.integration_type != INTEGRATION_TYPE or record.provider_key != PROVIDER_KEY:
+        return None
+    return record
 
 
 def record_for_canonical(instance_id: int) -> AnsibleConnectionRecord | None:
