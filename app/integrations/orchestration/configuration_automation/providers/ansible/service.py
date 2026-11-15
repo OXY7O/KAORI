@@ -195,20 +195,14 @@ def bound_kubernetes_targets(
     The Cluster model is authoritative for identity; Git inventory and arbitrary
     asset_key text are not accepted as an alternative target registry.
     """
-    statement = (
-        IntegrationBinding.query.filter_by(
-            integration_instance_id=connection.id,
-            asset_type='kubernetes_cluster',
-        )
-        .order_by(IntegrationBinding.priority.asc(), IntegrationBinding.id.asc())
-    )
+    statement = IntegrationBinding.query.filter_by(
+        integration_instance_id=connection.id,
+        asset_type='kubernetes_cluster',
+    ).order_by(IntegrationBinding.priority.asc(), IntegrationBinding.id.asc())
     bindings, pagination = paginate_query(statement, page=page, per_page=per_page)
     ids = {str(binding.asset_key) for binding in bindings}
     clusters = (
-        {
-            cluster.id: cluster
-            for cluster in db.session.scalars(select(Cluster).where(Cluster.id.in_(ids))).all()
-        }
+        {cluster.id: cluster for cluster in db.session.scalars(select(Cluster).where(Cluster.id.in_(ids))).all()}
         if ids
         else {}
     )
