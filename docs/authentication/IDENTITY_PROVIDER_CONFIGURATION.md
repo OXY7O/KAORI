@@ -150,13 +150,25 @@ The operator-owned file is never overwritten on subsequent starts.
 1. Discover the verified **AD server IP** from Windows DNS or the previously
    approved Windows/WSL host mapping; do **not** guess or use Vault's address.
    On Windows PowerShell: `Resolve-DnsName adds.kaori.cloud`; also inspect
-   `C:\\Windows\\System32\\drivers\\etc\\hosts` if resolution was
+   `C:\Windows\System32\drivers\etc\hosts` if resolution was
    previously handled by a local static record. Avoid printing unrelated
    host mappings or credentials.
-2. From the root KAORI checkout, edit the existing ignored overlay:
-   `secrets/devcontainer/compose.host-overrides.yml`. Use this exact
-   structure, replacing the reserved documentation IP with the approved
-   lab address:
+2. From the **host checkout**, create the ignored overlay if it does not
+   yet exist (the next initializer run also creates a harmless empty one).
+   Do this before any DevContainer rebuild so Compose has a file to load.
+   Then edit it with your verified lab IP:
+
+```bash
+mkdir -p secrets/devcontainer
+if [ ! -e secrets/devcontainer/compose.host-overrides.yml ]; then
+  cp .devcontainer/examples/compose.host-overrides.yml.example \\
+    secrets/devcontainer/compose.host-overrides.yml
+fi
+git check-ignore -v secrets/devcontainer/compose.host-overrides.yml
+```
+
+   Use the following exact YAML structure, replacing the reserved
+   documentation IP with the real approved address:
 
 ```yaml
 services:
