@@ -95,7 +95,7 @@
                 <div class="min-h-0 min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain bg-surface-page px-4 py-4 sm:px-5 sm:py-5">
                     {{ caller() }}
                 </div>
-                <footer class="flex shrink-0 flex-col gap-3 border-t border-outline-subtle bg-surface-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                <footer class="flex shrink-0 justify-between gap-3 border-t border-outline-subtle bg-surface-card px-4 py-3 sm:px-5 {{ 'flex-col sm:flex-row sm:items-center' if evidence_context else 'items-center' }}">
                     {% if evidence_context %}
                         <div class="flex min-w-0 items-start gap-2.5">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
@@ -109,7 +109,7 @@
                         <p class="hidden max-w-3xl text-xs leading-5 text-content-muted sm:block">{{ footer_text }}</p>
                     {% endif %}
                     <button type="button"
-                            class="inline-flex min-h-9 w-full shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-xs font-semibold text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus sm:ml-auto sm:w-auto"
+                            class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-xs font-semibold text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus {{ 'w-full shrink-0 sm:ml-auto sm:w-auto' if evidence_context else 'ml-auto' }}"
                             @click="detailOpen = false">
                         <i data-lucide="x" class="h-4 w-4"></i>
                         Close

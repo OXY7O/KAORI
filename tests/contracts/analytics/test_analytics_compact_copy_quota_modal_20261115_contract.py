@@ -73,6 +73,8 @@ def test_tenant_quota_modal_uses_opt_in_kaori_committed_evidence_chrome() -> Non
     assert "if evidence_context" in modal
     assert "Committed Snapshot" in modal
     assert "Evidence Source · Read Only" in modal
+    assert "'flex-col sm:flex-row sm:items-center' if evidence_context else 'items-center'" in modal
+    assert "'w-full shrink-0 sm:ml-auto sm:w-auto' if evidence_context else 'ml-auto'" in modal
     assert 'analytics/components/_analysis_surfaces.html' in modal
     assert "aria-labelledby=\"{{ modal_id }}-title\"" in modal
     assert "aria-describedby=\"{{ modal_id }}-description\"" in modal
@@ -91,6 +93,7 @@ def test_tenant_quota_modal_uses_opt_in_kaori_committed_evidence_chrome() -> Non
     assert "evidence_context=true" not in mapping
     assert "row.quota_objects|length > 1" in tenant
     assert "lg:grid-cols-2" in tenant
+    assert 'class="col-span-full"' in tenant
     assert "quota.hard_items" in tenant
     assert "quota.used_items" in tenant
     assert "row.missing_key_labels" in tenant
