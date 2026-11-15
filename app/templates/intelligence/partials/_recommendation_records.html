@@ -53,12 +53,9 @@
                         <td class="{{ table_ui.cell_classes() }}">
                             <div class="flex min-h-24 min-w-0 flex-col justify-center">
                                 <p class="line-clamp-2 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]"
-                                   title="{{ item.signal_source_label }}">{{ item.signal_source_label }}</p>
+                                   title="{{ item.signal_source_label }}{% if item.evidence and item.evidence.provider_label %} · {{ item.evidence.provider_label }}{% endif %}">{{ item.signal_source_label }}</p>
                                 <div class="mt-2 flex flex-wrap items-center gap-1.5">
                                     {{ table_label.metadata_label(item.logic_type_label, 'list-checks') }}
-                                    {% if item.evidence and item.evidence.provider_label %}
-                                        {{ table_label.metadata_label(item.evidence.provider_label, 'database') }}
-                                    {% endif %}
                                 </div>
                             </div>
                         </td>
