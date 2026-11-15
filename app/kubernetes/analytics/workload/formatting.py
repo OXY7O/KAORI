@@ -58,8 +58,21 @@ def format_resource_quota_value(key: str, value: float) -> str:
         return format_cpu_core(value)
     if key.endswith('.memory'):
         return format_memory_gib(value)
+    if key in {'requests.storage', 'requests.ephemeral-storage', 'limits.ephemeral-storage'}:
+        return format_memory_gib(value)
     if key == 'pods':
         return f'{format_count(value)} pods'
+    if key in {
+        'configmaps',
+        'persistentvolumeclaims',
+        'replicationcontrollers',
+        'resourcequotas',
+        'secrets',
+        'services',
+        'services.loadbalancers',
+        'services.nodeports',
+    } or key.startswith('count/'):
+        return format_count(value)
     return format_decimal(value)
 
 
