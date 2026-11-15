@@ -78,7 +78,8 @@ def assess_static_kubespray_pilot(spec: Mapping[str, Any]) -> StaticKubesprayPla
         findings.append('UNRECOGNIZED_OR_SENSITIVE_INPUT')
     if spec.get('management') != 'self_managed':
         findings.append('UNSUPPORTED_MANAGED_KUBERNETES')
-    if spec.get('environment') not in {'development', 'nonproduction', 'uat'}:
+    environment = spec.get('environment')
+    if not isinstance(environment, str) or environment not in {'development', 'nonproduction', 'uat'}:
         findings.append('NON_PRODUCTION_ONLY')
     if spec.get('kubespray_release') != KUBESPRAY_RELEASE:
         findings.append('KUBESPRAY_RELEASE_MISMATCH')
@@ -114,11 +115,17 @@ def assess_static_kubespray_pilot(spec: Mapping[str, Any]) -> StaticKubesprayPla
             if identity in seen:
                 findings.append('DUPLICATE_NODE_ASSET')
             seen.add(identity)
-            if role not in counts:
+            if not isinstance(role, str) or role not in counts:
                 findings.append('NODE_ROLE_UNSUPPORTED')
             else:
                 counts[role] += 1
-            if (node['os_distribution'], node['os_version']) not in SUPPORTED_OPERATING_SYSTEMS:
+            distribution = node['os_distribution']
+            os_version = node['os_version']
+            if (
+                not isinstance(distribution, str)
+                or not isinstance(os_version, str)
+                or (distribution, os_version) not in SUPPORTED_OPERATING_SYSTEMS
+            ):
                 findings.append('NODE_OS_UNQUALIFIED')
             for field, minimum in (('cpu_count', 2), ('memory_mib', 4096), ('disk_gib', 40)):
                 amount = node[field]
