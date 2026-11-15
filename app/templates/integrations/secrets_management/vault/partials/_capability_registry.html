@@ -8,10 +8,38 @@
 {% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set capability_contracts = [
-    {'key': 'health', 'title': 'Vault Health', 'contract': 'GET /v1/sys/health', 'required': true, 'icon': 'heart-pulse', 'description': 'Provider health and unsealed status'},
-    {'key': 'approle', 'title': 'AppRole Authentication', 'contract': 'POST /v1/auth/{mount}/login', 'required': true, 'icon': 'key-round', 'description': 'Approved AppRole identity'},
-    {'key': 'token_lookup', 'title': 'Token Self Lookup', 'contract': 'GET /v1/auth/token/lookup-self', 'required': true, 'icon': 'shield-check', 'description': 'Scoped AppRole token verification'},
-    {'key': 'mount_metadata', 'title': 'Mount Metadata', 'contract': 'GET /v1/sys/mounts', 'required': false, 'icon': 'database', 'description': 'Optional read-only mount discovery'}
+    {
+        "key": "health",
+        "title": "Vault Health",
+        "contract": "GET /v1/sys/health",
+        "required": true,
+        "icon": "heart-pulse",
+        "description": "Provider health and unsealed status"
+    },
+    {
+        "key": "approle",
+        "title": "AppRole Authentication",
+        "contract": "POST /v1/auth/{mount}/login",
+        "required": true,
+        "icon": "key-round",
+        "description": "Approved AppRole identity"
+    },
+    {
+        "key": "token_lookup",
+        "title": "Token Self Lookup",
+        "contract": "GET /v1/auth/token/lookup-self",
+        "required": true,
+        "icon": "shield-check",
+        "description": "Scoped AppRole token verification"
+    },
+    {
+        "key": "mount_metadata",
+        "title": "Mount Metadata",
+        "contract": "GET /v1/sys/mounts",
+        "required": false,
+        "icon": "database",
+        "description": "Optional read-only mount discovery"
+    }
 ] %}
 {% set readiness = instance.readiness_status or 'validation_required' %}
 {% set summary = instance.validation_summary or {} %}
