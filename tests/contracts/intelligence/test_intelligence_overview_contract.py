@@ -162,7 +162,7 @@ def test_intelligence_posture_signals_align_titles_values_and_supporting_copy() 
     assert region.index('<h3 ') < region.index('data-intelligence-posture-value')
     assert region.index('data-intelligence-posture-value') < region.index('data-intelligence-posture-supporting')
     assert 'focus-visible:ring-outline-focus' in region
-    assert 'grid divide-y divide-outline-subtle lg:grid-cols-3 lg:divide-x lg:divide-y-0' in region
+    assert 'grid divide-y divide-outline-subtle lg:grid-cols-3 lg:divide-x lg:divide-y-0' in template
     assert 'hover:bg-surface-hover' in region
     assert 'focus-visible:ring-inset' in region
     assert 'rounded-xl border' not in region
