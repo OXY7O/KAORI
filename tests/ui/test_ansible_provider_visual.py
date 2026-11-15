@@ -37,6 +37,9 @@ def test_ansible_provider_reviewable_visual_surfaces(
     page.get_by_role('button', name=re.compile(r'log in|login|sign in', re.I)).first.click()
     expect(page).not_to_have_url(re.compile(r'/auth/login(?:[/?#]|$)'))
 
+    css = page.request.get(f'{kaori_authenticated_base_url}/static/css/output.css')
+    assert css.ok, 'Canonical KAORI Tailwind CSS must be built before visual QA'
+
     overview = page.goto(f'{kaori_authenticated_base_url}{BASE_PATH}', wait_until='domcontentloaded')
     assert overview is not None and overview.ok
     if theme == 'dark':
@@ -58,7 +61,7 @@ def test_ansible_provider_reviewable_visual_surfaces(
     )
     assert register is not None and register.ok
     expect(page.get_by_role('heading', name='Register Ansible Connection')).to_be_visible()
-    expect(page.locator('input[name="csrf_token"]')).to_have_count(1)
+    expect(page.locator('form[action*="instances/new"] input[name="csrf_token"]')).to_have_count(1)
     expect(page.locator('input[name="ssh_private_key"]')).to_have_count(0)
     expect(page.get_by_role('button', name='Register Connection')).to_be_visible()
     _assert_no_document_overflow(page)

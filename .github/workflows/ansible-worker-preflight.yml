@@ -138,6 +138,10 @@ jobs:
           PY
       - name: Exercise Ansible provider UI with real PostgreSQL
         run: python -m pytest -q -p no:cacheprovider tests/integrations/test_ansible_provider_ui_postgres.py
+      - name: Build canonical KAORI frontend CSS for visual QA
+        run: |
+          npm ci
+          npm run build-css
       - name: Capture Ansible desktop/mobile light/dark visual QA
         run: |
           python -m playwright install --with-deps chromium
