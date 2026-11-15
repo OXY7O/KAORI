@@ -2079,11 +2079,14 @@ def test_registry_analytics_four_detail_surfaces_reuse_shared_evidence_and_quali
         'insights': [{'title': 'No derived review signal', 'detail': '', 'icon': 'info'}],
         'recommendations': [],
     }
-    render_url = lambda endpoint, **kwargs: '/' + endpoint.replace('.', '/')
+    def render_url(endpoint: str, **kwargs: object) -> str:
+        return '/' + endpoint.replace('.', '/')
 
     for domain in ('risk', 'governance', 'alerts', 'insights'):
         source = (folder / f'_analytics_{domain}_detail.html').read_text()
-        assert '{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}' in source
+        assert (
+            '{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}' in source
+        )
         assert 'analysis_surface.snapshot_shell_classes()' in source
         assert 'info_tip.render(' in source
         assert 'data-registry-' + domain + '-detail' in source
@@ -2096,7 +2099,10 @@ def test_registry_analytics_four_detail_surfaces_reuse_shared_evidence_and_quali
     assert 'Unscanned + Running' in missing_scan
     assert 'Open Security' in missing_scan and 'Open Runtime' in missing_scan
     observed_scan = risk.render(
-        analytics={**fixtures, 'aggregate': {**fixtures['aggregate'], 'scanned_artifacts': 1}},
+        analytics={
+            **fixtures,
+            'aggregate': {**fixtures['aggregate'], 'scanned_artifacts': 1},
+        },
         url_for=render_url,
     )
     assert 'Scan Evidence Unavailable' not in observed_scan
@@ -2107,9 +2113,7 @@ def test_registry_analytics_four_detail_surfaces_reuse_shared_evidence_and_quali
     assert '16.7%' in observed_policy
     assert 'Retention Not Configured' in observed_policy
     assert '5</p>' in observed_policy
-    missing_policy = governance.render(
-        analytics={**fixtures, 'snapshot_count': 0}, url_for=render_url
-    )
+    missing_policy = governance.render(analytics={**fixtures, 'snapshot_count': 0}, url_for=render_url)
     assert 'Policy Evidence Unavailable' in missing_policy
     assert 'N/A' in missing_policy
 
@@ -2154,12 +2158,21 @@ def test_registry_analytics_four_detail_surfaces_reuse_shared_evidence_and_quali
         analytics={
             **fixtures,
             'insights': [
-                {'title': f'fact-{index}', 'detail': 'Observed', 'icon': 'shield-alert', 'tone': 'warning'}
+                {
+                    'title': f'fact-{index}',
+                    'detail': 'Observed',
+                    'icon': 'shield-alert',
+                    'tone': 'warning',
+                }
                 for index in range(6)
             ],
             'recommendations': [
-                {'title': 'Investigate runtime CVE', 'summary': 'Committed finding',
-                 'severity_label': 'Critical', 'severity': 'critical'}
+                {
+                    'title': 'Investigate runtime CVE',
+                    'summary': 'Committed finding',
+                    'severity_label': 'Critical',
+                    'severity': 'critical',
+                }
             ],
         },
         url_for=render_url,
