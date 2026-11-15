@@ -28,6 +28,7 @@ SECRET_DIR = ROOT / 'secrets' / 'devcontainer'
 ADMIN_ENV = SECRET_DIR / 'postgres-bootstrap.env'
 MIGRATOR_ENV = SECRET_DIR / 'postgres-migrate.env'
 BACKUP_ENV = SECRET_DIR / 'application-env-before-three-role.bak'
+HOST_OVERRIDES = SECRET_DIR / 'compose.host-overrides.yml'
 RUNTIME_ROLE = 'kaori_runtime'
 PLACEHOLDER = 'postgresql://kaori_runtime:generated-by-devcontainer-initialize-command@db:5432/kaori'
 
@@ -124,6 +125,7 @@ def main() -> None:
     check_regular_file(ADMIN_ENV)
     check_regular_file(MIGRATOR_ENV)
     check_regular_file(BACKUP_ENV)
+    check_regular_file(HOST_OVERRIDES)
 
     data_exists = check_pgdata()
     source = (
@@ -214,6 +216,12 @@ def main() -> None:
         create_private(APP_ENV, source)
     elif APP_ENV.read_text(encoding='utf-8') != source:
         APP_ENV.write_text(source, encoding='utf-8')
+    # VS Code Compose includes this local opt-in overlay after the canonical
+    # Compose files. Never overwrite an operator-owned hostname mapping.
+    # An empty default preserves Docker DNS behavior for every provider.
+    if not HOST_OVERRIDES.exists():
+        SECRET_DIR.mkdir(parents=True, exist_ok=True)
+        create_private(HOST_OVERRIDES, 'services: {}\n')
     print('KAORI DevContainer: private local database ENV ready; runtime remains kaori_runtime')
     print('KAORI DevContainer: virgin schema bootstrap delegated to guarded db-first-run')
 
