@@ -452,8 +452,10 @@ def test_product_operations_overview_matches_shared_health_and_peer_evidence_con
     env.filters['user_datetime'] = lambda value: value.isoformat() if value else 'Not Collected'
     for text in (overview, snapshot, freshness):
         env.parse(text)
+
     def url_for(endpoint):
         return '/' + endpoint.replace('.', '/')
+
     observed = {
         'account': SimpleNamespace(last_observed_at=datetime(2026, 10, 26, tzinfo=UTC)),
         'committed': True,
@@ -496,6 +498,7 @@ def test_product_operations_overview_matches_shared_health_and_peer_evidence_con
     assert 'Not Collected' in unobserved
     assert 'Not Observed' in unobserved
     assert 'Unavailable' in unobserved
+
 
 def test_product_overview_installation_scope_filter_restricts_authorized_committed_projection(monkeypatch):
     app = Flask(__name__)
@@ -602,10 +605,22 @@ def test_product_overview_selector_table_and_two_line_evidence_contract():
     assert 'source-control-installation-filter' in overview
     assert 'All Authorized Installations' in overview
     assert 'for option in authorized_installations' in overview
-    assert 'hx-include="closest form"' in overview
+    assert 'hx-trigger="change"' in overview
+    assert 'hx-disabled-elt="this"' in overview
+    assert 'hx-include="#source-control-dashboard-active-tab"' in overview
     assert 'hx-select="#source-control-overview"' in overview
     assert 'hx-push-url="true"' in overview
-    assert 'x-bind:value="activeTab"' in overview
+    assert 'hx-sync="closest section:replace"' in overview
+    assert 'data-source-control-scope-filter' in overview
+    assert '<button type="submit"' not in overview
+    assert 'hx-include="closest form"' not in overview
+    assert "input_id='source-control-dashboard-active-tab'" in overview
+    assert "selected_scope = selected_installation_id is not none" in overview
+    assert "'Selected Inventory Retained'" in overview
+    assert "'Selected Inventory Not Collected'" in overview
+    assert "'Visible Scope Collected'" in overview
+    assert "'Selected Installation' if selected_scope" in overview
+    assert "'Selected Inventory Commit' if selected_scope" in overview
     assert "{'tab': 'overview', 'installation_id': selected_installation_id or ''}" in overview
     assert "selected_installation_name or 'All Authorized Installations'" in overview
     assert 'table_ui.header_cell_classes(action=true)' in overview
@@ -623,3 +638,65 @@ def test_product_overview_selector_table_and_two_line_evidence_contract():
         assert description in freshness
     assert 'operational_evidence_tile.html' in freshness
     assert 'operational_evidence_tile.html' in inventory
+
+    k8s = (root / 'app/templates/kubernetes/dashboard/partials/_signal_overview.html').read_text()
+    for htmx_contract in (
+        'hx-trigger="change"',
+        'hx-disabled-elt="this"',
+        'hx-push-url="true"',
+        'hx-include=',
+    ):
+        assert htmx_contract in k8s
+        assert htmx_contract in overview
+
+
+def test_product_overview_one_grant_all_vs_selected_are_explicitly_scoped(monkeypatch):
+    """One grant can yield equal counts; selected context must remain distinct."""
+    app = Flask(__name__)
+    monkeypatch.setattr(routes, '_require_product_uat_access', lambda: None)
+    commit_time = datetime(2026, 10, 26, tzinfo=UTC)
+    installation = {
+        'installation': SimpleNamespace(id=11),
+        'connection': SimpleNamespace(name='GitHub OXY7O UAT'),
+        'committed': True,
+        'collection_status': 'committed',
+        'last_committed_at': commit_time,
+        'observed_count': 1,
+    }
+    scope = {
+        'installations': (installation,),
+        'installation_count': 1,
+        'committed_count': 1,
+        'uncollected_count': 0,
+        'has_more': False,
+        'latest_committed_at': commit_time,
+    }
+    monkeypatch.setattr(routes, 'build_source_control_overview', lambda: scope)
+    contexts = []
+
+    def render(_template, **context):
+        contexts.append(context)
+        return 'rendered'
+
+    monkeypatch.setattr(routes, '_uncached_render', render)
+    with app.test_request_context('/source-control/', query_string={'tab': 'reporting'}):
+        assert routes.overview.__wrapped__() == 'rendered'
+    all_context = contexts[-1]
+    assert all_context['scope'] is scope
+    assert all_context['selected_installation_id'] is None
+    assert all_context['selected_installation_name'] is None
+    assert all_context['dashboard_active_tab'] == 'reporting'
+
+    with app.test_request_context(
+        '/source-control/', query_string={'tab': 'reporting', 'installation_id': '11'}
+    ):
+        assert routes.overview.__wrapped__() == 'rendered'
+    selected = contexts[-1]
+    assert selected['selected_installation_id'] == 11
+    assert selected['selected_installation_name'] == 'GitHub OXY7O UAT'
+    assert selected['dashboard_active_tab'] == 'reporting'
+    assert selected['scope'] is not scope
+    assert selected['scope']['installations'] == scope['installations']
+    assert selected['scope']['committed_count'] == scope['committed_count']
+    assert selected['scope']['installation_count'] == scope['installation_count']
+    assert selected['installation_rows'] == all_context['installation_rows']
