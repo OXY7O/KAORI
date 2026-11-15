@@ -108,9 +108,10 @@ def test_vault_form_actions_use_canonical_feedback_without_secrets(
     assert feedback['status'] == expected_status
     assert feedback['queue_feedback'] is True
     assert feedback['event_type'].startswith('vault_')
-    assert feedback['event_type'].endswith(event_suffix) or (
-        outcome == 'save_success' and feedback['event_type'] in {'vault_connection_registered', 'vault_connection_updated'}
-    )
+    if outcome == 'save_success':
+        assert feedback['event_type'] in {'vault_connection_registered', 'vault_connection_updated'}
+    else:
+        assert feedback['event_type'].endswith(event_suffix)
     assert 'not-for-ui-or-audit' not in repr(feedback)
     assert 'raw-provider-error-must-not-be-exposed' not in repr(feedback)
     assert 'raw-storage-error-must-not-be-exposed' not in repr(feedback)
