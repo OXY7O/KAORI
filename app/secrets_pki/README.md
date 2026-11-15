@@ -51,6 +51,15 @@ instance/namespace/mount scopes, without a live Vault call. Its prerequisite
 message follows the earliest missing stage: no eligible Vault source;
 registered Vault with no approved KV v2 mount; source/mount configured but
 no successful committed inventory; or a bounded scope-limit violation.
+For an active source with no approved KV v2 mount, the Overview blocker uses
+short, naturally fitting copy: **Vault source registered. Approve a KV v2
+mount to collect inventory.** The third displayed setup step is
+**Collect KV v2 inventory** instead of exposing an internal job key. The
+underlying governed operation remains `secrets_pki.inventory.sync` and
+must still run through the existing authorized JobExecution workflow.
+Do not use `whitespace-nowrap`, truncation or a fabricated Ready state
+to force a single line; narrower screens must wrap accessibly.
+
 The final stage requires the canonical governed manual job
 `secrets_pki.inventory.sync`, its completed JobExecution, and committed
 inventory evidence. The Overview remains Blocked before that evidence is
