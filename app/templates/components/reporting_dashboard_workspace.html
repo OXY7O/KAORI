@@ -1,5 +1,7 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/operational_evidence_tile.html" as evidence_tile %}
+{% import "components/operational_callout.html" as operational_callout %}
 {#
   Shared reporting dashboard presentation for Kubernetes and Object Storage.
 
@@ -119,7 +121,66 @@
         </aside>
     {% endcall %}
 {%- endmacro %}
-{% macro guidance(scope_label, evidence_label, narrow_scope_label, generate_copy=None) -%}
+{% macro evidence_summary(
+    metrics,
+    activity_title,
+    activity_description,
+    activity_at,
+    action_href,
+    evidence_available=true,
+    boundary_description='Generated reports require their own qualified source.'
+    ) -%}
+    {% call operational_section_card.render(
+        'Reporting Summary',
+        'Committed collection, account identity, and repository observations for this installation.',
+        'file-chart-column',
+        action_href=action_href,
+        action_label='View Repositories',
+        header_badge=table_label.status_label('Evidence Only' if evidence_available else 'Not Collected', tone='info' if evidence_available else 'unknown'),
+        body_classes='space-y-4 p-5',
+        extra_classes='h-full'
+        ) %}
+        <section class="grid gap-3 sm:grid-cols-3" aria-label="Source Control reporting evidence summary">
+            {% for metric in metrics %}
+                {{ evidence_tile.freshness(metric[0], metric[1], metric[2], metric[3], metric[4], description=metric[5]) }}
+            {% endfor %}
+        </section>
+        <section aria-labelledby="source-control-recent-evidence-title">
+            <div class="mb-2.5 flex items-center justify-between gap-2">
+                <h3 id="source-control-recent-evidence-title" class="text-sm font-semibold text-content-primary">Recent Evidence Activity</h3>
+                {{ table_label.status_label('Retained' if evidence_available else 'Unavailable', tone='info' if evidence_available else 'unknown') }}
+            </div>
+            {% if evidence_available %}
+                <article class="flex min-w-0 items-start gap-3 border-y border-outline-subtle py-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                        <i data-lucide="database-zap" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-semibold text-content-primary">{{ activity_title }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ activity_description }}</p>
+                        <p class="mt-1 text-xs text-content-muted">{{ activity_at }}</p>
+                    </div>
+                </article>
+            {% else %}
+                {% set empty_state_icon = "file-warning" %}
+                {% set empty_state_label = "Not Collected" %}
+                {% set empty_state_tone = "unknown" %}
+                {% set empty_state_title = "No Retained Inventory Activity" %}
+                {% set empty_state_description = "This selected installation has no committed inventory generation. Missing evidence is not a verified zero." %}
+                {% set empty_state_variant = "panel" %}
+                {% include 'components/states/_empty_state.html' %}
+            {% endif %}
+        </section>
+        {{ operational_callout.render(
+            'Reporting Boundary',
+            boundary_description,
+            icon='file-warning',
+            tone='unknown'
+        ) }}
+    {% endcall %}
+{%- endmacro %}
+
+{% macro guidance(scope_label, evidence_label, narrow_scope_label, generate_copy=None, evidence_only=false, evidence_available=true) -%}
     {% set reporting_steps = [
             ('01', 'scan-search', 'Validate', 'Confirm scope, period, freshness, and source coverage.'),
             ('02', 'layout-template', 'Select', 'Choose the report and narrowest scope for accurate results.'),
@@ -128,10 +189,21 @@
             ('05', 'calendar-clock', 'Schedule', 'Set cadence and delivery after the output is reviewed.'),
             ('06', 'archive', 'Retain', 'Preserve the artifact and supporting audit evidence for traceability.')
         ] %}
+    {% if evidence_only %}
+        {% set reporting_steps = [
+            ('01', 'scan-search', 'Validate', 'Confirm the authorized installation and retained evidence freshness.'),
+            ('02', 'layout-template', 'Select', 'Select only the repository observations within this installation grant.'),
+            ('03', 'database-zap', 'Collect', 'Commit the authoritative inventory snapshot through the approved collector.'),
+            ('04', 'git-branch', 'Correlate', 'Verify account identity and repository evidence without inferring PR, CI or DORA results.'),
+            ('05', 'shield-check', 'Review', 'Require a separately admitted report source before generating or scheduling output.'),
+            ('06', 'archive', 'Retain', 'Preserve collected snapshot lineage, reviewer decisions and audit evidence.')
+        ] %}
+    {% endif %}
     {% call operational_section_card.render(
         'Reporting Workflow',
         'From validated scope to retained evidence.',
         'notebook-tabs',
+        header_badge=table_label.status_label('Report Source Not Qualified', tone='unknown') if evidence_only else none,
         body_classes='space-y-4 p-5',
         extra_classes='h-full'
         ) %}
@@ -152,7 +224,7 @@
                         <i data-lucide="database-zap"
                            class="h-4 w-4 shrink-0 text-kaori-primary"
                            aria-hidden="true"></i>
-                        <p class="text-xs font-semibold text-content-primary">Evidence Backed</p>
+                        <p class="text-xs font-semibold text-content-primary">{{ 'Evidence Pending' if evidence_only and not evidence_available else 'Evidence Backed' }}</p>
                     </div>
                     <p class="mt-1.5 text-xs leading-5 text-content-muted">{{ evidence_label }}</p>
                 </div>
@@ -163,7 +235,7 @@
                            aria-hidden="true"></i>
                         <p class="text-xs font-semibold text-content-primary">Review First</p>
                     </div>
-                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Review before reuse.</p>
+                    <p class="mt-1.5 text-xs leading-5 text-content-muted">{{ 'Review before report admission.' if evidence_only else 'Review before reuse.' }}</p>
                 </div>
             </div>
         </section>
@@ -206,7 +278,7 @@
                            class="h-3.5 w-3.5 shrink-0 text-kaori-primary"
                            aria-hidden="true"></i>
                         <p class="text-xs text-content-secondary">
-                            <span class="font-semibold text-content-primary">One-time</span> · Manual
+                            <span class="font-semibold text-content-primary">{{ 'Evidence' if evidence_only else 'One-time' }}</span> · {{ 'Manual Review' if evidence_only else 'Manual' }}
                         </p>
                     </div>
                     <div class="flex min-w-0 items-center gap-2 rounded-lg bg-surface-card px-3 py-2.5">
@@ -214,7 +286,7 @@
                            class="h-3.5 w-3.5 shrink-0 text-kaori-primary"
                            aria-hidden="true"></i>
                         <p class="text-xs text-content-secondary">
-                            <span class="font-semibold text-content-primary">Recurring</span> · Schedule
+                            <span class="font-semibold text-content-primary">Recurring</span> · {{ 'Not Qualified' if evidence_only else 'Schedule' }}
                         </p>
                     </div>
                 </div>

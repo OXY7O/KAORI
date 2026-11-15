@@ -40,7 +40,7 @@
                             <div class="flex min-w-0 flex-wrap items-start justify-between gap-3">
                                 <div class="min-w-0 flex-1">
                                     {{ table_ui.title_cell(item.connection.name,
-                                                                                                'Installation #' ~ item.installation.native_installation_id,
+                                                                        'Installation #' ~ item.installation.native_installation_id,
                                                                                                 'git-branch') }}
                                 </div>
                                 <a href="{{ url_for('source_control.repositories', installation_id=item.installation.id) }}"
@@ -63,13 +63,15 @@
                                     <dt class="font-medium text-content-muted">Collection</dt>
                                     <dd class="mt-1">
                                         {{ integration_status('ready' if item.committed and item.collection_status == 'committed' else item.collection_status,
-                                                                                                item.collection_status|replace('_', ' ') |title,
+                                                                                item.collection_status|replace('_', ' ') |title,
                                         display='indicator') }}
                                     </dd>
                                 </div>
                                 <div class="min-w-0">
                                     <dt class="font-medium text-content-muted">Coverage</dt>
-                                    <dd class="mt-1 break-words text-content-secondary">{{ item.coverage|replace('_', ' ') |title }}</dd>
+                                    <dd class="mt-1 break-words text-content-secondary">
+                                        {{ item.coverage|replace('_', ' ') |title }}
+                                    </dd>
                                 </div>
                                 <div class="min-w-0">
                                     <dt class="font-medium text-content-muted">Repositories</dt>
@@ -111,7 +113,8 @@
                             <th scope="col" class="{{ table_ui.header_cell_classes() }}">GitHub Account</th>
                             <th scope="col" class="{{ table_ui.header_cell_classes() }}">Collection</th>
                             <th scope="col" class="{{ table_ui.header_cell_classes() }}">Coverage</th>
-                            <th scope="col" class="{{ table_ui.header_cell_classes() }} text-right"
+                            <th scope="col"
+                                class="{{ table_ui.header_cell_classes() }} text-right"
                                 title="Observed repositories per installation">Repos</th>
                             <th scope="col" class="{{ table_ui.header_cell_classes() }}">Last Committed</th>
                             <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Action</th>
@@ -122,14 +125,14 @@
                             <tr class="{{ table_ui.row_classes() }}">
                                 <td class="{{ table_ui.cell_classes() }}">
                                     {{ table_ui.title_cell(item.connection.name,
-                                                                                                'Installation #' ~ item.installation.native_installation_id,
+                                                                        'Installation #' ~ item.installation.native_installation_id,
                                                                                                 'git-branch') }}
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }}"
                                     title="{{ 'Account observed ' ~ (item.account.last_observed_at|user_datetime) if item.account and item.account.last_observed_at else 'Account observation unavailable' }}">
                                     {% if item.account %}
                                         {{ table_ui.title_cell(item.account.login if item.account.login else 'Account Name Unknown',
-                                                                                                        (item.account.account_type or 'Type Unknown') ~ ' · #' ~ item.account.native_account_id,
+                                                                                (item.account.account_type or 'Type Unknown') ~ ' · #' ~ item.account.native_account_id,
                                         'users') }}
                                     {% else %}
                                         <span class="text-xs text-content-secondary">Account Not Observed</span>
@@ -137,7 +140,7 @@
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }}">
                                     {{ integration_status('ready' if item.committed and item.collection_status == 'committed' else item.collection_status,
-                                                                                                item.collection_status|replace('_', ' ') |title,
+                                                                                item.collection_status|replace('_', ' ') |title,
                                     display='indicator') }}
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }}">
@@ -160,17 +163,17 @@
                 </table>
             {% endif %}
             {{ table_registry.footer('source_control.overview',
-                                                'source-control-installation-health-section',
-                                                'source-control-installation-health-loading',
-                                                installation_pagination,
-                                                {'tab': 'overview', 'installation_id': selected_installation_id or ''},
-                                                [5, 10, 25, 50],
-                                                resource_label='Installations',
-                                                rows_aria_label='Installation rows per page',
-                                                control_name='source-control-installation-health',
-                                                page_param='installation_page',
-                                                per_page_param='installation_per_page',
-                                    path_params={}) }}
+                        'source-control-installation-health-section',
+                        'source-control-installation-health-loading',
+                        installation_pagination,
+                        {'tab': 'overview', 'installation_id': selected_installation_id or ''},
+                        [5, 10, 25, 50],
+                        resource_label='Installations',
+                        rows_aria_label='Installation rows per page',
+                        control_name='source-control-installation-health',
+                        page_param='installation_page',
+                        per_page_param='installation_per_page',
+                        path_params={}) }}
         </div>
     {% endcall %}
     <div class="{{ peer_grid.layout_classes() }}">
