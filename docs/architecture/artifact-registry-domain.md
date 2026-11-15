@@ -1047,6 +1047,38 @@ committed provider authority remain unchanged. The chart uses shorter,
 nonrotated timestamp ticks and only marks measured points when point density
 is low. No provider read, worker materialization or forecast logic is added.
 
+### Registry Analytics Usage detail evidence-first visual treatment (#4792)
+
+The dedicated `/artifact-registry/analytics/usage` route retains its
+independent parent **Registry Usage Analysis** section intro and existing
+lazy HTMX section endpoint. A focused `_analytics_usage_detail.html` partial
+uses canonical `analysis_surface.snapshot_shell_classes`, role icons,
+`metric_grid_classes(4)`, semantic status badges, and a 3:2 project
+evidence/interpretation layout. This avoids a flat three-card strip and
+half-width orphan empty message while keeping the Growth/Capacity design
+hierarchy without inventing a new UI primitive.
+
+The four facts distinguish runtime-used artifact identities, committed
+artifact-to-workload bindings, source-qualified provider pull activity,
+and stale cleanup review candidates. **Pull Activity is N/A when no
+finite/nonnegative project pull counter qualifies**; it is zero only when
+a committed provider actually reported a qualifying zero. Missing
+selected-window snapshots also render unavailable runtime facts, rather
+than converting an absent dataset to zero. The left project evidence
+panel uses the existing maximum-five `usage_chart_rows` projection,
+retaining Registry source identity and observed counter values, while
+its no-data branch reuses the shared dashed/muted `empty_evidence_classes`
+surface. The right Usage Reading summarizes source qualification,
+distinct artifact/binding semantics and mutable-tag confidence.
+A standard action links to the authoritative Runtime domain.
+
+This is a **presentation-only slice** under Usage drilldown workstream
+#4617. It does not implement the workstream's separate artifact-to-workload
+correlation table, search, pagination, generation confidence, or Metrics
+Source qualification beyond existing committed projections. No provider
+requests, new forecast, inference of pull rate, worker mutation, separate
+data engine, authentication/permission change, or custom CSS/JS is added.
+
 ### Registry Analytics Overview Usage pull evidence chart (#4632)
 
 The **Usage** tab replaces the former three-line Observed Pull Activity list

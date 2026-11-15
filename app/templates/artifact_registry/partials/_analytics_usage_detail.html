@@ -1,0 +1,184 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/info_tip.html" as info_tip %}
+{% set usage_rows = analytics.usage_chart_rows|default([], true) %}
+{% set visible_rows = usage_rows[:5] %}
+{% set has_pulls = visible_rows|length > 0 %}
+{% set has_snapshot = analytics.snapshot_count|default(0) > 0 %}
+{% set runtime_used = analytics.aggregate.running_artifacts if has_snapshot else 'N/A' %}
+{% set runtime_bindings = analytics.aggregate.runtime_bindings if has_snapshot else 'N/A' %}
+{% set pull_value = ('%.0f'|format(analytics.aggregate.pull_activity)) if has_pulls else 'N/A' %}
+{% set stale_candidates = analytics.aggregate.stale_candidates if has_snapshot else 'N/A' %}
+{% set pull_helper = 'Qualified project pull-counter evidence' if has_pulls else 'No qualified pull counters' %}
+{% set usage_metrics = [
+    ('boxes', 'Runtime-used Artifacts', runtime_used, 'Distinct identities in runtime', 'brand'),
+    ('git-fork', 'Runtime Bindings', runtime_bindings, 'Artifact-to-workload relationships', 'evidence'),
+    ('activity', 'Observed Pull Activity', pull_value, pull_helper, 'insight'),
+    ('archive', 'Stale Candidates', stale_candidates, 'Review only; no automatic cleanup', 'evidence')
+] %}
+<section class="{{ analysis_surface.snapshot_shell_classes() }}"
+         data-registry-usage-detail
+         aria-labelledby="registry-usage-detail-title">
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ analysis_surface.role_icon_classes('brand', size='compact') }}"
+                  aria-hidden="true">
+                <i data-lucide="activity" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0">
+                <p class="{{ analysis_surface.role_label_classes('brand') }}">Artifact Usage</p>
+                <div class="mt-1 flex flex-wrap items-center gap-2">
+                    <h3 id="registry-usage-detail-title"
+                        class="text-base font-semibold text-content-primary">Runtime and demand evidence</h3>
+                    {{ info_tip.render('registry-usage-detail-guide',
+                                        'Usage Analytics Guide',
+                                        'Read committed Registry pull counters and Kubernetes runtime correlation as separate evidence.',
+                                        items=[
+                                        'Runtime-used artifacts are distinct identities; runtime bindings count artifact-to-workload relationships.',
+                                        'Pull activity requires a qualified project counter; missing metrics remain N/A, never zero.',
+                                        'Observed zero pull counts are retained when the committed source actually reports zero.',
+                                        'Tag-only correlation has lower confidence than digest evidence, and stale candidates are review-only.',
+                                        'Metrics Source and Registry providers remain authoritative; normal navigation reads committed KAORI state.'
+                                        ], placement='right', variant='guide') }}
+                </div>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                    Review runtime concentration and project pull evidence without inferring request rates.
+                </p>
+            </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            {{ table_label.metadata_label(table_label.count_text(visible_rows|length, 'Project Record'), 'database', size='compact') }}
+            {{ table_label.metadata_label(analytics.snapshot_window|upper ~ ' Window', 'clock-3', size='compact') }}
+        </div>
+    </header>
+    <div class="{{ analysis_surface.metric_grid_classes(4) }}">
+        {% for icon, label, value, detail, role in usage_metrics %}
+            <article class="{{ analysis_surface.metric_cell_classes() }}">
+                <div class="flex items-center gap-2">
+                    <span class="{{ analysis_surface.metric_icon_classes('compact', role=role) }}"
+                          aria-hidden="true">
+                        <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+                    </span>
+                    <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                </div>
+                <p class="mt-3 text-xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ detail }}</p>
+            </article>
+        {% endfor %}
+    </div>
+    <div class="grid items-start gap-4 border-t border-outline-subtle p-4 lg:grid-cols-5 lg:items-stretch sm:p-5">
+        <section class="{{ analysis_surface.evidence_shell_classes('flex min-w-0 flex-col lg:col-span-3') }}"
+                 aria-labelledby="registry-usage-project-evidence-title">
+            <header class="flex items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
+                          aria-hidden="true">
+                        <i data-lucide="list-checks" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h4 id="registry-usage-project-evidence-title"
+                            class="text-sm font-semibold text-content-primary">Committed Project Pull Evidence</h4>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                            Source-qualified project counters, not pull velocity.
+                        </p>
+                    </div>
+                </div>
+                {{ table_label.status_label('Observed' if has_pulls else 'Unavailable', 'info' if has_pulls else 'unknown', size='compact') }}
+            </header>
+            {% if has_pulls %}
+                <div class="divide-y divide-outline-subtle" data-registry-usage-project-rows>
+                    {% for row in visible_rows %}
+                        <article class="flex min-w-0 items-start justify-between gap-3 px-4 py-3 sm:px-5">
+                            <div class="min-w-0">
+                                <h5 class="break-words text-sm font-semibold text-content-primary">{{ row.project_name }}</h5>
+                                <p class="mt-1 break-words text-xs text-content-muted">{{ row.registry_name }}</p>
+                            </div>
+                            <div class="shrink-0 text-right">
+                                <p class="text-sm font-semibold tabular-nums text-content-primary">{{ row.pull_display }}</p>
+                                <p class="mt-1 text-xs text-content-muted">Observed pulls</p>
+                            </div>
+                        </article>
+                    {% endfor %}
+                    {% if usage_rows|length > visible_rows|length %}
+                        <p class="px-4 py-3 text-xs text-content-muted sm:px-5">
+                            Showing {{ visible_rows|length }} of {{ usage_rows|length }} qualified project records.
+                        </p>
+                    {% endif %}
+                </div>
+            {% else %}
+                {% set empty_classes = 'flex min-h-44 w-full flex-col items-center justify-center gap-2 p-5 text-center' %}
+                <div class="flex flex-1 p-4 sm:p-5">
+                    <div class="{{ analysis_surface.empty_evidence_classes(empty_classes) }}"
+                         data-kaori-empty-state
+                         role="status">
+                        <i data-lucide="activity"
+                           class="h-5 w-5 text-content-muted"
+                           aria-hidden="true"></i>
+                        <p class="text-sm font-semibold text-content-primary">Pull Counter Evidence Not Available</p>
+                        <p class="max-w-md text-xs leading-5 text-content-secondary">
+                            No qualified project pull counters for the selected Registry and Time Range.
+                            Missing metrics are not zero demand.
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
+        </section>
+        <aside class="{{ analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-2') }}"
+               aria-labelledby="registry-usage-reading-title">
+            <header class="flex items-start gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
+                <span class="{{ analysis_surface.role_icon_classes('insight', size='compact') }}"
+                      aria-hidden="true">
+                    <i data-lucide="scan-eye" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h4 id="registry-usage-reading-title"
+                        class="text-sm font-semibold text-content-primary">Usage Reading</h4>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">How to interpret committed evidence.</p>
+                </div>
+            </header>
+            <dl class="divide-y divide-outline-subtle">
+                <div class="space-y-1 px-4 py-3 sm:px-5">
+                    <dt class="{{ analysis_surface.metric_label_classes() }}">Pull Counter Qualification</dt>
+                    <dd class="text-sm font-semibold text-content-primary">
+                        {{ table_label.count_text(visible_rows|length, 'qualified project counter') if has_pulls else 'Not available' }}
+                    </dd>
+                    <dd class="text-xs leading-5 text-content-secondary">
+                        Missing counters are N/A; a source-reported zero is a valid observation.
+                    </dd>
+                </div>
+                <div class="space-y-1 px-4 py-3 sm:px-5">
+                    <dt class="{{ analysis_surface.metric_label_classes() }}">Runtime Correlation</dt>
+                    <dd class="text-sm font-semibold text-content-primary">
+                        {% if has_snapshot %}
+                            {{ analytics.aggregate.running_artifacts }} artifacts · {{ analytics.aggregate.runtime_bindings }} bindings
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </dd>
+                    <dd class="text-xs leading-5 text-content-secondary">
+                        Artifact identities and workload relationships are separate quantities.
+                    </dd>
+                </div>
+                <div class="space-y-1 px-4 py-3 sm:px-5">
+                    <dt class="{{ analysis_surface.metric_label_classes() }}">Tag Match Confidence</dt>
+                    <dd class="text-sm font-semibold text-content-primary">
+                        {{ analytics.aggregate.tag_only_bindings ~ ' tag-only bindings' if has_snapshot else 'N/A' }}
+                    </dd>
+                    <dd class="text-xs leading-5 text-content-secondary">
+                        Mutable tag references provide weaker correlation than immutable digests.
+                    </dd>
+                </div>
+            </dl>
+        </aside>
+    </div>
+    <footer class="flex flex-col gap-3 border-t border-outline-subtle px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <p class="text-xs leading-5 text-content-secondary">
+            Runtime bindings, distinct artifacts, and provider pull counters are not interchangeable or live demand rates.
+        </p>
+        <a href="{{ url_for('artifact_registry.runtime') }}"
+           class="{{ table_ui.action_classes() }}">
+            Open Runtime <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+        </a>
+    </footer>
+</section>
