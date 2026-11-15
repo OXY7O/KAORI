@@ -201,7 +201,7 @@ def recommendation_table_title(item: dict[str, Any], *, limit: int = 96) -> str:
     if rule_key.startswith('kubernetes.tenant.') and title.startswith('Tenant allocation posture for '):
         capacity_state = _clean(evidence.get('capacity_state'))
         if capacity_state:
-            return f'Tenant allocation: {capacity_state.replace("_", " ")}'
+            return f'Tenant allocation: {capacity_state.replace("_", " ").title()}'
     if len(title) <= limit:
         return title
     shortened = title[:limit].rsplit(' ', 1)[0].strip()
