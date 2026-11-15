@@ -1,0 +1,135 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/action_button.html" as action_button %}
+{% import "components/form_action_bar.html" as form_action_bar %}
+{% block title %}{{ 'Edit Ansible Connection' if instance else 'Register Ansible Connection' }} · KAORI{% endblock title %}
+{% block dashboard_content %}
+    {% set connection_name = form.name if form else (instance.name if instance else '') %}
+    {% set connection_description = form.description if form else (instance.description if instance else '') %}
+    {% set connection_environment = form.environment if form else (instance.environment if instance else 'development') %}
+    {% set connection_enabled = form.enabled if form else (instance.enabled if instance else true) %}
+    <div class="kaori-integration-semantic space-y-6"
+         data-kaori-ansible-registration>
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro("workflow", "Integrations / Orchestration", "workflow") %}
+                        <h1 class="{{ page_hero.title_classes() }}">
+                            {{ 'Edit Ansible Connection' if instance else 'Register Ansible Connection' }}
+                        </h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            Configure a safe Integration Registry identity for Git-defined Ansible operations.
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label("lock", "No SSH secrets in form") }}
+                            {{ page_hero.meta_label("git-commit", "Pinned source") }}
+                            {{ page_hero.meta_label("shield-check", "Non-production pilot") }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Registration Authority</p>
+                        <h2 class="{{ page_hero.context_panel_title_classes() }}">Reviewed Automation Source</h2>
+                        <p class="mt-2 break-all font-mono text-xs text-content-secondary">{{ source_commit }}</p>
+                        <p class="mt-3 text-xs leading-5 text-content-secondary">
+                            A saved connection does not authorize remote host access, and the source SHA cannot be overridden from this form.
+                        </p>
+                        <a href="{{ url_for('ansible.index') }}" class="{{ page_hero.context_single_action_classes() }}">
+                            <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+                            Connection Registry
+                        </a>
+                    </div>
+                </aside>
+            </div>
+        </section>
+        {% if error %}
+            <div class="rounded-xl border border-outline-default bg-surface-card px-5 py-4"
+                 role="alert">
+                <p class="text-sm font-semibold text-content-primary">Connection not saved</p>
+                <p class="mt-1 text-sm text-content-secondary">{{ error }}</p>
+            </div>
+        {% endif %}
+        <form method="post"
+              action="{{ url_for('ansible.edit_instance', instance_id=instance.id) if instance else url_for('ansible.new_instance') }}"
+              class="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(280px,0.8fr)]">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <section class="{{ integration_ui.section_shell_classes() }}">
+                {{ integration_ui.section_header("settings-2",
+                            "Connection Configuration",
+                            "Provide a stable identity for read-only evidence and governance.",
+                            eyebrow="Ansible Provider") }}
+                <div class="grid gap-5 p-5 sm:p-6">
+                    <div>
+                        <label for="ansible-connection-name"
+                               class="mb-1.5 block text-sm font-semibold text-content-primary">Connection Name</label>
+                        <input id="ansible-connection-name"
+                               name="name"
+                               type="text"
+                               maxlength="120"
+                               required
+                               autocomplete="off"
+                               placeholder="Ansible Lab Automation"
+                               value="{{ connection_name }}"
+                               class="{{ integration_ui.control_classes() }}">
+                        <p class="mt-1.5 text-xs text-content-muted">Unique identity in the Infrastructure Automation registry.</p>
+                    </div>
+                    <div>
+                        <label for="ansible-connection-description"
+                               class="mb-1.5 block text-sm font-semibold text-content-primary">Description</label>
+                        <textarea id="ansible-connection-description"
+                                  name="description"
+                                  rows="3"
+                                  maxlength="1000"
+                                  placeholder="Describe the non-production automation scope"
+                                  class="{{ integration_ui.control_classes() }} h-auto min-h-24 py-3">{{ connection_description or '' }}</textarea>
+                    </div>
+                    <div>
+                        <label for="ansible-connection-environment"
+                               class="mb-1.5 block text-sm font-semibold text-content-primary">Environment</label>
+                        <select id="ansible-connection-environment"
+                                name="environment"
+                                required
+                                class="{{ integration_ui.control_classes() }}">
+                            {% for key, label in [('development', 'Development'), ('testing', 'Testing'), ('uat', 'UAT')] %}
+                                <option value="{{ key }}" {% if connection_environment == key %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-outline-subtle p-4">
+                        <input type="checkbox"
+                               name="enabled"
+                               class="mt-1 h-4 w-4 accent-kaori-primary"
+                               {% if connection_enabled %}checked{% endif %}>
+                        <span>
+                            <span class="block text-sm font-semibold text-content-primary">Enabled in Integration Registry</span>
+                            <span class="mt-1 block text-xs leading-5 text-content-secondary">
+                                This controls the registry lifecycle only; execution still requires opt-in, worker readiness and a trusted source.
+                            </span>
+                        </span>
+                    </label>
+                </div>
+                {% call form_action_bar.render("Saving resets external readiness to Validation Required.", embedded=true) %}
+                    <a href="{{ url_for('ansible.instance_detail', instance_id=instance.id) if instance else url_for('ansible.index') }}"
+                       class="{{ action_button.classes() }}">Cancel</a>
+                    <button type="submit" class="{{ action_button.classes('primary') }}">
+                        <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
+                        {{ 'Save Changes' if instance else 'Register Connection' }}
+                    </button>
+                {% endcall %}
+            </section>
+            <aside class="space-y-4">
+                {{ integration_ui.interpretation_panel("Source and Execution",
+                            "Reviewed source: OXY7O/kaori-operations. Worker localhost facts only; no custom playbook, user-supplied inventory or remote shell.",
+                            "git-commit") }}
+                {{ integration_ui.interpretation_panel("Credential and SSH Trust",
+                            "Remote host identity, SSH host-key pinning and credential authority are not configured in this pilot. No SSH key or password can be submitted.",
+                            "shield-alert") }}
+                {{ integration_ui.interpretation_panel("Kubernetes Provisioning",
+                            "Kubespray preflight belongs to a separate Plan workstream. Creating this connection cannot install, patch or upgrade Kubernetes.",
+                            "boxes") }}
+            </aside>
+        </form>
+    </div>
+{% endblock dashboard_content %}

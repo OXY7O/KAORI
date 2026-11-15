@@ -1,0 +1,111 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/action_button.html" as action_button %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% block title %}{{ instance.name }} · Ansible · KAORI{% endblock title %}
+{% block dashboard_content %}
+    {% set source = instance.metadata_json or {} %}
+    <div class="kaori-integration-semantic space-y-6"
+         data-kaori-ansible-instance-detail>
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro("workflow", "Integrations / Orchestration / Ansible", "workflow") %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ instance.name }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            Registered automation identity, committed worker-local evidence and explicit host/EE trust gates.
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label("layers", "Canonical ID " ~ instance.id) }}
+                            {{ page_hero.meta_label("server", instance.environment|title) }}
+                            {{ page_hero.meta_label("git-commit", "Source pinned") }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Ansible execution eligibility">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Provider Posture</p>
+                                <h2 class="{{ page_hero.context_panel_title_classes() }}">External Host Validation</h2>
+                            </div>
+                            {{ integration_status("validation_required", "Not Verified", display="indicator") }}
+                        </div>
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric("server", "Execution Target", "Localhost", "Isolated automation worker") }}
+                            {{ page_hero.context_metric("shield-alert", "External Ready", "No", "Host trust and EE approval pending") }}
+                        </div>
+                        <div class="{{ page_hero.context_actions_classes() }}">
+                            <a href="{{ url_for('ansible.index') }}" class="{{ page_hero.context_action_classes() }}">
+                                <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+                                Connection Registry
+                            </a>
+                            <a href="{{ url_for('ansible.edit_instance', instance_id=instance.id) }}"
+                               class="{{ page_hero.context_action_classes() }}">
+                                <i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>
+                                Edit Connection
+                            </a>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+        <section class="{{ integration_ui.section_shell_classes() }}">
+            {{ integration_ui.section_header("git-commit",
+                        "Source and Execution Contract",
+                        "Immutable source and operator-owned runtime context. No live provider call is made to display this state.",
+                        eyebrow="Provider Configuration") }}
+            <div class="{{ integration_ui.metric_grid_classes(4) }}">
+                {{ integration_ui.metric_card("Registry Lifecycle", "Enabled" if instance.enabled else "Disabled", "Does not authorize a run", "toggle-right") }}
+                {{ integration_ui.metric_card("Target Profile", "Local-only", "Worker localhost facts", "server") }}
+                {{ integration_ui.metric_card("Remote Credential", "Not Set", "Secret authority not qualified", "key-round") }}
+                {{ integration_ui.metric_card("EE Attestation", "Not Verified", "No production image digest accepted", "shield-alert") }}
+            </div>
+            <div class="grid gap-4 border-t border-outline-subtle p-5 lg:grid-cols-2">
+                <dl class="space-y-3 text-sm">
+                    <div>
+                        <dt class="text-xs font-semibold text-content-muted">Repository</dt>
+                        <dd class="mt-1 font-medium text-content-primary">{{ source.source_repository or 'Not configured' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-semibold text-content-muted">Pinned Commit</dt>
+                        <dd class="mt-1 break-all font-mono text-xs text-content-secondary">{{ source.source_sha or 'Not configured' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-semibold text-content-muted">Read-only Operation</dt>
+                        <dd class="mt-1 font-medium text-content-primary">{{ source.operation or 'Not configured' }}</dd>
+                    </div>
+                </dl>
+                <div class="space-y-4">
+                    {{ integration_ui.interpretation_panel("Execution Authority",
+                                "Ansible executes; KAORI orchestrates; Git defines; committed evidence proves. The current pilot cannot contact registered external Linux hosts.",
+                                "workflow") }}
+                    {{ integration_ui.interpretation_panel("Required Before Real Host UAT",
+                                "Approve asset identity, inventory provenance, trusted SSH host key, credential reference and pinned Execution Environment image digest.",
+                                "shield-check") }}
+                </div>
+            </div>
+            <div class="flex flex-col gap-3 border-t border-outline-subtle p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div class="max-w-2xl">
+                    <p class="text-sm font-semibold text-content-primary">Read-only Worker Localhost Probe</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                        Requires development/testing flag and an approved local source checkout on both web and worker. A successful run only verifies the worker's own OS/kernel facts.
+                    </p>
+                </div>
+                <form method="post"
+                      action="{{ url_for('ansible.probe', instance_id=instance.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit"
+                            class="{{ action_button.classes('primary') }}"
+                            {% if not instance.enabled %}disabled title="Enable connection first"{% endif %}>
+                        <i data-lucide="play" class="h-4 w-4" aria-hidden="true"></i>
+                        Run Local Read-only Test
+                    </button>
+                </form>
+            </div>
+        </section>
+        {% include "integrations/orchestration/infrastructure_automation/providers/ansible/partials/_jobs.html" %}
+    </div>
+{% endblock dashboard_content %}
