@@ -22,10 +22,7 @@ def test_tenant_quota_summary_prefers_semantic_state_over_technical_identity() -
     scope = presentation['recommendation_table_scope_title']
     finding = {
         'rule_key': 'kubernetes.tenant.capacity.overcommitted',
-        'title': (
-            'Tenant allocation posture for '
-            '@tenant:kaori-capsule-uat-01:resource-quotas: Overcommitted'
-        ),
+        'title': 'Tenant allocation posture for @tenant:kaori-capsule-uat-01:resource-quotas: Overcommitted',
         'evidence': {
             'namespace': '@tenant:kaori-capsule-uat-01:resource-quotas',
             'capacity_state': 'overcommitted',
