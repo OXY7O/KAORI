@@ -82,4 +82,4 @@ def test_table_and_mobile_use_display_projection_with_original_full_tooltips() -
     assert 'item.signal_source_label' in records
     assert "resource_detail_modal.detail_button(item.rule_key" in records
     assert "data-kaori-recommendation-header-summary" in detail
-    assert '{{ item.title }}' in detail
+    assert 'review_title = item.title|default(item.list_title, true)' in detail
