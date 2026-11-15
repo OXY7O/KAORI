@@ -30,6 +30,26 @@ Reset is the only operation that replaces the complete `#recommendations-workspa
 
 The primary Recommendation column shows a concise operational summary. Examples, long technical identifiers, and supporting evidence remain in the detail modal. The service owns summary compaction so desktop and mobile records use the same wording.
 
+**Recommendation record visual alignment (#4833, operator UAT 2026-11-15):**
+Retain the canonical shared `table_ui` row, cell and label primitives,
+vertically centered cells, accessible caption/column headers, right-aligned
+Review detail control and existing committed-source fields. The six-column
+desktop table allocates 29% Recommendation, 22% Affected Scope, 17% Evidence,
+15% Alert Handling, 8% Priority and 9% Details to accommodate tenant-level
+technical scope identifiers and explanatory alert states. Within each cell,
+use a balanced minimum-height content group, consistent primary/secondary
+typography and compact badges; the information hierarchy, not colored blocks,
+distinguishes the cells. Long recommendation titles, scope identifiers and
+evidence titles use a two-line maximum with a native full-value title for
+pointer users; source keys, scopes, evidence semantics and details remain
+available through the existing Review modal. Keep the recommendation
+supporting sentence one concise line on desktop and two lines in mobile cards.
+Alert Handling retains its complete canonical state mapping and source-derived
+status label; concise helper copy may wrap to two lines. Mobile scope values
+may break only when needed to prevent overflow. Never invent display fields,
+execute provider reads, change AlertCase lifecycle or duplicate a recommendation
+engine to solve a presentation issue.
+
 ## Detail Modal Contract
 
 Recommendation evidence is rendered through the shared resource-detail modal system with an Intelligence context label. The modal uses:
