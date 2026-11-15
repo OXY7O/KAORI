@@ -1,5 +1,5 @@
 {% import "components/action_button.html" as action_button %}
-{% macro render(cancel_url, aria_label="Registration Actions", register_label="Register Connection", loading_label="Registering Connection...", submit_name=None, submit_value=None) -%}
+{% macro render(cancel_url, aria_label="Registration Actions", register_label="Register Connection", loading_label="Registering Connection...", submit_name=None, submit_value=None, required_title="Connection Test Required", verified_title="Connection Verified", required_description="Complete Test Connection before registration.", verified_description="Verified connection payload is ready to register.", disabled_title="Complete Test Connection before registration", enabled_title="Register this verified connection") -%}
     <footer class="border-t border-outline-subtle bg-surface-subtle px-5 py-4 sm:px-6"
             aria-label="{{ aria_label }}"
             data-kaori-provider-registration-actions>
@@ -19,9 +19,9 @@
                 </span>
                 <div class="min-w-0">
                     <p class="text-sm font-semibold text-content-primary"
-                       x-text="connectionVerified ? 'Connection Verified' : 'Connection Test Required'">Connection Test Required</p>
+                       x-text="connectionVerified ? '{{ verified_title }}' : '{{ required_title }}'">{{ required_title }}</p>
                     <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]"
-                       x-text="connectionVerified ? 'Verified connection payload is ready to register.' : 'Complete Test Connection before registration.'">Complete Test Connection before registration.</p>
+                       x-text="connectionVerified ? '{{ verified_description }}' : '{{ required_description }}'">{{ required_description }}</p>
                 </div>
             </div>
             <div class="flex w-full shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end lg:w-auto">
@@ -34,7 +34,7 @@
                         data-loading-label="{{ loading_label }}"
                         disabled
                         x-bind:disabled="!connectionVerified"
-                        x-bind:title="connectionVerified ? 'Register this verified connection' : 'Complete Test Connection before registration'"
+                        x-bind:title="connectionVerified ? '{{ enabled_title }}' : '{{ disabled_title }}'"
                         class="{{ action_button.classes('primary') }} w-full sm:w-auto">
                     <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
                     <span data-operation-submit-label>{{ register_label }}</span>
