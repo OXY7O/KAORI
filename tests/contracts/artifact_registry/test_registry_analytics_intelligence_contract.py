@@ -994,16 +994,21 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     assert "project_count_label = 'Top ' ~ quota_rows|length ~ ' of ' ~ qualified_total ~ ' Projects'" in partial
     assert "table_label.metadata_label(project_count_label, 'gauge', size='compact')" in partial
     assert 'analytics.capacity_chart_rows' in partial
-    assert 'grid items-start gap-4 p-4 lg:grid-cols-5 sm:p-5' in partial
-    assert "analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-3')" in partial
+    assert 'grid items-start gap-4 p-4 lg:grid-cols-5 lg:items-stretch sm:p-5' in partial
+    assert "analysis_surface.evidence_shell_classes('flex min-w-0 flex-col lg:col-span-3')" in partial
+    assert 'flex min-h-0 flex-1 flex-col p-4' in partial
+    assert 'relative mt-3 min-w-0 flex-1 {{ chart_min_height_classes }}' in partial
+    assert 'overflow-hidden' not in partial
+    assert 'data-registry-capacity-quota-series="{{ quota_rows|tojson|forceescape }}"' in partial
+    assert "analysis_surface.evidence_shell_classes('flex min-w-0 flex-col lg:col-span-3')" in partial
     assert "analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-2')" in partial
     assert 'Peak observed utilization' in partial
     assert '100% = quota limit' in partial
     assert "analysis_surface.ranked_item_classes('min-w-0 p-3 sm:p-4')" not in partial
     assert 'divide-y divide-outline-subtle' in partial
-    assert "chart_height_classes = 'h-36 sm:h-40'" in partial
-    assert "chart_height_classes = 'h-44 sm:h-48'" in partial
-    assert "chart_height_classes = 'h-52 sm:h-56'" in partial
+    assert "chart_min_height_classes = 'min-h-36 sm:min-h-40'" in partial
+    assert "chart_min_height_classes = 'min-h-44 sm:min-h-48'" in partial
+    assert "chart_min_height_classes = 'min-h-52 sm:min-h-56'" in partial
     assert 'data-registry-capacity-axis-note' in partial
     assert 'aria-describedby="registry-capacity-chart-note"' in partial
     assert 'if (maxObserved <= 1) axisMax = 1' in chart
@@ -1066,7 +1071,7 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     assert rendered.count('id="registry-capacity-evidence-title"') == 1
     assert 'data-registry-capacity-quota-chart' in rendered
     assert 'data-registry-capacity-chart-height="1"' in rendered
-    assert 'h-36 sm:h-40' in rendered
+    assert 'min-h-36 sm:min-h-40' in rendered
     assert 'Quota Chart Not Available' not in rendered
     assert 'Top 1 of' not in rendered
 
@@ -1080,10 +1085,14 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     assert 'Top 5 of 10 Projects' in bounded
     assert bounded.count('<article ') == 5
     assert 'data-registry-capacity-chart-height="5"' in bounded
-    assert 'h-52 sm:h-56' in bounded
+    assert 'min-h-52 sm:min-h-56' in bounded
     for index in range(1, 6):
         assert f'project-{index}' in bounded
     assert 'project-6' not in bounded
+    assert 'flex min-h-0 flex-1 flex-col p-4' in bounded
+    assert 'lg:items-stretch' in bounded
+    assert bounded.count('data-registry-capacity-chart-height="5"') == 1
+    assert bounded.count('<article ') == 5
 
     all_five = env.get_template('artifact_registry/partials/_analytics_capacity_chart.html').render(
         analytics={'capacity_chart_rows': top_five, 'capacity_project_count': 5}
@@ -1097,7 +1106,7 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     assert 'Top 4 of 7 Projects' in four
     assert four.count('<article ') == 4
     assert 'data-registry-capacity-chart-height="4"' in four
-    assert 'h-44 sm:h-48' in four
+    assert 'min-h-44 sm:min-h-48' in four
     assert 'project-5' not in four
 
     two = env.get_template('artifact_registry/partials/_analytics_capacity_chart.html').render(
@@ -1105,7 +1114,7 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     )
     assert two.count('<article ') == 2
     assert 'data-registry-capacity-chart-height="2"' in two
-    assert 'h-36 sm:h-40' in two
+    assert 'min-h-36 sm:min-h-40' in two
 
     empty = env.get_template('artifact_registry/partials/_analytics_capacity_chart.html').render(
         analytics={'capacity_chart_rows': []}
