@@ -105,7 +105,11 @@ class VaultConnectionForm(FlaskForm):
             description=str(self.description.data or '').strip() or None,
             endpoint=str(self.endpoint.data or '').strip(),
             namespace=str(self.namespace.data or '').strip('/') or None,
-            auth_mount='approle' if self.auth_mount_mode.data == 'approle' else str(self.auth_mount.data or '').strip('/'),
+            auth_mount=(
+                'approle'
+                if self.auth_mount_mode.data == 'approle'
+                else str(self.auth_mount.data or '').strip('/')
+            ),
             role_id=str(self.role_id.data or '').strip(),
             secret_id=secret_id,
             timeout=int(self.timeout.data or 5),
