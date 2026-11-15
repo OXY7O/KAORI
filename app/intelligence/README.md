@@ -75,16 +75,17 @@ are unchanged. No provider read, approval, or automation action is added.
 Automation Control is the governed bridge from Intelligence evidence to controlled execution. Its UI exposes factual **Governance Only** state across Overview, Runbooks & Bindings, Decision Review, Execution Control, and Production Readiness whenever infrastructure execution is disabled. Runbooks now use a source-controlled **System Runbook Catalog**: operators activate validated immutable contracts and configure environment-specific bindings instead of authoring action JSON manually. Catalog activation validates adapters shipped by the build without requiring `RESOLVER_ENABLED_ACTIONS`, so Governance Only preparation does not open the runtime execution registry. Custom authoring remains locked behind `CUSTOM_RUNBOOK_AUTHORING_ENABLED=false` until simulation, maturity, regression, and security contracts are production-ready. Deployment policy, safety controls, readiness evidence, and rollout stages remain writable without opening the resolver boundary. Active alert evidence is independently materialized into deduplicated candidates; accountable review uses immutable decisions and maker-checker approval where required. Infrastructure execution is default-deny behind `AUTOMATION_EXECUTION_ENABLED=false` and is revalidated at authorization, application admission, and worker admission. The Kubernetes Deployment restart pilot uses one-time authorization, canonical jobs, server-side dry-run, rollout-health verification, recovery evidence, lifecycle notifications, audit evidence, and immutable dead letters that require fresh evidence for another attempt.
 
 **Intelligence Posture card visual refinement (#4791, 2026-11-15):**
-The three cards retain their linked destinations, semantic color and
-source-derived values, but present icon/title/chevron as a consistent header
-and a separate primary-value plus concise supporting-copy hierarchy. A
-two-line value region preserves the baseline of the descriptions across the
-three cards even when the critical-attention value wraps. Copy for
-Critical Attention and Evidence Freshness is shortened without changing
-the critical-signal count or treating recent Inventory as live security,
-metrics or analytics freshness; worker-owned refresh remains explained
-in the section Guide. Execution Disabled and active automation failures
-continue to come directly from the governed automation projection.
+The three linked posture cards now share neutral card backgrounds and soft
+outlines instead of large red/green/warning-tinted surfaces. The small
+source-derived status icon and explicit status title retain operational
+meaning while the icon/title/chevron, metric and supporting text follow
+aligned rows. A minimum two-line metric region aligns the description
+baseline across desktop columns and permits responsive text wrapping.
+Critical Attention and Evidence Freshness supporting copy remains concise
+without changing critical-signal counts or treating recent Inventory as
+live security, metrics or analytics freshness; worker-owned collection
+remains explained in the Guide. Execution Disabled and active automation
+failures still come from the governed automation projection.
 
 ## Intelligence baseline lock v1
 
