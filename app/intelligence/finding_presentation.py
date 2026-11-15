@@ -208,7 +208,6 @@ def recommendation_table_title(item: dict[str, Any], *, limit: int = 96) -> str:
     return f'{shortened or title[:limit].strip()}…'
 
 
-
 def recommendation_table_scope_title(scope_title: str, *, limit: int = 44) -> str:
     """Show a short scope descriptor; retain full committed identity in Review."""
 
@@ -218,7 +217,6 @@ def recommendation_table_scope_title(scope_title: str, *, limit: int = 44) -> st
     if len(scope) <= limit:
         return scope
     return f'{scope[: limit - 1].rstrip()}…'
-
 
 
 def recommendation_table_summary(item: dict[str, Any], *, limit: int = 72) -> str:
