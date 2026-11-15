@@ -107,6 +107,56 @@ def compact_recommendation_summary(value: Any, *, limit: int = 180) -> str:
     return ' '.join(words).rstrip(' ,;:-') + '.'
 
 
+
+def recommendation_summary_domain_metrics(
+    findings: list[dict[str, Any]],
+    domain_labels: dict[str, str],
+) -> list[dict[str, str | int]]:
+    """Project authorized matching findings, not integration inventory, into domain KPIs."""
+
+    counts: dict[str, int] = {}
+    for finding in findings:
+        domain = _clean(finding.get('domain'))
+        if domain in domain_labels:
+            counts[domain] = counts.get(domain, 0) + 1
+
+    core_domains = (
+        ('kubernetes', 'ship-wheel', 'Committed Kubernetes finding(s)'),
+        ('object_storage', 'database-zap', 'Committed Object Storage finding(s)'),
+        ('registry', 'package', 'Committed Registry finding(s)'),
+    )
+    metrics: list[dict[str, str | int]] = [
+        {
+            'key': key,
+            'icon': icon,
+            'label': domain_labels[key],
+            'count': counts.get(key, 0),
+            'description': description,
+        }
+        for key, icon, description in core_domains
+    ]
+
+    extra_icons = {
+        'secrets_pki': 'shield-check',
+        'server': 'server',
+        'hci': 'network',
+    }
+    primary_keys = {key for key, _, _ in core_domains}
+    for domain, label in domain_labels.items():
+        if domain in primary_keys or not counts.get(domain):
+            continue
+        metrics.append(
+            {
+                'key': domain,
+                'icon': extra_icons.get(domain, 'layers'),
+                'label': label,
+                'count': counts[domain],
+                'description': f'Committed {label} finding(s)',
+            }
+        )
+    return metrics
+
+
 def recommendation_detail_header_summary(item: dict[str, Any]) -> str:
     """Keep the review header concise using committed restart evidence only."""
 
