@@ -111,10 +111,10 @@ For future cluster upgrades, validate supported minor-version path, etcd backup/
 
 ## 6. Bounded implementation workstreams
 
-1. **IA execution foundation:** register provider/execution instance and Git source; secure credential references; dedicated worker route; read-only connectivity/facts pilot; canonical JobExecution/event redaction and tests. Extend existing Integration Kernel instead of a new provider framework.
-2. **Self-managed provisioning readiness:** define approved, version-locked Kubespray profile, existing-host inventory adapter, preflight support matrix and verified non-mutation Plan; negative authorization/network/secret tests.
-3. **Non-production create & verify:** approved provision run, Kubernetes API qualified registration/binding, inventory synchronization, independent cluster health assertions, audit and exact-candidate UAT.
-4. **Single-worker maintenance:** bounded drain → OS patch → conditional reboot → health check → uncordon with failure-safe controls, PDB and capacity gates.
+1. **#4799 — IA execution foundation:** register provider/execution instance and Git source; secure credential references; dedicated worker route; read-only connectivity/facts pilot; canonical JobExecution/event redaction and tests. Extend existing Integration Kernel instead of a new provider framework.
+2. **#4800 — Self-managed provisioning readiness:** define approved, version-locked Kubespray profile, existing-host inventory adapter, preflight support matrix and verified non-mutation Plan; negative authorization/network/secret tests.
+3. **#4801 — Non-production create & verify:** approved provision run, Kubernetes API qualified registration/binding, inventory synchronization, independent cluster health assertions, audit and exact-candidate UAT.
+4. **#4802 — Single-worker maintenance:** bounded drain → OS patch → conditional reboot → health check → uncordon with failure-safe controls, PDB and capacity gates.
 5. **Future lifecycle:** Kubernetes version upgrade, control-plane maintenance, node replacement, schedules/compliance and managed-provider adapters under distinct implementation authorities.
 
 Each workstream needs an issue-first branch, tests mapped to existing Gherkin/pytest where available, a protected isolated real-provider UAT target, and explicit Human Acceptance before any production use. No external mutation may be inferred as authorized from #4796.
