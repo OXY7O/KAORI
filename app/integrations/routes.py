@@ -29,6 +29,7 @@ from app.integrations.orchestration.configuration_automation.providers.ansible.s
     connection_jobs,
     get_connection,
     save_source_connection,
+    source_validation_posture,
 )
 from app.integrations.orchestration.container_orchestrator.frontpage import (
     KubernetesCoverageFilters,
@@ -232,6 +233,7 @@ def ansible_connection_detail(instance_id: int) -> ResponseReturnValue:
         'integrations/orchestration/configuration_automation/providers/ansible/detail.html',
         connection=connection,
         source=connection.metadata_json or {},
+        source_posture=source_validation_posture(connection),
         jobs=jobs,
         pagination=pagination,
     )

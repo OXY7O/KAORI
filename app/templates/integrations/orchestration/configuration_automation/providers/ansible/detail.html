@@ -21,7 +21,7 @@
                         <p class="mt-2 {{ page_hero.description_classes() }}">Manage the reviewed Kubespray automation source, compatibility policy, committed execution evidence and future inventory lifecycle.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('shield-alert', 'Validation Required') }}
-                            {{ page_hero.meta_label('git-commit', 'Git Source Checked') }}
+                            {{ page_hero.meta_label('git-commit', source_posture.source_label) }}
                             {{ page_hero.meta_label("server-cog", connection.environment|replace("_", " ") |title) }}
                         </div>
                     {% endcall %}
@@ -31,8 +31,8 @@
                                 "Attention",
                                 "shield-check",
                                 "Git Source",
-                                "Source Checked",
-                                "Immutable commit files verified",
+                                source_posture.source_label,
+                                source_posture.source_description,
                                 "lock-keyhole",
                                 "Operations",
                                 "Blocked",
