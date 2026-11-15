@@ -323,7 +323,7 @@ def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> Non
     assert "event_type='vault_connection_update_proof_rejected'" in source
     assert "event_type='vault_connection_registration_failed'" in source
     assert "event_type='vault_connection_update_failed'" in source
-    assert "message=message,\n        notification_context=_notification()" not in source
+    assert 'message=message,\n        notification_context=_notification()' not in source
 
     # A rejected form must identify safe invalid field names, without a
     # generic no-context toast or a new page-local error notification.
