@@ -19,7 +19,10 @@ QUOTA_DOMAIN = ROOT / "app/kubernetes/analytics/workload/quota.py"
     ("key", "raw", "display"),
     [
         ("requests.storage", 107374182400.0, "100.00 GiB"),
+        ("requests.storage", 2147483648.0, "2.00 GiB"),
         ("requests.storage", 0.0, "0.00 GiB"),
+        ("persistentvolumeclaims", 2.0, "2"),
+        ("persistentvolumeclaims", 0.0, "0"),
         ("requests.ephemeral-storage", 1073741824.0, "1.00 GiB"),
         ("limits.ephemeral-storage", 2147483648.0, "2.00 GiB"),
         ("limits.memory", 8589934592.0, "8.00 GiB"),
@@ -79,6 +82,9 @@ def test_tenant_quota_records_guide_and_modal_panels_follow_existing_ui() -> Non
     assert "quota.hard_items" in source
     assert "quota.used_items" in source
     assert "divide-y divide-outline-subtle" in source
+    assert "grid-cols-[minmax(0,1fr)_minmax(6rem,auto)]" in source
+    assert source.count('title="{{ item.value }}"') == 2
+    assert source.count('title="{{ item.label }}"') == 2
     assert source.count("tabular-nums text-content-primary") >= 2
     assert 'class="col-span-full"' in source
     assert "No ResourceQuota Object Available" in source
