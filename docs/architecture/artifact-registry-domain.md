@@ -1186,14 +1186,23 @@ or unavailable evidence is omitted rather than silently rendered as zero.
 At most five qualified projects are plotted, ordered by utilization.
 The visible companion panel preserves the full project name, Registry
 source, actual usage and quota, and independently qualified forecast label.
-For visual UAT the chart panel presents the highest qualified project ratio as
-the primary observed readout, then the bounded horizontal bar chart. For ratios
-at or below 1%, 5%, or 25%, the chart axis automatically zooms to that explicit
-upper bound rather than wasting most pixels on 0–100%; values above quota retain
-a zero-based axis extended beyond 100%. The rendered axis range is named beside
-the chart to prevent a zoomed bar from implying high quota pressure. Exact
-percentages, denominators and forecast status remain in adjacent neutral
-evidence cards; neither the chart nor its visual emphasis implies a forecast.
+For visual UAT the highest qualified project utilization and 100% quota
+reference appear in a compact horizontal context strip rather than a tall
+duplicate KPI block. The Chart.js responsive canvas height follows the
+actual preview count through existing utility classes: 1–2, 3–4, or 5
+qualified project rows. Both desktop panels use `items-start`, so the
+chart surface is not stretched to match the evidence list. The adjacent
+evidence uses divider-separated compact rows, not nested cards, retaining
+each project's identity, Registry, exact percentage, usage, quota and
+independently qualified forecast. This eliminates the large unused chart
+area seen when four projects were rendered, without hiding any of the
+five eligible Overview preview records.
+
+For ratios at or below 1%, 5%, or 25%, the axis still zooms to the
+explicit upper bound; values above quota preserve a zero-based axis
+extending beyond 100%. The displayed axis range prevents a zoomed bar
+from implying high quota pressure. Observed zero utilization remains a
+valid observation, never a fabricated forecast or proof of inactivity.
 Missing all eligible quotas produces a dedicated unavailable state. The
 existing detailed Capacity table and worker/provider ownership are unchanged.
 
