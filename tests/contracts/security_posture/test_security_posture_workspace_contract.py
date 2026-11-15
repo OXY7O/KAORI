@@ -489,7 +489,7 @@ def test_security_investigation_recommendations_are_permission_filtered() -> Non
     denied = _render_workspace_page('overview', _renderable_posture(), can_view_intelligence=False)
     assert 'Review governed recommendations' in allowed
     assert 'Review governed recommendations' not in denied
-    assert 'Validate Runtime Impact' in denied
+    assert 'Open Findings' in denied
 
 
 def test_security_hero_surfaces_stale_scanner_status_not_runtime_readiness() -> None:
