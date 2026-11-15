@@ -304,4 +304,25 @@ def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> Non
     assert 'placeholder="pki, pki-internal"' in form
     assert 'placeholder="kaori-approle"' in form
 
+    # Test Connection and rejected Register/Edit actions use the canonical
+    # top-right Operational Toast + Activity Audit, not a form-level banner.
+    assert 'operational_callout.render(' not in form
+    assert 'if message' not in form
+    assert "'vault-evidence-scope-guide'" in form
+    assert 'No optional inventory is collected.' in form
+    assert 'def _form_feedback(' in source
+    assert "delivery_policy='audit_only'" in source
+    assert 'queue_feedback=True' in source
+    assert "event_type='vault_connection_test'" in source
+    assert "event_type='vault_connection_test_failed'" in source
+    assert "event_type='vault_connection_update_test'" in source
+    assert "event_type='vault_connection_update_test_failed'" in source
+    assert "event_type='vault_connection_registered'" in source
+    assert "event_type='vault_connection_updated'" in source
+    assert "event_type='vault_registration_proof_rejected'" in source
+    assert "event_type='vault_connection_update_proof_rejected'" in source
+    assert "event_type='vault_connection_registration_failed'" in source
+    assert "event_type='vault_connection_update_failed'" in source
+    assert "message=message,\n        notification_context=_notification()" not in source
+
     Environment().parse(form)
