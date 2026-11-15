@@ -11,8 +11,8 @@ from app.integrations.orchestration.infrastructure_automation.providers.ansible.
     parse_connection_form,
 )
 from app.integrations.provider_matrix import provider_kind
-from app.models.integration import IntegrationInstance
 from app.integrations.taxonomy import get_capability_definition
+from app.models.integration import IntegrationInstance
 
 
 def test_ansible_is_registered_in_canonical_orchestration_taxonomy() -> None:
