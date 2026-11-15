@@ -10,6 +10,39 @@
         {% set active_scope = 'All Registered Vault Sources' if summary.provider_count else 'No Eligible Vault Source' %}
         {% set action_href = url_for('vault.index') if can_manage_integrations else url_for('secrets_pki.inventory') %}
         {% set action_label = 'Open Vault Integrations' if can_manage_integrations else 'Review Inventory Readiness' %}
+        {% if summary.source_limit_exceeded|default(false) %}
+            {% set inventory_blocker_title = 'Vault Inventory Scope Review Required' %}
+            {% set inventory_blocker_info = 'Review Vault source and collection scope limits.' %}
+            {% set inventory_blocker_label = 'Scope Review Required' %}
+            {% set inventory_blocker_description = 'Vault inventory exceeds the bounded evidence scope. Review approved sources and mounts before collection. Missing evidence is not zero Secrets.' %}
+            {% set inventory_blocker_steps = ['Review eligible Vault sources', 'Review approved KV v2 metadata mounts', 'Resolve safe collection scope limits'] %}
+            {% set inventory_blocker_action_url = url_for('vault.index') if can_manage_integrations else none %}
+            {% set inventory_blocker_action_label = 'Review Vault Integrations' if can_manage_integrations else none %}
+        {% elif not summary.provider_count %}
+            {% set inventory_blocker_title = 'Vault Source Required' %}
+            {% set inventory_blocker_info = 'Register an enabled Vault source.' %}
+            {% set inventory_blocker_label = 'Setup Required' %}
+            {% set inventory_blocker_description = 'No eligible active Vault source is registered. A saved connection alone does not qualify committed KV v2 inventory; missing evidence is not zero Secrets.' %}
+            {% set inventory_blocker_steps = ['Register and enable a Vault source', 'Approve KV v2 metadata mounts', 'Run the inventory collection job'] %}
+            {% set inventory_blocker_action_url = url_for('vault.index') if can_manage_integrations else none %}
+            {% set inventory_blocker_action_label = 'Configure Vault Integrations' if can_manage_integrations else none %}
+        {% elif not summary.approved_mount_count %}
+            {% set inventory_blocker_title = 'KV v2 Mount Approval Required' %}
+            {% set inventory_blocker_info = 'Approve KV v2 mounts for metadata inventory.' %}
+            {% set inventory_blocker_label = 'Scope Approval Required' %}
+            {% set inventory_blocker_description = 'An eligible Vault source is registered, but no KV v2 metadata mounts are approved. A successful connection does not establish inventory evidence.' %}
+            {% set inventory_blocker_steps = ['Vault source registered', 'Approve explicit KV v2 metadata mounts', 'Run secrets_pki.inventory.sync after approval'] %}
+            {% set inventory_blocker_action_url = url_for('vault.index') if can_manage_integrations else none %}
+            {% set inventory_blocker_action_label = 'Review Vault Mounts' if can_manage_integrations else none %}
+        {% else %}
+            {% set inventory_blocker_title = 'KV v2 Inventory Not Collected' %}
+            {% set inventory_blocker_info = 'Run the KV v2 metadata inventory job.' %}
+            {% set inventory_blocker_label = 'Collection Required' %}
+            {% set inventory_blocker_description = 'Vault source and approved KV v2 mounts are configured, but no successful committed inventory snapshot is available. Run the governed collection job; missing evidence is not zero Secrets.' %}
+            {% set inventory_blocker_steps = ['Vault source registered', 'KV v2 metadata mounts approved', 'Run secrets_pki.inventory.sync and verify its committed evidence'] %}
+            {% set inventory_blocker_action_url = url_for('secrets_pki.inventory') %}
+            {% set inventory_blocker_action_label = 'Review Inventory Readiness' %}
+        {% endif %}
         {{ page_hero.operational_dashboard('Secrets & PKI', 'key-round', 'Overview',
                 'Review committed Secret evidence without exposing credentials.',
                 [
@@ -20,23 +53,19 @@
         active_scope, action_label, action_href,
         data_authority='Committed KAORI State',
         state='normal' if summary.has_evidence else 'blocked',
-        blocked_title='Secrets & PKI Inventory Not Ready',
-        blocked_info='Qualify Vault and collect KV v2 inventory.'
+        blocked_title=inventory_blocker_title,
+        blocked_info=inventory_blocker_info
         ) }}
         {% if not summary.has_evidence %}
             {% set blocked_state_icon = "key-round" %}
-            {% set blocked_state_label = "Setup Required" %}
-            {% set blocked_state_title = "Committed KV v2 Inventory Required" %}
-            {% set blocked_state_description = "No qualified Vault KV v2 inventory is committed. Missing evidence does not prove zero Secrets, healthy rotation or valid PKI." %}
-            {% set blocked_state_steps = [
-                            'Register an active Vault source' if not summary.provider_count else 'Review the Vault source',
-                            'Approve KV v2 metadata mounts',
-                            'Run the Inventory Job'
-                        ] %}
-            {% set blocked_state_action_url = url_for('vault.index') if can_manage_integrations else none %}
-            {% set blocked_state_action_label = 'Configure Vault Integrations' if can_manage_integrations else none %}
-            {% set blocked_state_permission_granted = can_manage_integrations %}
-            {% set blocked_state_show_admin_required = not can_manage_integrations %}
+            {% set blocked_state_label = inventory_blocker_label %}
+            {% set blocked_state_title = inventory_blocker_title %}
+            {% set blocked_state_description = inventory_blocker_description %}
+            {% set blocked_state_steps = inventory_blocker_steps %}
+            {% set blocked_state_action_url = inventory_blocker_action_url %}
+            {% set blocked_state_action_label = inventory_blocker_action_label %}
+            {% set blocked_state_permission_granted = summary.provider_count and summary.approved_mount_count and not summary.source_limit_exceeded or can_manage_integrations %}
+            {% set blocked_state_show_admin_required = not blocked_state_permission_granted %}
             {% include "components/states/_blocked_state.html" %}
         {% else %}
             {% set scope_context %}
