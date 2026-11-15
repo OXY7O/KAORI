@@ -69,20 +69,23 @@ authorized by this visual refinement.
 
 
 
-**Intelligence Posture card typography refinement (#4791, Human Visual
-UAT 2026-11-15):** The three source-qualified posture links retain their
-existing semantic critical/warning/normal status surfaces and ownership
-destinations. Within each existing card, use one consistent vertical rhythm:
-icon + short card title + chevron in the header, prominent source-derived
-value below it, and one concise supporting sentence beneath. Allocate a
-two-line value region so differing numbers and labels do not misalign the
-supporting text at desktop widths. Maintain full-card keyboard-focus
-visibility, responsive column stacking and no extra nested card surfaces.
-Shorten verbose supporting text without changing critical counts, committed
-24-hour Inventory qualification, separate security/metrics/analytics evidence
-authority, automation execution status or worker-owned collection. The Guide
-remains the canonical explanation of those detailed operational boundaries.
-No new component family, application state or provider queries are implied.
+**Intelligence Posture unboxed metric-row refinement (#4791, Human Visual
+UAT 2026-11-15):** Place the three source-qualified posture signals directly
+inside their existing `Intelligence Posture` owning surface as a single
+responsive three-column metric row with neutral divider lines. Do not nest
+colored status blocks, rounded cards, per-item borders or standalone tinted
+surfaces. On narrower viewports the row stacks vertically with horizontal
+dividers. Match the existing neutral `Intelligence Summary` KPI treatment;
+use small semantic status icons and explicit source-backed labels to convey
+risk without relying on color alone. Align the title/icon/chevron header and
+reserve a minimum two-line value region so all supporting text begins at the
+same baseline on desktop. Keep keyboard-visible focus, subtle neutral hover,
+and each owning workspace link. The concise supporting text may read
+`24h committed Inventory only.` because the owning Guide explicitly
+qualifies scanner/security, metrics and analytics evidence separately.
+Retain true critical counts, automation execution state, committed-source and
+worker ownership; do not add new component families, custom CSS or provider
+queries.
 
 ### Intelligence Overview committed-evidence posture and alert semantics (#1490–#1492)
 
