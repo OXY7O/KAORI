@@ -109,7 +109,9 @@
                                 {{ integration_ui.palette_icon(item[0], "unknown", size="lg") }}
                                 <div class="min-w-0 flex-1">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <h3 class="text-base font-semibold text-content-primary" title="{{ item[2] }}">{{ item[1] }}</h3>
+                                        <h3 class="text-base font-semibold text-content-primary"
+                                        aria-label="{{ item[2] }}"
+                                        title="{{ item[2] }}">{{ item[1] }}</h3>
                                         {{ table_label.status_label('Planned', 'unknown') }}
                                     </div>
                                     <p class="mt-1 text-xs leading-5 text-content-secondary">Future automation profile</p>
