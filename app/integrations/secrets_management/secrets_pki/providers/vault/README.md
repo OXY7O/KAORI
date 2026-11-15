@@ -43,6 +43,21 @@ INTEGRATION_VAULT_ALLOWED_ORIGINS=https://vault.internal.example:8200
 INTEGRATION_VAULT_CA_BUNDLE=/etc/ssl/approved/vault-root-ca.pem  # optional if system trusted
 ```
 
+### Governed production provider trust
+
+Production does **not** use the DevContainer's ignored `secrets/trust/`
+mount. Under the current `deploy/server/compose.server.yml` authority,
+approved Vault CA material is installed separately on the host at
+`/etc/kaori/trust/vault/ca.pem` and mounted read-only into the
+`web`, `validation-worker` and `runtime-worker` processes as
+`/run/kaori/trust/vault/ca.pem`. The approved production Vault HTTPS
+origin and `INTEGRATION_VAULT_CA_BUNDLE` stay in
+`/etc/kaori/app.env`; credential material remains in the encrypted
+integration connection contract. See
+[Production DNS and provider trust runbook](../../../../../../docs/operations/production-provider-dns-trust.md)
+for host/readiness, admission and rollback conditions. Never reuse
+`host.docker.internal` or an unapproved CA in production.
+
 ### Persistent Vault CA in DevContainer (Docker Desktop Kubernetes)
 
 The root `secrets/` directory is already ignored by `.gitignore` and
