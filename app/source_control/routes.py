@@ -41,7 +41,39 @@ def overview() -> ResponseReturnValue:
     active_tab = request.args.get('tab', 'overview', type=str)
     if active_tab not in {'overview', 'capacity', 'signals', 'reporting'}:
         active_tab = 'overview'
-    scope = build_source_control_overview()
+    authorized_scope = build_source_control_overview()
+    raw_installation_id = request.args.get('installation_id', '').strip()
+    selected_installation = None
+    scope = authorized_scope
+    if raw_installation_id:
+        if (
+            len(raw_installation_id) > 18
+            or not raw_installation_id.isascii()
+            or not raw_installation_id.isdecimal()
+        ):
+            abort(404)
+        installation_id = int(raw_installation_id)
+        if installation_id < 1:
+            abort(404)
+        selected_installation = next(
+            (
+                item
+                for item in authorized_scope['installations']
+                if item['installation'].id == installation_id
+            ),
+            None,
+        )
+        if selected_installation is None:
+            abort(404)
+        scope = {
+            **authorized_scope,
+            'installations': (selected_installation,),
+            'installation_count': 1,
+            'committed_count': int(selected_installation['committed']),
+            'uncollected_count': int(not selected_installation['committed']),
+            'latest_committed_at': selected_installation['last_committed_at'],
+            'has_more': False,
+        }
     installation_rows, installation_pagination = paginate_sequence(
         scope['installations'],
         page=request.args.get('installation_page'),
@@ -51,6 +83,14 @@ def overview() -> ResponseReturnValue:
         'source_control/overview.html',
         scope=scope,
         dashboard_active_tab=active_tab,
+        authorized_installations=authorized_scope['installations'],
+        authorized_scope_has_more=authorized_scope.get('has_more', False),
+        selected_installation_id=(
+            selected_installation['installation'].id if selected_installation else None
+        ),
+        selected_installation_name=(
+            selected_installation['connection'].name if selected_installation else None
+        ),
         installation_rows=installation_rows,
         installation_pagination=installation_pagination,
     )
