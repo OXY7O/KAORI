@@ -116,10 +116,10 @@ def test_vault_detail_reuses_four_domain_workspaces_without_cloning_engine():
     assert 'components/table.html' in capability_table
     assert 'components/table_label.html' in capability_table
     assert 'data-kaori-capability-table-standard' in capability_table
-    assert "'health'" in capability_table
-    assert "'approle'" in capability_table
-    assert "'token_lookup'" in capability_table
-    assert "'mount_metadata'" in capability_table
+    assert '"health"' in capability_table
+    assert '"approle"' in capability_table
+    assert '"token_lookup"' in capability_table
+    assert '"mount_metadata"' in capability_table
     assert 'GET /v1/sys/mounts' in capability_table
     assert 'permission_unavailable' in capability_table
 
@@ -224,8 +224,8 @@ def test_vault_full_validation_matches_shared_htmx_job_and_evidence_contract() -
 
     assert 'data-kaori-capability-table-standard' in registry
     assert 'components/table.html' in registry
-    assert registry.count("'required': true") == 3
-    assert registry.count("'required': false") == 1
+    assert registry.count('"required": true') == 3
+    assert registry.count('"required": false') == 1
     assert 'permission_unavailable' in registry
     assert 'get_validation_snapshot' not in registry
     assert "summary.get('mount_metadata')" in registry
@@ -476,8 +476,8 @@ def test_vault_policy_guide_and_capability_explorer_reuse_shared_kaori_contracts
         'pagination_ui.numeric_pages(',
     ):
         assert shared in registry
-    assert registry.count("'required': true") == 3
-    assert registry.count("'required': false") == 1
+    assert registry.count('"required": true') == 3
+    assert registry.count('"required": false') == 1
     assert "readiness in ['ready', 'degraded']" in registry
     assert 'permission_unavailable' in registry
     assert 'page_size = requested_page_size if requested_page_size in [5, 10, 25, 50] else 5' in registry
