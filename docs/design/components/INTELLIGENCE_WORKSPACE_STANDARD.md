@@ -69,22 +69,23 @@ authorized by this visual refinement.
 
 
 
-**Intelligence Posture card neutral-surface refinement (#4791, Human Visual
-UAT 2026-11-15):** The three source-qualified links use the same neutral
-`bg-surface-card` and `border-outline-subtle` surfaces, without large
-critical/warning/normal tinted backgrounds or semantic-colored card borders.
-Source-derived status remains legible through the explicit status title and
-small semantic icon, never through color alone. Each link keeps the same
-header geometry (icon, title, chevron) and aligned title/value/supporting-copy
-hierarchy. A minimum two-line value region aligns the start of supporting
-descriptions across desktop columns while allowing text to wrap naturally
-at narrow breakpoints. Preserve full-card focus, hover affordances, ownership
-destinations and responsive stacking; do not introduce nested cards or local
-CSS. Critical counts, committed 24-hour Inventory qualification, separate
-security/metrics/analytics evidence authority, automation execution state
-and worker-owned collection remain unchanged. The existing Guide explains
-the detailed evidence and execution boundaries. No new component family,
-application state or provider queries are implied.
+**Intelligence Posture unboxed metric-row refinement (#4791, Human Visual
+UAT 2026-11-15):** Place the three source-qualified posture signals directly
+inside their existing `Intelligence Posture` owning surface as a single
+responsive three-column metric row with neutral divider lines. Do not nest
+colored status blocks, rounded cards, per-item borders or standalone tinted
+surfaces. On narrower viewports the row stacks vertically with horizontal
+dividers. Match the existing neutral `Intelligence Summary` KPI treatment;
+use small semantic status icons and explicit source-backed labels to convey
+risk without relying on color alone. Align the title/icon/chevron header and
+reserve a minimum two-line value region so all supporting text begins at the
+same baseline on desktop. Keep keyboard-visible focus, subtle neutral hover,
+and each owning workspace link. The concise supporting text may read
+`24h committed Inventory only.` because the owning Guide explicitly
+qualifies scanner/security, metrics and analytics evidence separately.
+Retain true critical counts, automation execution state, committed-source and
+worker ownership; do not add new component families, custom CSS or provider
+queries.
 
 ### Intelligence Overview committed-evidence posture and alert semantics (#1490–#1492)
 
