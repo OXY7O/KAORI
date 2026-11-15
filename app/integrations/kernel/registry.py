@@ -237,6 +237,7 @@ class IntegrationRegistry:
                 return
             for module_path in (
                 'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api',
+                'app.integrations.orchestration.infrastructure_automation.providers.ansible',
                 'app.integrations.observability.metrics_source',
                 'app.integrations.observability.alert_source.providers.alertmanager',
                 'app.integrations.storage.object_storage.providers.minio',
