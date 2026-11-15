@@ -276,6 +276,18 @@ Record changes, approvals, rollback plan and operational evidence under the
 existing deployment/change procedure. Never disable TLS verification to
 work around DNS or trust failures.
 
+**Governed production implementation:** Use the existing server adapter's
+`/etc/kaori/trust` → `/run/kaori/trust` read-only mount, not the
+DevContainer's local host override. The complete deployment, conditional
+forwarding reference, CA validation, access scoping, rotation and rollback
+procedure is in
+[Production internal DNS and provider CA trust](../operations/production-provider-dns-trust.md).
+The currently observed lab LDAP certificate appears to be a directly
+trusted **self-signed server leaf**, not an issuing CA: its Key Usage
+contains `Digital Signature, Key Encipherment` but not `keyCertSign`,
+and no `Basic Constraints: CA:TRUE` was shown. Do not promote it as an
+enterprise CA without a separate approved PKI exception.
+
 ## Service account requirements
 
 Create a dedicated read-only directory account. It needs only:
