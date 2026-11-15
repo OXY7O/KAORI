@@ -123,6 +123,112 @@ rebuild the whole DevContainer, delete data volumes, or manually modify
 container trust files merely to add this CA. A valid certificate alone does
 not prove the LDAP bind/password, directory permissions, or user login works.
 
+### Persistent LDAP hostname resolution in Docker Desktop DevContainer
+
+An approved CA bundle is necessary but **not sufficient**: the actual Flask
+container must resolve the certificate's hostname. If
+`getent hosts adds.kaori.cloud` returns nothing and OpenSSL fails with
+`BIO_lookup_ex: Name or service not known`, DNS fails **before** any TCP,
+TLS or service-account bind attempt. Do not diagnose that error as bad
+certificates or credentials. A manual `/etc/hosts` change inside the
+container is ephemeral and is not the KAORI operating procedure.
+
+Prefer a **proper AD DNS record**, with Docker Desktop forwarding queries to
+the approved corporate/lab resolver. When a lab AD hostname is intentionally
+not served by Docker's resolver, KAORI has an opt-in ignored local Compose
+override. The existing DevContainer host initializer creates:
+
+```text
+secrets/devcontainer/compose.host-overrides.yml
+```
+
+with `services: {}` by default (no new mapping). It is the **last** file in
+`.devcontainer/devcontainer.json`'s `dockerComposeFile` list. The default
+does not affect any provider DNS, production deployment, or other workers.
+The operator-owned file is never overwritten on subsequent starts.
+
+1. Discover the verified **AD server IP** from Windows DNS or the previously
+   approved Windows/WSL host mapping; do **not** guess or use Vault's address.
+   On Windows PowerShell: `Resolve-DnsName adds.kaori.cloud`; also inspect
+   `C:\Windows\System32\drivers\etc\hosts` if resolution was
+   previously handled by a local static record. Avoid printing unrelated
+   host mappings or credentials.
+2. From the **host checkout**, create the ignored overlay if it does not
+   yet exist (the next initializer run also creates a harmless empty one).
+   Do this before any DevContainer rebuild so Compose has a file to load.
+   Then edit it with your verified lab IP:
+
+```bash
+mkdir -p secrets/devcontainer
+if [ ! -e secrets/devcontainer/compose.host-overrides.yml ]; then
+  cp .devcontainer/examples/compose.host-overrides.yml.example \
+    secrets/devcontainer/compose.host-overrides.yml
+fi
+git check-ignore -v secrets/devcontainer/compose.host-overrides.yml
+```
+
+   Use the following exact YAML structure, replacing the reserved
+   documentation IP with the real approved address:
+
+```yaml
+services:
+  workspace:
+    extra_hosts:
+      - "adds.kaori.cloud=192.0.2.10"
+```
+
+The tracked safe sample is
+`.devcontainer/examples/compose.host-overrides.yml.example`.
+`workspace` is the only service requiring LDAP hostname resolution for
+**Access → Identity Providers** Test Connection, directory search and user
+login. If a separate approved process later needs the same endpoint, update
+that process's explicit Compose service independently rather than blindly
+applying this mapping to all workers.
+
+3. From the **host terminal** with Docker Compose, inspect the resolved
+   configuration before creating/recreating any service:
+
+```bash
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml \
+  -f secrets/devcontainer/compose.host-overrides.yml config --format json \
+  | jq '.services.workspace.extra_hosts'
+```
+
+This prints **only** the workspace host aliases, not the full Compose
+configuration that can include environment credentials. Requires `jq`.
+Confirm the `workspace.extra_hosts` entry is the intended
+`adds.kaori.cloud` hostname and actual AD address, without changes to DB or
+Redis services. `dockerComposeFile` paths are loaded by VS Code DevContainer
+in the same order. **One controlled container recreate is necessary** for a
+new or changed `extra_hosts` entry; merely restarting Flask F5 is not
+enough. After updating this devcontainer configuration, use VS Code
+**Dev Containers → Rebuild and Reopen in Container** once, or an approved
+Compose-only `workspace` recreate; **do not** run `down --volumes`,
+reset credentials, or mutate the production environment. The ignored
+override survives further restarts/rebuilds at the same checkout.
+
+4. From the newly created workspace container:
+
+```bash
+getent ahostsv4 adds.kaori.cloud
+openssl s_client -connect adds.kaori.cloud:636 \
+  -servername adds.kaori.cloud \
+  -CAfile /workspace/kaori/secrets/trust/ldaps/ca.pem \
+  -verify_hostname adds.kaori.cloud -verify_return_error </dev/null
+```
+
+First confirm the **expected IP**; next confirm TCP 636 and
+`Verify return code: 0 (ok)`. The LDAP test CA currently displayed by the
+operator has `subject=issuer=CN=adds.kaori.cloud`, so examine
+`openssl x509 -text` to verify that the stored PEM is the appropriate
+approved trust anchor before relying on it. A successful certificate
+verification still does not prove that the configured bind DN/password works.
+
+Only then restart the Flask F5 process if the ignored `.env` changed,
+leave **Enable provider authentication** disabled, run **Test Connection**,
+and proceed to service-bind, scoped directory-provisioning and separate login
+UAT. No `ssl.CERT_NONE`, raw LDAP transport, or TLS trust bypass.
+
 ## Service account requirements
 
 Create a dedicated read-only directory account. It needs only:
