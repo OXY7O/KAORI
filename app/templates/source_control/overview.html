@@ -102,10 +102,11 @@
                 {{ dashboard_workspace.navigation('source-control-dashboard', 'Source Control Dashboard Sections') }}
                 {% call dashboard_workspace.panel('overview', active_dashboard_tab, 'source-control-dashboard') %}
                     <div id="source-control-dashboard-section-overview" class="space-y-5">
-                        <section class="space-y-4" aria-labelledby="source-control-operational-health-title">
+                        <section class="space-y-4"
+                                 aria-labelledby="source-control-operational-health-title">
                             {{ section_intro.render('Operational Health',
-                                'Review authorized GitHub installation collection readiness and committed repository evidence.',
-                                id='source-control-operational-health-title') }}
+                                                        'Review authorized GitHub installation collection readiness and committed repository evidence.',
+                                                        id='source-control-operational-health-title') }}
                             {% call section_card.render(
                                 'Installation Health Summary',
                                 'Showing ' ~ installation_pagination.start_item ~ '–' ~ installation_pagination.end_item ~ ' of ' ~ installation_pagination.total_items ~ ' authorized installations. Repository counts remain installation-scoped.',
@@ -117,7 +118,8 @@
                                 loading_bar_label='Installation Health Loading',
                                 body_classes='p-0'
                                 ) %}
-                                <div id="source-control-installation-health" data-source-control-installation-health>
+                                <div id="source-control-installation-health"
+                                     data-source-control-installation-health>
                                     {% if authorized_scope_has_more and not selected_installation_id %}
                                         <p class="border-b border-outline-subtle px-5 py-3 text-xs text-status-warning-text"
                                            role="status">
@@ -216,10 +218,11 @@
                                 </div>
                             {% endcall %}
                         </section>
-                        <section class="space-y-4" aria-labelledby="source-control-committed-evidence-title">
+                        <section class="space-y-4"
+                                 aria-labelledby="source-control-committed-evidence-title">
                             {{ section_intro.render('Committed Evidence',
-                                'Inspect installation inventory and the freshness of qualified source evidence.',
-                                id='source-control-committed-evidence-title') }}
+                                                        'Inspect installation inventory and the freshness of qualified source evidence.',
+                                                        id='source-control-committed-evidence-title') }}
                             <div class="{{ peer_grid.layout_classes() }}">
                                 <div class="{{ peer_grid.column_classes('primary') }}">
                                     {% include "source_control/partials/_dashboard_inventory_snapshot.html" %}
