@@ -474,6 +474,7 @@ def test_registry_growth_detail_child_tabs_render_observed_zero_missing_and_hist
 def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> None:
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
     section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
+    usage_detail = (ROOT / 'app/templates/artifact_registry/partials/_analytics_usage_detail.html').read_text()
     overview_tabs = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_workspace.html').read_text()
     overview_panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
     presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
@@ -485,7 +486,6 @@ def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> 
     assert 'Explore Analytics' in shell
     for title in (
         'Registry Growth',
-        'Artifact Usage',
         'Risk Concentration',
         'Governance Gaps',
         'Operational Alerts',
@@ -505,6 +505,8 @@ def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> 
     growth_overview = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_overview.html').read_text()
     assert 'never auto-cleaned' in growth_overview
     capacity_detail = (ROOT / 'app/templates/artifact_registry/partials/_analytics_capacity_outlook.html').read_text()
+    assert 'Artifact Usage' in usage_detail
+    assert 'artifact_registry/partials/_analytics_usage_detail.html' in section
     assert 'Capacity Outlook' in capacity_detail
     capacity_projects = (
         ROOT / 'app/templates/artifact_registry/partials/_analytics_capacity_project_quotas.html'
@@ -1128,6 +1130,72 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     assert 'border-dashed border-outline-strong bg-surface-muted' in empty
     assert 'role="status"' in empty
     assert 'Missing evidence is not zero utilization.' in empty
+
+
+def test_registry_usage_detail_reuses_kaori_evidence_and_distinguishes_missing_from_zero() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    path = ROOT / 'app/templates/artifact_registry/partials/_analytics_usage_detail.html'
+    partial = path.read_text()
+    section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
+    assert '{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}' in partial
+    assert "analysis_surface.snapshot_shell_classes()" in partial
+    assert "analysis_surface.metric_grid_classes(4)" in partial
+    assert "analysis_surface.empty_evidence_classes(" in partial
+    assert "table_label.status_label(" in partial
+    assert "url_for('artifact_registry.runtime')" in partial
+    assert "analytics.usage_chart_rows|default([], true)" in partial
+    assert "usage_rows[:5]" in partial
+    assert "('%.0f'|format(analytics.aggregate.pull_activity)) if has_pulls else 'N/A'" in partial
+    assert "{% include \"artifact_registry/partials/_analytics_usage_detail.html\" %}" in section
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    detail = env.get_template('artifact_registry/partials/_analytics_usage_detail.html')
+    aggregate = {
+        'running_artifacts': 1,
+        'runtime_bindings': 1,
+        'pull_activity': 0.0,
+        'stale_candidates': 0,
+        'tag_only_bindings': 1,
+    }
+    common = {'aggregate': aggregate, 'snapshot_count': 1, 'snapshot_window': '24h'}
+    render = lambda rows: detail.render(
+        analytics={**common, 'usage_chart_rows': rows},
+        url_for=lambda endpoint: '/artifact-registry/runtime',
+    )
+
+    missing = render([])
+    assert 'Pull Counter Evidence Not Available' in missing
+    assert 'No qualified project pull counters' in missing
+    assert 'Missing metrics are not zero demand.' in missing
+    assert missing.count('data-kaori-empty-state') == 1
+    assert 'bg-surface-muted' in missing
+    assert 'N/A' in missing
+    assert 'data-registry-usage-project-rows' not in missing
+    assert missing.count('Observed pulls</p>') == 0
+
+    observed_zero = render(
+        [{'project_name': 'sandbox', 'registry_name': 'Harbor X300', 'pull_count': 0, 'pull_display': '0'}]
+    )
+    assert 'Pull Counter Evidence Not Available' not in observed_zero
+    assert 'data-kaori-empty-state' not in observed_zero
+    assert 'data-registry-usage-project-rows' in observed_zero
+    assert 'sandbox' in observed_zero
+    assert 'Harbor X300' in observed_zero
+    assert '1 qualified projects' in observed_zero
+    assert 'Observed pulls</p>' in observed_zero
+
+    six = [
+        {'project_name': f'project-{index}', 'registry_name': 'Harbor X300', 'pull_count': 6 - index,
+         'pull_display': str(6 - index)}
+        for index in range(6)
+    ]
+    five_visible = render(six)
+    assert five_visible.count('Observed pulls</p>') == 5
+    assert 'project-4' in five_visible
+    assert 'project-5' not in five_visible
+    assert 'Showing 5 of 6 qualified project records.' in five_visible
+    assert '/artifact-registry/runtime' in five_visible
 
 
 def test_registry_usage_chart_projection_and_rendered_evidence() -> None:
