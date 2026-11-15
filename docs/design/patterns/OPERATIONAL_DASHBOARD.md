@@ -177,6 +177,21 @@ states, trend charts, business risk scores and provider calls are excluded.
 The two Security routes retain independent `security_posture.view` and
 `artifact_registry.view` source-authorization boundaries.
 
+**Security Highlights and Findings visual density (#4772, 2026-11-15):**
+The bounded Overview `Finding Highlights` section renders three compact
+`operational_metric_card` values and a maximum of three source-qualified
+CVE identity preview rows. These rows use the existing `table_ui.title_cell`
+identity and row-level standard action classes, but do **not** form a second
+searchable full registry. Findings `Evidence Qualification` uses the same
+three-card information density for **Scanner Coverage**, **Runtime
+Correlation**, and **Evidence Freshness**, with authentic Stale/Inputs Changed
+statuses and no fabricated `Current` state. Add the shared
+`section_intro.render` title and description directly above the canonical
+Findings registry. The first table column uses `table_ui.title_cell` and
+shared severity status labels, not custom HTML/CSS. Retain the canonical
+Guide, HTMX filter/loading/pagination, CVE impact links, source permissions,
+missing-evidence warnings and independent scanner/runtime authority.
+
 **Earlier Human Visual UAT correction (2026-11-14, #4711, superseded for Hero):** The Security normal Hero initially used the Operations Dashboard two-metric Active Scope/Data Authority context. The current approved reference is **Kubernetes Governance → Overview**. Security now uses the shared Governance-style Hero with two different semantic slots: *Provider Authority* (Artifact Registry) and *Evidence Boundary* (Committed), scanner-freshness status, and a Findings CTA. The previous Security-only dashboard context was rejected; no new Hero CSS or macro has been introduced. Other dashboard consumers retain their existing Hero action behavior; the blocked Security readiness state still offers permission-aware setup guidance. A single **Security Snapshot** card contains the shared four-metric `resource_posture_grid` (responsive two/four columns), including Evidence Freshness. A `space-y-5` content wrapper explicitly separates Hero-adjacent Snapshot, analysis and tabs: none of these sections may touch. One **Exposure & Runtime Evidence** `operational_section_card` contains two internal regions in an asymmetric 7/5 desktop grid, with a shared subtle divider (top border on mobile, left border on desktop): Severity distribution on the left, Runtime Impact and Evidence Confidence stacked as content **within the same card** on the right. No duplicate outer card shells or nested mini-cards. Existing semantic bars, source-qualified stale/unknown states, canonical four tab keys, bounded Overview findings preview and separately paginated Findings registry remain supported. This is a bounded Security Assurance variant; no new Hero/layout family is introduced.
 
 This approval is a bounded semantic variant for the Security consumer, **not** permission to rename the fixed tabs of Kubernetes, Object Storage, or Registry operational dashboards. Retain shared-component regression and human visual acceptance.
