@@ -73,7 +73,7 @@
                                 <p class="mt-1 text-xs leading-5 text-content-secondary">Automation profile</p>
                             </div>
                         </div>
-                        <p class="mt-4 min-h-10 text-sm leading-5 text-content-secondary">Register Kubespray source for Kubernetes lifecycle management.</p>
+                        <p class="mt-4 min-h-10 text-sm leading-5 text-content-secondary">Register a Kubespray Git source.</p>
                         <dl class="mt-4 grid grid-cols-2 gap-3 border-t border-outline-subtle pt-4">
                             <div class="min-w-0">
                                 <dt class="text-xs font-semibold text-content-muted">Engine</dt>
@@ -98,18 +98,18 @@
                         </div>
                     </article>
                     {% for item in [
-                        ("server-cog", "Linux Host Management"),
-                        ("database", "Middleware & Database"),
-                        ("network", "Network Automation")
+                        ("server-cog", "Linux Hosts", "Linux Host Management"),
+                        ("database", "Middleware & Database", "Middleware & Database"),
+                        ("network", "Network Automation", "Network Automation")
                         ] %}
-                        <article data-kaori-ansible-profile="{{ item[1]|lower|replace(' ', '_') |replace('&', 'and') }}"
+                        <article data-kaori-ansible-profile="{{ item[2]|lower|replace(' ', '_') |replace('&', 'and') }}"
                                  data-kaori-provider-lifecycle="planned"
                                  class="flex h-full min-w-0 flex-col rounded-xl border border-outline-subtle bg-surface-elevated p-5 opacity-90">
                             <div class="flex min-w-0 items-start gap-3">
                                 {{ integration_ui.palette_icon(item[0], "unknown", size="lg") }}
                                 <div class="min-w-0 flex-1">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <h3 class="text-base font-semibold text-content-primary">{{ item[1] }}</h3>
+                                        <h3 class="text-base font-semibold text-content-primary" title="{{ item[2] }}">{{ item[1] }}</h3>
                                         {{ table_label.status_label('Planned', 'unknown') }}
                                     </div>
                                     <p class="mt-1 text-xs leading-5 text-content-secondary">Future automation profile</p>
@@ -135,7 +135,7 @@
                                         data-kaori-provider-disabled
                                         class="{{ action_button.classes('locked-info', full=true) }}"
                                         disabled
-                                        aria-label="{{ item[1] }} registration not available">
+                                        aria-label="{{ item[2] }} registration not available">
                                     <i data-lucide="lock" class="h-4 w-4" aria-hidden="true"></i>
                                     Registration Unavailable
                                 </button>
