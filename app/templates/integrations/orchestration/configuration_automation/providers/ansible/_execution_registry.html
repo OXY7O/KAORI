@@ -15,10 +15,10 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="text-base font-semibold text-content-primary">Execution Evidence</h2>
                         {{ info_tip.render("ansible-evidence-guide",
-                                        "Committed Evidence",
-                                        "Only canonical JobExecution records for the exact Ansible localhost pilot operation are shown. Raw Ansible Runner events and confidential inventory are not presented.",
-                                        placement="right",
-                                        variant="guide") }}
+                                                "Committed Evidence",
+                                                "Only canonical JobExecution records for the exact Ansible localhost pilot operation are shown. Raw Ansible Runner events and confidential inventory are not presented.",
+                                                placement="right",
+                                                variant="guide") }}
                     </div>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Recent read-only automation runs from committed KAORI state.</p>
                 </div>
@@ -38,29 +38,31 @@
     </header>
     <div class="{{ table_ui.filter_bar_classes() }}">
         {% call registry_ui.filter_form('integrations.ansible',
-                                       'ansible-execution-registry',
-                                       'ansible-execution-loading',
-                                       pagination.per_page,
-                                       aria_label='Filter Ansible executions') %}
+            'ansible-execution-registry',
+            'ansible-execution-loading',
+            pagination.per_page,
+            aria_label='Filter Ansible executions') %}
             <div class="flex flex-wrap items-end gap-3">
                 <div class="min-w-0 flex-1 sm:max-w-xs">
-                    <label for="ansible-job-status" class="{{ table_ui.filter_label_classes() }}">Status</label>
+                    <label for="ansible-job-status"
+                           class="{{ table_ui.filter_label_classes() }}">Status</label>
                     <select id="ansible-job-status"
                             name="status"
                             class="{{ table_ui.filter_select_classes() }}">
                         <option value="">All statuses</option>
                         {% for state in statuses %}
-                            <option value="{{ state }}" {% if selected_status == state %}selected{% endif %}>{{ state|replace('_', ' ')|title }}</option>
+                            <option value="{{ state }}"
+                                    {% if selected_status == state %}selected{% endif %}>{{ state|replace('_', ' ') |title }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 {% if selected_status %}
                     {{ registry_ui.clear_filters_link('integrations.ansible',
-                                                        'ansible-execution-registry',
-                                                        'ansible-execution-loading',
-                                                        pagination.per_page,
-                                                        'inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary',
-                                                        label='Clear Filters') }}
+                                        'ansible-execution-registry',
+                                        'ansible-execution-loading',
+                                        pagination.per_page,
+                                        'inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary',
+                                        label='Clear Filters') }}
                 {% endif %}
             </div>
         {% endcall %}
@@ -84,7 +86,7 @@
                             <span class="mt-1 block text-xs text-content-muted">{{ execution.operation }}</span>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <span class="text-xs font-semibold text-content-secondary">{{ execution.status|replace('_', ' ')|title }}</span>
+                            <span class="text-xs font-semibold text-content-secondary">{{ execution.status|replace('_', ' ') |title }}</span>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             <span class="font-mono text-xs text-content-secondary">{{ execution.source_sha[:12] if execution.source_sha else 'Not committed' }}</span>
@@ -98,7 +100,8 @@
                             {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <time class="text-xs text-content-secondary" {% if execution.created_at %}datetime="{{ execution.created_at.isoformat() }}"{% endif %}>{{ execution.created_at.strftime('%Y-%m-%d %H:%M UTC') if execution.created_at else 'Not recorded' }}</time>
+                            <time class="text-xs text-content-secondary"
+                                  {% if execution.created_at %}datetime="{{ execution.created_at.isoformat() }}"{% endif %}>{{ execution.created_at.strftime("%Y-%m-%d %H:%M UTC") if execution.created_at else 'Not recorded' }}</time>
                         </td>
                     </tr>
                 {% else %}
@@ -114,11 +117,11 @@
         </table>
     </div>
     {{ registry_ui.footer('integrations.ansible',
-                            'ansible-execution-registry',
-                            'ansible-execution-loading',
-                            pagination,
-                            {'status': selected_status},
-                            [5, 10, 25, 50],
-                            resource_label='Executions',
-                            control_name='ansible-execution') }}
+        'ansible-execution-registry',
+        'ansible-execution-loading',
+        pagination,
+        {'status': selected_status},
+        [5, 10, 25, 50],
+        resource_label='Executions',
+        control_name='ansible-execution') }}
 </section>

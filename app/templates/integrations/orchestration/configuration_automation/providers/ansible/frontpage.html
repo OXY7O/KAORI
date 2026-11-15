@@ -15,25 +15,27 @@
                         <h1 class="{{ page_hero.title_classes() }}">Ansible</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">Git-defined infrastructure automation with governed execution, immutable source provenance, and committed evidence.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label("git-commit-horizontal", "Pinned Git Source") }}
+                            {{ page_hero.meta_label('git-commit-horizontal', 'Pinned Git Source') }}
                             {{ page_hero.meta_label("shield-check", source_mode) }}
-                            {{ page_hero.meta_label("layers-3", "Configuration Automation") }}
+                            {{ page_hero.meta_label('layers-3', 'Configuration Automation') }}
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Ansible readiness">
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Ansible readiness">
                     <div class="{{ page_hero.context_panel_classes() }}">
-                        {{ page_hero.context_header("Provider Posture", "Ansible Runner", "workflow") }}
+                        {{ page_hero.context_header('Provider Posture', 'Ansible Runner', 'workflow') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
                             {{ page_hero.context_metric("server-cog", "Registered Targets", registered_targets, "No remote execution instance admitted") }}
                             {{ page_hero.context_metric("list-checks", "Committed Jobs", total_executions, "Local-only pilot evidence") }}
                         </div>
-                        {{ page_hero.context_info("shield-check", "Not Configured for external hosts. Review-only workspace; production and Kubernetes mutations are disabled.") }}
+                        {{ page_hero.context_info('shield-check', 'Not Configured for external hosts. Review-only workspace; production and Kubernetes mutations are disabled.') }}
                     </div>
                 </aside>
             </div>
         </section>
-        <section class="{{ integration_ui.section_shell_classes() }}" aria-label="Automation overview">
+        <section class="{{ integration_ui.section_shell_classes() }}"
+                 aria-label="Automation overview">
             {{ integration_ui.section_header("layout-dashboard",
                         "Automation Overview",
                         "Operational evidence is read from committed KAORI JobExecution records. Ansible remains authoritative for execution and Git for source.") }}
@@ -50,7 +52,8 @@
                         <div class="min-w-0 space-y-2">
                             <h3 class="text-sm font-semibold text-content-primary">Source &amp; Execution</h3>
                             <p class="text-xs leading-5 text-content-secondary">Repository <span class="font-semibold text-content-primary">{{ source_repository }}</span></p>
-                            <p class="break-all font-mono text-xs leading-5 text-content-secondary" title="{{ source_sha }}">{{ source_sha }}</p>
+                            <p class="break-all font-mono text-xs leading-5 text-content-secondary"
+                               title="{{ source_sha }}">{{ source_sha }}</p>
                             <p class="text-xs leading-5 text-content-secondary">Allowlisted operation: <span class="font-mono text-content-primary">{{ operation_id }}</span></p>
                             <p class="text-xs leading-5 text-content-secondary">Dedicated worker queue: <span class="font-mono text-content-primary">{{ worker_queue }}</span></p>
                         </div>
@@ -63,10 +66,10 @@
                             <div class="flex flex-wrap items-center gap-2">
                                 <h3 class="text-sm font-semibold text-content-primary">Governance &amp; Readiness</h3>
                                 {{ info_tip.render("ansible-execution-boundary",
-                                                "Execution Boundary",
-                                                "The read-only pilot can only run against the automation worker localhost when explicitly enabled in development/testing. CI evidence is not real-host qualification. Host registration, SSH authority, privileged operations and Kubespray provisioning require separate approval.",
-                                                placement="right",
-                                                variant="guide") }}
+                                                                "Execution Boundary",
+                                                                "The read-only pilot can only run against the automation worker localhost when explicitly enabled in development/testing. CI evidence is not real-host qualification. Host registration, SSH authority, privileged operations and Kubespray provisioning require separate approval.",
+                                                                placement="right",
+                                                                variant="guide") }}
                             </div>
                             <p class="mt-2 text-xs leading-5 text-content-secondary">Provider registration: <span class="font-semibold text-content-primary">{{ provider_readiness }}</span>. No automatic promotion of CI smoke evidence to operational readiness.</p>
                             <p class="mt-2 text-xs leading-5 text-content-secondary">Kubernetes self-managed provisioning remains Plan-only and requires provider preflight, approved inventory, credentials and real UAT.</p>
