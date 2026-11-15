@@ -581,6 +581,68 @@ def test_security_overview_table_renders_complete_server_paged_results() -> None
     assert 'posture.rows[:5]' not in read('app/templates/security_posture/overview.html')
 
 
+def test_security_assets_tab_has_equal_source_cards_and_scope_guide() -> None:
+    html = _render_workspace_page('overview', _renderable_posture(), active_tab='capacity')
+    template = read('app/templates/security_posture/overview.html')
+    assert 'data-security-assets-impact-grid' in html
+    assert 'data-security-assets-boundary' in html
+    assert 'Open guide: Assets & Runtime Impact Guide' in html
+    assert 'Affected Artifact Digests' in html
+    assert 'Runtime Binding Readiness' in html
+    assert 'Open Registry Security' in html
+    assert 'Review Runtime Correlation' in html
+    assert "variant='guide'" in template
+    assert template.count('header_badge=assets_guide') == 1
+    assert 'neither establishes application or host ownership.' in html
+
+
+def test_security_investigation_tab_uses_qualified_metrics_and_one_handoff() -> None:
+    html = _render_workspace_page('overview', _renderable_posture(), active_tab='signals')
+    assert 'Open guide: CVE Investigation Guide' in html
+    assert 'data-security-investigation-layout' in html
+    assert 'data-security-investigation-boundary' in html
+    assert 'Observed Investigation Scope' in html
+    assert 'Distinct CVEs' in html
+    assert 'Affected Digests' in html
+    assert 'Runtime Bindings' in html
+    assert 'Open Findings' in html
+    assert 'Review governed recommendations' in html
+    assert 'This dashboard is read-only' in html
+
+    stale = _renderable_posture()
+    stale['runtime_status'] = {'status': 'Inputs Changed', 'tone': 'warning'}
+    stale_html = _render_workspace_page('overview', stale, active_tab='signals')
+    scope = stale_html.split('data-security-investigation-layout', 1)[1].split('data-security-investigation-boundary', 1)[0]
+    assert 'Unknown' in scope
+    assert 'Inputs Changed' not in scope
+    assert 'Review governed recommendations' in scope
+
+    denied = _render_workspace_page(
+        'overview', _renderable_posture(), active_tab='signals', can_view_intelligence=False
+    )
+    assert 'Review governed recommendations' not in denied
+
+
+def test_security_sources_tab_combines_authorities_and_publication_boundary() -> None:
+    html = _render_workspace_page('overview', _renderable_posture(), active_tab='reporting')
+    template = read('app/templates/security_posture/overview.html')
+    assert 'Open guide: Evidence & Source Ownership Guide' in html
+    assert 'data-security-source-authorities' in html
+    assert 'data-security-publication-boundary' in html
+    assert 'Artifact Registry Scanners' in html
+    assert 'Kubernetes Runtime' in html
+    assert 'Publication Boundary' in html
+    assert 'Open source evidence' in html
+    assert 'Open runtime evidence' in html
+    assert 'Open Reports' in html
+    assert "section_card.render('Security Reporting'" not in template
+    assert "header_badge=sources_guide" in template
+
+    denied = _render_workspace_page('overview', _renderable_posture(), active_tab='reporting', can_view_reports=False)
+    assert 'Publication Boundary' in denied
+    assert 'Open Reports' not in denied
+
+
 def test_security_assurance_stale_scanner_is_not_runtime_all_clear() -> None:
     posture = _renderable_posture()
     posture['scan_status'] = {'label': 'Stale', 'tone': 'warning'}
@@ -590,7 +652,7 @@ def test_security_assurance_stale_scanner_is_not_runtime_all_clear() -> None:
     assert 'Stale' in html
     assert 'Updated 32d ago' in html
     assert 'Partial, stale or unavailable evidence cannot establish an all-clear.' in html
-    assert 'Kubernetes binding generation can be Ready while scanner evidence is Stale.' in html
+    assert 'Binding generation and scanner freshness are separate evidence.' in html
     assert 'Ready' in html
 
 
