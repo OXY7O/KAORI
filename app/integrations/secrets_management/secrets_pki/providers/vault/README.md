@@ -62,6 +62,25 @@ policy, isolation/security gates and staging UAT. Do not select an
 unsupported method or interpret a renamed AppRole mount as an auth-method
 change.
 
+### Vault registration identity flush and transaction recovery
+
+The first Vault connection registration creates an `IntegrationInstance`
+before the `VaultInstance` child. PostgreSQL requires the canonical
+`integration_instances.name` to be **non-null at the initial INSERT**.
+The service populates `name`, provider/adapter keys, environment and
+enabled state before flushing for the canonical ID; only then does it
+write the generated `asset_key` into `metadata_json`.
+
+Any SQLAlchemy failure during that initial flush must be followed by
+`db.session.rollback()` before the route attempts Activity Audit or another
+request-scoped database operation. The existing commit error path also
+rolls back. A `NotNullViolation` followed by `PendingRollbackError` in
+the **Vault Register** route is an application transaction/lifecycle
+defect, **not** evidence that Alembic migrations are pending. Check
+`flask db current` versus `flask db heads` separately and do not
+disable constraints, stamp Alembic, or clear DevContainer PostgreSQL
+volumes as a workaround.
+
 ### Connection feedback and optional inventory scope
 
 Vault Add/Edit uses the existing KAORI top-right Operational Toast and
