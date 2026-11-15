@@ -92,17 +92,26 @@ Recommendations use a two-row desktop filter layout. The first row owns Search, 
 
 ## Recommendation Summary
 
-**Recommendation Summary is a standalone KAORI section between the Hero and Recommendation Workspace.** It is not nested inside the filter/table workspace. The section reports matching findings, Kubernetes and Object Storage distribution, critical/warning counts, active-filter state, and the committed-evidence boundary. Counts cover the full filtered result set rather than only the current pagination page.
+**Recommendation Summary is a standalone KAORI section between the Hero and Recommendation Workspace.** It is not nested inside the filter/table workspace. The section reports matching findings, source-qualified domain distribution, critical/warning counts, active-filter state, and the committed-evidence boundary. Counts cover the full filtered result set rather than only the current pagination page. The initial Kubernetes, Object Storage, and Artifact Registry domain metrics remain visible with accurate zero counts, while additional recognized domains appear only when authorized matching findings exist. Integration registration, connector connectivity, or a catalog-only rule never becomes an invented finding or healthy zero indicator.
 
 The Recommendation Workspace continues to own filters, records, and pagination. Filter and pagination requests replace only `#recommendations-results-content`; the standalone Summary is refreshed with an HTMX out-of-band swap so it remains synchronized without rerendering the filter form or collapsing the workspace hierarchy. Reset may replace the complete workspace while refreshing the standalone Summary through the same OOB contract.
 
 ### Recommendations header, Guides, and filter actions (#4819)
 
-The standalone **Recommendation Summary** header includes the shared `5 Indicators`
-metadata label adjacent to its title. The full five-metric strip and source-derived
-posture badge remain unchanged. A plain shared section intro, **Recommendation
-Review**, appears between the Summary and the owning Workspace card; do not
-add another container or duplicate summary statistics.
+The standalone **Recommendation Summary** header includes a shared **dynamic
+Indicators** metadata label adjacent to its title. The baseline remains five
+metrics (Matching Findings, Kubernetes, Object Storage, Artifact Registry,
+Priority), with any additional source-qualified domain metrics inserted before
+Priority. The number and responsive grid columns follow the rendered metric
+count; existing shared posture metric and divider components are mandatory.
+For example, an authorized committed Secrets & PKI finding may add a sixth
+metric, but its provider must never be inferred as an independent domain. New
+integrations such as Source Control/GitHub or Orchestration/Ansible do not add
+a finding count until an approved central evaluator has produced committed,
+permission-scoped evidence. Server/HCI are not assumed healthy just because
+their domain appears in a selector. A plain shared section intro,
+**Recommendation Review**, appears between the Summary and owning Workspace;
+do not add another container or duplicate summary statistics.
 
 **Recommendation Workspace** keeps its own title and description, with one
 title-adjacent shared neutral metadata label, **Filtered Review**, followed by
@@ -131,7 +140,7 @@ Recommendations remain evidence-backed findings. The workspace may describe live
 
 The server must narrow evaluators to the selected canonical domain and an exact Rule Catalog key when opening a finding detail; missing alert-policy overrides must consume the already-batched policy map rather than cause per-finding SQL. Source/domain workers remain authoritative, and Central Intelligence owns finding semantics. All-domain GET still evaluates all applicable domains; UAT must benchmark this operation on large estates before claiming complete bounded performance.
 
-The Recommendations Hero and **Recommendation Summary** are filter-scoped. Their presentation is synchronized by HTMX out-of-band replacements (`#recommendation-hero-posture` and `#recommendation-summary-section`) while results and pagination remain independently owned; no stale global Hero posture may remain after an AJAX filter change. Matching findings, severity, actionable counts and Kubernetes / Object Storage / Artifact Registry distribution are computed across the full matching set **before page slicing**, not from unrelated-domain findings. Filter source status is catalog-only and must not silently constrain Recommendations.
+The Recommendations Hero and **Recommendation Summary** are filter-scoped. Their presentation is synchronized by HTMX out-of-band replacements (`#recommendation-hero-posture` and `#recommendation-summary-section`) while results and pagination remain independently owned; no stale global Hero posture may remain after an AJAX filter change. Matching findings, severity, actionable counts, baseline Kubernetes / Object Storage / Artifact Registry distribution, and any additional eligible domain metrics are computed across the full matching set **before page slicing**, not from unrelated-domain findings. The projection consumes already server-authorized findings; `secrets_pki` remains gated by both Intelligence and Secrets & PKI view permissions and never publishes unauthorized underlying certificate identities. Filter source status is catalog-only and must not silently constrain Recommendations.
 
 The Alert Handling selector includes Open, Source Unknown, Resolved · Verify, Resolved, Withdrawn, Retired and Accepted Risk states. The list/modal must retain AlertCase lifecycle provenance and must not offer a fresh manual promotion action when a historical or source-unknown case already exists.
 
