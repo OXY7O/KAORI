@@ -442,7 +442,9 @@ def test_security_refresh_view_is_in_header_and_not_filter_bar() -> None:
     assert 'Re-read committed KAORI evidence; does not trigger Security Sync' in header_actions
 
     html = _render_workspace_page('overview', _renderable_posture())
-    assert html.count('Refresh View') == 1
+    assert len(re.findall(r'Refresh View\s*</a>', html)) == 1
+    assert 'hx-target="#security-posture-cve-registry"' in html
+    assert 'hx-select="#security-posture-cve-registry"' in html
     assert 'aria-label="Refresh committed CVE table without starting a security sync"' in html
     assert 'View All Findings' in html
     assert 'data-kaori-canonical-registry-footer="security-posture-cve-registry"' in html
@@ -476,7 +478,7 @@ def test_security_overview_filter_params_preserve_unfiltered_scope_totals() -> N
     assert 'grouped = _grouped_security_cves(scoped_cve_findings)' in presentation
     assert 'filtered_grouped = _grouped_security_cves(filtered_findings)' in presentation
     assert 'severity_summary = grouped.order_by(None).subquery()' in presentation
-    assert 'binding_totals = scoped_cve_findings.outerjoin(' in presentation
+    assert re.search(r'binding_totals\s*=\s*\(\s*scoped_cve_findings\.outerjoin\(', presentation)
     assert 'paginate_query(' in presentation
 
 
@@ -605,7 +607,7 @@ def test_security_assets_tab_has_equal_source_cards_and_scope_guide() -> None:
     template = read('app/templates/security_posture/overview.html')
     assert 'data-security-assets-impact-grid' in html
     assert 'data-security-assets-boundary' in html
-    assert 'Open guide: Assets & Runtime Impact Guide' in html
+    assert 'Open guide: Assets & Runtime Impact Guide' in unescape(html)
     assert 'Affected Artifact Digests' in html
     assert 'Runtime Binding Readiness' in html
     assert 'Open Registry Security' in html
@@ -646,7 +648,7 @@ def test_security_investigation_tab_uses_qualified_metrics_and_one_handoff() -> 
 def test_security_sources_tab_combines_authorities_and_publication_boundary() -> None:
     html = _render_workspace_page('overview', _renderable_posture(), active_tab='reporting', can_view_reports=True)
     template = read('app/templates/security_posture/overview.html')
-    assert 'Open guide: Evidence & Source Ownership Guide' in html
+    assert 'Open guide: Evidence & Source Ownership Guide' in unescape(html)
     assert 'data-security-source-authorities' in html
     assert 'data-security-publication-boundary' in html
     assert 'Artifact Registry Scanners' in html
@@ -656,7 +658,7 @@ def test_security_sources_tab_combines_authorities_and_publication_boundary() ->
     assert 'Open runtime evidence' in html
     assert 'Open Reports' in html
     assert "section_card.render('Security Reporting'" not in template
-    assert "header_badge=sources_guide" in template
+    assert 'header_badge=sources_guide' in template
 
     denied = _render_workspace_page('overview', _renderable_posture(), active_tab='reporting', can_view_reports=False)
     assert 'Publication Boundary' in denied
