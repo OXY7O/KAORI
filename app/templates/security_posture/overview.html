@@ -240,13 +240,13 @@
                                     <span class="flex flex-wrap items-center gap-2">
                                         {{ table_label.metadata_label(posture.pagination.total_items ~ ' CVEs', icon='shield-alert') }}
                                         {{ info_tip.render('security-finding-highlights-guide', 'Finding Highlights Guide',
-                                                                        'A bounded severity-ordered view of committed scanner CVEs.',
-                                                                        items=[
-                                                                        'Only the first three severity-ordered CVEs are presented here.',
-                                                                        'Security Findings owns full CVE search, filters, pagination and impact investigation.',
-                                                                        'Affected digests are not application counts, and runtime bindings require qualified correlation.',
-                                                                        'Stale or missing scanner evidence never establishes an all-clear.'
-                                                                        ], variant='guide', placement='left') }}
+                                                                                'A bounded severity-ordered view of committed scanner CVEs.',
+                                                                                items=[
+                                                                                'Only the first three severity-ordered CVEs are presented here.',
+                                                                                'Security Findings owns full CVE search, filters, pagination and impact investigation.',
+                                                                                'Affected digests are not application counts, and runtime bindings require qualified correlation.',
+                                                                                'Stale or missing scanner evidence never establishes an all-clear.'
+                                                                                ], variant='guide', placement='left') }}
                                     </span>
                                 {% endset %}
                                 {% call section_card.render('Finding Highlights',
@@ -259,23 +259,23 @@
                                     <div class="grid gap-3 border-b border-outline-subtle p-4 sm:grid-cols-3"
                                          data-security-findings-summary>
                                         {{ metric_card.render('Distinct CVEs',
-                                                            posture.pagination.total_items if posture.scanned_artifacts else 'Not Collected',
-                                                            'Distinct qualified scanner CVEs in the authorized source scope.',
-                                                            'shield-alert',
-                                                            source_label='Registry Scanner',
-                                                            compact=true) }}
+                                                                                posture.pagination.total_items if posture.scanned_artifacts else 'Not Collected',
+                                                                                'Distinct qualified scanner CVEs in the authorized source scope.',
+                                                                                'shield-alert',
+                                                                                source_label='Registry Scanner',
+                                                                                compact=true) }}
                                         {{ metric_card.render('Affected Digests',
-                                                            posture.affected_artifacts if posture.scanned_artifacts else 'Not Collected',
-                                                            'Distinct artifact digests with observed scanner findings.',
-                                                            'package-search',
-                                                            source_label='Registry Security',
-                                                            compact=true) }}
+                                                                                posture.affected_artifacts if posture.scanned_artifacts else 'Not Collected',
+                                                                                'Distinct artifact digests with observed scanner findings.',
+                                                                                'package-search',
+                                                                                source_label='Registry Security',
+                                                                                compact=true) }}
                                         {{ metric_card.render('Runtime Correlation',
-                                                            posture.runtime_status.status if registry_ready else 'Not Collected',
-                                                            'Committed binding readiness; not a scanner freshness verdict.',
-                                                            'waypoints',
-                                                            source_label='Registry × Kubernetes',
-                                                            compact=true) }}
+                                                                                posture.runtime_status.status if registry_ready else 'Not Collected',
+                                                                                'Committed binding readiness; not a scanner freshness verdict.',
+                                                                                'waypoints',
+                                                                                source_label='Registry × Kubernetes',
+                                                                                compact=true) }}
                                     </div>
                                     <div class="space-y-2 p-4" data-security-finding-highlights>
                                         {% for row in posture.rows[:3] %}
@@ -287,9 +287,9 @@
                                                      data-security-finding-highlight>
                                                 <div class="min-w-0 flex-1">
                                                     {{ table_ui.title_cell(row.cve_id,
-                                                                        'Qualified scanner evidence',
-                                                                        'shield-alert',
-                                                                        severity_badge) }}
+                                                                                                        'Qualified scanner evidence',
+                                                                                                        'shield-alert',
+                                                                                                        severity_badge) }}
                                                 </div>
                                                 <div class="flex min-w-0 flex-wrap gap-x-4 gap-y-1 text-xs text-content-secondary">
                                                     <span class="tabular-nums">
