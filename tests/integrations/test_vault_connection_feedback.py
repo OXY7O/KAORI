@@ -56,6 +56,8 @@ def test_vault_form_actions_use_canonical_feedback_without_secrets(
     )
 
     class FakeForm:
+        errors = {'secret_id': ['AppRole SecretID is required.']} if outcome == 'invalid_fields' else {}
+
         def validate_on_submit(self) -> bool:
             return outcome != 'invalid_fields'
 
@@ -115,6 +117,9 @@ def test_vault_form_actions_use_canonical_feedback_without_secrets(
     assert 'not-for-ui-or-audit' not in repr(feedback)
     assert 'raw-provider-error-must-not-be-exposed' not in repr(feedback)
     assert 'raw-storage-error-must-not-be-exposed' not in repr(feedback)
+    if outcome == 'invalid_fields':
+        assert 'AppRole SecretID' in feedback['message']
+        assert 'not-for-ui-or-audit' not in feedback['message']
     if outcome == 'save_success':
         assert result.status_code == 302
         assert feedback['event_type'] in {'vault_connection_registered', 'vault_connection_updated'}
