@@ -6,7 +6,6 @@
 {% import "components/resource_posture_grid.html" as posture_grid %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table.html" as table_ui %}
-{% import "components/operational_metric_card.html" as metric_card %}
 {% import "components/section_intro.html" as section_intro %}
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/action_button.html" as action_button %}
@@ -238,7 +237,7 @@
                             {% call dashboard_workspace.panel('overview', active_tab, 'security-posture-overview') %}
                                 {% set highlights_header %}
                                     <span class="flex flex-wrap items-center gap-2">
-                                        {{ table_label.metadata_label(posture.pagination.total_items ~ ' CVEs', icon='shield-alert') }}
+                                        {{ table_label.metadata_label((posture.rows[:3]|length) ~ ' Highlights', icon='shield-alert') }}
                                         {{ info_tip.render('security-finding-highlights-guide', 'Finding Highlights Guide',
                                                                                 'A bounded severity-ordered view of committed scanner CVEs.',
                                                                                 items=[
@@ -256,56 +255,79 @@
                                     action_href=url_for('security_posture.findings'),
                                     action_label='Open Findings',
                                     body_classes='p-0') %}
-                                    <div class="grid gap-3 border-b border-outline-subtle p-4 sm:grid-cols-3"
-                                         data-security-findings-summary>
-                                        {{ metric_card.render('Distinct CVEs',
-                                                                                posture.pagination.total_items if posture.scanned_artifacts else 'Not Collected',
-                                                                                'Distinct qualified scanner CVEs in the authorized source scope.',
-                                                                                'shield-alert',
-                                                                                source_label='Registry Scanner',
-                                                                                compact=true) }}
-                                        {{ metric_card.render('Affected Digests',
-                                                                                posture.affected_artifacts if posture.scanned_artifacts else 'Not Collected',
-                                                                                'Distinct artifact digests with observed scanner findings.',
-                                                                                'package-search',
-                                                                                source_label='Registry Security',
-                                                                                compact=true) }}
-                                        {{ metric_card.render('Runtime Correlation',
-                                                                                posture.runtime_status.status if registry_ready else 'Not Collected',
-                                                                                'Committed binding readiness; not a scanner freshness verdict.',
-                                                                                'waypoints',
-                                                                                source_label='Registry × Kubernetes',
-                                                                                compact=true) }}
+                                    <dl class="grid gap-px bg-outline-subtle sm:grid-cols-3"
+                                        data-security-findings-summary>
+                                        <div class="min-w-0 bg-surface-card px-5 py-4">
+                                            <dt class="flex items-center gap-1.5 text-xs font-semibold text-content-secondary">
+                                                <i data-lucide="shield-alert"
+                                                   class="h-3.5 w-3.5 text-kaori-primary"
+                                                   aria-hidden="true"></i>
+                                                Distinct CVEs
+                                            </dt>
+                                            <dd class="mt-2 text-xl font-semibold tabular-nums text-content-primary">
+                                                {{ posture.pagination.total_items if posture.scanned_artifacts else 'Not Collected' }}
+                                            </dd>
+                                            <p class="mt-1 text-xs leading-5 text-content-muted">Qualified Registry scanner observations.</p>
+                                        </div>
+                                        <div class="min-w-0 bg-surface-card px-5 py-4">
+                                            <dt class="flex items-center gap-1.5 text-xs font-semibold text-content-secondary">
+                                                <i data-lucide="package-search"
+                                                   class="h-3.5 w-3.5 text-kaori-primary"
+                                                   aria-hidden="true"></i>
+                                                Affected Digests
+                                            </dt>
+                                            <dd class="mt-2 text-xl font-semibold tabular-nums text-content-primary">
+                                                {{ posture.affected_artifacts if posture.scanned_artifacts else 'Not Collected' }}
+                                            </dd>
+                                            <p class="mt-1 text-xs leading-5 text-content-muted">Distinct artifacts in qualified findings.</p>
+                                        </div>
+                                        <div class="min-w-0 bg-surface-card px-5 py-4">
+                                            <dt class="flex items-center gap-1.5 text-xs font-semibold text-content-secondary">
+                                                <i data-lucide="waypoints"
+                                                   class="h-3.5 w-3.5 text-kaori-primary"
+                                                   aria-hidden="true"></i>
+                                                Runtime Correlation
+                                            </dt>
+                                            <dd class="mt-2 text-lg font-semibold text-content-primary">
+                                                {{ posture.runtime_status.status if registry_ready else 'Not Collected' }}
+                                            </dd>
+                                            <p class="mt-1 text-xs leading-5 text-content-muted">Committed Registry × Kubernetes readiness.</p>
+                                        </div>
+                                    </dl>
+                                    <div class="flex flex-wrap items-center justify-between gap-2 border-t border-outline-subtle px-5 py-3">
+                                        <h3 class="text-sm font-semibold text-content-primary">Highest-severity CVEs</h3>
+                                        <span class="text-xs text-content-muted">
+                                            Up to {{ posture.rows[:3]|length }} observed
+                                        </span>
                                     </div>
-                                    <div class="space-y-2 p-4" data-security-finding-highlights>
+                                    <ol class="divide-y divide-outline-subtle border-t border-outline-subtle"
+                                        data-security-finding-highlights>
                                         {% for row in posture.rows[:3] %}
                                             {% set row_tone = 'critical' if row.severity == 'Critical' else ('warning' if row.severity in ['High', 'Medium'] else 'unknown') %}
-                                            {% set severity_badge %}
-                                                {{ table_label.status_indicator_label(row.severity, row_tone) }}
-                                            {% endset %}
-                                            <article class="flex min-w-0 flex-col gap-3 rounded-lg border border-outline-subtle bg-surface-subtle p-3 shadow-sm sm:flex-row sm:items-center"
-                                                     data-security-finding-highlight>
-                                                <div class="min-w-0 flex-1">
-                                                    {{ table_ui.title_cell(row.cve_id,
-                                                                                                        'Qualified scanner evidence',
-                                                                                                        'shield-alert',
-                                                                                                        severity_badge) }}
+                                            <li class="flex min-w-0 flex-col gap-2 px-5 py-3 sm:flex-row sm:items-center sm:gap-4"
+                                                data-security-finding-highlight>
+                                                <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                                                    <i data-lucide="shield-alert"
+                                                       class="h-4 w-4 shrink-0 text-kaori-primary"
+                                                       aria-hidden="true"></i>
+                                                    <span class="text-sm font-semibold text-content-primary">{{ row.cve_id }}</span>
+                                                    {{ table_label.status_indicator_label(row.severity, row_tone) }}
                                                 </div>
-                                                <div class="flex min-w-0 flex-wrap gap-x-4 gap-y-1 text-xs text-content-secondary">
+                                                <p class="flex min-w-0 flex-wrap gap-x-4 gap-y-1 text-xs text-content-secondary">
                                                     <span class="tabular-nums">
                                                         {{ row.artifact_count }} affected {{ 'digest' if row.artifact_count == 1 else 'digests' }}
                                                     </span>
                                                     <span class="tabular-nums">
                                                         {{ row.finding_count }} scanner {{ 'finding' if row.finding_count == 1 else 'findings' }}
                                                     </span>
-                                                </div>
+                                                </p>
                                                 {% if posture.authorized_registry and row.impact_available %}
                                                     <a href="{{ url_for('artifact_registry.security_cve_impact', cve_id=row.cve_id) }}"
                                                        class="{{ table_ui.action_classes() }} shrink-0">View Impact</a>
                                                 {% else %}
                                                     {{ table_label.status_indicator_label('Unqualified', 'unknown') }}
                                                 {% endif %}
-                                            </article>
+                                            </li>
                                         {% else %}
                                             {% set empty_state_icon = "shield-alert" %}
                                             {% set empty_state_label = "No Qualified Evidence" %}
@@ -313,7 +335,7 @@
                                             {% set empty_state_description = "Missing or stale evidence does not confirm that applications are safe." %}
                                             {% include "components/states/_empty_state.html" %}
                                         {% endfor %}
-                                    </div>
+                                    </ol>
                                     <p role="note"
                                        class="border-t border-outline-subtle bg-surface-hover px-4 py-3 text-xs leading-5 text-content-muted"
                                        data-security-finding-preview-boundary>
