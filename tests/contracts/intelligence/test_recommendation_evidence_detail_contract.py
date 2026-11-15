@@ -68,3 +68,59 @@ def test_recommendation_evidence_presenter_keeps_asset_identity_and_restart_evid
     assert {'label': 'Trigger Threshold', 'value': '>= 5 restarts per pod'} in evidence
     assert {'label': 'Highest Observation', 'value': '100 restarts'} in evidence
     assert {'label': 'Highest Impact Asset', 'value': 'payments-api-7d9f'} in evidence
+
+
+def test_restart_review_header_uses_measured_counts_without_losing_original_evidence() -> None:
+    presentation = runpy.run_path('app/intelligence/finding_presentation.py')
+    summary = presentation['recommendation_detail_header_summary']
+    finding = {
+        'rule_key': 'kubernetes.pod.high_restart_count:cluster:capsule-system',
+        'summary': 'Full source summary with highest pod name and measured counts.',
+        'evidence': {
+            'evidence_window': 'Latest fast Kubernetes alert signal',
+            'affected_count': 2,
+            'total_restart_count': 91,
+            'max_restart_count': 70,
+        },
+    }
+
+    assert summary(finding) == (
+        'Latest fast Kubernetes alert signal · 2 affected pods · '
+        '91 total restarts · peak 70'
+    )
+    assert finding['summary'] == 'Full source summary with highest pod name and measured counts.'
+
+    one_pod = {
+        **finding,
+        'evidence': {
+            **finding['evidence'],
+            'affected_count': 1,
+            'total_restart_count': 70,
+        },
+    }
+    assert '1 affected pod · 70 total restarts · peak 70' in summary(one_pod)
+
+
+def test_modal_header_keeps_full_context_when_restart_evidence_is_incomplete() -> None:
+    presentation = runpy.run_path('app/intelligence/finding_presentation.py')
+    summary = presentation['recommendation_detail_header_summary']
+    original = 'Source-qualified evidence must remain available in its original form.'
+    finding = {
+        'rule_key': 'kubernetes.pod.high_restart_count:cluster:capsule-system',
+        'summary': original,
+        'evidence': {
+            'affected_count': 2,
+            'total_restart_count': 91,
+        },
+    }
+    assert summary(finding) == original
+    assert summary({**finding, 'evidence': {**finding['evidence'], 'max_restart_count': 100}}) == original
+    assert summary({**finding, 'rule_key': 'registry.image.scan'}) == original
+
+    template = read('app/templates/intelligence/partials/_recommendation_detail_content.html')
+    service = read('app/intelligence/service.py')
+    assert 'data-kaori-recommendation-header-summary' in template
+    assert 'xl:whitespace-nowrap' in template
+    assert 'title="{{ item.summary }}"' in template
+    assert 'item.detail_header_summary|default(item.summary, true)' in template
+    assert "finding['detail_header_summary'] = recommendation_detail_header_summary(finding)" in service
