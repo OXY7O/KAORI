@@ -192,6 +192,41 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
         'Inventory &amp; Lifecycle',
     ):
         assert name in detail
+    # Configuration reuses the same canonical Connection Contract as the
+    # other integration providers, without fabricating an Ansible Edit route.
+    configuration = detail.split('id="ansible-panel-configuration"', 1)[1].split(
+        'id="ansible-panel-validation"', 1
+    )[0]
+    assert configuration.count('data-kaori-provider-configuration-contract') == 1
+    assert configuration.count('data-kaori-provider-operational-context') == 1
+    assert 'Connection Contract' in configuration
+    assert 'Connection Evidence' in configuration
+    assert 'Operational Context' in configuration
+    assert 'aria-label="Open guide: Ansible Connection Contract"' in configuration
+    for label in (
+        'Canonical Identity',
+        'Environment',
+        'Ansible Core / Runner',
+        'Kubespray Release',
+        'Git Repository',
+        'Git Commit SHA',
+        'Git Tree SHA',
+        'Execution Environment',
+        'Worker Queue · automation',
+        'Profile · Kubernetes Lifecycle / Kubespray',
+        'Immutable Source',
+    ):
+        assert label in configuration
+    assert '2.19.3 / 2.4.3' in configuration
+    assert 'v2.32.0' in configuration
+    assert 'OXY7O/kaori-operations' in configuration
+    assert 'Not Checked' in configuration  # Fixture has no committed tree evidence.
+    assert 'Not Provided' in configuration  # No Execution Environment has been admitted.
+    assert 'data-kaori-provider-immutable-connection' in configuration
+    assert 'Configure Connection' not in configuration
+    assert 'data-kaori-authority-boundary-metadata' in configuration
+    assert 'Execution · Blocked' in configuration
+    assert 'Source validation does not authorize SSH or Kubernetes mutation.' in configuration
     assert 'No committed execution history' in detail
     assert 'No infrastructure mutation controls are enabled' in detail
 

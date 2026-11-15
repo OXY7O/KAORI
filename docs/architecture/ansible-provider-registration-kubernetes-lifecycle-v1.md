@@ -30,6 +30,8 @@ The manage page reuses `framed_workspace_tabs`, shared posture, table and readin
 3. Runtime & History
 4. Inventory & Lifecycle
 
+**Configuration display** uses the same `_provider_configuration_contract.html` macro as MinIO, Vault, Harbor, Metrics Source and Alertmanager: four identity/version summary cards, four committed Git/EE evidence fields, provider-owned Operational Context and an authority footer. The Ansible variant supplies source-appropriate Guide, contract/evidence copy and monospaced hash presentation through existing shared macro parameters. Because this first reviewed profile is **immutable and does not register an Edit route**, `configure_url=none` renders a noninteractive **Immutable Source** metadata label instead of an invalid Configure Connection action. Existing editable providers retain their current Configure link and defaults. Committed source proof is not evidence that the EE, automation worker, inventory or Kubernetes execution is admitted. The display performs no live Git/provider request and does not alter the approved source or version values.
+
 Runtime history is scoped by `JobExecution.integration_instance_id`; the previous unbound localhost pilot jobs are **not** misrepresented as Kubernetes connection jobs. Inventory lifecycle remains `not_collected` and the existing Kubernetes Cluster identity continues authoritative for actual API/node state. No live provider calls or fabricated 0 Ready results are used as evidence of an admitted cluster.
 
 ## Operational feedback and Notification Deck
