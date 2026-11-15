@@ -103,6 +103,10 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
             DETAIL,
             connection=connection,
             source=connection.metadata_json,
+            source_posture=__import__(
+                'app.integrations.orchestration.configuration_automation.providers.ansible.service',
+                fromlist=['source_validation_posture'],
+            ).source_validation_posture(connection),
             jobs=[],
             pagination=pagination_payload(build_pagination_window(total_items=0)),
         )
