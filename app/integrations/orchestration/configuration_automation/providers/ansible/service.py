@@ -21,7 +21,6 @@ from app.integrations.source_control.source_control.providers.github.public_auto
     REPOSITORY,
     SOURCE_CANDIDATE_SHA,
 )
-
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
 
