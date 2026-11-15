@@ -50,7 +50,17 @@
                 <div class="flex min-w-0 items-start gap-3">
                     <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-filter" class="h-4 w-4"></i></span>
                     <div class="min-w-0">
-                        <h3 class="text-base font-semibold text-content-primary">Tenant Quota Records</h3>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h3 class="text-base font-semibold text-content-primary">Tenant Quota Records</h3>
+                            {{ info_tip.render('kubernetes-analytics-workload-tenant-quota-records-guide',
+                                            'Tenant Quota Records Guide',
+                                            'Filter committed Namespace quota records and inspect independent ResourceQuota evidence without making live provider changes.',
+                                            items=[
+                                                'Quota Pressure compares observed used values with configured hard limits; missing observations do not mean zero.',
+                                                'Open View Details for object-level quota evidence, active-Pod demand, and recommendations.'
+                                            ],
+                                            placement='right', variant='guide') }}
+                        </div>
                         <p class="mt-1 text-sm leading-6 text-content-secondary">Filter namespace quota evidence independently from the overview posture and scope metrics.</p>
                     </div>
                 </div>
@@ -292,46 +302,63 @@
                                     </header>
                                     <div class="grid gap-4 p-4 sm:p-5 {{ 'lg:grid-cols-2' if row.quota_objects|length > 1 else 'grid-cols-1' }}">
                                         {% for quota in row.quota_objects %}
-                                            <article class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
-                                                <div class="flex items-center justify-between gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3">
-                                                    <div class="flex min-w-0 items-center gap-2">
-                                                        <i data-lucide="shield" class="h-4 w-4 shrink-0 text-content-muted"></i>
-                                                        <h4 class="truncate text-sm font-semibold text-content-primary"
-                                                            title="{{ quota.name }}">{{ quota.name }}</h4>
+                                            <article class="min-w-0 overflow-hidden rounded-xl border border-outline-default bg-surface-card"
+                                                     aria-label="{{ quota.name }} ResourceQuota evidence">
+                                                <header class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3 sm:px-5">
+                                                    <div class="flex min-w-0 items-center gap-2.5">
+                                                        <span class="{{ analysis_surface.role_icon_classes('evidence') }}"
+                                                              aria-hidden="true">
+                                                            <i data-lucide="shield" class="h-4 w-4"></i>
+                                                        </span>
+                                                        <h4 class="min-w-0 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ quota.name }}</h4>
                                                     </div>
                                                     {{ table_label.metadata_label((quota.hard_items|length) ~ ' Hard Keys', size='compact') }}
-                                                </div>
-                                                <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-                                                    <div class="p-4">
-                                                        <p class="{{ analysis_surface.metric_label_classes() }}">Hard Boundary</p>
-                                                        <dl class="mt-3 space-y-2 text-xs">
+                                                </header>
+                                                <div class="grid gap-3 bg-surface-page p-3 sm:p-4 {{ 'md:grid-cols-2' if row.quota_objects|length == 1 else 'grid-cols-1' }}">
+                                                    <section class="min-w-0 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card"
+                                                             aria-label="{{ quota.name }} hard boundary">
+                                                        <header class="flex flex-wrap items-center justify-between gap-2 border-b border-outline-subtle bg-surface-hover px-3 py-2.5">
+                                                            <div class="flex min-w-0 items-center gap-2">
+                                                                <i data-lucide="shield-check"
+                                                                   class="h-4 w-4 shrink-0 text-kaori-primary"
+                                                                   aria-hidden="true"></i>
+                                                                <h5 class="{{ analysis_surface.metric_label_classes() }}">Hard Boundary</h5>
+                                                            </div>
+                                                            <span class="text-xs text-content-muted">{{ quota.hard_items|length }} keys</span>
+                                                        </header>
+                                                        <dl class="divide-y divide-outline-subtle px-3">
                                                             {% for item in quota.hard_items %}
-                                                                <div class="flex items-center justify-between gap-3">
-                                                                    <dt class="text-content-muted">{{ item.label }}</dt>
-                                                                    <dd class="text-right font-semibold text-content-primary">
-                                                                        {{ item.value }}
-                                                                    </dd>
+                                                                <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-2">
+                                                                    <dt class="min-w-0 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ item.label }}</dt>
+                                                                    <dd class="max-w-full text-right text-xs font-semibold tabular-nums text-content-primary [overflow-wrap:anywhere]">{{ item.value }}</dd>
                                                                 </div>
                                                             {% else %}
-                                                                <p class="text-content-muted">No hard quota keys observed.</p>
+                                                                <div class="py-3 text-xs text-content-muted">No hard quota keys observed.</div>
                                                             {% endfor %}
                                                         </dl>
-                                                    </div>
-                                                    <div class="p-4">
-                                                        <p class="{{ analysis_surface.metric_label_classes() }}">Observed Used</p>
-                                                        <dl class="mt-3 space-y-2 text-xs">
+                                                    </section>
+                                                    <section class="min-w-0 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card"
+                                                             aria-label="{{ quota.name }} observed used">
+                                                        <header class="flex flex-wrap items-center justify-between gap-2 border-b border-outline-subtle bg-surface-hover px-3 py-2.5">
+                                                            <div class="flex min-w-0 items-center gap-2">
+                                                                <i data-lucide="activity"
+                                                                   class="h-4 w-4 shrink-0 text-kaori-primary"
+                                                                   aria-hidden="true"></i>
+                                                                <h5 class="{{ analysis_surface.metric_label_classes() }}">Observed Used</h5>
+                                                            </div>
+                                                            <span class="text-xs text-content-muted">{{ quota.used_items|length }} observed</span>
+                                                        </header>
+                                                        <dl class="divide-y divide-outline-subtle px-3">
                                                             {% for item in quota.used_items %}
-                                                                <div class="flex items-center justify-between gap-3">
-                                                                    <dt class="text-content-muted">{{ item.label }}</dt>
-                                                                    <dd class="text-right font-semibold text-content-primary">
-                                                                        {{ item.value }}
-                                                                    </dd>
+                                                                <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-2">
+                                                                    <dt class="min-w-0 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ item.label }}</dt>
+                                                                    <dd class="max-w-full text-right text-xs font-semibold tabular-nums text-content-primary [overflow-wrap:anywhere]">{{ item.value }}</dd>
                                                                 </div>
                                                             {% else %}
-                                                                <p class="text-content-muted">Used-value evidence is unavailable.</p>
+                                                                <div class="py-3 text-xs text-content-muted">Used-value evidence is unavailable.</div>
                                                             {% endfor %}
                                                         </dl>
-                                                    </div>
+                                                    </section>
                                                 </div>
                                             </article>
                                         {% else %}
