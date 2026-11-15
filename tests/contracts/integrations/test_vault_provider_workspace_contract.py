@@ -683,3 +683,40 @@ def test_vault_runtime_history_reuses_canonical_projection_and_scoped_htmx_regis
     Environment().parse(runtime)
     Environment().parse(history)
 
+def test_vault_runtime_badge_and_next_action_match_committed_runtime_posture() -> None:
+    import re
+
+    from jinja2 import Environment
+
+    detail = DETAIL.read_text(encoding='utf-8')
+    runtime = _partial('_detail_runtime.html')
+    routes = ROUTES.read_text(encoding='utf-8')
+    kubernetes = (
+        ROOT / 'app/templates/integrations/orchestration/container_orchestrator/'
+        'providers/kubernetes/detail.html'
+    ).read_text(encoding='utf-8')
+
+    # The tab exposes committed runtime health, not a static job label or
+    # independent Full Validation compatibility.
+    runtime_badge = "('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label)"
+    assert runtime_badge in detail
+    assert runtime_badge in kubernetes
+    assert 'Jobs & Evidence' not in detail
+    assert 'runtime_state=runtime_state' in routes
+    assert 'runtime_observation_state_view(' in routes
+    assert 'latest_vault_runtime_observation(instance.id)' in routes
+    assert "runtime_health = runtime_state.health_status if runtime_observed" in runtime
+
+    # All states keep precise actions short enough for the desktop card.
+    # Narrow viewports may wrap naturally; no text truncation is introduced.
+    actions = re.findall(r"{% set runtime_next_action = '([^']+)' %}", runtime)
+    assert len(actions) == 5
+    assert all(len(action) <= 60 for action in actions)
+    assert 'Review Vault health, remediate, then refresh runtime.' in actions
+    assert 'Restore Vault access, then refresh runtime evidence.' in actions
+    assert 'Review Full Validation; continue runtime monitoring.' in actions
+    assert 'lg:line-clamp-1' not in runtime
+
+    Environment().parse(detail)
+    Environment().parse(runtime)
+
