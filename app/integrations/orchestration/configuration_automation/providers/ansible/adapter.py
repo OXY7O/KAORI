@@ -18,9 +18,7 @@ class AnsibleSourceAdapter:
     def refresh(self, instance: AnsibleConnectionRecord) -> RuntimeState:
         return self.get_state(instance)
 
-    def get_state(
-        self, instance: AnsibleConnectionRecord, *, validation_result: Any | None = None
-    ) -> RuntimeState:
+    def get_state(self, instance: AnsibleConnectionRecord, *, validation_result: Any | None = None) -> RuntimeState:
         canonical = instance.integration_instance
         evidence = (canonical.metadata_json or {}).get('source_validation') or {}
         observed_at = canonical.created_at or datetime.now(UTC)

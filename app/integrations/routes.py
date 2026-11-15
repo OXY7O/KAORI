@@ -181,7 +181,9 @@ def ansible_new_connection() -> ResponseReturnValue:
                         str(form.source_test_proof.data or ''), values, int(current_user.id)
                     )
                     if evidence is None:
-                        feedback = 'Re-run Validate Source after changes; a verified source proof is required to register.'
+                        feedback = (
+                            'Re-run Validate Source after changes; a verified source proof is required to register.'
+                        )
                     else:
                         connection = save_source_connection(values, evidence=evidence)
                         record_operational_activity(

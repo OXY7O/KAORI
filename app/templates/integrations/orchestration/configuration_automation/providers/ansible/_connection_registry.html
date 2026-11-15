@@ -25,10 +25,10 @@
     {{ loading_bar.render("ansible-registry-loading", label="Loading Ansible connections") }}
     <div class="{{ table_ui.filter_bar_classes() }}">
         {% call registry_ui.filter_form("integrations.ansible",
-                    "ansible-connection-registry",
-                    "ansible-registry-loading",
-                    pagination.per_page,
-                    aria_label="Filter Ansible connections") %}
+            "ansible-connection-registry",
+            "ansible-registry-loading",
+            pagination.per_page,
+            aria_label="Filter Ansible connections") %}
             <div class="grid w-full gap-3 md:grid-cols-2">
                 <div>
                     <label for="ansible-connection-search"
@@ -48,18 +48,19 @@
                             class="{{ table_ui.filter_select_classes() }}">
                         <option value="">All environments</option>
                         {% for value, label in environment_options %}
-                            <option value="{{ value }}" {% if value == selected_environment %}selected{% endif %}>{{ label }}</option>
+                            <option value="{{ value }}"
+                                    {% if value == selected_environment %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </div>
             </div>
             {% if selected_query or selected_environment %}
                 {{ registry_ui.clear_filters_link("integrations.ansible",
-                                    "ansible-connection-registry",
-                                    "ansible-registry-loading",
-                                    pagination.per_page,
-                                    "inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary",
-                                    label="Clear Filters") }}
+                                "ansible-connection-registry",
+                                "ansible-registry-loading",
+                                pagination.per_page,
+                                "inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary",
+                                label="Clear Filters") }}
             {% endif %}
         {% endcall %}
     </div>
@@ -95,7 +96,7 @@
                             <span class="mt-1 block text-xs text-content-muted">Source only · No remote execution</span>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <span class="text-xs text-content-secondary">{{ connection.environment|replace("_", " ")|title }}</span>
+                            <span class="text-xs text-content-secondary">{{ connection.environment|replace('_', ' ') |title }}</span>
                         </td>
                         <td class="{{ table_ui.cell_classes(true) }}">
                             <a href="{{ url_for('integrations.ansible_connection_detail', instance_id=connection.id) }}"
@@ -122,11 +123,11 @@
         </table>
     </div>
     {{ registry_ui.footer("integrations.ansible",
-                "ansible-connection-registry",
-                "ansible-registry-loading",
-                pagination,
-                {"q": selected_query, "environment": selected_environment},
-                pagination.allowed_per_page,
-                resource_label="Connections",
-                control_name="ansible") }}
+        "ansible-connection-registry",
+        "ansible-registry-loading",
+        pagination,
+        {"q": selected_query, "environment": selected_environment},
+        pagination.allowed_per_page,
+        resource_label="Connections",
+        control_name="ansible") }}
 </div>

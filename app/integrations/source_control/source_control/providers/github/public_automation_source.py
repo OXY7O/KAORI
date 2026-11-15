@@ -136,7 +136,9 @@ def verify_public_kubespray_source(
                     raise AutomationSourceRejected('Required Git source file type is unsafe.')
                 blobs[name] = str(item.get('sha') or '')
         if blobs != _REQUIRED_BLOBS:
-            raise AutomationSourceRejected('Required Kubespray manifest, playbook or version policy differs from reviewed Git blobs.')
+            raise AutomationSourceRejected(
+                'Required Kubespray manifest, playbook or version policy differs from reviewed Git blobs.'
+            )
         return PublicSourceEvidence(
             repository=REPOSITORY,
             revision=revision,

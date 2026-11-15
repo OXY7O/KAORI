@@ -35,7 +35,7 @@ jobs:
             tests/integrations/test_ansible_provider_registration_web.py
       - name: Ruff format
         run: |
-          python -m ruff format \
+          python -m ruff format --check \
             app/integrations/orchestration/configuration_automation \
             app/integrations/source_control/source_control/providers/github/public_automation_source.py \
             app/integrations/routes.py \
@@ -44,28 +44,9 @@ jobs:
             tests/integrations/test_ansible_provider_registration_web.py
       - name: djlint shared Violet templates
         run: |
-          djlint --reformat \
+          djlint --check \
             app/templates/integrations/orchestration/configuration_automation/providers/ansible/*.html \
-            app/templates/integrations/partials/_domain_workspace.html || true
-      - name: Output formatted candidate files
-        run: |
-          python - <<'PY'
-          import base64
-          from pathlib import Path
-          candidates = (
-              list(Path('app/integrations/orchestration/configuration_automation').rglob('*.py'))
-              + [Path('app/integrations/source_control/source_control/providers/github/public_automation_source.py'), Path('app/integrations/routes.py')]
-              + list(Path('tests/contracts/integrations').glob('test_ansible_configuration_automation_workspace_contract.py'))
-              + list(Path('tests/integrations').glob('test_ansible_*.py'))
-              + list(Path('app/templates/integrations/orchestration/configuration_automation/providers/ansible').glob('*.html'))
-              + [Path('app/templates/integrations/partials/_domain_workspace.html')]
-          )
-          for path in sorted(set(candidates)):
-              print('FORMAT_BEGIN:' + str(path))
-              print(base64.b64encode(path.read_bytes()).decode('ascii'))
-              print('FORMAT_END:' + str(path))
-          PY
-          exit 1
+            app/templates/integrations/partials/_domain_workspace.html
       - name: Pyright
         run: |
           python -m pyright \

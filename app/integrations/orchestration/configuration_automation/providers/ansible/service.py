@@ -46,9 +46,7 @@ def record_for_canonical(instance_id: int) -> AnsibleConnectionRecord | None:
     return AnsibleConnectionRecord(record) if record is not None else None
 
 
-def save_source_connection(
-    values: AnsibleConnectionInput, *, evidence: dict[str, Any]
-) -> IntegrationInstance:
+def save_source_connection(values: AnsibleConnectionInput, *, evidence: dict[str, Any]) -> IntegrationInstance:
     """A successful Git proof never authorizes infrastructure mutation."""
     require_registration_policy(values)
     if (
@@ -98,7 +96,9 @@ def save_source_connection(
 def list_connections(*, query: str = '', environment: str = '', page: int = 1, per_page: int = 5):
     statement = IntegrationInstance.query.filter_by(integration_type=INTEGRATION_TYPE, provider_key=PROVIDER_KEY)
     totals = statement.count()
-    ready = statement.filter(IntegrationInstance.readiness_status == 'ready', IntegrationInstance.enabled.is_(True)).count()
+    ready = statement.filter(
+        IntegrationInstance.readiness_status == 'ready', IntegrationInstance.enabled.is_(True)
+    ).count()
     if query:
         statement = statement.filter(IntegrationInstance.name.ilike(f'%{query[:80]}%'))
     if environment:

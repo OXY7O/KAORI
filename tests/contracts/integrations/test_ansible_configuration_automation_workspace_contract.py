@@ -24,7 +24,9 @@ def _empty_context(monkeypatch):
     def empty_registry(**kwargs):
         return (
             [],
-            pagination_payload(build_pagination_window(total_items=0, page=kwargs['page'], per_page=kwargs['per_page'])),
+            pagination_payload(
+                build_pagination_window(total_items=0, page=kwargs['page'], per_page=kwargs['per_page'])
+            ),
             {'total': 0, 'ready': 0, 'attention': 0},
         )
 
@@ -80,7 +82,9 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
             feedback_tone='warning',
         )
         connection = SimpleNamespace(
-            id=1, name='Kubespray Lab', environment='laboratory',
+            id=1,
+            name='Kubespray Lab',
+            environment='laboratory',
             description=None,
             metadata_json={
                 'profile_key': 'kubernetes_lifecycle',
@@ -110,7 +114,12 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
     assert 'Linux Host Management' in choose
     assert 'Validate Source' in form
     assert 'source_test_proof' in form
-    for name in ('Configuration', 'Validation &amp; Capabilities', 'Runtime &amp; History', 'Inventory &amp; Lifecycle'):
+    for name in (
+        'Configuration',
+        'Validation &amp; Capabilities',
+        'Runtime &amp; History',
+        'Inventory &amp; Lifecycle',
+    ):
         assert name in detail
     assert 'No committed execution history' in detail
     assert 'No infrastructure mutation controls are enabled' in detail
@@ -124,7 +133,7 @@ def test_registry_does_not_read_live_runner_or_fabricate_inventory() -> None:
     for source in (front, service):
         for banned in ('ansible_runner.run', 'requests.get(', 'subprocess.run', '.apply_async('):
             assert banned not in source
-    assert "integration_instance_id=connection.id" in service
+    assert 'integration_instance_id=connection.id' in service
     detail = (ROOT / 'app/templates/' / DETAIL).read_text()
     assert 'framed_workspace_tabs' in detail
     assert 'integrationWorkspaceTabs' in detail

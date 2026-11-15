@@ -50,14 +50,18 @@ def app(monkeypatch):
     monkeypatch.setattr(
         routes,
         'verify_public_kubespray_source',
-        lambda repo, sha: PublicSourceEvidence(
-            repository=REPOSITORY,
-            revision=SOURCE_CANDIDATE_SHA,
-            tree_sha='a' * 40,
-            profile_key=PROFILE_KEY,
-            checked_files=5,
-            observed_at='2026-11-15T12:00:00+00:00',
-        ) if repo == REPOSITORY and sha == SOURCE_CANDIDATE_SHA else (_ for _ in ()).throw(ValueError('Invalid source')),
+        lambda repo, sha: (
+            PublicSourceEvidence(
+                repository=REPOSITORY,
+                revision=SOURCE_CANDIDATE_SHA,
+                tree_sha='a' * 40,
+                profile_key=PROFILE_KEY,
+                checked_files=5,
+                observed_at='2026-11-15T12:00:00+00:00',
+            )
+            if repo == REPOSITORY and sha == SOURCE_CANDIDATE_SHA
+            else (_ for _ in ()).throw(ValueError('Invalid source'))
+        ),
     )
     yield application
     with application.app_context():
@@ -91,7 +95,9 @@ def test_choose_validate_save_manage_with_canonical_database(app):
     registration = client.get('/integrations/ansible/connections/new')
     assert registration.status_code == 200
     assert b'Validate Source' in registration.data
-    invalid = client.post('/integrations/ansible/connections/new', data={**_input(repository='evil/secret'), 'action': 'test'})
+    invalid = client.post(
+        '/integrations/ansible/connections/new', data={**_input(repository='evil/secret'), 'action': 'test'}
+    )
     assert invalid.status_code == 200
     assert b'outside the reviewed' in invalid.data or b'does not match' in invalid.data
 
@@ -101,19 +107,26 @@ def test_choose_validate_save_manage_with_canonical_database(app):
     assert match, 'source validation must render a signed proof for Save'
     token = match.group(1).decode()
 
-    altered = client.post('/integrations/ansible/connections/new', data={
-        **_input(name='Modified'),
-        'source_test_proof': token,
-        'action': 'save',
-    })
+    altered = client.post(
+        '/integrations/ansible/connections/new',
+        data={
+            **_input(name='Modified'),
+            'source_test_proof': token,
+            'action': 'save',
+        },
+    )
     assert altered.status_code == 200
     assert b'Re-run Validate Source' in altered.data
 
-    saved = client.post('/integrations/ansible/connections/new', data={
-        **_input(),
-        'source_test_proof': token,
-        'action': 'save',
-    }, follow_redirects=False)
+    saved = client.post(
+        '/integrations/ansible/connections/new',
+        data={
+            **_input(),
+            'source_test_proof': token,
+            'action': 'save',
+        },
+        follow_redirects=False,
+    )
     assert saved.status_code == 302
     with app.app_context():
         rows = IntegrationInstance.query.filter_by(integration_type='configuration_automation').all()
@@ -131,8 +144,10 @@ def test_choose_validate_save_manage_with_canonical_database(app):
     detail = client.get(f'/integrations/ansible/connections/{identity}')
     assert detail.status_code == 200
     for expected in (
-        b'Configuration', b'Validation &amp; Capabilities',
-        b'Runtime &amp; History', b'Inventory &amp; Lifecycle',
+        b'Configuration',
+        b'Validation &amp; Capabilities',
+        b'Runtime &amp; History',
+        b'Inventory &amp; Lifecycle',
         b'No committed execution history',
     ):
         assert expected in detail.data
@@ -140,16 +155,22 @@ def test_choose_validate_save_manage_with_canonical_database(app):
     assert b'Kubespray Lab' in registry.data
     assert b'Validation Required' in registry.data
 
-    duplicate = client.post('/integrations/ansible/connections/new', data={
-        **_input(), 'source_test_proof': token, 'action': 'save',
-    })
+    duplicate = client.post(
+        '/integrations/ansible/connections/new',
+        data={
+            **_input(),
+            'source_test_proof': token,
+            'action': 'save',
+        },
+    )
     assert duplicate.status_code == 200
     assert b'already exists' in duplicate.data
     with app.app_context():
         assert IntegrationInstance.query.filter_by(integration_type='configuration_automation').count() == 1
 
-    filtered = client.get('/integrations/ansible?q=unknown',
-                          headers={'HX-Request': 'true', 'HX-Target': 'ansible-connection-registry'})
+    filtered = client.get(
+        '/integrations/ansible?q=unknown', headers={'HX-Request': 'true', 'HX-Target': 'ansible-connection-registry'}
+    )
     assert filtered.status_code == 200
     assert b'No Ansible Connections' in filtered.data
     assert b'Kubespray Lab' not in filtered.data
@@ -157,7 +178,10 @@ def test_choose_validate_save_manage_with_canonical_database(app):
 
 def test_route_permission_denial_preserves_registration_boundary(app, monkeypatch):
     principal = SimpleNamespace(
-        id=2, is_authenticated=True, username='unprivileged', role_name='Viewer',
+        id=2,
+        is_authenticated=True,
+        username='unprivileged',
+        role_name='Viewer',
         has_permission=lambda _: False,
     )
     monkeypatch.setattr('flask_login.utils._get_user', lambda: principal)

@@ -5,7 +5,7 @@
 <section class="{{ integration_ui.section_shell_classes() }}"
          id="ansible-runtime-registry"
          aria-label="Ansible runtime history">
-    {{ integration_ui.section_header("activity", "Runtime & History", "Canonical jobs scoped to this specific connection. Standalone localhost pilot jobs are not misattributed to managed clusters.") }}
+    {{ integration_ui.section_header('activity', 'Runtime & History', 'Canonical jobs scoped to this specific connection. Standalone localhost pilot jobs are not misattributed to managed clusters.') }}
     {{ loading_bar.render("ansible-runtime-loading", label="Loading Ansible runtime evidence") }}
     <div class="overflow-x-auto">
         <table class="{{ table_ui.table_classes('min-w-[700px]') }}">
@@ -22,8 +22,9 @@
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }}"><span class="font-mono text-xs text-content-primary">{{ job.public_id }}</span></td>
                         <td class="{{ table_ui.cell_classes() }}"><span class="text-xs text-content-secondary">{{ job.operation }}</span></td>
-                        <td class="{{ table_ui.cell_classes() }}"><span class="text-xs font-semibold text-content-primary">{{ job.status|replace("_", " ")|title }}</span></td>
-                        <td class="{{ table_ui.cell_classes() }}"><time class="text-xs text-content-secondary" {% if job.created_at %}datetime="{{ job.created_at.isoformat() }}"{% endif %}>{{ job.created_at.strftime('%Y-%m-%d %H:%M UTC') if job.created_at else "Not recorded" }}</time></td>
+                        <td class="{{ table_ui.cell_classes() }}"><span class="text-xs font-semibold text-content-primary">{{ job.status|replace('_', ' ') |title }}</span></td>
+                        <td class="{{ table_ui.cell_classes() }}"><time class="text-xs text-content-secondary"
+      {% if job.created_at %}datetime="{{ job.created_at.isoformat() }}"{% endif %}>{{ job.created_at.strftime("%Y-%m-%d %H:%M UTC") if job.created_at else "Not recorded" }}</time></td>
                     </tr>
                 {% else %}
                     <tr>
@@ -37,11 +38,11 @@
         </table>
     </div>
     {{ registry_ui.footer("integrations.ansible_connection_detail",
-                "ansible-runtime-registry",
-                "ansible-runtime-loading",
-                pagination,
-                {},
-                pagination.allowed_per_page,
-                resource_label="Executions",
-                control_name="ansible-runtime") }}
+        "ansible-runtime-registry",
+        "ansible-runtime-loading",
+        pagination,
+        {},
+        pagination.allowed_per_page,
+        resource_label="Executions",
+        control_name="ansible-runtime") }}
 </section>

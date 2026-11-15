@@ -1,14 +1,15 @@
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-<section class="{{ integration_ui.section_shell_classes() }}" aria-label="Ansible validation and capabilities">
-    {{ integration_ui.section_header("scan-search", "Validation & Capabilities", "Git source validation is only the first gate. Operational readiness requires worker, host and Kubernetes provider evidence.") }}
+<section class="{{ integration_ui.section_shell_classes() }}"
+         aria-label="Ansible validation and capabilities">
+    {{ integration_ui.section_header('scan-search', 'Validation & Capabilities', 'Git source validation is only the first gate. Operational readiness requires worker, host and Kubernetes provider evidence.') }}
     <div class="p-5 sm:p-6">
         <div class="grid gap-3 md:grid-cols-2">
             {% for icon, title, state, tone, description in [
-                    ("git-commit", "Immutable Git Source", "Checked", "normal", "Required Git blobs match reviewed source; this does not prove runtime access."),
-                    ("layers-3", "Toolchain Compatibility", "Candidate", "unknown", "Ansible Core, Runner and Kubespray pins recorded; EE not qualified."),
-                    ("server-cog", "Worker & SSH Identity", "Not Verified", "unknown", "No provider authorized host, SSH trust, become role or worker digest."),
-                    ("boxes", "Cluster Preflight", "Not Collected", "unknown", "Kubernetes API, topology, CNI, CRI, capacity, DNS and network evidence absent.")
+                ("git-commit", "Immutable Git Source", "Checked", "normal", "Required Git blobs match reviewed source; this does not prove runtime access."),
+                ("layers-3", "Toolchain Compatibility", "Candidate", "unknown", "Ansible Core, Runner and Kubespray pins recorded; EE not qualified."),
+                ("server-cog", "Worker & SSH Identity", "Not Verified", "unknown", "No provider authorized host, SSH trust, become role or worker digest."),
+                ("boxes", "Cluster Preflight", "Not Collected", "unknown", "Kubernetes API, topology, CNI, CRI, capacity, DNS and network evidence absent.")
                 ] %}
                 <article class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
                     <div class="flex items-start gap-3">

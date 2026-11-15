@@ -4,18 +4,19 @@
 {% import "components/action_button.html" as action_button %}
 {% block title %}Ansible Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
-    <div class="kaori-integration-semantic space-y-6" data-kaori-ansible-workspace>
+    <div class="kaori-integration-semantic space-y-6"
+         data-kaori-ansible-workspace>
         {{ provider_front.hero("workflow", "terminal-square",
-                    "Ansible Integrations",
-                    "Register governed automation sources and manage Kubernetes Lifecycle profiles. Runtime and infrastructure execution remain separate authorities.",
-                    stats.total,
-                    stats.ready,
-                    0,
-                    "Attention" if stats.attention else "Not Configured",
-                    url_for("integrations.ansible_choose"),
-                    register_label="Add Connection",
-                    association_label="Qualified Targets",
-                    association_description="Validated cluster asset bindings") }}
+                "Ansible Integrations",
+                "Register governed automation sources and manage Kubernetes Lifecycle profiles. Runtime and infrastructure execution remain separate authorities.",
+                stats.total,
+                stats.ready,
+                0,
+                "Attention" if stats.attention else "Not Configured",
+                url_for("integrations.ansible_choose") ,
+        register_label="Add Connection",
+        association_label="Qualified Targets",
+        association_description="Validated cluster asset bindings") }}
         <section class="{{ integration_ui.section_shell_classes() }}"
                  aria-label="Ansible source connection registry">
             {{ integration_ui.section_header("server-cog",

@@ -64,10 +64,12 @@ def valid_source(**changes):
         'tree': blob_map,
     }
     base.update(changes)
-    session = Session([
-        Response({'sha': source.SOURCE_CANDIDATE_SHA, 'tree': {'sha': tree_sha}}),
-        Response(base),
-    ])
+    session = Session(
+        [
+            Response({'sha': source.SOURCE_CANDIDATE_SHA, 'tree': {'sha': tree_sha}}),
+            Response(base),
+        ]
+    )
     return session
 
 
@@ -100,36 +102,44 @@ def test_real_git_tree_and_blob_checks_are_required_before_source_proof() -> Non
     assert len(session.urls) == 2
 
 
-@pytest.mark.parametrize('invalid', [
-    {'truncated': True},
-    {'tree': []},
-    {'tree': [{'path': 'automation/operations.json', 'sha': '0'*40, 'type': 'blob', 'mode': '100644'}]},
-    {'sha': 'b'*40},
-])
+@pytest.mark.parametrize(
+    'invalid',
+    [
+        {'truncated': True},
+        {'tree': []},
+        {'tree': [{'path': 'automation/operations.json', 'sha': '0' * 40, 'type': 'blob', 'mode': '100644'}]},
+        {'sha': 'b' * 40},
+    ],
+)
 def test_missing_or_changed_git_source_fails_closed(invalid):
     session = valid_source(**invalid)
     with pytest.raises(source.AutomationSourceRejected):
-        source.verify_public_kubespray_source(source.REPOSITORY, source.SOURCE_CANDIDATE_SHA, session_factory=lambda: session)
+        source.verify_public_kubespray_source(
+            source.REPOSITORY, source.SOURCE_CANDIDATE_SHA, session_factory=lambda: session
+        )
 
 
 def test_unapproved_repository_or_sha_never_opens_network_session():
-    for repository, sha in [('Evil/Private', source.SOURCE_CANDIDATE_SHA), (source.REPOSITORY, '0'*40)]:
+    for repository, sha in [('Evil/Private', source.SOURCE_CANDIDATE_SHA), (source.REPOSITORY, '0' * 40)]:
         with pytest.raises(source.AutomationSourceRejected):
             source.verify_public_kubespray_source(
                 repository, sha, session_factory=lambda: (_ for _ in ()).throw(AssertionError('network call'))
             )
 
 
-@pytest.mark.parametrize('field,value', [
-    ('environment', 'production'),
-    ('profile_key', 'arbitrary_playbook'),
-    ('repository', 'other/repo'),
-    ('revision', 'main'),
-    ('ansible_core_version', 'latest'),
-    ('ansible_runner_version', 'latest'),
-    ('kubespray_release', 'v2.1.0'),
-    ('execution_environment_digest', 'sha256:bad'),
-])
+@pytest.mark.parametrize(
+    'field,value',
+    [
+        ('environment', 'production'),
+        ('profile_key', 'arbitrary_playbook'),
+        ('repository', 'other/repo'),
+        ('revision', 'main'),
+        ('ansible_core_version', 'latest'),
+        ('ansible_runner_version', 'latest'),
+        ('kubespray_release', 'v2.1.0'),
+        ('execution_environment_digest', 'sha256:bad'),
+    ],
+)
 def test_registration_policy_rejects_unapproved_versions_and_environments(field, value):
     with pytest.raises(ValueError):
         require_registration_policy(replace(values(), **{field: value}))

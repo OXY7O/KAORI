@@ -13,18 +13,20 @@ from app.integrations.source_control.source_control.providers.github.public_auto
     SOURCE_CANDIDATE_SHA,
 )
 
-_NONPRODUCTION = frozenset({
-    'development',
-    'staging',
-    'quality_assurance',
-    'user_acceptance_testing',
-    'testing',
-    'non_production',
-    'laboratory',
-    'proof_of_concept',
-    'demonstration',
-    'sandbox',
-})
+_NONPRODUCTION = frozenset(
+    {
+        'development',
+        'staging',
+        'quality_assurance',
+        'user_acceptance_testing',
+        'testing',
+        'non_production',
+        'laboratory',
+        'proof_of_concept',
+        'demonstration',
+        'sandbox',
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
