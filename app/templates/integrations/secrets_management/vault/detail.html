@@ -7,6 +7,12 @@
 {% block dashboard_content %}
     {% set readiness = instance.readiness_status or "validation_required" %}
     {% set summary = instance.validation_summary or {} %}
+    {% set inventory_committed_streams = [
+        inventory_readiness.last_committed_at,
+        public_pki_readiness.last_committed_at,
+        stored_cert_readiness.last_committed_at
+    ]|select|list|length %}
+    {% set inventory_tab_badge = (inventory_committed_streams ~ ' Committed Streams') if inventory_committed_streams else 'Not Collected' %}
     <div class="kaori-integration-semantic space-y-6"
          x-data="integrationWorkspaceTabs(['configuration', 'validation', 'runtime', 'inventory'], 'configuration', 'vault-detail-tabs')"
          x-on:hashchange.window="syncTab()"
@@ -37,7 +43,7 @@
                         ('configuration', 'Configuration', 'settings-2', instance.environment or 'Unspecified') ,
             ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ')|title),
             ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label),
-            ('inventory', 'Inventory & Lifecycle', 'database', 'Committed Evidence')
+            ('inventory', 'Inventory & Lifecycle', 'database', inventory_tab_badge)
             ], prefix='vault', aria_label='Vault Connection Domains') }}
             <div class="p-4 sm:p-5 lg:p-6">
                 <div id="vault-panel-configuration"

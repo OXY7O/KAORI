@@ -137,6 +137,38 @@ A historical degraded Vault release can still show 3/3 required APIs,
 while a denied optional `sys/mounts` check remains Limited. Empty filter
 results do not indicate missing provider capabilities.
 
+### Inventory & Lifecycle workspace parity (#4884)
+
+The connection-detail fourth tab follows the approved MinIO/Kubernetes
+full-width **Inventory & Lifecycle Decision** hierarchy, followed by
+**KAORI Operational Consumers**, a compact **Committed Evidence Sources**
+registry and an explicit **Evidence Ownership** boundary. Provider
+ownership differs from MinIO: the only available source evidence is
+(1) KV v2 metadata collection, (2) public PKI issuer collection and
+(3) separately opted-in PKI stored certificate collection. These
+streams remain independently qualified and are not asset-scoped
+Metrics Source/Alertmanager bindings.
+
+The tab badge, header and summary reflect the number of streams with
+a committed timestamp, or `Not Collected`. Four decision facts summarize
+independent source freshness, coverage across three streams (not an
+operational readiness score), approved KV/PKI mount counts, and the
+**Not Evaluated** removal/lifecycle gate. The evidence-source table uses
+existing Violet table/status primitives, a native View More dialog for
+scope counts and timestamps, and a `jobs.view`-gated link to the
+existing collection JobExecution where authorized. `None` observed
+records mean `Not Collected`; do not claim confirmed zero, full
+trust or completion from provider registration alone.
+
+Vault has no asset-owner deletion endpoint or authoritative
+observability-binding registry in this integration detail. It must
+not display MinIO's `Delete Connection`, fake bound sources, or a
+`Guardrails Passed` badge. Operators use the existing governed
+`Configure Connection` action to review approved scopes; actual
+collection follows separately owned jobs. No new Vault permission,
+Secret value, key, lease, retention action, provider call or schema
+mutation is introduced.
+
 ### Runtime tab status and concise operator action (#4879)
 
 The Runtime & History tab badge reflects the latest **committed runtime
