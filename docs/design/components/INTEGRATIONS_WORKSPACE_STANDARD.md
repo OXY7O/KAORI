@@ -401,6 +401,27 @@ Do not offer Kubernetes, JWT/OIDC, or cloud-IAM authentication as
 working form options until a separate approved adapter supplies their
 credential, runtime, security and test contracts.
 
+**Vault operational feedback (UAT #3384):** Vault's synchronous
+Test Connection, Register, and Edit form actions must reuse the existing
+canonical **Operational Toast + Activity Audit** service. Do not display
+`operational_callout.render` above the Connection Identity section for
+test success/failure: a form-level full-width status card misrepresents
+ephemeral feedback as persistent provider readiness. Use
+`record_operational_activity(..., queue_feedback=True)` with
+`delivery_policy='audit_only'` for connection tests and rejected form
+actions (one audited toast, without creating a new Notification Deck item).
+Successful Register/Update already have the shared persistent event/toast
+and redirect to canonical connection detail; never duplicate that feedback.
+
+Validation failures, expired/mismatched 10-minute proofs, failed Vault
+tests, storage errors, and unsupported form actions must produce safe,
+bounded warning/error feedback without exposing raw provider responses,
+RoleID, SecretID, access tokens or DB exceptions. Keep per-field errors
+visible in the form and clear stale connection proof after a rejected
+submission. Test Connection proves AppRole identity, **not** Full Validation.
+Async Full Validation/Runtime progress belongs to the established
+Jobs/Activity Center contract, not another synchronous success toast.
+
 **Vault placeholders and section-level Guides (UAT #3384):** field
 labels in Add/Edit stay concise and semantic. Use existing WTForms
 `render_kw.placeholder` defaults for Connection Name, Description,
