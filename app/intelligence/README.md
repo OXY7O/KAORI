@@ -55,6 +55,23 @@ The category root `/intelligence/` renders **Intelligence Overview**. The landin
 
 Intelligence Overview, Recommendations, Rule Catalog, Alert Intelligence, and Automation Control use the canonical Intelligence workspace contract documented in `docs/design/components/INTELLIGENCE_WORKSPACE_STANDARD.md`.
 
+**Intelligence Overview Visual UAT — #4791 (2026-11-15):** The
+`Intelligence Summary` retains its four source-qualified KPI readings and
+semantic posture status, and now shows a neutral `4 Indicators` metadata
+label beside the section title. Use shared `section_intro.render` immediately
+above `Intelligence Posture` (Intelligence Assessment) and
+`Intelligence Workspaces` (Workspace Navigation), preserving the original
+owning card titles and short descriptions. Both cards expose the shared
+`info_tip.render(variant='guide')` in their title row. These Guides explain
+committed Inventory freshness limitations, Alert Intelligence/Rule Catalog/
+Recommendations/Automation Control ownership, read-only Overview semantics
+and worker-owned provider collection. The former standalone
+`Operational Boundary` card below the workspace list is removed because it
+repeated the Guide information. The shared Intelligence workspace macros
+accept optional `title_extra` content; existing status labels and callers
+are unchanged. No provider read, approval, or automation action is added.
+
+
 Automation Control is the governed bridge from Intelligence evidence to controlled execution. Its UI exposes factual **Governance Only** state across Overview, Runbooks & Bindings, Decision Review, Execution Control, and Production Readiness whenever infrastructure execution is disabled. Runbooks now use a source-controlled **System Runbook Catalog**: operators activate validated immutable contracts and configure environment-specific bindings instead of authoring action JSON manually. Catalog activation validates adapters shipped by the build without requiring `RESOLVER_ENABLED_ACTIONS`, so Governance Only preparation does not open the runtime execution registry. Custom authoring remains locked behind `CUSTOM_RUNBOOK_AUTHORING_ENABLED=false` until simulation, maturity, regression, and security contracts are production-ready. Deployment policy, safety controls, readiness evidence, and rollout stages remain writable without opening the resolver boundary. Active alert evidence is independently materialized into deduplicated candidates; accountable review uses immutable decisions and maker-checker approval where required. Infrastructure execution is default-deny behind `AUTOMATION_EXECUTION_ENABLED=false` and is revalidated at authorization, application admission, and worker admission. The Kubernetes Deployment restart pilot uses one-time authorization, canonical jobs, server-side dry-run, rollout-health verification, recovery evidence, lifecycle notifications, audit evidence, and immutable dead letters that require fresh evidence for another attempt.
 
 ## Intelligence baseline lock v1
