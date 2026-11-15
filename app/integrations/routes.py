@@ -26,6 +26,7 @@ from app.integrations.orchestration.configuration_automation.providers.ansible.p
     verified_source_proof,
 )
 from app.integrations.orchestration.configuration_automation.providers.ansible.service import (
+    bound_kubernetes_targets,
     connection_jobs,
     get_connection,
     save_source_connection,
@@ -229,13 +230,25 @@ def ansible_connection_detail(instance_id: int) -> ResponseReturnValue:
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
+    inventory_targets, inventory_pagination = bound_kubernetes_targets(
+        connection,
+        page=request.args.get('inventory_page', 1, type=int) or 1,
+        per_page=request.args.get('inventory_per_page', 5, type=int) or 5,
+    )
+    template = (
+        'integrations/orchestration/configuration_automation/providers/ansible/_detail_inventory.html'
+        if is_htmx_request() and htmx_target() == 'ansible-inventory-registry'
+        else 'integrations/orchestration/configuration_automation/providers/ansible/detail.html'
+    )
     return render_template(
-        'integrations/orchestration/configuration_automation/providers/ansible/detail.html',
+        template,
         connection=connection,
         source=connection.metadata_json or {},
         source_posture=source_validation_posture(connection),
         jobs=jobs,
         pagination=pagination,
+        inventory_targets=inventory_targets,
+        inventory_pagination=inventory_pagination,
     )
 
 
