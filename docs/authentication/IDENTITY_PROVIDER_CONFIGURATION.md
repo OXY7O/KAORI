@@ -65,6 +65,64 @@ KAORI does not store the LDAP user's password.
 
 KAORI validates server certificates for LDAPS and StartTLS. StartTLS is negotiated before the bind credentials are sent.
 
+### Persistent internal LDAP CA for DevContainer
+
+Use KAORI's **existing** ignored root `secrets/` directory and worktree
+bind mount. Do not manually install a CA under an ephemeral container `/etc`
+path; recreation would discard it. The LDAP issuing CA is separate from
+Vault's CA unless the same authority actually signed both server certificates.
+
+On the **host checkout** (WSL or Windows; not inside the container), copy only
+the approved public issuing CA/full trust chain, never its private key:
+
+```bash
+cd /path/to/KAORI
+mkdir -p secrets/trust/ldaps
+install -m 0644 /path/to/approved-ad-issuing-ca.pem secrets/trust/ldaps/ca.pem
+git check-ignore -v secrets/trust/ldaps/ca.pem
+openssl x509 -in secrets/trust/ldaps/ca.pem -noout -subject -issuer -dates
+```
+
+Set the ignored **local** `.env` value used by KAORI web processes (the
+tracked `.env.example` stays blank by default):
+
+```dotenv
+KAORI_LDAP_CA_BUNDLE=/workspace/kaori/secrets/trust/ldaps/ca.pem
+```
+
+The existing DevContainer Compose worktree mount already makes this path
+available to `workspace` and workers. The LDAP adapter passes the optional
+PEM bundle to `ldap3.Tls` for **both** LDAPS and StartTLS with
+`ssl.CERT_REQUIRED`; if the variable is empty, normal system CA trust remains.
+If configured with a missing, relative, or unreadable file, the adapter fails
+closed instead of silently trusting a different CA or disabling verification.
+
+Before entering credentials in the UI, verify the AD server hostname and
+chain **from the environment that can reach it**:
+
+```bash
+openssl s_client -connect adds.kaori.cloud:636 \
+  -servername adds.kaori.cloud \
+  -CAfile secrets/trust/ldaps/ca.pem \
+  -verify_hostname adds.kaori.cloud \
+  -verify_return_error </dev/null
+```
+
+For StartTLS, use `openssl s_client -starttls ldap` with the actual LDAP
+hostname/port, `-CAfile`, `-verify_hostname` and
+`-verify_return_error`. Do not use `-k`, `CERT_NONE`, or LDAP plaintext.
+`KAORI_LDAP_BIND_PASSWORD` remains separately provisioned into the runtime;
+the CA file is **not** an authentication secret.
+
+The Flask F5 debugger reads `.env` on **process start**: restart F5 after
+changing this value. Compose-launched web processes require a controlled
+service recreate to refresh process environment. An edited CA file on the
+host is visible via the bind mount, but validate the new chain before reusing
+an existing connection; refresh the relevant LDAP process if required. Do not
+rebuild the whole DevContainer, delete data volumes, or manually modify
+container trust files merely to add this CA. A valid certificate alone does
+not prove the LDAP bind/password, directory permissions, or user login works.
+
 ## Service account requirements
 
 Create a dedicated read-only directory account. It needs only:
