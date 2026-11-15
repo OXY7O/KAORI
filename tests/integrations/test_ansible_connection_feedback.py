@@ -15,6 +15,7 @@ from flask import Flask
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.integrations import routes
+from app.platform_operations.notifications.event_catalog import event_category_key
 from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 
 
@@ -104,6 +105,7 @@ def test_registration_action_produces_one_canonical_receipt_without_source_leak(
     assert len(captured) == 1
     event = captured[0]
     assert event['event_type'] == expected_event
+    assert event_category_key(event['event_type']) == 'integrations'
     assert event['status'] == expected_status
     assert event['queue_feedback'] is True
     assert event['metadata']['provider'] == 'ansible'
