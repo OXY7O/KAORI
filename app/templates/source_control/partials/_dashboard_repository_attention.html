@@ -1,0 +1,59 @@
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/table_label.html" as table_label %}
+{% call section_card.render(
+    'Repository Attention & Evidence Gaps',
+    'Missing metadata and default-branch revision evidence in the selected committed grant.',
+    'scan-search',
+    action_href=url_for('source_control.repositories', installation_id=selected_installation_id),
+    action_label='Explore Repositories',
+    body_classes='p-5'
+    ) %}
+    {% if not repository_coverage or not repository_coverage.collected %}
+        {% set empty_state_icon = "database-zap" %}
+        {% set empty_state_label = "Not Collected" %}
+        {% set empty_state_title = "Evidence Gaps Not Yet Qualified" %}
+        {% set empty_state_description = "Repository inventory must be committed before its metadata and reference gaps can be assessed." %}
+        {% set empty_state_variant = "panel" %}
+        {% include 'components/states/_empty_state.html' %}
+    {% elif repository_coverage.grant_count == 0 %}
+        <p class="text-sm text-content-muted">Zero repository grants were observed in a committed collection. No individual repository can be assessed.</p>
+    {% elif repository_coverage.attention_count == 0 %}
+        <div class="flex items-center gap-3 rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+            <i data-lucide="circle-check" class="h-5 w-5 shrink-0 text-status-normal" aria-hidden="true"></i>
+            <p class="text-sm text-content-secondary">
+                No missing visibility, lifecycle or default-branch revision evidence was observed in the retained grant rows. This is not a provider health or governance assessment.
+            </p>
+        </div>
+    {% else %}
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="text-sm text-content-secondary">
+                <strong class="tabular-nums text-content-primary">{{ repository_coverage.attention_count }}</strong>
+                of {{ repository_coverage.grant_count }} grant rows require metadata or reference evidence review.
+            </p>
+            {{ table_label.metadata_label('Top 5 Evidence Gaps', icon='list-filter') }}
+        </div>
+        <ol class="mt-3 grid gap-3 lg:grid-cols-2"
+            aria-label="Repositories with evidence gaps">
+            {% for item in repository_coverage.attention %}
+                <li class="min-w-0 rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                    <div class="flex min-w-0 items-start justify-between gap-2">
+                        <p class="min-w-0 break-words text-sm font-semibold text-content-primary">{{ item.name }}</p>
+                        <a href="{{ url_for('source_control.repositories', installation_id=selected_installation_id, inventory_search=item.name) }}"
+                           class="shrink-0 text-xs font-medium text-kaori-primary hover:underline"
+                           aria-label="Inspect repository evidence for {{ item.name }}">Inspect</a>
+                    </div>
+                    <div class="mt-2 flex flex-wrap gap-1.5">
+                        {% for reason in item.reasons %}
+                            {{ table_label.status_label(reason, 'unknown') }}
+                        {% endfor %}
+                    </div>
+                </li>
+            {% endfor %}
+        </ol>
+        {% if repository_coverage.attention_count > repository_coverage.attention|length %}
+            <p class="mt-3 text-xs text-content-muted">
+                Showing {{ repository_coverage.attention|length }} of {{ repository_coverage.attention_count }} gaps; use Repositories for the complete authorized inventory.
+            </p>
+        {% endif %}
+    {% endif %}
+{% endcall %}
