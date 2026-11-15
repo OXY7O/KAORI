@@ -34,10 +34,27 @@ jobs:
             tests/contracts/integrations/test_ansible_configuration_automation_workspace_contract.py
       - name: Djlint shared template contract
         run: |
-          djlint --check --diff \
+          djlint --reformat \
             app/templates/integrations/orchestration/configuration_automation/providers/ansible/frontpage.html \
             app/templates/integrations/orchestration/configuration_automation/providers/ansible/_execution_registry.html \
             app/templates/integrations/partials/_domain_workspace.html
+      - name: Output formatted template candidates for GitHub review
+        run: |
+          python - <<'PY'
+          import base64
+          from pathlib import Path
+          paths = [
+              'app/templates/integrations/orchestration/configuration_automation/providers/ansible/frontpage.html',
+              'app/templates/integrations/orchestration/configuration_automation/providers/ansible/_execution_registry.html',
+              'app/templates/integrations/partials/_domain_workspace.html',
+          ]
+          for path in paths:
+              print(f'FORMAT_BEGIN:{path}')
+              print(base64.b64encode(Path(path).read_bytes()).decode('ascii'))
+              print(f'FORMAT_END:{path}')
+          PY
+          # This is a one-off formatting diagnostic; fail closed until reviewed source is committed.
+          exit 1
       - name: Pyright provider workspace
         run: python -m pyright app/integrations/orchestration/configuration_automation
       - name: Focused route and template contracts
