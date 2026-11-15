@@ -1,50 +1,81 @@
 {% import "components/operational_section_card.html" as section_card %}
 {% import "components/operational_evidence_tile.html" as evidence_tile %}
-{% import "components/section_intro.html" as section_intro %}
-{% import "components/info_tip.html" as info_tip %}
+{% import "components/peer_content_grid.html" as peer_grid %}
 {% if not selected_scope %}
-    {% set blocked_state_icon = "gauge" %}
+    {% set blocked_state_icon = "folder-git-2" %}
     {% set blocked_state_label = "Installation Required" %}
     {% set blocked_state_title = "Select Installation" %}
-    {% set blocked_state_description = "Select an authorized GitHub App installation to review its committed repository footprint and source-qualified demand evidence." %}
+    {% set blocked_state_description = "Select an authorized GitHub App installation to inspect its committed repository grant coverage." %}
     {% set blocked_state_tone = "warning" %}
     {% include 'components/states/_blocked_state.html' %}
 {% else %}
     {% set selected_items = scope.installations|default([], true) %}
     {% set selected_item = selected_items[0] if selected_items else none %}
     {% set has_collection = selected_item and selected_item.committed %}
-    {{ section_intro.render('Capacity & Demand',
-        'Review committed repository observations for this installation; engineering demand remains a separate evidence source.') }}
-    {% call section_card.render('Repository Collection Footprint',
-        'Selected installation grants and collection coverage, not storage utilization or delivery throughput.',
-        'gauge',
-        header_badge=info_tip.render('source-control-capacity-guide',
-        'Source Control Capacity Guide',
-        'Repository counts belong to the selected GitHub App installation only.',
-        items=[
-        'Overlapping GitHub App installation grants cannot be summed into a unique repository total.',
-        'Only successful retained collection evidence can qualify an observed repository count, including zero.',
-        'Actions usage, PR throughput, repository growth and demand forecasts are not available from this collection.'
-        ], placement='right', variant='guide')) %}
-        <div class="grid gap-3 sm:grid-cols-3">
-            {{ evidence_tile.freshness('Observed Repositories',
-                        selected_item.observed_count if has_collection and selected_item.observed_count is not none else 'Unknown',
-                        'Committed' if has_collection else 'Unavailable',
-                        'info' if has_collection else 'unknown',
-                        'folder-git-2',
-                        description='Observed in the selected grant; not a global unique repository count.') }}
-            {{ evidence_tile.freshness('Grant Coverage',
-                        selected_item.coverage|replace('_', ' ') |title if has_collection else 'Not Collected',
-            'Observed' if has_collection else 'Unavailable',
-            'info' if has_collection else 'unknown',
-            'scan-search',
-            description='Explicit repository grant coverage in the retained collection.') }}
-            {{ evidence_tile.freshness('Engineering Demand',
-                        'Not Qualified',
-                        'Unavailable',
-                        'unknown',
-                        'chart-no-axes-combined',
-                        description='PR throughput, Actions usage and growth need independent committed sources.') }}
+    {% set has_count = has_collection and selected_item.observed_count is not none %}
+    {% set grant_coverage = selected_item.coverage|default('unknown', true) if has_collection else 'unknown' %}
+    {% set repository_selection = selected_item.selection_scope|default('unknown', true) if has_collection else 'unknown' %}
+    <div class="{{ peer_grid.layout_classes() }}">
+        <div class="{{ peer_grid.column_classes('primary') }}">
+            {% call section_card.render(
+                'Repository Grant Snapshot',
+                'Committed inventory for the selected GitHub App installation grant.',
+                'folder-git-2',
+                action_href=url_for('source_control.repositories', installation_id=selected_installation_id),
+                action_label='View Repositories',
+                body_classes='grid gap-3 p-5 sm:grid-cols-2',
+                extra_classes='h-full'
+                ) %}
+                {{ evidence_tile.freshness(
+                    'Observed Repositories',
+                    selected_item.observed_count if has_count else 'Unknown',
+                    'Observed' if has_count else 'Unavailable',
+                    'info' if has_count else 'unknown',
+                    'folder-git-2',
+                    description='Repository count within this installation grant.'
+                ) }}
+                {{ evidence_tile.freshness(
+                    'Grant Coverage',
+                    grant_coverage|replace('_', ' ') |title if has_collection and grant_coverage != 'unknown' else 'Unknown',
+                    'Committed' if has_collection and grant_coverage != 'unknown' else 'Unavailable',
+                    'info' if has_collection and grant_coverage != 'unknown' else 'unknown',
+                    'scan-search',
+                    description='Coverage reported by the committed collector.'
+                ) }}
+                {{ evidence_tile.freshness(
+                    'Repository Selection',
+                    repository_selection|replace('_', ' ') |title if has_collection and repository_selection != 'unknown' else 'Unknown',
+                    'Committed' if has_collection and repository_selection != 'unknown' else 'Unavailable',
+                    'info' if has_collection and repository_selection != 'unknown' else 'unknown',
+                    'list-filter',
+                    description='Repository selection recorded for this grant.'
+                ) }}
+                {{ evidence_tile.freshness(
+                    'Inventory Committed',
+                    selected_item.last_committed_at|user_datetime if has_collection and selected_item.last_committed_at else 'Not Collected',
+                    'Retained' if has_collection and selected_item.last_committed_at else 'Unavailable',
+                    'info' if has_collection and selected_item.last_committed_at else 'unknown',
+                    'clock-3',
+                    description='Last retained inventory, not live GitHub health.'
+                ) }}
+            {% endcall %}
         </div>
-    {% endcall %}
+        <div class="{{ peer_grid.column_classes('secondary') }}">
+            {% call section_card.render(
+                'Engineering Demand Evidence',
+                'Delivery demand and growth require separately qualified sources.',
+                'chart-no-axes-combined',
+                body_classes='p-5',
+                extra_classes='h-full'
+                ) %}
+                {% set empty_state_icon = "chart-no-axes-combined" %}
+                {% set empty_state_label = "Evidence Unavailable" %}
+                {% set empty_state_tone = "unknown" %}
+                {% set empty_state_title = "Engineering Demand Not Qualified" %}
+                {% set empty_state_description = "PR throughput, Actions usage, repository growth and forecasts are not available from committed repository inventory." %}
+                {% set empty_state_min_height = "min-h-[220px]" %}
+                {% include 'components/states/_empty_state.html' %}
+            {% endcall %}
+        </div>
+    </div>
 {% endif %}
