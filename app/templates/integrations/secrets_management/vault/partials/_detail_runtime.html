@@ -4,6 +4,8 @@
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_runtime_decision.html" as runtime_decision %}
 {% import "integrations/components/_provider_job_status.html" as provider_job_status %}
+{% import "integrations/components/_validation_poller.html" as validation_poller %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set latest_runtime = latest_runtime_observation %}
@@ -31,13 +33,24 @@
     {% set runtime_finding = 'Vault runtime · Healthy and observed.' %}
     {% set runtime_next_action = 'No remediation needed; continue scheduled refresh.' %}
 {% endif %}
-<section class="{{ integration_ui.section_shell_classes() }}"
-         data-kaori-vault-runtime-workspace
-         data-kaori-runtime-workspace-v8>
+<div id="vault-runtime-content"
+     class="space-y-4"
+     data-kaori-vault-runtime-htmx>
+    {{ validation_poller.render(
+        evidence.runtime_job and evidence.runtime_job.is_active,
+        url_for('vault.runtime_refresh_status', instance_id=instance.id, task_id=evidence.runtime_job.task_id) if evidence.runtime_job and evidence.runtime_job.is_active else '',
+        '#vault-runtime-content'
+    ) }}
+    <section class="{{ integration_ui.section_shell_classes() }}"
+             data-kaori-vault-runtime-workspace
+             data-kaori-runtime-workspace-v8>
     {% call connection_validation_header.render(
         'Vault Runtime Health & Diagnostics',
         'Review persisted runtime health, diagnostics, provider context, and validation boundaries.',
         icon='activity',
+        loading_id='vault-runtime-refresh-loading',
+        loading_active=evidence.runtime_job and evidence.runtime_job.is_active,
+        loading_label='Refreshing Vault runtime health',
         title_extra=info_tip.render(
             'vault-runtime-guide',
             'Vault Runtime Health',
@@ -52,12 +65,19 @@
         )
     ) %}
         <form action="{{ url_for('vault.runtime_refresh', instance_id=instance.id) }}"
-              method="post">
+              method="post"
+              hx-post="{{ url_for('vault.runtime_refresh', instance_id=instance.id) }}"
+              hx-target="#vault-runtime-content"
+              hx-swap="outerHTML"
+              hx-disabled-elt="button"
+              hx-indicator="#vault-runtime-refresh-loading">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit"
                     class="{{ action_button.classes('primary') }}"
                     {% if not instance.enabled or (evidence.runtime_job and evidence.runtime_job.is_active) %}disabled{% endif %}>
-                <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                <i data-lucide="{{ 'loader-circle' if evidence.runtime_job and evidence.runtime_job.is_active else 'refresh-cw' }}"
+                   class="h-4 w-4{% if evidence.runtime_job and evidence.runtime_job.is_active %} animate-spin{% endif %}"
+                   aria-hidden="true"></i>
                 {{ 'Refresh Running' if evidence.runtime_job and evidence.runtime_job.is_active else 'Refresh Runtime' }}
             </button>
         </form>
@@ -156,5 +176,12 @@
             </footer>
         </section>
     </div>
-</section>
-{% include 'integrations/secrets_management/vault/partials/_runtime_history.html' %}
+    </section>
+    {% include 'integrations/secrets_management/vault/partials/_runtime_history.html' %}
+</div>
+{% if request.headers.get('HX-Request') == 'true' %}
+    {{ framed_workspace_tabs.badge_oob('vault', 'runtime', runtime_state.health_status_label) }}
+{% endif %}
+{% if operation_feedback is defined %}
+    {% include 'components/operation_feedback_oob.html' %}
+{% endif %}
