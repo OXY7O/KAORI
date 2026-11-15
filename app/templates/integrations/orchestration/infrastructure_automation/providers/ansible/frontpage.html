@@ -16,9 +16,9 @@
                             Register reviewed Ansible sources and inspect committed read-only execution evidence.
                         </p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label("git-commit", "Immutable Git source") }}
-                            {{ page_hero.meta_label("shield-check", "Governed execution") }}
-                            {{ page_hero.meta_label("server", "Worker localhost pilot") }}
+                            {{ page_hero.meta_label('git-commit', 'Immutable Git source') }}
+                            {{ page_hero.meta_label('shield-check', 'Governed execution') }}
+                            {{ page_hero.meta_label('server', 'Worker localhost pilot') }}
                         </div>
                     {% endcall %}
                 </div>
@@ -60,15 +60,15 @@
             <div class="{{ integration_ui.metric_grid_classes(3) }}">
                 {{ integration_ui.metric_card("Registered Connections", counts.total, "Canonical provider identities", "server-cog") }}
                 {{ integration_ui.metric_card("Enabled Connections", counts.enabled, "Execution requires separate authorization", "toggle-right") }}
-                {{ integration_ui.metric_card("External Host Readiness", "Not Verified", "SSH identity, inventory and EE approval pending", "shield-alert") }}
+                {{ integration_ui.metric_card('External Host Readiness', 'Not Verified', 'SSH identity, inventory and EE approval pending', 'shield-alert') }}
             </div>
             <div class="grid gap-4 border-t border-outline-subtle p-5 lg:grid-cols-2">
                 {{ integration_ui.interpretation_panel("Git Defines",
-                            "Only exact reviewed Git source SHA and the localhost example inventory are eligible for this first pilot.",
-                            "git-commit") }}
+                                "Only exact reviewed Git source SHA and the localhost example inventory are eligible for this first pilot.",
+                                "git-commit") }}
                 {{ integration_ui.interpretation_panel("Evidence Proves",
-                            "The worker writes sanitized OS/kernel facts into canonical JobExecution; it does not prove remote host readiness.",
-                            "file-check") }}
+                                "The worker writes sanitized OS/kernel facts into canonical JobExecution; it does not prove remote host readiness.",
+                                "file-check") }}
             </div>
         </section>
         <section class="{{ integration_ui.section_shell_classes() }}"

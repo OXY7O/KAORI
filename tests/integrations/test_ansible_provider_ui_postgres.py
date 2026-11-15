@@ -3,6 +3,7 @@
 Runs with ephemeral PostgreSQL after schema initialization in issue branch QA.
 Never hits an external Ansible provider or real infrastructure.
 """
+
 from __future__ import annotations
 
 import re
@@ -130,9 +131,12 @@ def test_real_provider_routes_registration_edit_and_safe_evidence(monkeypatch: p
     )
     assert probe.status_code in {302, 303}
     with app.app_context():
-        assert JobExecution.query.filter_by(
-            integration_type='infrastructure_automation', integration_instance_id=instance_id
-        ).count() == 0
+        assert (
+            JobExecution.query.filter_by(
+                integration_type='infrastructure_automation', integration_instance_id=instance_id
+            ).count()
+            == 0
+        )
     invalid = client.post(
         f'{INDEX}instances/new',
         data={
@@ -154,7 +158,10 @@ def test_authentication_and_csrf_deny_unapproved_management() -> None:
     restricted = _authenticated_client(app, is_super_admin=False)
     assert restricted.get(INDEX).status_code == 403
     authorized = _authenticated_client(app)
-    assert authorized.post(
-        f'{INDEX}instances/new',
-        data={'name': 'missing csrf', 'environment': 'testing'},
-    ).status_code == 400
+    assert (
+        authorized.post(
+            f'{INDEX}instances/new',
+            data={'name': 'missing csrf', 'environment': 'testing'},
+        ).status_code
+        == 400
+    )

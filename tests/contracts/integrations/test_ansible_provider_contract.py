@@ -1,4 +1,5 @@
 """Source-owned, database-free Ansible provider and unsafe-input contracts (#4817)."""
+
 from __future__ import annotations
 
 import pytest

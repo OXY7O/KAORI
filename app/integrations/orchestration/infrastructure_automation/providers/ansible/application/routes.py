@@ -86,7 +86,9 @@ def index() -> ResponseReturnValue:
     )
     counts = {
         'total': IntegrationInstance.query.filter_by(integration_type=INTEGRATION_TYPE, provider_key='ansible').count(),
-        'enabled': IntegrationInstance.query.filter_by(integration_type=INTEGRATION_TYPE, provider_key='ansible', enabled=True).count(),
+        'enabled': IntegrationInstance.query.filter_by(
+            integration_type=INTEGRATION_TYPE, provider_key='ansible', enabled=True
+        ).count(),
     }
     context = {
         'rows': rows,
@@ -123,7 +125,13 @@ def new_instance() -> ResponseReturnValue:
         instance = save_connection(form)
     except ValueError as exc:
         return _render_form(instance=None, form=_safe_form_fallback(), error=str(exc))
-    _notify(instance, status='success', title='Ansible connection registered', detail='Saved in the canonical Integration Registry; remote host readiness remains unverified.', event='ansible_connection_created')
+    _notify(
+        instance,
+        status='success',
+        title='Ansible connection registered',
+        detail='Saved in the canonical Integration Registry; remote host readiness remains unverified.',
+        event='ansible_connection_created',
+    )
     return _redirect(url_for('ansible.instance_detail', instance_id=instance.id))
 
 
@@ -151,7 +159,13 @@ def edit_instance(instance_id: int) -> ResponseReturnValue:
         save_connection(form, instance=instance)
     except ValueError as exc:
         return _render_form(instance=instance, form=_safe_form_fallback(), error=str(exc))
-    _notify(instance, status='success', title='Ansible connection updated', detail='Updated identity and lifecycle; readiness reset to Validation Required.', event='ansible_connection_updated')
+    _notify(
+        instance,
+        status='success',
+        title='Ansible connection updated',
+        detail='Updated identity and lifecycle; readiness reset to Validation Required.',
+        event='ansible_connection_updated',
+    )
     return _redirect(url_for('ansible.instance_detail', instance_id=instance.id))
 
 

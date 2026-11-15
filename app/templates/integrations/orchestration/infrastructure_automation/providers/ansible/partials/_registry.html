@@ -16,7 +16,8 @@
           class="grid gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 md:grid-cols-[minmax(0,1fr)_12rem_auto] md:items-end"
           aria-label="Filter Ansible connections">
         <div>
-            <label for="ansible-registry-search" class="{{ integration_ui.control_label_classes() }}">Search</label>
+            <label for="ansible-registry-search"
+                   class="{{ integration_ui.control_label_classes() }}">Search</label>
             <input id="ansible-registry-search"
                    name="q"
                    type="search"
@@ -25,19 +26,23 @@
                    class="{{ integration_ui.control_classes() }}">
         </div>
         <div>
-            <label for="ansible-status-filter" class="{{ integration_ui.control_label_classes() }}">Lifecycle</label>
+            <label for="ansible-status-filter"
+                   class="{{ integration_ui.control_label_classes() }}">Lifecycle</label>
             <select id="ansible-status-filter"
                     name="status"
                     class="{{ integration_ui.control_classes() }}">
                 <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Connections</option>
-                <option value="enabled" {% if status_filter == 'enabled' %}selected{% endif %}>Enabled</option>
-                <option value="disabled" {% if status_filter == 'disabled' %}selected{% endif %}>Disabled</option>
+                <option value="enabled"
+                        {% if status_filter == 'enabled' %}selected{% endif %}>Enabled</option>
+                <option value="disabled"
+                        {% if status_filter == 'disabled' %}selected{% endif %}>Disabled</option>
             </select>
         </div>
         <div class="flex flex-wrap gap-2">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
             <button type="submit" class="{{ table_ui.action_classes() }}">Apply Filters</button>
-            <a href="{{ url_for('ansible.index') }}" class="{{ table_ui.action_classes() }}">Clear</a>
+            <a href="{{ url_for('ansible.index') }}"
+               class="{{ table_ui.action_classes() }}">Clear</a>
         </div>
     </form>
     <div class="px-5">{{ loading_bar.render("ansible-registry-loading", label="Updating Ansible connections") }}</div>
@@ -97,9 +102,7 @@
         </table>
     </div>
     <footer class="{{ pagination_ui.footer_classes() }}">
-        <p>
-            Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} connections
-        </p>
+        <p>Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} connections</p>
         <div class="flex flex-wrap items-center gap-2">
             <label for="ansible-page-size" class="sr-only">Rows per page</label>
             <select id="ansible-page-size"
@@ -113,7 +116,8 @@
                     hx-include="#ansible-registry-search,#ansible-status-filter"
                     name="per_page">
                 {% for option in pagination.allowed_per_page %}
-                    <option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }} / page</option>
+                    <option value="{{ option }}"
+                            {% if pagination.per_page == option %}selected{% endif %}>{{ option }} / page</option>
                 {% endfor %}
             </select>
             {{ pagination_ui.numeric_pages(pagination.page,

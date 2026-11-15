@@ -3,6 +3,7 @@
 External SSH hosts, private inventories, credentials and arbitrary playbooks are
 intentionally unsupported. UI reads committed IntegrationInstance/JobExecution.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping

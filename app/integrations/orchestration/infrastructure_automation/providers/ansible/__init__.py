@@ -14,11 +14,7 @@ ADAPTER_KEY = 'ansible_runner'
 
 def _load(record_id: int) -> IntegrationInstance | None:
     instance = db.session.get(IntegrationInstance, int(record_id))
-    if (
-        instance is None
-        or instance.integration_type != INTEGRATION_TYPE
-        or instance.provider_key != PROVIDER_KEY
-    ):
+    if instance is None or instance.integration_type != INTEGRATION_TYPE or instance.provider_key != PROVIDER_KEY:
         return None
     return instance
 
