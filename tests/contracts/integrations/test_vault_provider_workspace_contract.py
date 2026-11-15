@@ -331,11 +331,21 @@ def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> Non
     assert 'form = VaultConnectionForm()' in source
     assert "'secret_id': 'AppRole SecretID'" in source
     assert "'csrf_token' in errors" in source
-    assert "_form_validation_message(form, action=" in source
+    assert '_form_validation_message(form, action=' in source
     assert 'Review the highlighted fields before testing or registering.' not in source
     assert 'Review the highlighted fields before testing or saving.' not in source
     assert "if action == 'test' or not self.connection_test_proof.data:" in forms
     assert "{% set invalid_focus_field = (form.errors|list|first) if form.errors else '' %}" in form
-    assert "autofocus=(invalid_focus_field == 'secret_id')" in form
+    # Jinja requires ordinary keywords before dynamic **kwargs; an
+    # autofocus keyword *after* x-model / :required breaks template parsing.
+    # Use a formatter-stable expression, not a nested parenthesized call.
+    assert "autofocus=invalid_focus_field == 'secret_id'" in form
+    assert form.count('autofocus=invalid_focus_field == ') == 10
+    assert "autofocus=invalid_focus_field == 'auth_mount_mode', **{'x-model': 'authMountMode'}" in form
+    assert (
+        "autofocus=invalid_focus_field == 'auth_mount', **{':required': \"authMountMode === 'custom'\"}"
+        in form
+    )
+    assert 'autofocus=(invalid_focus_field' not in form
 
     Environment().parse(form)
