@@ -102,4 +102,5 @@ def test_initial_connection_proof_requires_non_whitespace_value() -> None:
     """A restored whitespace-only proof must not initialize verified state."""
     source = TEMPLATE.read_text(encoding="utf-8")
     assert "registration_proof is defined and registration_proof|string|trim" in source
-    assert "registration_proof if registration_proof is defined" in source
+    assert "registration_proof|string|trim if registration_proof is defined" in source
+    assert 'name="connection_test_proof"' in source
