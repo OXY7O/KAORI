@@ -62,6 +62,30 @@ and Runtime Freshness responsibilities unchanged. When a current
 validation is blocked or not observed, do not display stale prior
 capability records as newly Ready.
 
+**Vault permission guidance and capability explorer (Human UAT #4849):**
+Vault Configuration retains the shared provider Connection Contract and adds a
+bounded **Minimum Vault Permission & Policy Example** below it, matching the
+Kubernetes explanatory RBAC reference without introducing provider-managed
+policy writes. It shows one AppRole Full Validation baseline requiring only
+`auth/token/lookup-self` read; `sys/health` and AppRole login do not imply
+elevated client token ACL. Optional `sys/mounts` read and approved, named
+KV v2 `metadata` LIST/read examples are independent, never automatically
+granted or combined with KV `data/*` access. A Vault administrator must
+review and assign all policies; KAORI may never expose tokens, SecretID,
+Secret payloads or PKI mutation through this guide.
+
+Vault Validation's Capability Registry reuses the Kubernetes capability
+explorer's shared tables, filter controls, canonical five-row default and
+5/10/25/50 choices, and native View More dialog. A separate, read-only,
+`integrations.manage`-protected fragment filters the same **four** committed
+provider API contracts without invoking Vault during rendering. Search,
+requirement and status filters reset the page, preserve Rows and distinguish
+Ready, optional Limited, Required Gap and Not Observed. The short readiness
+helper should occupy one desktop line where space permits, wrap naturally
+on narrow screens, and never truncate. At four contracts, one pagination
+page is expected by default; do not fabricate more rows to match Kubernetes.
+Provider release compatibility stays distinct from required API coverage.
+
 **Vault provider detail post-Hero review (Human UAT #4835):** after the
 Vault connection Hero, render the shared **four-tab framed connection
 workspace** directly, matching other provider detail pages. The formerly

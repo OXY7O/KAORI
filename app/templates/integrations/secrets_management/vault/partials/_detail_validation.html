@@ -25,47 +25,47 @@
     {'icon': 'shield-x', 'tone': 'critical' if required_gaps else 'normal', 'label': 'Required Gaps', 'value': required_gaps if required_gaps is not none else '—', 'description': 'Missing required API evidence in the current validation.'}
 ] %}
 {% if not instance.enabled %}
-    {% set gate_label = 'Connection Disabled' %}
-    {% set gate_body = 'Enable the connection before running Full Validation.' %}
-    {% set gate_tone = 'warning' %}
-    {% set next_action = 'Review Configuration, then enable and validate the Vault connection.' %}
+    {% set gate_label = "Connection Disabled" %}
+    {% set gate_body = "Enable the connection before running Full Validation." %}
+    {% set gate_tone = "warning" %}
+    {% set next_action = "Review Configuration, then enable and validate the Vault connection." %}
 {% elif readiness == 'ready' and required_ready == required_total %}
-    {% set gate_label = 'Vault Provider Eligible' %}
-    {% set gate_body = 'Required Vault APIs and compatibility are qualified.' %}
-    {% set gate_tone = 'normal' %}
-    {% set next_action = 'Review independent KV v2 and PKI evidence in Inventory & Lifecycle.' %}
+    {% set gate_label = "Vault Provider Eligible" %}
+    {% set gate_body = "Required Vault APIs and compatibility are qualified." %}
+    {% set gate_tone = "normal" %}
+    {% set next_action = "Review independent KV v2 and PKI evidence in Inventory & Lifecycle." %}
 {% elif readiness == 'degraded' and required_ready == required_total %}
-    {% set gate_label = 'Core APIs Verified' %}
-    {% set gate_body = 'Required Vault APIs work; release compatibility needs review.' %}
-    {% set gate_tone = 'warning' %}
-    {% set next_action = 'Review version qualification and upstream advisories; rerun validation after an approved upgrade.' %}
+    {% set gate_label = "Core APIs Verified" %}
+    {% set gate_body = "Required Vault APIs work; release compatibility needs review." %}
+    {% set gate_tone = "warning" %}
+    {% set next_action = "Review version qualification and upstream advisories; rerun validation after an approved upgrade." %}
 {% elif readiness in ['blocked', 'failed', 'unavailable', 'incompatible'] %}
-    {% set gate_label = 'Provider Validation Blocked' %}
-    {% set gate_body = 'Required Vault access or compatibility could not be qualified.' %}
-    {% set gate_tone = 'critical' %}
-    {% set next_action = 'Review endpoint, AppRole policy and compatibility, then rerun Full Validation.' %}
+    {% set gate_label = "Provider Validation Blocked" %}
+    {% set gate_body = "Required Vault access or compatibility could not be qualified." %}
+    {% set gate_tone = "critical" %}
+    {% set next_action = "Review endpoint, AppRole policy and compatibility, then rerun Full Validation." %}
 {% else %}
-    {% set gate_label = 'Validation Required' %}
-    {% set gate_body = 'Run Full Validation to establish committed provider API evidence.' %}
-    {% set gate_tone = 'warning' %}
-    {% set next_action = 'Run Full Validation; optional inventory requires separate admission.' %}
+    {% set gate_label = "Validation Required" %}
+    {% set gate_body = "Run Full Validation to establish committed provider API evidence." %}
+    {% set gate_tone = "warning" %}
+    {% set next_action = "Run Full Validation; optional inventory requires separate admission." %}
 {% endif %}
 {% if readiness == 'degraded' %}
-    {% set decision_title = 'Why Readiness Is Degraded' %}
+    {% set decision_title = "Why Readiness Is Degraded" %}
     {% set decision_message = instance.validation_message or 'Core APIs were observed, but release compatibility needs review.' %}
-    {% set decision_tone = 'warning' %}
+    {% set decision_tone = "warning" %}
 {% elif readiness in ['blocked', 'failed', 'unavailable', 'incompatible'] %}
-    {% set decision_title = 'Why Readiness Is Blocked' %}
+    {% set decision_title = "Why Readiness Is Blocked" %}
     {% set decision_message = instance.validation_message or 'Resolve the failed Vault provider contract before retrying.' %}
-    {% set decision_tone = 'critical' %}
+    {% set decision_tone = "critical" %}
 {% elif readiness == 'ready' %}
-    {% set decision_title = 'Provider Readiness Is Ready' %}
-    {% set decision_message = 'Required Vault APIs and release compatibility satisfy the current provider contract.' %}
-    {% set decision_tone = 'normal' %}
+    {% set decision_title = "Provider Readiness Is Ready" %}
+    {% set decision_message = "Required Vault APIs and release compatibility satisfy the current provider contract." %}
+    {% set decision_tone = "normal" %}
 {% else %}
-    {% set decision_title = 'Why Validation Is Required' %}
-    {% set decision_message = 'No current required Vault API evidence has been admitted.' %}
-    {% set decision_tone = 'warning' %}
+    {% set decision_title = "Why Validation Is Required" %}
+    {% set decision_message = "No current required Vault API evidence has been admitted." %}
+    {% set decision_tone = "warning" %}
 {% endif %}
 <section id="vault-core-validation"
          class="relative {{ integration_ui.section_shell_classes() }}"
@@ -113,7 +113,7 @@
     {{ provider_job_status.render(validation_job, 'Vault validation running in worker', 'Vault') }}
     <div class="space-y-4 p-4 sm:p-5">
         {{ capability_readiness.render('Vault Capability Readiness',
-                'Required API evidence is independent from committed Secret and PKI inventory.',
+                'Core API readiness is independent of Secret and PKI inventory.',
                 readiness if instance.enabled else 'disabled',
                 readiness|replace('_', ' ')|title if instance.enabled else 'Disabled',
                 'Required Capability Coverage',

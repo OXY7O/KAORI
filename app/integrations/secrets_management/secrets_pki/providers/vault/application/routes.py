@@ -412,6 +412,17 @@ def detail(instance_id: int) -> ResponseReturnValue:
     )
 
 
+@vault_bp.get('/instances/<int:instance_id>/capabilities')
+@permission_required('integrations.manage')
+def capability_registry(instance_id: int) -> ResponseReturnValue:
+    """Read-only capability filters over persisted Vault Full Validation evidence."""
+    instance = _instance_or_404(instance_id)
+    return render_template(
+        'integrations/secrets_management/vault/partials/_capability_registry.html',
+        instance=instance,
+    )
+
+
 @vault_bp.post('/instances/<int:instance_id>/validate')
 @permission_required('integrations.manage')
 def validate(instance_id: int) -> ResponseReturnValue:
