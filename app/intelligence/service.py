@@ -109,6 +109,39 @@ def _visible_filter_keys(page_mode: str) -> tuple[str, ...]:
     return (*common, 'alert_handling')
 
 
+def _summary_counts(
+    filtered: list[dict[str, Any]],
+    *,
+    domain_metrics: list[dict[str, Any]],
+    total_items: int,
+    source_count: int,
+    active_filter_count: int,
+    page_mode: str,
+) -> dict[str, Any]:
+    """Summarize existing committed catalog/finding rows without new reads."""
+    result = {
+        'domain_metrics': domain_metrics,
+        'matching_items': total_items,
+        'source_items': source_count,
+        'active_filters': active_filter_count,
+        'kubernetes_items': sum(1 for item in filtered if item.get('domain') == 'kubernetes'),
+        'object_storage_items': sum(1 for item in filtered if item.get('domain') == 'object_storage'),
+        'registry_items': sum(1 for item in filtered if item.get('domain') == 'registry'),
+        'matched_domains': len({str(item.get('domain')) for item in filtered if item.get('domain')}),
+        'critical_items': sum(1 for item in filtered if item.get('severity') == 'critical'),
+        'warning_items': sum(1 for item in filtered if item.get('severity') == 'warning'),
+    }
+    if page_mode == 'catalog':
+        result.update(
+            {
+                'available_items': sum(1 for rule in filtered if rule.get('status') == 'available'),
+                'reserved_items': sum(1 for rule in filtered if rule.get('status') == 'reserved'),
+                'imported_items': sum(1 for rule in filtered if rule.get('status') == 'imported_signal'),
+            }
+        )
+    return result
+
+
 def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any]:
     filters = {
         'domain': clean(args.get('domain')),
@@ -180,26 +213,14 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
         else []
     )
 
-    result_context = {
-        'domain_metrics': domain_metrics,
-        'matching_items': total_items,
-        'source_items': len(source_items),
-        'active_filters': active_filter_count,
-        'kubernetes_items': sum(1 for item in filtered if item.get('domain') == 'kubernetes'),
-        'object_storage_items': sum(1 for item in filtered if item.get('domain') == 'object_storage'),
-        'registry_items': sum(1 for item in filtered if item.get('domain') == 'registry'),
-        'matched_domains': len({str(item.get('domain')) for item in filtered if item.get('domain')}),
-        'critical_items': sum(1 for item in filtered if item.get('severity') == 'critical'),
-        'warning_items': sum(1 for item in filtered if item.get('severity') == 'warning'),
-    }
-    if page_mode == 'catalog':
-        result_context.update(
-            {
-                'available_items': sum(1 for rule in filtered if rule.get('status') == 'available'),
-                'reserved_items': sum(1 for rule in filtered if rule.get('status') == 'reserved'),
-                'imported_items': sum(1 for rule in filtered if rule.get('status') == 'imported_signal'),
-            }
-        )
+    result_context = _summary_counts(
+        filtered,
+        domain_metrics=domain_metrics,
+        total_items=total_items,
+        source_count=len(source_items),
+        active_filter_count=active_filter_count,
+        page_mode=page_mode,
+    )
 
     return {
         'page_mode': page_mode,
