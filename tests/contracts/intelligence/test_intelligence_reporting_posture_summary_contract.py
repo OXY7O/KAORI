@@ -34,7 +34,9 @@ def test_every_primary_intelligence_page_uses_reference_posture_directly_below_h
     automation = read('app/templates/intelligence/automation_control.html')
 
     assert overview.index('page_hero.shell_classes()') < overview.index('intelligence_ui.posture_panel(')
-    assert overview.index('intelligence_ui.posture_panel(') < overview.index("'Intelligence Posture',")
+    # The hero context card also names Intelligence Posture; compare with the later assessment section.
+    posture_panel_index = overview.index('intelligence_ui.posture_panel(')
+    assert posture_panel_index < overview.index("'Intelligence Posture',", posture_panel_index)
 
     assert recommendations.index('page_hero.shell_classes()') < recommendations.index(
         '_recommendation_workspace_info.html'
