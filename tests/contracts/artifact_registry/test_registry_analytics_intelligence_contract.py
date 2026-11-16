@@ -1014,9 +1014,9 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     assert '100% = quota limit' in partial
     assert "analysis_surface.ranked_item_classes('min-w-0 p-3 sm:p-4')" not in partial
     assert 'divide-y divide-outline-subtle' in partial
-    assert "chart_min_height_classes = 'min-h-36 sm:min-h-40'" in partial
-    assert "chart_min_height_classes = 'min-h-44 sm:min-h-48'" in partial
-    assert "chart_min_height_classes = 'min-h-52 sm:min-h-56'" in partial
+    assert 'chart_min_height_classes = "min-h-36 sm:min-h-40"' in partial
+    assert 'chart_min_height_classes = "min-h-44 sm:min-h-48"' in partial
+    assert 'chart_min_height_classes = "min-h-52 sm:min-h-56"' in partial
     assert 'data-registry-capacity-axis-note' in partial
     assert 'aria-describedby="registry-capacity-chart-note"' in partial
     assert 'if (maxObserved <= 1) axisMax = 1' in chart
