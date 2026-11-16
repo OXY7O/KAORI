@@ -110,3 +110,29 @@ def test_canonical_remote_authority_identifiers_fail_closed(admitted_snapshot, c
     assert qualify_remote_facts_admission(replace(admitted_snapshot, **change)) == (
         False, reason
     )
+
+
+@pytest.mark.parametrize(
+    "fingerprint",
+    [
+        "SHA256:" + "A" * 43 + "=",
+        "SHA256:" + "A" * 42 + "/",
+        "SHA256:" + "A" * 42 + "+",
+        "SHA256:" + "A" * 42 + "_",
+    ],
+)
+def test_noncanonical_or_padded_host_key_fingerprint_is_rejected(admitted_snapshot, fingerprint):
+    assert qualify_remote_facts_admission(
+        replace(
+            admitted_snapshot,
+            host_key_fingerprint=fingerprint,
+            authorized_host_key_fingerprint=fingerprint,
+        )
+    ) == (False, "invalid_host_key")
+
+
+def test_canonical_unpadded_host_key_remains_review_only(admitted_snapshot):
+    assert qualify_remote_facts_admission(admitted_snapshot) == (
+        True,
+        "qualified_for_review_only",
+    )
