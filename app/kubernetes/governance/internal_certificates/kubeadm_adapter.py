@@ -9,8 +9,8 @@ from __future__ import annotations
 from typing import Any
 
 from app.kubernetes.governance.internal_certificates.evidence_import import (
-    PKIEvidenceValidationError,
     SCHEMA_VERSION,
+    PKIEvidenceValidationError,
     validate_metadata_manifest,
 )
 
