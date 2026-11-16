@@ -6,13 +6,44 @@ registry, resolve secrets, contact SSH, or authorize a worker dispatch.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import base64
+import binascii
 import re
-from unicodedata import category
+from unicodedata import category, normalize
 
 _SHA = re.compile(r"[0-9a-f]{40}")
 _DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
 _HOST_KEY = re.compile(r"SHA256:[A-Za-z0-9+/]{43}=?")
 _REF = re.compile(r"[a-z][a-z0-9_-]{1,31}:[A-Za-z0-9][A-Za-z0-9._/-]{2,191}")
+
+
+
+def _canonical_identity(value: str, maximum: int = 96) -> bool:
+    return (
+        bool(value)
+        and len(value) <= maximum
+        and value == value.strip()
+        and value == normalize("NFC", value)
+        and not any(category(character).startswith("C") for character in value)
+    )
+
+
+def _valid_host_key(value: str) -> bool:
+    if not _HOST_KEY.fullmatch(value):
+        return False
+    try:
+        # SHA-256 SSH fingerprints encode exactly 32 bytes, without padding.
+        return len(base64.b64decode(value[7:] + "=", validate=True)) == 32
+    except (binascii.Error, ValueError):
+        return False
+
+
+def _safe_credential_reference(value: str) -> bool:
+    if not _REF.fullmatch(value):
+        return False
+    # A secret locator is not a filesystem traversal or an implicit URI.
+    locator = value.partition(":")[2]
+    return all(segment not in {"", ".", ".."} for segment in locator.split("/"))
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,19 +85,17 @@ def qualify_remote_facts_admission(candidate: RemoteFactsAdmission) -> tuple[boo
     )
     if any(not isinstance(value, str) for value in identity_fields):
         return False, "invalid_admission"
-    if not candidate.asset_id or len(candidate.asset_id) > 96 or candidate.asset_id != candidate.asset_id.strip():
+    if not _canonical_identity(candidate.asset_id):
         return False, "invalid_asset"
-    if any(category(character).startswith("C") for character in candidate.asset_id):
-        return False, "invalid_asset"
-    if not candidate.target_id or candidate.target_id != candidate.target_id.strip():
+    if not _canonical_identity(candidate.target_id):
         return False, "invalid_target"
     if candidate.asset_id != candidate.authorized_asset_id or candidate.target_id != candidate.authorized_target_id:
         return False, "target_authority_mismatch"
-    if not _HOST_KEY.fullmatch(candidate.host_key_fingerprint):
+    if not _valid_host_key(candidate.host_key_fingerprint):
         return False, "invalid_host_key"
     if candidate.host_key_fingerprint != candidate.authorized_host_key_fingerprint:
         return False, "host_key_mismatch"
-    if not _REF.fullmatch(candidate.credential_reference):
+    if not _safe_credential_reference(candidate.credential_reference):
         return False, "invalid_credential_reference"
     if candidate.credential_reference != candidate.authorized_credential_reference:
         return False, "credential_authority_mismatch"
