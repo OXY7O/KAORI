@@ -142,7 +142,9 @@ def test_source_only_registration_is_not_an_executable_plan() -> None:
 def test_verified_worker_evidence_is_still_only_ready_for_review() -> None:
     report = build_kubespray_preflight(_connection(), jobs=[_job()], now=_NOW)
     assert report.state == 'ready_for_review'
-    assert report.verified_gates == report.required_gates == 10
+    assert report.verified_gates == 8
+    assert report.required_gates == 10
+    assert {gate.key for gate in report.gates if gate.state == 'blocked'} == {'execution_scope', 'approval'}
     assert report.facts_job_public_id == 'canonical-job-42'
     assert 'mutation_authorized' not in report.presentation()
     assert report.source_revision == SOURCE_CANDIDATE_SHA
@@ -260,3 +262,17 @@ def test_latest_mismatched_source_or_stale_preflight_never_reuses_prior_success(
         report = build_kubespray_preflight(_connection(), jobs=[current, older], now=_NOW)
         assert report.state == 'blocked'
         assert report.facts_job_public_id is None
+
+
+def test_future_worker_evidence_cannot_self_authorize_execution_or_maker_checker() -> None:
+    record = _job()
+    record.result_summary_json.update(
+        worker_execution_admitted=True,
+        plan_fingerprint_verified=True,
+        maker_checker_approval_verified=True,
+        maintenance_window_verified=True,
+    )
+    report = build_kubespray_preflight(_connection(), jobs=[record], now=_NOW)
+    assert report.state == 'ready_for_review'
+    assert [gate.state for gate in report.gates[-2:]] == ['blocked', 'blocked']
+    assert all('approved' not in key for key in report.presentation() if key != 'gates')
