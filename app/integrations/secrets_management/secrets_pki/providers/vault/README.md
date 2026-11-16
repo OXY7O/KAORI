@@ -169,6 +169,28 @@ collection follows separately owned jobs. No new Vault permission,
 Secret value, key, lease, retention action, provider call or schema
 mutation is introduced.
 
+### Runtime Refresh HTMX lifecycle (#4889)
+
+The Runtime & History header uses the same canonical `Refresh Runtime`
+idle and `Refresh Running` active labels as Kubernetes and MinIO.
+The standard HTMX POST replaces only `#vault-runtime-content`, with
+the shared loading bar, disabled submit, provider job status and
+validation poller. It does not reload the full provider detail page.
+After a terminal worker result, the status endpoint refreshes the
+committed Runtime Decision, Runtime Evidence, Recent Runtime
+Observations, and runtime tab badge together. Toast/deck notifications
+use the existing operational-feedback components. Browsers without
+HTMX retain the scoped POST redirect fallback.
+
+`GET /instances/<id>/runtime/status/<task_id>` validates the requested
+task against `secrets_pki`, the selected canonical integration instance
+and the `runtime_refresh` operation; incorrect tasks return 404.
+The shared no-cache poll response stops polling after the task reaches a
+terminal status and broadcasts standard navigation notification changes.
+Conflicting Full Validation jobs are shown as deferred rather than a
+fake runtime spinner. No live Vault query, credential exposure, mutation,
+new API read, scheduler or custom JS is added by the fragment.
+
 ### Runtime tab status and concise operator action (#4879)
 
 The Runtime & History tab badge reflects the latest **committed runtime
