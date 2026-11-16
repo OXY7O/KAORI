@@ -145,17 +145,8 @@ def _security_finding_rows(page_rows: Any) -> list[dict[str, Any]]:
     return rows
 
 
-def build_security_posture(
-    *,
-    can_view_registry: bool,
-    search: str = '',
-    severity: str = '',
-    page: int = 1,
-    per_page: int = 5,
-    include_overview_summary: bool = False,
-) -> dict[str, Any]:
-    """Paginated cross-domain read projection; never a scanner or global all-clear."""
-    if not can_view_registry:
+def _unauthorized_security_posture(*, search: str, page: int, per_page: int) -> dict[str, Any]:
+    """Return a fail-closed projection without querying provider-backed evidence."""
         _, pagination = paginate_sequence([], page=page, per_page=per_page)
         return {
             'rows': [],
@@ -180,6 +171,21 @@ def build_security_posture(
             'severity_distribution': [],
             'runtime_binding_summary': {'digest': 0, 'reference': 0},
         }
+
+
+
+def build_security_posture(
+    *,
+    can_view_registry: bool,
+    search: str = '',
+    severity: str = '',
+    page: int = 1,
+    per_page: int = 5,
+    include_overview_summary: bool = False,
+) -> dict[str, Any]:
+    """Paginated cross-domain read projection; never a scanner or global all-clear."""
+    if not can_view_registry:
+        return _unauthorized_security_posture(search=search, page=page, per_page=per_page)
     sources = _providers()
     source_ids = [int(source.id) for source in sources]
     q = str(search or '').strip().upper()[:100]
