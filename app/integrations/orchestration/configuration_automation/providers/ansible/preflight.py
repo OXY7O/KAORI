@@ -162,6 +162,18 @@ def _valid_pilot_network(facts: dict[str, Any]) -> bool:
     networks = [pod, service, *observed]
     if any(not isinstance(net, IPv4Network) for net in networks):
         return False
+    # A default route, loopback, link-local or multicast range is not an
+    # attestation of a routable Linux host interface. Fail closed even when
+    # the proposed pod/service CIDRs happen not to overlap it.
+    if any(
+        net.prefixlen == 0
+        or net.is_loopback
+        or net.is_link_local
+        or net.is_multicast
+        or net.is_unspecified
+        for net in observed
+    ):
+        return False
     if any(
         net.prefixlen < 8
         or net.prefixlen > 24

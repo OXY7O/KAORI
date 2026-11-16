@@ -49,3 +49,21 @@ def test_network_observation_accepts_disjoint_concrete_network():
         'host_network_cidrs': ['192.168.80.0/24'],
     }
     assert _valid_pilot_network(facts) is True
+
+
+def test_network_observation_rejects_non_routable_host_ranges():
+    base = {
+        'pod_cidr': '10.233.0.0/16',
+        'service_cidr': '10.96.0.0/16',
+    }
+    for host_cidr in ('0.0.0.0/0', '127.0.0.1/32', '169.254.1.0/24', '224.0.0.0/4'):
+        assert _valid_pilot_network({**base, 'host_network_cidrs': [host_cidr]}) is False
+
+
+def test_network_observation_allows_public_unicast_host_network_without_overlap():
+    facts = {
+        'pod_cidr': '10.233.0.0/16',
+        'service_cidr': '10.96.0.0/16',
+        'host_network_cidrs': ['198.51.100.0/24'],
+    }
+    assert _valid_pilot_network(facts) is True

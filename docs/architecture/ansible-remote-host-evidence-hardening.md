@@ -30,3 +30,18 @@ Also run relevant existing Ansible/JobExecution regression suites and
 `python scripts/verify_ui_reuse.py` / `python scripts/verify_ui_style.py`
 before considering integration. This connector-only commit has **not**
 executed those commands, CI or real provider UAT. Human Acceptance HOLD.
+
+## Follow-on #4799 host-network validation
+
+The bounded source-only projection now explicitly rejects IPv4 default routes,
+loopback, link-local and multicast networks as observed host interface CIDRs.
+A disjoint unicast network is not rejected merely for being outside RFC1918:
+publicly routed interfaces may exist, but still require independently admitted
+asset identity, authorized target and verified host-key/credential bindings.
+This check does **not** establish reachability, SSH trust or worker admission.
+Regression cases cover rejected special ranges and accepted disjoint unicast.
+
+Verification remains **NOT RUN** for the follow-on connector commits: execute
+Ruff check/format, focused pytest and existing Ansible/JobExecution contracts
+on the exact branch SHA before any integration. Keep this dependent candidate
+in Draft while #4905 and its review are outstanding; no host contact permitted.
