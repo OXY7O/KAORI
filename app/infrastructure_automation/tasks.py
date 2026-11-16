@@ -13,11 +13,6 @@ from app.infrastructure_automation.kubernetes.plan_review import (
     PLAN_RESULT_TYPE,
     build_kubespray_plan_review,
 )
-from app.integrations.orchestration.configuration_automation.providers.ansible.preflight import (
-    committed_kubespray_preflight,
-)
-from app.models.integration import IntegrationInstance
-from app.models.job import JobExecution
 from app.infrastructure_automation.source import (
     INVENTORY,
     OPERATION_ID,
@@ -27,6 +22,11 @@ from app.infrastructure_automation.source import (
     verify_localhost_source,
     verify_read_only_runner_stats,
 )
+from app.integrations.orchestration.configuration_automation.providers.ansible.preflight import (
+    committed_kubespray_preflight,
+)
+from app.models.integration import IntegrationInstance
+from app.models.job import JobExecution
 from app.platform_operations.jobs.execution import (
     JobCancellationRequested,
     JobExecutionContext,
