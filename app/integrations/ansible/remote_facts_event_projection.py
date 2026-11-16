@@ -29,14 +29,14 @@ def project_remote_facts_event(event: Any, *, expected_host: str) -> dict[str, s
     """
     if _identifier(expected_host) is None or not isinstance(event, Mapping):
         return None
-    if event.get("event") not in _ALLOWED_EVENTS:
+    if not isinstance(event.get("event"), str) or event["event"] not in _ALLOWED_EVENTS:
         return None
     data = event.get("event_data")
     if not isinstance(data, Mapping):
         return None
     host = _identifier(data.get("host"))
     task = data.get("task_action")
-    if host != expected_host or task not in _ALLOWED_TASKS:
+    if host != expected_host or not isinstance(task, str) or task not in _ALLOWED_TASKS:
         return None
     status = {"runner_on_ok": "ok", "runner_on_failed": "failed",
               "runner_on_unreachable": "unreachable"}[event["event"]]
