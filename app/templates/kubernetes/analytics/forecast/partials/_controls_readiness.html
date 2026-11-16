@@ -21,10 +21,10 @@
         analytics_materialization,
         eyebrow='Resource Forecast',
         title_accessory=info_tip.render('kubernetes-analytics-forecast-controls-guide',
-            'Forecast Controls Guide',
-            'Model, committed history, planning horizon, Cluster, and Namespace determine forecast scope.',
-            items=['Validate sample quality and capacity denominators before relying on projected thresholds.'],
-            placement='right', variant='guide')
+        'Forecast Controls Guide',
+        'Model, committed history, planning horizon, Cluster, and Namespace determine forecast scope.',
+        items=['Validate sample quality and capacity denominators before relying on projected thresholds.'],
+        placement='right', variant='guide')
         ) %}
         <div class="grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle xl:grid-cols-2">
             {% call analytics_workspace.control_group(

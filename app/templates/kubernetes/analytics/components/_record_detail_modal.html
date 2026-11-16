@@ -77,7 +77,9 @@
                                         {% for label, value in context_facts %}
                                             <div class="inline-flex min-w-0 items-center gap-2 rounded-lg border border-outline-subtle bg-surface-hover px-2.5 py-1.5 text-xs">
                                                 <dt class="text-content-muted">{{ label }}</dt>
-                                                <dd class="font-semibold tabular-nums text-content-primary">{{ value }}</dd>
+                                                <dd class="font-semibold tabular-nums text-content-primary">
+                                                    {{ value }}
+                                                </dd>
                                             </div>
                                         {% endfor %}
                                     </dl>

@@ -19,15 +19,15 @@
             <section class="space-y-4"
                      aria-labelledby="analytics-forecast-posture-heading">
                 {{ section_intro.render('Review Forecast Posture',
-                        'Assess projected pressure, model quality, and threshold timing from committed evidence.',
-                        'analytics-forecast-posture-heading') }}
+                                'Assess projected pressure, model quality, and threshold timing from committed evidence.',
+                                'analytics-forecast-posture-heading') }}
                 {% include "kubernetes/analytics/forecast/partials/_overview_methodology.html" %}
             </section>
             <section class="space-y-4"
                      aria-labelledby="analytics-forecast-domains-heading">
                 {{ section_intro.render('Explore Forecast Domains',
-                        'Inspect resource projections, historical trends, and evidence-qualified actions.',
-                        'analytics-forecast-domains-heading') }}
+                                'Inspect resource projections, historical trends, and evidence-qualified actions.',
+                                'analytics-forecast-domains-heading') }}
                 <div id="forecast-section">{% include "kubernetes/analytics/forecast/partials/_forecast_section.html" %}</div>
             </section>
         {% endif %}
