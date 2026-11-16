@@ -18,8 +18,8 @@
             <section class="space-y-4"
                      aria-labelledby="analytics-workload-posture-heading">
                 {{ section_intro.render('Review Workload Posture',
-                        'Assess committed quota coverage, request and limit policy, and workload risks.',
-                        'analytics-workload-posture-heading') }}
+                                'Assess committed quota coverage, request and limit policy, and workload risks.',
+                                'analytics-workload-posture-heading') }}
                 {% include "kubernetes/analytics/workload/partials/_overview.html" %}
             </section>
             {% if cluster %}
@@ -28,8 +28,8 @@
                 <section class="space-y-4"
                          aria-labelledby="analytics-workload-domains-heading">
                     {{ section_intro.render('Explore Workload Domains',
-                            'Review Tenant quotas, workload resource mapping, and evidence-qualified recommendations.',
-                            'analytics-workload-domains-heading') }}
+                                        'Review Tenant quotas, workload resource mapping, and evidence-qualified recommendations.',
+                                        'analytics-workload-domains-heading') }}
                     {% call analytics_workspace.tabbed(
                         'workload-content',
                         workload_tabs,
@@ -40,9 +40,9 @@
                         active_tab,
                         ['quotas', 'mapping', 'recommendations'],
                         title_accessory=info_tip.render('kubernetes-analytics-workload-workspace-guide',
-                            'Workload Analysis Workspace Guide',
-                            'Review quota governance, resource mapping, and evidence-qualified workload actions independently.',
-                            placement='right', variant='guide')
+                        'Workload Analysis Workspace Guide',
+                        'Review quota governance, resource mapping, and evidence-qualified workload actions independently.',
+                        placement='right', variant='guide')
                         ) %}
                         <div id="workload-content-panel-quotas"
                              role="tabpanel"

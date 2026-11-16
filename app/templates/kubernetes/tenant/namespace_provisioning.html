@@ -99,13 +99,13 @@
                                  hx-indicator="#namespace-provisioning-workspace-loading"
                                  hx-sync="#namespace-provisioning-workspace:replace">
                             {{ framed_workspace_tabs.render_navigation(capsule_scope_tabs,
-                                        active_capsule_view,
-                                        prefix='capsule-governance-scope',
-                                        aria_label='Capsule allocation authority scope',
-                                        hx_target='#namespace-provisioning-workspace',
-                                        hx_select='#namespace-provisioning-workspace',
-                                        hx_swap='outerHTML show:none focus-scroll:false',
-                                        hx_push_url='true') }}
+                                                        active_capsule_view,
+                                                        prefix='capsule-governance-scope',
+                                                        aria_label='Capsule allocation authority scope',
+                                                        hx_target='#namespace-provisioning-workspace',
+                                                        hx_select='#namespace-provisioning-workspace',
+                                                        hx_swap='outerHTML show:none focus-scroll:false',
+                                                        hx_push_url='true') }}
                             <div class="min-w-0 p-4 sm:p-5">
                                 {% if active_capsule_view == 'overview' %}
                                     {% include "kubernetes/tenant/partials/_capsule_governance_overview.html" %}

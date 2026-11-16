@@ -50,26 +50,13 @@
                                         digits=0) }}
                 {% endfor %}
             </div>
-            {% set capacity_review_groups = [
-                ('scan-search', 'Evidence', [
-                    ('Validate', 'Confirm cluster scope and snapshot freshness'),
-                    ('Assess', 'Review utilization, headroom, and forecast risk')
-                ]),
-                ('list-filter', 'Decision', [
-                    ('Prioritize', 'Identify the node or workload driving pressure'),
-                    ('Act', 'Apply the approved capacity/workload change')
-                ]),
-                ('clipboard-check', 'Assurance', [
-                    ('Verify', 'Confirm headroom and projected risk improve'),
-                    ('Record', 'Capture the change and operational evidence')
-                ])
-            ] %}
+            {% set capacity_review_groups = [('scan-search', 'Evidence', [('Validate', 'Confirm cluster scope and snapshot freshness'), ('Assess', 'Review utilization, headroom, and forecast risk')]), ('list-filter', 'Decision', [('Prioritize', 'Identify the node or workload driving pressure'), ('Act', 'Apply the approved capacity/workload change')]), ('clipboard-check', 'Assurance', [('Verify', 'Confirm headroom and projected risk improve'), ('Record', 'Capture the change and operational evidence')])] %}
             {% set risk_tone = 'critical' if dashboard.capacity_snapshot.risk in ['Critical', 'High'] else ('warning' if dashboard.capacity_snapshot.risk == 'Medium' else ('normal' if dashboard.capacity_snapshot.risk == 'Low' else 'unknown')) %}
             {{ capacity_decision.render(dashboard.capacity_snapshot.risk,
-                                         risk_tone,
-                                         dashboard.capacity_snapshot.insight,
-                                         dashboard.capacity_snapshot.risk_detail,
-                                         dashboard.capacity_snapshot.recommended_action, review_groups=capacity_review_groups) }}
+                        risk_tone,
+                        dashboard.capacity_snapshot.insight,
+                        dashboard.capacity_snapshot.risk_detail,
+                        dashboard.capacity_snapshot.recommended_action, review_groups=capacity_review_groups) }}
             <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4"
                      aria-label="Worker capacity headroom chart">
                 <div class="flex flex-wrap items-center justify-between gap-2">

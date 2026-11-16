@@ -8,9 +8,9 @@
     'layout-dashboard',
     workload_posture.value|default('Overview'),
     title_accessory=info_tip.render('kubernetes-analytics-workload-overview-guide',
-        'Workload Analysis Overview Guide',
-        'Interpret Namespace quota coverage, workload requests, QoS posture, and high-risk records using committed evidence.',
-        placement='right', variant='guide')
+    'Workload Analysis Overview Guide',
+    'Interpret Namespace quota coverage, workload requests, QoS posture, and high-risk records using committed evidence.',
+    placement='right', variant='guide')
     ) %}
     {% set quota_evidence_available = tenant_quota_summary.scope_evidence_available|default(false) %}
     {% set workload_evidence_available = workload_scope_summary.scope_evidence_available|default(false) %}

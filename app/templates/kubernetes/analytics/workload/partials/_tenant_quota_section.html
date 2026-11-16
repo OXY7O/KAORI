@@ -20,9 +20,9 @@
                 <div class="flex flex-wrap items-center gap-2">
                     <h3 class="text-lg font-semibold text-content-primary">Tenant Quota Analysis</h3>
                     {{ info_tip.render('kubernetes-analytics-workload-tenant-quota-section-guide',
-                        'Tenant Quota Analysis Guide',
-                        'Namespace quota evidence and effective demand come from committed governance and provider observations.',
-                        placement='right', variant='guide') }}
+                                        'Tenant Quota Analysis Guide',
+                                        'Namespace quota evidence and effective demand come from committed governance and provider observations.',
+                                        placement='right', variant='guide') }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-muted">Review ResourceQuota coverage, pressure ownership, runtime demand, and governance risk for the top-level active scope.</p>
             </div>
@@ -53,13 +53,13 @@
                         <div class="flex flex-wrap items-center gap-2">
                             <h3 class="text-base font-semibold text-content-primary">Tenant Quota Records</h3>
                             {{ info_tip.render('kubernetes-analytics-workload-tenant-quota-records-guide',
-                                            'Tenant Quota Records Guide',
-                                            'Filter committed Namespace quota records and inspect independent ResourceQuota evidence without making live provider changes.',
-                                            items=[
-                                                'Quota Pressure compares observed used values with configured hard limits; missing observations do not mean zero.',
-                                                'Open View Details for object-level quota evidence, active-Pod demand, and recommendations.'
-                                            ],
-                                            placement='right', variant='guide') }}
+                                                        'Tenant Quota Records Guide',
+                                                        'Filter committed Namespace quota records and inspect independent ResourceQuota evidence without making live provider changes.',
+                                                        items=[
+                                                        'Quota Pressure compares observed used values with configured hard limits; missing observations do not mean zero.',
+                                                        'Open View Details for object-level quota evidence, active-Pod demand, and recommendations.'
+                                                        ],
+                                                        placement='right', variant='guide') }}
                         </div>
                         <p class="mt-1 text-sm leading-6 text-content-secondary">Filter namespace quota evidence independently from the overview posture and scope metrics.</p>
                     </div>
@@ -332,7 +332,9 @@
                                                                     <dt class="min-w-0 break-words text-xs font-medium text-content-secondary [overflow-wrap:anywhere]"
                                                                         title="{{ item.label }}">{{ item.label }}</dt>
                                                                     <dd class="min-w-0 text-right text-xs font-semibold tabular-nums text-content-primary [overflow-wrap:anywhere]"
-                                                                        title="{{ item.value }}">{{ item.value }}</dd>
+                                                                        title="{{ item.value }}">
+                                                                        {{ item.value }}
+                                                                    </dd>
                                                                 </div>
                                                             {% else %}
                                                                 <div class="py-3 text-xs text-content-muted">No hard quota keys observed.</div>
@@ -356,7 +358,9 @@
                                                                     <dt class="min-w-0 break-words text-xs font-medium text-content-secondary [overflow-wrap:anywhere]"
                                                                         title="{{ item.label }}">{{ item.label }}</dt>
                                                                     <dd class="min-w-0 text-right text-xs font-semibold tabular-nums text-content-primary [overflow-wrap:anywhere]"
-                                                                        title="{{ item.value }}">{{ item.value }}</dd>
+                                                                        title="{{ item.value }}">
+                                                                        {{ item.value }}
+                                                                    </dd>
                                                                 </div>
                                                             {% else %}
                                                                 <div class="py-3 text-xs text-content-muted">Used-value evidence is unavailable.</div>
