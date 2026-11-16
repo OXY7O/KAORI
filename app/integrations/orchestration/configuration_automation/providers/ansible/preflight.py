@@ -11,6 +11,11 @@ from datetime import UTC, datetime, timedelta
 from ipaddress import IPv4Network, ip_network
 from typing import Any
 
+from app.infrastructure_automation.kubernetes.kubespray_preflight import (
+    KUBESPRAY_KUBERNETES_MINOR,
+    KUBESPRAY_RELEASE,
+    SUPPORTED_OPERATING_SYSTEMS,
+)
 from app.integrations.orchestration.configuration_automation.providers.ansible.service import (
     source_validation_posture,
 )
@@ -105,7 +110,6 @@ def _valid_pilot_hosts(facts: dict[str, Any]) -> bool:
         return False
     roles: list[str] = []
     identities: set[str] = set()
-    supported = {('OracleLinux', '9'), ('Ubuntu', '24.04')}
     for host in hosts:
         if not isinstance(host, dict) or host.get('asset_identity_verified') is not True:
             return False
@@ -117,11 +121,11 @@ def _valid_pilot_hosts(facts: dict[str, Any]) -> bool:
             return False
         identities.add(identity)
         roles.append(role)
-        if (host.get('os_distribution'), host.get('os_release')) not in supported:
+        if (host.get('os_distribution'), host.get('os_release')) not in SUPPORTED_OPERATING_SYSTEMS:
             return False
-        for field in ('cpu_count', 'memory_mib', 'disk_gib'):
+        for field, minimum in (('cpu_count', 2), ('memory_mib', 4096), ('disk_gib', 40)):
             value = host.get(field)
-            if type(value) is not int or value <= 0:
+            if type(value) is not int or value < minimum:
                 return False
     return roles.count('control_plane') == 1 and roles.count('worker') == 2
 
@@ -140,7 +144,7 @@ def _valid_pilot_network(facts: dict[str, Any]) -> bool:
     networks = [pod, service, *observed]
     if any(not isinstance(net, IPv4Network) for net in networks):
         return False
-    if any(net.is_loopback or net.is_link_local or net.is_multicast for net in (pod, service)):
+    if any(not net.is_private or net.prefixlen < 8 or net.prefixlen > 24 for net in (pod, service)):
         return False
     return not any(pod.overlaps(other) or service.overlaps(other) for other in observed) and not pod.overlaps(
         service
@@ -164,8 +168,8 @@ def build_kubespray_preflight(
     qualified_topology = (
         qualified_hosts
         and facts.get('high_availability') is False
-        and facts.get('upstream_kubespray_release') == 'v2.32.0'
-        and facts.get('kubernetes_minor') == '1.36'
+        and facts.get('upstream_kubespray_release') == KUBESPRAY_RELEASE
+        and facts.get('kubernetes_minor') == KUBESPRAY_KUBERNETES_MINOR
     )
 
     gates = (
