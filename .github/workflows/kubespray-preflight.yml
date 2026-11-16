@@ -6,6 +6,7 @@ on:
     branches:
       - kaori/issue-4800-kubespray-preflight-plan-readiness
       - kaori/issue-4800-kubespray-plan-evidence
+      - kaori/issue-4800-plan-currentness-audit
 
 permissions:
   contents: read
@@ -36,6 +37,7 @@ jobs:
             app/integrations/routes.py \
             tests/integrations/test_ansible_kubespray_preflight.py \
             tests/integrations/test_kubespray_plan_review_contract.py \
+            tests/integrations/test_kubespray_plan_currentness_contract.py \
             tests/integrations/test_kubespray_plan_dispatch_contract.py \
             tests/integrations/test_kubespray_plan_worker_contract.py \
             tests/contracts/integrations/test_ansible_source_posture_contract.py \
@@ -50,6 +52,7 @@ jobs:
             app/integrations/routes.py \
             tests/integrations/test_ansible_kubespray_preflight.py \
             tests/integrations/test_kubespray_plan_review_contract.py \
+            tests/integrations/test_kubespray_plan_currentness_contract.py \
             tests/integrations/test_kubespray_plan_dispatch_contract.py \
             tests/integrations/test_kubespray_plan_worker_contract.py \
             tests/contracts/integrations/test_ansible_source_posture_contract.py \
@@ -73,6 +76,7 @@ jobs:
             tests/contracts/platform_operations/test_kubespray_static_preflight_contract.py \
             tests/integrations/test_ansible_kubespray_preflight.py \
             tests/integrations/test_kubespray_plan_review_contract.py \
+            tests/integrations/test_kubespray_plan_currentness_contract.py \
             tests/integrations/test_kubespray_plan_dispatch_contract.py \
             tests/integrations/test_kubespray_plan_worker_contract.py \
             tests/contracts/integrations/test_ansible_source_posture_contract.py \

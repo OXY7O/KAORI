@@ -6,6 +6,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import permission_required
+from app.infrastructure_automation.kubernetes.plan_currentness import (
+    committed_kubespray_plan_currentness,
+)
 from app.infrastructure_automation.kubernetes.plan_dispatch import (
     KubesprayPlanNotQualified,
     dispatch_kubespray_plan_review,
@@ -335,12 +338,16 @@ def ansible_connection_detail(instance_id: int) -> ResponseReturnValue:
         if is_htmx_request() and htmx_target() == 'ansible-inventory-registry'
         else 'integrations/orchestration/configuration_automation/providers/ansible/detail.html'
     )
+    preflight = committed_kubespray_preflight(connection)
     return render_template(
         template,
         connection=connection,
         source=connection.metadata_json or {},
         source_posture=source_validation_posture(connection),
-        kubespray_preflight=committed_kubespray_preflight(connection).presentation(),
+        kubespray_preflight=preflight.presentation(),
+        kubespray_plan_currentness=committed_kubespray_plan_currentness(
+            connection, preflight=preflight
+        ).presentation(),
         can_generate_review_plan=bool(
             connection.enabled and getattr(current_user, 'has_permission', lambda _: False)('jobs.execute')
         ),
