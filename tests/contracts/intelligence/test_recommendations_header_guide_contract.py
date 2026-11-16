@@ -53,7 +53,7 @@ def test_recommendation_filter_reset_and_status_share_header_oob_owner() -> None
     route = read('app/intelligence/routes.py')
 
     assert '_recommendation_workspace_header_actions.html' in page
-    assert "payload.active_filter_count|default(0) > 0" in actions
+    assert 'payload.active_filter_count|default(0) > 0' in actions
     assert 'registry_ui.clear_filters_action(' in actions
     assert "table_ui.action_classes(size='header')" in actions
     assert "target='#recommendations-workspace-content'" in actions
@@ -66,8 +66,10 @@ def test_recommendation_filter_reset_and_status_share_header_oob_owner() -> None
     assert 'payload.posture.label' in actions
     assert 'payload.posture.tone' in actions
     assert '_recommendation_workspace_header_actions.html' in results
-    assert results.index('_recommendation_workspace_header_actions.html') < results.index('_recommendation_records.html')
-    assert "recommendation_summary_oob=True" in route
+    assert results.index('_recommendation_workspace_header_actions.html') < results.index(
+        '_recommendation_records.html'
+    )
+    assert 'recommendation_summary_oob=True' in route
 
 
 def test_recommendation_results_remove_redundant_strip_but_keep_records_and_pagination() -> None:
@@ -78,6 +80,6 @@ def test_recommendation_results_remove_redundant_strip_but_keep_records_and_pagi
     assert 'clear_filters_action' not in results
     assert "include 'intelligence/partials/_recommendation_records.html'" in results
     assert 'intelligence_pagination.render(' in results
-    assert "payload.result_context.matching_items" in summary
+    assert 'payload.result_context.matching_items' in summary
     assert "'Matching Findings'" in summary
-    assert "payload.pagination.total_items" in summary
+    assert 'payload.pagination.total_items' in summary

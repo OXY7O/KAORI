@@ -244,7 +244,6 @@ def test_namespace_allocation_workflow_uses_distinct_primary_provider_tabs() -> 
     assert "url_for('tenant.namespace_provisioning')" in routes  # Provision default.
 
 
-
 def test_capsule_scope_tabs_reuse_jobs_framed_navigation_with_htmx_fallback() -> None:
     from jinja2 import Environment
 
@@ -258,7 +257,7 @@ def test_capsule_scope_tabs_reuse_jobs_framed_navigation_with_htmx_fallback() ->
     assert 'framed_workspace_tabs.render_navigation(top_tabs,' in jobs
     assert 'framed_workspace_tabs.render_navigation(capsule_scope_tabs,' in workspace
     assert "prefix='capsule-governance-scope'" in workspace
-    assert "data-tenant-capsule-active-view=\"{{ active_capsule_view }}\"" in workspace
+    assert 'data-tenant-capsule-active-view="{{ active_capsule_view }}"' in workspace
     assert 'data-kaori-tab-variant="framed-workspace-v2-server"' in framed
     assert "hx_target='#namespace-provisioning-workspace'" in workspace
     assert "hx_select='#namespace-provisioning-workspace'" in workspace
@@ -266,7 +265,7 @@ def test_capsule_scope_tabs_reuse_jobs_framed_navigation_with_htmx_fallback() ->
     assert "hx_push_url='true'" in workspace
     assert 'hx-indicator="#namespace-provisioning-workspace-loading"' in workspace
     assert 'hx-sync="#namespace-provisioning-workspace:replace"' in workspace
-    assert "if active_key == tab_key" in framed
+    assert 'if active_key == tab_key' in framed
     assert 'aria-current="page"' in framed
     assert 'href="{{ tab_href }}"' in framed
     assert workspace.count('_capsule_governance_overview.html') == 1
@@ -346,7 +345,10 @@ def test_capsule_authority_copy_and_blocker_rows_retain_complete_evidence() -> N
     assert 'max-w-4xl' not in header
     assert 'items-start justify-between' not in header
     assert 'border-b border-outline-subtle px-5 py-4' in header
-    assert '<section class="overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm"' in overview
+    assert (
+        '<section class="overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm"'
+        in overview
+    )
     assert '<div class="space-y-4 p-4 sm:p-5">' in overview
     assert overview.index('<div class="space-y-4 p-4 sm:p-5">') < overview.index(
         '<div class="grid items-stretch gap-4 lg:grid-cols-2">'
@@ -359,9 +361,9 @@ def test_capsule_authority_copy_and_blocker_rows_retain_complete_evidence() -> N
         'GlobalResourceQuota governance blockers',
         'Other Capsule allocation authorities',
         'GlobalResourceQuota · Control Unavailable',
-        "blocked_grq = capsule_shared_cutover_state.values()",
+        'blocked_grq = capsule_shared_cutover_state.values()',
         "|selectattr('applicable')|rejectattr('supported')|list",
-        "other_authorities = capsule_shared_cutover_state.values()",
+        'other_authorities = capsule_shared_cutover_state.values()',
         "|rejectattr('applicable')|list",
         "if state.get('applicable') and not state.get('supported')",
         "if not state.get('applicable')",

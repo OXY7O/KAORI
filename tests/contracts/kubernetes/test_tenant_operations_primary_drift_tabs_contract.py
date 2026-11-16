@@ -54,23 +54,21 @@ def test_operations_titles_follow_shared_indicator_and_guide_contract() -> None:
         Environment(autoescape=True).parse(source)
 
     assert "table_label.metadata_label((operations_metrics|length) ~ ' Indicators', icon='layout-grid')" in operations
-    assert "resource_posture_grid.render(operations_metrics, columns=4)" in operations
+    assert 'resource_posture_grid.render(operations_metrics, columns=4)' in operations
     assert "info_tip.render('tenant-operational-control-guide'" in operations
     assert operations.count("'tenant-operational-control-guide'") == 1
     assert "placement='right', variant='guide'" in operations
-    assert operations.index("'tenant-operational-control-guide'") < operations.index(
-        "id='tenant-operations-workspace'"
-    )
+    assert operations.index("'tenant-operational-control-guide'") < operations.index("id='tenant-operations-workspace'")
     assert "id='tenant-operations-workspace'" in operations
     assert "content_tabs.render_links('tenant-operations'" in operations
 
     assert "info_tip.render('tenant-operations-namespace-registry-guide'" in registry
     assert registry.count("'tenant-operations-namespace-registry-guide'") == 1
-    assert "title_extra=title_info" in registry
-    assert "result_count=operations_namespace_pagination.total_items" in registry
-    assert "header_actions=header_actions" in registry
-    assert "Provision Namespace" in registry
-    assert "registry_ui.filter_form(" in registry
+    assert 'title_extra=title_info' in registry
+    assert 'result_count=operations_namespace_pagination.total_items' in registry
+    assert 'header_actions=header_actions' in registry
+    assert 'Provision Namespace' in registry
+    assert 'registry_ui.filter_form(' in registry
     assert "registry_ui.footer('tenant.operations'" in registry
 
 
@@ -106,9 +104,9 @@ def test_operations_evidence_and_drift_guides_keep_results_filters_and_ownership
 
     evidence = read('app/templates/kubernetes/tenant/partials/_operations_evidence_registry.html')
     drift = read('app/templates/kubernetes/tenant/partials/_operations_drift_registry.html')
-    assert "operations_evidence_filters.evidence_type" in evidence
-    assert "operations_evidence_pagination.allowed_per_page" in evidence
-    assert "operations_drift_pagination.allowed_per_page" in drift
+    assert 'operations_evidence_filters.evidence_type' in evidence
+    assert 'operations_evidence_pagination.allowed_per_page' in evidence
+    assert 'operations_drift_pagination.allowed_per_page' in drift
     assert "url_for('tenant." in drift
     assert 'explicit recovery decision' in drift
 
@@ -119,9 +117,7 @@ def test_activity_directory_uses_three_canonical_link_rows_not_nested_cards() ->
     page = read('app/templates/kubernetes/tenant/operations.html')
     Environment(autoescape=True).parse(page)
     assert 'data-tenant-activity-destinations' in page
-    activity = page.split('data-tenant-activity-destinations', 1)[1].split(
-        '                {% endif %}', 1
-    )[0]
+    activity = page.split('data-tenant-activity-destinations', 1)[1].split('                {% endif %}', 1)[0]
 
     assert 'Canonical Workspaces</h3>' in activity
     assert "table_label.metadata_label('3 Destinations', icon='layout-grid')" in activity
@@ -190,17 +186,17 @@ def test_drift_sections_have_context_before_child_tabs_and_one_active_registry()
         assert source.index('data-tenant-operations-review-intro') < source.index(
             f'id="tenant-drift-{section}-registry"'
         )
-        assert source.index(f'id="tenant-drift-{section}-registry"') < source.index(
-            'workspace_tabs.render_query_tabs('
-        )
+        assert source.index(f'id="tenant-drift-{section}-registry"') < source.index('workspace_tabs.render_query_tabs(')
         assert source.index('workspace_tabs.render_query_tabs(') < source.index(
             '{% include "kubernetes/tenant/partials/'
         )
         assert source.count('{% include "kubernetes/tenant/partials/') == expected_count
-        assert source.count(
-            'class="min-w-0 overflow-hidden rounded-2xl border border-outline-default '
-            'bg-surface-card shadow-sm"'
-        ) == 1
+        assert (
+            source.count(
+                'class="min-w-0 overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"'
+            )
+            == 1
+        )
         assert source.count('class="min-w-0 p-4 sm:p-5"') == 1
         assert 'hx-select="#tenant-operations-workspace"' in source
         assert "hx_sync='#tenant-operations-workspace:replace'" in source
@@ -250,8 +246,6 @@ def test_integrated_child_registry_tab_shell_matches_membership_reference() -> N
     assert operations.count('data-capsule-allocation-scope-guide') == 1
 
 
-
-
 def test_drift_context_cards_precede_attached_registries_without_new_runtime_actions() -> None:
     """#4718: operator-requested scope guidance belongs before both child tabsets."""
     from jinja2 import Environment
@@ -276,12 +270,8 @@ def test_drift_context_cards_precede_attached_registries_without_new_runtime_act
         assert source.index('data-tenant-operations-review-intro') < source.index(
             f'data-tenant-drift-context="{context}"'
         )
-        assert source.index(f'data-tenant-drift-context="{context}"') < source.index(
-            f'id="{shell}"'
-        )
-        assert source.index(f'id="{shell}"') < source.index(
-            'workspace_tabs.render_query_tabs('
-        )
+        assert source.index(f'data-tenant-drift-context="{context}"') < source.index(f'id="{shell}"')
+        assert source.index(f'id="{shell}"') < source.index('workspace_tabs.render_query_tabs(')
         assert source.count("variant='neutral'") == count
         assert '<form method="post"' not in source
         assert 'hx-post=' not in source
@@ -296,7 +286,9 @@ def test_drift_context_cards_precede_attached_registries_without_new_runtime_act
 
     assert 'lg:grid-cols-3' in operational
     assert 'Namespace Drift' in operational
-    assert 'Compare committed Access Grants with effective Kubernetes RBAC. Review access drift separately.' in operational
+    assert (
+        'Compare committed Access Grants with effective Kubernetes RBAC. Review access drift separately.' in operational
+    )
     # Keep the concise description within the approved desktop two-line copy budget.
     assert len('Compare committed Access Grants with effective Kubernetes RBAC. Review access drift separately.') <= 100
     assert 'read-only context, not a drift queue' in operational
@@ -324,7 +316,7 @@ def test_each_registry_retains_child_view_during_filter_clear_and_pagination() -
         assert "'drift_view':" not in source, name
 
     common = read('app/kubernetes/tenant/route_common.py')
-    assert "def _operations_active_view(active_tab: str)" in common
+    assert 'def _operations_active_view(active_tab: str)' in common
     assert "requested = str(request.args.get('ops_view') or '').strip()" in common
     for view in ('tenant-quota', 'shared-allocation', 'namespace-drift', 'access-reconciliation', 'provider-authority'):
         assert f"'{view}'" in common

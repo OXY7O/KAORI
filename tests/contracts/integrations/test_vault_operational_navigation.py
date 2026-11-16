@@ -15,8 +15,8 @@ def test_vault_detail_uses_canonical_tabs_not_cross_domain_shortcuts() -> None:
     assert 'Secrets and PKI operational workspaces' not in page
     assert "url_for('secrets_pki." not in page
     assert 'id="vault-detail-tabs"' in page
-    assert "app/templates/integrations/secrets_management/vault/detail.html" not in route
-    assert "integrations/secrets_management/vault/detail.html" in route
+    assert 'app/templates/integrations/secrets_management/vault/detail.html' not in route
+    assert 'integrations/secrets_management/vault/detail.html' in route
     # No permissions broadened: the provider detail still requires
     # integrations.manage, rather than implying a scoped secrets_pki grant.
     assert "@permission_required('integrations.manage')\ndef detail(" in route

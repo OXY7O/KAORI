@@ -60,13 +60,13 @@ def test_operations_namespace_rows_balance_identity_provider_and_reconciliation(
     registry = _template('_operations_namespace_registry')
     assert _header_widths(registry) == (25, 18, 15, 16, 26)
     assert "table_ui.table_classes('min-w-[1100px] !table-fixed')" in registry
-    assert "table_ui.title_cell(item.namespace," in registry
-    assert "table_ui.cell_classes()" in registry  # shared middle-aligned cells
+    assert 'table_ui.title_cell(item.namespace,' in registry
+    assert 'table_ui.cell_classes()' in registry  # shared middle-aligned cells
     assert registry.count('text-sm font-semibold leading-5 text-content-primary') == 3
     assert registry.count('mt-0.5 text-xs leading-5 text-content-muted') == 3
-    assert "reconciliation_evidence = item.provisioning_message or" in registry
-    assert "evidence_lower = reconciliation_evidence|lower" in registry
-    assert "compact_summary = false" in registry
+    assert 'reconciliation_evidence = item.provisioning_message or' in registry
+    assert 'evidence_lower = reconciliation_evidence|lower' in registry
+    assert 'compact_summary = false' in registry
     for phrase, summary in (
         ('match committed intent', 'Matches committed intent'),
         ('provider mirrored policy', 'Provider-mirrored policy'),
@@ -79,9 +79,9 @@ def test_operations_namespace_rows_balance_identity_provider_and_reconciliation(
     assert '<span class="sr-only">{{ reconciliation_evidence }}</span>' in registry
     assert '<span aria-hidden="true">{{ reconciliation_summary }}</span>' in registry
     assert 'item.provisioning_message or' in registry
-    assert "table_label.status_label(item.provisioning_status" in registry
-    assert "operations_namespace_pagination.total_items" in registry
-    assert "operations_namespace_pagination.allowed_per_page" in registry
+    assert 'table_label.status_label(item.provisioning_status' in registry
+    assert 'operations_namespace_pagination.total_items' in registry
+    assert 'operations_namespace_pagination.allowed_per_page' in registry
     assert "control_name='operations-namespace'" in registry
     assert "page_param='ops_namespace_page'" in registry
     assert "per_page_param='ops_namespace_per_page'" in registry
@@ -270,7 +270,7 @@ def test_credential_column_balance_preserves_existing_shared_table_and_detail_ac
     assert 'title="Valid until {{ credential.valid_until|user_datetime }}"' in credential
     assert '<span class="sr-only">Valid until </span>{{ credential.valid_until|user_datetime }}' in credential
     assert 'Valid until {{ credential.valid_until|user_datetime }}\n' not in credential
-    assert "table_ui.cell_classes(action=true)" in credential
+    assert 'table_ui.cell_classes(action=true)' in credential
     assert 'detail_row.static_detail_row(detail_row_id, detail_target_id, 6' in credential
     # Capacity decisions have an approved wider bounded record shape, with an
     # explicit action column and shared horizontal overflow on compact screens.

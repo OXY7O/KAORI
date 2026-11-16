@@ -72,9 +72,7 @@ def test_filter_and_authority_boundaries_hide_unmatched_or_unregistered_domains(
         'object_storage',
         'registry',
     ]
-    assert 'not_an_approved_domain' not in [
-        metric['key'] for metric in domain_metrics(all_findings)
-    ]
+    assert 'not_an_approved_domain' not in [metric['key'] for metric in domain_metrics(all_findings)]
 
 
 def test_future_admitted_domains_expand_without_integrations_inventory_projection() -> None:
@@ -97,7 +95,7 @@ def test_summary_binding_stays_filtered_and_permission_constrained() -> None:
     assert 'recommendation_summary_domain_metrics(' in service
     assert '            filtered,' in service
     assert "if page_mode != 'catalog'" in service
-    assert "and _can_view_secrets_pki_intelligence()" in service
+    assert 'and _can_view_secrets_pki_intelligence()' in service
     assert "current_user.has_permission('secrets_pki.view')" in service
     assert "current_user.has_permission('intelligence.view')" in service
     assert "'domain_metrics': domain_metrics" in service

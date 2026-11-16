@@ -198,9 +198,7 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
         assert name in detail
     # Configuration reuses the same canonical Connection Contract as the
     # other integration providers, without fabricating an Ansible Edit route.
-    configuration = detail.split('id="ansible-panel-configuration"', 1)[1].split(
-        'id="ansible-panel-validation"', 1
-    )[0]
+    configuration = detail.split('id="ansible-panel-configuration"', 1)[1].split('id="ansible-panel-validation"', 1)[0]
     assert configuration.count('data-kaori-provider-configuration-contract') == 1
     assert configuration.count('data-kaori-provider-operational-context') == 1
     assert 'Connection Contract' in configuration

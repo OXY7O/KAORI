@@ -449,6 +449,7 @@ def test_vault_registration_and_edit_match_shared_kaori_connection_form() -> Non
 
     Environment().parse(form)
 
+
 def test_vault_policy_guide_and_capability_explorer_reuse_shared_kaori_contracts() -> None:
     from jinja2 import Environment
 
@@ -480,7 +481,7 @@ def test_vault_policy_guide_and_capability_explorer_reuse_shared_kaori_contracts
         'data-kaori-capability-server-filtered',
         'data-kaori-capability-table-standard',
         'data-kaori-vault-capability-record',
-        "hx-target=\"#vault-capability-registry\"",
+        'hx-target="#vault-capability-registry"',
         'capability_page',
         'capability_per_page',
         'capability_q',
@@ -497,25 +498,26 @@ def test_vault_policy_guide_and_capability_explorer_reuse_shared_kaori_contracts
     assert 'page_size = requested_page_size if requested_page_size in [5, 10, 25, 50] else 5' in registry
     assert "@vault_bp.get('/instances/<int:instance_id>/capabilities')" in routes
     assert "@permission_required('integrations.manage')\ndef capability_registry(" in routes
-    assert "instance = _instance_or_404(instance_id)" in routes
+    assert 'instance = _instance_or_404(instance_id)' in routes
 
     for template in (policy, registry, validation):
         Environment().parse(template)
+
 
 def test_vault_capability_modal_parity_with_kubernetes_without_invented_checks() -> None:
     from jinja2 import Environment
 
     registry = _partial('_capability_registry.html')
     modal = _partial('_capability_detail_content.html')
-    adapter = (
-        ROOT / 'app/integrations/secrets_management/secrets_pki/providers/vault/adapter.py'
-    ).read_text(encoding='utf-8')
+    adapter = (ROOT / 'app/integrations/secrets_management/secrets_pki/providers/vault/adapter.py').read_text(
+        encoding='utf-8'
+    )
 
     # Retain one provider-owned native modal per visible capability row.
     assert 'integrations/components/_record_detail_modal.html' in registry
     assert 'integrations/secrets_management/vault/partials/_capability_detail_content.html' in registry
-    assert "record_detail_modal.render(" in registry
-    assert "row.key" in registry
+    assert 'record_detail_modal.render(' in registry
+    assert 'row.key' in registry
     assert 'data-kaori-vault-capability-detail' not in registry
 
     for section in (
@@ -547,7 +549,7 @@ def test_vault_capability_modal_parity_with_kubernetes_without_invented_checks()
     assert "('02', 'Identity & Access'," in modal
     assert "('03', 'Committed Observation'," in modal
     assert 'not three independently stored check results' in modal
-    assert "result.status_label" in modal
+    assert 'result.status_label' in modal
     assert 'result.observed' in modal
     assert 'result.limited' in modal
     assert 'result.gap' in modal
@@ -608,7 +610,7 @@ def test_vault_view_more_copy_line_budgets_cover_all_capabilities_and_statuses()
         ('auth_description', 4, 64),
         ('observation_description', 4, 64),
     ):
-        variants = re.findall(r"\{% set " + name + r" = '([^']*)' %\}", modal)
+        variants = re.findall(r'\{% set ' + name + r" = '([^']*)' %\}", modal)
         assert len(variants) == expected_count, name
         assert max(map(len, variants)) <= max_chars, name
 
@@ -687,6 +689,7 @@ def test_vault_runtime_history_reuses_canonical_projection_and_scoped_htmx_regis
     Environment().parse(runtime)
     Environment().parse(history)
 
+
 def test_vault_runtime_badge_and_next_action_match_committed_runtime_posture() -> None:
     import re
 
@@ -696,8 +699,7 @@ def test_vault_runtime_badge_and_next_action_match_committed_runtime_posture() -
     runtime = _partial('_detail_runtime.html')
     routes = ROUTES.read_text(encoding='utf-8')
     kubernetes = (
-        ROOT / 'app/templates/integrations/orchestration/container_orchestrator/'
-        'providers/kubernetes/detail.html'
+        ROOT / 'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html'
     ).read_text(encoding='utf-8')
 
     # The tab exposes committed runtime health, not a static job label or
@@ -709,7 +711,7 @@ def test_vault_runtime_badge_and_next_action_match_committed_runtime_posture() -
     assert 'runtime_state=runtime_state' in routes
     assert 'runtime_observation_state_view(' in routes
     assert 'latest_vault_runtime_observation(instance.id)' in routes
-    assert "runtime_health = runtime_state.health_status if runtime_observed" in runtime
+    assert 'runtime_health = runtime_state.health_status if runtime_observed' in runtime
 
     # All states keep precise actions short enough for the desktop card.
     # Narrow viewports may wrap naturally; no text truncation is introduced.
@@ -724,14 +726,14 @@ def test_vault_runtime_badge_and_next_action_match_committed_runtime_posture() -
     Environment().parse(detail)
     Environment().parse(runtime)
 
+
 def test_vault_inventory_uses_minio_hierarchy_without_invented_asset_mutations() -> None:
     from jinja2 import Environment
 
     source = _partial('_detail_inventory.html')
     detail = DETAIL.read_text(encoding='utf-8')
     minio = (
-        ROOT / 'app/templates/integrations/storage/object_storage/providers/minio/'
-        'partials/_detail_scope.html'
+        ROOT / 'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html'
     ).read_text(encoding='utf-8')
     route = ROUTES.read_text(encoding='utf-8')
     for structural_token in (
@@ -785,7 +787,7 @@ def test_vault_inventory_uses_minio_hierarchy_without_invented_asset_mutations()
     assert 'data-kaori-vault-evidence-source-detail' in source
     assert 'record_actions.view_more(' in source
     assert 'record_detail_modal.render(' in source
-    assert 'current_user.has_permission(\'jobs.view\')' in source
+    assert "current_user.has_permission('jobs.view')" in source
     assert "url_for('jobs.configuration', job_key=source.job_key)" in source
     assert "url_for('vault.delete_instance', instance_id=instance.id)" in source
     assert "current_user.has_permission('integrations.manage')" in source
@@ -805,12 +807,13 @@ def test_vault_inventory_uses_minio_hierarchy_without_invented_asset_mutations()
         'source.secret_id',
     ):
         assert unsafe not in source
-    assert "def delete_instance(" in route
+    assert 'def delete_instance(' in route
     assert "@permission_required('integrations.manage')\ndef delete_instance(" in route
     assert 'integrations/components/_asset_owner_delete_modal.html' in _partial('_delete_modal.html')
     assert 'partials/_delete_modal.html' in detail
     Environment().parse(source)
     Environment().parse(detail)
+
 
 def test_vault_runtime_refresh_reuses_canonical_in_place_job_lifecycle() -> None:
     from jinja2 import Environment
@@ -822,8 +825,7 @@ def test_vault_runtime_refresh_reuses_canonical_in_place_job_lifecycle() -> None
         'providers/kubernetes/partials/_runtime_workspace.html'
     ).read_text(encoding='utf-8')
     minio = (
-        ROOT / 'app/templates/integrations/storage/object_storage/providers/minio/'
-        'partials/_detail_runtime.html'
+        ROOT / 'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_runtime.html'
     ).read_text(encoding='utf-8')
 
     # Same canonical button text and form interaction as existing providers.
@@ -858,26 +860,27 @@ def test_vault_runtime_refresh_reuses_canonical_in_place_job_lifecycle() -> None
     assert 'runtime_decision.render(' in runtime
 
     for token in (
-        "def _vault_runtime_refresh_fragment(",
-        "latest_vault_runtime_observation(instance.id)",
-        "runtime_state=runtime_state",
-        "runtime_history=_vault_runtime_history_view(instance)",
-        "operation_feedback=operation_feedback",
+        'def _vault_runtime_refresh_fragment(',
+        'latest_vault_runtime_observation(instance.id)',
+        'runtime_state=runtime_state',
+        'runtime_history=_vault_runtime_history_view(instance)',
+        'operation_feedback=operation_feedback',
         "@vault_bp.post('/instances/<int:instance_id>/runtime/refresh')",
         "@vault_bp.get('/instances/<int:instance_id>/runtime/status/<string:task_id>')",
-        "enqueue_runtime_health_refresh(",
+        'enqueue_runtime_health_refresh(',
         "snapshot.get('operation') != 'runtime_refresh'",
-        "validate_snapshot_access(",
-        "snapshot_feedback_for_user(snapshot, user_id=int(current_user.id))",
-        "validation_poll_response(content, snapshot=snapshot)",
+        'validate_snapshot_access(',
+        'snapshot_feedback_for_user(snapshot, user_id=int(current_user.id))',
+        'validation_poll_response(content, snapshot=snapshot)',
     ):
         assert token in routes
 
     assert "@permission_required('integrations.manage')\ndef runtime_refresh(" in routes
     assert "@permission_required('integrations.manage')\ndef runtime_refresh_status(" in routes
-    assert "queue_feedback=not is_htmx" in routes
+    assert 'queue_feedback=not is_htmx' in routes
     assert "return redirect(url_for('vault.detail', instance_id=instance.id, _anchor='runtime'))" in routes
     Environment().parse(runtime)
+
 
 def test_vault_delete_ui_reuses_minio_confirmation_and_limits_evidence_to_one_line() -> None:
     from jinja2 import Environment
@@ -886,23 +889,21 @@ def test_vault_delete_ui_reuses_minio_confirmation_and_limits_evidence_to_one_li
     detail = DETAIL.read_text(encoding='utf-8')
     modal = _partial('_delete_modal.html')
     minio = (
-        ROOT / 'app/templates/integrations/storage/object_storage/providers/minio/'
-        'partials/_detail_scope.html'
+        ROOT / 'app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html'
     ).read_text(encoding='utf-8')
     for marker in ('data-delete-url', 'data-delete-name', 'openDelete(', 'Delete Connection'):
         assert marker in vault
         assert marker in minio
-    assert 'current_user.has_permission(\'integrations.manage\')' in vault
+    assert "current_user.has_permission('integrations.manage')" in vault
     assert '{% if deletion_guard.blocked %}disabled' in vault
     assert 'data-kaori-vault-evidence-ownership' in vault
     assert 'KAORI commits scoped metadata; Vault owns Secrets and PKI; observability stays separate.' in vault
     assert 'Collection uses independently approved Vault scopes;' not in vault
     assert 'integrations/components/_asset_owner_delete_modal.html' in modal
-    assert "integrations/secrets_management/vault/partials/_delete_modal.html" in detail
+    assert 'integrations/secrets_management/vault/partials/_delete_modal.html' in detail
     assert 'Provider-owned Vault connection' in modal
     assert 'runtime observations' in modal
     assert 'Retained Secret or PKI dependencies block deletion' in modal
     Environment().parse(vault)
     Environment().parse(detail)
     Environment().parse(modal)
-

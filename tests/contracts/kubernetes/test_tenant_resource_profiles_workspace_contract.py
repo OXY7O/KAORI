@@ -103,7 +103,7 @@ def test_resource_profile_namespace_titles_use_canonical_guides_and_committed_me
         assert f'result_count={count}' in source
         assert 'registry_ui.filter_form(' in source
 
-    assert "header_badge=table_label.result_count(namespace_total)" in namespace
+    assert 'header_badge=table_label.result_count(namespace_total)' in namespace
     assert "('folder-tree', 'Namespace Records', namespace_total" in namespace
     assert "'Committed managed/adopted records'" in namespace
     assert "'Intent differs from provider state'" in namespace
