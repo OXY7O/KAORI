@@ -39,6 +39,89 @@ def _literal_contains(value: str) -> str:
     return f'%{escaped}%'
 
 
+def _qualified_cve_findings(canonical_cve: str, source_ids: list[int]) -> Any:
+    """Read only the last successful provider scan per artifact and permitted source."""
+    # Latest *successful* scan per digest is the last-good scanner authority.
+    # Never resurrect findings from an older successful scan after a newer
+    # successful scan has removed them; failed refreshes remain visible as old.
+    latest_success_ids = (
+        select(func.max(RegistryScanSnapshot.id).label('id'))
+        .where(func.lower(RegistryScanSnapshot.status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES))
+        .group_by(RegistryScanSnapshot.artifact_id)
+        .subquery()
+    )
+    findings = (
+        RegistryVulnerability.query.join(
+            RegistryScanSnapshot,
+            RegistryVulnerability.scan_snapshot_id == RegistryScanSnapshot.id,
+        )
+        .join(latest_success_ids, RegistryScanSnapshot.id == latest_success_ids.c.id)
+        .join(RegistryArtifact, RegistryScanSnapshot.artifact_id == RegistryArtifact.id)
+        .join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+        .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+        .filter(
+            func.upper(RegistryVulnerability.vulnerability_id) == canonical_cve,
+            RegistryProject.integration_instance_id.in_(source_ids),
+        )
+    )
+    return findings
+
+
+def _present_cve_finding_rows(finding_items: Any, source_by_id: dict[int, Any]) -> list[dict[str, Any]]:
+    """Project source-qualified findings without altering scanner authority."""
+    finding_rows = []
+    for item in finding_items:
+        scan = item.scan_snapshot
+        artifact = scan.artifact
+        repository = artifact.repository
+        project = repository.project
+        source = source_by_id.get(int(project.integration_instance_id))
+        finding_rows.append(
+            {
+                'id': item.id,
+                'artifact_id': artifact.id,
+                'source': source.name if source else 'Unknown Source',
+                'repository': repository.name,
+                'project': project.name,
+                'digest': artifact.digest,
+                'package': item.package,
+                'installed_version': item.installed_version,
+                'fixed_version': item.fixed_version or 'No Fix Observed',
+                'severity': str(item.severity or 'unknown').title(),
+                'observed_at': scan.observed_at,
+                'freshness': _freshness(scan.observed_at),
+            }
+        )
+
+    return finding_rows
+
+
+def _present_cve_runtime_rows(binding_items: Any) -> list[dict[str, Any]]:
+    """Resolve runtime binding names only for the bounded current page."""
+    cluster_ids = {str(item.cluster_id) for item in binding_items}
+    cluster_names = {
+        str(cluster.id): cluster.name
+        for cluster in (Cluster.query.filter(Cluster.id.in_(cluster_ids)).all() if cluster_ids else [])
+    }
+    runtime_rows = [
+        {
+            'id': item.id,
+            'artifact_id': item.artifact_id,
+            'cluster': cluster_names.get(str(item.cluster_id), str(item.cluster_id)),
+            'namespace': item.namespace,
+            'workload': item.workload_name or 'Not Mapped',
+            'workload_type': item.workload_type or 'Unknown',
+            'pod': item.pod_name,
+            'container': item.container_name or 'Unknown',
+            'match': _runtime_match_state(item.match_type, item.confidence),
+            'observed_at': item.observed_at,
+        }
+        for item in binding_items
+    ]
+
+    return runtime_rows
+
+
 def build_cve_runtime_impact(
     cve_id: str,
     *,
@@ -70,29 +153,8 @@ def build_cve_runtime_impact(
     source_by_id = {int(source.id): source for source in sources}
     source_ids = list(source_by_id)
 
-    # Latest *successful* scan per digest is the last-good scanner authority.
-    # Never resurrect findings from an older successful scan after a newer
-    # successful scan has removed them; failed refreshes remain visible as old.
-    latest_success_ids = (
-        select(func.max(RegistryScanSnapshot.id).label('id'))
-        .where(func.lower(RegistryScanSnapshot.status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES))
-        .group_by(RegistryScanSnapshot.artifact_id)
-        .subquery()
-    )
-    findings = (
-        RegistryVulnerability.query.join(
-            RegistryScanSnapshot,
-            RegistryVulnerability.scan_snapshot_id == RegistryScanSnapshot.id,
-        )
-        .join(latest_success_ids, RegistryScanSnapshot.id == latest_success_ids.c.id)
-        .join(RegistryArtifact, RegistryScanSnapshot.artifact_id == RegistryArtifact.id)
-        .join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
-        .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
-        .filter(
-            func.upper(RegistryVulnerability.vulnerability_id) == canonical_cve,
-            RegistryProject.integration_instance_id.in_(source_ids),
-        )
-    )
+    findings = _qualified_cve_findings(canonical_cve, source_ids)
+
     finding_count = findings.order_by(None).count()
     affected_artifacts = int(
         findings.with_entities(func.count(func.distinct(RegistryScanSnapshot.artifact_id))).scalar() or 0
@@ -164,29 +226,7 @@ def build_cve_runtime_impact(
         page=finding_page,
         per_page=finding_per_page if finding_per_page is not None else per_page,
     )
-    finding_rows = []
-    for item in finding_items:
-        scan = item.scan_snapshot
-        artifact = scan.artifact
-        repository = artifact.repository
-        project = repository.project
-        source = source_by_id.get(int(project.integration_instance_id))
-        finding_rows.append(
-            {
-                'id': item.id,
-                'artifact_id': artifact.id,
-                'source': source.name if source else 'Unknown Source',
-                'repository': repository.name,
-                'project': project.name,
-                'digest': artifact.digest,
-                'package': item.package,
-                'installed_version': item.installed_version,
-                'fixed_version': item.fixed_version or 'No Fix Observed',
-                'severity': str(item.severity or 'unknown').title(),
-                'observed_at': scan.observed_at,
-                'freshness': _freshness(scan.observed_at),
-            }
-        )
+    finding_rows = _present_cve_finding_rows(finding_items, source_by_id)
 
     binding_items, runtime_pagination = paginate_query(
         visible_bindings.order_by(
@@ -199,26 +239,7 @@ def build_cve_runtime_impact(
         page=runtime_page,
         per_page=runtime_per_page if runtime_per_page is not None else per_page,
     )
-    cluster_ids = {str(item.cluster_id) for item in binding_items}
-    cluster_names = {
-        str(cluster.id): cluster.name
-        for cluster in (Cluster.query.filter(Cluster.id.in_(cluster_ids)).all() if cluster_ids else [])
-    }
-    runtime_rows = [
-        {
-            'id': item.id,
-            'artifact_id': item.artifact_id,
-            'cluster': cluster_names.get(str(item.cluster_id), str(item.cluster_id)),
-            'namespace': item.namespace,
-            'workload': item.workload_name or 'Not Mapped',
-            'workload_type': item.workload_type or 'Unknown',
-            'pod': item.pod_name,
-            'container': item.container_name or 'Unknown',
-            'match': _runtime_match_state(item.match_type, item.confidence),
-            'observed_at': item.observed_at,
-        }
-        for item in binding_items
-    ]
+    runtime_rows = _present_cve_runtime_rows(binding_items)
 
     correlation = _runtime_snapshot_state(correlation_prerequisites())
     # Missing/old/changed inputs can invalidate a zero-binding interpretation.
