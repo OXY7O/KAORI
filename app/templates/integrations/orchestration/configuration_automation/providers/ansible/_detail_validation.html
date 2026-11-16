@@ -91,6 +91,8 @@
                     <p class="max-w-xl text-xs leading-5 text-content-secondary">
                         {% if kubespray_preflight.state != 'ready_for_review' %}
                             Requires current, qualified remote-host evidence. No operation can be queued yet.
+                        {% elif not connection.enabled %}
+                            Source-only registration is not yet admitted for review operations.
                         {% elif not can_generate_review_plan %}
                             Jobs execution permission is required to queue this non-mutating Plan.
                         {% else %}
