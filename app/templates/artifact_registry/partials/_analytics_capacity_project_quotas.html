@@ -104,9 +104,13 @@
                       hx-swap="outerHTML"
                       class="{{ pager.rows_group_classes() }}">
                     {% if analytics.selected_provider_id is not none %}
-                        <input type="hidden" name="provider_id" value="{{ analytics.selected_provider_id }}" />
+                        <input type="hidden"
+                               name="provider_id"
+                               value="{{ analytics.selected_provider_id }}" />
                     {% endif %}
-                    <input type="hidden" name="snapshot_window" value="{{ analytics.snapshot_window }}" />
+                    <input type="hidden"
+                           name="snapshot_window"
+                           value="{{ analytics.snapshot_window }}" />
                     <input type="hidden" name="capacity_page" value="1" />
                     <label for="registry-capacity-project-page-size">Rows</label>
                     <select id="registry-capacity-project-page-size"
@@ -124,13 +128,13 @@
                 <nav class="{{ pager.navigation_group_classes() }}"
                      aria-label="Project quota pages">
                     {{ pager.numeric_pages(page_window.page,
-                                            page_window.total_pages,
-                                            page_param='capacity_page',
-                                            hx_target='#registry-capacity-projects-table',
-                                            endpoint='artifact_registry.analytics_capacity_table',
-                                            href_endpoint='artifact_registry.analytics_capacity',
-                                            query_params=capacity_page_query,
-                                            hx_swap='outerHTML') }}
+                                        page_window.total_pages,
+                                        page_param='capacity_page',
+                                        hx_target='#registry-capacity-projects-table',
+                                        endpoint='artifact_registry.analytics_capacity_table',
+                                        href_endpoint='artifact_registry.analytics_capacity',
+                                        query_params=capacity_page_query,
+                                        hx_swap='outerHTML') }}
                 </nav>
             {% endif %}
         </footer>

@@ -49,9 +49,7 @@
             <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">
                 {{ analytics.aggregate.stale_candidates if analytics.snapshot_count else 'N/A' }}
             </p>
-            <p class="mt-1 text-xs leading-5 text-content-secondary">
-                Review candidates; never auto-cleaned
-            </p>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">Review candidates; never auto-cleaned</p>
         </div>
     </div>
 </div>
@@ -77,12 +75,8 @@
                 <div class="flex min-w-0 flex-wrap items-start justify-between gap-3">
                     <div class="min-w-0">
                         <p class="{{ analysis_surface.metric_label_classes() }}">Qualified Source Spotlight</p>
-                        <p class="mt-1 break-words text-sm font-semibold text-content-primary">
-                            {{ spotlight.registry_name }}
-                        </p>
-                        <p class="mt-1 text-xs text-content-muted">
-                            {{ spotlight.provider_key|replace('_', ' ') |title }}
-                        </p>
+                        <p class="mt-1 break-words text-sm font-semibold text-content-primary">{{ spotlight.registry_name }}</p>
+                        <p class="mt-1 text-xs text-content-muted">{{ spotlight.provider_key|replace('_', ' ') |title }}</p>
                     </div>
                     {{ table_label.metadata_label('Committed Comparison', 'database', size='compact') }}
                 </div>
@@ -125,9 +119,7 @@
             <div class="min-w-0">
                 <h4 id="registry-growth-basis-title"
                     class="text-sm font-semibold text-content-primary">Materialization Basis</h4>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">
-                    Evidence coverage of the selected analysis.
-                </p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Evidence coverage of the selected analysis.</p>
             </div>
         </header>
         <dl class="divide-y divide-outline-subtle">

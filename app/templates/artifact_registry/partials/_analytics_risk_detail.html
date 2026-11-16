@@ -21,7 +21,8 @@
             <div class="min-w-0">
                 <p class="{{ analysis_surface.role_label_classes('brand') }}">Risk Concentration</p>
                 <div class="mt-1 flex flex-wrap items-center gap-2">
-                    <h3 id="registry-risk-detail-title" class="text-base font-semibold text-content-primary">Security × Runtime</h3>
+                    <h3 id="registry-risk-detail-title"
+                        class="text-base font-semibold text-content-primary">Security × Runtime</h3>
                     {{ info_tip.render('registry-risk-detail-guide',
                                         'Registry Risk Analytics Guide',
                                         'These counts come from committed Registry security and runtime evidence, not a live scanner.',
@@ -58,20 +59,29 @@
                 <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
                       aria-hidden="true"><i data-lucide="git-merge" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
-                    <h4 id="registry-risk-intersection-title" class="text-sm font-semibold text-content-primary">Runtime Exposure Readout</h4>
+                    <h4 id="registry-risk-intersection-title"
+                        class="text-sm font-semibold text-content-primary">Runtime Exposure Readout</h4>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Committed correlations, not a live vulnerability assessment.</p>
                 </div>
             </header>
             <dl class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0">
                 <div class="px-4 py-4 sm:px-5">
                     <dt class="{{ analysis_surface.metric_label_classes() }}">Running Artifacts</dt>
-                    <dd class="mt-2 text-lg font-semibold tabular-nums text-content-primary">{{ analytics.aggregate.running_artifacts if has_snapshot else 'N/A' }}</dd>
-                    <dd class="mt-1 text-xs leading-5 text-content-secondary">Distinct runtime-used identities in scope.</dd>
+                    <dd class="mt-2 text-lg font-semibold tabular-nums text-content-primary">
+                        {{ analytics.aggregate.running_artifacts if has_snapshot else 'N/A' }}
+                    </dd>
+                    <dd class="mt-1 text-xs leading-5 text-content-secondary">
+                        Distinct runtime-used identities in scope.
+                    </dd>
                 </div>
                 <div class="px-4 py-4 sm:px-5">
                     <dt class="{{ analysis_surface.metric_label_classes() }}">Runtime Bindings</dt>
-                    <dd class="mt-2 text-lg font-semibold tabular-nums text-content-primary">{{ analytics.aggregate.runtime_bindings if has_snapshot else 'N/A' }}</dd>
-                    <dd class="mt-1 text-xs leading-5 text-content-secondary">Artifact-to-workload relationships; not CVE count.</dd>
+                    <dd class="mt-2 text-lg font-semibold tabular-nums text-content-primary">
+                        {{ analytics.aggregate.runtime_bindings if has_snapshot else 'N/A' }}
+                    </dd>
+                    <dd class="mt-1 text-xs leading-5 text-content-secondary">
+                        Artifact-to-workload relationships; not CVE count.
+                    </dd>
                 </div>
             </dl>
         </section>
@@ -81,7 +91,8 @@
                 <span class="{{ analysis_surface.role_icon_classes('insight', size='compact') }}"
                       aria-hidden="true"><i data-lucide="scan-eye" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
-                    <h4 id="registry-risk-evidence-title" class="text-sm font-semibold text-content-primary">Evidence Confidence</h4>
+                    <h4 id="registry-risk-evidence-title"
+                        class="text-sm font-semibold text-content-primary">Evidence Confidence</h4>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Interpret the qualified coverage boundary.</p>
                 </div>
             </header>
@@ -95,8 +106,10 @@
     <footer class="flex flex-col gap-3 border-t border-outline-subtle px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <p class="text-xs leading-5 text-content-secondary">Unknown, not scanned, or missing signature evidence never implies healthy zero.</p>
         <div class="flex flex-wrap gap-2">
-            <a href="{{ url_for('artifact_registry.security') }}" class="{{ table_ui.action_classes() }}">Open Security <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i></a>
-            <a href="{{ url_for('artifact_registry.runtime') }}" class="{{ table_ui.action_classes() }}">Open Runtime <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i></a>
+            <a href="{{ url_for('artifact_registry.security') }}"
+               class="{{ table_ui.action_classes() }}">Open Security <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i></a>
+            <a href="{{ url_for('artifact_registry.runtime') }}"
+               class="{{ table_ui.action_classes() }}">Open Runtime <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i></a>
         </div>
     </footer>
 </section>

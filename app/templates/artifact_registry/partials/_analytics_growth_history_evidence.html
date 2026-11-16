@@ -26,9 +26,7 @@
                 {% for row in source_rows[:5] %}
                     <div class="flex min-w-0 flex-wrap items-start justify-between gap-3 px-4 py-3 sm:px-5">
                         <div class="min-w-0">
-                            <p class="break-words text-sm font-semibold text-content-primary">
-                                {{ row.identity.name }}
-                            </p>
+                            <p class="break-words text-sm font-semibold text-content-primary">{{ row.identity.name }}</p>
                             <p class="mt-1 text-xs leading-5 text-content-secondary">
                                 {% if row.snapshot and row.is_current %}
                                     Current committed snapshot
@@ -52,9 +50,7 @@
             <div class="p-4">
                 <div class="{{ analysis_surface.empty_evidence_classes('px-5 py-5 text-center') }}">
                     <p class="text-sm font-semibold text-content-primary">Snapshot Lineage Not Available</p>
-                    <p class="mt-1 text-xs text-content-secondary">
-                        No Registry source was selected for committed historical analysis.
-                    </p>
+                    <p class="mt-1 text-xs text-content-secondary">No Registry source was selected for committed historical analysis.</p>
                 </div>
             </div>
         {% endif %}

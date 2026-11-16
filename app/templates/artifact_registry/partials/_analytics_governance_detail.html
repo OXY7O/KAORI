@@ -22,7 +22,8 @@
             <div class="min-w-0">
                 <p class="{{ analysis_surface.role_label_classes('brand') }}">Governance Gaps</p>
                 <div class="mt-1 flex flex-wrap items-center gap-2">
-                    <h3 id="registry-governance-detail-title" class="text-base font-semibold text-content-primary">Policy coverage concentration</h3>
+                    <h3 id="registry-governance-detail-title"
+                        class="text-base font-semibold text-content-primary">Policy coverage concentration</h3>
                     {{ info_tip.render('registry-governance-detail-guide',
                                         'Registry Governance Analytics Guide',
                                         'Committed Registry policy observations summarize retention and immutability, not provider-enforced durability assurance.',
@@ -58,22 +59,29 @@
                 <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
                       aria-hidden="true"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
-                    <h4 id="registry-governance-assessment-title" class="text-sm font-semibold text-content-primary">Observed Policy Baseline</h4>
+                    <h4 id="registry-governance-assessment-title"
+                        class="text-sm font-semibold text-content-primary">Observed Policy Baseline</h4>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Qualified records from committed Registry snapshots.</p>
                 </div>
             </header>
             <dl class="grid divide-y divide-outline-subtle sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                 <div class="px-4 py-4 sm:px-5">
                     <dt class="{{ analysis_surface.metric_label_classes() }}">Projects in Scope</dt>
-                    <dd class="mt-2 text-lg font-semibold tabular-nums text-content-primary">{{ projects }}</dd>
+                    <dd class="mt-2 text-lg font-semibold tabular-nums text-content-primary">
+                        {{ projects }}
+                    </dd>
                 </div>
                 <div class="px-4 py-4 sm:px-5">
                     <dt class="{{ analysis_surface.metric_label_classes() }}">Retention Configured</dt>
-                    <dd class="mt-2 text-lg font-semibold tabular-nums text-content-primary">{{ analytics.aggregate.retention_configured if has_policy else 'N/A' }}</dd>
+                    <dd class="mt-2 text-lg font-semibold tabular-nums text-content-primary">
+                        {{ analytics.aggregate.retention_configured if has_policy else 'N/A' }}
+                    </dd>
                 </div>
                 <div class="px-4 py-4 sm:px-5">
                     <dt class="{{ analysis_surface.metric_label_classes() }}">Immutability Configured</dt>
-                    <dd class="mt-2 text-lg font-semibold tabular-nums text-content-primary">{{ analytics.aggregate.immutability_configured if has_policy else 'N/A' }}</dd>
+                    <dd class="mt-2 text-lg font-semibold tabular-nums text-content-primary">
+                        {{ analytics.aggregate.immutability_configured if has_policy else 'N/A' }}
+                    </dd>
                 </div>
             </dl>
         </section>
@@ -83,7 +91,8 @@
                 <span class="{{ analysis_surface.role_icon_classes('insight', size='compact') }}"
                       aria-hidden="true"><i data-lucide="scan-eye" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
-                    <h4 id="registry-governance-reading-title" class="text-sm font-semibold text-content-primary">Policy Interpretation</h4>
+                    <h4 id="registry-governance-reading-title"
+                        class="text-sm font-semibold text-content-primary">Policy Interpretation</h4>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Observation versus provider enforcement.</p>
                 </div>
             </header>
@@ -96,6 +105,7 @@
     </div>
     <footer class="flex flex-col gap-3 border-t border-outline-subtle px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <p class="text-xs leading-5 text-content-secondary">Analytics highlights control gaps; provider-native policy evidence remains authoritative in Governance.</p>
-        <a href="{{ url_for('artifact_registry.governance') }}" class="{{ table_ui.action_classes() }}">Review Governance <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i></a>
+        <a href="{{ url_for('artifact_registry.governance') }}"
+           class="{{ table_ui.action_classes() }}">Review Governance <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i></a>
     </footer>
 </section>

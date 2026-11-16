@@ -15,7 +15,8 @@
             <div class="min-w-0">
                 <p class="{{ analysis_surface.role_label_classes('brand') }}">Derived Insights</p>
                 <div class="mt-1 flex flex-wrap items-center gap-2">
-                    <h3 id="registry-insights-detail-title" class="text-base font-semibold text-content-primary">What deserves attention</h3>
+                    <h3 id="registry-insights-detail-title"
+                        class="text-base font-semibold text-content-primary">What deserves attention</h3>
                     {{ info_tip.render('registry-insights-detail-guide',
                                         'Registry Insights Analytics Guide',
                                         'Registry Analytics emits factual review signals. Central Intelligence owns recommendation and risk decisions.',
@@ -39,7 +40,8 @@
                     <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
                           aria-hidden="true"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
                     <div class="min-w-0">
-                        <h4 id="registry-insights-facts-title" class="text-sm font-semibold text-content-primary">Committed Review Facts</h4>
+                        <h4 id="registry-insights-facts-title"
+                            class="text-sm font-semibold text-content-primary">Committed Review Facts</h4>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">Derived facts, not escalations or decisions.</p>
                     </div>
                 </div>
@@ -49,7 +51,7 @@
                 <div class="divide-y divide-outline-subtle" data-registry-insight-facts>
                     {% for insight in review_facts[:5] %}
                         <article class="flex min-w-0 items-start gap-3 px-4 py-3 sm:px-5">
-                            <span class="{{ analysis_surface.role_icon_classes('status', tone=insight.tone|default('info'), size='compact') }}"
+                            <span class="{{ analysis_surface.role_icon_classes('status', tone=insight.tone|default('info') , size='compact') }}"
                                   aria-hidden="true"><i data-lucide="{{ insight.icon }}" class="h-3.5 w-3.5"></i></span>
                             <div class="min-w-0">
                                 <h5 class="break-words text-sm font-semibold text-content-primary">{{ insight.title }}</h5>
@@ -64,7 +66,8 @@
             {% else %}
                 <div class="p-4 sm:p-5">
                     <div class="{{ analysis_surface.empty_evidence_classes('px-5 py-6 text-center') }}"
-                         data-kaori-empty-state role="status">
+                         data-kaori-empty-state
+                         role="status">
                         <p class="text-sm font-semibold text-content-primary">{{ 'No Derived Review Facts' if has_snapshot else 'Review Signal Evidence Not Available' }}</p>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">Missing or absent review facts never establish a clean security or governance posture.</p>
                     </div>
@@ -79,13 +82,15 @@
                           aria-hidden="true"><i data-lucide="brain-circuit" class="h-4 w-4"></i></span>
                     <div class="min-w-0">
                         <p class="{{ analysis_surface.role_label_classes('brand') }}">Central Intelligence</p>
-                        <h4 id="registry-insights-recommendations-title" class="mt-1 text-sm font-semibold text-content-primary">Active recommendations</h4>
+                        <h4 id="registry-insights-recommendations-title"
+                            class="mt-1 text-sm font-semibold text-content-primary">Active recommendations</h4>
                     </div>
                 </div>
-                {{ table_label.metadata_label(table_label.count_text(recommendations|length, 'Recommendation'), 'brain-circuit') }}
+                {{ table_label.metadata_label(table_label.count_text(recommendations|length, 'Recommendation') , 'brain-circuit') }}
             </header>
             {% if recommendations %}
-                <div class="divide-y divide-outline-subtle" data-registry-insight-recommendations>
+                <div class="divide-y divide-outline-subtle"
+                     data-registry-insight-recommendations>
                     {% for row in recommendations[:5] %}
                         <article class="space-y-2 px-4 py-3 sm:px-5">
                             <div class="flex min-w-0 flex-wrap items-start justify-between gap-2">
@@ -102,7 +107,8 @@
             {% else %}
                 <div class="p-4 sm:p-5">
                     <div class="{{ analysis_surface.empty_evidence_classes('px-5 py-6 text-center') }}"
-                         data-kaori-empty-state role="status">
+                         data-kaori-empty-state
+                         role="status">
                         <p class="text-sm font-semibold text-content-primary">No active Registry recommendation is currently projected.</p>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">The central Intelligence workspace remains the decision authority.</p>
                     </div>
