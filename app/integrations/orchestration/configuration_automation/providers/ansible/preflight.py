@@ -30,6 +30,9 @@ _APPROVED_SCOPE = 'self_managed_existing_linux_hosts'
 _NONPRODUCTION = frozenset(
     {'development', 'staging', 'testing', 'laboratory', 'sandbox', 'proof_of_concept', 'non_production'}
 )
+_POD_SERVICE_PRIVATE_NETWORKS = tuple(
+    ip_network(cidr) for cidr in ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16')
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,7 +156,12 @@ def _valid_pilot_network(facts: dict[str, Any]) -> bool:
     networks = [pod, service, *observed]
     if any(not isinstance(net, IPv4Network) for net in networks):
         return False
-    if any(not net.is_private or net.prefixlen < 8 or net.prefixlen > 24 for net in (pod, service)):
+    if any(
+        net.prefixlen < 8
+        or net.prefixlen > 24
+        or not any(net.subnet_of(private) for private in _POD_SERVICE_PRIVATE_NETWORKS)
+        for net in (pod, service)
+    ):
         return False
     return not any(pod.overlaps(other) or service.overlaps(other) for other in observed) and not pod.overlaps(
         service
