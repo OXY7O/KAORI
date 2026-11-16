@@ -99,7 +99,8 @@ def evaluate_kubespray_plan_currentness(
         expiry = datetime.fromisoformat(expiry_value)
     except ValueError:
         return blocked
-    if expiry.tzinfo is None or expiry <= latest_plan_job.completed_at:
+    completed_at = latest_plan_job.completed_at
+    if completed_at is None or expiry.tzinfo is None or expiry <= completed_at:
         return blocked
     if timestamp >= expiry:
         return KubesprayPlanCurrentness(

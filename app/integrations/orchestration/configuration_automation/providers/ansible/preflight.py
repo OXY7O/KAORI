@@ -30,7 +30,7 @@ _APPROVED_SCOPE = 'self_managed_existing_linux_hosts'
 _NONPRODUCTION = frozenset(
     {'development', 'staging', 'testing', 'laboratory', 'sandbox', 'proof_of_concept', 'non_production'}
 )
-_POD_SERVICE_PRIVATE_NETWORKS = tuple(ip_network(cidr) for cidr in ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16'))
+_POD_SERVICE_PRIVATE_NETWORKS = tuple(IPv4Network(cidr) for cidr in ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16'))
 
 
 @dataclass(frozen=True, slots=True)
@@ -145,9 +145,12 @@ def _valid_pilot_network(facts: dict[str, Any]) -> bool:
     raw_host_networks = facts.get('host_network_cidrs')
     if not isinstance(raw_host_networks, list) or not raw_host_networks or len(raw_host_networks) > 64:
         return False
+    raw_pod, raw_service = facts.get('pod_cidr'), facts.get('service_cidr')
+    if not isinstance(raw_pod, str) or not isinstance(raw_service, str):
+        return False
     try:
-        pod = ip_network(facts.get('pod_cidr'), strict=True)
-        service = ip_network(facts.get('service_cidr'), strict=True)
+        pod = ip_network(raw_pod, strict=True)
+        service = ip_network(raw_service, strict=True)
         observed = [ip_network(cidr, strict=False) for cidr in raw_host_networks]
     except (ValueError, TypeError):
         return False

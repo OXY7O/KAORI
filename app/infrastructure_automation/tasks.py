@@ -148,8 +148,11 @@ def materialize_kubespray_plan_review(
             or rechecked.plan_fingerprint != plan.plan_fingerprint
         ):
             raise ValueError('Plan preflight changed before evidence commit')
+        fingerprint = rechecked.plan_fingerprint
+        if fingerprint is None:
+            raise ValueError('Verified plan fingerprint is missing')
         context.succeed(result_type=PLAN_RESULT_TYPE, result_summary=rechecked.committed_summary())
-        return {'status': 'succeeded', 'plan_fingerprint': rechecked.plan_fingerprint}
+        return {'status': 'succeeded', 'plan_fingerprint': fingerprint}
     except JobCancellationRequested:
         context.canceled(message='Kubespray Plan review canceled before evidence commit.')
         return {'status': 'canceled'}
