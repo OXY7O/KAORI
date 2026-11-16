@@ -173,3 +173,37 @@ def test_over_limit_lifecycle_keeps_independent_pki_qualification() -> None:
         'Review Vault scope or qualify independent PKI evidence.'
     )
     assert "lifecycle_unqualified = not summary.has_evidence and pki_validity.status != 'ready'" in source
+
+
+
+def test_inventory_hero_scope_does_not_confuse_overflow_with_missing_vault() -> None:
+    source = _read(INVENTORY)
+    begin = source.index('{% set inventory_unqualified = ')
+    end = source.index('<section', begin)
+    template = Environment().from_string(
+        source[begin:end] + '{{ inventory_scope_label }}|{{ inventory_scope_helper }}'
+    )
+    scenarios = (
+        (
+            {'provider_count': None, 'approved_mount_count': None, 'source_limit_exceeded': True},
+            'Scope Review Required|Review approved scope',
+        ),
+        (
+            {'provider_count': 0, 'approved_mount_count': 0, 'source_limit_exceeded': False},
+            'No Vault Source|Registration required',
+        ),
+        (
+            {'provider_count': 1, 'approved_mount_count': 0, 'source_limit_exceeded': False},
+            'Registered Vault Sources|Mount approval required',
+        ),
+    )
+    for summary, expected in scenarios:
+        result = template.render(
+            summary=summary,
+            can_manage_integrations=False,
+            can_execute_inventory=False,
+            url_for=lambda endpoint, **kwargs: '/vault',
+        )
+        assert result.strip() == expected
+
+    assert "('server', 'Active Scope', inventory_scope_label, inventory_scope_helper)" in source

@@ -131,3 +131,19 @@ def test_overview_reuses_canonical_blocker_without_relaxing_inventory_gate() -> 
     assert 'No successful committed inventory snapshot' not in source
     assert 'no successful committed inventory snapshot' in source
     assert 'summary.observed_secret_count if summary.observed_secret_count is not none' in source
+
+
+
+def test_hero_active_scope_distinguishes_oversized_fleet_from_no_vault() -> None:
+    source = _read()
+    begin = source.index('        {% if summary.source_limit_exceeded|default(false) %}')
+    end = source.index('        {% set action_href = ', begin)
+    template = Environment().from_string(source[begin:end] + '{{ active_scope }}')
+
+    scenarios = (
+        ({'provider_count': None, 'source_limit_exceeded': True}, 'Vault Scope Review Required'),
+        ({'provider_count': 0, 'source_limit_exceeded': False}, 'No Eligible Vault Source'),
+        ({'provider_count': 1, 'source_limit_exceeded': False}, 'All Registered Vault Sources'),
+    )
+    for summary, expected in scenarios:
+        assert template.render(summary=summary).strip() == expected
