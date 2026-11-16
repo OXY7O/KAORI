@@ -283,7 +283,8 @@ def test_capacity_dashboard_matches_kubernetes_forecast_and_top_consumer_pattern
     assert 'consumer_panel' in kubernetes_consumers
     assert 'build_forecast_view(payload, state)' in service
     assert 'No bucket forecast shows 90-day capacity pressure; monitor growth.' in presentation
-    assert 'Keep analytics and forecasts current; review concentration before growth.' in capacity
+    assert 'Maintain analytics; review bucket growth before approving changes.' in capacity
+    assert 'Refresh committed storage analytics before capacity decisions.' in capacity
     expected_consumer_copy = (
         "f'The largest bucket accounts for {format_percent(top_share)} of committed storage usage in this system.'"
     )
