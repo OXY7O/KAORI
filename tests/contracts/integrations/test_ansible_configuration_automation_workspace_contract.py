@@ -12,6 +12,9 @@ from app import create_app
 from app.common.pagination import build_pagination_window, pagination_payload
 from app.integrations.orchestration.configuration_automation import frontpage, integration_module
 from app.integrations.orchestration.configuration_automation.providers.ansible import provider_implementation
+from app.integrations.orchestration.configuration_automation.providers.ansible.preflight import (
+    build_kubespray_preflight,
+)
 from app.integrations.orchestration.configuration_automation.providers.ansible.service import source_validation_posture
 from app.integrations.provider_matrix import provider_kind
 from app.integrations.taxonomy import get_capability_definition
@@ -110,6 +113,7 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
             connection=connection,
             source=connection.metadata_json,
             source_posture=source_validation_posture(connection),
+            kubespray_preflight=build_kubespray_preflight(connection).presentation(),
             inventory_targets=[],
             inventory_pagination=pagination_payload(build_pagination_window(total_items=0)),
             jobs=[],
@@ -227,6 +231,8 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
     assert 'data-kaori-authority-boundary-metadata' in configuration
     assert 'Execution · Blocked' in configuration
     assert 'Source validation does not authorize SSH or Kubernetes mutation.' in configuration
+    assert 'Kubespray Preflight &amp; Plan Readiness' in detail
+    assert '10 Gates' in detail
     assert 'No committed execution history' in detail
     assert 'No infrastructure mutation controls are enabled' in detail
 

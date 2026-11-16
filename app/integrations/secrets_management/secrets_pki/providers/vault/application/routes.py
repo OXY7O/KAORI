@@ -13,6 +13,8 @@ from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
+from app.extensions.db import db
+from app.integrations.deletion import DeletionBlocked
 from app.integrations.runtime.presentation import runtime_history_view, runtime_observation_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.integrations.secrets_management.secrets_pki.inventory_presentation import vault_inventory_readiness
@@ -22,11 +24,13 @@ from app.integrations.secrets_management.secrets_pki.providers.vault.application
     verified_secret,
 )
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.service import (
+    delete_vault_connection,
     get_vault_connection_instance,
     latest_vault_runtime_observation,
     list_vault_connection_registry,
     save_connection,
     test_connection,
+    vault_connection_deletion_guard,
 )
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import VaultProviderError
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
@@ -412,6 +416,7 @@ def detail(instance_id: int) -> ResponseReturnValue:
     return render_template(
         'integrations/secrets_management/vault/detail.html',
         instance=instance,
+        deletion_guard=vault_connection_deletion_guard(instance),
         evidence=_evidence(instance),
         latest_runtime_observation=latest_runtime_observation,
         inventory_readiness=vault_inventory_readiness(instance),
@@ -425,6 +430,60 @@ def detail(instance_id: int) -> ResponseReturnValue:
         ),
         notification_context=_notification(),
     )
+
+
+@vault_bp.post('/instances/<int:instance_id>/delete')
+@permission_required('integrations.manage')
+def delete_instance(instance_id: int) -> ResponseReturnValue:
+    """Remove an unreferenced KAORI Vault registration; never mutate Vault."""
+    instance = _instance_or_404(instance_id)
+    name = instance.name
+    try:
+        delete_vault_connection(instance)
+    except DeletionBlocked as exc:
+        logger.warning('Vault deletion blocked for instance %s.', instance_id)
+        record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='vault_connection_delete_blocked',
+            status='warning',
+            title='Vault Connection Deletion Blocked',
+            message='Active jobs or retained Secrets & PKI evidence still reference this connection.',
+            detail=exc.guard.message,
+            action_url=url_for('vault.detail', instance_id=instance_id, _anchor='inventory'),
+            queue_feedback=True,
+        )
+        return redirect(url_for('vault.detail', instance_id=instance_id, _anchor='inventory'))
+    except SQLAlchemyError:
+        db.session.rollback()
+        logger.exception('Vault connection deletion failed for instance %s.', instance_id)
+        record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='vault_connection_delete_failed',
+            status='error',
+            title='Vault Connection Not Deleted',
+            message='KAORI could not delete the Vault registration.',
+            detail='Review database connectivity and dependent records before retrying.',
+            action_url=url_for('vault.detail', instance_id=instance_id, _anchor='inventory'),
+            queue_feedback=True,
+        )
+        return redirect(url_for('vault.detail', instance_id=instance_id, _anchor='inventory'))
+    record_operational_activity(
+        user_id=int(current_user.id),
+        event_type='vault_connection_deleted',
+        status='success',
+        title='Vault Connection Deleted',
+        message=f'{name} was removed from the KAORI Vault registry.',
+        detail=(
+            'Only the KAORI Vault registration and encrypted AppRole SecretID were removed. '
+            'Vault Secrets, PKI, committed runtime history, JobExecution and Activity Audit were not deleted.'
+        ),
+        action_url=url_for('vault.index', tab='registry'),
+        action_label='Open Vault Registry',
+        action_icon='key-round',
+        metadata={'instance_id': instance_id, 'provider': 'vault'},
+        queue_feedback=True,
+    )
+    return redirect(url_for('vault.index', tab='registry'))
 
 
 @vault_bp.get('/instances/<int:instance_id>/runtime/history')

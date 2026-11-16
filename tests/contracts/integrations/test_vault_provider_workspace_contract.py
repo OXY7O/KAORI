@@ -761,8 +761,8 @@ def test_vault_inventory_uses_minio_hierarchy_without_invented_asset_mutations()
         'Evidence Coverage',
         'Approved Scopes',
         'Lifecycle Gate',
-        'Vault Authority Boundary',
-        'Evidence &amp; Retention Boundary',
+        'Removed With Connection',
+        'Retained After Removal',
         'Next Lifecycle Action',
         'KAORI Operational Consumers',
         'Committed Evidence Sources',
@@ -787,26 +787,28 @@ def test_vault_inventory_uses_minio_hierarchy_without_invented_asset_mutations()
     assert 'record_detail_modal.render(' in source
     assert 'current_user.has_permission(\'jobs.view\')' in source
     assert "url_for('jobs.configuration', job_key=source.job_key)" in source
-    assert "url_for('vault.edit_instance', instance_id=instance.id)" in source
+    assert "url_for('vault.delete_instance', instance_id=instance.id)" in source
     assert "current_user.has_permission('integrations.manage')" in source
     assert 'No Committed Inventory' in source
     assert "'Not Collected'" in source
     assert 'source.observed is not none' in source
     assert 'source.timestamp|user_datetime if source.timestamp else' in source
     assert 'not a readiness score' in source
-    assert 'Removal Not Evaluated' in source
-    assert 'No Vault connection removal guardrail is qualified' in source
+    assert 'Deletion Blocked' in source
+    assert 'Guardrails Passed' in source
+    assert 'deletion_guard.reasons' in source
+    assert 'deletion_guard.blocked' in source
     assert 'No Secret values' in source or 'no Vault live request or Secret payload' in source
     for unsafe in (
-        'url_for(\'vault.delete',
-        'openDelete(',
-        'Delete Connection',
         'Bound Observability Sources',
         'binding_rows',
         'source.secret_id',
     ):
         assert unsafe not in source
-    assert "def delete_instance(" not in route
+    assert "def delete_instance(" in route
+    assert "@permission_required('integrations.manage')\ndef delete_instance(" in route
+    assert 'integrations/components/_asset_owner_delete_modal.html' in _partial('_delete_modal.html')
+    assert 'partials/_delete_modal.html' in detail
     Environment().parse(source)
     Environment().parse(detail)
 
@@ -876,4 +878,31 @@ def test_vault_runtime_refresh_reuses_canonical_in_place_job_lifecycle() -> None
     assert "queue_feedback=not is_htmx" in routes
     assert "return redirect(url_for('vault.detail', instance_id=instance.id, _anchor='runtime'))" in routes
     Environment().parse(runtime)
+
+def test_vault_delete_ui_reuses_minio_confirmation_and_limits_evidence_to_one_line() -> None:
+    from jinja2 import Environment
+
+    vault = _partial('_detail_inventory.html')
+    detail = DETAIL.read_text(encoding='utf-8')
+    modal = _partial('_delete_modal.html')
+    minio = (
+        ROOT / 'app/templates/integrations/storage/object_storage/providers/minio/'
+        'partials/_detail_scope.html'
+    ).read_text(encoding='utf-8')
+    for marker in ('data-delete-url', 'data-delete-name', 'openDelete(', 'Delete Connection'):
+        assert marker in vault
+        assert marker in minio
+    assert 'current_user.has_permission(\'integrations.manage\')' in vault
+    assert '{% if deletion_guard.blocked %}disabled' in vault
+    assert 'data-kaori-vault-evidence-ownership' in vault
+    assert 'KAORI commits scoped metadata; Vault owns Secrets and PKI; observability stays separate.' in vault
+    assert 'Collection uses independently approved Vault scopes;' not in vault
+    assert 'integrations/components/_asset_owner_delete_modal.html' in modal
+    assert "integrations/secrets_management/vault/partials/_delete_modal.html" in detail
+    assert 'Provider-owned Vault connection' in modal
+    assert 'runtime observations' in modal
+    assert 'Retained Secret or PKI dependencies block deletion' in modal
+    Environment().parse(vault)
+    Environment().parse(detail)
+    Environment().parse(modal)
 

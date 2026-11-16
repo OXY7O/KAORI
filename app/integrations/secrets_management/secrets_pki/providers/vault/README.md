@@ -153,21 +153,38 @@ The tab badge, header and summary reflect the number of streams with
 a committed timestamp, or `Not Collected`. Four decision facts summarize
 independent source freshness, coverage across three streams (not an
 operational readiness score), approved KV/PKI mount counts, and the
-**Not Evaluated** removal/lifecycle gate. The evidence-source table uses
+**actual guarded deletion posture**. The evidence-source table uses
 existing Violet table/status primitives, a native View More dialog for
-scope counts and timestamps, and a `jobs.view`-gated link to the
-existing collection JobExecution where authorized. `None` observed
-records mean `Not Collected`; do not claim confirmed zero, full
-trust or completion from provider registration alone.
+scope counts and timestamps, and a `jobs.view`-gated link to existing
+JobExecution evidence where authorized. `None` observed records mean
+`Not Collected`; do not claim confirmed zero, trust or collection
+completion from provider registration alone.
 
-Vault has no asset-owner deletion endpoint or authoritative
-observability-binding registry in this integration detail. It must
-not display MinIO's `Delete Connection`, fake bound sources, or a
-`Guardrails Passed` badge. Operators use the existing governed
-`Configure Connection` action to review approved scopes; actual
-collection follows separately owned jobs. No new Vault permission,
-Secret value, key, lease, retention action, provider call or schema
-mutation is introduced.
+### Vault guarded Delete Connection (#4900)
+
+The Inventory & Lifecycle footer follows the MinIO **Delete Connection**
+placement, shared confirmation dialog and critical styling. A guarded,
+`integrations.manage`-protected, CSRF POST removes **only** the KAORI
+Vault connection registration and its encrypted AppRole credential, not
+the upstream Vault service, Secrets, certificates, policies or leases.
+The service takes the existing admission lock, rechecks active jobs and
+blocks deletion while any canonical binding, Secret representation,
+KV v2 collection state, PKI issuer/collection state or stored PKI
+certificate/collection state references the identity. It never
+cascades committed provider evidence. The button is disabled and
+Lifecycle Gate is Blocked when dependencies exist; unreferenced
+connections may be deleted after confirmation. Runtime observations,
+completed JobExecution and Activity Audit remain retained. SQL
+integrity/availability failures are rolled back and surfaced as safe
+operational feedback; successful removals are audited and redirect to
+the Vault registry. **No Vault provider API call** occurs on deletion.
+
+There is still no Vault asset-owner Observability binding registry or
+MinIO-style managed asset to delete. Existing independent collection
+jobs and consumer governance remain unchanged. Evidence Ownership
+uses the concise one-line desktop copy, `KAORI commits scoped metadata;
+Vault owns Secrets and PKI; observability stays separate.`, with natural
+mobile wrapping.
 
 ### Runtime Refresh HTMX lifecycle (#4889)
 
