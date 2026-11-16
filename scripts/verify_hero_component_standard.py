@@ -1210,7 +1210,7 @@ def _verify_secrets_pki_missing_vault_source_prerequisites() -> None:
             raise AssertionError(f'{owner}: missing explicit blocked Hero state')
 
         branch = re.search(
-            r'{%\\s*if ' + re.escape(guard) + r'\\s*%}(?P<blocked>.*?){%\\s*else\\s*%}',
+            r'{%\s*if ' + re.escape(guard) + r'\s*%}(?P<blocked>.*?){%\s*else\s*%}',
             body,
             re.S,
         )
@@ -1235,7 +1235,7 @@ def _verify_secrets_pki_missing_vault_source_prerequisites() -> None:
             raise AssertionError(f'{owner}: missing RBAC-scoped Vault configuration action')
         if source.index(section) < source.index('{% else %}', source.index('</section>')):
             raise AssertionError(f'{owner}: operational evidence cannot precede the no-source blocker')
-        if not source.rstrip().endswith('{% endif %}\\n    </div>\\n{% endblock dashboard_content %}'):
+        if not source.rstrip().endswith('{% endif %}\n    </div>\n{% endblock dashboard_content %}'):
             raise AssertionError(f'{owner}: guard the entire operational evidence workspace')
 
     routes = _read(ROOT / 'app/secrets_pki/routes.py')
@@ -1254,13 +1254,13 @@ def _verify_secrets_pki_overview_blocked_dashboard() -> None:
         raise AssertionError(f'{owner}: canonical shared Dashboard Hero is required')
     if 'blocked_info=inventory_blocker_info' not in overview:
         raise AssertionError(f'{owner}: blocked Dashboard must consume current evidence-specific guidance')
-    copies = re.findall(r'{%\\s*set inventory_blocker_info = "([^"]+)"\\s*%}', overview)
-    if len(copies) != 5 or any(len(copy) > 52 or '\\n' in copy for copy in copies):
+    copies = re.findall(r'{%\s*set inventory_blocker_info = "([^"]+)"\s*%}', overview)
+    if len(copies) != 5 or any(len(copy) > 52 or '\n' in copy for copy in copies):
         raise AssertionError(f'{owner}: compact Hero info exceeds one-line copy budget')
     if any('Vault' not in copy and 'KV v2' not in copy for copy in copies):
         raise AssertionError(f'{owner}: each compact Hero copy must retain Vault/KV v2 qualification')
     branch = re.search(
-        r'{%\\s*if not summary\\.has_evidence\\s*%}(?P<body>.*?){%\\s*else\\s*%}',
+        r'{%\s*if not summary\.has_evidence\s*%}(?P<body>.*?){%\s*else\s*%}',
         overview,
         re.S,
     )
