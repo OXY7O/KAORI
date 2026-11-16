@@ -52,6 +52,20 @@ A blocked Operational Dashboard uses the same canonical right-side grammar in ev
 
 **Secrets & PKI Overview admission regression (#4130):** a Dashboard blocked on absent qualified Vault KV v2 inventory uses a short single-line Hero guidance strip, while the below-Hero setup steps and permission-aware Vault action use the existing section `_blocked_state.html`. A page-level missing prerequisite is not a section-local empty result. Preserve missing-evidence-is-not-zero and no Secret material disclosure.
 
+**Secrets & PKI Inventory/Lifecycle qualification extension (#4892):** Sidebar links
+and `secrets_pki.view`-authorized routes remain accessible for diagnostic
+navigation. Inventory shows the canonical page-level blocked prerequisite whenever
+`summary.has_evidence` is false, including when one active Vault connection
+exists but `approved_mount_count = 0` or no committed KV v2 snapshot exists.
+Do not render operational KPI cards that imply normal inventory until evidence
+qualifies. Lifecycle & Assurance blocks its ordinary operational workspace
+unless committed KV v2 or independently qualified public-PKI evidence is
+available. Keep independently qualified PKI evidence visible if KV v2 has not
+qualified. Both pages reuse `page_hero.blocked_context_body` and shared
+`components/states/_blocked_state.html`, with permission-aware setup links.
+The absence of committed evidence is not proof of zero Secrets, valid rotation
+or healthy TLS. An accessible sidebar link does not signify operational Ready.
+
 The blocked Dashboard body immediately below the Hero uses the shared section blocked-state grammar: setup title/status, concise explanation, ordered setup steps when useful, and one permission-aware primary action. Kubernetes and Object Storage must not maintain separate local blocker geometry.
 
 ## Canonical composition

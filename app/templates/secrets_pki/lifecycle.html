@@ -7,6 +7,11 @@
 {% block title %}Lifecycle &amp; Assurance · Secrets &amp; PKI · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div id="secrets-pki-lifecycle" class="min-w-0 space-y-6">
+        {% set lifecycle_unqualified = not summary.has_evidence and pki_validity.status != 'ready' %}
+        {% set lifecycle_blocker_title = "Vault Lifecycle Source Required" if not summary.provider_count else ("KV v2 Mount Approval Required" if not summary.approved_mount_count else "Lifecycle Evidence Not Collected") %}
+        {% set lifecycle_blocker_description = "Register an eligible Vault source to qualify lifecycle evidence." if not summary.provider_count else ("Approve KV v2 mounts or qualify independent PKI evidence before reviewing lifecycle posture." if not summary.approved_mount_count else "No qualified committed KV v2 or PKI lifecycle evidence is available. Collect approved evidence first.") %}
+        {% set lifecycle_blocker_steps = ["Register an active Vault source", "Approve KV v2 or PKI evidence scopes", "Collect qualified evidence"] if not summary.provider_count else (["Vault source registered", "Approve metadata collection scopes", "Collect qualified lifecycle evidence"] if not summary.approved_mount_count else ["Vault source registered", "Collection scopes approved", "Collect and verify lifecycle evidence"]) %}
+        {% set lifecycle_blocker_url = url_for('vault.index') if can_manage_integrations else none %}
         {{ lifecycle_navigation.render("lifecycle") }}
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
@@ -25,14 +30,14 @@
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}"
                        aria-label="Lifecycle evidence readiness">
-                    {% if summary.provider_count == 0 %}
+                    {% if lifecycle_unqualified %}
                         {{ page_hero.blocked_context_body('Lifecycle Readiness',
-                                                'Vault Source Required',
+                                                lifecycle_blocker_title,
                                                 [
                                                 ('layers', 'KV v2 Evidence', 'Not Qualified', 'Source required') ,
                         ('certificate', 'PKI Evidence', 'Not Qualified', 'Source required')
                         ],
-                        'Register Vault to qualify lifecycle evidence.',
+                        lifecycle_blocker_description,
                         'Blocked', 'warning', 'shield-alert', 'shield-alert') }}
                     {% else %}
                         <div class="{{ page_hero.context_panel_classes() }}">
@@ -63,16 +68,16 @@
                 </aside>
             </div>
         </section>
-        {% if summary.provider_count == 0 %}
+        {% if lifecycle_unqualified %}
             {% set blocked_state_icon = "shield-alert" %}
             {% set blocked_state_label = "Setup Required" %}
-            {% set blocked_state_title = "Vault Lifecycle Source Required" %}
-            {% set blocked_state_description = "No eligible active Vault integration is registered. KV v2, PKI and cross-domain TLS assurance remain unqualified." %}
-            {% set blocked_state_steps = ["Register an active Vault source", "Approve KV v2 and PKI evidence scopes", "Run approved collection jobs"] %}
-            {% set blocked_state_action_url = url_for('vault.index') if can_manage_integrations else none %}
-            {% set blocked_state_action_label = 'Configure Vault Integrations' if can_manage_integrations else none %}
-            {% set blocked_state_permission_granted = can_manage_integrations %}
-            {% set blocked_state_show_admin_required = not can_manage_integrations %}
+            {% set blocked_state_title = lifecycle_blocker_title %}
+            {% set blocked_state_description = lifecycle_blocker_description %}
+            {% set blocked_state_steps = lifecycle_blocker_steps %}
+            {% set blocked_state_action_url = lifecycle_blocker_url %}
+            {% set blocked_state_action_label = "Review Vault Configuration" if can_manage_integrations else none %}
+            {% set blocked_state_permission_granted = lifecycle_blocker_url is not none %}
+            {% set blocked_state_show_admin_required = not blocked_state_permission_granted %}
             {% include "components/states/_blocked_state.html" %}
         {% else %}
             {{ section_intro.render('Version Lifecycle',

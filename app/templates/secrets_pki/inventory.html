@@ -6,6 +6,12 @@
 {% block title %}Secrets &amp; PKI Inventory · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div id="secrets-pki-inventory" class="min-w-0 space-y-6">
+        {% set inventory_unqualified = not summary.has_evidence %}
+        {% set inventory_blocker_title = "Vault Source Required" if not summary.provider_count else ("KV v2 Mount Approval Required" if not summary.approved_mount_count else "KV v2 Inventory Not Collected") %}
+        {% set inventory_blocker_description = "Register and enable a Vault source before collecting inventory." if not summary.provider_count else ("Vault source registered. Approve a KV v2 mount to collect inventory." if not summary.approved_mount_count else "Vault source and approved KV v2 mounts are configured, but inventory has not been committed.") %}
+        {% set inventory_blocker_steps = ["Register and enable a Vault source", "Approve KV v2 metadata mounts", "Collect KV v2 inventory"] if not summary.provider_count else (["Vault source registered", "Approve KV v2 metadata mounts", "Collect KV v2 inventory"] if not summary.approved_mount_count else ["Vault source registered", "KV v2 mounts approved", "Collect and verify KV v2 inventory"]) %}
+        {% set inventory_blocker_href = url_for('vault.index') if can_manage_integrations and not summary.approved_mount_count else (url_for('jobs.configuration', job_key='secrets_pki.inventory.sync') if can_execute_inventory and summary.approved_mount_count else none) %}
+        {% set inventory_blocker_action = ("Configure Vault Integrations" if not summary.provider_count else "Review Vault Mounts") if can_manage_integrations and not summary.approved_mount_count else ("Open Inventory Job" if can_execute_inventory and summary.approved_mount_count else none) %}
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -23,14 +29,14 @@
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}"
                        aria-label="Inventory evidence context">
-                    {% if summary.provider_count == 0 %}
+                    {% if inventory_unqualified %}
                         {{ page_hero.blocked_context_body('Inventory Readiness',
-                                                'Vault Source Required',
+                                                inventory_blocker_title,
                                                 [
-                                                ('server', 'Active Scope', 'No Vault Source', 'Registration required') ,
+                                                ('server', 'Active Scope', 'Registered Vault Sources' if summary.provider_count else 'No Vault Source', 'Approved mount required') ,
                         ('clock-3', 'Latest Commit', 'Not Collected', 'Committed inventory required')
                         ],
-                        'Register Vault to collect KV v2 inventory.',
+                        inventory_blocker_description,
                         'Blocked', 'warning', 'database-zap', 'shield-alert') }}
                     {% else %}
                         <div class="{{ page_hero.context_panel_classes() }}">
@@ -45,16 +51,16 @@
                 </aside>
             </div>
         </section>
-        {% if summary.provider_count == 0 %}
+        {% if inventory_unqualified %}
             {% set blocked_state_icon = "key-round" %}
             {% set blocked_state_label = "Setup Required" %}
-            {% set blocked_state_title = "Vault Inventory Source Required" %}
-            {% set blocked_state_description = "No eligible active Vault integration is registered. Missing committed evidence is not proof of zero Secrets." %}
-            {% set blocked_state_steps = ["Register an active Vault source", "Approve KV v2 metadata mounts", "Run the Inventory Job"] %}
-            {% set blocked_state_action_url = url_for('vault.index') if can_manage_integrations else none %}
-            {% set blocked_state_action_label = 'Configure Vault Integrations' if can_manage_integrations else none %}
-            {% set blocked_state_permission_granted = can_manage_integrations %}
-            {% set blocked_state_show_admin_required = not can_manage_integrations %}
+            {% set blocked_state_title = inventory_blocker_title %}
+            {% set blocked_state_description = inventory_blocker_description %}
+            {% set blocked_state_steps = inventory_blocker_steps %}
+            {% set blocked_state_action_url = inventory_blocker_href %}
+            {% set blocked_state_action_label = inventory_blocker_action %}
+            {% set blocked_state_permission_granted = inventory_blocker_href is not none %}
+            {% set blocked_state_show_admin_required = not blocked_state_permission_granted %}
             {% include "components/states/_blocked_state.html" %}
         {% else %}
             {{ section_intro.render('Committed Inventory Coverage',
