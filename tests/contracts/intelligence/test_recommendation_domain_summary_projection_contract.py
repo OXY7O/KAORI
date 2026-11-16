@@ -90,6 +90,7 @@ def test_future_admitted_domains_expand_without_integrations_inventory_projectio
 
 def test_summary_binding_stays_filtered_and_permission_constrained() -> None:
     service = source('app/intelligence/service.py')
+    projection = source('app/intelligence/rule_presentation.py')
     partial = source('app/templates/intelligence/partials/_recommendation_workspace_info.html')
     page = source('app/templates/intelligence/recommendations.html')
     assert 'recommendation_summary_domain_metrics(' in service
@@ -98,7 +99,8 @@ def test_summary_binding_stays_filtered_and_permission_constrained() -> None:
     assert 'and _can_view_secrets_pki_intelligence()' in service
     assert "current_user.has_permission('secrets_pki.view')" in service
     assert "current_user.has_permission('intelligence.view')" in service
-    assert "'domain_metrics': domain_metrics" in service
+    assert "'domain_metrics': domain_metrics" in projection
+    assert 'domain_metrics=domain_metrics' in service
     assert 'indicator_count = domain_metrics|length + 2' in partial
     assert "metadata_label(indicator_count ~ ' Indicators'" in partial
     assert 'for domain_metric in domain_metrics' in partial

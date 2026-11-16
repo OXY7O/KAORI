@@ -20,7 +20,8 @@ def test_recommendation_header_markup_is_valid_jinja_and_reuses_shared_component
     assert 'components/section_intro.html' in page
     assert 'components/info_tip.html' in page
     assert 'components/table_label.html' in summary
-    assert "table_label.metadata_label('5 Indicators', icon='layout-dashboard')" in summary
+    assert "table_label.metadata_label(indicator_count ~ ' Indicators', icon='layout-dashboard')" in summary
+    assert 'indicator_count = domain_metrics|length + 2' in summary
     assert 'title_extra=summary_title_label' in summary
     assert 'title_extra=workspace_title_extra' in page
     assert "table_label.metadata_label('Filtered Review', 'list-filter')" in page
