@@ -13,7 +13,7 @@ from unicodedata import category, normalize
 
 _SHA = re.compile(r"[0-9a-f]{40}")
 _DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
-_HOST_KEY = re.compile(r"SHA256:[A-Za-z0-9+/]{43}=?")
+_HOST_KEY = re.compile(r"SHA256:[A-Za-z0-9+/]{43}")
 _REF = re.compile(r"[a-z][a-z0-9_-]{1,31}:[A-Za-z0-9][A-Za-z0-9._/-]{2,191}")
 
 
@@ -33,7 +33,8 @@ def _valid_host_key(value: str) -> bool:
         return False
     try:
         # SHA-256 SSH fingerprints encode exactly 32 bytes, without padding.
-        return len(base64.b64decode(value[7:] + "=", validate=True)) == 32
+        decoded = base64.b64decode(value[7:] + "=", validate=True)
+        return len(decoded) == 32 and base64.b64encode(decoded).decode("ascii").rstrip("=") == value[7:]
     except (binascii.Error, ValueError):
         return False
 
