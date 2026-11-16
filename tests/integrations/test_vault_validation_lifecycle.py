@@ -234,3 +234,193 @@ def test_vault_runtime_history_fragment_rejects_unknown_connection(
         with pytest.raises(NotFound):
             unwrap(routes.runtime_history)(155)
 
+@pytest.mark.parametrize('is_htmx', [False, True])
+def test_vault_runtime_refresh_uses_canonical_htmx_job_admission(
+    monkeypatch: pytest.MonkeyPatch,
+    is_htmx: bool,
+) -> None:
+    app = _app(monkeypatch)
+    queued: list[dict[str, Any]] = []
+    snapshot = {'task_id': 'vault-runtime-task', 'operation': 'runtime_refresh', 'is_active': True}
+
+    def enqueue(**kwargs: Any) -> tuple[dict[str, Any], bool]:
+        queued.append(kwargs)
+        return snapshot, True
+
+    monkeypatch.setattr(routes, 'enqueue_runtime_health_refresh', enqueue)
+    monkeypatch.setattr(
+        routes, '_vault_runtime_refresh_fragment', lambda instance, **kwargs: {'instance': instance, **kwargs}
+    )
+    url = '/integrations/secrets-management/secrets-pki/vault/instances/15/runtime/refresh'
+    with app.test_request_context(url, method='POST', headers={'HX-Request': 'true'} if is_htmx else {}):
+        result = unwrap(routes.runtime_refresh)(15)
+
+    assert queued == [{
+        'integration_type': 'secrets_pki',
+        'integration_instance_id': 99,
+        'requested_by_user_id': 42,
+    }]
+    if is_htmx:
+        assert result['runtime_job'] is snapshot
+        assert result['instance'].id == 15
+        assert result['operation_feedback'] is None
+    else:
+        assert result.status_code == 302
+        assert result.location.endswith('/instances/15#runtime')
+
+
+def test_vault_runtime_refresh_failure_has_safe_htmx_feedback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = _app(monkeypatch)
+    recorded: list[dict[str, Any]] = []
+
+    def fail(**kwargs: Any) -> None:
+        raise RuntimeError('private provider/job secret')
+
+    def record(**kwargs: Any) -> dict[str, Any]:
+        recorded.append(kwargs)
+        return {'status': kwargs['status'], 'title': kwargs['title']}
+
+    monkeypatch.setattr(routes, 'enqueue_runtime_health_refresh', fail)
+    monkeypatch.setattr(routes, 'record_operational_activity', record)
+    monkeypatch.setattr(routes, '_vault_runtime_refresh_fragment', lambda instance, **kwargs: kwargs)
+    with app.test_request_context(
+        '/integrations/secrets-management/secrets-pki/vault/instances/15/runtime/refresh',
+        method='POST',
+        headers={'HX-Request': 'true'},
+    ):
+        result = unwrap(routes.runtime_refresh)(15)
+
+    assert result['runtime_job'] is None
+    assert result['operation_feedback']['status'] == 'error'
+    assert recorded[0]['queue_feedback'] is False
+    assert 'private provider/job secret' not in str(recorded)
+
+
+def test_vault_runtime_refresh_rejects_conflicting_full_validation_task(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = _app(monkeypatch)
+    monkeypatch.setattr(
+        routes, 'enqueue_runtime_health_refresh',
+        lambda **kwargs: ({'task_id': 'validation-task', 'operation': 'full_validation'}, False),
+    )
+    monkeypatch.setattr(
+        routes, 'record_operational_activity', lambda **kwargs: {'status': kwargs['status']}
+    )
+    monkeypatch.setattr(routes, '_vault_runtime_refresh_fragment', lambda instance, **kwargs: kwargs)
+    with app.test_request_context(
+        '/integrations/secrets-management/secrets-pki/vault/instances/15/runtime/refresh',
+        method='POST',
+        headers={'HX-Request': 'true'},
+    ):
+        result = unwrap(routes.runtime_refresh)(15)
+
+    assert result['runtime_job'] is None
+    assert result['operation_feedback']['status'] == 'warning'
+
+
+@pytest.mark.parametrize('is_complete', [False, True])
+def test_vault_runtime_status_polls_scoped_task_without_page_reload(
+    monkeypatch: pytest.MonkeyPatch,
+    is_complete: bool,
+) -> None:
+    app = _app(monkeypatch)
+    snapshot = {
+        'task_id': 'vault-runtime-task',
+        'integration_type': 'secrets_pki',
+        'integration_instance_id': 99,
+        'operation': 'runtime_refresh',
+        'is_active': not is_complete,
+        'is_complete': is_complete,
+    }
+    monkeypatch.setattr(routes, 'build_validation_snapshot', lambda task_id: snapshot)
+    feedback_users: list[int] = []
+
+    def feedback(job: dict[str, Any], *, user_id: int) -> dict[str, str] | None:
+        feedback_users.append(user_id)
+        return {'status': 'success', 'title': 'Runtime Updated'} if is_complete else None
+
+    monkeypatch.setattr(routes, 'snapshot_feedback_for_user', feedback)
+    rendered: list[dict[str, Any]] = []
+
+    def render(instance: Any, **kwargs: Any) -> str:
+        rendered.append(kwargs)
+        return '<div id="vault-runtime-content">Runtime Evidence and History</div>'
+
+    monkeypatch.setattr(routes, '_vault_runtime_refresh_fragment', render)
+    with app.test_request_context(
+        '/integrations/secrets-management/secrets-pki/vault/instances/15/runtime/status/vault-runtime-task',
+        method='GET',
+        headers={'HX-Request': 'true'},
+    ):
+        response = unwrap(routes.runtime_refresh_status)(15, 'vault-runtime-task')
+
+    assert response.status_code == 200
+    assert response.headers['Cache-Control'] == 'no-store, max-age=0'
+    assert ('HX-Trigger' in response.headers) is is_complete
+    assert rendered[0]['runtime_job'] is snapshot
+    assert rendered[0]['operation_feedback'] is None if not is_complete else rendered[0]['operation_feedback']
+    assert feedback_users == [42]
+
+
+@pytest.mark.parametrize('integration_type,instance_id,operation', [
+    ('secrets_pki', 77, 'runtime_refresh'),
+    ('orchestration', 99, 'runtime_refresh'),
+    ('secrets_pki', 99, 'full_validation'),
+])
+def test_vault_runtime_status_denies_cross_scope_or_wrong_operation(
+    monkeypatch: pytest.MonkeyPatch,
+    integration_type: str,
+    instance_id: int,
+    operation: str,
+) -> None:
+    app = _app(monkeypatch)
+    monkeypatch.setattr(routes, 'build_validation_snapshot', lambda task_id: {
+        'task_id': task_id,
+        'integration_type': integration_type,
+        'integration_instance_id': instance_id,
+        'operation': operation,
+    })
+    with app.test_request_context(
+        '/integrations/secrets-management/secrets-pki/vault/instances/15/runtime/status/unrelated-task',
+        headers={'HX-Request': 'true'},
+    ):
+        with pytest.raises(NotFound):
+            unwrap(routes.runtime_refresh_status)(15, 'unrelated-task')
+
+
+def test_vault_runtime_refresh_fragment_uses_only_persisted_instance_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = _app(monkeypatch)
+    instance = SimpleNamespace(
+        id=15,
+        integration_instance_id=99,
+        readiness_status='degraded',
+        compatibility_profile='vault-approle-read-v1',
+        capabilities=['health'],
+    )
+    committed = object()
+    pagination = {'rows': [], 'total': 0}
+    monkeypatch.setattr(routes, 'latest_vault_runtime_observation', lambda instance_id: committed)
+    monkeypatch.setattr(routes, 'runtime_observation_state_view', lambda observation, **kwargs: {
+        'health_status_label': 'Degraded',
+        'observed_at': '2026-11-16T09:00:00+07:00',
+    })
+    monkeypatch.setattr(routes, '_vault_runtime_history_view', lambda instance: pagination)
+    monkeypatch.setattr(routes, 'render_template', lambda template, **context: {
+        'template': template, **context,
+    })
+    job = {'task_id': 'runtime-task', 'is_active': True}
+    with app.test_request_context('/'):
+        context = routes._vault_runtime_refresh_fragment(instance, runtime_job=job)
+
+    assert context['instance'] is instance
+    assert context['latest_runtime_observation'] is committed
+    assert context['runtime_state']['health_status_label'] == 'Degraded'
+    assert context['runtime_history'] is pagination
+    assert context['evidence']['runtime_job'] is job
+    assert context['template'].endswith('vault/partials/_detail_runtime.html')
+
