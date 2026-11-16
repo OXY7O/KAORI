@@ -108,3 +108,9 @@ Continue existing Pyright, integration regressions, UI reuse verifiers and
 Developer Check against the reconciled dependent PR stack before holding-branch
 promotion. No CI, real host UAT, source/EE approval or Human Acceptance is
 asserted.
+
+## Exact source and EE authority binding (issue #4799)
+
+The review-only admission predicate now compares `source_sha` and `ee_digest` with separately supplied `authorized_source_sha` and `authorized_ee_digest`, in addition to validating the immutable Git SHA and `sha256:` image digest syntax. Boolean `source_reviewed` / `ee_signature_verified` flags alone cannot qualify a different source revision or EE image. The authorized values **must** be populated by trusted, independently verified canonical source/EE admission services, never copied from the caller's request. Equality of caller-supplied values does not establish independent provenance or a worker execution permit.
+
+Negative contracts cover candidate drift, authority drift, malformed authority types and existing source/EE format checks. This remains a pure predicate: no SSH, secret resolution, worker dispatch or cluster mutation. The stacked Draft PR requires reconciliation with current `kaori/review/staging-uat` and actual Ruff, pytest, Pyright, CI and real-host UAT before admission; no tests or UAT are asserted passed by this document.

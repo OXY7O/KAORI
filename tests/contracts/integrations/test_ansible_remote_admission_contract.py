@@ -22,6 +22,8 @@ def admitted_snapshot():
         authorized_target_id="host-001",
         authorized_host_key_fingerprint="SHA256:" + "A" * 43,
         authorized_credential_reference="vault:infrastructure/ssh/host-001",
+        authorized_source_sha="a" * 40,
+        authorized_ee_digest="sha256:" + "b" * 64,
         source_reviewed=True,
         ee_signature_verified=True,
         credential_scope_verified=True,
@@ -44,6 +46,10 @@ def test_exact_authority_snapshot_is_only_review_qualified(admitted_snapshot):
         ({"credential_reference": "vault:infrastructure/ssh/other"}, "credential_authority_mismatch"),
         ({"credential_reference": "-----BEGIN PRIVATE KEY-----"}, "invalid_credential_reference"),
         ({"source_sha": "main"}, "unpinned_source_or_ee"),
+        ({"source_sha": "c" * 40}, "source_ee_authority_mismatch"),
+        ({"ee_digest": "sha256:" + "c" * 64}, "source_ee_authority_mismatch"),
+        ({"authorized_source_sha": "c" * 40}, "source_ee_authority_mismatch"),
+        ({"authorized_ee_digest": "sha256:" + "c" * 64}, "source_ee_authority_mismatch"),
         ({"ee_digest": "latest"}, "unpinned_source_or_ee"),
         ({"source_reviewed": False}, "authority_evidence_missing"),
         ({"ee_signature_verified": False}, "authority_evidence_missing"),
@@ -72,6 +78,8 @@ def test_arbitrary_payload_cannot_claim_admission():
         {"authorized_target_id": []},
         {"authorized_host_key_fingerprint": None},
         {"authorized_credential_reference": {}},
+        {"authorized_source_sha": None},
+        {"authorized_ee_digest": []},
     ],
 )
 def test_malformed_authority_field_types_fail_closed(admitted_snapshot, change):
