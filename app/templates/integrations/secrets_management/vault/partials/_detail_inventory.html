@@ -77,24 +77,20 @@
                         <div class="flex flex-wrap items-center gap-2">
                             <h2 id="vault-inventory-lifecycle-title"
                                 class="text-base font-semibold text-content-primary">Inventory &amp; Lifecycle</h2>
-                            {{ info_tip.render(
-                                'vault-inventory-evidence-guide',
-                                'Vault Committed Inventory',
-                                'Vault remains authoritative for Secret values, PKI keys and ACLs. KAORI reports independently qualified, read-only evidence.',
-                                [
-                                    'Not Collected is not a confirmed zero, and each stream commits independently.',
-                                    'PKI Stored Certificates requires explicit collection opt-in.',
-                                    'Deletion is blocked by active work or retained evidence; Vault itself is never modified.'
-                                ],
-                                placement='right', variant='guide'
-                            ) }}
+                            {{ info_tip.render('vault-inventory-evidence-guide',
+                                                        'Vault Committed Inventory',
+                                                        'Vault remains authoritative for Secret values, PKI keys and ACLs. KAORI reports independently qualified, read-only evidence.',
+                                                        [
+                                                        'Not Collected is not a confirmed zero, and each stream commits independently.',
+                                                        'PKI Stored Certificates requires explicit collection opt-in.',
+                                                        'Deletion is blocked by active work or retained evidence; Vault itself is never modified.'
+                                                        ],
+                                                        placement='right', variant='guide') }}
                         </div>
                         <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review committed KV v2 metadata, public issuers, stored certificates, consumers, and governance boundaries.</p>
                     </div>
                 </div>
-                <div class="shrink-0">
-                    {{ integration_status(inventory_tone, inventory_label, display='text') }}
-                </div>
+                <div class="shrink-0">{{ integration_status(inventory_tone, inventory_label, display='text') }}</div>
             </div>
         </header>
         <section class="border-b border-outline-subtle bg-surface-subtle"
@@ -157,7 +153,7 @@
                         </div>
                         {{ integration_ui.palette_icon('shield-alert' if deletion_guard.blocked else 'shield-check', 'warning' if deletion_guard.blocked else 'normal', size='md') }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ (deletion_guard.reasons|length) ~ ' blocking condition(s)' if deletion_guard.blocked else 'No active jobs or committed evidence dependencies block removal.' }}</p>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ (deletion_guard.reasons|length) ~ ' blocking condition(s) ' if deletion_guard.blocked else 'No active jobs or committed evidence dependencies block removal.' }}</p>
                 </article>
             </div>
             <div class="grid gap-px bg-outline-subtle lg:grid-cols-2"
@@ -204,9 +200,7 @@
                                 data-delete-url="{{ url_for('vault.delete_instance', instance_id=instance.id) }}"
                                 data-delete-name="{{ instance.name }}"
                                 @click="openDelete($el.dataset.deleteUrl, $el.dataset.deleteName)"
-                                {% if deletion_guard.blocked %}disabled
-                                title="{{ deletion_guard.reasons[0] if deletion_guard.reasons else 'Deletion blocked' }}"
-                                {% endif %}
+                                {% if deletion_guard.blocked %}disabled title="{{ deletion_guard.reasons[0] if deletion_guard.reasons else 'Deletion blocked' }}" {% endif %}
                                 class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-status-critical px-4 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-50">
                             <i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>
                             Delete Connection
@@ -215,8 +209,7 @@
                 </div>
             </section>
         </section>
-        <div class="space-y-4 p-4 sm:p-5"
-             data-kaori-inventory-lifecycle-content>
+        <div class="space-y-4 p-4 sm:p-5" data-kaori-inventory-lifecycle-content>
             <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
                      aria-labelledby="vault-operational-consumers-title">
                 <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
@@ -229,15 +222,8 @@
                         </div>
                     </div>
                 </header>
-                <div class="divide-y divide-outline-subtle"
-                     data-kaori-consumer-list>
-                    {% set consumers = [
-                        ('scan-search', 'Validation & Capabilities', 'Provider Full Validation', 'AppRole authentication, Vault API qualification, and release compatibility remain separate from collected inventory.'),
-                        ('activity', 'Runtime Monitoring', 'Committed runtime observation', 'Health, latency, diagnostics, and historical runtime evidence are independently observed.'),
-                        ('database', 'KV v2 Inventory', 'Committed metadata only', 'Approved mount and version metadata are available only after an independently qualified collection.'),
-                        ('shield-check', 'PKI & Certificates', 'Qualified public and optional stored evidence', 'Public issuers and retained certificates are source-qualified; trust and deployment are not implied.'),
-                        ('scroll-text', 'Activity Audit', 'Governed operational evidence', 'Registration, validation, and runtime operations remain traceable under their owning policies.')
-                    ] %}
+                <div class="divide-y divide-outline-subtle" data-kaori-consumer-list>
+                    {% set consumers = [('scan-search', 'Validation & Capabilities', 'Provider Full Validation', 'AppRole authentication, Vault API qualification, and release compatibility remain separate from collected inventory.'), ('activity', 'Runtime Monitoring', 'Committed runtime observation', 'Health, latency, diagnostics, and historical runtime evidence are independently observed.'), ('database', 'KV v2 Inventory', 'Committed metadata only', 'Approved mount and version metadata are available only after an independently qualified collection.'), ('shield-check', 'PKI & Certificates', 'Qualified public and optional stored evidence', 'Public issuers and retained certificates are source-qualified; trust and deployment are not implied.'), ('scroll-text', 'Activity Audit', 'Governed operational evidence', 'Registration, validation, and runtime operations remain traceable under their owning policies.')] %}
                     {% for icon, title, boundary, description in consumers %}
                         <article class="grid gap-3 px-4 py-3.5 transition hover:bg-kaori-mist sm:px-5 lg:grid-cols-[minmax(14rem,0.8fr)_minmax(15rem,0.8fr)_minmax(0,1.4fr)] lg:items-center">
                             <div class="flex min-w-0 items-start gap-3">
@@ -268,7 +254,7 @@
                             <p class="mt-1 text-xs leading-5 text-content-secondary">Three independent Vault evidence streams; source state and counts reflect committed snapshots only.</p>
                         </div>
                     </div>
-                    {{ table_label.metadata_label('3 Evidence Streams') }}
+                    {{ table_label.metadata_label("3 Evidence Streams") }}
                 </header>
                 <div class="overflow-x-auto overscroll-x-contain">
                     <table class="{{ table_ui.table_classes('min-w-[64rem]') }}">
@@ -285,8 +271,7 @@
                         </thead>
                         <tbody class="{{ table_ui.body_classes() }}">
                             {% for source in sources %}
-                                <tr class="{{ table_ui.row_classes() }}"
-                                    data-kaori-vault-evidence-source>
+                                <tr class="{{ table_ui.row_classes() }}" data-kaori-vault-evidence-source>
                                     <td class="{{ table_ui.cell_classes() }}">
                                         <div class="flex min-w-0 items-start gap-3">
                                             {{ integration_ui.palette_icon(source.icon, 'brand', size='sm') }}
@@ -329,7 +314,7 @@
                         icon=source.icon,
                         footer_text='Read-only committed metadata; no Vault live request or Secret payload.',
                         size='standard'
-                    ) %}
+                        ) %}
                         <div class="space-y-4" data-kaori-vault-evidence-source-detail>
                             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                                 <header class="flex items-start justify-between gap-3 border-b border-outline-subtle p-4">
@@ -345,10 +330,12 @@
                                         ('Committed Mounts', source.committed if source.committed is not none else 'Not Collected'),
                                         (source.observed_label, source.observed if source.observed is not none else 'Not Collected'),
                                         ('Last Commit', source.timestamp|user_datetime if source.timestamp else 'Never')
-                                    ] %}
+                                        ] %}
                                         <div class="min-w-0 bg-surface-card p-4">
                                             <dt class="text-xs font-semibold text-content-muted">{{ label }}</dt>
-                                            <dd class="mt-1 break-words text-sm font-semibold text-content-primary">{{ value }}</dd>
+                                            <dd class="mt-1 break-words text-sm font-semibold text-content-primary">
+                                                {{ value }}
+                                            </dd>
                                         </div>
                                     {% endfor %}
                                 </dl>
@@ -381,7 +368,7 @@
                             <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI commits scoped metadata; Vault owns Secrets and PKI; observability stays separate.</p>
                         </div>
                     </div>
-                    {{ table_label.metadata_label('Read-Only Evidence') }}
+                    {{ table_label.metadata_label("Read-Only Evidence") }}
                 </div>
             </section>
         </div>

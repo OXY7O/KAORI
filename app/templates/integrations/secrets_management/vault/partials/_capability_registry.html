@@ -100,14 +100,13 @@
                 {% if search or requirement or status_filter %}
                     {% set clear_href = url_for('vault.detail', instance_id=instance.id, _anchor='validation') %}
                     {% set clear_fragment = url_for('vault.capability_registry', instance_id=instance.id, capability_per_page=page_size) %}
-                    {{ registry_ui.clear_filters_action(
-                        clear_href,
-                        table_ui.action_classes(),
-                        hx_get=clear_fragment,
-                        target='#vault-capability-registry',
-                        indicator='#vault-capability-loading',
-                        swap='outerHTML',
-                        marker='vault-capability-registry'
+                    {{ registry_ui.clear_filters_action(clear_href,
+                                        table_ui.action_classes() ,
+                    hx_get=clear_fragment,
+                    target='#vault-capability-registry',
+                    indicator='#vault-capability-loading',
+                    swap='outerHTML',
+                    marker='vault-capability-registry'
                     ) }}
                 {% endif %}
                 {{ table_label.metadata_label(capability_contracts|length ~ ' Capability Contracts') }}
@@ -200,7 +199,7 @@
                         data-kaori-capability-matrix-row>
                         <td class="{{ table_ui.cell_classes() }}">
                             <div class="flex min-w-0 items-start gap-3">
-                                {{ integration_ui.palette_icon(row.icon, 'normal' if result.observed else ('warning' if result.limited else 'info'), size='sm') }}
+                                {{ integration_ui.palette_icon(row.icon, 'normal' if result.observed else ('warning' if result.limited else 'info') , size='sm') }}
                                 <div class="min-w-0">
                                     <p class="text-sm font-semibold text-content-primary">{{ row.title }}</p>
                                     <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ 'Core Contract' if row.required else 'Optional Contract' }}</p>
@@ -218,12 +217,12 @@
                 {% else %}
                     <tr>
                         <td colspan="5" class="p-0">
-                            {% set empty_state_icon = 'scan-search' %}
-                            {% set empty_state_label = 'No Results' %}
-                            {% set empty_state_tone = 'unknown' %}
-                            {% set empty_state_title = 'No Capability Records Match the Current Filters' %}
-                            {% set empty_state_description = 'Adjust Search Capability, Requirement, or Validation Status to broaden results.' %}
-                            {% set empty_state_min_height = 'min-h-[160px]' %}
+                            {% set empty_state_icon = "scan-search" %}
+                            {% set empty_state_label = "No Results" %}
+                            {% set empty_state_tone = "unknown" %}
+                            {% set empty_state_title = "No Capability Records Match the Current Filters" %}
+                            {% set empty_state_description = "Adjust Search Capability, Requirement, or Validation Status to broaden results." %}
+                            {% set empty_state_min_height = "min-h-[160px]" %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
@@ -231,9 +230,10 @@
             </tbody>
         </table>
     </div>
-    <footer class="{{ pagination_ui.footer_classes() }}" data-kaori-capability-pagination>
+    <footer class="{{ pagination_ui.footer_classes() }}"
+            data-kaori-capability-pagination>
         <div class="{{ pagination_ui.summary_group_classes() }}">
-            <p>Showing <span class="font-semibold text-content-primary">{{ start_item }}</span>–<span class="font-semibold text-content-primary">{{ end_item }}</span> of <span class="font-semibold text-content-primary">{{ total_filtered }}</span> {{ pagination_ui.resource_name('Capabilities', total_filtered)|trim }}</p>
+            <p>Showing <span class="font-semibold text-content-primary">{{ start_item }}</span>–<span class="font-semibold text-content-primary">{{ end_item }}</span> of <span class="font-semibold text-content-primary">{{ total_filtered }}</span> {{ pagination_ui.resource_name('Capabilities', total_filtered) |trim }}</p>
             <form method="get"
                   action="{{ url_for('vault.detail', instance_id=instance.id, _anchor='validation') }}"
                   hx-get="{{ url_for('vault.capability_registry', instance_id=instance.id) }}"
@@ -254,8 +254,7 @@
                         data-kaori-auto-submit
                         class="{{ pagination_ui.page_size_classes() }}">
                     {% for option in [5, 10, 25, 50] %}
-                        <option value="{{ option }}"
-                                {% if option == page_size %}selected{% endif %}>{{ option }}</option>
+                        <option value="{{ option }}" {% if option == page_size %}selected{% endif %}>{{ option }}</option>
                     {% endfor %}
                 </select>
             </form>
@@ -276,14 +275,14 @@
                       aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</span>
             {% endif %}
             {{ pagination_ui.numeric_pages(page,
-                total_pages,
-                page_param='capability_page',
-                endpoint='vault.capability_registry',
-                href_endpoint='vault.detail',
-                query_params=filter_params,
-                hx_target='#vault-capability-registry',
-                hx_indicator='#vault-capability-loading',
-                hx_swap='outerHTML') }}
+                        total_pages,
+                        page_param='capability_page',
+                        endpoint='vault.capability_registry',
+                        href_endpoint='vault.detail',
+                        query_params=filter_params,
+                        hx_target='#vault-capability-registry',
+                        hx_indicator='#vault-capability-loading',
+                        hx_swap='outerHTML') }}
             {% if page < total_pages %}
                 {% set next_href = url_for('vault.detail', instance_id=instance.id, capability_page=page + 1, **filter_params) %}
                 {% set next_fragment = url_for('vault.capability_registry', instance_id=instance.id, capability_page=page + 1, **filter_params) %}
@@ -310,7 +309,7 @@
             icon=row.icon,
             footer_text='Read-only committed API evidence; no Secret values or live Vault request.',
             size='standard'
-        ) %}
+            ) %}
             {% include "integrations/secrets_management/vault/partials/_capability_detail_content.html" %}
         {% endcall %}
     {% endfor %}

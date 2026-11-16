@@ -79,14 +79,14 @@
         loading_active=validation_job and validation_job.is_active,
         loading_label='Running Vault Full Validation',
         title_extra=info_tip.render(
-            'vault-full-validation-guide',
-            'Vault Full Validation',
-            'Full Validation qualifies provider APIs only, not Secret reads or optional inventory.',
-            [
-                'Required checks: Vault health, AppRole login and token lookup.',
-                'Mount metadata discovery is optional and may be denied without blocking required APIs.',
-                'Runtime health, KV v2 and PKI evidence remain separate committed workflows.'
-            ], placement='right', variant='guide'
+        'vault-full-validation-guide',
+        'Vault Full Validation',
+        'Full Validation qualifies provider APIs only, not Secret reads or optional inventory.',
+        [
+        'Required checks: Vault health, AppRole login and token lookup.',
+        'Mount metadata discovery is optional and may be denied without blocking required APIs.',
+        'Runtime health, KV v2 and PKI evidence remain separate committed workflows.'
+        ], placement='right', variant='guide'
         )
         ) %}
         <form method="post"
@@ -109,33 +109,33 @@
     {% endcall %}
     {{ validation_poller.render(validation_job and validation_job.is_active,
         url_for('vault.validation_status', instance_id=instance.id, task_id=validation_job.task_id) if validation_job and validation_job.is_active else '',
-        '#vault-core-validation') }}
+    '#vault-core-validation') }}
     {{ provider_job_status.render(validation_job, 'Vault validation running in worker', 'Vault') }}
     <div class="space-y-4 p-4 sm:p-5">
         {{ capability_readiness.render('Vault Capability Readiness',
                 'Core API readiness is independent of Secret and PKI inventory.',
                 readiness if instance.enabled else 'disabled',
-                readiness|replace('_', ' ')|title if instance.enabled else 'Disabled',
-                'Required Capability Coverage',
-                required_ready ~ ' / ' ~ required_total if has_current_validation else 'Not Observed',
-                capability_percent,
-                capability_metadata,
-                capability_metrics,
-                gate_label,
-                gate_body,
-                gate_tone,
-                'Full Validation owns Vault API readiness; Runtime Refresh and KV v2/PKI collection are independent.',
-                next_action) }}
+                readiness|replace('_', ' ') |title if instance.enabled else 'Disabled',
+        'Required Capability Coverage',
+        required_ready ~ ' / ' ~ required_total if has_current_validation else 'Not Observed',
+        capability_percent,
+        capability_metadata,
+        capability_metrics,
+        gate_label,
+        gate_body,
+        gate_tone,
+        'Full Validation owns Vault API readiness; Runtime Refresh and KV v2/PKI collection are independent.',
+        next_action) }}
         {{ readiness_explanation.render(decision_title,
                 decision_message,
                 decision_tone,
-                ['Vault · ' ~ (instance.detected_version or 'Not Observed'),
-                 'Validated · ' ~ (instance.last_validated_at|user_datetime if instance.last_validated_at else 'Not Observed')]) }}
+                ['Vault · ' ~ (instance.detected_version or 'Not Observed') ,
+        'Validated · ' ~ (instance.last_validated_at|user_datetime if instance.last_validated_at else 'Not Observed')]) }}
         {% include "integrations/secrets_management/vault/partials/_capability_registry.html" %}
     </div>
 </section>
 {% if request.headers.get('HX-Request') == 'true' %}
-    {{ framed_workspace_tabs.badge_oob('vault', 'validation', readiness|replace('_', ' ')|title) }}
+    {{ framed_workspace_tabs.badge_oob('vault', 'validation', readiness|replace('_', ' ') |title) }}
     {{ provider_detail_posture.state_oob('vault', readiness, observed_capabilities|length if has_current_validation else 0) }}
 {% endif %}
 {% include "components/operation_feedback_oob.html" %}

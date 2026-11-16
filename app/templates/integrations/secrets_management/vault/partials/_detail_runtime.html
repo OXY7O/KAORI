@@ -18,164 +18,161 @@
 {% set runtime_capabilities = runtime_snapshot.get('capabilities') or [] %}
 {% set runtime_diagnostics = runtime_state.diagnostics if runtime_observed else [] %}
 {% if not runtime_observed %}
-    {% set runtime_finding = 'Vault runtime · Not Observed.' %}
-    {% set runtime_next_action = 'Run Runtime Refresh to record Vault health evidence.' %}
+    {% set runtime_finding = "Vault runtime · Not Observed." %}
+    {% set runtime_next_action = "Run Runtime Refresh to record Vault health evidence." %}
 {% elif runtime_gate == 'blocked' %}
-    {% set runtime_finding = 'Vault runtime · Unhealthy. Provider diagnostics require review.' %}
-    {% set runtime_next_action = 'Restore Vault access, then refresh runtime evidence.' %}
+    {% set runtime_finding = "Vault runtime · Unhealthy. Provider diagnostics require review." %}
+    {% set runtime_next_action = "Restore Vault access, then refresh runtime evidence." %}
 {% elif runtime_gate == 'degraded' %}
-    {% set runtime_finding = 'Vault runtime · Attention required; review committed diagnostics.' %}
-    {% set runtime_next_action = 'Review Vault health, remediate, then refresh runtime.' %}
+    {% set runtime_finding = "Vault runtime · Attention required; review committed diagnostics." %}
+    {% set runtime_next_action = "Review Vault health, remediate, then refresh runtime." %}
 {% elif runtime_state.readiness != 'ready' %}
-    {% set runtime_finding = 'Vault runtime · Healthy; Full Validation readiness needs review.' %}
-    {% set runtime_next_action = 'Review Full Validation; continue runtime monitoring.' %}
+    {% set runtime_finding = "Vault runtime · Healthy; Full Validation readiness needs review." %}
+    {% set runtime_next_action = "Review Full Validation; continue runtime monitoring." %}
 {% else %}
-    {% set runtime_finding = 'Vault runtime · Healthy and observed.' %}
-    {% set runtime_next_action = 'No remediation needed; continue scheduled refresh.' %}
+    {% set runtime_finding = "Vault runtime · Healthy and observed." %}
+    {% set runtime_next_action = "No remediation needed; continue scheduled refresh." %}
 {% endif %}
 <div id="vault-runtime-content"
      class="space-y-4"
      data-kaori-vault-runtime-htmx>
-    {{ validation_poller.render(
-        evidence.runtime_job and evidence.runtime_job.is_active,
+    {{ validation_poller.render(evidence.runtime_job and evidence.runtime_job.is_active,
         url_for('vault.runtime_refresh_status', instance_id=instance.id, task_id=evidence.runtime_job.task_id) if evidence.runtime_job and evidence.runtime_job.is_active else '',
-        '#vault-runtime-content'
+    '#vault-runtime-content'
     ) }}
     <section class="{{ integration_ui.section_shell_classes() }}"
              data-kaori-vault-runtime-workspace
              data-kaori-runtime-workspace-v8>
-    {% call connection_validation_header.render(
-        'Vault Runtime Health & Diagnostics',
-        'Review persisted runtime health, diagnostics, provider context, and validation boundaries.',
-        icon='activity',
-        loading_id='vault-runtime-refresh-loading',
-        loading_active=evidence.runtime_job and evidence.runtime_job.is_active,
-        loading_label='Refreshing Vault runtime health',
-        title_extra=info_tip.render(
+        {% call connection_validation_header.render(
+            'Vault Runtime Health & Diagnostics',
+            'Review persisted runtime health, diagnostics, provider context, and validation boundaries.',
+            icon='activity',
+            loading_id='vault-runtime-refresh-loading',
+            loading_active=evidence.runtime_job and evidence.runtime_job.is_active,
+            loading_label='Refreshing Vault runtime health',
+            title_extra=info_tip.render(
             'vault-runtime-guide',
             'Vault Runtime Health',
             'Runtime Refresh observes Vault health separately from Full Validation and Secrets & PKI inventory.',
             [
-                'Runtime health is derived from persisted observations, not a live page-load Vault request.',
-                'Provider health, release compatibility and KV v2/PKI inventory remain independently governed.',
-                'Detailed diagnostic evidence and remediation live under Recent Runtime Observations.'
+            'Runtime health is derived from persisted observations, not a live page-load Vault request.',
+            'Provider health, release compatibility and KV v2/PKI inventory remain independently governed.',
+            'Detailed diagnostic evidence and remediation live under Recent Runtime Observations.'
             ],
             placement='right',
             variant='guide'
-        )
-    ) %}
-        <form action="{{ url_for('vault.runtime_refresh', instance_id=instance.id) }}"
-              method="post"
-              hx-post="{{ url_for('vault.runtime_refresh', instance_id=instance.id) }}"
-              hx-target="#vault-runtime-content"
-              hx-swap="outerHTML"
-              hx-disabled-elt="button"
-              hx-indicator="#vault-runtime-refresh-loading">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit"
-                    class="{{ action_button.classes('primary') }}"
-                    {% if not instance.enabled or (evidence.runtime_job and evidence.runtime_job.is_active) %}disabled{% endif %}>
-                <i data-lucide="{{ 'loader-circle' if evidence.runtime_job and evidence.runtime_job.is_active else 'refresh-cw' }}"
-                   class="h-4 w-4{% if evidence.runtime_job and evidence.runtime_job.is_active %} animate-spin{% endif %}"
-                   aria-hidden="true"></i>
-                {{ 'Refresh Running' if evidence.runtime_job and evidence.runtime_job.is_active else 'Refresh Runtime' }}
-            </button>
-        </form>
-    {% endcall %}
-    {{ provider_job_status.render(evidence.runtime_job, 'Vault runtime refresh running', 'Vault') }}
-    <div class="space-y-4 p-4 sm:p-5"
-         data-kaori-runtime-main-layout>
-        {{ runtime_decision.render(
-            runtime_gate,
-            runtime_state.health_status_label if runtime_observed else 'Not Observed',
-            runtime_state.health_score_display if runtime_observed else 'Not Observed',
-            'Persisted Runtime Refresh evidence, not a live provider assertion.',
-            runtime_gate_label,
-            'Runtime health and provider Full Validation are evaluated separately.',
-            runtime_state.readiness,
-            runtime_state.readiness_label,
-            'Readiness at the observation; review Full Validation for current API qualification.',
-            [
-                ('Observed', runtime_state.observed_at_display if runtime_observed else 'Never'),
-                ('Latency', runtime_state.latency_display if runtime_observed else 'N/A'),
-                ('Diagnostics', runtime_diagnostics|length ~ ' checks' if runtime_observed else 'Not Observed')
+            )
+            ) %}
+            <form action="{{ url_for('vault.runtime_refresh', instance_id=instance.id) }}"
+                  method="post"
+                  hx-post="{{ url_for('vault.runtime_refresh', instance_id=instance.id) }}"
+                  hx-target="#vault-runtime-content"
+                  hx-swap="outerHTML"
+                  hx-disabled-elt="button"
+                  hx-indicator="#vault-runtime-refresh-loading">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit"
+                        class="{{ action_button.classes('primary') }}"
+                        {% if not instance.enabled or (evidence.runtime_job and evidence.runtime_job.is_active) %}disabled{% endif %}>
+                    <i data-lucide="{{ 'loader-circle' if evidence.runtime_job and evidence.runtime_job.is_active else 'refresh-cw' }}"
+                       class="h-4 w-4{% if evidence.runtime_job and evidence.runtime_job.is_active %} animate-spin{% endif %}"
+                       aria-hidden="true"></i>
+                    {{ 'Refresh Running' if evidence.runtime_job and evidence.runtime_job.is_active else 'Refresh Runtime' }}
+                </button>
+            </form>
+        {% endcall %}
+        {{ provider_job_status.render(evidence.runtime_job, 'Vault runtime refresh running', 'Vault') }}
+        <div class="space-y-4 p-4 sm:p-5" data-kaori-runtime-main-layout>
+            {{ runtime_decision.render(runtime_gate,
+                        runtime_state.health_status_label if runtime_observed else 'Not Observed',
+                        runtime_state.health_score_display if runtime_observed else 'Not Observed',
+                        'Persisted Runtime Refresh evidence, not a live provider assertion.',
+                        runtime_gate_label,
+                        'Runtime health and provider Full Validation are evaluated separately.',
+                        runtime_state.readiness,
+                        runtime_state.readiness_label,
+                        'Readiness at the observation; review Full Validation for current API qualification.',
+                        [
+                        ('Observed', runtime_state.observed_at_display if runtime_observed else 'Never') ,
+            ('Latency', runtime_state.latency_display if runtime_observed else 'N/A'),
+            ('Diagnostics', runtime_diagnostics|length ~ ' checks' if runtime_observed else 'Not Observed')
             ],
             runtime_finding,
             runtime_state.attention_factors|length if runtime_observed else 0,
             runtime_next_action,
             'Review Recent Runtime Observations for immutable technical evidence before repeating Full Validation.'
-        ) }}
-        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
-                 aria-labelledby="vault-runtime-evidence-title"
-                 data-kaori-runtime-evidence-workspace>
-            <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-start sm:justify-between sm:px-5">
-                <div class="flex min-w-0 items-start gap-3">
-                    {{ integration_ui.palette_icon('stethoscope', 'brand', size='md') }}
-                    <div class="min-w-0">
-                        <h3 id="vault-runtime-evidence-title"
-                            class="text-sm font-semibold text-content-primary">Runtime Evidence</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Persisted Vault provider contract and concise diagnostic findings. Full technical evidence remains in Recent Runtime Observations.</p>
-                    </div>
-                </div>
-                {{ table_label.metadata_label(runtime_diagnostics|length ~ ' Checks') }}
-            </header>
-            <div class="flex items-center justify-between gap-3 border-b border-outline-subtle bg-surface-subtle px-4 py-3 sm:px-5">
-                <div class="min-w-0">
-                    <p class="text-xs font-semibold text-content-primary">Provider Contract</p>
-                    <p class="mt-0.5 text-xs text-content-muted">Version and capabilities are the latest committed observation, not current live discovery.</p>
-                </div>
-                {{ integration_status(runtime_state.readiness if runtime_observed else 'not_observed',
-                    runtime_state.readiness_label if runtime_observed else 'Not Observed',
-                    display='indicator') }}
-            </div>
-            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4"
-                 data-kaori-runtime-lifecycle-contract>
-                {% for label, value in [
-                    ('Detected Version', runtime_metadata.get('version') or 'Not Observed' if runtime_observed else 'Not Observed'),
-                    ('Capability Profile', latest_runtime.capability_profile or 'Not Observed' if runtime_observed else 'Not Observed'),
-                    ('Compatibility Profile', latest_runtime.compatibility_profile or 'Not Observed' if runtime_observed else 'Not Observed'),
-                    ('Observed Capabilities', runtime_capabilities|length if runtime_observed else 'Not Observed')
-                ] %}
-                    <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
-                        <p class="text-xs font-medium text-content-muted">{{ label }}</p>
-                        <p class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
-                    </div>
-                {% endfor %}
-            </div>
-            <div class="divide-y divide-outline-subtle border-t border-outline-subtle"
-                 data-kaori-runtime-diagnostic-list>
-                {% for diagnostic in runtime_diagnostics %}
-                    {% set diagnostic_tone = 'ready' if diagnostic.status == 'success' else ('degraded' if diagnostic.status in ['warning', 'pending'] else ('blocked' if diagnostic.status == 'failed' else 'not_observed')) %}
-                    <article class="grid gap-2 px-4 py-3.5 transition hover:bg-kaori-mist sm:px-5 md:grid-cols-12 md:items-center md:gap-4"
-                             data-kaori-runtime-diagnostic-row>
-                        <div class="md:col-span-3">
-                            <p class="text-sm font-semibold text-content-primary">{{ diagnostic.label }}</p>
-                            <p class="mt-0.5 text-xs text-content-muted">{{ diagnostic.category_label }}</p>
+            ) }}
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                     aria-labelledby="vault-runtime-evidence-title"
+                     data-kaori-runtime-evidence-workspace>
+                <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+                    <div class="flex min-w-0 items-start gap-3">
+                        {{ integration_ui.palette_icon('stethoscope', 'brand', size='md') }}
+                        <div class="min-w-0">
+                            <h3 id="vault-runtime-evidence-title"
+                                class="text-sm font-semibold text-content-primary">Runtime Evidence</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Persisted Vault provider contract and concise diagnostic findings. Full technical evidence remains in Recent Runtime Observations.</p>
                         </div>
-                        <div class="min-w-0 md:col-span-7">
-                            <p class="text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ diagnostic.summary }}</p>
-                        </div>
-                        <div class="md:col-span-2 md:flex md:justify-end">{{ integration_status(diagnostic_tone, diagnostic.status_label, display='indicator') }}</div>
-                    </article>
-                {% else %}
-                    <div class="px-4 py-8 text-center sm:px-5">
-                        <p class="text-sm font-semibold text-content-primary">No Diagnostic Evidence Yet</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime Refresh records bounded health evidence; the page does not infer diagnostics from Full Validation.</p>
                     </div>
-                {% endfor %}
-            </div>
-            <footer class="border-t border-outline-subtle bg-surface-subtle px-4 py-3.5 sm:px-5"
-                    data-kaori-runtime-observation-boundary>
-                <div class="flex items-start gap-3">
-                    {{ integration_ui.palette_icon('layers-3', 'info', size='sm') }}
+                    {{ table_label.metadata_label(runtime_diagnostics|length ~ ' Checks') }}
+                </header>
+                <div class="flex items-center justify-between gap-3 border-b border-outline-subtle bg-surface-subtle px-4 py-3 sm:px-5">
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold text-content-primary">Evidence Boundary</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime Refresh owns current runtime observations; Full Validation owns API capability and release compatibility. KV v2 and PKI inventory are independent.</p>
+                        <p class="text-xs font-semibold text-content-primary">Provider Contract</p>
+                        <p class="mt-0.5 text-xs text-content-muted">Version and capabilities are the latest committed observation, not current live discovery.</p>
                     </div>
+                    {{ integration_status(runtime_state.readiness if runtime_observed else 'not_observed',
+                                        runtime_state.readiness_label if runtime_observed else 'Not Observed',
+                                        display='indicator') }}
                 </div>
-            </footer>
-        </section>
-    </div>
+                <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4"
+                     data-kaori-runtime-lifecycle-contract>
+                    {% for label, value in [
+                        ('Detected Version', runtime_metadata.get('version') or 'Not Observed' if runtime_observed else 'Not Observed'),
+                        ('Capability Profile', latest_runtime.capability_profile or 'Not Observed' if runtime_observed else 'Not Observed'),
+                        ('Compatibility Profile', latest_runtime.compatibility_profile or 'Not Observed' if runtime_observed else 'Not Observed'),
+                        ('Observed Capabilities', runtime_capabilities|length if runtime_observed else 'Not Observed')
+                        ] %}
+                        <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
+                            <p class="text-xs font-medium text-content-muted">{{ label }}</p>
+                            <p class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="divide-y divide-outline-subtle border-t border-outline-subtle"
+                     data-kaori-runtime-diagnostic-list>
+                    {% for diagnostic in runtime_diagnostics %}
+                        {% set diagnostic_tone = 'ready' if diagnostic.status == 'success' else ('degraded' if diagnostic.status in ['warning', 'pending'] else ('blocked' if diagnostic.status == 'failed' else 'not_observed')) %}
+                        <article class="grid gap-2 px-4 py-3.5 transition hover:bg-kaori-mist sm:px-5 md:grid-cols-12 md:items-center md:gap-4"
+                                 data-kaori-runtime-diagnostic-row>
+                            <div class="md:col-span-3">
+                                <p class="text-sm font-semibold text-content-primary">{{ diagnostic.label }}</p>
+                                <p class="mt-0.5 text-xs text-content-muted">{{ diagnostic.category_label }}</p>
+                            </div>
+                            <div class="min-w-0 md:col-span-7">
+                                <p class="text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ diagnostic.summary }}</p>
+                            </div>
+                            <div class="md:col-span-2 md:flex md:justify-end">{{ integration_status(diagnostic_tone, diagnostic.status_label, display='indicator') }}</div>
+                        </article>
+                    {% else %}
+                        <div class="px-4 py-8 text-center sm:px-5">
+                            <p class="text-sm font-semibold text-content-primary">No Diagnostic Evidence Yet</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime Refresh records bounded health evidence; the page does not infer diagnostics from Full Validation.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+                <footer class="border-t border-outline-subtle bg-surface-subtle px-4 py-3.5 sm:px-5"
+                        data-kaori-runtime-observation-boundary>
+                    <div class="flex items-start gap-3">
+                        {{ integration_ui.palette_icon('layers-3', 'info', size='sm') }}
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-content-primary">Evidence Boundary</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime Refresh owns current runtime observations; Full Validation owns API capability and release compatibility. KV v2 and PKI inventory are independent.</p>
+                        </div>
+                    </div>
+                </footer>
+            </section>
+        </div>
     </section>
     {% include 'integrations/secrets_management/vault/partials/_runtime_history.html' %}
 </div>

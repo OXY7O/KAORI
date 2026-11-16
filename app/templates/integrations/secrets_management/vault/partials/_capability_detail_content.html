@@ -4,56 +4,56 @@
 {% set status_tone = result.status_key %}
 {% set decision_title = 'Capability Available' if result.observed else ('Optional Discovery Limited' if result.limited else ('Required Capability Gap' if result.gap else 'Capability Not Observed')) %}
 {% if result.observed %}
-    {% set decision_message = 'Full Validation verified this API; runtime and compatibility stay independent.' %}
+    {% set decision_message = "Full Validation verified this API; runtime and compatibility stay independent." %}
 {% elif result.limited %}
-    {% set decision_message = 'Optional mount discovery is denied; core API readiness is unaffected.' %}
+    {% set decision_message = "Optional mount discovery is denied; core API readiness is unaffected." %}
 {% elif result.gap %}
-    {% set decision_message = 'Required API evidence is missing; provider readiness is unqualified.' %}
+    {% set decision_message = "Required API evidence is missing; provider readiness is unqualified." %}
 {% else %}
-    {% set decision_message = 'No qualifying Full Validation evidence exists for this API.' %}
+    {% set decision_message = "No qualifying Full Validation evidence exists for this API." %}
 {% endif %}
 {% if row.key == 'health' %}
-    {% set auth_boundary = 'Root health · no token' %}
-    {% set auth_description = 'Root health needs no token and grants no Secret access.' %}
-    {% set impact_ready = 'Vault health was qualified during Full Validation; separately collected Runtime Health may change afterward.' %}
-    {% set verification_command = 'set -euo pipefail\n# Operator CLI context; output suppressed. Not KAORI worker evidence.\nvault status -format=json >/dev/null' %}
+    {% set auth_boundary = "Root health · no token" %}
+    {% set auth_description = "Root health needs no token and grants no Secret access." %}
+    {% set impact_ready = "Vault health was qualified during Full Validation; separately collected Runtime Health may change afterward." %}
+    {% set verification_command = "set -euo pipefail\n# Operator CLI context; output suppressed. Not KAORI worker evidence.\nvault status -format=json >/dev/null" %}
 {% elif row.key == 'approle' %}
-    {% set auth_boundary = 'Approved AppRole' %}
-    {% set auth_description = 'The worker uses an encrypted SecretID; its token is temporary.' %}
-    {% set impact_ready = 'AppRole login succeeded during Full Validation. No Secret read, lifecycle privilege, or inventory permission is implied.' %}
-    {% set verification_command = '' %}
+    {% set auth_boundary = "Approved AppRole" %}
+    {% set auth_description = "The worker uses an encrypted SecretID; its token is temporary." %}
+    {% set impact_ready = "AppRole login succeeded during Full Validation. No Secret read, lifecycle privilege, or inventory permission is implied." %}
+    {% set verification_command = "" %}
 {% elif row.key == 'token_lookup' %}
-    {% set auth_boundary = 'AppRole token' %}
-    {% set auth_description = 'The worker checks its token without persisting its value.' %}
-    {% set impact_ready = 'The required token identity check succeeded during Full Validation. Access to individual Secrets is not established.' %}
-    {% set verification_command = 'set -euo pipefail\n# Uses an independently authorized operator CLI identity.\n# It does not verify the managed KAORI AppRole identity.\nvault token lookup -format=json >/dev/null' %}
+    {% set auth_boundary = "AppRole token" %}
+    {% set auth_description = "The worker checks its token without persisting its value." %}
+    {% set impact_ready = "The required token identity check succeeded during Full Validation. Access to individual Secrets is not established." %}
+    {% set verification_command = "set -euo pipefail\n# Uses an independently authorized operator CLI identity.\n# It does not verify the managed KAORI AppRole identity.\nvault token lookup -format=json >/dev/null" %}
 {% else %}
-    {% set auth_boundary = 'Optional mount read' %}
-    {% set auth_description = 'Optional mount read uses scoped access; 403/404 is Limited.' %}
-    {% set impact_ready = 'Optional mount names were discoverable during Full Validation; this does not qualify KV v2 or PKI inventory.' %}
-    {% set verification_command = 'set -euo pipefail\n# Requires approved optional discovery access for the operator identity.\n# Suppress mount metadata output; this is not KAORI worker evidence.\nvault read -format=json sys/mounts >/dev/null' %}
+    {% set auth_boundary = "Optional mount read" %}
+    {% set auth_description = "Optional mount read uses scoped access; 403/404 is Limited." %}
+    {% set impact_ready = "Optional mount names were discoverable during Full Validation; this does not qualify KV v2 or PKI inventory." %}
+    {% set verification_command = "set -euo pipefail\n# Requires approved optional discovery access for the operator identity.\n# Suppress mount metadata output; this is not KAORI worker evidence.\nvault read -format=json sys/mounts >/dev/null" %}
 {% endif %}
 {% if result.observed %}
     {% set operational_impact = impact_ready %}
-    {% set next_action = 'Revalidate after Vault upgrades, AppRole policy changes or TLS changes. Review release qualification separately.' %}
+    {% set next_action = "Revalidate after Vault upgrades, AppRole policy changes or TLS changes. Review release qualification separately." %}
 {% elif result.limited %}
-    {% set operational_impact = 'Only optional mount discovery is limited. The required health, AppRole and token-lookup contracts remain separately qualified.' %}
-    {% set next_action = 'Grant read-only sys/mounts only after a separate approved operational need; otherwise keep optional discovery Limited.' %}
+    {% set operational_impact = "Only optional mount discovery is limited. The required health, AppRole and token-lookup contracts remain separately qualified." %}
+    {% set next_action = "Grant read-only sys/mounts only after a separate approved operational need; otherwise keep optional discovery Limited." %}
 {% elif result.gap %}
-    {% set operational_impact = 'A required API contract is not qualified. Dependent provider readiness must not be inferred.' %}
-    {% set next_action = 'Check the approved Vault origin, AppRole access and provider version, then rerun Full Validation.' %}
+    {% set operational_impact = "A required API contract is not qualified. Dependent provider readiness must not be inferred." %}
+    {% set next_action = "Check the approved Vault origin, AppRole access and provider version, then rerun Full Validation." %}
 {% else %}
-    {% set operational_impact = 'The present connection has no qualifying observation for this capability; an earlier result must not be treated as current.' %}
-    {% set next_action = 'Run Full Validation for this connection, then inspect newly committed capability evidence.' %}
+    {% set operational_impact = "The present connection has no qualifying observation for this capability; an earlier result must not be treated as current." %}
+    {% set next_action = "Run Full Validation for this connection, then inspect newly committed capability evidence." %}
 {% endif %}
 {% if result.observed %}
-    {% set observation_description = 'This API was observed in the latest Full Validation.' %}
+    {% set observation_description = "This API was observed in the latest Full Validation." %}
 {% elif result.limited %}
-    {% set observation_description = 'Mount discovery denied; core checks remain unaffected.' %}
+    {% set observation_description = "Mount discovery denied; core checks remain unaffected." %}
 {% elif result.gap %}
-    {% set observation_description = 'Required API was not qualified by the current validation.' %}
+    {% set observation_description = "Required API was not qualified by the current validation." %}
 {% else %}
-    {% set observation_description = 'No current Full Validation observation exists for this API.' %}
+    {% set observation_description = "No current Full Validation observation exists for this API." %}
 {% endif %}
 {% set evidence_steps = [
     ('01', 'API Contract', row.contract, 'The adapter declares this API; validation proves its status.'),
@@ -70,11 +70,12 @@
         <div class="p-5 sm:p-6">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div class="flex min-w-0 items-start gap-3.5">
-                    {{ integration_ui.palette_icon('circle-check' if result.observed else ('triangle-alert' if result.limited else 'circle-help'), 'normal' if result.observed else ('warning' if result.limited else 'info'), size='lg', rounded='xl') }}
+                    {{ integration_ui.palette_icon('circle-check' if result.observed else ('triangle-alert' if result.limited else 'circle-help') , 'normal' if result.observed else ('warning' if result.limited else 'info'), size='lg', rounded='xl') }}
                     <div class="min-w-0">
                         <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Capability Decision</p>
                         <h3 class="mt-1 text-lg font-semibold text-content-primary">{{ decision_title }}</h3>
-                        <p class="mt-2 max-w-3xl text-sm leading-6 text-content-secondary lg:line-clamp-1" title="{{ decision_message }}">{{ decision_message }}</p>
+                        <p class="mt-2 max-w-3xl text-sm leading-6 text-content-secondary lg:line-clamp-1"
+                           title="{{ decision_message }}">{{ decision_message }}</p>
                     </div>
                 </div>
                 <span class="shrink-0">{{ integration_status(status_tone, result.status_label, display='indicator') }}</span>
@@ -88,15 +89,16 @@
             </div>
             <dl class="mt-3 grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
                 {% set context_rows = [
-                    ('Requirement', 'Required' if row.required else 'Optional'),
-                    ('API Contract', row.contract),
-                    ('Identity Boundary', auth_boundary),
-                    ('Evidence Owner', 'Vault Full Validation')
-                ] %}
+                                    ('Requirement', 'Required' if row.required else 'Optional'),
+                                    ('API Contract', row.contract),
+                                    ('Identity Boundary', auth_boundary),
+                                    ('Evidence Owner', 'Vault Full Validation')
+                                ] %}
                 {% for label, value in context_rows %}
                     <div class="min-w-0 bg-surface-card px-4 py-3">
                         <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
-                        <dd class="mt-1 break-words text-xs font-semibold text-content-primary [overflow-wrap:anywhere] {% if label == 'Identity Boundary' %}lg:line-clamp-1{% endif %}" title="{{ value }}">
+                        <dd class="mt-1 break-words text-xs font-semibold text-content-primary [overflow-wrap:anywhere] {% if label == 'Identity Boundary' %}lg:line-clamp-1{% endif %}"
+                            title="{{ value }}">
                             {{ value }}
                         </dd>
                     </div>
@@ -125,7 +127,8 @@
                             <p class="mt-1 break-words text-xs font-semibold text-content-secondary [overflow-wrap:anywhere]">{{ evidence }}</p>
                         </div>
                     </div>
-                    <p class="mt-3 text-xs leading-5 text-content-muted lg:line-clamp-2" title="{{ description }}">{{ description }}</p>
+                    <p class="mt-3 text-xs leading-5 text-content-muted lg:line-clamp-2"
+                       title="{{ description }}">{{ description }}</p>
                 </li>
             {% endfor %}
         </ol>
@@ -193,8 +196,8 @@
             </header>
             <div class="border-b border-outline-subtle bg-surface-subtle px-5 py-3">
                 <div class="flex flex-wrap gap-2">
-                    {{ table_label.metadata_label('Scope · Approved operator CLI context') }}
-                    {{ table_label.metadata_label('Identity · Operator-managed, not KAORI AppRole') }}
+                    {{ table_label.metadata_label("Scope · Approved operator CLI context") }}
+                    {{ table_label.metadata_label("Identity · Operator-managed, not KAORI AppRole") }}
                 </div>
             </div>
             <pre class="max-h-64 overflow-auto whitespace-pre-wrap break-words bg-surface-card px-5 py-4 text-xs leading-5 text-content-secondary"><code x-ref="script">{{ verification_command }}</code></pre>
