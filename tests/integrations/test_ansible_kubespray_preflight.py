@@ -169,7 +169,13 @@ def test_verified_worker_evidence_is_still_only_ready_for_review() -> None:
         {'completed_at': None},
         {'result_summary_json': {'repository': REPOSITORY}},
         {'result_summary_json': {'source_sha': SOURCE_CANDIDATE_SHA}},
-        {'result_summary_json': {'repository': REPOSITORY, 'source_sha': SOURCE_CANDIDATE_SHA, 'upstream_kubespray_commit': '0' * 40}},
+        {
+            'result_summary_json': {
+                'repository': REPOSITORY,
+                'source_sha': SOURCE_CANDIDATE_SHA,
+                'upstream_kubespray_commit': '0' * 40,
+            }
+        },
     ],
 )
 def test_unrelated_stale_or_unattested_jobs_cannot_qualify_a_plan(change) -> None:
