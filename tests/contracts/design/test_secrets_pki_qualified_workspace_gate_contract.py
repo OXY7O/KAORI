@@ -25,7 +25,9 @@ def _gate(source: str, expression: str, **context: object) -> bool:
 def test_inventory_is_blocked_for_saved_but_unqualified_vault() -> None:
     source = _read(INVENTORY)
     Environment().parse(source)
-    assert _gate(source, 'inventory_unqualified = not summary.has_evidence', summary={'has_evidence': False})
+    assert _gate(
+        source, 'inventory_unqualified = not summary.has_evidence', summary={'has_evidence': False}
+    )
     assert not _gate(
         source, 'inventory_unqualified = not summary.has_evidence', summary={'has_evidence': True}
     )
