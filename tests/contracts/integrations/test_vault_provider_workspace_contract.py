@@ -560,7 +560,7 @@ def test_vault_capability_modal_parity_with_kubernetes_without_invented_checks()
     # A standalone human CLI check cannot claim to validate the managed
     # AppRole. Show copyable commands only for safe, read-only operator probes.
     assert "row.key == 'approle'" in modal
-    assert "verification_command = ''" in modal
+    assert 'verification_command = ""' in modal
     assert 'data-kaori-capability-verification-unavailable' in modal
     assert 'Use Run Full Validation with the approved managed AppRole identity.' in modal
     for probe in (
@@ -610,7 +610,7 @@ def test_vault_view_more_copy_line_budgets_cover_all_capabilities_and_statuses()
         ('auth_description', 4, 64),
         ('observation_description', 4, 64),
     ):
-        variants = re.findall(r'\{% set ' + name + r" = '([^']*)' %\}", modal)
+        variants = re.findall(r'\{% set ' + name + r' = "([^"]*)" %\}', modal)
         assert len(variants) == expected_count, name
         assert max(map(len, variants)) <= max_chars, name
 
@@ -715,7 +715,7 @@ def test_vault_runtime_badge_and_next_action_match_committed_runtime_posture() -
 
     # All states keep precise actions short enough for the desktop card.
     # Narrow viewports may wrap naturally; no text truncation is introduced.
-    actions = re.findall(r"{% set runtime_next_action = '([^']+)' %}", runtime)
+    actions = re.findall(r'{% set runtime_next_action = "([^"]+)" %}', runtime)
     assert len(actions) == 5
     assert all(len(action) <= 60 for action in actions)
     assert 'Review Vault health, remediate, then refresh runtime.' in actions
