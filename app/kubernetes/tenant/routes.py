@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, cast
+from typing import cast
 
 from flask import abort, current_app, make_response, redirect, render_template, request, url_for
 from flask_login import current_user
@@ -117,8 +117,8 @@ from app.kubernetes.tenant.route_common import (
     _csrf,
     _operations_active_tab,
     _operations_active_view,
-    _operations_provisioning_context,
     _operations_drift_context,
+    _operations_provisioning_context,
     _record,
     _required_int,
     _tenant_active_section_context,
@@ -141,7 +141,6 @@ from app.kubernetes.tenant.service import (
     get_namespace_registry_context,
     get_resource_profile_registry_context,
     get_resource_profile_workspace_context,
-    get_tenant_registry_context,
     provision_native_namespace_committed,
     reconcile_managed_native_namespace_committed,
     rollout_resource_profile_to_tenant_committed,

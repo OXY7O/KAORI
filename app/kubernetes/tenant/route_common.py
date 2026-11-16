@@ -11,9 +11,6 @@ from app.kubernetes.tenant.access_service import (
     get_provider_access_evidence_registry_context,
     get_tenant_access_context,
 )
-from app.kubernetes.tenant.allocation_drift import build_allocation_drift_action_state
-from app.kubernetes.tenant.capsule_allocation_governance import get_capsule_shared_allocation_context
-from app.kubernetes.tenant.capsule_tenant_quota_governance import get_capsule_tenant_quota_context
 from app.kubernetes.tenant.admin_workspace import (
     get_access_grant_registry_context,
     get_credential_registry_context,
@@ -22,6 +19,9 @@ from app.kubernetes.tenant.admin_workspace import (
     get_namespace_access_registry_context,
     get_tenant_summary_context,
 )
+from app.kubernetes.tenant.allocation_drift import build_allocation_drift_action_state
+from app.kubernetes.tenant.capsule_allocation_governance import get_capsule_shared_allocation_context
+from app.kubernetes.tenant.capsule_tenant_quota_governance import get_capsule_tenant_quota_context
 from app.kubernetes.tenant.discovery_service import get_tenant_discovery_context
 from app.kubernetes.tenant.registry_context import (
     get_tenant_namespace_profile_mapping_context,
