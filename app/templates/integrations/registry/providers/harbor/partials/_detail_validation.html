@@ -56,14 +56,14 @@
         loading_active=validation_job and validation_job.is_active,
         loading_label="Running Harbor Full Validation",
         title_extra=info_tip.render(
-            "harbor-full-validation-detail-guide",
-            "Harbor Full Validation",
-            "Verify Harbor API compatibility, identity and required read-only capabilities.",
-            [
-                "Harbor stays authoritative for registry data and policy.",
-                "Artifact inventory collection and runtime observation are separate workflows."
-            ],
-            placement="right", variant="guide"
+        "harbor-full-validation-detail-guide",
+        "Harbor Full Validation",
+        "Verify Harbor API compatibility, identity and required read-only capabilities.",
+        [
+        "Harbor stays authoritative for registry data and policy.",
+        "Artifact inventory collection and runtime observation are separate workflows."
+        ],
+        placement="right", variant="guide"
         )
         ) %}
         <form method="post"

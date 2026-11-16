@@ -24,16 +24,14 @@
                             class="text-base font-semibold leading-6 text-content-primary">
                             Capsule Cluster RBAC Bootstrap
                         </h3>
-                        {{ info_tip.render(
-                            "kubernetes-capsule-rbac-bootstrap-guide",
-                            "Capsule Cluster RBAC Bootstrap",
-                            "Review committed access-profile checks before requesting or modifying Capsule ClusterRoles.",
-                            [
-                                "Four versioned access profiles define the governed ClusterRole baseline.",
-                                "Checking readiness does not grant permissions; RBAC changes require authorization."
-                            ],
-                            placement="right", variant="guide"
-                        ) }}
+                        {{ info_tip.render("kubernetes-capsule-rbac-bootstrap-guide",
+                                                "Capsule Cluster RBAC Bootstrap",
+                                                "Review committed access-profile checks before requesting or modifying Capsule ClusterRoles.",
+                                                [
+                                                "Four versioned access profiles define the governed ClusterRole baseline.",
+                                                "Checking readiness does not grant permissions; RBAC changes require authorization."
+                                                ],
+                                                placement="right", variant="guide") }}
                     </div>
                     <p class="mt-1 max-w-2xl text-xs leading-5 text-content-secondary">
                         Reusable ClusterRoles for governed Capsule Access Grants.
@@ -154,8 +152,8 @@
                                                 {{ role.profile }} <span class="text-xs font-normal text-content-muted">v{{ role.version }}</span>
                                             </p>
                                             {{ table_label.status_label(role.status|title,
-                                                                                    'normal' if role.status == 'ready'
-                                                                                    else 'warning' if role.status == 'missing' else 'critical') }}
+                                                                                        'normal' if role.status == 'ready'
+                                                                                        else 'warning' if role.status == 'missing' else 'critical') }}
                                         </div>
                                         <p class="mt-1 break-all font-mono text-xs leading-5 text-content-muted">{{ role.name }}</p>
                                         <p class="mt-1.5 text-xs leading-5 text-content-secondary">

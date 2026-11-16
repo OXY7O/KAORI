@@ -59,14 +59,14 @@
         loading_active=runtime_refresh_job and runtime_refresh_job.is_active,
         loading_label="Refreshing Harbor runtime health",
         title_extra=info_tip.render(
-            "harbor-runtime-health-detail-guide",
-            "Harbor Runtime Health & Diagnostics",
-            "Review persisted Harbor endpoint health without repeating provider capability checks.",
-            [
-                "Runtime observation does not replace Full Validation.",
-                "Detailed Registry inventory and governance remain in Artifact Registry."
-            ],
-            placement="right", variant="guide"
+        "harbor-runtime-health-detail-guide",
+        "Harbor Runtime Health & Diagnostics",
+        "Review persisted Harbor endpoint health without repeating provider capability checks.",
+        [
+        "Runtime observation does not replace Full Validation.",
+        "Detailed Registry inventory and governance remain in Artifact Registry."
+        ],
+        placement="right", variant="guide"
         )
         ) %}
         <button type="button"

@@ -8,10 +8,10 @@
     {% set readiness = instance.readiness_status or "validation_required" %}
     {% set summary = instance.validation_summary or {} %}
     {% set inventory_committed_streams = [
-        inventory_readiness.last_committed_at,
-        public_pki_readiness.last_committed_at,
-        stored_cert_readiness.last_committed_at
-    ]|select|list|length %}
+            inventory_readiness.last_committed_at,
+            public_pki_readiness.last_committed_at,
+            stored_cert_readiness.last_committed_at
+        ]|select|list|length %}
     {% set inventory_tab_badge = (inventory_committed_streams ~ ' Committed Streams') if inventory_committed_streams else 'Not Collected' %}
     <div class="kaori-integration-semantic space-y-6"
          x-data="integrationWorkspaceTabs(['configuration', 'validation', 'runtime', 'inventory'], 'configuration', 'vault-detail-tabs')"

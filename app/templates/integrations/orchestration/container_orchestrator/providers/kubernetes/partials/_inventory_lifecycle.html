@@ -16,16 +16,14 @@
                         <div class="flex flex-wrap items-center gap-2">
                             <h2 id="inventory-operational-use-title"
                                 class="text-base font-semibold text-content-primary">Inventory &amp; Lifecycle</h2>
-                            {{ info_tip.render(
-                                "kubernetes-inventory-lifecycle-detail-guide",
-                                "Kubernetes Inventory & Lifecycle",
-                                "Review committed inventory freshness, consumers, retained evidence and deletion safeguards.",
-                                [
-                                    "Kubernetes retains authority for live resources; KAORI correlates committed inventory.",
-                                    "Resolve lifecycle blockers before deleting the connection."
-                                ],
-                                placement="right", variant="guide"
-                            ) }}
+                            {{ info_tip.render("kubernetes-inventory-lifecycle-detail-guide",
+                                                        "Kubernetes Inventory & Lifecycle",
+                                                        "Review committed inventory freshness, consumers, retained evidence and deletion safeguards.",
+                                                        [
+                                                        "Kubernetes retains authority for live resources; KAORI correlates committed inventory.",
+                                                        "Resolve lifecycle blockers before deleting the connection."
+                                                        ],
+                                                        placement="right", variant="guide") }}
                         </div>
                         <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review committed inventory, consumers, observability bindings, retention boundaries, and connection lifecycle in one workspace.</p>
                     </div>
