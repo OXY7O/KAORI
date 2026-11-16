@@ -85,7 +85,8 @@ def test_operational_dashboards_share_peer_grid_and_reporting_proportions() -> N
     alert_response_workspace = read('app/templates/components/operational_alert_response.html')
     assert 'Controlled Response Flow' in alert_response_workspace
     assert 'Governed Reporting Flow' in reporting_workspace
-    assert '<span class="font-semibold text-content-primary">One-time</span> · Manual' in reporting_workspace
+    assert "{{ 'Evidence' if evidence_only else 'One-time' }}" in reporting_workspace
+    assert "{{ 'Manual Review' if evidence_only else 'Manual' }}" in reporting_workspace
     assert 'Generate manually' not in reporting_workspace
 
 
@@ -304,7 +305,10 @@ def test_capacity_metric_cards_follow_kubernetes_visual_grammar() -> None:
     storage = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
     registry = read('app/templates/artifact_registry/partials/_overview_capacity_snapshot.html')
 
+    shared_metric = read('app/templates/components/operational_capacity_metric_card.html')
     for template in (kubernetes, storage, registry):
+        assert 'components/operational_capacity_metric_card.html' in template
+        assert 'capacity_metric_card.render(' in template
         assert 'Data Scope:' in template
         assert 'bg-kaori-soft p-3 text-xs leading-5 text-content-secondary' in template
         assert 'grid gap-3 lg:grid-cols-3' in template
@@ -322,12 +326,13 @@ def test_capacity_metric_cards_follow_kubernetes_visual_grammar() -> None:
         assert 'Recommended Capacity Action Flow' not in template
         assert 'components/operational_flow_steps.html' not in template
 
-    assert 'progress_bar.bar(percent,' in storage
-    assert 'percentage unavailable' in storage
+    assert 'progress_bar.bar(percent,' in shared_metric
+    assert 'percentage unavailable' in shared_metric
+    assert 'progress_bar.bar(usage_percent,' in storage
     assert 'Capacity Utilization</h3>' not in storage
-    assert 'progress_bar.bar(item.progress_percent,' in registry
-    assert 'item.progress_percent is not none' in registry
-    assert 'percentage not applicable' in registry
+    assert 'item.progress_percent' in registry
+    assert 'percent is not none' in shared_metric
+    assert 'percentage unavailable' in shared_metric
     assert "operational_callout.render('Data Scope'" not in registry
     assert 'Worker capacity headroom chart' in kubernetes
     assert 'Object Storage utilization balance chart' in storage
@@ -381,10 +386,10 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert 'has_requests = reporting_snapshot.generated_reports > 0' in freshness
     assert "status='Recorded' if has_artifacts else ('Not Ready' if has_requests else 'Not Generated')" in freshness
     assert 'Committed artifact references; storage accessibility is not verified here.' in freshness
-    assert 'No immediate scaling required.' in capacity
-    assert 'Validate requests/limits, growth, and planned deployments against current worker headroom.' in capacity
+    assert 'No scaling needed; monitor trends, requests/limits, and baselines.' in capacity
+    assert 'Check headroom, requests/limits, and forecast before workload growth.' in capacity
     assert (
-        'Verify the selected cluster Metrics Source and kube-state-metrics node-role labels, then reload the snapshot.'
+        'Refresh Metrics Source and node-role evidence before capacity decisions.'
         in capacity
     )
     assert "'Worker-node CPU, memory, and pod headroom.'" in kubernetes_capacity
