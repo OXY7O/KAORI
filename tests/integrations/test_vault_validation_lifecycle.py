@@ -368,11 +368,14 @@ def test_vault_runtime_status_polls_scoped_task_without_page_reload(
     assert feedback_users == [42]
 
 
-@pytest.mark.parametrize('integration_type,instance_id,operation', [
-    ('secrets_pki', 77, 'runtime_refresh'),
-    ('orchestration', 99, 'runtime_refresh'),
-    ('secrets_pki', 99, 'full_validation'),
-])
+@pytest.mark.parametrize(
+    'integration_type,instance_id,operation',
+    [
+        ('secrets_pki', 77, 'runtime_refresh'),
+        ('orchestration', 99, 'runtime_refresh'),
+        ('secrets_pki', 99, 'full_validation'),
+    ],
+)
 def test_vault_runtime_status_denies_cross_scope_or_wrong_operation(
     monkeypatch: pytest.MonkeyPatch,
     integration_type: str,
@@ -380,12 +383,16 @@ def test_vault_runtime_status_denies_cross_scope_or_wrong_operation(
     operation: str,
 ) -> None:
     app = _app(monkeypatch)
-    monkeypatch.setattr(routes, 'build_validation_snapshot', lambda task_id: {
-        'task_id': task_id,
-        'integration_type': integration_type,
-        'integration_instance_id': instance_id,
-        'operation': operation,
-    })
+    monkeypatch.setattr(
+        routes,
+        'build_validation_snapshot',
+        lambda task_id: {
+            'task_id': task_id,
+            'integration_type': integration_type,
+            'integration_instance_id': instance_id,
+            'operation': operation,
+        },
+    )
     with app.test_request_context(
         '/integrations/secrets-management/secrets-pki/vault/instances/15/runtime/status/unrelated-task',
         headers={'HX-Request': 'true'},
@@ -434,9 +441,11 @@ def test_vault_runtime_refresh_rejects_disabled_connection_before_enqueue(
 
     app = _app(monkeypatch)
     monkeypatch.setattr(
-        routes, '_instance_or_404',
+        routes,
+        '_instance_or_404',
         lambda instance_id: SimpleNamespace(id=instance_id, integration_instance_id=99, enabled=False),
     )
+
     def unexpected_enqueue(**kwargs: Any) -> None:
         raise AssertionError('Disabled Vault instance must not enqueue runtime work')
 
