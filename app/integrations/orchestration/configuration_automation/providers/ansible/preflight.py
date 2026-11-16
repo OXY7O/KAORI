@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime, timedelta
+from ipaddress import IPv4Network, ip_network
 from typing import Any
 
 from app.integrations.orchestration.configuration_automation.providers.ansible.service import (
@@ -94,6 +95,55 @@ def _committed_host_evidence(
     return {}, None
 
 
+def _valid_pilot_hosts(facts: dict[str, Any]) -> bool:
+    """Exactly 1 control plane and 2 workers, from the reviewed non-HA source profile."""
+    hosts = facts.get('hosts')
+    if not isinstance(hosts, list) or len(hosts) != 3:
+        return False
+    roles: list[str] = []
+    identities: set[str] = set()
+    supported = {('OracleLinux', '9'), ('Ubuntu', '24.04')}
+    for host in hosts:
+        if not isinstance(host, dict) or host.get('asset_identity_verified') is not True:
+            return False
+        identity = host.get('asset_id')
+        role = host.get('role')
+        if not isinstance(identity, str) or not identity.strip() or identity in identities:
+            return False
+        if role not in {'control_plane', 'worker'}:
+            return False
+        identities.add(identity)
+        roles.append(role)
+        if (host.get('os_distribution'), host.get('os_release')) not in supported:
+            return False
+        for field in ('cpu_count', 'memory_mib', 'disk_gib'):
+            value = host.get(field)
+            if type(value) is not int or value <= 0:
+                return False
+    return roles.count('control_plane') == 1 and roles.count('worker') == 2
+
+
+def _valid_pilot_network(facts: dict[str, Any]) -> bool:
+    """Require concrete, non-overlapping pod/service and observed host networks."""
+    raw_host_networks = facts.get('host_network_cidrs')
+    if not isinstance(raw_host_networks, list) or not raw_host_networks or len(raw_host_networks) > 64:
+        return False
+    try:
+        pod = ip_network(facts.get('pod_cidr'), strict=True)
+        service = ip_network(facts.get('service_cidr'), strict=True)
+        observed = [ip_network(cidr, strict=False) for cidr in raw_host_networks]
+    except (ValueError, TypeError):
+        return False
+    networks = [pod, service, *observed]
+    if any(not isinstance(net, IPv4Network) for net in networks):
+        return False
+    if any(net.is_loopback or net.is_link_local or net.is_multicast for net in (pod, service)):
+        return False
+    return not any(pod.overlaps(other) or service.overlaps(other) for other in observed) and not pod.overlaps(
+        service
+    )
+
+
 def build_kubespray_preflight(
     connection: IntegrationInstance,
     *,
@@ -106,6 +156,14 @@ def build_kubespray_preflight(
     posture = source_validation_posture(connection)
     facts, facts_job_id = _committed_host_evidence(connection, jobs or [], now=checked_at)
     verified_facts = facts_job_id is not None
+    qualified_hosts = verified_facts and _valid_pilot_hosts(facts)
+    qualified_network = verified_facts and _valid_pilot_network(facts)
+    qualified_topology = (
+        qualified_hosts
+        and facts.get('high_availability') is False
+        and facts.get('upstream_kubespray_release') == 'v2.32.0'
+        and facts.get('kubernetes_minor') == '1.36'
+    )
 
     gates = (
         KubesprayGate(
@@ -145,14 +203,14 @@ def build_kubespray_preflight(
             'host_facts',
             'OS & Capacity Evidence',
             'ready'
-            if verified_facts and facts.get('os_support_verified') is True and facts.get('capacity_verified') is True
+            if verified_facts and facts.get('os_support_verified') is True and facts.get('capacity_verified') is True and qualified_hosts
             else 'blocked',
             'Host OS, kernel, CPU, RAM, disk and package manager require observed worker facts.',
         ),
         KubesprayGate(
             'network',
             'CIDR & Network Reachability',
-            'ready' if verified_facts and facts.get('network_verified') is True else 'blocked',
+            'ready' if qualified_network and facts.get('network_verified') is True else 'blocked',
             'Pod/Service and existing CIDRs, interfaces, required ports and reachability need evidence.',
         ),
         KubesprayGate(
@@ -167,7 +225,7 @@ def build_kubespray_preflight(
             'cluster_topology',
             'Topology, Quorum & CRI/CNI',
             'ready'
-            if verified_facts
+            if qualified_topology
             and facts.get('etcd_quorum_verified') is True
             and facts.get('control_plane_endpoint_verified') is True
             and facts.get('cri_cni_compatibility_verified') is True
