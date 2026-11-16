@@ -6,14 +6,14 @@
 {% import "kubernetes/analytics/components/_scoped_link.html" as scoped_link %}
 {% set overview_usage_guide %}
     {{ info_tip.render('kubernetes-analytics-overview-usage-guide',
-            'Resource Utilization Snapshot Guide',
-            'Interpret committed CPU, memory, storage, and pod utilization for the selected cluster and time range.',
-            items=[
-                'Compare current utilization against remaining headroom and the threshold lanes before escalating pressure.',
-                'The committed snapshot is not a live probe; missing worker data must remain unavailable, not healthy.',
-                'Open Resource Utilization for sustained trends and workload-level evidence.'
-            ],
-            placement='right', variant='guide') }}
+        'Resource Utilization Snapshot Guide',
+        'Interpret committed CPU, memory, storage, and pod utilization for the selected cluster and time range.',
+        items=[
+        'Compare current utilization against remaining headroom and the threshold lanes before escalating pressure.',
+        'The committed snapshot is not a live probe; missing worker data must remain unavailable, not healthy.',
+        'Open Resource Utilization for sustained trends and workload-level evidence.'
+        ],
+        placement='right', variant='guide') }}
 {% endset %}
 {% if not payload.resource_snapshot.available|default(false) %}
     {{ overview_surface.snapshot_unavailable('utilization', 'Resource Utilization Snapshot', 'The Analytics worker has not committed utilization evidence for the selected cluster and time range.', icon='gauge', title_accessory=overview_usage_guide) }}

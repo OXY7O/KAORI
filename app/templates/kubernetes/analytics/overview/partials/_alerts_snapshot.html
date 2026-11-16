@@ -5,14 +5,14 @@
 {% import "kubernetes/analytics/components/_scoped_link.html" as scoped_link %}
 {% set overview_alerts_guide %}
     {{ info_tip.render('kubernetes-analytics-overview-alerts-guide',
-            'Alerts & Anomalies Snapshot Guide',
-            'Distinguish active alert pressure, pending signals, and anomaly candidates from committed Alertmanager and Metrics Source evidence.',
-            items=[
-                'Critical or firing alerts may require immediate triage; warnings and pending signals need scoped follow-up.',
-                'Anomaly candidates are not automatically confirmed incidents.',
-                'Confirm freshness, routing, and owning workload before escalation.'
-            ],
-            placement='right', variant='guide') }}
+        'Alerts & Anomalies Snapshot Guide',
+        'Distinguish active alert pressure, pending signals, and anomaly candidates from committed Alertmanager and Metrics Source evidence.',
+        items=[
+        'Critical or firing alerts may require immediate triage; warnings and pending signals need scoped follow-up.',
+        'Anomaly candidates are not automatically confirmed incidents.',
+        'Confirm freshness, routing, and owning workload before escalation.'
+        ],
+        placement='right', variant='guide') }}
 {% endset %}
 {% if not payload.alerts_snapshot.available|default(false) %}
     {{ overview_surface.snapshot_unavailable('alerts', 'Alerts & Anomalies Snapshot', 'The Analytics worker has not committed alert and anomaly evidence for the selected cluster.', icon='bell-ring', title_accessory=overview_alerts_guide) }}

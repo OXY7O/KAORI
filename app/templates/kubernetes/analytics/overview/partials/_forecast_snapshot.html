@@ -7,14 +7,14 @@
 {% import "kubernetes/analytics/components/_scoped_link.html" as scoped_link %}
 {% set overview_forecast_guide %}
     {{ info_tip.render('kubernetes-analytics-overview-forecast-guide',
-            'Forecast & Trend Snapshot Guide',
-            'Interpret historical measurements, projected utilization, and threshold risk from qualified committed forecast evidence.',
-            items=[
-                'Historical observations and dashed projections represent different evidence types.',
-                'Validate coverage, forecast horizon, and nearest threshold timing before capacity changes.',
-                'An absent forecast remains Unknown instead of a normal-risk assertion.'
-            ],
-            placement='right', variant='guide') }}
+        'Forecast & Trend Snapshot Guide',
+        'Interpret historical measurements, projected utilization, and threshold risk from qualified committed forecast evidence.',
+        items=[
+        'Historical observations and dashed projections represent different evidence types.',
+        'Validate coverage, forecast horizon, and nearest threshold timing before capacity changes.',
+        'An absent forecast remains Unknown instead of a normal-risk assertion.'
+        ],
+        placement='right', variant='guide') }}
 {% endset %}
 {% if not payload.forecast_snapshot.available|default(false) %}
     {{ overview_surface.snapshot_unavailable('forecast', 'Forecast & Trend Snapshot', 'The Analytics worker has not committed forecast evidence for the selected cluster and forecast history window.', icon='chart-spline', title_accessory=overview_forecast_guide) }}
@@ -137,11 +137,11 @@
                         icon='scan-search',
                         role='brand') }}
             {{ overview_surface.interpretation_callout('Forecast Decision',
-                        forecast.risk_note|replace('No threshold breach is projected from the available evidence.', 'No projected breach in available evidence.')|replace('No threshold breach is projected from available evidence.', 'No projected breach in available evidence.'),
-                        'Use risk, horizon, and threshold direction to choose monitoring or capacity planning.',
-                        icon='triangle-alert' if risk_count > 0 else 'circle-check',
-                        role='brand',
-                        tone='warning' if risk_count > 0 else 'normal') }}
+                        forecast.risk_note|replace('No threshold breach is projected from the available evidence.', 'No projected breach in available evidence.') |replace('No threshold breach is projected from available evidence.', 'No projected breach in available evidence.'),
+            'Use risk, horizon, and threshold direction to choose monitoring or capacity planning.',
+            icon='triangle-alert' if risk_count > 0 else 'circle-check',
+            role='brand',
+            tone='warning' if risk_count > 0 else 'normal') }}
         </div>
     </section>
 {% endif %}

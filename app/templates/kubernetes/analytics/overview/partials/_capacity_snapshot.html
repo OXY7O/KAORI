@@ -5,14 +5,14 @@
 {% import "kubernetes/analytics/components/_scoped_link.html" as scoped_link %}
 {% set overview_capacity_guide %}
     {{ info_tip.render('kubernetes-analytics-overview-capacity-guide',
-            'Worker Capacity Snapshot Guide',
-            'Interpret worker allocatable headroom and Kubernetes scheduling capacity without treating control-plane resources as available workers.',
-            items=[
-                'Compare worker CPU, memory, and pod slots with current requests and workload placement.',
-                'Capacity recommendations require observed, committed evidence and an explicit operator decision.',
-                'Missing snapshots are unavailable evidence, not zero demand.'
-            ],
-            placement='right', variant='guide') }}
+        'Worker Capacity Snapshot Guide',
+        'Interpret worker allocatable headroom and Kubernetes scheduling capacity without treating control-plane resources as available workers.',
+        items=[
+        'Compare worker CPU, memory, and pod slots with current requests and workload placement.',
+        'Capacity recommendations require observed, committed evidence and an explicit operator decision.',
+        'Missing snapshots are unavailable evidence, not zero demand.'
+        ],
+        placement='right', variant='guide') }}
 {% endset %}
 {% if not payload.capacity_snapshot.available|default(false) %}
     {{ overview_surface.snapshot_unavailable('capacity', 'Worker Capacity Snapshot', 'The Analytics worker has not committed capacity evidence for the selected cluster and time range.', icon='server-cog', title_accessory=overview_capacity_guide) }}

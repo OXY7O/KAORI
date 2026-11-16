@@ -36,8 +36,8 @@
             <section class="space-y-4"
                      aria-labelledby="analytics-overview-domain-review-heading">
                 {{ section_intro.render('Explore Analytics Domains',
-                        'Select a domain to review its committed evidence, operational signals, and recommended actions.',
-                        'analytics-overview-domain-review-heading') }}
+                                'Select a domain to review its committed evidence, operational signals, and recommended actions.',
+                                'analytics-overview-domain-review-heading') }}
                 <section id="analytics-overview-workspace"
                          data-analytics-tabset
                          data-analytics-tabset-id="overview-content"
@@ -53,14 +53,14 @@
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h2 class="text-base font-semibold text-content-primary">Analytics Overview Workspace</h2>
                                         {{ info_tip.render('kubernetes-analytics-overview-workspace-guide',
-                                                        'Kubernetes Analytics Overview Guide',
-                                                        'Switch between committed operational snapshots without implying live provider reads.',
-                                                        items=[
-                                                        'Usage, Capacity, Workload, Storage, and Consumers expose source-qualified resource and governance evidence.',
-                                                        'Forecast and Alerts qualify trend risk and alert pressure; missing worker datasets remain unavailable.',
-                                                        'Actions and Guidance provide committed recommendations for explicit operator review, not automatic remediation.'
-                                                        ],
-                                                        placement='right', variant='guide') }}
+                                                                                'Kubernetes Analytics Overview Guide',
+                                                                                'Switch between committed operational snapshots without implying live provider reads.',
+                                                                                items=[
+                                                                                'Usage, Capacity, Workload, Storage, and Consumers expose source-qualified resource and governance evidence.',
+                                                                                'Forecast and Alerts qualify trend risk and alert pressure; missing worker datasets remain unavailable.',
+                                                                                'Actions and Guidance provide committed recommendations for explicit operator review, not automatic remediation.'
+                                                                                ],
+                                                                                placement='right', variant='guide') }}
                                     </div>
                                     <p class="mt-1 text-sm leading-6 text-content-secondary">Open one operational domain at a time. KAORI loads its committed snapshot only when the tab is first activated.</p>
                                 </div>
