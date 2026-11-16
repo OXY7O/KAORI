@@ -44,23 +44,49 @@ from app.integrations.orchestration.configuration_automation.providers.ansible.s
 )
 from app.integrations.orchestration.container_orchestrator.routes import (
     _capsule_rbac_feedback_response as _capsule_rbac_feedback_response,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
     _kubernetes_detail_context as _kubernetes_detail_context,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
     kubernetes as kubernetes,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
     kubernetes_binding_registry as kubernetes_binding_registry,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
     kubernetes_capability_registry as kubernetes_capability_registry,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
     kubernetes_capability_validate as kubernetes_capability_validate,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
     kubernetes_capability_validation_status as kubernetes_capability_validation_status,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
     kubernetes_capsule_rbac_bootstrap as kubernetes_capsule_rbac_bootstrap,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
     kubernetes_capsule_rbac_check as kubernetes_capsule_rbac_check,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
     kubernetes_detail as kubernetes_detail,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
     kubernetes_registry_details as kubernetes_registry_details,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
     kubernetes_runtime_history as kubernetes_runtime_history,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
     kubernetes_runtime_refresh as kubernetes_runtime_refresh,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
     kubernetes_runtime_refresh_status as kubernetes_runtime_refresh_status,
 )
-from app.integrations.route_common import integrations_bp
 from app.integrations.overview_workspace import build_integrations_overview
 from app.integrations.provider_matrix import provider_kinds
+from app.integrations.route_common import integrations_bp
 from app.integrations.service import (
     MetricsSourceRegistryFilters,
     build_alertmanager_page,
@@ -78,6 +104,7 @@ from app.platform_operations.notifications.service import (
     get_navigation_notification_context,
     record_operational_activity,
 )
+
 
 @integrations_bp.get('/')
 @permission_required('integrations.manage')
