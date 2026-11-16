@@ -125,18 +125,35 @@ a source readiness score or consumer-grant claim. Metadata-only
 View More is available via the existing Integration native dialog,
 and any Jobs handoff retains `jobs.view` authorization.
 
-**Do not clone MinIO asset lifecycle into Vault**: the Vault connection
-provider has no approved asset-owner binding table, deletion route,
-or proven removal guardrail. The Lifecycle Gate must say
-`Not Evaluated`, and the supported action is permission-gated
-`Configure Connection` plus existing independently governed collection
-jobs. Do not show `Delete Connection` or `Guardrails Passed`; never
-invent bound observability sources. Vault remains authoritative for
-Secret payloads, ACLs, tokens, issuer keys, and issuance. Operational
-consumers describe read-only ownership boundaries, not proof of actual
-active consumers, issued certificates, or automatic source bindings.
-Source collection, Full Validation, runtime evidence and lifecycle
-retention are independent. No live Vault requests during rendering.
+**Vault guarded Delete Connection (Human UAT #4900):**
+Vault now follows the approved MinIO **Delete Connection** placement,
+critical button, shared confirmation dialog and CSRF-protected POST.
+Unlike MinIO, it is **not an asset owner**: only the KAORI Vault provider
+registration and encrypted AppRole SecretID are removed, never provider
+Vault objects or retained runtime/JobExecution/Activity Audit evidence.
+Use `provider_deletion_guard` under the existing resource admission
+lock, and additionally deny removal if canonical IntegrationBindings,
+KV v2 Secret representations/collection states, public PKI issuers/
+collection states or stored PKI certificates/collection states exist.
+Those committed evidence references are protected by RESTRICT foreign
+keys and must **never** be cascaded or silently deleted. If blocked,
+show the blocking condition count and a disabled Delete Connection
+button; the POST guard must run again and fail safely even if a stale
+client submits. Eligible clean registrations use the shared native
+confirmation and operational Activity Audit/toast; SQL errors roll back
+and are reported without leaking Vault credentials or provider details.
+The Lifecycle Gate can show Ready/Guardrails Passed only after the
+committed dependency guard has actually completed; otherwise it is
+Blocked. Do not invent MinIO's asset-scoped Observability bindings,
+reusable source destruction, or provider-side Secret/PKI revocation.
+KAORI operational consumers remain bounded, independently owned
+read-only evidence. No live Vault request occurs during rendering or
+deletion.
+
+**Vault Evidence Ownership text density (Human UAT #4900):**
+Use a concise provider-aware single desktop line: `KAORI commits scoped
+metadata; Vault owns Secrets and PKI; observability stays separate.`
+Keep natural mobile wrapping and the shared Evidence Ownership band.
 
 **Vault Runtime Refresh in-place worker lifecycle (Human UAT #4889):**
 Vault Runtime & History now follows the already-approved Kubernetes/MinIO

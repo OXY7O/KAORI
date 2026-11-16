@@ -5,6 +5,7 @@ from typing import Any
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.common.pagination import paginate_query
+from app.integrations.deletion import DeletionBlocked, DeletionGuard, provider_deletion_guard
 from app.extensions.db import db
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.types import VaultConnectionInput
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import VaultClient
@@ -16,7 +17,14 @@ from app.integrations.secrets_management.secrets_pki.providers.vault.transport i
     validate_auth_mount,
     validate_vault_endpoint,
 )
-from app.models.integration import IntegrationInstance
+from app.models.integration import IntegrationBinding, IntegrationInstance
+from app.models.secrets_pki import SecretInventoryCollectionState, SecretProviderRepresentation
+from app.models.secrets_pki_pki import PKIIssuerCollectionState, PKIIssuerIdentity
+from app.models.secrets_pki_stored_certificates import (
+    PKIStoredCertificateCollectionState,
+    PKIStoredCertificateObservation,
+)
+from app.platform_operations.jobs.service import acquire_resource_admission_locks
 from app.models.runtime import IntegrationRuntimeObservation
 from app.models.vault import VaultInstance
 
@@ -128,6 +136,61 @@ def save_connection(values: VaultConnectionInput, *, existing: VaultInstance | N
         db.session.rollback()
         raise
     return instance
+
+
+def vault_connection_deletion_guard(instance: VaultInstance) -> DeletionGuard:
+    """Fail closed on active work and committed Secrets/PKI dependencies.
+
+    All downstream Secret/PKI evidence is retained by its canonical
+    integration identity under RESTRICT foreign keys. A provider registration
+    with committed evidence cannot be deleted without a separately approved
+    evidence-retention/migration workflow.
+    """
+    canonical_id = instance.integration_instance_id
+    existing = provider_deletion_guard(
+        integration_type='secrets_pki',
+        integration_instance_id=canonical_id,
+    )
+    blockers = (
+        (IntegrationBinding, 'integration bindings'),
+        (SecretProviderRepresentation, 'Secret representations'),
+        (SecretInventoryCollectionState, 'KV v2 collection states'),
+        (PKIIssuerIdentity, 'PKI issuers'),
+        (PKIIssuerCollectionState, 'public PKI collection states'),
+        (PKIStoredCertificateObservation, 'stored PKI certificates'),
+        (PKIStoredCertificateCollectionState, 'stored PKI collection states'),
+    )
+    reasons = list(existing.reasons)
+    for model, label in blockers:
+        count = model.query.filter_by(integration_instance_id=canonical_id).count()
+        if count:
+            reasons.append(f'{count} {label} still reference this connection.')
+    return DeletionGuard(
+        blocked=bool(reasons),
+        reasons=tuple(reasons),
+        active_jobs=existing.active_jobs,
+    )
+
+
+def delete_vault_connection(instance: VaultInstance) -> None:
+    """Remove only the unreferenced Vault credential and KAORI registration.
+
+    Runtime observations, historical JobExecution and Activity Audit are
+    independent owner records and are not deleted. Vault itself is untouched.
+    """
+    acquire_resource_admission_locks(f'integration:secrets_pki:{instance.integration_instance_id}')
+    guard = vault_connection_deletion_guard(instance)
+    if guard.blocked:
+        raise DeletionBlocked(guard)
+    canonical = instance.integration_instance
+    try:
+        db.session.delete(instance)
+        db.session.flush()
+        db.session.delete(canonical)
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
 
 
 def get_vault_connection_instance(instance_id: int) -> VaultInstance | None:

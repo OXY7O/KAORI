@@ -84,7 +84,7 @@
                                 [
                                     'Not Collected is not a confirmed zero, and each stream commits independently.',
                                     'PKI Stored Certificates requires explicit collection opt-in.',
-                                    'This provider workspace has no asset-owner deletion or observability binding contract.'
+                                    'Deletion is blocked by active work or retained evidence; Vault itself is never modified.'
                                 ],
                                 placement='right', variant='guide'
                             ) }}
@@ -113,7 +113,7 @@
                     </div>
                     <div class="flex flex-wrap items-center gap-2 lg:justify-end">
                         {{ table_label.metadata_label(committed_streams ~ ' / 3 Committed Streams') }}
-                        {{ integration_status('not_observed', 'Removal Not Evaluated', display='text') }}
+                        {{ integration_status('blocked' if deletion_guard.blocked else 'ready', 'Deletion Blocked' if deletion_guard.blocked else 'Guardrails Passed', display='text') }}
                     </div>
                 </div>
             </header>
@@ -153,11 +153,11 @@
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Lifecycle Gate</p>
-                            <p class="mt-2 text-lg font-semibold text-content-primary">Not Evaluated</p>
+                            <p class="mt-2 text-lg font-semibold text-content-primary">{{ 'Blocked' if deletion_guard.blocked else 'Ready' }}</p>
                         </div>
-                        {{ integration_ui.palette_icon('shield-alert', 'unknown', size='md') }}
+                        {{ integration_ui.palette_icon('shield-alert' if deletion_guard.blocked else 'shield-check', 'warning' if deletion_guard.blocked else 'normal', size='md') }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">No Vault connection removal guardrail is qualified in this provider workspace.</p>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ (deletion_guard.reasons|length) ~ ' blocking condition(s)' if deletion_guard.blocked else 'No active jobs or committed evidence dependencies block removal.' }}</p>
                 </article>
             </div>
             <div class="grid gap-px bg-outline-subtle lg:grid-cols-2"
@@ -166,8 +166,8 @@
                     <div class="flex items-start gap-3">
                         {{ integration_ui.palette_icon('shield-check', 'brand', size='sm') }}
                         <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">Vault Authority Boundary</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Vault retains authority for Secret values, ACLs, tokens, issuer keys, and certificate issuance; registration does not confer access to these operations.</p>
+                            <p class="text-sm font-semibold text-content-primary">Removed With Connection</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Only the KAORI Vault registration and encrypted AppRole SecretID are removed; Vault Secrets, leases, ACLs and PKI remain untouched.</p>
                         </div>
                     </div>
                 </section>
@@ -175,8 +175,8 @@
                     <div class="flex items-start gap-3">
                         {{ integration_ui.palette_icon('archive-restore', 'info', size='sm') }}
                         <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">Evidence &amp; Retention Boundary</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Committed metadata, runtime history, and Activity Audit follow their owning retention policies. This screen does not authorize source deletion or retention overrides.</p>
+                            <p class="text-sm font-semibold text-content-primary">Retained After Removal</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime history, completed JobExecution, and Activity Audit remain. Committed Secret and PKI evidence blocks removal until separately governed.</p>
                         </div>
                     </div>
                 </section>
@@ -185,27 +185,32 @@
                      aria-labelledby="vault-inventory-lifecycle-next-action">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
-                        {{ integration_ui.palette_icon('route', 'brand', size='sm') }}
+                        {{ integration_ui.palette_icon('route', 'warning' if deletion_guard.blocked else 'brand', size='sm') }}
                         <div class="min-w-0">
                             <h4 id="vault-inventory-lifecycle-next-action"
                                 class="text-sm font-semibold text-content-primary">Next Lifecycle Action</h4>
                             <p class="mt-1 text-xs leading-5 text-content-secondary">
-                                {% if approved_kv == 0 and approved_pki == 0 %}
-                                    Configure approved KV v2 or PKI scopes before running independently authorized collection.
-                                {% elif committed_streams == 0 %}
-                                    Run the approved collection jobs to establish evidence for the configured scopes.
+                                {% if deletion_guard.blocked %}
+                                    Resolve {{ deletion_guard.reasons|length }} blocking condition(s) before deleting this connection.
+                                    {% if deletion_guard.reasons %}First: {{ deletion_guard.reasons[0] }}{% endif %}
                                 {% else %}
-                                    Review freshness and permissions per stream before relying on committed evidence.
+                                    Guardrails passed. Deletion removes only the KAORI Vault registration and encrypted credential.
                                 {% endif %}
                             </p>
                         </div>
                     </div>
                     {% if current_user.has_permission('integrations.manage') %}
-                        <a href="{{ url_for('vault.edit_instance', instance_id=instance.id) }}"
-                           class="{{ table_ui.action_classes() }} shrink-0">
-                            <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
-                            Configure Connection
-                        </a>
+                        <button type="button"
+                                data-delete-url="{{ url_for('vault.delete_instance', instance_id=instance.id) }}"
+                                data-delete-name="{{ instance.name }}"
+                                @click="openDelete($el.dataset.deleteUrl, $el.dataset.deleteName)"
+                                {% if deletion_guard.blocked %}disabled
+                                title="{{ deletion_guard.reasons[0] if deletion_guard.reasons else 'Deletion blocked' }}"
+                                {% endif %}
+                                class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-status-critical px-4 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-50">
+                            <i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>
+                            Delete Connection
+                        </button>
                     {% endif %}
                 </div>
             </section>
@@ -373,7 +378,7 @@
                         {{ integration_ui.palette_icon('waypoints', 'brand', size='sm') }}
                         <div class="min-w-0">
                             <p class="text-sm font-semibold text-content-primary">Evidence Ownership</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Collection uses independently approved Vault scopes; Secret inventory and PKI workflows remain governed in Secrets &amp; PKI. This connection view does not create Observability bindings or grant Secret access.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI commits scoped metadata; Vault owns Secrets and PKI; observability stays separate.</p>
                         </div>
                     </div>
                     {{ table_label.metadata_label('Read-Only Evidence') }}

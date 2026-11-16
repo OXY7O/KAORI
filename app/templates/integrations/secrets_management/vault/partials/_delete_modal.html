@@ -1,0 +1,10 @@
+{% import "integrations/components/_asset_owner_delete_modal.html" as asset_owner_delete_modal %}
+{{ asset_owner_delete_modal.render(
+    "Delete Vault Connection",
+    (
+        "Only the KAORI Vault registration and encrypted AppRole credential are removed. "
+        ~ "Vault Secrets, PKI, runtime observations, completed JobExecution and Activity Audit remain untouched. "
+        ~ "Retained Secret or PKI dependencies block deletion."
+    ),
+    "Provider-owned Vault connection"
+) }}
