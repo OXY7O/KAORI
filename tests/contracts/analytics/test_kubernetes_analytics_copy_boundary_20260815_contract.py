@@ -68,7 +68,7 @@ def test_kubernetes_analytics_operator_copy_density_keeps_evidence_semantics() -
     assert 'Filesystem does not determine scheduling posture.' in capacity
     assert '{{ lowest_headroom_metric_display }}' in capacity
     assert 'destination systems control authentication, authorization, and lifecycle' in links
-    assert 'Use Node Detail to locate concentrated pressure' in trend
+    assert 'Use Node Detail to confirm hotspots and assess redistribution' in trend
     assert 'Signal Quality reflects historical sample completeness and variability' in forecast
     assert 'does not measure forecast accuracy' in forecast
     assert 'Missing ownership or guidance can delay assignment' in ownership
