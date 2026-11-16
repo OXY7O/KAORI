@@ -268,7 +268,7 @@ def test_credential_column_balance_preserves_existing_shared_table_and_detail_ac
     assert '<th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Validity</th>' in credential
     assert '<p class="whitespace-nowrap text-xs font-medium leading-5 text-content-secondary"' in credential
     assert 'title="Valid until {{ credential.valid_until|user_datetime }}"' in credential
-    assert '<span class="sr-only">Valid until </span>{{ credential.valid_until|user_datetime }}' in credential
+    assert '<span class="sr-only">Valid until:</span>{{ credential.valid_until|user_datetime }}' in credential
     assert 'Valid until {{ credential.valid_until|user_datetime }}\n' not in credential
     assert 'table_ui.cell_classes(action=true)' in credential
     assert 'detail_row.static_detail_row(detail_row_id, detail_target_id, 6' in credential
