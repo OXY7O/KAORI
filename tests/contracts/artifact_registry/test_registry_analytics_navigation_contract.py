@@ -88,7 +88,7 @@ def test_registry_analytics_has_eight_authorized_page_level_views() -> None:
     assert 'artifact-registry-analytics-summary' in shell
     assert "url_for('integrations.registry')" in shell
     assert "@artifact_registry_bp.get('/analytics/capacity/table')" in routes
-    assert "def analytics_capacity_table() -> ResponseReturnValue:" in routes
+    assert 'def analytics_capacity_table() -> ResponseReturnValue:' in routes
     assert "return redirect(url_for('artifact_registry.analytics_capacity', **query_args))" in routes
     assert "'Open Registry Integrations'," in shell
     assert "action_icon='plug-zap'" in shell
@@ -138,7 +138,7 @@ def test_registry_analytics_detail_pages_reuse_external_section_intro() -> None:
 
     assert '{% import "components/section_intro.html" as section_intro %}' in shell
     assert "section_intro.render('Explore Analytics'," in shell
-    assert "section_intro.render(detail_intro[0]," in shell
+    assert 'section_intro.render(detail_intro[0],' in shell
     assert "'artifact-registry-analytics-detail-heading')" in shell
     assert 'aria-labelledby="artifact-registry-analytics-detail-heading"' in shell
 
@@ -166,7 +166,7 @@ def test_registry_analytics_detail_pages_reuse_external_section_intro() -> None:
     )
     assert 'id="artifact-registry-analytics-active-section"' in shell
     assert "hx-get=\"{{ url_for('artifact_registry.analytics_section'" in shell
-    assert "class=\"space-y-3\"" in shell
+    assert 'class="space-y-3"' in shell
 
 
 def test_analytics_overview_uses_shared_intro_and_level_three_navigation() -> None:

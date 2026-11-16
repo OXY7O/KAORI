@@ -1084,10 +1084,7 @@ def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contrac
     assert 'data-kaori-empty-state' not in rendered
     assert 'Top 1 of' not in rendered
 
-    top_five = [
-        {**rows[0], 'project_name': f'project-{i}', 'utilization_display': f'{i}.0%'}
-        for i in range(1, 6)
-    ]
+    top_five = [{**rows[0], 'project_name': f'project-{i}', 'utilization_display': f'{i}.0%'} for i in range(1, 6)]
     bounded = env.get_template('artifact_registry/partials/_analytics_capacity_chart.html').render(
         analytics={'capacity_chart_rows': top_five, 'capacity_project_count': 10}
     )
@@ -1143,15 +1140,15 @@ def test_registry_usage_detail_reuses_kaori_evidence_and_distinguishes_missing_f
     partial = path.read_text()
     section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
     assert '{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}' in partial
-    assert "analysis_surface.snapshot_shell_classes()" in partial
-    assert "analysis_surface.metric_grid_classes(4)" in partial
-    assert "analysis_surface.empty_evidence_classes(" in partial
-    assert "table_label.status_label(" in partial
+    assert 'analysis_surface.snapshot_shell_classes()' in partial
+    assert 'analysis_surface.metric_grid_classes(4)' in partial
+    assert 'analysis_surface.empty_evidence_classes(' in partial
+    assert 'table_label.status_label(' in partial
     assert "url_for('artifact_registry.runtime')" in partial
-    assert "analytics.usage_chart_rows|default([], true)" in partial
-    assert "usage_rows[:5]" in partial
+    assert 'analytics.usage_chart_rows|default([], true)' in partial
+    assert 'usage_rows[:5]' in partial
     assert "set pull_value = ('%.0f'|format(analytics.aggregate.pull_activity)) if has_pulls else 'N/A'" in partial
-    assert "{% include \"artifact_registry/partials/_analytics_usage_detail.html\" %}" in section
+    assert '{% include "artifact_registry/partials/_analytics_usage_detail.html" %}' in section
 
     env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
     detail = env.get_template('artifact_registry/partials/_analytics_usage_detail.html')
@@ -1466,9 +1463,7 @@ def test_kubernetes_and_registry_render_shared_readiness_without_duplicate_shell
     assert 'Latest Analytics Data Snapshot' in registry
     assert 'Analytics Controls & Data Readiness' in registry
     # The conditional belongs to Jinja source, not the rendered HTML output.
-    registry_source = (
-        ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html'
-    ).read_text()
+    registry_source = (ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html').read_text()
     assert "eyebrow='Analytics Overview' if analytics.active_tab == 'overview'" in registry_source
     assert 'Analytics Overview' in registry
     assert 'data-kaori-info-tip-variant="guide"' in registry
@@ -1581,18 +1576,14 @@ def test_registry_analytics_selector_renders_only_explicit_registry_sources() ->
         'helper': 'Committed Registry inputs changed after materialization.',
         'last_attempt_window': 'current',
     }
-    attention = env.get_template('artifact_registry/partials/_analytics_controls_readiness.html').render(
-        analytics=page
-    )
+    attention = env.get_template('artifact_registry/partials/_analytics_controls_readiness.html').render(analytics=page)
     assert 'Committed Snapshot Requires Review' in attention
     assert 'Last worker attempt targeted CURRENT; this view selects 24H.' in attention
     assert 'Committed Snapshot Needs Refresh' not in attention
 
     page['data_readiness']['label'] = 'Stale Snapshot'
     page['data_readiness']['last_attempt_window'] = '24h'
-    expired = env.get_template('artifact_registry/partials/_analytics_controls_readiness.html').render(
-        analytics=page
-    )
+    expired = env.get_template('artifact_registry/partials/_analytics_controls_readiness.html').render(analytics=page)
     assert 'Committed Snapshot Needs Refresh' in expired
     assert 'Last worker attempt targeted CURRENT' not in expired
 
@@ -1942,7 +1933,7 @@ def test_registry_capacity_outlook_table_reuses_canonical_primitives() -> None:
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     page = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
     presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
-    assert "def analytics_capacity_table() -> ResponseReturnValue:" in routes
+    assert 'def analytics_capacity_table() -> ResponseReturnValue:' in routes
     assert "capacity_page=request.args.get('capacity_page', 1, type=int)" in routes
     assert "capacity_page=request.args.get('capacity_page', 1, type=int)" in page
     assert "'capacity_project_rows': capacity_page_rows" in presentation
@@ -2079,14 +2070,13 @@ def test_registry_analytics_four_detail_surfaces_reuse_shared_evidence_and_quali
         'insights': [{'title': 'No derived review signal', 'detail': '', 'icon': 'info'}],
         'recommendations': [],
     }
+
     def render_url(endpoint: str, **kwargs: object) -> str:
         return '/' + endpoint.replace('.', '/')
 
     for domain in ('risk', 'governance', 'alerts', 'insights'):
         source = (folder / f'_analytics_{domain}_detail.html').read_text()
-        assert (
-            '{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}' in source
-        )
+        assert '{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}' in source
         assert 'analysis_surface.snapshot_shell_classes()' in source
         assert 'info_tip.render(' in source
         assert 'data-registry-' + domain + '-detail' in source
@@ -2142,9 +2132,7 @@ def test_registry_analytics_four_detail_surfaces_reuse_shared_evidence_and_quali
         analytics={
             **fixtures,
             'aggregate': {**fixtures['aggregate'], 'alert_sources_ready': 1},
-            'alert_source_rows': [
-                {**ready, 'registry_name': f'source-{index}'} for index in range(6)
-            ],
+            'alert_source_rows': [{**ready, 'registry_name': f'source-{index}'} for index in range(6)],
         }
     )
     assert 'Showing 5 of 6 committed sources.' in six_sources

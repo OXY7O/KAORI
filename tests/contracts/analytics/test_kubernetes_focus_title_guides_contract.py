@@ -143,7 +143,7 @@ def test_overview_compact_copy_preserves_risk_and_source_semantics() -> None:
     assert 'Restore PVC usage evidence before confirming storage health.' in storage
     assert 'Monitor free capacity and Namespace growth; plan expansion before utilization rises.' in storage
     assert 'Storage Evidence Is Limited' in storage
-    assert "overview_surface.unavailable_value_classes()" in storage
+    assert 'overview_surface.unavailable_value_classes()' in storage
     assert 'Check requests, limits, replicas, and storage allocation before resizing.' in consumers
     assert 'No projected breach in available evidence.' in forecast
     assert 'forecast.risk_note|replace(' in forecast

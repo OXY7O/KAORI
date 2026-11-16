@@ -57,11 +57,8 @@ def test_saved_vault_connection_with_approved_mounts_still_requires_inventory_co
     ]
 
 
-
 def test_failed_first_inventory_collection_receives_specific_blocked_guidance() -> None:
-    assert _state(
-        provider_count=1, approved_mount_count=1, collection_state='failed'
-    ) == [
+    assert _state(provider_count=1, approved_mount_count=1, collection_state='failed') == [
         'KV v2 Inventory Collection Failed',
         'Collection Failed',
         'Review failed KV v2 collection.',
@@ -74,9 +71,11 @@ def test_failed_first_inventory_collection_receives_specific_blocked_guidance() 
         collection_state='failed',
         can_manage_integrations=False,
     )[-2:] == ['/secrets-pki/inventory', 'Review Inventory Readiness']
-    assert _state(
-        provider_count=1, approved_mount_count=1, collection_state='not_collected'
-    )[0] == 'KV v2 Inventory Not Collected'
+    assert (
+        _state(provider_count=1, approved_mount_count=1, collection_state='not_collected')[0]
+        == 'KV v2 Inventory Not Collected'
+    )
+
 
 def test_registered_vault_without_approved_kv2_mounts_has_separate_setup_state() -> None:
     assert _state(provider_count=1, approved_mount_count=0) == [
@@ -154,7 +153,6 @@ def test_overview_reuses_canonical_blocker_without_relaxing_inventory_gate() -> 
     assert 'No successful committed inventory snapshot' not in source
     assert 'no successful committed inventory snapshot' in source
     assert 'summary.observed_secret_count if summary.observed_secret_count is not none' in source
-
 
 
 def test_hero_active_scope_distinguishes_oversized_fleet_from_no_vault() -> None:

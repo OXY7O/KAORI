@@ -203,7 +203,6 @@ def test_kubernetes_dashboard_forecast_cards_fill_peer_width_without_clipping() 
     assert 'item.projected_percent' in forecast
 
 
-
 def test_capacity_decision_shared_component_renders_evidence_with_no_provider_action() -> None:
     from jinja2 import Environment, FileSystemLoader
 
@@ -251,7 +250,6 @@ def test_capacity_decision_shared_component_renders_evidence_with_no_provider_ac
         assert '<form' not in html
         assert 'hx-post' not in html
         assert 'Recommended Capacity Action Flow' not in html
-
 
 
 def test_capacity_status_action_copy_is_concise_without_forced_truncation() -> None:

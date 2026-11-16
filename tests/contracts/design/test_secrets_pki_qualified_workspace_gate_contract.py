@@ -120,10 +120,9 @@ def test_inventory_job_links_require_view_permission_of_destination() -> None:
     assert "and current_user.has_permission('jobs.execute')" in inventory_route
     assert "and current_user.has_permission('jobs.view')" in inventory_route
     assert "@permission_required('jobs.view')\ndef configuration(" in job_routes
-    assert "{% if can_execute_inventory %}" in source
+    assert '{% if can_execute_inventory %}' in source
     assert "url_for('jobs.configuration', job_key='secrets_pki.inventory.sync')" in source
     assert 'inventory_blocker_href is not none' in source
-
 
 
 def test_over_limit_vault_inventory_uses_scope_review_not_inventory_execution() -> None:
@@ -141,6 +140,7 @@ def test_over_limit_vault_inventory_uses_scope_review_not_inventory_execution() 
         'provider_count': 1,
         'approved_mount_count': 100,
     }
+
     def render(manage: bool) -> str:
         return template.render(
             summary=scope,
@@ -174,21 +174,15 @@ def test_over_limit_lifecycle_keeps_independent_pki_qualification() -> None:
         can_manage_integrations=False,
         url_for=lambda endpoint: '/vault',
     ).strip()
-    assert result == (
-        'Vault Inventory Scope Review Required|'
-        'Review Vault scope or qualify independent PKI evidence.'
-    )
+    assert result == ('Vault Inventory Scope Review Required|Review Vault scope or qualify independent PKI evidence.')
     assert "lifecycle_unqualified = not lifecycle_kv2_qualified and pki_validity.status != 'ready'" in source
-
 
 
 def test_inventory_hero_scope_does_not_confuse_overflow_with_missing_vault() -> None:
     source = _read(INVENTORY)
     begin = source.index('{% set inventory_unqualified = ')
     end = source.index('<section', begin)
-    template = Environment().from_string(
-        source[begin:end] + '{{ inventory_scope_label }}|{{ inventory_scope_helper }}'
-    )
+    template = Environment().from_string(source[begin:end] + '{{ inventory_scope_label }}|{{ inventory_scope_helper }}')
     scenarios = (
         (
             {'provider_count': None, 'approved_mount_count': None, 'source_limit_exceeded': True},
@@ -213,7 +207,6 @@ def test_inventory_hero_scope_does_not_confuse_overflow_with_missing_vault() -> 
         assert result.strip() == expected
 
     assert "('server', 'Active Scope', inventory_scope_label, inventory_scope_helper)" in source
-
 
 
 def test_failed_first_collection_has_distinct_inventory_blocker_and_short_hero_info() -> None:
@@ -243,9 +236,7 @@ def test_failed_first_collection_has_distinct_inventory_blocker_and_short_hero_i
         'Review failed inventory collection|Open Inventory Job'
     )
     summary['state'] = 'not_collected'
-    assert stage.render(**context).strip().startswith(
-        'KV v2 Inventory Not Collected|Collect approved KV v2 inventory.'
-    )
+    assert stage.render(**context).strip().startswith('KV v2 Inventory Not Collected|Collect approved KV v2 inventory.')
     assert 'blocked_state_description = inventory_blocker_description' in source
     assert 'blocked_state_label = "Collection Failed" if inventory_collection_failed' in source
 
@@ -266,6 +257,7 @@ def test_lifecycle_failed_first_collection_keeps_independent_pki_path() -> None:
         'approved_mount_count': 1,
         'source_limit_exceeded': False,
     }
+
     def render(pki_status: str) -> str:
         return stage.render(
             summary=summary,
@@ -280,7 +272,6 @@ def test_lifecycle_failed_first_collection_keeps_independent_pki_path() -> None:
     )
     assert render('ready').startswith('False|Lifecycle Collection Failed|')
     assert 'blocked_state_label = "Collection Failed" if summary.state == ' in source
-
 
 
 def test_stale_or_partial_historical_kv2_does_not_open_lifecycle_without_qualified_pki() -> None:
@@ -306,10 +297,7 @@ def test_stale_or_partial_historical_kv2_does_not_open_lifecycle_without_qualifi
             can_manage_integrations=False,
             url_for=lambda endpoint: '/vault',
         ).strip()
-        assert result == (
-            'True|KV v2 Evidence Not Qualified|'
-            'Refresh KV v2 evidence or qualify independent PKI.|True'
-        )
+        assert result == ('True|KV v2 Evidence Not Qualified|Refresh KV v2 evidence or qualify independent PKI.|True')
 
     # Current-generation qualified empty inventory is a real, valid zero.
     qualified = stage.render(
@@ -330,14 +318,12 @@ def test_stale_or_partial_historical_kv2_does_not_open_lifecycle_without_qualifi
     assert 'components/states/_blocked_state.html' in source
 
 
-
 def test_lifecycle_blocker_routes_qualified_mounts_to_inventory_for_read_only_viewers() -> None:
     source = _read(LIFECYCLE)
     begin = source.index('{% set lifecycle_kv2_qualified = ')
     end = source.index('{{ lifecycle_navigation.render', begin)
     stage = Environment().from_string(
-        source[begin:end]
-        + '{{ lifecycle_blocker_url|default("", true) }}|{{ lifecycle_inventory_review }}'
+        source[begin:end] + '{{ lifecycle_blocker_url|default("", true) }}|{{ lifecycle_inventory_review }}'
     )
     data = {
         'has_evidence': True,
@@ -364,7 +350,6 @@ def test_lifecycle_blocker_routes_qualified_mounts_to_inventory_for_read_only_vi
     assert 'blocked_state_permission_granted = lifecycle_blocker_url is not none' in source
 
 
-
 def test_secrets_pki_workspaces_compile_entire_jinja_templates() -> None:
     """Catch syntax failures on full page compilation before browser UAT."""
     env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
@@ -383,9 +368,7 @@ def test_lifecycle_blocker_steps_render_for_each_readiness_stage() -> None:
         source.index('{% set lifecycle_blocker_info = '),
     )
     end = source.index('{% set lifecycle_inventory_review = ', start)
-    template = Environment().from_string(
-        source[start:end] + "{{ lifecycle_blocker_steps|join(' | ') }}"
-    )
+    template = Environment().from_string(source[start:end] + "{{ lifecycle_blocker_steps|join(' | ') }}")
     scenarios = (
         (True, 1, 201, 'blocked', False, 'Qualify committed KV v2 or PKI evidence'),
         (False, 0, 0, 'blocked', False, 'Collect qualified evidence'),
@@ -407,4 +390,3 @@ def test_lifecycle_blocker_steps_render_for_each_readiness_stage() -> None:
         steps = rendered.strip().split(' | ')
         assert len(steps) == 3
         assert steps[-1] == expected
-

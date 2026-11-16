@@ -52,7 +52,7 @@ def test_kubernetes_overview_title_guides_cover_all_tabs_and_unavailable_states(
     overview = read('index.html')
     environment.parse(controls)
     environment.parse(overview)
-    assert "title_accessory=analytics_controls_guide" in controls
+    assert 'title_accessory=analytics_controls_guide' in controls
     assert "'kubernetes-analytics-overview-controls-guide'" in controls
     assert "'kubernetes-analytics-overview-health-guide'" in controls
     assert "'kubernetes-analytics-overview-workspace-guide'" in overview
@@ -64,11 +64,12 @@ def test_kubernetes_overview_title_guides_cover_all_tabs_and_unavailable_states(
     assert 'Review headroom, forecasts, and alerts before scheduling remediation.' in controls
     assert 'Compare the affected domain with current headroom' not in controls
 
-    shared_source = Path('app/templates/analytics/components/_analysis_surfaces.html').read_text(
-        encoding='utf-8'
-    )
+    shared_source = Path('app/templates/analytics/components/_analysis_surfaces.html').read_text(encoding='utf-8')
     environment.parse(shared_source)
-    assert "macro snapshot_unavailable(panel, title, description, icon='database-zap', title_accessory='')" in shared_source
+    assert (
+        "macro snapshot_unavailable(panel, title, description, icon='database-zap', title_accessory='')"
+        in shared_source
+    )
     assert '{{ title_accessory }}' in shared_source
     rendered = environment.from_string(
         "{% import 'analytics/components/_analysis_surfaces.html' as surface %}"
@@ -127,7 +128,6 @@ def test_metrics_source_status_uses_one_canonical_card_contract() -> None:
     assert 'compact=' not in source
 
 
-
 def test_overview_major_sections_reuse_shared_intro_outside_cards() -> None:
     """#4736 Visual UAT: contextual introductions before Health and Analytics tabs."""
     from jinja2 import Environment
@@ -141,8 +141,8 @@ def test_overview_major_sections_reuse_shared_intro_outside_cards() -> None:
         assert source.count('section_intro.render(') == 1
         assert 'section class="space-y-4"' in source
 
-    assert health.index('</form>') < health.index("section_intro.render(")
-    assert health.index("section_intro.render(") < health.index(
+    assert health.index('</form>') < health.index('section_intro.render(')
+    assert health.index('section_intro.render(') < health.index(
         '<section class="{{ overview_surface.snapshot_shell_classes() }}">'
     )
     assert 'aria-labelledby="analytics-overview-health-review-heading"' in health
@@ -151,12 +151,8 @@ def test_overview_major_sections_reuse_shared_intro_outside_cards() -> None:
     assert health.count('Operational Health Summary</h2>') == 1
     assert '6 Health Signals' in health
 
-    assert overview.index('id="overview-health-summary"') < overview.index(
-        "section_intro.render("
-    )
-    assert overview.index("section_intro.render(") < overview.index(
-        'id="analytics-overview-workspace"'
-    )
+    assert overview.index('id="overview-health-summary"') < overview.index('section_intro.render(')
+    assert overview.index('section_intro.render(') < overview.index('id="analytics-overview-workspace"')
     assert 'aria-labelledby="analytics-overview-domain-review-heading"' in overview
     assert "'Explore Analytics Domains'" in overview
     assert 'committed evidence, operational signals' in overview
