@@ -10,9 +10,9 @@
     'gauge',
     cluster.name if cluster else 'No Cluster',
     title_accessory=info_tip.render('kubernetes-analytics-utilization-overview-guide',
-        'Resource Utilization Overview Guide',
-        'Compare committed worker pressure with node usage and scheduling headroom; validate source freshness before remediation.',
-        placement='right', variant='guide')
+    'Resource Utilization Overview Guide',
+    'Compare committed worker pressure with node usage and scheduling headroom; validate source freshness before remediation.',
+    placement='right', variant='guide')
     ) %}
     <div class="{{ analysis_surface.evidence_shell_classes() }}">
         <div class="{{ analysis_surface.metric_grid_classes(4) }}">

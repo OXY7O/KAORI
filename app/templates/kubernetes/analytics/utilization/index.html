@@ -18,8 +18,8 @@
             <section class="space-y-4"
                      aria-labelledby="analytics-utilization-posture-heading">
                 {{ section_intro.render('Review Utilization Posture',
-                        'Assess worker utilization, headroom, and node pressure before planning changes.',
-                        'analytics-utilization-posture-heading') }}
+                                'Assess worker utilization, headroom, and node pressure before planning changes.',
+                                'analytics-utilization-posture-heading') }}
                 {% include "kubernetes/analytics/utilization/partials/_overview.html" %}
             </section>
             {% if analytics_materialization.source_warning %}
@@ -30,8 +30,8 @@
             <section class="space-y-4"
                      aria-labelledby="analytics-utilization-domains-heading">
                 {{ section_intro.render('Explore Utilization Domains',
-                        'Inspect committed utilization, trends, node evidence, and recommendations one workflow at a time.',
-                        'analytics-utilization-domains-heading') }}
+                                'Inspect committed utilization, trends, node evidence, and recommendations one workflow at a time.',
+                                'analytics-utilization-domains-heading') }}
                 {% call analytics_workspace.tabbed(
                     'utilization-content',
                     utilization_tabs,
@@ -42,9 +42,9 @@
                     'summary',
                     ['summary', 'trend', 'nodes', 'recommendations'],
                     title_accessory=info_tip.render('kubernetes-analytics-utilization-workspace-guide',
-                        'Resource Utilization Workspace Guide',
-                        'Navigate Summary, committed trend, node detail, and recommendations. Historical and node panels load on demand.',
-                        placement='right', variant='guide')
+                    'Resource Utilization Workspace Guide',
+                    'Navigate Summary, committed trend, node detail, and recommendations. Historical and node panels load on demand.',
+                    placement='right', variant='guide')
                     ) %}
                     <div id="utilization-content-panel-summary"
                          role="tabpanel"

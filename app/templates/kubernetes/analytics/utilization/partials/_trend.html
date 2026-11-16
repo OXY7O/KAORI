@@ -16,9 +16,9 @@
                         <div class="flex flex-wrap items-center gap-2">
                             <h3 class="text-lg font-semibold text-content-primary">Resource Utilization Trend</h3>
                             {{ info_tip.render('kubernetes-analytics-utilization-trend-guide',
-                                'Resource Utilization Trend Guide',
-                                'Use committed historical samples to evaluate sustained pressure; scope and Metrics Source coverage govern interpretation.',
-                                placement='right', variant='guide') }}
+                                                        'Resource Utilization Trend Guide',
+                                                        'Use committed historical samples to evaluate sustained pressure; scope and Metrics Source coverage govern interpretation.',
+                                                        placement='right', variant='guide') }}
                         </div>
                         {{ table_label.status_label(presentation.posture|default('No Data') , presentation.tone|default('unknown'), size='detail') }}
                     </div>
