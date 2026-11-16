@@ -85,6 +85,8 @@
                             {{ integration_status("pending", "Current for Review", display="text") }}
                         {% elif current_plan and current_plan.state == 'expired' %}
                             {{ integration_status("blocked", "Expired", display="text") }}
+                        {% elif current_plan and current_plan.state == 'not_generated' %}
+                            {{ integration_status("pending", "Not Generated", display="text") }}
                         {% else %}
                             {{ integration_status("blocked", "Not Admitted", display="text") }}
                         {% endif %}
