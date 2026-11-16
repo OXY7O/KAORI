@@ -183,10 +183,10 @@ def delete_vault_connection(instance: VaultInstance) -> None:
     if guard.blocked:
         raise DeletionBlocked(guard)
     canonical = instance.integration_instance
-    db.session.delete(instance)
-    db.session.flush()
-    db.session.delete(canonical)
     try:
+        db.session.delete(instance)
+        db.session.flush()
+        db.session.delete(canonical)
         db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
