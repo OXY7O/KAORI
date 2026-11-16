@@ -547,7 +547,7 @@ def runtime_refresh(instance_id: int) -> ResponseReturnValue:
             integration_instance_id=instance.integration_instance_id,
             requested_by_user_id=int(current_user.id),
         )
-        if runtime_job and runtime_job.get('operation') not in (None, 'runtime_refresh'):
+        if runtime_job and runtime_job.get('operation') != 'runtime_refresh':
             # The shared admission lock may return a conflicting Full Validation,
             # which must not be presented as a Vault runtime refresh.
             runtime_job = None
