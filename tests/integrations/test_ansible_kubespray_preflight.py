@@ -84,6 +84,44 @@ def _job(**changes):
             'plan_fingerprint_verified': True,
             'maker_checker_approval_verified': True,
             'maintenance_window_verified': True,
+            'high_availability': False,
+            'upstream_kubespray_release': 'v2.32.0',
+            'kubernetes_minor': '1.36',
+            'service_cidr': '10.233.0.0/18',
+            'pod_cidr': '10.233.64.0/18',
+            'host_network_cidrs': ['172.16.10.0/24'],
+            'hosts': [
+                {
+                    'asset_id': 'host-cp-01',
+                    'asset_identity_verified': True,
+                    'role': 'control_plane',
+                    'os_distribution': 'OracleLinux',
+                    'os_release': '9',
+                    'cpu_count': 4,
+                    'memory_mib': 8192,
+                    'disk_gib': 100,
+                },
+                {
+                    'asset_id': 'host-worker-01',
+                    'asset_identity_verified': True,
+                    'role': 'worker',
+                    'os_distribution': 'Ubuntu',
+                    'os_release': '24.04',
+                    'cpu_count': 4,
+                    'memory_mib': 8192,
+                    'disk_gib': 100,
+                },
+                {
+                    'asset_id': 'host-worker-02',
+                    'asset_identity_verified': True,
+                    'role': 'worker',
+                    'os_distribution': 'Ubuntu',
+                    'os_release': '24.04',
+                    'cpu_count': 4,
+                    'memory_mib': 8192,
+                    'disk_gib': 100,
+                },
+            ],
         },
     }
     fields.update(changes)
@@ -164,3 +202,41 @@ def test_production_and_unverified_git_source_are_blocked_even_with_host_evidenc
     unverified = build_kubespray_preflight(_connection(source_checked=False), jobs=[_job()], now=_NOW)
     assert unverified.state == 'blocked'
     assert unverified.gates[0].state == 'blocked'
+
+
+@pytest.mark.parametrize(
+    ('changes', 'gate'),
+    [
+        ({'high_availability': True}, 'cluster_topology'),
+        ({'upstream_kubespray_release': 'master'}, 'cluster_topology'),
+        ({'kubernetes_minor': '1.37'}, 'cluster_topology'),
+        ({'hosts': []}, 'host_facts'),
+        ({'host_network_cidrs': []}, 'network'),
+        ({'service_cidr': '10.233.64.0/18'}, 'network'),
+        ({'pod_cidr': '172.16.10.0/24'}, 'network'),
+        ({'service_cidr': 'not-a-cidr'}, 'network'),
+        ({'pod_cidr': '127.0.0.0/8'}, 'network'),
+        ({'host_network_cidrs': ['::/0']}, 'network'),
+    ],
+)
+def test_unsupported_topology_or_cidr_fails_closed(changes, gate) -> None:
+    record = _job()
+    record.result_summary_json.update(changes)
+    report = build_kubespray_preflight(_connection(), jobs=[record], now=_NOW)
+    assert report.state == 'blocked'
+    assert any(item.key == gate and item.state == 'blocked' for item in report.gates)
+
+
+def test_duplicate_host_identity_unsupported_os_and_missing_capacity_are_blocked() -> None:
+    for change in (
+        lambda hosts: hosts[1].update(asset_id=hosts[0]['asset_id']),
+        lambda hosts: hosts[1].update(os_distribution='Windows'),
+        lambda hosts: hosts[0].update(cpu_count=0),
+        lambda hosts: hosts[0].update(asset_identity_verified=False),
+        lambda hosts: hosts[0].update(role='worker'),
+    ):
+        record = _job()
+        change(record.result_summary_json['hosts'])
+        report = build_kubespray_preflight(_connection(), jobs=[record], now=_NOW)
+        assert report.state == 'blocked'
+        assert any(gate.key == 'host_facts' and gate.state == 'blocked' for gate in report.gates)
