@@ -810,3 +810,70 @@ def test_vault_inventory_uses_minio_hierarchy_without_invented_asset_mutations()
     Environment().parse(source)
     Environment().parse(detail)
 
+def test_vault_runtime_refresh_reuses_canonical_in_place_job_lifecycle() -> None:
+    from jinja2 import Environment
+
+    runtime = _partial('_detail_runtime.html')
+    routes = ROUTES.read_text(encoding='utf-8')
+    kubernetes = (
+        ROOT / 'app/templates/integrations/orchestration/container_orchestrator/'
+        'providers/kubernetes/partials/_runtime_workspace.html'
+    ).read_text(encoding='utf-8')
+    minio = (
+        ROOT / 'app/templates/integrations/storage/object_storage/providers/minio/'
+        'partials/_detail_runtime.html'
+    ).read_text(encoding='utf-8')
+
+    # Same canonical button text and form interaction as existing providers.
+    for label in ("'Refresh Running'", "'Refresh Runtime'"):
+        assert label in runtime
+        assert label in kubernetes
+        assert label in minio
+    for token in (
+        'id="vault-runtime-content"',
+        'data-kaori-vault-runtime-htmx',
+        'integrations/components/_validation_poller.html',
+        'validation_poller.render(',
+        'integrations/components/_provider_job_status.html',
+        'provider_job_status.render(',
+        "url_for('vault.runtime_refresh', instance_id=instance.id)",
+        "url_for('vault.runtime_refresh_status', instance_id=instance.id,",
+        'hx-target="#vault-runtime-content"',
+        'hx-swap="outerHTML"',
+        'hx-disabled-elt="button"',
+        'hx-indicator="#vault-runtime-refresh-loading"',
+        "loading_id='vault-runtime-refresh-loading'",
+        'csrf_token()',
+        'integrations/secrets_management/vault/partials/_runtime_history.html',
+        "framed_workspace_tabs.badge_oob('vault', 'runtime',",
+        'components/operation_feedback_oob.html',
+    ):
+        assert token in runtime
+
+    assert runtime.count('id="vault-runtime-content"') == 1
+    assert 'hx-post="{{ url_for(' in runtime
+    assert 'data-kaori-runtime-evidence-workspace' in runtime
+    assert 'runtime_decision.render(' in runtime
+
+    for token in (
+        "def _vault_runtime_refresh_fragment(",
+        "latest_vault_runtime_observation(instance.id)",
+        "runtime_state=runtime_state",
+        "runtime_history=_vault_runtime_history_view(instance)",
+        "operation_feedback=operation_feedback",
+        "@vault_bp.post('/instances/<int:instance_id>/runtime/refresh')",
+        "@vault_bp.get('/instances/<int:instance_id>/runtime/status/<string:task_id>')",
+        "enqueue_runtime_health_refresh(",
+        "snapshot.get('operation') != 'runtime_refresh'",
+        "validate_snapshot_access(",
+        "snapshot_feedback_for_user(snapshot, user_id=int(current_user.id))",
+        "validation_poll_response(content, snapshot=snapshot)",
+    ):
+        assert token in routes
+
+    assert "@permission_required('integrations.manage')\ndef runtime_refresh(" in routes
+    assert "@permission_required('integrations.manage')\ndef runtime_refresh_status(" in routes
+    assert "queue_feedback=not is_htmx" in routes
+    assert "return redirect(url_for('vault.detail', instance_id=instance.id, _anchor='runtime'))" in routes
+    Environment().parse(runtime)
+
