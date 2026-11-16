@@ -14,6 +14,21 @@
     <div id="security-posture-overview" class="space-y-5">
         {% set registry_ready = posture.authorized_registry and posture.sources > 0 %}
         {% set blocked_info = "Connect a Registry source with committed inventory and grant authorized domain access." %}
+        {% set evidence_context = {
+            'eyebrow': 'Assurance Boundary',
+            'title': 'Security Evidence',
+            'status_label': posture.scan_status.label,
+            'status_tone': posture.scan_status.tone,
+            'metrics': [
+                ('database-zap', 'Provider Authority', 'Artifact Registry', 'Registry scanner remains authoritative'),
+                ('shield-check', 'Evidence Boundary', 'Committed', 'KAORI-normalized evidence')
+            ],
+            'blocked_eyebrow': 'Assurance Readiness',
+            'blocked_metrics': [
+                ('database-zap', 'Provider Authority', 'Artifact Registry', 'Registry scanner source'),
+                ('lock-keyhole', 'Evidence Boundary', 'Not Collected', 'No eligible committed Registry evidence')
+            ]
+        } %}
         {{ page_hero.operational_dashboard('Security Posture',
                 'shield-alert',
                 'Overview',
@@ -30,7 +45,8 @@
         'Committed KAORI State',
         'normal' if registry_ready else 'blocked',
         'Registry Evidence Required',
-        blocked_info
+        blocked_info,
+        evidence_context=evidence_context
         ) }}
         {% if not registry_ready %}
             {% set empty_state_icon = "shield-alert" %}

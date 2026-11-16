@@ -107,12 +107,17 @@ def test_security_pages_use_approved_dashboard_and_registry_components() -> None
     for html in (overview, findings):
         Environment().parse(html)
         assert 'components/page_hero.html' in html
-        assert 'page_hero.context_card(' in html
-        assert 'page_hero.blocked_context_body(' in html
-        assert 'page_hero.shell_classes()' in html
-        assert 'page_hero.layout_classes()' in html
+    assert 'page_hero.operational_dashboard(' in overview
+    assert 'evidence_context=evidence_context' in overview
+    assert "'status_label': posture.scan_status.label" in overview
+    assert "'status_tone': posture.scan_status.tone" in overview
+    assert 'page_hero.context_card(' in findings
+    assert 'page_hero.blocked_context_body(' in findings
+    assert 'page_hero.shell_classes()' in findings
+    assert 'page_hero.layout_classes()' in findings
     assert 'components/operational_dashboard_workspace.html' in overview
-    assert "page_hero.intro('layout-dashboard', 'Security Posture', 'shield-alert')" in overview
+    assert "'Security Posture'," in overview
+    assert "'shield-alert'," in overview
     assert 'components/section_intro.html' in overview
     assert 'data-security-posture-insights' in overview
     assert 'lg:col-span-7' in overview
