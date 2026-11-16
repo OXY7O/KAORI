@@ -41,7 +41,7 @@
                                 <div class="min-w-0 flex-1">
                                     {{ table_ui.title_cell(item.connection.name,
                                                                         'Installation #' ~ item.installation.native_installation_id,
-                                                                                                'git-branch') }}
+                                                                        'git-branch') }}
                                 </div>
                                 <a href="{{ url_for('source_control.repositories', installation_id=item.installation.id) }}"
                                    class="{{ table_ui.action_classes() }}"
@@ -126,7 +126,7 @@
                                 <td class="{{ table_ui.cell_classes() }}">
                                     {{ table_ui.title_cell(item.connection.name,
                                                                         'Installation #' ~ item.installation.native_installation_id,
-                                                                                                'git-branch') }}
+                                                                        'git-branch') }}
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }}"
                                     title="{{ 'Account observed ' ~ (item.account.last_observed_at|user_datetime) if item.account and item.account.last_observed_at else 'Account observation unavailable' }}">
@@ -140,7 +140,7 @@
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }}">
                                     {{ integration_status('ready' if item.committed and item.collection_status == 'committed' else item.collection_status,
-                                                                                item.collection_status|replace('_', ' ') |title,
+                                                                        item.collection_status|replace('_', ' ') |title,
                                     display='indicator') }}
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }}">

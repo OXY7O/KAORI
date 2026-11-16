@@ -49,20 +49,7 @@
                                                                         aria_label=label ~ ' ' ~ percent_meaning|lower ~ ' percentage') }}
                                 {% endfor %}
                             </div>
-                            {% set capacity_review_groups = [
-                                ('scan-search', 'Evidence', [
-                                    ('Validate', 'Confirm system scope and snapshot freshness'),
-                                    ('Assess', 'Review utilization, headroom, and forecast.')
-                                ]),
-                                ('list-filter', 'Decision', [
-                                    ('Prioritize', 'Identify buckets driving capacity pressure'),
-                                    ('Act', 'Apply the approved storage or quota change')
-                                ]),
-                                ('clipboard-check', 'Assurance', [
-                                    ('Verify', 'Confirm headroom and projected risk improve'),
-                                    ('Record', 'Capture the change and operational evidence')
-                                ])
-                            ] %}
+                            {% set capacity_review_groups = [('scan-search', 'Evidence', [('Validate', 'Confirm system scope and snapshot freshness'), ('Assess', 'Review utilization, headroom, and forecast.')]), ('list-filter', 'Decision', [('Prioritize', 'Identify buckets driving capacity pressure'), ('Act', 'Apply the approved storage or quota change')]), ('clipboard-check', 'Assurance', [('Verify', 'Confirm headroom and projected risk improve'), ('Record', 'Capture the change and operational evidence')])] %}
                             {% set capacity_tone = dashboard.capacity.posture.tone|default('unknown') %}
                             {% if capacity_tone == 'critical' %}
                                 {% set capacity_action = "Review major buckets; approve capacity expansion or demand reduction." %}
@@ -73,11 +60,11 @@
                             {% else %}
                                 {% set capacity_action = "Refresh committed storage analytics before capacity decisions." %}
                             {% endif %}
-                            {{ capacity_decision.render(dashboard.capacity.posture.status|default('Unknown'),
-                                                         capacity_tone,
-                                                         dashboard.capacity.posture.detail|default("Capacity posture is unavailable until committed storage analytics contain usable capacity evidence."),
-                                                         'Current usage is ' ~ dashboard.capacity.utilization_display ~ ' with ' ~ dashboard.capacity.headroom_display ~ ' headroom inside the committed usable-capacity boundary.',
-                                                         capacity_action, review_groups=capacity_review_groups) }}
+                            {{ capacity_decision.render(dashboard.capacity.posture.status|default('Unknown') ,
+                            capacity_tone,
+                            dashboard.capacity.posture.detail|default("Capacity posture is unavailable until committed storage analytics contain usable capacity evidence."),
+                            'Current usage is ' ~ dashboard.capacity.utilization_display ~ ' with ' ~ dashboard.capacity.headroom_display ~ ' headroom inside the committed usable-capacity boundary.',
+                            capacity_action, review_groups=capacity_review_groups) }}
                             <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4"
                                      aria-label="Object Storage utilization balance chart">
                                 <div class="flex flex-wrap items-center justify-between gap-2">

@@ -22,7 +22,11 @@
         {% elif summary.state == 'failed' %}
             {% set lifecycle_blocker_steps = ["Vault source registered", "Collection scopes approved", "Review failed collection before retry"] %}
         {% elif lifecycle_version_incomplete %}
-            {% set lifecycle_blocker_steps = ["Review KV v2 evidence qualification", "Collect complete and fresh KV v2 metadata", "Verify qualified lifecycle evidence"] %}
+            {% set lifecycle_blocker_steps = [
+                "Review KV v2 evidence qualification",
+                "Collect complete and fresh KV v2 metadata",
+                "Verify qualified lifecycle evidence"
+            ] %}
         {% else %}
             {% set lifecycle_blocker_steps = ["Vault source registered", "Collection scopes approved", "Collect and verify lifecycle evidence"] %}
         {% endif %}

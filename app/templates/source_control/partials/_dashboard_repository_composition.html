@@ -35,41 +35,41 @@
                 <p class="text-xs text-content-muted">Native Repository #{{ profile.native_id }} · Retained GitHub metadata, not current provider health.</p>
                 <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     {{ evidence_tile.freshness('Visibility',
-                                profile.visibility,
-                                'Observed' if profile.visibility != 'Unknown' else 'Unknown',
-                                'info' if profile.visibility != 'Unknown' else 'unknown',
-                                'eye',
-                                description='Provider-observed repository visibility.') }}
+                                        profile.visibility,
+                                        'Observed' if profile.visibility != 'Unknown' else 'Unknown',
+                                        'info' if profile.visibility != 'Unknown' else 'unknown',
+                                        'eye',
+                                        description='Provider-observed repository visibility.') }}
                     {{ evidence_tile.freshness('Lifecycle',
-                                profile.lifecycle,
-                                'Observed' if profile.lifecycle != 'Unknown' else 'Unknown',
-                                'info' if profile.lifecycle != 'Unknown' else 'unknown',
-                                'archive',
-                                description='Active or archived metadata.') }}
+                                        profile.lifecycle,
+                                        'Observed' if profile.lifecycle != 'Unknown' else 'Unknown',
+                                        'info' if profile.lifecycle != 'Unknown' else 'unknown',
+                                        'archive',
+                                        description='Active or archived metadata.') }}
                     {{ evidence_tile.freshness('Default Branch',
-                                profile.default_branch or 'Not Observed',
-                                'Observed' if profile.default_branch else 'Unavailable',
-                                'info' if profile.default_branch else 'unknown',
-                                'git-branch',
-                                description='Recorded default branch name.') }}
+                                        profile.default_branch or 'Not Observed',
+                                        'Observed' if profile.default_branch else 'Unavailable',
+                                        'info' if profile.default_branch else 'unknown',
+                                        'git-branch',
+                                        description='Recorded default branch name.') }}
                     {{ evidence_tile.freshness('Default Branch SHA',
-                                profile.exact_sha or 'Not Observed',
-                                'Exact SHA' if profile.exact_sha else 'Not Qualified',
-                                'info' if profile.exact_sha else 'unknown',
-                                'git-commit-horizontal',
-                                description='Retained current reference to an exact repository revision.') }}
+                                        profile.exact_sha or 'Not Observed',
+                                        'Exact SHA' if profile.exact_sha else 'Not Qualified',
+                                        'info' if profile.exact_sha else 'unknown',
+                                        'git-commit-horizontal',
+                                        description='Retained current reference to an exact repository revision.') }}
                     {{ evidence_tile.freshness('Grant Access',
-                                profile.access_status|replace('_', ' ') |title,
-                                'Retained',
-                                'info',
-                                'shield-check',
-                                description='Last committed installation grant, not verified live access.') }}
+                                        profile.access_status|replace('_', ' ') |title,
+                    'Retained',
+                    'info',
+                    'shield-check',
+                    description='Last committed installation grant, not verified live access.') }}
                     {{ evidence_tile.freshness('Repository Observed',
-                                profile.repository_observed_at|user_datetime if profile.repository_observed_at else 'Not Observed',
-                                'Observed' if profile.repository_observed_at else 'Unavailable',
-                                'info' if profile.repository_observed_at else 'unknown',
-                                'clock',
-                                description='Latest retained repository metadata observation.') }}
+                                        profile.repository_observed_at|user_datetime if profile.repository_observed_at else 'Not Observed',
+                                        'Observed' if profile.repository_observed_at else 'Unavailable',
+                                        'info' if profile.repository_observed_at else 'unknown',
+                                        'clock',
+                                        description='Latest retained repository metadata observation.') }}
                 </div>
             {% else %}
                 <p class="text-xs text-content-muted">Repository detail is not qualified; review the authorized repository inventory.</p>

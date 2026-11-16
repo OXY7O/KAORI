@@ -23,14 +23,14 @@
                         <h2 id="tenant-allocation-overview-heading"
                             class="text-base font-semibold text-content-primary">Tenant Allocation Overview</h2>
                         {{ info_tip.render('tenant-allocation-overview-guide',
-                                'Tenant Allocation Overview Guide',
-                                'Review committed request commitments separately from provider capacity and workload utilization.',
-                                [
-                                'CPU, memory, and pod commitments represent governed requests, not actual workload usage or physical reservations.',
-                                'Stale or unknown committed capacity evidence cannot establish available headroom or allocation approval.',
-                                'Kubernetes remains authoritative for execution; KAORI records admission and reconciliation evidence.'
-                                ],
-                                placement='right', variant='guide') }}
+                                                'Tenant Allocation Overview Guide',
+                                                'Review committed request commitments separately from provider capacity and workload utilization.',
+                                                [
+                                                'CPU, memory, and pod commitments represent governed requests, not actual workload usage or physical reservations.',
+                                                'Stale or unknown committed capacity evidence cannot establish available headroom or allocation approval.',
+                                                'Kubernetes remains authoritative for execution; KAORI records admission and reconciliation evidence.'
+                                                ],
+                                                placement='right', variant='guide') }}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">
                         Governed request commitments, not actual workload utilization or physical reservations.

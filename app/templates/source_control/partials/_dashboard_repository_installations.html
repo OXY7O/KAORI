@@ -14,11 +14,11 @@
     <div class="space-y-4 p-5">
         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {{ evidence_tile.freshness('Visible Installations',
-                        scope.installation_count ~ ('+' if scope.has_more else ''),
-                        'Authorized',
-                        'info',
-                        'git-branch',
-                        description='Bounded GitHub App installation grants.') }}
+                        scope.installation_count ~ ('+' if scope.has_more else '') ,
+            'Authorized',
+            'info',
+            'git-branch',
+            description='Bounded GitHub App installation grants.') }}
             {{ evidence_tile.freshness('Committed Scopes',
                         scope.committed_count,
                         'Retained',
@@ -53,7 +53,8 @@
                 {% set empty_state_variant = "panel" %}
                 {% include "components/states/_empty_state.html" %}
             {% else %}
-                <ol class="divide-y divide-outline-subtle" aria-label="Authorized installation collection evidence">
+                <ol class="divide-y divide-outline-subtle"
+                    aria-label="Authorized installation collection evidence">
                     {% for item in installation_rows %}
                         <li class="flex min-w-0 flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
                             <div class="min-w-0">
@@ -81,15 +82,15 @@
         </div>
     </div>
     {{ table_registry.footer('source_control.overview',
-                'source-control-repository-installations-section',
-                'source-control-repository-installations-loading',
-                installation_pagination,
-                {'tab': 'capacity', 'installation_id': ''},
-                [5, 10, 25, 50],
-                resource_label='Installations',
-                rows_aria_label='Installations per page',
-                control_name='source-control-repository-installations',
-                page_param='installation_page',
-                per_page_param='installation_per_page',
-                path_params={}) }}
+        'source-control-repository-installations-section',
+        'source-control-repository-installations-loading',
+        installation_pagination,
+        {'tab': 'capacity', 'installation_id': ''},
+        [5, 10, 25, 50],
+        resource_label='Installations',
+        rows_aria_label='Installations per page',
+        control_name='source-control-repository-installations',
+        page_param='installation_page',
+        per_page_param='installation_per_page',
+        path_params={}) }}
 {% endcall %}

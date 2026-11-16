@@ -21,7 +21,8 @@
         {% set empty_state_variant = "panel" %}
         {% include "components/states/_empty_state.html" %}
     {% else %}
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" data-source-control-evidence-lineage>
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+             data-source-control-evidence-lineage>
             {{ evidence_tile.freshness('Inventory Commit',
                         repository_coverage.committed_at|user_datetime if repository_coverage.committed_at else 'Not Observed',
                         'Retained' if repository_coverage.committed_at else 'Unavailable',
