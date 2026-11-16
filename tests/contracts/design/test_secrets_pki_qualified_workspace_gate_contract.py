@@ -103,3 +103,20 @@ def test_lifecycle_hero_info_is_one_natural_desktop_line_with_full_blocker_below
     assert 'lifecycle_blocker_info,' in source
     assert 'blocked_state_description = lifecycle_blocker_description' in source
     assert 'whitespace-nowrap' not in source
+
+
+def test_inventory_job_links_require_view_permission_of_destination() -> None:
+    source = _read(INVENTORY)
+    routes = _read(ROOT / 'app/secrets_pki/routes.py')
+    job_routes = _read(ROOT / 'app/platform_operations/jobs/routes.py')
+    inventory_route = routes.split('def inventory()', 1)[1].split(
+        '@secrets_pki_bp.get', 1
+    )[0]
+
+    assert "can_execute_inventory=current_user.has_permission('secrets_pki.sync')" in inventory_route
+    assert "and current_user.has_permission('jobs.execute')" in inventory_route
+    assert "and current_user.has_permission('jobs.view')" in inventory_route
+    assert "@permission_required('jobs.view')\ndef configuration(" in job_routes
+    assert "{% if can_execute_inventory %}" in source
+    assert "url_for('jobs.configuration', job_key='secrets_pki.inventory.sync')" in source
+    assert 'inventory_blocker_href is not none' in source
