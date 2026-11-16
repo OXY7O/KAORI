@@ -64,58 +64,13 @@ def _cidr(value: object, name: str, findings: list[str]):
     return network
 
 
-def assess_static_kubespray_pilot(spec: Mapping[str, Any]) -> StaticKubesprayPlan:
-    """Inspect only a synthetic/authorized spec; never contact a provider.
-
-    Findings are machine-readable codes and intentionally omit hostnames,
-    IPs, secret values or other raw operator inputs.
-    """
-    findings: list[str] = []
-    if not isinstance(spec, Mapping):
-        return StaticKubesprayPlan(
-            status='blocked',
-            findings=('SPEC_SCHEMA_INVALID',),
-            profile=f'{KUBESPRAY_REPOSITORY}@{KUBESPRAY_COMMIT}',
-            inventory_fingerprint=None,
-            required_evidence=_REQUIRED_EVIDENCE,
-        )
-    if any(not isinstance(key, str) for key in spec):
-        return StaticKubesprayPlan(
-            status='blocked',
-            findings=('SPEC_SCHEMA_INVALID',),
-            profile=f'{KUBESPRAY_REPOSITORY}@{KUBESPRAY_COMMIT}',
-            inventory_fingerprint=None,
-            required_evidence=_REQUIRED_EVIDENCE,
-        )
-    allowed = {
-        'management',
-        'environment',
-        'kubespray_commit',
-        'kubespray_release',
-        'kubernetes_minor',
-        'pod_cidr',
-        'service_cidr',
-        'nodes',
-    }
-    if set(spec) - allowed:
-        findings.append('UNRECOGNIZED_OR_SENSITIVE_INPUT')
-    if spec.get('management') != 'self_managed':
-        findings.append('UNSUPPORTED_MANAGED_KUBERNETES')
-    environment = spec.get('environment')
-    if not isinstance(environment, str) or environment not in {'development', 'nonproduction', 'uat'}:
-        findings.append('NON_PRODUCTION_ONLY')
-    if spec.get('kubespray_release') != KUBESPRAY_RELEASE:
-        findings.append('KUBESPRAY_RELEASE_MISMATCH')
-    if spec.get('kubespray_commit') != KUBESPRAY_COMMIT:
-        findings.append('KUBESPRAY_SHA_MISMATCH')
-    if spec.get('kubernetes_minor') != KUBESPRAY_KUBERNETES_MINOR:
-        findings.append('KUBERNETES_MINOR_UNQUALIFIED')
-    pod = _cidr(spec.get('pod_cidr'), 'pod_cidr', findings)
-    service = _cidr(spec.get('service_cidr'), 'service_cidr', findings)
-    if pod is not None and service is not None and pod.overlaps(service):
-        findings.append('POD_SERVICE_NETWORK_OVERLAP')
-
-    nodes = spec.get('nodes')
+def _pilot_identity_material(
+    nodes: Any,
+    pod: ipaddress.IPv4Network | None,
+    service: ipaddress.IPv4Network | None,
+    findings: list[str],
+) -> list[tuple[str, str, str]]:
+    """Qualify the fixed non-HA pilot without revealing operator inputs."""
     identity_material: list[tuple[str, str, str]] = []
     if not isinstance(nodes, list) or len(nodes) != 3:
         findings.append('PILOT_TOPOLOGY_REQUIRES_THREE_NODES')
@@ -177,6 +132,61 @@ def assess_static_kubespray_pilot(spec: Mapping[str, Any]) -> StaticKubesprayPla
             identity_material.append((identity, role if isinstance(role, str) else '', str(ip)))
         if counts != {'control_plane': 1, 'worker': 2}:
             findings.append('PILOT_REQUIRES_ONE_CONTROL_PLANE_TWO_WORKERS')
+    return identity_material
+
+
+def assess_static_kubespray_pilot(spec: Mapping[str, Any]) -> StaticKubesprayPlan:
+    """Inspect only a synthetic/authorized spec; never contact a provider.
+
+    Findings are machine-readable codes and intentionally omit hostnames,
+    IPs, secret values or other raw operator inputs.
+    """
+    findings: list[str] = []
+    if not isinstance(spec, Mapping):
+        return StaticKubesprayPlan(
+            status='blocked',
+            findings=('SPEC_SCHEMA_INVALID',),
+            profile=f'{KUBESPRAY_REPOSITORY}@{KUBESPRAY_COMMIT}',
+            inventory_fingerprint=None,
+            required_evidence=_REQUIRED_EVIDENCE,
+        )
+    if any(not isinstance(key, str) for key in spec):
+        return StaticKubesprayPlan(
+            status='blocked',
+            findings=('SPEC_SCHEMA_INVALID',),
+            profile=f'{KUBESPRAY_REPOSITORY}@{KUBESPRAY_COMMIT}',
+            inventory_fingerprint=None,
+            required_evidence=_REQUIRED_EVIDENCE,
+        )
+    allowed = {
+        'management',
+        'environment',
+        'kubespray_commit',
+        'kubespray_release',
+        'kubernetes_minor',
+        'pod_cidr',
+        'service_cidr',
+        'nodes',
+    }
+    if set(spec) - allowed:
+        findings.append('UNRECOGNIZED_OR_SENSITIVE_INPUT')
+    if spec.get('management') != 'self_managed':
+        findings.append('UNSUPPORTED_MANAGED_KUBERNETES')
+    environment = spec.get('environment')
+    if not isinstance(environment, str) or environment not in {'development', 'nonproduction', 'uat'}:
+        findings.append('NON_PRODUCTION_ONLY')
+    if spec.get('kubespray_release') != KUBESPRAY_RELEASE:
+        findings.append('KUBESPRAY_RELEASE_MISMATCH')
+    if spec.get('kubespray_commit') != KUBESPRAY_COMMIT:
+        findings.append('KUBESPRAY_SHA_MISMATCH')
+    if spec.get('kubernetes_minor') != KUBESPRAY_KUBERNETES_MINOR:
+        findings.append('KUBERNETES_MINOR_UNQUALIFIED')
+    pod = _cidr(spec.get('pod_cidr'), 'pod_cidr', findings)
+    service = _cidr(spec.get('service_cidr'), 'service_cidr', findings)
+    if pod is not None and service is not None and pod.overlaps(service):
+        findings.append('POD_SERVICE_NETWORK_OVERLAP')
+
+    identity_material = _pilot_identity_material(spec.get('nodes'), pod, service, findings)
 
     # Fingerprint is a correlation hint, not a signed target/approval authority.
     digest = None
