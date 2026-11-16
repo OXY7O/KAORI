@@ -476,9 +476,8 @@ def test_secrets_pki_overview_blocked_dashboard_uses_shared_state_and_bounded_co
         source = original_read(path)
         if path == overview:
             return source.replace(
-                "blocked_info='Qualify Vault and collect KV v2 inventory.'",
-                "blocked_info='Register a Vault source, approve KV v2 metadata mounts, "
-                "and run the registered inventory job.'",
+                'inventory_blocker_info = "Register an enabled Vault source."',
+                'inventory_blocker_info = "Register a Vault source, approve KV v2 metadata mounts, and run the registered inventory job."',
             )
         return source
 
