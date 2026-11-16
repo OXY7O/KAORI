@@ -35,7 +35,11 @@ def test_primary_finding_is_hover_free_across_current_integration_runtimes() -> 
 
     kubernetes = read(KUBERNETES_RUNTIME)
     assert '{{ runtime_primary_finding }}' in kubernetes
-    assert 'components/info_tip.html' not in kubernetes
+    assert 'components/info_tip.html' in kubernetes
+    assert 'kubernetes-runtime-health-detail-guide' in kubernetes
+    # The separate runtime health Guide must not clutter the primary finding.
+    finding = kubernetes.split('data-kaori-runtime-primary-finding', 1)[1].split('runtime-next-action-title', 1)[0]
+    assert 'info_tip.render(' not in finding
     assert 'kubernetes-runtime-primary-finding-info' not in kubernetes
 
 

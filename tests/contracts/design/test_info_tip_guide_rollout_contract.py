@@ -45,7 +45,7 @@ TITLE_GUIDE_TEMPLATES = (
     'kubernetes/tenant/partials/_tenant_memberships_workspace.html',
     'kubernetes/tenant/partials/_tenant_access_grants_workspace.html',
     'kubernetes/tenant/partials/_tenant_credentials_workspace.html',
-    'kubernetes/tenant/partials/_tenant_namespace_access_workspace.html',
+    'kubernetes/tenant/partials/_namespace_access_registry.html',
     'kubernetes/tenant/partials/_namespace_form.html',
     'kubernetes/tenant/partials/_capacity_decisions.html',
     'kubernetes/tenant/partials/_capacity_governance.html',
@@ -76,6 +76,10 @@ def test_title_level_guides_use_canonical_variant_and_preserve_scope() -> None:
         # Data Lifecycle uses the approved top placement to avoid its header edge.
         expected_placement = 'top' if template == 'platform_operations/data_lifecycle/index.html' else 'right'
         assert f"placement='{expected_placement}'" in source, template
+
+    # Namespace Access delegates its title-level Guide to the included registry.
+    wrapper = _read('kubernetes/tenant/partials/_tenant_namespace_access_workspace.html')
+    assert 'kubernetes/tenant/partials/_namespace_access_registry.html' in wrapper
 
     # Overview owns one Guide per capability, not duplicate Guides in its registries.
     for template in (
