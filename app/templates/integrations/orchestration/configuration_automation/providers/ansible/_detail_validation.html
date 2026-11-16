@@ -43,6 +43,40 @@
                 </form>
             </div>
         </div>
+        <section class="mt-4 overflow-hidden rounded-xl border border-outline-subtle"
+                 aria-labelledby="ansible-kubespray-preflight-heading"
+                 data-kaori-ansible-kubespray-preflight>
+            <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle p-4">
+                <div class="min-w-0">
+                    <h3 id="ansible-kubespray-preflight-heading"
+                        class="text-sm font-semibold text-content-primary">Kubespray Preflight &amp; Plan Readiness</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Non-mutating qualification from committed KAORI evidence. No SSH or cluster operation runs when opening this page.</p>
+                </div>
+                <div class="flex shrink-0 items-center gap-2">
+                    {{ integration_status("blocked" if kubespray_preflight.state == "blocked" else "pending",
+                    "Blocked" if kubespray_preflight.state == "blocked" else "Ready for Review",
+                    display="text") }}
+                    <span class="text-xs text-content-muted">{{ kubespray_preflight.verified_gates }}/{{ kubespray_preflight.required_gates }} Gates</span>
+                </div>
+            </header>
+            <div class="grid gap-px bg-outline-subtle md:grid-cols-2">
+                {% for gate in kubespray_preflight.gates %}
+                    <div class="min-w-0 bg-surface-card p-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <h4 class="text-xs font-semibold text-content-primary">{{ gate.title }}</h4>
+                            {{ integration_status(gate.state, gate.state|title, display="text") }}
+                        </div>
+                        <p class="mt-2 text-xs leading-5 text-content-secondary">{{ gate.reason }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+            <footer class="border-t border-outline-subtle bg-surface-subtle px-4 py-3">
+                <p class="text-xs leading-5 text-content-secondary">An approved Plan, execution image, trusted host facts, maker/checker decision and current change window are mandatory before dispatch. This is a readiness projection, not executable authorization.</p>
+                {% if kubespray_preflight.facts_job_public_id %}
+                    <p class="mt-2 text-xs text-content-muted">Latest qualifying JobExecution: <code class="font-mono">{{ kubespray_preflight.facts_job_public_id }}</code></p>
+                {% endif %}
+            </footer>
+        </section>
         <div class="mt-4 space-y-2">
             <h3 class="text-sm font-semibold text-content-primary">Operation Eligibility</h3>
             <p class="text-xs leading-5 text-content-secondary">Source verification does not enable execution. Each operation requires separately admitted provider, target, policy and evidence.</p>
