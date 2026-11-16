@@ -20,6 +20,9 @@ from app.integrations.observability.metrics_source.application.registration_web 
 )
 from app.integrations.observability.metrics_source.providers import provider_definitions
 from app.integrations.orchestration.configuration_automation.frontpage import build_ansible_frontpage
+from app.integrations.orchestration.configuration_automation.providers.ansible.preflight import (
+    committed_kubespray_preflight,
+)
 from app.integrations.orchestration.configuration_automation.providers.ansible.forms import AnsibleSourceConnectionForm
 from app.integrations.orchestration.configuration_automation.providers.ansible.proof import (
     issue_source_proof,
@@ -332,6 +335,7 @@ def ansible_connection_detail(instance_id: int) -> ResponseReturnValue:
         connection=connection,
         source=connection.metadata_json or {},
         source_posture=source_validation_posture(connection),
+        kubespray_preflight=committed_kubespray_preflight(connection).presentation(),
         jobs=jobs,
         pagination=pagination,
         inventory_targets=inventory_targets,
