@@ -382,7 +382,12 @@ def _committed_growth_chart_points(history: dict[str, Any], metric: str) -> tupl
             if not isinstance(sample, dict):
                 return [], 'unavailable', 0
             timestamp, value = sample.get('timestamp'), sample.get('value')
-            if not all(isinstance(number, (int, float)) and isfinite(number) for number in (timestamp, value)):
+            if not (
+                isinstance(timestamp, (int, float))
+                and isinstance(value, (int, float))
+                and isfinite(timestamp)
+                and isfinite(value)
+            ):
                 return [], 'unavailable', 0
             if value < 0 or (points and timestamp <= points[-1]['timestamp']):
                 return [], 'unavailable', 0
@@ -401,10 +406,20 @@ def _committed_growth_chart_points(history: dict[str, Any], metric: str) -> tupl
     for pair in projects.values():
         if not isinstance(pair, dict):
             return [], 'unavailable', 0
-        numbers = (pair.get('start_time'), pair.get('end_time'), pair.get('first'), pair.get('last'))
-        if not all(isinstance(value, (int, float)) and isfinite(value) for value in numbers):
+        start, end, first, last = (
+            pair.get('start_time'),
+            pair.get('end_time'),
+            pair.get('first'),
+            pair.get('last'),
+        )
+        if not (
+            isinstance(start, (int, float))
+            and isinstance(end, (int, float))
+            and isinstance(first, (int, float))
+            and isinstance(last, (int, float))
+            and all(isfinite(value) for value in (start, end, first, last))
+        ):
             return [], 'unavailable', 0
-        start, end, first, last = numbers
         if start >= end or first < 0 or last < 0:
             return [], 'unavailable', 0
         first_times.add(float(start))
@@ -698,7 +713,7 @@ def build_analytics(
         bundle['latest_rows'],
     )
     growth = _analytics_growth_summary(aggregate, growth_rows)
-    alert_page_rows, alert_pagination, alert_filters = _analytics_alert_page(
+    alert_page_rows, alert_pagination, active_alert_filters = _analytics_alert_page(
         bundle['alert_rows'],
         search=alert_search,
         severity=alert_filters.severity,
@@ -770,7 +785,7 @@ def build_analytics(
         'alert_rows': alert_page_rows,
         'alert_source_rows': bundle['alert_source_rows'],
         'alert_pagination': alert_pagination,
-        'alert_filters': alert_filters,
+        'alert_filters': active_alert_filters,
         'recommendations': recommendation_rows,
         'recommendation_count': len(recommendation_rows),
         'active_signal_count': active_signal_count,
