@@ -127,7 +127,11 @@ def evaluate_kubespray_plan_currentness(
     )
 
 
-def committed_kubespray_plan_currentness(connection: IntegrationInstance) -> KubesprayPlanCurrentness:
+def committed_kubespray_plan_currentness(
+    connection: IntegrationInstance,
+    *,
+    preflight: KubesprayPreflight | None = None,
+) -> KubesprayPlanCurrentness:
     """Use committed JobExecution state exclusively, with bounded indexed reads."""
     latest = (
         JobExecution.query.filter_by(
@@ -137,18 +141,18 @@ def committed_kubespray_plan_currentness(connection: IntegrationInstance) -> Kub
         .order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
         .first()
     )
-    preflight = committed_kubespray_preflight(connection)
+    current_preflight = preflight if preflight is not None else committed_kubespray_preflight(connection)
     host = (
         JobExecution.query.filter_by(
             integration_instance_id=connection.id,
-            public_id=preflight.facts_job_public_id,
+            public_id=current_preflight.facts_job_public_id,
         ).first()
-        if preflight.facts_job_public_id
+        if current_preflight.facts_job_public_id
         else None
     )
     return evaluate_kubespray_plan_currentness(
         connection,
         latest_plan_job=latest,
-        latest_host_preflight=preflight,
+        latest_host_preflight=current_preflight,
         host_preflight_job=host,
     )
