@@ -349,4 +349,5 @@ def test_reporting_activity_is_capped_at_four_records() -> None:
     assert 'recent_items[:4]' in reporting_workspace
     assert 'else reporting.latest_reports' in reporting_workspace
     assert 'Review before reuse.' in reporting_workspace
-    assert '<span class="font-semibold text-content-primary">Recurring</span> · Schedule' in reporting_workspace
+    assert '<span class="font-semibold text-content-primary">Recurring</span>' in reporting_workspace
+    assert "{{ 'Not Qualified' if evidence_only else 'Schedule' }}" in reporting_workspace

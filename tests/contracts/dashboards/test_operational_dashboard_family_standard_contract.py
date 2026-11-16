@@ -390,7 +390,7 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert 'Check headroom, requests/limits, and forecast before workload growth.' in capacity
     assert 'Refresh Metrics Source and node-role evidence before capacity decisions.' in capacity
     assert "'Worker-node CPU, memory, and pod headroom.'" in kubernetes_capacity
-    assert 'Data Scope:</span> worker nodes only' in kubernetes_capacity
+    assert 'Data Scope:</span> Capacity Analysis workers; control-plane/master excluded.' in kubernetes_capacity
     assert 'Apply the approved capacity/workload change' in kubernetes_capacity
     assert 'KAORI Alert Intelligence case evidence is temporarily unavailable.' in kubernetes_alerts
     reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
@@ -584,7 +584,8 @@ def test_recent_report_activity_is_bounded_to_four_in_both_reference_dashboards(
 
     assert 'components/reporting_dashboard_workspace.html' in kubernetes_summary
     assert 'components/reporting_dashboard_workspace.html' in object_summary
-    assert 'reporting.latest_reports[:4]' in reporting_workspace
+    assert 'recent_items[:4]' in reporting_workspace
+    assert 'else reporting.latest_reports' in reporting_workspace
     # Keep recent Kubernetes reports domain-scoped, selection-scoped, ordered, and bounded.
     assert "Report.report_domain == 'kubernetes'" in kubernetes_builder
     assert 'Report.cluster_id == selected_cluster_id' in kubernetes_builder
