@@ -99,31 +99,29 @@
                         <div class="grid gap-3 md:grid-cols-2"
                              data-tenant-drift-context="allocation"
                              aria-label="Capsule allocation governance context">
-                            {{ operational_callout.render(
-                                'Tenant Quota · Namespace scope',
-                                'Capsule Tenant.spec.resourceQuotas governs per-Namespace quotas. Compare committed KAORI intent with observed ResourceQuota evidence before deciding on recovery.',
-                                icon='shield-alert',
-                                variant='neutral') }}
-                            {{ operational_callout.render(
-                                'Shared Allocation · Tenant scope',
-                                'Capsule GlobalResourceQuota governs shared Tenant allocation separately. Sync records differences; reapply or accept provider state only through governed recovery.',
-                                icon='layers-3',
-                                variant='neutral') }}
+                            {{ operational_callout.render('Tenant Quota · Namespace scope',
+                                                        'Capsule Tenant.spec.resourceQuotas governs per-Namespace quotas. Compare committed KAORI intent with observed ResourceQuota evidence before deciding on recovery.',
+                                                        icon='shield-alert',
+                                                        variant='neutral') }}
+                            {{ operational_callout.render('Shared Allocation · Tenant scope',
+                                                        'Capsule GlobalResourceQuota governs shared Tenant allocation separately. Sync records differences; reapply or accept provider state only through governed recovery.',
+                                                        icon='layers-3',
+                                                        variant='neutral') }}
                         </div>
                         {% set allocation_registry_tabs = [
-                                ('tenant-quota', 'Tenant Quota', 'shield-alert', url_for('tenant.operations', tab='allocation-drift', ops_view='tenant-quota')),
-                                ('shared-allocation', 'Shared Allocation', 'layers-3', url_for('tenant.operations', tab='allocation-drift', ops_view='shared-allocation'))
-                            ] %}
+                                                    ('tenant-quota', 'Tenant Quota', 'shield-alert', url_for('tenant.operations', tab='allocation-drift', ops_view='tenant-quota')),
+                                                    ('shared-allocation', 'Shared Allocation', 'layers-3', url_for('tenant.operations', tab='allocation-drift', ops_view='shared-allocation'))
+                                                ] %}
                         <section id="tenant-drift-allocation-registry"
                                  class="min-w-0 overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
                                  aria-label="Capsule allocation registries"
                                  hx-select="#tenant-operations-workspace">
                             {{ workspace_tabs.render_query_tabs(allocation_registry_tabs,
-                                    active_view,
-                                    aria_label='Capsule allocation registries',
-                                    hx_target='#tenant-operations-workspace',
-                                    hx_indicator='#tenant-operations-workspace-loading',
-                                    hx_sync='#tenant-operations-workspace:replace') }}
+                                                        active_view,
+                                                        aria_label='Capsule allocation registries',
+                                                        hx_target='#tenant-operations-workspace',
+                                                        hx_indicator='#tenant-operations-workspace-loading',
+                                                        hx_sync='#tenant-operations-workspace:replace') }}
                             <div class="min-w-0 p-4 sm:p-5">
                                 {% if active_view == 'shared-allocation' %}
                                     <div id="tenant-allocation-shared-panel" class="min-w-0">
@@ -153,37 +151,34 @@
                         <div class="grid gap-3 lg:grid-cols-3"
                              data-tenant-drift-context="operational"
                              aria-label="Operational reconciliation scope">
-                            {{ operational_callout.render(
-                                'Namespace Drift',
-                                'Compare committed Namespace and allocation intent with provider observations. A mismatch requires an explicit recovery decision.',
-                                icon='refresh-cw',
-                                variant='neutral') }}
-                            {{ operational_callout.render(
-                                'Access Reconciliation',
-                                'Compare committed Access Grants with effective Kubernetes RBAC. Review access drift separately.',
-                                icon='key-round',
-                                variant='neutral') }}
-                            {{ operational_callout.render(
-                                'Provider Authority',
-                                'Confirm the owning Kubernetes or Capsule provider and reconciliation policy. This is read-only context, not a drift queue.',
-                                icon='shield-check',
-                                variant='neutral') }}
+                            {{ operational_callout.render('Namespace Drift',
+                                                        'Compare committed Namespace and allocation intent with provider observations. A mismatch requires an explicit recovery decision.',
+                                                        icon='refresh-cw',
+                                                        variant='neutral') }}
+                            {{ operational_callout.render('Access Reconciliation',
+                                                        'Compare committed Access Grants with effective Kubernetes RBAC. Review access drift separately.',
+                                                        icon='key-round',
+                                                        variant='neutral') }}
+                            {{ operational_callout.render('Provider Authority',
+                                                        'Confirm the owning Kubernetes or Capsule provider and reconciliation policy. This is read-only context, not a drift queue.',
+                                                        icon='shield-check',
+                                                        variant='neutral') }}
                         </div>
                         {% set operational_registry_tabs = [
-                                ('namespace-drift', 'Namespace Drift', 'refresh-cw', url_for('tenant.operations', tab='operational-reconcile', ops_view='namespace-drift')),
-                                ('access-reconciliation', 'Access Reconciliation', 'key-round', url_for('tenant.operations', tab='operational-reconcile', ops_view='access-reconciliation')),
-                                ('provider-authority', 'Provider Authority', 'shield-check', url_for('tenant.operations', tab='operational-reconcile', ops_view='provider-authority'))
-                            ] %}
+                                                    ('namespace-drift', 'Namespace Drift', 'refresh-cw', url_for('tenant.operations', tab='operational-reconcile', ops_view='namespace-drift')),
+                                                    ('access-reconciliation', 'Access Reconciliation', 'key-round', url_for('tenant.operations', tab='operational-reconcile', ops_view='access-reconciliation')),
+                                                    ('provider-authority', 'Provider Authority', 'shield-check', url_for('tenant.operations', tab='operational-reconcile', ops_view='provider-authority'))
+                                                ] %}
                         <section id="tenant-drift-operations-registry"
                                  class="min-w-0 overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
                                  aria-label="Operational reconciliation registries"
                                  hx-select="#tenant-operations-workspace">
                             {{ workspace_tabs.render_query_tabs(operational_registry_tabs,
-                                    active_view,
-                                    aria_label='Operational reconciliation registries',
-                                    hx_target='#tenant-operations-workspace',
-                                    hx_indicator='#tenant-operations-workspace-loading',
-                                    hx_sync='#tenant-operations-workspace:replace') }}
+                                                        active_view,
+                                                        aria_label='Operational reconciliation registries',
+                                                        hx_target='#tenant-operations-workspace',
+                                                        hx_indicator='#tenant-operations-workspace-loading',
+                                                        hx_sync='#tenant-operations-workspace:replace') }}
                             <div class="min-w-0 p-4 sm:p-5">
                                 {% if active_view == 'access-reconciliation' %}
                                     <div id="tenant-operational-access-panel" class="min-w-0">
@@ -223,7 +218,8 @@
                                         </span>
                                         <div class="min-w-0">
                                             <div class="flex min-w-0 flex-wrap items-center gap-2">
-                                                <span id="tenant-activity-audit-destination" class="text-sm font-semibold text-content-primary">Activity Audit</span>
+                                                <span id="tenant-activity-audit-destination"
+                                                      class="text-sm font-semibold text-content-primary">Activity Audit</span>
                                                 {{ table_label.metadata_label('Audit History', icon='shield-check') }}
                                             </div>
                                             <p class="mt-0.5 text-xs leading-5 text-content-muted">Trace Tenant mutations and their outcomes in the canonical audit history.</p>
@@ -245,7 +241,8 @@
                                         </span>
                                         <div class="min-w-0">
                                             <div class="flex min-w-0 flex-wrap items-center gap-2">
-                                                <span id="tenant-intelligence-destination" class="text-sm font-semibold text-content-primary">Intelligence</span>
+                                                <span id="tenant-intelligence-destination"
+                                                      class="text-sm font-semibold text-content-primary">Intelligence</span>
                                                 {{ table_label.metadata_label('Recommendations', icon='sparkles') }}
                                             </div>
                                             <p class="mt-0.5 text-xs leading-5 text-content-muted">Review operational findings and recommendations in KAORI Intelligence.</p>
@@ -267,7 +264,8 @@
                                         </span>
                                         <div class="min-w-0">
                                             <div class="flex min-w-0 flex-wrap items-center gap-2">
-                                                <span id="tenant-reports-destination" class="text-sm font-semibold text-content-primary">Reports</span>
+                                                <span id="tenant-reports-destination"
+                                                      class="text-sm font-semibold text-content-primary">Reports</span>
                                                 {{ table_label.metadata_label('Governed Reports', icon='file-check-2') }}
                                             </div>
                                             <p class="mt-0.5 text-xs leading-5 text-content-muted">Build and review published evidence through the canonical Reports workflow.</p>

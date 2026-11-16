@@ -129,13 +129,13 @@
                     {% set compact_summary = false %}
                     {% set reconciliation_summary = reconciliation_evidence %}
                     {% if item.provisioning_status == 'ready' and 'match committed intent' in evidence_lower %}
-                        {% set reconciliation_summary = 'Matches committed intent' %}
+                        {% set reconciliation_summary = "Matches committed intent" %}
                         {% set compact_summary = true %}
                     {% elif item.provisioning_status == 'ready' and 'provider mirrored policy' in evidence_lower %}
-                        {% set reconciliation_summary = 'Provider-mirrored policy' %}
+                        {% set reconciliation_summary = "Provider-mirrored policy" %}
                         {% set compact_summary = true %}
                     {% elif item.provisioning_status == 'released' and 'verified native successor' in evidence_lower %}
-                        {% set reconciliation_summary = 'Verified successor handoff' %}
+                        {% set reconciliation_summary = "Verified successor handoff" %}
                         {% set compact_summary = true %}
                     {% endif %}
                     <tr class="{{ table_ui.row_classes() }}">

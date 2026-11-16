@@ -18,14 +18,14 @@
                     <h3 id="external-native-access-heading"
                         class="text-base font-semibold text-content-primary">Native Namespace RBAC Inventory</h3>
                     {{ info_tip.render('tenant-native-namespace-rbac-inventory-guide',
-                            'Native Namespace RBAC Inventory Guide',
-                            'Inspect Kubernetes-owned namespace RoleBindings through committed, read-only inspection evidence.',
-                            [
-                            'Native Kubernetes remains authoritative for RoleBindings and effective namespace authorization.',
-                            'On-demand inspection reads provider RBAC and commits findings to KAORI without changing permissions.',
-                            'Not inspected means no committed inspection evidence exists; do not infer a compliant state.'
-                            ],
-                            placement='right', variant='guide') }}
+                                        'Native Namespace RBAC Inventory Guide',
+                                        'Inspect Kubernetes-owned namespace RoleBindings through committed, read-only inspection evidence.',
+                                        [
+                                        'Native Kubernetes remains authoritative for RoleBindings and effective namespace authorization.',
+                                        'On-demand inspection reads provider RBAC and commits findings to KAORI without changing permissions.',
+                                        'Not inspected means no committed inspection evidence exists; do not infer a compliant state.'
+                                        ],
+                                        placement='right', variant='guide') }}
                 </div>
                 <p class="mt-1 max-w-3xl text-xs leading-5 text-content-secondary">
                     Inspect Namespace RoleBindings read-only without changing RBAC or identities.

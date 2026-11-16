@@ -15,14 +15,14 @@
                     <h2 id="capsule-governance-overview-heading"
                         class="text-base font-semibold text-content-primary">Capsule Governance Overview</h2>
                     {{ info_tip.render('capsule-governance-overview-guide',
-                                            'Capsule Governance Overview Guide',
-                                            'Select the committed quota authority before applying a Resource Profile.',
-                                            [
-                                            'Tenant.spec.resourceQuotas and GlobalResourceQuota are distinct Capsule-owned quota sources.',
-                                            'Generated Namespace ResourceQuotas are provider effects, not independent shared budgets.',
-                                            'Admission and provider read-back remain required for mutation; this overview reads committed KAORI state.'
-                                            ],
-                                            placement='right', variant='guide') }}
+                                        'Capsule Governance Overview Guide',
+                                        'Select the committed quota authority before applying a Resource Profile.',
+                                        [
+                                        'Tenant.spec.resourceQuotas and GlobalResourceQuota are distinct Capsule-owned quota sources.',
+                                        'Generated Namespace ResourceQuotas are provider effects, not independent shared budgets.',
+                                        'Admission and provider read-back remain required for mutation; this overview reads committed KAORI state.'
+                                        ],
+                                        placement='right', variant='guide') }}
                 </span>
                 {{ table_label.special_label('Capsule authoritative', 'maintenance', 'shield-check') }}
             </div>

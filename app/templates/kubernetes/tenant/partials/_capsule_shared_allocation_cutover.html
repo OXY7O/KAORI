@@ -154,7 +154,9 @@
                 <section class="rounded-xl border {{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft p-4"
                          aria-label="GlobalResourceQuota governance blockers">
                     <div class="flex min-w-0 items-start gap-3 text-status-warning-text">
-                        <i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true"></i>
+                        <i data-lucide="triangle-alert"
+                           class="mt-0.5 h-4 w-4 shrink-0"
+                           aria-hidden="true"></i>
                         <div class="min-w-0">
                             <h3 class="text-sm font-semibold">GlobalResourceQuota · Control Unavailable</h3>
                             <p class="mt-1 text-xs leading-5">Review the committed provider blocker for each Tenant before cutover.</p>
@@ -205,11 +207,15 @@
                                     <dl class="flex flex-wrap gap-x-5 gap-y-1 text-xs leading-5">
                                         <div class="flex min-w-0 flex-wrap gap-1">
                                             <dt class="font-medium text-content-muted">Detected authority:</dt>
-                                            <dd class="break-words font-semibold text-content-primary">{{ state.get("detected_authority") }}</dd>
+                                            <dd class="break-words font-semibold text-content-primary">
+                                                {{ state.get("detected_authority") }}
+                                            </dd>
                                         </div>
                                         <div class="flex gap-1">
                                             <dt class="text-content-muted">GRQ sources:</dt>
-                                            <dd class="font-semibold text-content-primary">{{ state.get('source_count', 0) }}</dd>
+                                            <dd class="font-semibold text-content-primary">
+                                                {{ state.get('source_count', 0) }}
+                                            </dd>
                                         </div>
                                     </dl>
                                     {% if state.get('authority') == 'capsule_tenant_resource_quotas' %}
@@ -235,9 +241,7 @@
                                                 A Capsule Tenant can be Active without one; this is not a failed deployment.
                                                 Initial quota configuration is a separate governed workflow, not an observed-quota cutover.
                                             </p>
-                                            <p class="text-xs leading-5 text-content-muted">
-                                                Review Tenant Sync evidence before planning any initial allocation.
-                                            </p>
+                                            <p class="text-xs leading-5 text-content-muted">Review Tenant Sync evidence before planning any initial allocation.</p>
                                         {% else %}
                                             <p class="text-xs leading-5 text-content-secondary">
                                                 No Tenant-level quota authority is recorded. Review Tenant Sync and provider observation before choosing any governance path.
