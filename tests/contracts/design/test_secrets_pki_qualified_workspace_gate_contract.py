@@ -136,12 +136,13 @@ def test_over_limit_vault_inventory_uses_scope_review_not_inventory_execution() 
         'provider_count': 1,
         'approved_mount_count': 100,
     }
-    render = lambda manage: template.render(
-        summary=scope,
-        can_manage_integrations=manage,
-        can_execute_inventory=True,
-        url_for=lambda endpoint, **kwargs: '/vault' if endpoint == 'vault.index' else '/jobs',
-    ).strip()
+    def render(manage: bool) -> str:
+        return template.render(
+            summary=scope,
+            can_manage_integrations=manage,
+            can_execute_inventory=True,
+            url_for=lambda endpoint, **kwargs: '/vault' if endpoint == 'vault.index' else '/jobs',
+        ).strip()
 
     assert render(True) == 'Vault Inventory Scope Review Required|Review Vault Scope|/vault'
     assert render(False) == 'Vault Inventory Scope Review Required||'
