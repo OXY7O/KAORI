@@ -205,3 +205,19 @@ def build_kubespray_preflight(
         source_revision=str(metadata.get('source_sha') or ''),
         gates=gates,
     )
+
+
+def committed_kubespray_preflight(connection: IntegrationInstance) -> KubesprayPreflight:
+    """Project the latest five bounded, immutable preflight records from KAORI state."""
+    jobs = (
+        JobExecution.query.filter_by(
+            integration_instance_id=connection.id,
+            integration_type='configuration_automation',
+            job_type='infrastructure_automation',
+            operation=_HOST_PREFLIGHT_OPERATION,
+        )
+        .order_by(JobExecution.completed_at.desc(), JobExecution.id.desc())
+        .limit(5)
+        .all()
+    )
+    return build_kubespray_preflight(connection, jobs=jobs)
