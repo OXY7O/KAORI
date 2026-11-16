@@ -183,9 +183,7 @@ def _single_repository_profile(
         name=full_name or f'Repository #{native_id}',
         native_id=native_id,
         visibility=(
-            visibility.title()
-            if visibility and visibility.lower() in {'public', 'private', 'internal'}
-            else 'Unknown'
+            visibility.title() if visibility and visibility.lower() in {'public', 'private', 'internal'} else 'Unknown'
         ),
         lifecycle='Archived' if archived is True else ('Active' if archived is False else 'Unknown'),
         default_branch=default_branch or None,
@@ -301,9 +299,7 @@ def read_repository_coverage(
         if visibility_label == 'Unknown' or lifecycle == 'Unknown' or reference != 'Exact SHA':
             attention_count += amount
 
-    attention = _coverage_attention(
-        session, scoped_statement, visibility_expr, lifecycle_expr, reference_expr
-    )
+    attention = _coverage_attention(session, scoped_statement, visibility_expr, lifecycle_expr, reference_expr)
 
     observed_times = session.execute(
         scoped_statement(
