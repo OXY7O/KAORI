@@ -11,6 +11,14 @@ Authority: #556 → #4796 → #4799 → #4800. Provisioning #4801 is a separate 
 5. The Plan fingerprint hashes normalized repository/commit, connection identity/environment, exact EE sha256 digest, pinned Kubespray version, deterministic inventory fingerprint, canonical preflight JobExecution ID, evidence timestamp and expiry. The canonical Plan JobExecution stores only fingerprint, source SHA, upstream SHA, preflight job reference, expiry and explicit `approval_status=not_requested`, `execution_status=blocked`, `mutation_authorized=false`. Raw host addresses, usernames, secrets and SSH material are excluded.
 6. Worker rechecks the newest preflight evidence and Plan fingerprint at a cooperative checkpoint. Any mismatch, unavailable connection, stale/failed/in-flight later preflight, invalid host/overlay network, unavailable worker or canceled job fails closed with sanitized canonical errors.
 
+## Latest Plan currentness and stale-source invalidation
+
+The Ansible **Validation & Capabilities** tab now projects the most recent canonical `automation_kubespray_plan_review` JobExecution through `plan_currentness.py`. It uses existing DB state only and shares the current host-preflight snapshot with the page. The latest Plan *attempt*, not the latest succeeded one, owns the visible outcome. A newer failed, canceled, queued or malformed attempt must not resurrect an earlier successful Plan.
+
+The evaluator checks exact Ansible connection/queue/operation/result type, timezone-aware completion, committed Plan schema, `approval_status=not_requested`, `execution_status=blocked`, `mutation_authorized=false`, a valid unexpired Plan deadline, and current trusted host preflight identity. It re-runs the existing immutable Plan builder and requires an **exact match** between its sanitized canonical summary and the JobExecution result. Source, EE digest, inventory, evidence generation, upstream release or target drift therefore blocks Plan currentness; raw provider data is never requested on page load.
+
+Possible presentations are **Not Generated**, **Expired**, **Not Admitted**, or **Current for Review**. Even `current_for_review` is a display-only evidence assessment, **never approval, a signed execution token, a privilege grant or permission to Run**. SHA-256 values are correlation checksums, not bearer secrets. No new Plan table, manual scheduler, permission taxonomy or execution workflow has been introduced.
+
 ## Security and independent authority
 
 - **No automatic approval:** A successful Plan materialization job means only that a review artifact was committed, not that the Plan was accepted. No provision endpoint, SSH execution path, shell command console, kubeconfig creation or cluster mutation is added.
