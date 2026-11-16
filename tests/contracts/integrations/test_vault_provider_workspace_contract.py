@@ -901,7 +901,7 @@ def test_vault_delete_ui_reuses_minio_confirmation_and_limits_evidence_to_one_li
     assert "integrations/secrets_management/vault/partials/_delete_modal.html" in detail
     assert 'Provider-owned Vault connection' in modal
     assert 'runtime observations' in modal
-    assert 'Any retained Secret or PKI dependencies block deletion' in modal
+    assert 'Retained Secret or PKI dependencies block deletion' in modal
     Environment().parse(vault)
     Environment().parse(detail)
     Environment().parse(modal)
