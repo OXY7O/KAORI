@@ -94,6 +94,7 @@ def _analytics_provider_id() -> int | None:
         abort(404)
     return int(value)
 
+
 def _analytics_alert_filters() -> AnalyticsAlertFilters:
     """Read allowed alert dimensions from the current Registry view request."""
     return AnalyticsAlertFilters(

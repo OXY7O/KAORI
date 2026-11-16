@@ -471,9 +471,6 @@ def namespace_provisioning():
     )
 
 
-
-
-
 @tenant_bp.get('/operations')
 @any_permission_required('tenant.view', 'tenant.manage')
 def operations():

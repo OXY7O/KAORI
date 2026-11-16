@@ -190,12 +190,6 @@ def inventory_artifact_details(artifact_id: int) -> ResponseReturnValue:
     )
 
 
-
-
-
-
-
-
 @artifact_registry_bp.get('/security')
 @permission_required('artifact_registry.view')
 def security_overview() -> ResponseReturnValue:
@@ -235,9 +229,6 @@ def security_cve_impact(cve_id: str) -> ResponseReturnValue:
 @permission_required('artifact_registry.view')
 def security_supply_chain() -> ResponseReturnValue:
     return _security_response('supply_chain')
-
-
-
 
 
 @artifact_registry_bp.post('/security/sync')
@@ -343,9 +334,6 @@ def security_sync_status(public_id: str) -> ResponseReturnValue:
     return response
 
 
-
-
-
 @artifact_registry_bp.get('/runtime/overview')
 @permission_required('artifact_registry.view')
 def runtime_overview() -> ResponseReturnValue:
@@ -376,9 +364,6 @@ def runtime() -> ResponseReturnValue:
         else 'artifact_registry/runtime.html'
     )
     return render_template(template, runtime=context)
-
-
-
 
 
 @artifact_registry_bp.get('/runtime/topology')
@@ -418,9 +403,6 @@ _REGISTRY_ANALYTICS_DETAIL_ROUTES = {
     'alerts': 'artifact_registry.analytics_alerts',
     'insights': 'artifact_registry.analytics_insights',
 }
-
-
-
 
 
 def _render_registry_analytics_page(section: str) -> ResponseReturnValue:
