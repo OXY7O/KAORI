@@ -16,21 +16,17 @@ def _read(path: Path) -> str:
 def _gate(source: str, expression: str, **context: object) -> bool:
     start = source.index('{% set ' + expression.split(' = ')[0] + ' = ')
     end = source.index('%}', start) + 2
-    rendered = Environment().from_string(
-        source[start:end] + '\n{{ ' + expression.split(' = ')[0] + ' }}'
-    ).render(**context)
+    rendered = (
+        Environment().from_string(source[start:end] + '\n{{ ' + expression.split(' = ')[0] + ' }}').render(**context)
+    )
     return rendered.strip() == 'True'
 
 
 def test_inventory_is_blocked_for_saved_but_unqualified_vault() -> None:
     source = _read(INVENTORY)
     Environment().parse(source)
-    assert _gate(
-        source, 'inventory_unqualified = not summary.has_evidence', summary={'has_evidence': False}
-    )
-    assert not _gate(
-        source, 'inventory_unqualified = not summary.has_evidence', summary={'has_evidence': True}
-    )
+    assert _gate(source, 'inventory_unqualified = not summary.has_evidence', summary={'has_evidence': False})
+    assert not _gate(source, 'inventory_unqualified = not summary.has_evidence', summary={'has_evidence': True})
     assert source.count('{% if inventory_unqualified %}') == 2
     assert 'summary.approved_mount_count' in source
     assert 'KV v2 Mount Approval Required' in source
@@ -38,7 +34,7 @@ def test_inventory_is_blocked_for_saved_but_unqualified_vault() -> None:
     assert 'Vault Source Required' in source
     assert 'components/states/_blocked_state.html' in source
     assert 'inventory_blocker_href is not none' in source
-    assert "can_execute_inventory and summary.approved_mount_count" in source
+    assert 'can_execute_inventory and summary.approved_mount_count' in source
     assert 'secrets_pki.inventory.sync' in source
 
 
@@ -61,12 +57,15 @@ def test_lifecycle_requires_qualified_kv2_or_independent_pki_evidence() -> None:
         (True, 'not_collected', False),
         (True, 'ready', False),
     ]:
-        assert _gate(
-            source,
-            "lifecycle_unqualified = not summary.has_evidence and pki_validity.status != 'ready'",
-            summary={'has_evidence': kv2},
-            pki_validity={'status': pki},
-        ) is expected
+        assert (
+            _gate(
+                source,
+                "lifecycle_unqualified = not summary.has_evidence and pki_validity.status != 'ready'",
+                summary={'has_evidence': kv2},
+                pki_validity={'status': pki},
+            )
+            is expected
+        )
     assert source.count('{% if lifecycle_unqualified %}') == 2
     assert 'KV v2 Mount Approval Required' in source
     assert 'Lifecycle Evidence Not Collected' in source
@@ -82,3 +81,25 @@ def test_lifecycle_qualified_independent_pki_and_routes_remain_intact() -> None:
     assert 'Kubernetes TLS Consumer Correlation' in source
     assert "@permission_required('secrets_pki.view')\ndef inventory(" in routes
     assert "@permission_required('secrets_pki.view')\ndef lifecycle(" in routes
+
+
+def test_lifecycle_hero_info_is_one_natural_desktop_line_with_full_blocker_below() -> None:
+    source = _read(LIFECYCLE)
+    begin = source.index('{% set lifecycle_blocker_info = ')
+    end = source.index('%}', begin) + 2
+    template = Environment().from_string(source[begin:end] + '{{ lifecycle_blocker_info }}')
+    cases = (
+        (0, 0, 'Register Vault to qualify lifecycle evidence.'),
+        (1, 0, 'Approve KV v2 mounts or qualify independent PKI evidence.'),
+        (1, 1, 'Collect qualified KV v2 or PKI evidence.'),
+    )
+    for providers, mounts, expected in cases:
+        result = template.render(
+            summary={'provider_count': providers, 'approved_mount_count': mounts}
+        )
+        assert result.strip() == expected
+        assert len(result.strip()) < 65
+
+    assert 'lifecycle_blocker_info,' in source
+    assert 'blocked_state_description = lifecycle_blocker_description' in source
+    assert 'whitespace-nowrap' not in source
