@@ -62,7 +62,11 @@ qualifies. Lifecycle & Assurance blocks its ordinary operational workspace
 unless committed KV v2 or independently qualified public-PKI evidence is
 available. Keep independently qualified PKI evidence visible if KV v2 has not
 qualified. Both pages reuse `page_hero.blocked_context_body` and shared
-`components/states/_blocked_state.html`, with permission-aware setup links.
+`components/states/_blocked_state.html`, with permission-aware setup links. Inventory links to Platform Operations Job
+Configuration only when the operator also has `jobs.view`, alongside the
+existing `secrets_pki.sync` and `jobs.execute` capabilities, since the
+configuration destination itself is protected by `jobs.view`. This hides
+inaccessible shortcuts without widening any authorization.
 The absence of committed evidence is not proof of zero Secrets, valid rotation
 or healthy TLS. An accessible sidebar link does not signify operational Ready.
 
