@@ -4,16 +4,18 @@
 {% import "components/peer_content_grid.html" as peer_content_grid %}
 {% import "components/section_intro.html" as section_intro %}
 <div id="object-storage-dashboard-section-overview" class="space-y-5">
-    <section class="space-y-4" aria-labelledby="object-storage-operations-health-heading">
+    <section class="space-y-4"
+             aria-labelledby="object-storage-operations-health-heading">
         {{ section_intro.render('Operational Health',
-            'Review the committed health and readiness of Object Storage systems.',
-            'object-storage-operations-health-heading') }}
+                'Review the committed health and readiness of Object Storage systems.',
+                'object-storage-operations-health-heading') }}
         {% include "storage/object_storage/dashboard/partials/_system_health.html" %}
     </section>
-    <section class="space-y-4" aria-labelledby="object-storage-operations-evidence-heading">
+    <section class="space-y-4"
+             aria-labelledby="object-storage-operations-evidence-heading">
         {{ section_intro.render('Committed Evidence',
-            'Inspect inventory coverage and the freshness of operational evidence.',
-            'object-storage-operations-evidence-heading') }}
+                'Inspect inventory coverage and the freshness of operational evidence.',
+                'object-storage-operations-evidence-heading') }}
         <div class="{{ peer_content_grid.layout_classes() }}">
             <div class="{{ peer_content_grid.column_classes('primary') }}">
                 {% call operational_section_card.render(
@@ -26,25 +28,25 @@
                     extra_classes='h-full'
                     ) %}
                     {% set items = [
-                                        ('Systems', dashboard.inventory.systems, 'server', 'Scope'),
-                                        ('Buckets', dashboard.inventory.buckets, 'database', 'Assets'),
-                                        ('Stored Data', dashboard.inventory.stored_display, 'hard-drive', 'Usage'),
-                                        ('Objects', dashboard.inventory.objects_display, 'blocks', 'Inventory'),
-                                        ('Quota Configured', dashboard.inventory.quota_configured, 'gauge', 'Governance'),
-                                        ('Usage Collected', dashboard.inventory.usage_collected, 'database-check', 'Evidence')
-                                    ] %}
+                                            ('Systems', dashboard.inventory.systems, 'server', 'Scope'),
+                                            ('Buckets', dashboard.inventory.buckets, 'database', 'Assets'),
+                                            ('Stored Data', dashboard.inventory.stored_display, 'hard-drive', 'Usage'),
+                                            ('Objects', dashboard.inventory.objects_display, 'blocks', 'Inventory'),
+                                            ('Quota Configured', dashboard.inventory.quota_configured, 'gauge', 'Governance'),
+                                            ('Usage Collected', dashboard.inventory.usage_collected, 'database-check', 'Evidence')
+                                        ] %}
                     {% for label, value, icon, role in items %}
                         {{ evidence_tile.snapshot(label, value, icon, role) }}
                     {% endfor %}
                     {% if dashboard.inventory.empty_observed_systems %}
                         <div class="col-span-full">
                             {{ operational_callout.render('Empty Committed Inventory Detected',
-                                                    dashboard.inventory.empty_observed_systems ~ ' observed Object Storage system(s) currently have zero committed bucket/container assets. If this follows a previously non-empty snapshot, verify the S3 endpoint, credentials, and ListBuckets scope, then run Object Storage Inventory Sync again.',
-                                                    icon='triangle-alert',
-                                                    tone='warning',
-                                                    variant='semantic',
-                                                    extra_classes='w-full',
-                                                    action_href=url_for('jobs.configuration', job_key='object_storage.inventory.sync') ,
+                                                        dashboard.inventory.empty_observed_systems ~ ' observed Object Storage system(s) currently have zero committed bucket/container assets. If this follows a previously non-empty snapshot, verify the S3 endpoint, credentials, and ListBuckets scope, then run Object Storage Inventory Sync again.',
+                                                        icon='triangle-alert',
+                                                        tone='warning',
+                                                        variant='semantic',
+                                                        extra_classes='w-full',
+                                                        action_href=url_for('jobs.configuration', job_key='object_storage.inventory.sync') ,
                             action_label='Open Inventory Job',
                             action_icon='arrow-up-right'
                             ) }}
