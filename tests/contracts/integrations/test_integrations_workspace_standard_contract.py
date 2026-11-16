@@ -74,7 +74,7 @@ def test_runtime_overview_uses_bright_evidence_and_shared_controls() -> None:
 
 
 def test_runtime_history_has_one_direct_shared_component() -> None:
-    routes = read('app/integrations/routes.py')
+    routes = read('app/integrations/orchestration/container_orchestrator/routes.py')
     shared = read('app/templates/integrations/partials/_runtime_history.html')
 
     assert not exists(
