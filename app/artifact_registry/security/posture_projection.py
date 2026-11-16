@@ -3,7 +3,6 @@
 Provider scan artifacts and committed Registry snapshots remain authoritative.
 """
 
-
 from __future__ import annotations
 
 from typing import Any
