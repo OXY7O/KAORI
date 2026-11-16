@@ -56,7 +56,7 @@
         </section>
         {% if inventory_unqualified %}
             {% set blocked_state_icon = "key-round" %}
-            {% set blocked_state_label = "Setup Required" %}
+            {% set blocked_state_label = "Collection Failed" if inventory_collection_failed else ("Scope Review Required" if summary.source_limit_exceeded|default(false) else "Setup Required") %}
             {% set blocked_state_title = inventory_blocker_title %}
             {% set blocked_state_description = inventory_blocker_description %}
             {% set blocked_state_steps = inventory_blocker_steps %}
