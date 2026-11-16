@@ -18,15 +18,15 @@
             <section class="space-y-4"
                      aria-labelledby="analytics-top_consumers-posture-heading">
                 {{ section_intro.render('Review Consumer Posture',
-                        'Assess ranked resource demand, committed scope coverage, and ownership context.',
-                        'analytics-top_consumers-posture-heading') }}
+                                'Assess ranked resource demand, committed scope coverage, and ownership context.',
+                                'analytics-top_consumers-posture-heading') }}
                 {% include "kubernetes/analytics/top_consumers/partials/_summary.html" %}
             </section>
             <section class="space-y-4"
                      aria-labelledby="analytics-top_consumers-domains-heading">
                 {{ section_intro.render('Explore Consumer Domains',
-                        'Compare consumer rankings, record evidence, and recommendations before resizing.',
-                        'analytics-top_consumers-domains-heading') }}
+                                'Compare consumer rankings, record evidence, and recommendations before resizing.',
+                                'analytics-top_consumers-domains-heading') }}
                 <div id="top-consumers-section">
                     {% include "kubernetes/analytics/top_consumers/partials/_top_consumers_section.html" %}
                 </div>
