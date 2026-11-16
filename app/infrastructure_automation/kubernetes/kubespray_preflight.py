@@ -71,6 +71,22 @@ def assess_static_kubespray_pilot(spec: Mapping[str, Any]) -> StaticKubesprayPla
     IPs, secret values or other raw operator inputs.
     """
     findings: list[str] = []
+    if not isinstance(spec, Mapping):
+        return StaticKubesprayPlan(
+            status='blocked',
+            findings=('SPEC_SCHEMA_INVALID',),
+            profile=f'{KUBESPRAY_REPOSITORY}@{KUBESPRAY_COMMIT}',
+            inventory_fingerprint=None,
+            required_evidence=_REQUIRED_EVIDENCE,
+        )
+    if any(not isinstance(key, str) for key in spec):
+        return StaticKubesprayPlan(
+            status='blocked',
+            findings=('SPEC_SCHEMA_INVALID',),
+            profile=f'{KUBESPRAY_REPOSITORY}@{KUBESPRAY_COMMIT}',
+            inventory_fingerprint=None,
+            required_evidence=_REQUIRED_EVIDENCE,
+        )
     allowed = {
         'management',
         'environment',
@@ -122,7 +138,7 @@ def assess_static_kubespray_pilot(spec: Mapping[str, Any]) -> StaticKubesprayPla
                 continue
             identity = node['asset_id']
             role = node['role']
-            if not isinstance(identity, str) or not identity or len(identity) > 96:
+            if not isinstance(identity, str) or not identity.strip() or len(identity) > 96:
                 findings.append('NODE_ASSET_ID_INVALID')
                 continue
             if identity in seen:
