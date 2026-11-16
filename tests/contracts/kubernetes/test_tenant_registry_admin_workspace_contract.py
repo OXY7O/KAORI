@@ -293,7 +293,8 @@ def test_access_grant_registry_uses_expandable_evidence_without_reconciliation_h
     capsule = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
     form = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
 
-    assert 'components/info_tip.html' not in registry
+    assert 'components/info_tip.html' in registry
+    assert "info_tip.render('tenant-access-grant-registry-guide'" in registry
     assert 'access-grant-reconciliation-' not in registry
     assert 'table_label.status_label(grant.reconciliation_status|title, reconciliation_tone)' in registry
     assert 'detail_row.toggle_button(' in registry

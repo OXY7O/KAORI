@@ -35,7 +35,7 @@ def test_every_primary_intelligence_page_uses_reference_posture_directly_below_h
 
     assert overview.index('page_hero.shell_classes()') < overview.index('intelligence_ui.posture_panel(')
     assert overview.index('intelligence_ui.posture_panel(') < overview.index(
-        "{% call intelligence_ui.section(\n            'Intelligence Posture'"
+        "'Intelligence Posture',"
     )
 
     assert recommendations.index('page_hero.shell_classes()') < recommendations.index(
