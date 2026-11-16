@@ -39,6 +39,7 @@ def _connection() -> SimpleNamespace:
         metadata_json={
             'source_repository': REPOSITORY,
             'source_sha': SOURCE_CANDIDATE_SHA,
+            'execution_environment_digest': 'sha256:' + 'a' * 64,
             'profile_key': PROFILE_KEY,
             'ansible_core_version': ANSIBLE_CORE_VERSION,
             'ansible_runner_version': ANSIBLE_RUNNER_VERSION,
@@ -84,6 +85,7 @@ def _job() -> SimpleNamespace:
         result_summary_json={
             'repository': REPOSITORY,
             'source_sha': SOURCE_CANDIDATE_SHA,
+            'execution_environment_digest': 'sha256:' + 'a' * 64,
             'upstream_kubespray_commit': KUBESPRAY_COMMIT,
             'upstream_kubespray_release': 'v2.32.0',
             'kubernetes_minor': '1.36',
@@ -124,6 +126,7 @@ def test_plan_result_is_deterministic_review_only_and_excludes_raw_inventory() -
     assert first.host_preflight_job_public_id == job.public_id
     summary = first.committed_summary()
     assert summary['schema_version'] == 1
+    assert summary['execution_environment_digest'] == 'sha256:' + 'a' * 64
     assert summary['approval_status'] == 'not_requested'
     assert summary['execution_status'] == 'blocked'
     assert summary['mutation_authorized'] is False
@@ -137,6 +140,9 @@ def test_plan_result_is_deterministic_review_only_and_excludes_raw_inventory() -
     'mutate',
     [
         lambda conn, job: conn.metadata_json.update(source_sha='f' * 40),
+        lambda conn, job: conn.metadata_json.update(execution_environment_digest=None),
+        lambda conn, job: conn.metadata_json.update(execution_environment_digest='not-a-digest'),
+        lambda conn, job: job.result_summary_json.update(execution_environment_digest='sha256:' + 'b' * 64),
         lambda conn, job: conn.metadata_json['source_validation'].update(status='blocked'),
         lambda conn, job: setattr(conn, 'environment', 'production'),
         lambda conn, job: setattr(conn, 'enabled', False),
