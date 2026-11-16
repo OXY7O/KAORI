@@ -29,9 +29,7 @@
                 return
             }
             if (!Array.isArray(rows)) return
-            const data = rows
-                .filter((row) => Number.isFinite(row.pull_count) && row.pull_count >= 0)
-                .slice(0, 5)
+            const data = rows.filter((row) => Number.isFinite(row.pull_count) && row.pull_count >= 0).slice(0, 5)
             if (!data.length) return
 
             const textColor = cssVariable('--kaori-content-secondary', 'CanvasText')
