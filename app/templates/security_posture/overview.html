@@ -14,43 +14,24 @@
     <div id="security-posture-overview" class="space-y-5">
         {% set registry_ready = posture.authorized_registry and posture.sources > 0 %}
         {% set blocked_info = "Connect a Registry source with committed inventory and grant authorized domain access." %}
-        <section class="{{ page_hero.shell_classes() }}">
-            <div class="{{ page_hero.layout_classes() }}">
-                <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('layout-dashboard', 'Security Posture', 'shield-alert') %}
-                        <h1 class="{{ page_hero.title_classes() }}">Overview</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">
-                            Investigate committed CVE exposure and Kubernetes runtime impact.
-                        </p>
-                        <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('database-zap', 'Registry Scan Evidence') }}
-                            {{ page_hero.meta_label('waypoints', 'Runtime Correlation') }}
-                            {{ page_hero.meta_label('shield-alert', 'CVE Exposure') }}
-                        </div>
-                    {% endcall %}
-                </div>
-                {% if not registry_ready %}
-                    <aside class="{{ page_hero.aside_classes() }}"
-                           aria-label="Security evidence readiness">
-                        {% set readiness_metrics = [('database-zap', 'Provider Authority', 'Artifact Registry', 'Registry scanner source'), ('lock-keyhole', 'Evidence Boundary', 'Not Collected', 'No eligible committed Registry evidence')] %}
-                        {{ page_hero.blocked_context_body('Assurance Readiness', 'Registry Evidence Required', readiness_metrics,
-                                                blocked_info, 'Blocked', 'warning', 'lock-keyhole', 'info') }}
-                    </aside>
-                {% else %}
-                    {% set evidence_context_metrics = [('database-zap', 'Provider Authority', 'Artifact Registry', 'Registry scanner remains authoritative'), ('shield-check', 'Evidence Boundary', 'Committed', 'KAORI-normalized evidence')] %}
-                    {{ page_hero.context_card('Security Overview context',
-                                        'Assurance Boundary',
-                                        'Security Evidence',
-                                        posture.scan_status.label,
-                                        posture.scan_status.tone,
-                                        evidence_context_metrics,
-                                        'Review CVE Findings',
-                                        url_for('security_posture.findings') ,
-                    'shield-alert'
-                    ) }}
-                {% endif %}
-            </div>
-        </section>
+        {{ page_hero.operational_dashboard('Security Posture',
+                'shield-alert',
+                'Overview',
+                'Investigate committed CVE exposure and Kubernetes runtime impact.',
+                [
+                ('database-zap', 'Registry Scan Evidence'),
+                ('waypoints', 'Runtime Correlation'),
+                ('shield-alert', 'CVE Exposure')
+                ],
+                'Authorized Registry Evidence',
+                'Review CVE Findings',
+                url_for('security_posture.findings'),
+                'shield-alert',
+                'Committed KAORI State',
+                'normal' if registry_ready else 'blocked',
+                'Registry Evidence Required',
+                blocked_info
+                ) }}
         {% if not registry_ready %}
             {% set empty_state_icon = "shield-alert" %}
             {% set empty_state_label = "Setup Required" %}
