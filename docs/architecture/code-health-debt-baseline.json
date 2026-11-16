@@ -218,10 +218,10 @@
     "app/storage/object_storage/inventory/tasks.py::sync_all_object_storage_task": 179
   },
   "module_line_limits": {
-    "app/artifact_registry/presentation_inventory.py": 938,
+    "app/artifact_registry/presentation_inventory.py": 932,
     "app/artifact_registry/presentation_runtime.py": 807,
-    "app/artifact_registry/routes.py": 936,
-    "app/artifact_registry/security/presentation.py": 893,
+    "app/artifact_registry/routes.py": 911,
+    "app/artifact_registry/security/presentation.py": 860,
     "app/integrations/delivery/notification_channels/service.py": 991,
     "app/integrations/observability/metrics_source/query_profiles/kubernetes_v1.py": 1309,
     "app/integrations/service.py": 876,
@@ -240,7 +240,7 @@
     "app/kubernetes/tenant/discovery_service.py": 992,
     "app/kubernetes/tenant/registry_context.py": 1238,
     "app/kubernetes/tenant/release_handoff_approval.py": 817,
-    "app/kubernetes/tenant/routes.py": 2488,
+    "app/kubernetes/tenant/routes.py": 2417,
     "app/kubernetes/tenant/service.py": 947,
     "app/platform_operations/data_lifecycle/retention/service.py": 821,
     "app/reports/generate/service.py": 820,
