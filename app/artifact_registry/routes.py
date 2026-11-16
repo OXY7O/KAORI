@@ -35,16 +35,22 @@ from app.artifact_registry.presentation import (
     build_runtime_binding_detail,
     build_runtime_usage,
 )
-from app.artifact_registry.presentation_common import _providers as _active_registry_sources
 from app.artifact_registry.presentation_topology import build_dependency_topology
-from app.artifact_registry.route_scope import _inventory_source_id, _overview_provider_id
+from app.artifact_registry.route_scope import (
+    _analytics_provider_id,
+    _inventory_source_id,
+    _overview_provider_id,
+    _runtime_scope_id,
+    _runtime_topology_filters,
+    _security_source_id,
+)
 from app.artifact_registry.security.cve_impact import build_cve_runtime_impact
 from app.artifact_registry.security.job_adapter import (
     build_registry_security_sync_state,
     get_registry_security_sync_job,
 )
-from app.artifact_registry.security.presentation import _providers as _eligible_security_sources
-from app.artifact_registry.security.presentation import build_security, build_security_overview
+from app.artifact_registry.security.presentation import build_security_overview
+from app.artifact_registry.security.web import _security_response, _security_sync_context
 from app.artifact_registry.sync_jobs import NoEligibleRegistryTargets, enqueue_all_registry_inventory_sync
 from app.artifact_registry.webhooks import RegistryWebhookAuthError, ingest_webhook
 from app.dashboards.common.operational import (
@@ -182,41 +188,10 @@ def inventory_artifact_details(artifact_id: int) -> ResponseReturnValue:
     )
 
 
-def _security_source_id(*, from_form: bool = False) -> int | None:
-    """Explicit malformed source filters must never widen Security to the fleet."""
-    values = request.form if from_form else request.args
-    raw = values.get('source_id')
-    if raw is None or not str(raw).strip():
-        return None
-    try:
-        source_id = int(raw)
-    except (TypeError, ValueError):
-        abort(404)
-    if source_id < 1:
-        abort(404)
-    if from_form and not any(int(item.id) == source_id for item in _eligible_security_sources()):
-        # Reject unavailable selected-view context *before* dispatching a fleet job.
-        abort(404)
-    return source_id
 
 
-def _security_response(kind: str) -> ResponseReturnValue:
-    context = build_security(
-        kind=kind,
-        section=request.args.get('section', '', type=str),
-        search=request.args.get('q', '', type=str),
-        severity=request.args.get('severity', '', type=str),
-        provider=request.args.get('provider', '', type=str),
-        source_id=_security_source_id(),
-        page=request.args.get('page', 1, type=int) or 1,
-        per_page=request.args.get('per_page', 5, type=int) or 5,
-    )
-    template = (
-        'artifact_registry/partials/_security_workspace.html'
-        if request.headers.get('HX-Request') == 'true'
-        else 'artifact_registry/security.html'
-    )
-    return render_template(template, security=context)
+
+
 
 
 @artifact_registry_bp.get('/security')
@@ -263,17 +238,7 @@ def security_supply_chain() -> ResponseReturnValue:
     return _security_response('supply_chain')
 
 
-def _security_sync_context(kind: str) -> dict[str, object]:
-    return build_security(
-        kind=kind,
-        section=request.form.get('section', '', type=str),
-        search=request.form.get('q', '', type=str),
-        severity=request.form.get('severity', '', type=str),
-        provider=request.form.get('provider', '', type=str),
-        source_id=_security_source_id(from_form=True),
-        page=request.form.get('page', 1, type=int) or 1,
-        per_page=request.form.get('per_page', 5, type=int) or 5,
-    )
+
 
 
 @artifact_registry_bp.post('/security/sync')
@@ -379,19 +344,7 @@ def security_sync_status(public_id: str) -> ResponseReturnValue:
     return response
 
 
-def _runtime_scope_id(name: str) -> int | None:
-    raw = request.args.get(name)
-    if raw is None or not raw.strip():
-        return None
-    try:
-        value = int(raw)
-    except (TypeError, ValueError):
-        abort(404)
-    if value < 1:
-        abort(404)
-    if name == 'source_id' and not any(int(source.id) == value for source in _active_registry_sources()):
-        abort(404)
-    return value
+
 
 
 @artifact_registry_bp.get('/runtime/overview')
@@ -426,16 +379,7 @@ def runtime() -> ResponseReturnValue:
     return render_template(template, runtime=context)
 
 
-def _runtime_topology_filters() -> dict[str, Any]:
-    return {
-        'search': request.args.get('q', '', type=str),
-        'source_id': _runtime_scope_id('source_id'),
-        'cluster_id': request.args.get('cluster_id', '', type=str),
-        'namespace': request.args.get('namespace', '', type=str),
-        'match_type': request.args.get('match_type', '', type=str),
-        'exposure': request.args.get('exposure', '', type=str),
-        'artifact_id': _runtime_scope_id('artifact_id'),
-    }
+
 
 
 @artifact_registry_bp.get('/runtime/topology')
@@ -477,16 +421,7 @@ _REGISTRY_ANALYTICS_DETAIL_ROUTES = {
 }
 
 
-def _analytics_provider_id() -> int | None:
-    """Explicit scope is fail-closed; invalid IDs must not expand to the fleet."""
-    value = request.args.get('provider_id')
-    if value is None or value == '':
-        return None
-    if not value.isascii() or not value.isdecimal() or len(value) > 18:
-        abort(404)
-    if int(value) <= 0:
-        abort(404)
-    return int(value)
+
 
 
 def _render_registry_analytics_page(section: str) -> ResponseReturnValue:
