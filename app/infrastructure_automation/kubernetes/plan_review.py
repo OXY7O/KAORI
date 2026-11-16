@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -41,6 +42,7 @@ class KubesprayPlanReview:
     host_preflight_job_public_id: str | None = None
     expires_at: str | None = None
     source_sha: str | None = None
+    execution_environment_digest: str | None = None
     mutation_authorized: bool = False
 
     def committed_summary(self) -> dict[str, Any]:
@@ -54,6 +56,7 @@ class KubesprayPlanReview:
             'host_preflight_job_public_id': self.host_preflight_job_public_id,
             'expires_at': self.expires_at,
             'source_sha': self.source_sha,
+            'execution_environment_digest': self.execution_environment_digest,
             'upstream_kubespray_commit': KUBESPRAY_COMMIT,
             'mutation_authorized': False,
             'approval_status': 'not_requested',
@@ -82,6 +85,9 @@ def build_kubespray_plan_review(
     source_sha = metadata.get('source_sha')
     if not isinstance(source_sha, str) or len(source_sha) != 40:
         return KubesprayPlanReview('blocked', 'SOURCE_UNQUALIFIED')
+    ee_digest = metadata.get('execution_environment_digest')
+    if not isinstance(ee_digest, str) or re.fullmatch(r'sha256:[a-f0-9]{64}', ee_digest) is None:
+        return KubesprayPlanReview('blocked', 'EE_DIGEST_REQUIRED')
 
     posture = build_kubespray_preflight(connection, jobs=[host_preflight_job], now=timestamp)
     if posture.state != 'ready_for_review' or posture.facts_job_public_id != host_preflight_job.public_id:
@@ -90,6 +96,8 @@ def build_kubespray_plan_review(
     facts = host_preflight_job.result_summary_json
     if not isinstance(facts, dict):
         return KubesprayPlanReview('blocked', 'HOST_PREFLIGHT_UNQUALIFIED')
+    if facts.get('execution_environment_digest') != ee_digest:
+        return KubesprayPlanReview('blocked', 'EE_DIGEST_MISMATCH')
     nodes = facts.get('hosts')
     if not isinstance(nodes, list) or len(nodes) != 3:
         return KubesprayPlanReview('blocked', 'INVENTORY_UNQUALIFIED')
@@ -163,6 +171,7 @@ def build_kubespray_plan_review(
         'environment': environment,
         'repository': metadata.get('source_repository'),
         'source_sha': source_sha,
+        'execution_environment_digest': ee_digest,
         'kubespray_release': KUBESPRAY_RELEASE,
         'upstream_commit': KUBESPRAY_COMMIT,
         'kubernetes_minor': KUBESPRAY_KUBERNETES_MINOR,
@@ -182,4 +191,5 @@ def build_kubespray_plan_review(
         host_preflight_job_public_id=host_preflight_job.public_id,
         expires_at=fields['expires_at'],
         source_sha=source_sha,
+        execution_environment_digest=ee_digest,
     )
