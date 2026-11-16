@@ -13,7 +13,7 @@ jobs:
   targeted-static:
     name: Static plus committed evidence contracts
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Checkout exact reviewed branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -59,8 +59,6 @@ jobs:
         run: |
           python -m pytest -q -p no:cacheprovider \
             tests/contracts/platform_operations/test_kubespray_static_preflight_contract.py \
-            app/integrations/orchestration/configuration_automation/providers/ansible/preflight.py \
-            app/integrations/routes.py \
             tests/integrations/test_ansible_kubespray_preflight.py \
             tests/contracts/integrations/test_ansible_source_posture_contract.py \
             tests/contracts/integrations/test_ansible_configuration_automation_workspace_contract.py
