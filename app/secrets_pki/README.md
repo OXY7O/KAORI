@@ -308,7 +308,12 @@ gates and real Vault/PostgreSQL, RBAC, Visual QA/UAT remain required.
   partial, generation-mismatched or otherwise unqualified. This corrects the
   older historical-evidence gate without hiding independently qualified PKI.
   Historical snapshots remain inspectable in Overview/Inventory as
-  source-qualified retained evidence with stale/partial warnings.
+  source-qualified retained evidence with stale/partial warnings. When an
+  approved Vault scope exists but current lifecycle evidence is unqualified,
+  the shared blocker links to **Inventory Readiness**, including for a user
+  holding `secrets_pki.view` without `integrations.manage`. Missing source
+  or mount approval still routes eligible managers to Vault configuration;
+  it does not grant configuration or job execution permissions.
 - KPI cards only render numeric values after the respective source-qualified
   complete/current generation. `observed_empty` is a valid KV2 zero; blocked,
   stale and partial statuses show text, never invented zero counts.
