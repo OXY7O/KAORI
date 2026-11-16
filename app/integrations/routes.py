@@ -6,6 +6,10 @@ from sqlalchemy.exc import SQLAlchemyError
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import permission_required
+from app.infrastructure_automation.kubernetes.plan_dispatch import (
+    KubesprayPlanNotQualified,
+    dispatch_kubespray_plan_review,
+)
 from app.common.http import htmx_target, is_htmx_request
 from app.extensions.db import db
 from app.integrations.binding_web import binding_response as _binding_response
@@ -72,6 +76,7 @@ from app.integrations.validation.web import (
     validate_snapshot_access,
     validation_poll_response,
 )
+from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable
 from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 from app.platform_operations.notifications.service import (
     get_navigation_notification_context,
@@ -341,6 +346,60 @@ def ansible_connection_detail(instance_id: int) -> ResponseReturnValue:
         inventory_targets=inventory_targets,
         inventory_pagination=inventory_pagination,
     )
+
+
+@integrations_bp.post('/ansible/connections/<int:instance_id>/plan-review')
+@permission_required('integrations.manage')
+@permission_required('jobs.execute')
+def ansible_plan_review(instance_id: int) -> ResponseReturnValue:
+    """Dispatch only DB-backed, non-mutating Plan review; no Kubernetes Run."""
+    connection = get_connection(instance_id)
+    if connection is None:
+        abort(404)
+    try:
+        validate_csrf(str(request.form.get('csrf_token') or ''))
+    except ValidationError:
+        abort(400)
+
+    try:
+        job, created = dispatch_kubespray_plan_review(connection, user_id=int(current_user.id))
+    except (KubesprayPlanNotQualified, JobWorkerUnavailable):
+        status = 'warning'
+        event_type = 'ansible_kubespray_plan_review_blocked'
+        title = 'Kubespray Plan Review Blocked'
+        message = 'Source, host preflight or plan worker is not qualified. No operation was dispatched.'
+    except SQLAlchemyError:
+        current_app.logger.exception('Kubespray Plan review dispatch failed.')
+        status = 'error'
+        event_type = 'ansible_kubespray_plan_review_failed'
+        title = 'Kubespray Plan Review Failed'
+        message = 'Unable to record the review-only Plan job. No cluster mutation was authorized.'
+    else:
+        status = 'info'
+        event_type = 'ansible_kubespray_plan_review_queued'
+        title = 'Kubespray Plan Review Queued'
+        message = (
+            'Review-only Plan is queued in Jobs & Executions; independent approval and cluster operations remain blocked.'
+            if created
+            else 'A review-only Plan job already exists; no duplicate dispatch was created.'
+        )
+        # No JobExecution identifier or secret is needed in toast metadata.
+        del job
+
+    record_operational_activity(
+        user_id=int(current_user.id),
+        event_type=event_type,
+        status=status,
+        title=title,
+        message=message,
+        action_url=url_for('integrations.ansible_connection_detail', instance_id=connection.id) + '#runtime',
+        action_label='Review Jobs',
+        action_icon='clipboard-list',
+        metadata={'provider': 'ansible', 'instance_id': connection.id, 'feedback_delivery': 'toast'},
+        queue_feedback=True,
+        delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY,
+    )
+    return redirect(url_for('integrations.ansible_connection_detail', instance_id=connection.id) + '#validation')
 
 
 @integrations_bp.post('/ansible/connections/<int:instance_id>/validate-source')
