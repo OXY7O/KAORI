@@ -179,7 +179,12 @@ def test_vault_delete_endpoint_returns_safe_feedback(
 
     assert response.status_code == 302
     assert len(audit) == 1
-    assert audit[0]['status'] == ('success' if outcome == 'success' else 'warning' if outcome == 'blocked' else 'error')
+    expected_status = {
+        'success': 'success',
+        'blocked': 'warning',
+        'failed': 'error',
+    }[outcome]
+    assert audit[0]['status'] == expected_status
     assert audit[0]['queue_feedback'] is True
     assert 'private provider data' not in str(audit)
     if outcome == 'success':
