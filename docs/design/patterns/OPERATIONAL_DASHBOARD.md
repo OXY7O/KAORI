@@ -66,6 +66,15 @@ qualified. Both pages reuse `page_hero.blocked_context_body` and shared
 The absence of committed evidence is not proof of zero Secrets, valid rotation
 or healthy TLS. An accessible sidebar link does not signify operational Ready.
 
+The Lifecycle blocked Hero uses stage-specific, concise `lifecycle_blocker_info`
+copy rather than repeating the longer prerequisite description from the shared
+below-Hero blocker. At the unapproved-mount stage, show **Approve KV v2 mounts
+or qualify independent PKI evidence.** It fits naturally on a standard desktop
+context line and may wrap accessibly on smaller screens; do not force
+`whitespace-nowrap` or truncate. Keep the full operational rationale and
+permission-aware action in the canonical shared blocker.
+
+
 The blocked Dashboard body immediately below the Hero uses the shared section blocked-state grammar: setup title/status, concise explanation, ordered setup steps when useful, and one permission-aware primary action. Kubernetes and Object Storage must not maintain separate local blocker geometry.
 
 ## Canonical composition
