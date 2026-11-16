@@ -30,7 +30,7 @@ _APPROVED_SCOPE = 'self_managed_existing_linux_hosts'
 _NONPRODUCTION = frozenset(
     {'development', 'staging', 'testing', 'laboratory', 'sandbox', 'proof_of_concept', 'non_production'}
 )
-
+_POD_SERVICE_PRIVATE_NETWORKS = tuple(ip_network(cidr) for cidr in ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16'))
 
 
 @dataclass(frozen=True, slots=True)
