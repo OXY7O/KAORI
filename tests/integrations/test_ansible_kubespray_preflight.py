@@ -218,7 +218,10 @@ def test_production_and_unverified_git_source_are_blocked_even_with_host_evidenc
         ({'pod_cidr': '172.16.10.0/24'}, 'network'),
         ({'service_cidr': 'not-a-cidr'}, 'network'),
         ({'pod_cidr': '127.0.0.0/8'}, 'network'),
+        ({'pod_cidr': '0.0.0.0/0'}, 'network'),
+        ({'service_cidr': '192.0.2.0/24'}, 'network'),
         ({'host_network_cidrs': ['::/0']}, 'network'),
+        ({'host_network_cidrs': [None]}, 'network'),
     ],
 )
 def test_unsupported_topology_or_cidr_fails_closed(changes, gate) -> None:
@@ -236,6 +239,11 @@ def test_duplicate_host_identity_unsupported_os_and_missing_capacity_are_blocked
         lambda hosts: hosts[0].update(cpu_count=0),
         lambda hosts: hosts[0].update(asset_identity_verified=False),
         lambda hosts: hosts[0].update(role='worker'),
+        lambda hosts: hosts[0].update(role=[]),
+        lambda hosts: hosts[0].update(os_distribution=[]),
+        lambda hosts: hosts[0].update(memory_mib=1024),
+        lambda hosts: hosts[0].update(disk_gib=20),
+        lambda hosts: hosts[0].update(cpu_count=True),
     ):
         record = _job()
         change(record.result_summary_json['hosts'])
