@@ -199,17 +199,20 @@ def import_attested_pki_metadata(payload: Any) -> tuple[InternalPKIEvidenceBatch
     if prior is not None and manifest['collected_at'] <= prior.collected_at.replace(tzinfo=UTC):
         raise PKIEvidenceValidationError('Evidence is older than the latest committed source snapshot.')
 
-    batch = InternalPKIEvidenceBatch(
-        id=str(uuid4()),
-        **source_scope,
-        source_version=manifest['source_version'],
-        operator_reference=manifest['reference'],
-        manifest_sha256=digest,
-        coverage_state=manifest['coverage_state'],
-        collected_at=manifest['collected_at'],
-        imported_at=datetime.now(UTC),
-        record_count=len(manifest['certificates']),
-    )
+    # SQLAlchemy's declarative constructor is dynamically installed; assign
+    # already-validated mapped attributes explicitly for static type safety.
+    batch = InternalPKIEvidenceBatch()
+    batch.id = str(uuid4())
+    batch.cluster_id = source_scope['cluster_id']
+    batch.node_name = source_scope['node_name']
+    batch.source_kind = source_scope['source_kind']
+    batch.source_version = manifest['source_version']
+    batch.operator_reference = manifest['reference']
+    batch.manifest_sha256 = digest
+    batch.coverage_state = manifest['coverage_state']
+    batch.collected_at = manifest['collected_at']
+    batch.imported_at = datetime.now(UTC)
+    batch.record_count = len(manifest['certificates'])
     try:
         db.session.add(batch)
         existing = {
@@ -220,7 +223,11 @@ def import_attested_pki_metadata(payload: Any) -> tuple[InternalPKIEvidenceBatch
             received.add(entry['component'])
             item = existing.get(entry['component'])
             if item is None:
-                item = InternalPKICertificateInventory(**source_scope, component=entry['component'])
+                item = InternalPKICertificateInventory()
+                item.cluster_id = source_scope['cluster_id']
+                item.node_name = source_scope['node_name']
+                item.source_kind = source_scope['source_kind']
+                item.component = entry['component']
                 db.session.add(item)
             for key in ('kind', 'issuer', 'not_before', 'not_after', 'externally_managed'):
                 setattr(item, key, entry[key])
