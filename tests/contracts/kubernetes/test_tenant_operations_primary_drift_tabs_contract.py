@@ -405,7 +405,6 @@ def test_both_capsule_drift_registries_use_full_kaori_table_contract() -> None:
 
 
 def test_capsule_drift_filters_are_committed_and_independently_paginated() -> None:
-    routes = read('app/kubernetes/tenant/routes.py')
     route_common = read('app/kubernetes/tenant/route_common.py')
     quota = read('app/kubernetes/tenant/capsule_tenant_quota_governance.py')
     shared = read('app/kubernetes/tenant/capsule_allocation_governance.py')
