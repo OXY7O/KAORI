@@ -7,9 +7,10 @@ The product route enforces the local UAT boundary before passing an ID.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable
+from typing import Any
 
 from flask_sqlalchemy.session import Session as FlaskSession
 from sqlalchemy import and_, case, func, literal, or_, select
