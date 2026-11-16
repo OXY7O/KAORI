@@ -77,3 +77,34 @@ or a dispatch permit. The predicate's synthetic positive test is not evidence
 of real host trust. Focused Ruff/format/pytest and source review are required
 before temporary holding-branch integration. CI, real worker execution,
 provider UAT and Human Acceptance are not established by these commits.
+
+
+## Canonical SSH SHA-256 fingerprint representation (#4799)
+
+The candidate fingerprint now requires exactly 43 unpadded RFC 4648 Base64
+characters after `SHA256:`. Decode must yield 32 bytes and round-trip to
+the identical unpadded encoding. Padding, alternate pad-bit encodings and
+non-Base64 characters fail closed before comparison to the approved host-key
+fingerprint. This prevents multiple textual representations of one key from
+passing an exact-match authority boundary.
+
+**This is not host-key trust establishment.** A fingerprint supplied by a
+browser or by the candidate worker is never independent verification. A
+future dedicated, non-mutating worker must obtain the canonical pinned key
+from approved host-key authority, verify the SSH handshake with strict
+known_hosts enforcement, and bind its JobExecution to the authorized asset,
+credential reference, exact Git source and signed EE. No SSH connection,
+credential resolution, or execution permission is introduced here.
+
+Review commands (not executed in this connector-only increment):
+
+```sh
+python -m ruff check app/integrations/orchestration/configuration_automation/providers/ansible/remote_admission.py tests/contracts/integrations/test_ansible_remote_admission_contract.py
+python -m ruff format --check app/integrations/orchestration/configuration_automation/providers/ansible/remote_admission.py tests/contracts/integrations/test_ansible_remote_admission_contract.py
+python -m pytest -q -p no:cacheprovider tests/contracts/integrations/test_ansible_remote_admission_contract.py
+```
+
+Continue existing Pyright, integration regressions, UI reuse verifiers and
+Developer Check against the reconciled dependent PR stack before holding-branch
+promotion. No CI, real host UAT, source/EE approval or Human Acceptance is
+asserted.
