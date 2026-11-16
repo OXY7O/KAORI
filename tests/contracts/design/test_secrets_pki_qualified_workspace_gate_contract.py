@@ -207,3 +207,69 @@ def test_inventory_hero_scope_does_not_confuse_overflow_with_missing_vault() -> 
         assert result.strip() == expected
 
     assert "('server', 'Active Scope', inventory_scope_label, inventory_scope_helper)" in source
+
+
+
+def test_failed_first_collection_has_distinct_inventory_blocker_and_short_hero_info() -> None:
+    source = _read(INVENTORY)
+    start = source.index('{% set inventory_unqualified = ')
+    end = source.index('<section', start)
+    stage = Environment().from_string(
+        source[start:end]
+        + '{{ inventory_blocker_title }}|{{ inventory_blocker_info }}|'
+        + '{{ inventory_blocker_steps[-1] }}|{{ inventory_blocker_action|default("", true) }}'
+    )
+    summary = {
+        'has_evidence': False,
+        'state': 'failed',
+        'provider_count': 1,
+        'approved_mount_count': 1,
+        'source_limit_exceeded': False,
+    }
+    context = {
+        'summary': summary,
+        'can_manage_integrations': False,
+        'can_execute_inventory': True,
+        'url_for': lambda endpoint, **kwargs: '/inventory-job',
+    }
+    assert stage.render(**context).strip() == (
+        'KV v2 Inventory Collection Failed|Review the failed KV v2 inventory job.|'
+        'Review failed inventory collection|Open Inventory Job'
+    )
+    summary['state'] = 'not_collected'
+    assert stage.render(**context).strip().startswith(
+        'KV v2 Inventory Not Collected|Collect approved KV v2 inventory.'
+    )
+    assert 'blocked_state_description = inventory_blocker_description' in source
+    assert 'blocked_state_label = "Collection Failed" if inventory_collection_failed' in source
+
+
+def test_lifecycle_failed_first_collection_keeps_independent_pki_path() -> None:
+    source = _read(LIFECYCLE)
+    start = source.index('{% set lifecycle_unqualified = ')
+    end = source.index('{{ lifecycle_navigation.render', start)
+    stage = Environment().from_string(
+        source[start:end]
+        + '{{ lifecycle_unqualified }}|{{ lifecycle_blocker_title }}|'
+        + '{{ lifecycle_blocker_info }}'
+    )
+    summary = {
+        'has_evidence': False,
+        'state': 'failed',
+        'provider_count': 1,
+        'approved_mount_count': 1,
+        'source_limit_exceeded': False,
+    }
+    def render(pki_status: str) -> str:
+        return stage.render(
+            summary=summary,
+            pki_validity={'status': pki_status},
+            can_manage_integrations=False,
+            url_for=lambda endpoint: '/vault',
+        ).strip()
+
+    assert render('not_collected') == (
+        'True|Lifecycle Collection Failed|Review failed collection or qualify independent PKI.'
+    )
+    assert render('ready').startswith('False|Lifecycle Collection Failed|')
+    assert 'blocked_state_label = "Collection Failed" if summary.state == ' in source
