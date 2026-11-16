@@ -1,0 +1,82 @@
+"""Inventory and Lifecycle stay navigable but suppress unqualified operational sections."""
+
+from pathlib import Path
+
+from jinja2 import Environment
+
+ROOT = Path(__file__).resolve().parents[3]
+INVENTORY = ROOT / 'app/templates/secrets_pki/inventory.html'
+LIFECYCLE = ROOT / 'app/templates/secrets_pki/lifecycle.html'
+
+
+def _read(path: Path) -> str:
+    return path.read_text(encoding='utf-8')
+
+
+def _gate(source: str, expression: str, **context: object) -> bool:
+    start = source.index('{% set ' + expression.split(' = ')[0] + ' = ')
+    end = source.index('%}', start) + 2
+    rendered = Environment().from_string(
+        source[start:end] + '\n{{ ' + expression.split(' = ')[0] + ' }}'
+    ).render(**context)
+    return rendered.strip() == 'True'
+
+
+def test_inventory_is_blocked_for_saved_but_unqualified_vault() -> None:
+    source = _read(INVENTORY)
+    Environment().parse(source)
+    assert _gate(source, 'inventory_unqualified = not summary.has_evidence', summary={'has_evidence': False})
+    assert not _gate(
+        source, 'inventory_unqualified = not summary.has_evidence', summary={'has_evidence': True}
+    )
+    assert source.count('{% if inventory_unqualified %}') == 2
+    assert 'summary.approved_mount_count' in source
+    assert 'KV v2 Mount Approval Required' in source
+    assert 'KV v2 Inventory Not Collected' in source
+    assert 'Vault Source Required' in source
+    assert 'components/states/_blocked_state.html' in source
+    assert 'inventory_blocker_href is not none' in source
+    assert "can_execute_inventory and summary.approved_mount_count" in source
+    assert 'secrets_pki.inventory.sync' in source
+
+
+def test_inventory_does_not_show_operational_zero_tiles_without_qualification() -> None:
+    source = _read(INVENTORY)
+    blocked_branch = source.split('{% if inventory_unqualified %}', 2)[2].split('{% else %}', 1)[0]
+    assert 'components/states/_blocked_state.html' in blocked_branch
+    assert "metric_card.render('Enabled Vault Sources'" not in blocked_branch
+    assert "metric_card.render('Approved KV v2 Mounts'" not in blocked_branch
+    assert 'Committed Inventory Coverage' in source
+    assert 'summary.observed_secret_count if summary.observed_secret_count is not none' in source
+
+
+def test_lifecycle_requires_qualified_kv2_or_independent_pki_evidence() -> None:
+    source = _read(LIFECYCLE)
+    Environment().parse(source)
+    for kv2, pki, expected in [
+        (False, 'not_collected', True),
+        (False, 'ready', False),
+        (True, 'not_collected', False),
+        (True, 'ready', False),
+    ]:
+        assert _gate(
+            source,
+            "lifecycle_unqualified = not summary.has_evidence and pki_validity.status != 'ready'",
+            summary={'has_evidence': kv2},
+            pki_validity={'status': pki},
+        ) is expected
+    assert source.count('{% if lifecycle_unqualified %}') == 2
+    assert 'KV v2 Mount Approval Required' in source
+    assert 'Lifecycle Evidence Not Collected' in source
+    assert 'components/states/_blocked_state.html' in source
+
+
+def test_lifecycle_qualified_independent_pki_and_routes_remain_intact() -> None:
+    source = _read(LIFECYCLE)
+    routes = _read(ROOT / 'app/secrets_pki/routes.py')
+    assert "pki_validity.status == 'ready'" in source
+    assert 'Version Lifecycle' in source
+    assert 'Certificate Validity' in source
+    assert 'Kubernetes TLS Consumer Correlation' in source
+    assert "@permission_required('secrets_pki.view')\ndef inventory(" in routes
+    assert "@permission_required('secrets_pki.view')\ndef lifecycle(" in routes
