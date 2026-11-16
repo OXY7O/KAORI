@@ -62,7 +62,9 @@ def test_native_access_observation_reuses_shared_settings_inventory_tabs() -> No
     assert 'workspace_tabs.render_query_tabs' in tabs
     assert capsule.count('External Capsule Access Inventory') == 1
     assert native.count('data-external-native-access-inventory') == 1
-    assert native.count('Native Namespace RBAC Inventory') == 1
+    assert native.count('Native Namespace RBAC Inventory') == 2
+    assert 'Native Namespace RBAC Inventory Guide' in native
+    assert native.count('id="external-native-access-heading"') == 1
     assert 'name="access_inventory_view" value="native"' in native
     assert 'name="access_inventory_view" value="capsule"' in capsule
     assert native.count('method="post"') >= 1
