@@ -97,12 +97,16 @@
                 <dl class="{{ analysis_surface.guidance_fact_grid_classes(2) }}">
                     <div class="{{ analysis_surface.guidance_fact_classes() }}">
                         <dt class="{{ analysis_surface.metric_label_classes() }}">Ready sources</dt>
-                        <dd class="mt-1.5 text-2xl font-semibold tabular-nums text-content-primary">{{ ready_count }}</dd>
+                        <dd class="mt-1.5 text-2xl font-semibold tabular-nums text-content-primary">
+                            {{ ready_count }}
+                        </dd>
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">Committed ready evidence</p>
                     </div>
                     <div class="{{ analysis_surface.guidance_fact_classes() }}">
                         <dt class="{{ analysis_surface.metric_label_classes() }}">Fallback records</dt>
-                        <dd class="mt-1.5 text-2xl font-semibold tabular-nums text-content-primary">{{ fallback_count }}</dd>
+                        <dd class="mt-1.5 text-2xl font-semibold tabular-nums text-content-primary">
+                            {{ fallback_count }}
+                        </dd>
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">Selected or attempted</p>
                     </div>
                 </dl>

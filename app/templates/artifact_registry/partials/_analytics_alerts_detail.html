@@ -20,7 +20,8 @@
             <div class="min-w-0">
                 <p class="{{ analysis_surface.role_label_classes('brand') }}">Operational Alerts</p>
                 <div class="mt-1 flex flex-wrap items-center gap-2">
-                    <h3 id="registry-alerts-detail-title" class="text-base font-semibold text-content-primary">Alertmanager + Metrics Source evidence</h3>
+                    <h3 id="registry-alerts-detail-title"
+                        class="text-base font-semibold text-content-primary">Alertmanager + Metrics Source evidence</h3>
                     {{ info_tip.render('registry-alerts-detail-guide',
                                         'Registry Alerts Analytics Guide',
                                         'Alertmanager is primary. Metrics Source is fallback evidence. All records shown here came from committed Analytics materialization.',
@@ -36,7 +37,7 @@
             </div>
         </div>
         {{ table_label.status_indicator_label(analytics.aggregate.alert_sources_ready ~ '/' ~ analytics.provider_count ~ ' Sources Ready' if analytics.provider_count else 'Sources Unavailable',
-                                'normal' if analytics.provider_count and analytics.aggregate.alert_sources_ready == analytics.provider_count else ('warning' if ready_sources else 'unknown')) }}
+                'normal' if analytics.provider_count and analytics.aggregate.alert_sources_ready == analytics.provider_count else ('warning' if ready_sources else 'unknown') ) }}
     </header>
     <div class="{{ analysis_surface.metric_grid_classes(4) }}">
         {% for icon, label, value, detail, role in alert_metrics %}
@@ -59,14 +60,16 @@
                     <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
                           aria-hidden="true"><i data-lucide="network" class="h-4 w-4"></i></span>
                     <div class="min-w-0">
-                        <h4 id="registry-alert-source-title" class="text-sm font-semibold text-content-primary">Committed Alert Sources</h4>
+                        <h4 id="registry-alert-source-title"
+                            class="text-sm font-semibold text-content-primary">Committed Alert Sources</h4>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">Selected primary or qualified fallback by Registry.</p>
                     </div>
                 </div>
-                {{ table_label.metadata_label(table_label.count_text(source_rows|length, 'Source'), 'database') }}
+                {{ table_label.metadata_label(table_label.count_text(source_rows|length, 'Source') , 'database') }}
             </header>
             {% if source_rows %}
-                <div class="divide-y divide-outline-subtle" data-registry-alert-source-rows>
+                <div class="divide-y divide-outline-subtle"
+                     data-registry-alert-source-rows>
                     {% for source in source_rows[:5] %}
                         <article class="flex min-w-0 flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:px-5">
                             <div class="min-w-0">
@@ -74,8 +77,8 @@
                                 <p class="mt-1 break-words text-xs leading-5 text-content-secondary">{{ source.detail }}</p>
                             </div>
                             <div class="shrink-0">
-                                {{ table_label.status_indicator_label(source.source_label ~ (' · Fallback' if source.fallback_used else ''),
-                                                'warning' if source.fallback_used else ('normal' if source.status == 'ready' else 'unknown')) }}
+                                {{ table_label.status_indicator_label(source.source_label ~ (' · Fallback' if source.fallback_used else '') ,
+                                'warning' if source.fallback_used else ('normal' if source.status == 'ready' else 'unknown')) }}
                             </div>
                         </article>
                     {% endfor %}
@@ -86,7 +89,8 @@
             {% else %}
                 <div class="p-4 sm:p-5">
                     <div class="{{ analysis_surface.empty_evidence_classes('px-5 py-6 text-center') }}"
-                         data-kaori-empty-state role="status">
+                         data-kaori-empty-state
+                         role="status">
                         <p class="text-sm font-semibold text-content-primary">Alert Source Evidence Not Available</p>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">No committed source selection is available for this Registry and Time Range. Missing source evidence is not a clean alert posture.</p>
                     </div>
@@ -99,7 +103,8 @@
                 <span class="{{ analysis_surface.role_icon_classes('insight', size='compact') }}"
                       aria-hidden="true"><i data-lucide="scan-eye" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
-                    <h4 id="registry-alert-readout-title" class="text-sm font-semibold text-content-primary">Alert Evidence Reading</h4>
+                    <h4 id="registry-alert-readout-title"
+                        class="text-sm font-semibold text-content-primary">Alert Evidence Reading</h4>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">A zero only when the source is qualified.</p>
                 </div>
             </header>

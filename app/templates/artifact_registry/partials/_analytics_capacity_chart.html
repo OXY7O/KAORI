@@ -3,11 +3,11 @@
 {% import "components/info_tip.html" as info_tip %}
 {% set quota_rows = analytics.capacity_chart_rows|default([], true) %}
 {% set shown_count = quota_rows|length %}
-{% set chart_min_height_classes = 'min-h-36 sm:min-h-40' %}
+{% set chart_min_height_classes = "min-h-36 sm:min-h-40" %}
 {% if shown_count >= 5 %}
-    {% set chart_min_height_classes = 'min-h-52 sm:min-h-56' %}
+    {% set chart_min_height_classes = "min-h-52 sm:min-h-56" %}
 {% elif shown_count >= 3 %}
-    {% set chart_min_height_classes = 'min-h-44 sm:min-h-48' %}
+    {% set chart_min_height_classes = "min-h-44 sm:min-h-48" %}
 {% endif %}
 {% set qualified_total = analytics.capacity_project_count|default(quota_rows|length) %}
 {% set project_count_label = quota_rows|length ~ ' Projects' %}
@@ -108,15 +108,21 @@
                             <dl class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                                 <div class="flex min-w-0 items-center gap-1.5">
                                     <dt class="text-content-muted">Used</dt>
-                                    <dd class="font-semibold tabular-nums text-content-primary">{{ row.usage_display }}</dd>
+                                    <dd class="font-semibold tabular-nums text-content-primary">
+                                        {{ row.usage_display }}
+                                    </dd>
                                 </div>
                                 <div class="flex min-w-0 items-center gap-1.5">
                                     <dt class="text-content-muted">Quota</dt>
-                                    <dd class="font-semibold tabular-nums text-content-primary">{{ row.quota_display }}</dd>
+                                    <dd class="font-semibold tabular-nums text-content-primary">
+                                        {{ row.quota_display }}
+                                    </dd>
                                 </div>
                                 <div class="flex min-w-0 items-center gap-1.5">
                                     <dt class="text-content-muted">Forecast</dt>
-                                    <dd class="font-medium text-content-secondary">{{ row.forecast_label }}</dd>
+                                    <dd class="font-medium text-content-secondary">
+                                        {{ row.forecast_label }}
+                                    </dd>
                                 </div>
                             </dl>
                         </article>

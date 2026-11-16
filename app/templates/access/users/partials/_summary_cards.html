@@ -9,19 +9,19 @@
                 </span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                            <h2 class="text-base font-semibold text-content-primary">Account &amp; Identity Posture</h2>
-                            {{ info_tip.render('account-identity-posture-guide',
-                                                    'Account & Identity Posture',
-                                                    'Review local accounts, external identities, role eligibility, and protected recovery boundaries.',
-                                                    items=[
-                                                    'KAORI owns account lifecycle, local roles, and Local Database credentials; RBAC and admission gates still apply.',
-                                                    'Directory and SSO providers own upstream credentials; KAORI retains local authorization and account state.',
-                                                    'Super Admin is Local Database-only break-glass authority; the last active Super Admin is protected.',
-                                                    'Deleted accounts restore as inactive and require an explicit activation decision.'
-                                                    ],
-                                                    placement='right',
-                                                    variant='guide') }}
-                        </div>
+                        <h2 class="text-base font-semibold text-content-primary">Account &amp; Identity Posture</h2>
+                        {{ info_tip.render('account-identity-posture-guide',
+                                                'Account & Identity Posture',
+                                                'Review local accounts, external identities, role eligibility, and protected recovery boundaries.',
+                                                items=[
+                                                'KAORI owns account lifecycle, local roles, and Local Database credentials; RBAC and admission gates still apply.',
+                                                'Directory and SSO providers own upstream credentials; KAORI retains local authorization and account state.',
+                                                'Super Admin is Local Database-only break-glass authority; the last active Super Admin is protected.',
+                                                'Deleted accounts restore as inactive and require an explicit activation decision.'
+                                                ],
+                                                placement='right',
+                                                variant='guide') }}
+                    </div>
                     <p class="mt-0.5 text-xs leading-5 text-content-muted">Current account lifecycle, privileged access, and identity-source ownership.</p>
                 </div>
             </div>

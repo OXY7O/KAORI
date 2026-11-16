@@ -46,87 +46,87 @@
                               aria-hidden="true"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
                         <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-2">
-                            <h2 class="text-base font-semibold text-content-primary">Role Registry Overview</h2>
-                            {{ info_tip.render('role-registry-overview-guide',
-                                                    'Role Registry Overview',
-                                                    'Review protected role defaults, effective authorization, and controlled delegation.',
-                                                    items=[
-                                                    'System roles are code-owned protected defaults; custom roles support governed administrator changes.',
-                                                    'Assigned roles grant access only when role, user, and provider admission gates permit; inactive roles fail closed.',
-                                                    'Delegation cannot exceed the actor\'s effective access; Local Database Super Admin remains a separate break-glass authority.',
-                                                    'Permission dependencies derive from the code-owned catalog; baseline drift requires explicit review.'
-                                                    ],
-                                                    placement='right',
-                                                    variant='guide') }}
-                        </div>
-                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Current role population, assignment posture, and authorization ownership boundaries.</p>
-                        </div>
-                    </div>
-                    {{ table_label.status_indicator_label(summary.posture_label, summary.posture_tone) }}
-                </div>
-            </header>
-            <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
-                {% set overview_metrics = [
-                                    ('circle-check', 'Active Roles', summary.active_roles, 'Profiles currently available for assignment.', 'bg-status-normal-soft text-status-normal-text'),
-                                    ('lock-keyhole', 'System Roles', summary.system_roles, 'Protected defaults owned by the RBAC baseline.', 'bg-kaori-soft text-kaori-primary'),
-                                    ('sparkles', 'Custom Roles', summary.custom_roles, 'Editable administrator-managed access profiles.', 'bg-status-info-soft text-status-info-text'),
-                                    ('triangle-alert', 'Baseline Drift', summary.baseline_drift_count, 'Protected defaults require RBAC review.', 'bg-status-warning-soft text-status-warning-text' if summary.baseline_drift_count else 'bg-status-normal-soft text-status-normal-text')
-                                ] %}
-                {% for icon, label, value, description, tone in overview_metrics %}
-                    <article class="flex min-h-[11rem] flex-col bg-surface-card p-5">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="min-w-0">
-                                <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
-                                <p class="mt-2 truncate text-3xl font-bold tracking-tight text-content-primary">{{ value }}</p>
-                            </div>
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ tone }}"
-                                  aria-hidden="true"><i data-lucide="{{ icon }}" class="h-5 w-5"></i></span>
-                        </div>
-                        <p class="mt-3 text-sm leading-6 text-content-muted">{{ description }}</p>
-                    </article>
-                {% endfor %}
-            </div>
-            <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
-                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                    {% set boundaries = [('lock-keyhole', 'Protected Defaults', 'Code-Owned', 'Code-owned roles require cloning before edits.'), ('shield-ellipsis', 'Delegation Boundary', 'Effective Access', 'Delegation cannot exceed your effective access.'), ('git-merge', 'Permission Dependencies', 'Catalog-Owned', 'Code-owned dependencies expand as needed.'), ('shield-check', 'Effective Authorization', 'Fail Closed', 'Inactive roles fail closed at authorization.')] %}
-                    {% for icon, title, value, description in boundaries %}
-                        <article class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                  aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
-                            <div class="min-w-0 flex-1">
-                                <div class="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
-                                    <h3 class="text-sm font-semibold text-content-primary">{{ title }}</h3>
-                                    <p class="text-xs font-semibold text-content-secondary">{{ value }}</p>
-                                </div>
-                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
-                            </div>
-                        </article>
-                    {% endfor %}
-                </div>
-            </div>
-        </section>
-        <div class="space-y-3">
-            {{ section_intro.render('Authorization Flow',
-                        'Follow how code-owned permissions reach users through role assignments and access checks.',
-                        id='role-assignment-section-heading') }}
-            {% call operational_section.render(
-                'Role Assignment Flow',
-                'How code-owned permissions become effective user authorization.',
-                'workflow',
-                action_href=url_for('access.permissions.index'),
-                action_label='Open Permission Catalog',
-                action_icon='book-key',
-                body_classes='p-5'
-                ) %}
-                {% set role_flow = [('book-key', 'Permission Catalog', 'Code defines available permission contracts.'), ('layers-3', 'Role Composition', 'Roles group permissions into reusable profiles.'), ('user-round-check', 'User Assignment', 'User Management assigns one active role.'), ('shield-check', 'Authorization Check', 'Server guards verify each protected action.')] %}
-                {{ point_flow.render(role_flow, aria_label='Role Assignment Flow') }}
-                <p class="mt-4 text-xs leading-5 text-content-muted">Super Admin remains a separately controlled Local Database emergency authority flag and is never granted through a normal role. Custom role delegation cannot exceed the administrator's own effective permission boundary.</p>
-            {% endcall %}
-        </div>
-        <div class="space-y-3">
-            {{ section_intro.render('Role Administration',
-                        'Review registered roles, assignment coverage, lifecycle state, and baseline integrity.',
-                        id='role-registry-section-heading') }}
+                                <h2 class="text-base font-semibold text-content-primary">Role Registry Overview</h2>
+                                {{ info_tip.render('role-registry-overview-guide',
+                                                                'Role Registry Overview',
+                                                                'Review protected role defaults, effective authorization, and controlled delegation.',
+                                                                items=[
+                                                                'System roles are code-owned protected defaults; custom roles support governed administrator changes.',
+                                                                'Assigned roles grant access only when role, user, and provider admission gates permit; inactive roles fail closed.',
+                                                                'Delegation cannot exceed the actor\'s effective access; Local Database Super Admin remains a separate break-glass authority.',
+                                                                'Permission dependencies derive from the code-owned catalog; baseline drift requires explicit review.'
+                                                                ],
+                                                                placement='right',
+                                                                variant='guide') }}
+                                                            </div>
+                                                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Current role population, assignment posture, and authorization ownership boundaries.</p>
+                                                        </div>
+                                                    </div>
+                                                    {{ table_label.status_indicator_label(summary.posture_label, summary.posture_tone) }}
+                                                </div>
+                                            </header>
+                                            <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
+                                                {% set overview_metrics = [
+                                                                    ('circle-check', 'Active Roles', summary.active_roles, 'Profiles currently available for assignment.', 'bg-status-normal-soft text-status-normal-text'),
+                                                                    ('lock-keyhole', 'System Roles', summary.system_roles, 'Protected defaults owned by the RBAC baseline.', 'bg-kaori-soft text-kaori-primary'),
+                                                                    ('sparkles', 'Custom Roles', summary.custom_roles, 'Editable administrator-managed access profiles.', 'bg-status-info-soft text-status-info-text'),
+                                                                    ('triangle-alert', 'Baseline Drift', summary.baseline_drift_count, 'Protected defaults require RBAC review.', 'bg-status-warning-soft text-status-warning-text' if summary.baseline_drift_count else 'bg-status-normal-soft text-status-normal-text')
+                                                                ] %}
+                                                {% for icon, label, value, description, tone in overview_metrics %}
+                                                    <article class="flex min-h-[11rem] flex-col bg-surface-card p-5">
+                                                        <div class="flex items-start justify-between gap-3">
+                                                            <div class="min-w-0">
+                                                                <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
+                                                                <p class="mt-2 truncate text-3xl font-bold tracking-tight text-content-primary">{{ value }}</p>
+                                                            </div>
+                                                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ tone }}"
+                                                                  aria-hidden="true"><i data-lucide="{{ icon }}" class="h-5 w-5"></i></span>
+                                                        </div>
+                                                        <p class="mt-3 text-sm leading-6 text-content-muted">{{ description }}</p>
+                                                    </article>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
+                                                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                                                    {% set boundaries = [('lock-keyhole', 'Protected Defaults', 'Code-Owned', 'Code-owned roles require cloning before edits.'), ('shield-ellipsis', 'Delegation Boundary', 'Effective Access', 'Delegation cannot exceed your effective access.'), ('git-merge', 'Permission Dependencies', 'Catalog-Owned', 'Code-owned dependencies expand as needed.'), ('shield-check', 'Effective Authorization', 'Fail Closed', 'Inactive roles fail closed at authorization.')] %}
+                                                    {% for icon, title, value, description in boundaries %}
+                                                        <article class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
+                                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                                                  aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                                                            <div class="min-w-0 flex-1">
+                                                                <div class="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+                                                                    <h3 class="text-sm font-semibold text-content-primary">{{ title }}</h3>
+                                                                    <p class="text-xs font-semibold text-content-secondary">{{ value }}</p>
+                                                                </div>
+                                                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
+                                                            </div>
+                                                        </article>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </section>
+                                        <div class="space-y-3">
+                                            {{ section_intro.render('Authorization Flow',
+                                            'Follow how code-owned permissions reach users through role assignments and access checks.',
+                                            id='role-assignment-section-heading') }}
+                                            {% call operational_section.render(
+                                                'Role Assignment Flow',
+                                                'How code-owned permissions become effective user authorization.',
+                                                'workflow',
+                                                action_href=url_for('access.permissions.index'),
+                                                action_label='Open Permission Catalog',
+                                                action_icon='book-key',
+                                                body_classes='p-5'
+                                                ) %}
+                                                {% set role_flow = [('book-key', 'Permission Catalog', 'Code defines available permission contracts.'), ('layers-3', 'Role Composition', 'Roles group permissions into reusable profiles.'), ('user-round-check', 'User Assignment', 'User Management assigns one active role.'), ('shield-check', 'Authorization Check', 'Server guards verify each protected action.')] %}
+                                                {{ point_flow.render(role_flow, aria_label='Role Assignment Flow') }}
+                                                <p class="mt-4 text-xs leading-5 text-content-muted">Super Admin remains a separately controlled Local Database emergency authority flag and is never granted through a normal role. Custom role delegation cannot exceed the administrator's own effective permission boundary.</p>
+                                            {% endcall %}
+                                        </div>
+                                        <div class="space-y-3">
+                                            {{ section_intro.render('Role Administration',
+                                            'Review registered roles, assignment coverage, lifecycle state, and baseline integrity.',
+                                            id='role-registry-section-heading') }}
             {% include "access/roles/partials/_registry.html" %}
         </div>
         {{ resource_detail_modal.host('Role',

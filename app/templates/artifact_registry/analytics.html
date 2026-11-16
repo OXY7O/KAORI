@@ -86,15 +86,7 @@
                     {% include "artifact_registry/partials/_analytics_overview_workspace.html" %}
                 </section>
             {% else %}
-                {% set detail_section_intros = {
-                    'growth': ('Registry Growth Analysis', 'Review committed artifact and storage deltas, source comparisons, and measured history.'),
-                    'capacity': ('Registry Capacity Analysis', 'Review project quota pressure, qualified headroom, and evidence-backed forecast horizons.'),
-                    'usage': ('Registry Usage Analysis', 'Correlate committed pull counters with artifact usage in Kubernetes runtime.'),
-                    'risk': ('Registry Risk Analysis', 'Review committed security findings, runtime exposure, and scan coverage gaps.'),
-                    'governance': ('Registry Governance Analysis', 'Examine provider-observed retention, immutability, and replication control evidence.'),
-                    'alerts': ('Registry Alerts & Anomalies', 'Review committed alert lifecycle, source readiness, and qualified fallback evidence.'),
-                    'insights': ('Registry Insights & Intelligence', 'Review factual cross-domain signals; Intelligence retains recommendation and decision authority.')
-                } %}
+                {% set detail_section_intros = {'growth': ('Registry Growth Analysis', 'Review committed artifact and storage deltas, source comparisons, and measured history.'), 'capacity': ('Registry Capacity Analysis', 'Review project quota pressure, qualified headroom, and evidence-backed forecast horizons.'), 'usage': ('Registry Usage Analysis', 'Correlate committed pull counters with artifact usage in Kubernetes runtime.'), 'risk': ('Registry Risk Analysis', 'Review committed security findings, runtime exposure, and scan coverage gaps.'), 'governance': ('Registry Governance Analysis', 'Examine provider-observed retention, immutability, and replication control evidence.'), 'alerts': ('Registry Alerts & Anomalies', 'Review committed alert lifecycle, source readiness, and qualified fallback evidence.'), 'insights': ('Registry Insights & Intelligence', 'Review factual cross-domain signals; Intelligence retains recommendation and decision authority.')} %}
                 {% set detail_intro = detail_section_intros[analytics.active_tab] %}
                 <section class="space-y-3"
                          aria-labelledby="artifact-registry-analytics-detail-heading">
@@ -112,8 +104,8 @@
                              hx-target="this"
                              hx-swap="outerHTML">
                             {{ section_loading.section(analytics.page_title,
-                                                    'Preparing committed Analytics evidence for the active workspace.',
-                                                    analytics.page_icon) }}
+                                                        'Preparing committed Analytics evidence for the active workspace.',
+                                                        analytics.page_icon) }}
                         </div>
                     </section>
                 </section>
