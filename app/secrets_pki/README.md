@@ -75,8 +75,18 @@ may configure sources or approve mounts. No credential, Secret path or
 runtime provider call is introduced into page rendering.
 
 A valid **zero** is shown only after an actual committed snapshot; missing
-snapshots are `Not Collected`. Counts from stale or partial committed sources
-remain explicitly labelled stale/partial; absent source is not deletion.
+snapshots are `Not Collected`. A failed first KV v2 metadata collection
+creates a sanitized collection-state record with `status='failed'` and no
+committed snapshot. The read-only fleet summary must show **Inventory Collection
+Failed**, `has_evidence=False`, and unknown observed counts—not silently
+downgrade a known failure to **Not Collected**. Overview, Inventory and
+Lifecycle use the existing canonical blocked prerequisites to offer retry/
+diagnostic guidance; an independent qualified PKI source may still admit
+Lifecycle. After a successful governed commit the state is committed. Failure
+after a previous commit must remain **Stale**, with historical evidence
+retained and explicitly qualified rather than represented as current.
+Counts from stale or partial committed sources remain explicitly labelled
+stale/partial; absent source is not deletion.
 PKI issuance/certificates, lease posture, consumer correlation, Vault
 Metrics Source, Alert Source, canonical Recommendations and Reporting are
 shown as unavailable/not materialized until their dedicated workstreams are

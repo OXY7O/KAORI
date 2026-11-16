@@ -44,6 +44,14 @@
             {% set inventory_blocker_steps = ["Vault source registered", "Approve explicit KV v2 metadata mounts", "Collect KV v2 inventory"] %}
             {% set inventory_blocker_action_url = url_for('vault.index') if can_manage_integrations else none %}
             {% set inventory_blocker_action_label = "Review Vault Mounts" if can_manage_integrations else none %}
+        {% elif summary.state == 'failed' %}
+            {% set inventory_blocker_title = "KV v2 Inventory Collection Failed" %}
+            {% set inventory_blocker_info = "Review failed KV v2 collection." %}
+            {% set inventory_blocker_label = "Collection Failed" %}
+            {% set inventory_blocker_description = "The KV v2 collection failed before any inventory could be committed. Review the failed job before retrying; missing evidence is not zero Secrets." %}
+            {% set inventory_blocker_steps = ["Vault source registered", "KV v2 mounts approved", "Review failed inventory collection"] %}
+            {% set inventory_blocker_action_url = url_for('secrets_pki.inventory') %}
+            {% set inventory_blocker_action_label = "Review Inventory Readiness" %}
         {% else %}
             {% set inventory_blocker_title = "KV v2 Inventory Not Collected" %}
             {% set inventory_blocker_info = "Run the KV v2 metadata inventory job." %}

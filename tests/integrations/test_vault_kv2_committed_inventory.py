@@ -195,6 +195,39 @@ def test_failed_provider_scan_keeps_history_but_marks_stale(store):
     assert state.last_error is None
 
 
+
+def test_failed_first_inventory_collection_is_not_misreported_as_never_collected(store):
+    # An initial provider failure commits no Secret metadata but does retain
+    # sanitized failure evidence for operator diagnosis.
+    mark_kv2_inventory_failed(store, 'secret')
+    row = SecretInventoryCollectionState.query.one()
+    assert row.status == 'failed'
+    assert row.last_committed_at is None
+
+    failed = build_secrets_pki_operational_summary()
+    assert failed['state'] == 'failed'
+    assert failed['label'] == 'Inventory Collection Failed'
+    assert failed['provider_count'] == 1
+    assert failed['approved_mount_count'] == 1
+    assert failed['committed_mount_count'] == 0
+    assert failed['observed_secret_count'] is None
+    assert failed['has_evidence'] is False
+
+    # A successful governed commit can recover without re-registering Vault.
+    commit_kv2_inventory(store, _snapshot(datetime(2026, 10, 22, tzinfo=UTC)))
+    ready = build_secrets_pki_operational_summary()
+    assert ready['state'] == 'committed'
+    assert ready['has_evidence'] is True
+    assert ready['observed_secret_count'] == 1
+
+    # After a prior commit, the same failure must retain the old evidence
+    # but disclose stale status, not claim that collection never occurred.
+    mark_kv2_inventory_failed(store, 'secret')
+    stale = build_secrets_pki_operational_summary()
+    assert stale['state'] == 'stale'
+    assert stale['has_evidence'] is True
+    assert stale['observed_secret_count'] == 1
+
 def test_unapproved_mount_failure_does_not_create_collection_state(store):
     mark_kv2_inventory_failed(store, 'unapproved')
     assert SecretInventoryCollectionState.query.count() == 0

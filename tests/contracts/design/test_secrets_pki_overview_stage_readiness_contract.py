@@ -16,6 +16,7 @@ def _state(
     *,
     provider_count: int | None,
     approved_mount_count: int | None,
+    collection_state: str = 'not_collected',
     source_limit_exceeded: bool = False,
     can_manage_integrations: bool = True,
 ) -> list[str]:
@@ -35,6 +36,7 @@ def _state(
             summary={
                 'provider_count': provider_count,
                 'approved_mount_count': approved_mount_count,
+                'state': collection_state,
                 'source_limit_exceeded': source_limit_exceeded,
             },
             can_manage_integrations=can_manage_integrations,
@@ -54,6 +56,27 @@ def test_saved_vault_connection_with_approved_mounts_still_requires_inventory_co
         'Review Inventory Readiness',
     ]
 
+
+
+def test_failed_first_inventory_collection_receives_specific_blocked_guidance() -> None:
+    assert _state(
+        provider_count=1, approved_mount_count=1, collection_state='failed'
+    ) == [
+        'KV v2 Inventory Collection Failed',
+        'Collection Failed',
+        'Review failed KV v2 collection.',
+        '/secrets-pki/inventory',
+        'Review Inventory Readiness',
+    ]
+    assert _state(
+        provider_count=1,
+        approved_mount_count=1,
+        collection_state='failed',
+        can_manage_integrations=False,
+    )[-2:] == ['/secrets-pki/inventory', 'Review Inventory Readiness']
+    assert _state(
+        provider_count=1, approved_mount_count=1, collection_state='not_collected'
+    )[0] == 'KV v2 Inventory Not Collected'
 
 def test_registered_vault_without_approved_kv2_mounts_has_separate_setup_state() -> None:
     assert _state(provider_count=1, approved_mount_count=0) == [

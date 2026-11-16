@@ -7,9 +7,11 @@
 {% block dashboard_content %}
     <div id="secrets-pki-inventory" class="min-w-0 space-y-6">
         {% set inventory_unqualified = not summary.has_evidence %}
-        {% set inventory_blocker_title = "Vault Inventory Scope Review Required" if summary.source_limit_exceeded|default(false) else ("Vault Source Required" if not summary.provider_count else ("KV v2 Mount Approval Required" if not summary.approved_mount_count else "KV v2 Inventory Not Collected")) %}
-        {% set inventory_blocker_description = "Review approved Vault sources and KV v2 mount limits before collecting inventory." if summary.source_limit_exceeded|default(false) else ("Register and enable a Vault source before collecting inventory." if not summary.provider_count else ("Vault source registered. Approve a KV v2 mount to collect inventory." if not summary.approved_mount_count else "Vault source and approved KV v2 mounts are configured, but inventory has not been committed.")) %}
-        {% set inventory_blocker_steps = ["Review eligible Vault sources", "Review approved KV v2 mounts", "Reduce collection scope to approved limits"] if summary.source_limit_exceeded|default(false) else (["Register and enable a Vault source", "Approve KV v2 metadata mounts", "Collect KV v2 inventory"] if not summary.provider_count else (["Vault source registered", "Approve KV v2 metadata mounts", "Collect KV v2 inventory"] if not summary.approved_mount_count else ["Vault source registered", "KV v2 mounts approved", "Collect and verify KV v2 inventory"])) %}
+        {% set inventory_collection_failed = summary.state == 'failed' %}
+        {% set inventory_blocker_title = "Vault Inventory Scope Review Required" if summary.source_limit_exceeded|default(false) else ("Vault Source Required" if not summary.provider_count else ("KV v2 Mount Approval Required" if not summary.approved_mount_count else ("KV v2 Inventory Collection Failed" if inventory_collection_failed else "KV v2 Inventory Not Collected"))) %}
+        {% set inventory_blocker_description = "Review approved Vault sources and KV v2 mount limits before collecting inventory." if summary.source_limit_exceeded|default(false) else ("Register and enable a Vault source before collecting inventory." if not summary.provider_count else ("Vault source registered. Approve a KV v2 mount to collect inventory." if not summary.approved_mount_count else ("The KV v2 inventory collection failed before a snapshot was committed. Review the failed job before retrying." if inventory_collection_failed else "Vault source and approved KV v2 mounts are configured, but inventory has not been committed."))) %}
+        {% set inventory_blocker_info = "Review Vault source and mount scope." if summary.source_limit_exceeded|default(false) else ("Register a Vault source." if not summary.provider_count else ("Approve KV v2 mounts." if not summary.approved_mount_count else ("Review the failed KV v2 inventory job." if inventory_collection_failed else "Collect approved KV v2 inventory."))) %}
+        {% set inventory_blocker_steps = ["Review eligible Vault sources", "Review approved KV v2 mounts", "Reduce collection scope to approved limits"] if summary.source_limit_exceeded|default(false) else (["Register and enable a Vault source", "Approve KV v2 metadata mounts", "Collect KV v2 inventory"] if not summary.provider_count else (["Vault source registered", "Approve KV v2 metadata mounts", "Collect KV v2 inventory"] if not summary.approved_mount_count else (["Vault source registered", "KV v2 mounts approved", "Review failed inventory collection"] if inventory_collection_failed else ["Vault source registered", "KV v2 mounts approved", "Collect and verify KV v2 inventory"]))) %}
         {% set inventory_blocker_href = url_for('vault.index') if can_manage_integrations and (summary.source_limit_exceeded|default(false) or not summary.approved_mount_count) else (url_for('jobs.configuration', job_key='secrets_pki.inventory.sync') if can_execute_inventory and summary.approved_mount_count and not summary.source_limit_exceeded|default(false) else none) %}
         {% set inventory_blocker_action = "Review Vault Scope" if can_manage_integrations and summary.source_limit_exceeded|default(false) else (("Configure Vault Integrations" if not summary.provider_count else "Review Vault Mounts") if can_manage_integrations and not summary.approved_mount_count else ("Open Inventory Job" if can_execute_inventory and summary.approved_mount_count and not summary.source_limit_exceeded|default(false) else none)) %}
         {% set inventory_scope_label = "Scope Review Required" if summary.source_limit_exceeded|default(false) else ("Registered Vault Sources" if summary.provider_count else "No Vault Source") %}
@@ -38,7 +40,7 @@
                                                 ('server', 'Active Scope', inventory_scope_label, inventory_scope_helper) ,
                         ('clock-3', 'Latest Commit', 'Not Collected', 'Committed inventory required')
                         ],
-                        inventory_blocker_description,
+                        inventory_blocker_info,
                         'Blocked', 'warning', 'database-zap', 'shield-alert') }}
                     {% else %}
                         <div class="{{ page_hero.context_panel_classes() }}">
@@ -55,7 +57,7 @@
         </section>
         {% if inventory_unqualified %}
             {% set blocked_state_icon = "key-round" %}
-            {% set blocked_state_label = "Setup Required" %}
+            {% set blocked_state_label = "Collection Failed" if inventory_collection_failed else ("Scope Review Required" if summary.source_limit_exceeded|default(false) else "Setup Required") %}
             {% set blocked_state_title = inventory_blocker_title %}
             {% set blocked_state_description = inventory_blocker_description %}
             {% set blocked_state_steps = inventory_blocker_steps %}

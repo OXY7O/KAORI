@@ -111,7 +111,10 @@ def build_secrets_pki_operational_summary() -> dict[str, Any]:
     if not sources or not scopes:
         state, label = 'blocked', 'Inventory Setup Required'
     elif not committed:
-        state, label = 'not_collected', 'Inventory Not Collected'
+        if any(row.status in {'failed', 'stale'} for row in selected):
+            state, label = 'failed', 'Inventory Collection Failed'
+        else:
+            state, label = 'not_collected', 'Inventory Not Collected'
     elif any(row.status in {'stale', 'failed'} for row in selected):
         state, label = 'stale', 'Stale Collection Evidence'
     elif len(committed) < len(scopes):
