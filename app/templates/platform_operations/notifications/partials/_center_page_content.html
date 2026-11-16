@@ -203,7 +203,7 @@
                           hx-select="#activity-notification-page"
                           hx-swap="outerHTML"
                           hx-indicator="#notification-center-loading"
-                          hx-trigger="submit, change from:select, keyup changed delay:500ms from:input[name='search']"
+                          hx-trigger="submit, change, keyup changed delay:500ms from:input[name='search']"
                           hx-push-url="true"
                           class="{{ table_ui.filter_bar_classes() }}">
                         <input type="hidden" name="view" value="notifications">
