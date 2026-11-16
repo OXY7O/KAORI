@@ -37,7 +37,9 @@ from app.artifact_registry.presentation import (
 )
 from app.artifact_registry.presentation_topology import build_dependency_topology
 from app.artifact_registry.route_scope import (
+    _analytics_alert_filters,
     _analytics_provider_id,
+    _cve_impact_filters,
     _inventory_source_id,
     _overview_provider_id,
     _runtime_scope_id,
@@ -222,10 +224,7 @@ def security_cve_impact(cve_id: str) -> ResponseReturnValue:
         per_page=request.args.get('per_page', 5, type=int) or 5,
         finding_per_page=request.args.get('finding_per_page', type=int),
         runtime_per_page=request.args.get('runtime_per_page', type=int),
-        finding_search=request.args.get('finding_q', '', type=str),
-        finding_severity=request.args.get('finding_severity', '', type=str),
-        runtime_search=request.args.get('runtime_q', '', type=str),
-        runtime_match=request.args.get('runtime_match', '', type=str),
+        filters=_cve_impact_filters(),
     )
     active_tab = request.args.get('evidence_tab', 'findings', type=str)
     impact['active_tab'] = 'runtime' if active_tab == 'runtime' else 'findings'
@@ -617,9 +616,7 @@ def analytics_section(section: str) -> ResponseReturnValue:
         provider_id=_analytics_provider_id(),
         snapshot_window=request.args.get('snapshot_window', '24h', type=str),
         alert_search=request.args.get('alert_q', '', type=str),
-        alert_severity=request.args.get('alert_severity', 'all', type=str),
-        alert_state=request.args.get('alert_state', 'all', type=str),
-        alert_source=request.args.get('alert_source', 'all', type=str),
+        alert_filters=_analytics_alert_filters(),
         alert_page=request.args.get('alert_page', 1, type=int) or 1,
         alert_per_page=request.args.get('alert_per_page', 5, type=int) or 5,
         capacity_page=request.args.get('capacity_page', 1, type=int) or 1,
@@ -679,9 +676,7 @@ def analytics_alerts_table() -> ResponseReturnValue:
         provider_id=_analytics_provider_id(),
         snapshot_window=request.args.get('snapshot_window', '24h', type=str),
         alert_search=request.args.get('alert_q', '', type=str),
-        alert_severity=request.args.get('alert_severity', 'all', type=str),
-        alert_state=request.args.get('alert_state', 'all', type=str),
-        alert_source=request.args.get('alert_source', 'all', type=str),
+        alert_filters=_analytics_alert_filters(),
         alert_page=request.args.get('alert_page', 1, type=int) or 1,
         alert_per_page=request.args.get('alert_per_page', 5, type=int) or 5,
     )
