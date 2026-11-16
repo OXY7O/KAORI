@@ -404,7 +404,7 @@ def test_registry_security_finding_states_use_usable_scan_coverage() -> None:
     assert "'Partial Scan Coverage'" in posture_projection
     assert "'No Vulnerabilities Observed'" in posture_projection
     assert "'No Findings Match This View'" in posture_projection
-    assert 'KAORI does not trigger provider scans.' in presentation
+    assert 'KAORI does not trigger provider scans.' in posture_projection
     assert 'security.finding_empty_state.title' in template
 
 
