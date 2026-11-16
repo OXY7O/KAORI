@@ -39,9 +39,7 @@ class KubesprayPlanCurrentness:
         return asdict(self)
 
 
-def _is_qualified_plan_job(
-    connection: IntegrationInstance, latest_plan_job: JobExecution, timestamp: datetime
-) -> bool:
+def _is_qualified_plan_job(connection: IntegrationInstance, latest_plan_job: JobExecution, timestamp: datetime) -> bool:
     """Validate the latest immutable job envelope before comparing plan evidence."""
     return (
         latest_plan_job.integration_instance_id == connection.id
