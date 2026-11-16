@@ -15,7 +15,7 @@ def read(path: str) -> str:
 def test_cluster_rbac_bootstrap_is_governed_separately_from_tenant_adoption():
     bootstrap = read('app/kubernetes/tenant/capsule_rbac_bootstrap.py')
     assert not (ROOT / 'app/kubernetes/cluster/capsule_rbac_bootstrap.py').exists()
-    integrations = read('app/integrations/routes.py')
+    integrations = read('app/integrations/orchestration/container_orchestrator/routes.py')
     tenant_web = read('app/integrations/orchestration/container_orchestrator/tenant_capsule_web.py')
     composition = read('app/bootstrap/blueprints.py')
     detail = read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html')
@@ -74,7 +74,7 @@ def test_cluster_rbac_bootstrap_is_governed_separately_from_tenant_adoption():
 
 def test_capsule_rbac_actions_emit_canonical_feedback_in_both_request_modes() -> None:
     """Check and approved bootstrap must present one audited toast, never layout-shifting flash."""
-    source = read('app/integrations/routes.py')
+    source = read('app/integrations/orchestration/container_orchestrator/routes.py')
     tree = ast.parse(source)
     panel = read(
         'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/'

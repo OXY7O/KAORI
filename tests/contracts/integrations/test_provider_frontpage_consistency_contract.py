@@ -79,7 +79,7 @@ def test_kubernetes_frontpage_uses_same_coverage_and_registry_contract() -> None
     registry = read(
         'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html'
     )
-    routes = read('app/integrations/routes.py')
+    routes = read('app/integrations/orchestration/container_orchestrator/routes.py')
     frontpage_service = read('app/integrations/orchestration/container_orchestrator/frontpage.py')
 
     assert 'Kubernetes Integration Overview' in page

@@ -40,7 +40,7 @@ def test_kubernetes_registry_uses_one_line_htmx_filters_and_inventory_table() ->
     registry = read(
         'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html'
     )
-    routes = read('app/integrations/routes.py')
+    routes = read('app/integrations/orchestration/container_orchestrator/routes.py')
     frontpage_service = read('app/integrations/orchestration/container_orchestrator/frontpage.py')
 
     assert 'components/table.html' in registry
@@ -143,7 +143,7 @@ def test_kubernetes_actions_are_permission_aware() -> None:
     assert "current_user.has_permission('clusters.sync')" in detail
     assert 'show_primary_action' in detail_posture
     assert "current_user.has_permission('integrations.manage')" in detail
-    routes = read('app/integrations/routes.py')
+    routes = read('app/integrations/orchestration/container_orchestrator/routes.py')
     assert "@integrations_bp.get('/kubernetes')" in routes
     assert 'def kubernetes() -> ResponseReturnValue:' in routes
     assert "url_for('integrations.kubernetes')" in detail or 'url_for("integrations.kubernetes")' in detail

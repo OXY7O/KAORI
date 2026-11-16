@@ -120,7 +120,7 @@ def test_asset_owner_lifecycle_uses_shared_read_only_observability_registry() ->
 
 def test_kubernetes_bound_source_registry_is_paginated_server_side() -> None:
     service = read('app/integrations/service.py')
-    routes = read('app/integrations/routes.py')
+    routes = read('app/integrations/orchestration/container_orchestrator/routes.py')
     registry = read(
         'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/'
         '_binding_registry.html'
