@@ -300,6 +300,15 @@ gates and real Vault/PostgreSQL, RBAC, Visual QA/UAT remain required.
   lifecycle, opted-in public PKI validity and Kubernetes TLS candidate overlap
   read models. The sidebar entry uses the existing Infrastructure Secrets & PKI
   workspace registry, not a Vault-specific navigation root.
+- Lifecycle page admission uses the existing **current-generation KV v2
+  version posture** (status `ready` or `observed_empty`) OR independently
+  qualified public PKI validity (`pki_validity.status='ready'`). A historical
+  inventory snapshot, represented by fleet `summary.has_evidence=True`, is
+  **not sufficient** for lifecycle admission when its versions are stale,
+  partial, generation-mismatched or otherwise unqualified. This corrects the
+  older historical-evidence gate without hiding independently qualified PKI.
+  Historical snapshots remain inspectable in Overview/Inventory as
+  source-qualified retained evidence with stale/partial warnings.
 - KPI cards only render numeric values after the respective source-qualified
   complete/current generation. `observed_empty` is a valid KV2 zero; blocked,
   stale and partial statuses show text, never invented zero counts.
