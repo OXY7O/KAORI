@@ -45,3 +45,22 @@ Verification remains **NOT RUN** for the follow-on connector commits: execute
 Ruff check/format, focused pytest and existing Ansible/JobExecution contracts
 on the exact branch SHA before any integration. Keep this dependent candidate
 in Draft while #4905 and its review are outstanding; no host contact permitted.
+
+## Follow-on: exact asset identifier encoding boundary
+
+The review-only preflight rejects Unicode category **C** in observed asset IDs,
+including control characters, bidirectional overrides, zero-width formatting,
+private-use and unassigned code points. These identifiers can render as an
+apparently different target in audit or approval screens, so they must never
+be treated as equivalent to a canonical asset reference. Printable Unicode
+remains permitted; no normalization or silently repaired identity is applied.
+
+This is only a negative evidence filter, **not** a replacement for canonical
+asset ownership, exact host-key fingerprint matching, protected credential
+binding or worker-side target authorization. No SSH session is opened.
+
+Focused regression: `python -m pytest -q -p no:cacheprovider tests/contracts/integrations/test_ansible_remote_host_evidence_contract.py`.
+Run Ruff check/format and the relevant JobExecution and integration regression
+suite on the candidate SHA. CI, UAT and real host verification are not implied
+by these commits. Keep #4799 and #4800 OPEN, worker admission and Run BLOCKED,
+and Human Acceptance pending.

@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime, timedelta
 from ipaddress import IPv4Network, ip_network
+from unicodedata import category
 from typing import Any
 
 from app.infrastructure_automation.kubernetes.kubespray_preflight import (
@@ -126,6 +127,7 @@ def _valid_pilot_hosts(facts: dict[str, Any]) -> bool:
             or not identity.strip()
             or identity != identity.strip()
             or len(identity) > 96
+            or any(category(character).startswith('C') for character in identity)
             or identity in identities
         ):
             return False
