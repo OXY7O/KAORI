@@ -160,6 +160,12 @@ def test_vault_delete_endpoint_returns_safe_feedback(
 ) -> None:
     app = _web_app(monkeypatch)
     audit: list[dict[str, Any]] = []
+    rollbacks: list[str] = []
+    monkeypatch.setattr(
+        routes,
+        'db',
+        SimpleNamespace(session=SimpleNamespace(rollback=lambda: rollbacks.append('rolled back'))),
+    )
 
     def delete(instance: Any) -> None:
         if outcome == 'blocked':
@@ -187,6 +193,7 @@ def test_vault_delete_endpoint_returns_safe_feedback(
     assert audit[0]['status'] == expected_status
     assert audit[0]['queue_feedback'] is True
     assert 'private provider data' not in str(audit)
+    assert rollbacks == (['rolled back'] if outcome == 'failed' else [])
     if outcome == 'success':
         assert response.location.endswith('/vault/?tab=registry')
     else:
