@@ -67,8 +67,11 @@ Lifecycle evidence; it can remain true for stale or partial snapshots. Show
 a canonical **KV v2 Evidence Not Qualified** blocker with brief Hero guidance
 when historical evidence exists but current lifecycle qualification fails,
 rather than implying Lifecycle is Ready or incorrectly claiming it was never
-collected. Keep independently qualified PKI evidence visible if KV v2 has not
-qualified. Both pages reuse `page_hero.blocked_context_body` and shared
+collected. When a Vault source and mount are approved, even read-only viewers
+may follow the existing **Review Inventory Readiness** link; access to Vault
+configuration still requires `integrations.manage` and actual JobExecution
+still requires the existing job permissions. Keep independently qualified PKI
+evidence visible if KV v2 has not qualified. Both pages reuse `page_hero.blocked_context_body` and shared
 `components/states/_blocked_state.html`, with permission-aware setup links. Inventory links to Platform Operations Job
 Configuration only when the operator also has `jobs.view`, alongside the
 existing `secrets_pki.sync` and `jobs.execute` capabilities, since the
