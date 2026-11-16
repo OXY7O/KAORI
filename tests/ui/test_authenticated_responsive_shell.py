@@ -407,7 +407,7 @@ def test_secrets_pki_overview_1440_blocked_hero_and_canonical_prerequisite(
 
     blocker = page.locator('#secrets-pki-overview section[data-kaori-blocked-state]')
     expect(blocker).to_be_visible()
-    expect(blocker.get_by_role('heading', name='Committed KV v2 Inventory Required')).to_be_visible()
+    expect(blocker.get_by_role('heading', name='Vault Source Required')).to_be_visible()
     assert page.locator('#secrets-pki-overview [data-kaori-empty-state]').count() == 0
     expect(blocker.get_by_role('link', name='Configure Vault Integrations')).to_be_visible()
 
@@ -446,7 +446,7 @@ def test_secrets_pki_overview_1440_blocked_hero_and_canonical_prerequisite(
 @pytest.mark.parametrize(
     ('workspace', 'blocked_title', 'hidden_metric'),
     [
-        ('inventory', 'Vault Inventory Source Required', 'Enabled Vault Sources'),
+        ('inventory', 'Vault Source Required', 'Enabled Vault Sources'),
         ('lifecycle', 'Vault Lifecycle Source Required', 'Expires Within 7 Days'),
     ],
 )
