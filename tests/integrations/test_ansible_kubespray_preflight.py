@@ -13,6 +13,7 @@ import pytest
 from app.integrations.orchestration.configuration_automation.providers.ansible.preflight import (
     build_kubespray_preflight,
 )
+from app.infrastructure_automation.kubernetes.kubespray_preflight import KUBESPRAY_COMMIT
 from app.integrations.source_control.source_control.providers.github.public_automation_source import (
     ANSIBLE_CORE_VERSION,
     ANSIBLE_RUNNER_VERSION,
@@ -56,6 +57,7 @@ def _job(**changes):
         'integration_instance_id': 77,
         'integration_type': 'configuration_automation',
         'job_type': 'infrastructure_automation',
+        'queue_name': 'automation',
         'operation': 'automation_kubespray_host_preflight',
         'result_type': 'automation_kubespray_host_preflight_v1',
         'status': 'succeeded',
@@ -64,6 +66,7 @@ def _job(**changes):
         'result_summary_json': {
             'repository': REPOSITORY,
             'source_sha': SOURCE_CANDIDATE_SHA,
+            'upstream_kubespray_commit': KUBESPRAY_COMMIT,
             'scope': 'self_managed_existing_linux_hosts',
             'target_class': 'self_managed_existing_linux_hosts',
             'attestation': 'verified_by_automation_worker',
@@ -156,6 +159,7 @@ def test_verified_worker_evidence_is_still_only_ready_for_review() -> None:
         {'integration_instance_id': 999},
         {'integration_type': 'artifact_registry'},
         {'job_type': 'inventory'},
+        {'queue_name': 'default'},
         {'operation': 'automation_localhost_host_facts'},
         {'result_type': 'automation_read_only_host_facts'},
         {'status': 'failed'},
@@ -165,6 +169,7 @@ def test_verified_worker_evidence_is_still_only_ready_for_review() -> None:
         {'completed_at': None},
         {'result_summary_json': {'repository': REPOSITORY}},
         {'result_summary_json': {'source_sha': SOURCE_CANDIDATE_SHA}},
+        {'result_summary_json': {'repository': REPOSITORY, 'source_sha': SOURCE_CANDIDATE_SHA, 'upstream_kubespray_commit': '0' * 40}},
     ],
 )
 def test_unrelated_stale_or_unattested_jobs_cannot_qualify_a_plan(change) -> None:
