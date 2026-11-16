@@ -25,9 +25,7 @@ class InternalPKIEvidenceBatch(db.Model):
     imported_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     record_count: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    __table_args__ = (
-        Index('ix_internal_pki_batch_scope', 'cluster_id', 'node_name', 'source_kind', 'collected_at'),
-    )
+    __table_args__ = (Index('ix_internal_pki_batch_scope', 'cluster_id', 'node_name', 'source_kind', 'collected_at'),)
 
 
 class InternalPKICertificateInventory(db.Model):

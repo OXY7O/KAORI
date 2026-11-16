@@ -17,9 +17,7 @@ from app.kubernetes.governance.internal_certificates.evidence_import import (
 _SUPPORTED_VERSION = 'v1.36.4'
 _SOURCE_API_VERSION = 'output.kubeadm.k8s.io/v1alpha3'
 _ROOT_FIELDS = frozenset({'kind', 'apiVersion', 'certificates', 'certificateAuthorities'})
-_LEAF_FIELDS = frozenset(
-    {'name', 'expirationDate', 'residualTime', 'externallyManaged', 'caName', 'missing'}
-)
+_LEAF_FIELDS = frozenset({'name', 'expirationDate', 'residualTime', 'externallyManaged', 'caName', 'missing'})
 _CA_FIELDS = frozenset({'name', 'expirationDate', 'residualTime', 'externallyManaged', 'missing'})
 
 

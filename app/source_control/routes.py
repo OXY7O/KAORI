@@ -105,9 +105,7 @@ def overview() -> ResponseReturnValue:
     context['eager_health_pagination'] = active_tab == 'overview' and page_requested
     # All-installations Repository Coverage reuses the same canonical table
     # footer; its paged fragment must be present in the overview HX response.
-    context['eager_coverage_pagination'] = (
-        active_tab == 'capacity' and not context['selected_scope'] and page_requested
-    )
+    context['eager_coverage_pagination'] = active_tab == 'capacity' and not context['selected_scope'] and page_requested
     return _uncached_render('source_control/overview.html', **context)
 
 

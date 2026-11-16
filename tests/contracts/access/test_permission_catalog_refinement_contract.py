@@ -411,9 +411,9 @@ def test_permission_detail_section_badges_derive_from_authoritative_contracts() 
     detail = read('app/templates/access/permissions/partials/_permission_detail.html')
     assert "badge='Code-Owned' if permission.code_owned else 'Database-Only'" in detail
     assert "badge='Has Dependencies' if effective_requires else 'No Dependencies'" in detail
-    assert "badge=permission.delegation_tier.label" in detail
-    assert "badge_tone=permission.delegation_tier.tone" in detail
-    assert "badge=permission.state.label" in detail
+    assert 'badge=permission.delegation_tier.label' in detail
+    assert 'badge_tone=permission.delegation_tier.tone' in detail
+    assert 'badge=permission.state.label' in detail
     assert "badge='Mapped' if role_rows else 'Unassigned'" in detail
     assert detail.count('detail_ui.inventory_section(') == 5
     assert 'whitespace-nowrap' not in detail

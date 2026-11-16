@@ -185,9 +185,7 @@ def test_identity_provider_overview_owns_one_guide_without_duplicate_registry_gu
     assert 'Directory provisioning requires delegated permission' in overview
     for partial in (registry, directory):
         assert 'info_tip.render(' not in partial
-    assert registry.index('>Provider Registry</h2>') < registry.index(
-        'table_label.result_count(summary.matching)'
-    )
+    assert registry.index('>Provider Registry</h2>') < registry.index('table_label.result_count(summary.matching)')
     assert 'registry_ui.clear_filters_link(' in registry
     assert 'registry_ui.footer(' in registry
     assert "current_user.has_permission('identity_providers.provision')" in directory

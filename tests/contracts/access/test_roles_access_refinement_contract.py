@@ -277,9 +277,7 @@ def test_role_registry_overview_has_single_shared_guide() -> None:
     Environment().parse(source)
     assert '{% import "components/info_tip.html" as info_tip %}' in source
     assert source.count("info_tip.render('role-registry-overview-guide'") == 1
-    assert source.index('>Role Registry Overview</h2>') < source.index(
-        "info_tip.render('role-registry-overview-guide'"
-    )
+    assert source.index('>Role Registry Overview</h2>') < source.index("info_tip.render('role-registry-overview-guide'")
     assert "variant='guide'" in source
     for meaning in (
         'code-owned protected defaults',

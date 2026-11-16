@@ -52,13 +52,17 @@ def upgrade() -> None:
         sa.Column('not_after', sa.DateTime(timezone=True), nullable=False),
         sa.Column('externally_managed', sa.Boolean(), nullable=True),
         sa.Column(
-            'evidence_batch_id', sa.String(36),
-            sa.ForeignKey('internal_pki_evidence_batches.id', ondelete='RESTRICT'), nullable=False
+            'evidence_batch_id',
+            sa.String(36),
+            sa.ForeignKey('internal_pki_evidence_batches.id', ondelete='RESTRICT'),
+            nullable=False,
         ),
         sa.Column('collected_at', sa.DateTime(timezone=True), nullable=False),
         sa.UniqueConstraint('cluster_id', 'node_name', 'source_kind', 'component', name='uq_internal_pki_source_cert'),
     )
-    op.create_index('ix_internal_pki_certificate_inventory_not_after', 'internal_pki_certificate_inventory', ['not_after'])
+    op.create_index(
+        'ix_internal_pki_certificate_inventory_not_after', 'internal_pki_certificate_inventory', ['not_after']
+    )
     op.create_index(
         'ix_internal_pki_certificate_scope',
         'internal_pki_certificate_inventory',

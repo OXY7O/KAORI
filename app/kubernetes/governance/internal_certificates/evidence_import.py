@@ -50,9 +50,7 @@ _MANIFEST_FIELDS = frozenset(
         'certificates',
     }
 )
-_CERTIFICATE_FIELDS = frozenset(
-    {'component', 'kind', 'issuer', 'not_before', 'not_after', 'externally_managed'}
-)
+_CERTIFICATE_FIELDS = frozenset({'component', 'kind', 'issuer', 'not_before', 'not_after', 'externally_managed'})
 
 
 class PKIEvidenceValidationError(ValueError):
@@ -215,8 +213,7 @@ def import_attested_pki_metadata(payload: Any) -> tuple[InternalPKIEvidenceBatch
     try:
         db.session.add(batch)
         existing = {
-            record.component: record
-            for record in InternalPKICertificateInventory.query.filter_by(**source_scope).all()
+            record.component: record for record in InternalPKICertificateInventory.query.filter_by(**source_scope).all()
         }
         received = set()
         for entry in manifest['certificates']:
