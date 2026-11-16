@@ -15,6 +15,7 @@ from app.artifact_registry.presentation_analytics_charts import (
     _analytics_insights,
     _analytics_summary_cards,
     _decorate_analytics_rows,
+    _registry_capacity_chart_rows,
     _registry_capacity_project_rows,
     _registry_usage_chart_rows,
 )
