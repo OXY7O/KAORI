@@ -71,7 +71,7 @@
         </section>
         {% if lifecycle_unqualified %}
             {% set blocked_state_icon = "shield-alert" %}
-            {% set blocked_state_label = "Setup Required" %}
+            {% set blocked_state_label = "Collection Failed" if summary.state == 'failed' else ("Scope Review Required" if summary.source_limit_exceeded|default(false) else "Setup Required") %}
             {% set blocked_state_title = lifecycle_blocker_title %}
             {% set blocked_state_description = lifecycle_blocker_description %}
             {% set blocked_state_steps = lifecycle_blocker_steps %}
