@@ -60,7 +60,9 @@ def test_native_access_observation_reuses_shared_settings_inventory_tabs() -> No
     assert tabs.count('_external_capsule_access_inventory.html') == 1
     assert tabs.count('_native_namespace_rbac_inventory.html') == 1
     assert 'workspace_tabs.render_query_tabs' in tabs
-    assert capsule.count('External Capsule Access Inventory') == 1
+    assert capsule.count('External Capsule Access Inventory') == 2
+    assert 'External Capsule Access Inventory Guide' in capsule
+    assert capsule.count('>External Capsule Access Inventory</h3>') == 1
     assert native.count('data-external-native-access-inventory') == 1
     assert native.count('Native Namespace RBAC Inventory') == 2
     assert 'Native Namespace RBAC Inventory Guide' in native
