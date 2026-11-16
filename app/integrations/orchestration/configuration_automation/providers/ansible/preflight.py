@@ -69,20 +69,23 @@ def _committed_host_evidence(
             or job.integration_type != 'configuration_automation'
             or job.job_type != 'infrastructure_automation'
             or job.operation != _HOST_PREFLIGHT_OPERATION
-            or job.result_type != _HOST_PREFLIGHT_RESULT_TYPE
-            or job.status != 'succeeded'
-            or job.completed_at is None
         ):
             continue
+        # The latest attempt owns readiness. Never fall back to an older good
+        # observation after a failed, queued, expired or mismatched attempt.
+        if job.result_type != _HOST_PREFLIGHT_RESULT_TYPE or job.status != 'succeeded':
+            return {}, None
+        if job.completed_at is None:
+            return {}, None
         observed = job.completed_at
         if observed.tzinfo is None:
             # A naive timestamp is not a trustworthy time-bound attestation.
-            continue
+            return {}, None
         if observed > now or now - observed > _EVIDENCE_FRESHNESS:
-            continue
+            return {}, None
         facts = job.result_summary_json
         if not isinstance(facts, dict):
-            continue
+            return {}, None
         meta = connection.metadata_json if isinstance(connection.metadata_json, dict) else {}
         if (
             facts.get('repository') != meta.get('source_repository')
@@ -90,7 +93,7 @@ def _committed_host_evidence(
             or facts.get('scope') != _APPROVED_SCOPE
             or facts.get('attestation') != 'verified_by_automation_worker'
         ):
-            continue
+            return {}, None
         return facts, job.public_id
     return {}, None
 
@@ -274,7 +277,7 @@ def committed_kubespray_preflight(connection: IntegrationInstance) -> KubesprayP
             job_type='infrastructure_automation',
             operation=_HOST_PREFLIGHT_OPERATION,
         )
-        .order_by(JobExecution.completed_at.desc(), JobExecution.id.desc())
+        .order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
         .limit(5)
         .all()
     )
