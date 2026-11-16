@@ -59,9 +59,19 @@ navigation. Inventory shows the canonical page-level blocked prerequisite whenev
 exists but `approved_mount_count = 0` or no committed KV v2 snapshot exists.
 Do not render operational KPI cards that imply normal inventory until evidence
 qualifies. Lifecycle & Assurance blocks its ordinary operational workspace
-unless committed KV v2 or independently qualified public-PKI evidence is
-available. Keep independently qualified PKI evidence visible if KV v2 has not
-qualified. Both pages reuse `page_hero.blocked_context_body` and shared
+unless **current-generation qualified KV v2 version posture** (the existing
+`kv2_version_posture.status in ('ready', 'observed_empty')` contract) or
+independently qualified public-PKI validity evidence is available. Retained
+fleet `summary.has_evidence` is not the same as qualified current-generation
+Lifecycle evidence; it can remain true for stale or partial snapshots. Show
+a canonical **KV v2 Evidence Not Qualified** blocker with brief Hero guidance
+when historical evidence exists but current lifecycle qualification fails,
+rather than implying Lifecycle is Ready or incorrectly claiming it was never
+collected. When a Vault source and mount are approved, even read-only viewers
+may follow the existing **Review Inventory Readiness** link; access to Vault
+configuration still requires `integrations.manage` and actual JobExecution
+still requires the existing job permissions. Keep independently qualified PKI
+evidence visible if KV v2 has not qualified. Both pages reuse `page_hero.blocked_context_body` and shared
 `components/states/_blocked_state.html`, with permission-aware setup links. Inventory links to Platform Operations Job
 Configuration only when the operator also has `jobs.view`, alongside the
 existing `secrets_pki.sync` and `jobs.execute` capabilities, since the

@@ -51,18 +51,22 @@ def test_inventory_does_not_show_operational_zero_tiles_without_qualification() 
 def test_lifecycle_requires_qualified_kv2_or_independent_pki_evidence() -> None:
     source = _read(LIFECYCLE)
     Environment().parse(source)
-    for kv2, pki, expected in [
-        (False, 'not_collected', True),
-        (False, 'ready', False),
-        (True, 'not_collected', False),
-        (True, 'ready', False),
+    for kv2_status, pki_status, expected in [
+        ('not_configured', 'not_collected', True),
+        ('incomplete_evidence', 'not_collected', True),
+        ('blocked', 'not_collected', True),
+        ('ready', 'not_collected', False),
+        ('observed_empty', 'not_collected', False),
+        ('incomplete_evidence', 'ready', False),
+        ('not_configured', 'ready', False),
+        ('ready', 'ready', False),
     ]:
         assert (
             _gate(
                 source,
-                "lifecycle_unqualified = not summary.has_evidence and pki_validity.status != 'ready'",
-                summary={'has_evidence': kv2},
-                pki_validity={'status': pki},
+                "lifecycle_unqualified = not lifecycle_kv2_qualified and pki_validity.status != 'ready'",
+                lifecycle_kv2_qualified=kv2_status in {'ready', 'observed_empty'},
+                pki_validity={'status': pki_status},
             )
             is expected
         )
@@ -95,7 +99,8 @@ def test_lifecycle_hero_info_is_one_natural_desktop_line_with_full_blocker_below
     )
     for providers, mounts, expected in cases:
         result = template.render(
-            summary={'provider_count': providers, 'approved_mount_count': mounts}
+            summary={'provider_count': providers, 'approved_mount_count': mounts},
+            lifecycle_version_incomplete=False,
         )
         assert result.strip() == expected
         assert len(result.strip()) < 65
@@ -152,7 +157,7 @@ def test_over_limit_vault_inventory_uses_scope_review_not_inventory_execution() 
 
 def test_over_limit_lifecycle_keeps_independent_pki_qualification() -> None:
     source = _read(LIFECYCLE)
-    begin = source.index('{% set lifecycle_unqualified = ')
+    begin = source.index('{% set lifecycle_kv2_qualified = ')
     end = source.index('{{ lifecycle_navigation.render', begin)
     template = Environment().from_string(
         source[begin:end] + '{{ lifecycle_blocker_title }}|{{ lifecycle_blocker_info }}'
@@ -164,6 +169,7 @@ def test_over_limit_lifecycle_keeps_independent_pki_qualification() -> None:
             'provider_count': 1,
             'approved_mount_count': 100,
         },
+        kv2_version_posture={'status': 'incomplete_evidence'},
         pki_validity={'status': 'not_collected'},
         can_manage_integrations=False,
         url_for=lambda endpoint: '/vault',
@@ -172,7 +178,7 @@ def test_over_limit_lifecycle_keeps_independent_pki_qualification() -> None:
         'Vault Inventory Scope Review Required|'
         'Review Vault scope or qualify independent PKI evidence.'
     )
-    assert "lifecycle_unqualified = not summary.has_evidence and pki_validity.status != 'ready'" in source
+    assert "lifecycle_unqualified = not lifecycle_kv2_qualified and pki_validity.status != 'ready'" in source
 
 
 
@@ -246,7 +252,7 @@ def test_failed_first_collection_has_distinct_inventory_blocker_and_short_hero_i
 
 def test_lifecycle_failed_first_collection_keeps_independent_pki_path() -> None:
     source = _read(LIFECYCLE)
-    start = source.index('{% set lifecycle_unqualified = ')
+    start = source.index('{% set lifecycle_kv2_qualified = ')
     end = source.index('{{ lifecycle_navigation.render', start)
     stage = Environment().from_string(
         source[start:end]
@@ -263,6 +269,7 @@ def test_lifecycle_failed_first_collection_keeps_independent_pki_path() -> None:
     def render(pki_status: str) -> str:
         return stage.render(
             summary=summary,
+            kv2_version_posture={'status': 'incomplete_evidence'},
             pki_validity={'status': pki_status},
             can_manage_integrations=False,
             url_for=lambda endpoint: '/vault',
@@ -273,3 +280,85 @@ def test_lifecycle_failed_first_collection_keeps_independent_pki_path() -> None:
     )
     assert render('ready').startswith('False|Lifecycle Collection Failed|')
     assert 'blocked_state_label = "Collection Failed" if summary.state == ' in source
+
+
+
+def test_stale_or_partial_historical_kv2_does_not_open_lifecycle_without_qualified_pki() -> None:
+    source = _read(LIFECYCLE)
+    begin = source.index('{% set lifecycle_kv2_qualified = ')
+    end = source.index('{{ lifecycle_navigation.render', begin)
+    stage = Environment().from_string(
+        source[begin:end]
+        + '{{ lifecycle_unqualified }}|{{ lifecycle_blocker_title }}|'
+        + '{{ lifecycle_blocker_info }}|{{ lifecycle_version_incomplete }}'
+    )
+    for kv2_status in ('incomplete_evidence', 'blocked', 'not_configured'):
+        result = stage.render(
+            summary={
+                'has_evidence': True,
+                'state': 'stale',
+                'provider_count': 1,
+                'approved_mount_count': 1,
+                'source_limit_exceeded': False,
+            },
+            kv2_version_posture={'status': kv2_status},
+            pki_validity={'status': 'not_collected'},
+            can_manage_integrations=False,
+            url_for=lambda endpoint: '/vault',
+        ).strip()
+        assert result == (
+            'True|KV v2 Evidence Not Qualified|'
+            'Refresh KV v2 evidence or qualify independent PKI.|True'
+        )
+
+    # Current-generation qualified empty inventory is a real, valid zero.
+    qualified = stage.render(
+        summary={
+            'has_evidence': True,
+            'state': 'committed',
+            'provider_count': 1,
+            'approved_mount_count': 1,
+            'source_limit_exceeded': False,
+        },
+        kv2_version_posture={'status': 'observed_empty'},
+        pki_validity={'status': 'not_collected'},
+        can_manage_integrations=False,
+        url_for=lambda endpoint: '/vault',
+    ).strip()
+    assert qualified.startswith('False|')
+    assert 'blocked_state_description = lifecycle_blocker_description' in source
+    assert 'components/states/_blocked_state.html' in source
+
+
+
+def test_lifecycle_blocker_routes_qualified_mounts_to_inventory_for_read_only_viewers() -> None:
+    source = _read(LIFECYCLE)
+    begin = source.index('{% set lifecycle_kv2_qualified = ')
+    end = source.index('{{ lifecycle_navigation.render', begin)
+    stage = Environment().from_string(
+        source[begin:end]
+        + '{{ lifecycle_blocker_url|default("", true) }}|{{ lifecycle_inventory_review }}'
+    )
+    data = {
+        'has_evidence': True,
+        'state': 'stale',
+        'provider_count': 1,
+        'approved_mount_count': 1,
+        'source_limit_exceeded': False,
+    }
+
+    def render(mounts: int, manage: bool) -> str:
+        data['approved_mount_count'] = mounts
+        return stage.render(
+            summary=data,
+            kv2_version_posture={'status': 'incomplete_evidence'},
+            pki_validity={'status': 'not_collected'},
+            can_manage_integrations=manage,
+            url_for=lambda endpoint: '/inventory' if endpoint == 'secrets_pki.inventory' else '/vault',
+        ).strip()
+
+    assert render(1, False) == '/inventory|True'
+    assert render(0, False) == '|0'
+    assert render(0, True) == '/vault|0'
+    assert 'blocked_state_action_label = "Review Inventory Readiness" if lifecycle_inventory_review' in source
+    assert 'blocked_state_permission_granted = lifecycle_blocker_url is not none' in source
