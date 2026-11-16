@@ -62,7 +62,6 @@
   },
   "function_branch_limits": {
     "app/access/activity_audit/administrative_sources.py::build_administrative_evidence_context": 33,
-    "app/artifact_registry/analytics_history.py::_bounded_matrix": 31,
     "app/artifact_registry/analytics_job_adapter.py::build_registry_analytics_readiness": 40,
     "app/artifact_registry/governance.py::sync_registry_governance": 37,
     "app/common/integration_errors.py::describe_integration_failure": 35,
@@ -78,7 +77,6 @@
     "app/intelligence/alert_intelligence/recommendation_source.py::_source_evidence_posture": 34,
     "app/intelligence/recommendation_engine.py::build_alerts_actionable_recommendations": 38,
     "app/intelligence/recommendation_engine.py::build_workload_actionable_recommendations": 49,
-    "app/intelligence/service.py::_base_payload": 37,
     "app/intelligence/tenant_governance_recommendations.py::_access_declaration_findings": 35,
     "app/kubernetes/analytics/alerts/silences.py::build_silence_summary": 35,
     "app/kubernetes/analytics/job_adapter.py::_analytics_work_items": 32,
