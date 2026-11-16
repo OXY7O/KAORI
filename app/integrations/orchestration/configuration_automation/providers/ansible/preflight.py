@@ -12,6 +12,7 @@ from ipaddress import IPv4Network, ip_network
 from typing import Any
 
 from app.infrastructure_automation.kubernetes.kubespray_preflight import (
+    KUBESPRAY_COMMIT,
     KUBESPRAY_KUBERNETES_MINOR,
     KUBESPRAY_RELEASE,
     SUPPORTED_OPERATING_SYSTEMS,
@@ -73,6 +74,7 @@ def _committed_host_evidence(
             job.integration_instance_id != connection.id
             or job.integration_type != 'configuration_automation'
             or job.job_type != 'infrastructure_automation'
+            or job.queue_name != 'automation'
             or job.operation != _HOST_PREFLIGHT_OPERATION
         ):
             continue
@@ -95,6 +97,7 @@ def _committed_host_evidence(
         if (
             facts.get('repository') != meta.get('source_repository')
             or facts.get('source_sha') != meta.get('source_sha')
+            or facts.get('upstream_kubespray_commit') != KUBESPRAY_COMMIT
             or facts.get('scope') != _APPROVED_SCOPE
             or facts.get('attestation') != 'verified_by_automation_worker'
         ):
