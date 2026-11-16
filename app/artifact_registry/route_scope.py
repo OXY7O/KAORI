@@ -4,7 +4,9 @@ from typing import Any
 
 from flask import abort, request
 
+from app.artifact_registry.presentation_analytics import AnalyticsAlertFilters
 from app.artifact_registry.presentation_common import _providers as _active_registry_sources
+from app.artifact_registry.security.cve_impact import CveImpactFilters
 from app.artifact_registry.security.presentation import _providers as _eligible_security_sources
 
 
@@ -91,3 +93,21 @@ def _analytics_provider_id() -> int | None:
     if int(value) <= 0:
         abort(404)
     return int(value)
+
+def _analytics_alert_filters() -> AnalyticsAlertFilters:
+    """Read allowed alert dimensions from the current Registry view request."""
+    return AnalyticsAlertFilters(
+        severity=request.args.get('alert_severity', 'all', type=str),
+        state=request.args.get('alert_state', 'all', type=str),
+        source=request.args.get('alert_source', 'all', type=str),
+    )
+
+
+def _cve_impact_filters() -> CveImpactFilters:
+    """Preserve separate scanner and Kubernetes runtime search parameters."""
+    return CveImpactFilters(
+        finding_search=request.args.get('finding_q', '', type=str),
+        finding_severity=request.args.get('finding_severity', '', type=str),
+        runtime_search=request.args.get('runtime_q', '', type=str),
+        runtime_match=request.args.get('runtime_match', '', type=str),
+    )
