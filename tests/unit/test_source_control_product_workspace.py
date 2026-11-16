@@ -346,6 +346,9 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
         'repository_portfolio',
         'repository_composition',
         'repository_attention',
+        'repository_installations',
+        'repository_governance',
+        'repository_lineage',
     ):
         env.parse((template_dir / 'partials' / f'_dashboard_{name}.html').read_text())
 
@@ -356,7 +359,9 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
         'coverage': 'exhaustive_installation_grants',
         'selection_scope': 'all_repositories',
         'collection_status': 'committed',
-        'account': SimpleNamespace(last_observed_at=committed_at),
+        'account': SimpleNamespace(last_observed_at=committed_at, login='OXY7O'),
+        'connection': SimpleNamespace(name='GitHub OXY7O UAT'),
+        'installation': SimpleNamespace(id=11, native_installation_id='175089894'),
         'last_committed_at': committed_at,
     }
     scope = {
@@ -390,6 +395,10 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
         attention=(),
         single_repository=None,
     )
+    env.globals['url_for'] = url
+    from app.common.pagination import paginate_sequence
+
+    installation_rows, installation_pagination = paginate_sequence(scope['installations'], per_page=5)
     panels = {
         name: env.get_template(f'source_control/partials/_dashboard_{name}.html')
         for name in ('capacity', 'signals', 'reporting')
@@ -400,12 +409,21 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
             selected_scope=False,
             selected_installation_id=None,
             repository_coverage=None,
+            installation_rows=installation_rows,
+            installation_pagination=installation_pagination,
             url_for=url,
         )
-        assert 'data-kaori-blocked-state' in blocked, name
-        assert 'Select Installation' in blocked, name
-        assert 'Installation Required' in blocked, name
-        assert 'Not Qualified' not in blocked, name
+        if name == 'capacity':
+            assert 'Installation Repository Coverage' in blocked
+            assert 'Installation Collection Register' in blocked
+            assert 'GitHub OXY7O UAT' in blocked
+            assert '1 repository' in blocked
+            assert 'data-kaori-blocked-state' not in blocked
+        else:
+            assert 'data-kaori-blocked-state' in blocked, name
+            assert 'Select Installation' in blocked, name
+            assert 'Installation Required' in blocked, name
+            assert 'Not Qualified' not in blocked, name
 
         selected = panel.render(
             scope=scope,
@@ -428,11 +446,17 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
         repository_coverage=coverage,
         url_for=url,
     )
-    assert 'Repository Portfolio Snapshot' in capacity_selected
+    assert 'Repository Inventory Snapshot' in capacity_selected
     assert 'Repository Composition' in capacity_selected
+    assert 'Repository Controls & Governance' in capacity_selected
+    assert 'Evidence Freshness & Lineage' in capacity_selected
+    assert 'Branch Protection' in capacity_selected
+    assert 'Actions & Automation' in capacity_selected
+    assert 'Default Branch Reference' in capacity_selected
+    assert 'Not Qualified' in capacity_selected
     assert 'Repository Attention & Evidence Gaps' in capacity_selected
     assert 'Observed Repositories' in capacity_selected
-    assert 'All Repositories' in capacity_selected
+    assert 'Scope: All Repositories' in capacity_selected
     assert 'Verified Empty' in capacity_selected
     assert 'Engineering Demand Evidence' not in capacity_selected
 
@@ -758,7 +782,7 @@ def test_product_overview_selector_table_and_two_line_evidence_contract():
     inventory = (folder / 'partials/_dashboard_inventory_snapshot.html').read_text()
     freshness = (folder / 'partials/_dashboard_data_freshness.html').read_text()
     assert 'source-control-installation-filter' in overview
-    assert 'All Authorized Installations' in overview
+    assert 'All Installations' in overview
     assert 'for option in authorized_installations' in overview
     assert 'hx-trigger="change"' in overview
     assert 'hx-disabled-elt="this"' in overview
@@ -777,12 +801,12 @@ def test_product_overview_selector_table_and_two_line_evidence_contract():
     assert "'Selected Installation' if selected_scope" in overview
     assert "'Selected Inventory Commit' if selected_scope" in overview
     assert "{'tab': 'overview', 'installation_id': selected_installation_id or ''}" in operations
-    assert "selected_installation_name or 'All Authorized Installations'" in overview
+    assert "selected_installation_name or 'All Installations'" in overview
     assert 'table_ui.header_cell_classes(action=true)' in operations
     assert 'table_ui.cell_classes(action=true)' in operations
     assert "item.observed_count if item.observed_count is not none else 'Unknown'" in operations
     assert "item.collection_status == 'committed'" in operations
-    assert 'account.last_observed_at' in overview
+    assert 'account.last_observed_at' in operations
     assert 'Repository observations are shown only for a single' not in inventory
     for description in (
         'Committed inventory is retained in KAORI. Live GitHub health is not verified.',
@@ -966,8 +990,10 @@ def test_source_control_repository_coverage_reuses_dashboard_and_qualified_chart
     assert 'tabs=source_control_tabs' in overview
     assert 'peer_grid.layout_classes()' in capacity
     assert 'peer_content_grid.layout_classes()' in k8s
-    assert 'components/states/_blocked_state.html' in capacity
-    assert 'Repository Portfolio Snapshot' in portfolio
+    assert 'source_control/partials/_dashboard_repository_installations.html' in capacity
+    assert 'source_control/partials/_dashboard_repository_governance.html' in capacity
+    assert 'source_control/partials/_dashboard_repository_lineage.html' in capacity
+    assert 'Repository Inventory Snapshot' in portfolio
     assert 'components/operational_evidence_tile.html' in portfolio
     assert 'Repository Composition' in composition
     assert 'components/progress_bar.html' in composition
@@ -975,8 +1001,10 @@ def test_source_control_repository_coverage_reuses_dashboard_and_qualified_chart
     assert 'data-source-control-repository-distributions' in composition
     assert 'Repository Attention & Evidence Gaps' in attention
     assert 'repository_coverage.attention' in attention
+    assert 'Repository Profile' in composition
+    assert 'single_profile' in composition
     assert 'components/operational_section_card.html' in attention
-    assert 'Not Qualified' not in capacity
+    assert 'Repository Controls & Governance' not in capacity
     assert 'Engineering Demand Evidence' not in capacity
     assert 'Forecast & Growth Risk' not in capacity
     assert 'source_control.repositories' in attention
@@ -1009,15 +1037,64 @@ def test_source_control_repository_coverage_reuses_dashboard_and_qualified_chart
         'attention_count': 1,
         'attention': (SimpleNamespace(name='org/repo', reasons=('Exact SHA Missing',)),),
         'single_repository': 'org/repo',
+        'single_profile': SimpleNamespace(
+            name='org/repo',
+            native_id='77',
+            visibility='Private',
+            lifecycle='Active',
+            default_branch='main',
+            exact_sha=None,
+            repository_observed_at=datetime(2026, 10, 26, tzinfo=UTC),
+            reference_observed_at=None,
+            access_status='granted',
+            grant_observed_at=datetime(2026, 10, 26, tzinfo=UTC),
+            provider_presence='observed',
+        ),
+        'last_repository_observed_at': datetime(2026, 10, 26, tzinfo=UTC),
+        'last_reference_observed_at': None,
+        'last_grant_observed_at': datetime(2026, 10, 26, tzinfo=UTC),
+        'collection_observed_at': datetime(2026, 10, 26, tzinfo=UTC),
     }
+    env.globals['url_for'] = url
     panel = env.get_template('source_control/partials/_dashboard_capacity.html')
-    all_scope = panel.render(selected_scope=False, repository_coverage=None, url_for=url)
-    assert 'data-kaori-blocked-state' in all_scope
-    assert 'Select Installation' in all_scope
-    assert 'Repository Portfolio Snapshot' not in all_scope
+    from app.common.pagination import paginate_sequence
+
+    all_installation = {
+        'installation': SimpleNamespace(id=11, native_installation_id='100'),
+        'connection': SimpleNamespace(name='GitHub Grant 11'),
+        'account': SimpleNamespace(login='org', last_observed_at=common['committed_at']),
+        'committed': True,
+        'observed_count': 1,
+        'last_committed_at': common['committed_at'],
+    }
+    all_state = {
+        'installations': (all_installation,),
+        'installation_count': 1,
+        'committed_count': 1,
+        'uncollected_count': 0,
+        'has_more': False,
+        'latest_committed_at': common['committed_at'],
+    }
+    all_rows, all_pagination = paginate_sequence(all_state['installations'], per_page=5)
+    selected_state = {
+        'installations': ({'account': SimpleNamespace(last_observed_at=common['committed_at'])},),
+    }
+    all_scope = panel.render(
+        selected_scope=False,
+        scope=all_state,
+        installation_rows=all_rows,
+        installation_pagination=all_pagination,
+        repository_coverage=None,
+        url_for=url,
+    )
+    assert 'Installation Repository Coverage' in all_scope
+    assert 'Inspect Installation' in all_scope
+    assert 'GitHub Grant 11' in all_scope
+    assert 'Repository Inventory Snapshot' not in all_scope
 
     single = panel.render(
         selected_scope=True,
+        scope=selected_state,
         selected_installation_id=11,
         repository_coverage=SimpleNamespace(**common),
         url_for=url,
@@ -1025,6 +1102,11 @@ def test_source_control_repository_coverage_reuses_dashboard_and_qualified_chart
     assert 'data-source-control-single-repository' in single
     assert 'data-source-control-repository-distributions' not in single
     assert 'org/repo' in single
+    assert 'Repository Profile' in single
+    assert 'Default Branch SHA' in single
+    assert 'main' in single
+    assert 'Grant Access' in single
+    assert 'Repository Observed' in single
     assert 'Exact SHA Missing' in single
     assert '2026-10-26T00:00:00+00:00' in single
     assert 'Repository Attention & Evidence Gaps' in single
@@ -1032,6 +1114,7 @@ def test_source_control_repository_coverage_reuses_dashboard_and_qualified_chart
 
     multi = panel.render(
         selected_scope=True,
+        scope=selected_state,
         selected_installation_id=11,
         repository_coverage=SimpleNamespace(
             **{
@@ -1053,17 +1136,19 @@ def test_source_control_repository_coverage_reuses_dashboard_and_qualified_chart
 
     missing = panel.render(
         selected_scope=True,
+        scope=selected_state,
         selected_installation_id=11,
         repository_coverage=SimpleNamespace(**{**common, 'collected': False}),
         url_for=url,
     )
     assert 'Repository Inventory Unavailable' in missing
-    assert 'Repository Composition Unavailable' in missing
+    assert 'Repository Profile Unavailable' in missing
     assert 'Evidence Gaps Not Yet Qualified' in missing
     assert 'data-source-control-repository-distributions' not in missing
 
     zero = panel.render(
         selected_scope=True,
+        scope=selected_state,
         selected_installation_id=11,
         repository_coverage=SimpleNamespace(**{**common, 'observed_count': 0, 'grant_count': 0, 'attention_count': 0}),
         url_for=url,
@@ -1403,7 +1488,9 @@ def test_source_control_reporting_matches_shared_peer_workflow_and_qualified_evi
         schedules=0,
         latest_reports=[],
     )
-    summary_macro = env.get_template('components/reporting_dashboard_workspace.html').module.summary
+    summary_macro = env.get_template('components/reporting_dashboard_workspace.html').make_module(
+        {'url_for': url}
+    ).summary
     standard_summary = summary_macro(reporting_snapshot, 'Object Storage', 'System')
     assert 'Generated Reports' in standard_summary
     assert 'Report Templates' in standard_summary
@@ -1412,4 +1499,49 @@ def test_source_control_reporting_matches_shared_peer_workflow_and_qualified_evi
     assert 'Create Report Request' in standard_summary
     assert 'Reporting Tip' in standard_summary
     assert 'Evidence Only' not in standard_summary
+
+def test_source_control_all_installations_repository_coverage_uses_canonical_pagination(monkeypatch):
+    """All is an installation register, not a sum of overlapping repository grants."""
+    app = Flask(__name__)
+    monkeypatch.setattr(routes, '_require_product_uat_access', lambda: None)
+    installs = tuple({'installation': SimpleNamespace(id=index)} for index in range(1, 13))
+    scope = {
+        'installations': installs,
+        'installation_count': 12,
+        'committed_count': 0,
+        'uncollected_count': 12,
+        'has_more': False,
+        'latest_committed_at': None,
+    }
+    monkeypatch.setattr(routes, 'build_source_control_overview', lambda: scope)
+    monkeypatch.setattr(
+        routes,
+        'read_repository_coverage_for_current_session',
+        lambda **_kwargs: pytest.fail('All-installation scope must not sum repository grants'),
+    )
+    captured = []
+
+    def render(template, **context):
+        captured.append((template, context))
+        return 'rendered'
+
+    monkeypatch.setattr(routes, '_uncached_render', render)
+    with app.test_request_context(
+        '/source-control/',
+        query_string={'tab': 'capacity', 'installation_page': '2', 'installation_per_page': '5'},
+    ):
+        assert routes.overview.__wrapped__() == 'rendered'
+    template, context = captured[-1]
+    assert template == 'source_control/overview.html'
+    assert context['eager_coverage_pagination']
+    assert not context['eager_health_pagination']
+    assert context['repository_coverage'] is None
+    assert [item['installation'].id for item in context['installation_rows']] == [6, 7, 8, 9, 10]
+    assert context['installation_pagination']['total_items'] == 12
+    assert context['installation_pagination']['per_page'] == 5
+
+    with app.test_request_context('/source-control/', query_string={'tab': 'capacity'}):
+        assert routes.overview.__wrapped__() == 'rendered'
+    assert not captured[-1][1]['eager_coverage_pagination']
+    assert captured[-1][1]['repository_coverage'] is None
 

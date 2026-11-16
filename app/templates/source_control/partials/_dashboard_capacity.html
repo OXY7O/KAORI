@@ -1,11 +1,6 @@
 {% import "components/peer_content_grid.html" as peer_grid %}
 {% if not selected_scope %}
-    {% set blocked_state_icon = "folder-git-2" %}
-    {% set blocked_state_label = "Installation Required" %}
-    {% set blocked_state_title = "Select Installation" %}
-    {% set blocked_state_description = "Select an authorized GitHub App installation to inspect its committed repository portfolio and evidence coverage." %}
-    {% set blocked_state_tone = "warning" %}
-    {% include 'components/states/_blocked_state.html' %}
+    {% include "source_control/partials/_dashboard_repository_installations.html" %}
 {% else %}
     <div class="space-y-5" data-source-control-repository-coverage>
         <div class="{{ peer_grid.layout_classes() }}">
@@ -16,6 +11,8 @@
                 {% include "source_control/partials/_dashboard_repository_composition.html" %}
             </div>
         </div>
+        {% include "source_control/partials/_dashboard_repository_governance.html" %}
+        {% include "source_control/partials/_dashboard_repository_lineage.html" %}
         {% include "source_control/partials/_dashboard_repository_attention.html" %}
     </div>
 {% endif %}

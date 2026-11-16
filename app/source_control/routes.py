@@ -101,8 +101,12 @@ def overview() -> ResponseReturnValue:
     context = _dashboard_context(active_tab=active_tab)
     # Registry footer HTMX selects an eager source-control health section from
     # the full overview response, preserving canonical Rows/pagination URLs.
-    context['eager_health_pagination'] = active_tab == 'overview' and (
-        'installation_page' in request.args or 'installation_per_page' in request.args
+    page_requested = 'installation_page' in request.args or 'installation_per_page' in request.args
+    context['eager_health_pagination'] = active_tab == 'overview' and page_requested
+    # All-installations Repository Coverage reuses the same canonical table
+    # footer; its paged fragment must be present in the overview HX response.
+    context['eager_coverage_pagination'] = (
+        active_tab == 'capacity' and not context['selected_scope'] and page_requested
     )
     return _uncached_render('source_control/overview.html', **context)
 

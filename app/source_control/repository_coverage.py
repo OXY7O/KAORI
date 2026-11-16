@@ -41,6 +41,23 @@ class RepositoryAttention:
 
 
 @dataclass(frozen=True, slots=True)
+class RepositoryProfile:
+    """One currently granted repository, never an installation or org total."""
+
+    name: str
+    native_id: str
+    visibility: str
+    lifecycle: str
+    default_branch: str | None
+    exact_sha: str | None
+    repository_observed_at: datetime | None
+    reference_observed_at: datetime | None
+    access_status: str
+    grant_observed_at: datetime | None
+    provider_presence: str
+
+
+@dataclass(frozen=True, slots=True)
 class RepositoryCoverage:
     installation_id: int
     collected: bool
@@ -57,6 +74,11 @@ class RepositoryCoverage:
     attention_count: int | None
     attention: tuple[RepositoryAttention, ...]
     single_repository: str | None
+    single_profile: RepositoryProfile | None = None
+    last_repository_observed_at: datetime | None = None
+    last_reference_observed_at: datetime | None = None
+    last_grant_observed_at: datetime | None = None
+    collection_observed_at: datetime | None = None
 
 
 def _categories(
@@ -215,16 +237,61 @@ def read_repository_coverage(
             )
         )
 
-    single_name: str | None = None
+    observed_times = session.execute(
+        scoped_statement(
+            func.max(SourceRepository.last_observed_at),
+            func.max(SourceReference.last_observed_at),
+            func.max(SourceRepositoryGrant.last_observed_at),
+        )
+    ).one()
+
+    single_profile: RepositoryProfile | None = None
     if total == 1:
-        repository_identity = session.execute(
-            select(SourceRepository.full_name, SourceRepository.native_repository_id)
-            .join(SourceRepositoryGrant, SourceRepositoryGrant.repository_id == SourceRepository.id)
-            .where(*scoped_conditions)
-            .limit(1)
-        ).first()
-        if repository_identity is not None:
-            single_name = repository_identity[0] or f'Repository #{repository_identity[1]}'
+        detail = session.execute(
+            scoped_statement(
+                SourceRepository.full_name,
+                SourceRepository.native_repository_id,
+                SourceRepository.visibility,
+                SourceRepository.archived,
+                SourceRepository.default_branch,
+                SourceRevision.commit_sha,
+                SourceRepository.last_observed_at,
+                SourceReference.last_observed_at,
+                SourceRepositoryGrant.access_status,
+                SourceRepositoryGrant.last_observed_at,
+                SourceRepository.provider_presence,
+            ).limit(1)
+        ).one()
+        (
+            full_name,
+            native_id,
+            visibility,
+            archived,
+            default_branch,
+            exact_sha,
+            repository_observed_at,
+            reference_observed_at,
+            grant_access,
+            grant_observed_at,
+            provider_presence,
+        ) = detail
+        single_profile = RepositoryProfile(
+            name=full_name or f'Repository #{native_id}',
+            native_id=native_id,
+            visibility=(
+                visibility.title()
+                if visibility and visibility.lower() in {'public', 'private', 'internal'}
+                else 'Unknown'
+            ),
+            lifecycle='Archived' if archived is True else ('Active' if archived is False else 'Unknown'),
+            default_branch=default_branch or None,
+            exact_sha=exact_sha,
+            repository_observed_at=repository_observed_at,
+            reference_observed_at=reference_observed_at,
+            access_status=grant_access,
+            grant_observed_at=grant_observed_at,
+            provider_presence=provider_presence or 'unknown',
+        )
 
     return RepositoryCoverage(
         installation_id=authorized_installation_id,
@@ -241,7 +308,12 @@ def read_repository_coverage(
         references=_categories(reference_count, ('Exact SHA', 'Branch Only', 'Missing Branch'), total),
         attention_count=attention_count,
         attention=tuple(attention),
-        single_repository=single_name,
+        single_repository=single_profile.name if single_profile else None,
+        single_profile=single_profile,
+        last_repository_observed_at=observed_times[0],
+        last_reference_observed_at=observed_times[1],
+        last_grant_observed_at=observed_times[2],
+        collection_observed_at=state.last_observed_at,
     )
 
 

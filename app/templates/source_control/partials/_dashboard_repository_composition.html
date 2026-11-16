@@ -1,43 +1,79 @@
 {% import "components/operational_section_card.html" as section_card %}
+{% import "components/operational_evidence_tile.html" as evidence_tile %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
+{% set one_repository = repository_coverage and repository_coverage.collected and repository_coverage.grant_count == 1 %}
 {% call section_card.render(
-    'Repository Composition',
-    'Visibility, lifecycle and default-branch reference coverage from committed grants.',
-    'chart-no-axes-column',
+    'Repository Profile' if one_repository else 'Repository Composition',
+    'Recorded metadata and exact default-branch identity.' if one_repository else 'Installation-scoped visibility, lifecycle and default-branch evidence distributions.',
+    'folder-git-2' if one_repository else 'chart-no-axes-column',
     body_classes='p-5',
     extra_classes='h-full'
     ) %}
     {% if not repository_coverage or not repository_coverage.collected %}
-        {% set empty_state_icon = "chart-no-axes-column" %}
+        {% set empty_state_icon = "database-zap" %}
         {% set empty_state_label = "Not Qualified" %}
-        {% set empty_state_title = "Repository Composition Unavailable" %}
-        {% set empty_state_description = "Collect the authorized installation inventory to qualify repository composition." %}
+        {% set empty_state_title = "Repository Profile Unavailable" %}
+        {% set empty_state_description = "Collect the selected installation inventory to qualify repository identity and composition." %}
         {% set empty_state_variant = "panel" %}
-        {% include 'components/states/_empty_state.html' %}
+        {% include "components/states/_empty_state.html" %}
     {% elif repository_coverage.grant_count == 0 %}
         {% set empty_state_icon = "folder-open" %}
         {% set empty_state_label = "Verified Empty" %}
         {% set empty_state_title = "No Repositories in the Retained Grant" %}
         {% set empty_state_description = "A committed collection observed zero current repository grant rows." %}
         {% set empty_state_variant = "panel" %}
-        {% include 'components/states/_empty_state.html' %}
-    {% elif repository_coverage.grant_count == 1 %}
+        {% include "components/states/_empty_state.html" %}
+    {% elif one_repository %}
+        {% set profile = repository_coverage.single_profile|default(none) %}
         <div class="space-y-3" data-source-control-single-repository>
-            <p class="break-words text-sm font-semibold text-content-primary">{{ repository_coverage.single_repository }}</p>
-            <p class="text-xs leading-5 text-content-muted">One repository: show recorded facts rather than a 100% distribution chart.</p>
-            <div class="grid gap-3 sm:grid-cols-3">
-                {% for title, buckets in [('Visibility', repository_coverage.visibility), ('Lifecycle', repository_coverage.lifecycle), ('Default Branch', repository_coverage.references)] %}
-                    <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                        <p class="text-xs text-content-muted">{{ title }}</p>
-                        {% for bucket in buckets %}
-                            {% if bucket.count %}
-                                <p class="mt-2 break-words text-sm font-semibold text-content-primary">{{ bucket.label }}</p>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
-                {% endfor %}
+            <div class="flex min-w-0 flex-wrap items-center gap-2">
+                <p class="min-w-0 break-words text-sm font-semibold text-content-primary">{{ profile.name if profile else repository_coverage.single_repository }}</p>
+                {{ table_label.status_label('Committed Identity', tone='info') }}
             </div>
+            {% if profile %}
+                <p class="text-xs text-content-muted">Native Repository #{{ profile.native_id }} · Retained GitHub metadata, not current provider health.</p>
+                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {{ evidence_tile.freshness('Visibility',
+                                profile.visibility,
+                                'Observed' if profile.visibility != 'Unknown' else 'Unknown',
+                                'info' if profile.visibility != 'Unknown' else 'unknown',
+                                'eye',
+                                description='Provider-observed repository visibility.') }}
+                    {{ evidence_tile.freshness('Lifecycle',
+                                profile.lifecycle,
+                                'Observed' if profile.lifecycle != 'Unknown' else 'Unknown',
+                                'info' if profile.lifecycle != 'Unknown' else 'unknown',
+                                'archive',
+                                description='Active or archived metadata.') }}
+                    {{ evidence_tile.freshness('Default Branch',
+                                profile.default_branch or 'Not Observed',
+                                'Observed' if profile.default_branch else 'Unavailable',
+                                'info' if profile.default_branch else 'unknown',
+                                'git-branch',
+                                description='Recorded default branch name.') }}
+                    {{ evidence_tile.freshness('Default Branch SHA',
+                                profile.exact_sha or 'Not Observed',
+                                'Exact SHA' if profile.exact_sha else 'Not Qualified',
+                                'info' if profile.exact_sha else 'unknown',
+                                'git-commit-horizontal',
+                                description='Retained current reference to an exact repository revision.') }}
+                    {{ evidence_tile.freshness('Grant Access',
+                                profile.access_status|replace('_', ' ') |title,
+                                'Retained',
+                                'info',
+                                'shield-check',
+                                description='Last committed installation grant, not verified live access.') }}
+                    {{ evidence_tile.freshness('Repository Observed',
+                                profile.repository_observed_at|user_datetime if profile.repository_observed_at else 'Not Observed',
+                                'Observed' if profile.repository_observed_at else 'Unavailable',
+                                'info' if profile.repository_observed_at else 'unknown',
+                                'clock',
+                                description='Latest retained repository metadata observation.') }}
+                </div>
+            {% else %}
+                <p class="text-xs text-content-muted">Repository detail is not qualified; review the authorized repository inventory.</p>
+            {% endif %}
         </div>
     {% else %}
         <div class="space-y-4" data-source-control-repository-distributions>
@@ -65,8 +101,8 @@
                 </section>
             {% endfor %}
         </div>
+        <p class="mt-4 text-xs leading-5 text-content-muted">
+            Counts are current installation grants, not organization-wide unique repositories. Historical growth is not qualified.
+        </p>
     {% endif %}
-    <p class="mt-4 text-xs leading-5 text-content-muted">
-        Current installation grant rows only. No cross-installation deduplication or historical growth forecast.
-    </p>
 {% endcall %}
