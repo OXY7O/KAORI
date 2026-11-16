@@ -617,7 +617,8 @@ def test_vault_view_more_copy_line_budgets_cover_all_capabilities_and_statuses()
     assert 'lg:line-clamp-1"' in modal
     assert 'title="{{ decision_message }}">{{ decision_message }}</p>' in modal
     assert "{% if label == 'Identity Boundary' %}lg:line-clamp-1{% endif %}" in modal
-    assert 'lg:line-clamp-2" title="{{ description }}"' in modal
+    assert 'lg:line-clamp-2"' in modal
+    assert 'title="{{ description }}">{{ description }}</p>' in modal
     assert "('03', 'Committed Observation', result.status_label, observation_description)" in modal
     assert "('03', 'Committed Observation', result.status_label, decision_message)" not in modal
 
