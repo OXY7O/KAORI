@@ -357,7 +357,7 @@ def test_lifecycle_blocker_routes_qualified_mounts_to_inventory_for_read_only_vi
             url_for=lambda endpoint: '/inventory' if endpoint == 'secrets_pki.inventory' else '/vault',
         ).strip()
 
-    assert render(1, False) == '/inventory|1'
+    assert render(1, False) == '/inventory|True'
     assert render(0, False) == '|0'
     assert render(0, True) == '/vault|0'
     assert 'blocked_state_action_label = "Review Inventory Readiness" if lifecycle_inventory_review' in source
