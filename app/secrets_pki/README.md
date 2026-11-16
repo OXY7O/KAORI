@@ -123,6 +123,19 @@ negative checks, PostgreSQL migration tests, Celery worker and actual Vault
 KV2/read ACL UAT. No CI/DevContainer/UAT pass is claimed by the existence of
 this source.
 
+**Lifecycle Jinja parser incident (2026-11-16, #4892):** A missing closing
+parenthesis in a nested `lifecycle_blocker_steps` assignment caused a
+`TemplateSyntaxError` and HTTP 500 on `GET /secrets-pki/lifecycle`, before
+any readiness or permission-aware page content could render. The step selection
+now uses explicit Jinja `if/elif/else` branches. Run the existing
+`test_secrets_pki_qualified_workspace_gate_contract.py` in Developer Check:
+it compiles all three workspace templates through Jinja `get_template` and
+renders six blocked-state step scenarios. A source-only structural review or
+successful tests against a previous commit **cannot** qualify a new template
+commit for UAT. Confirm the exact merged SHA and then test the authenticated
+Lifecycle HTTP 200/blocked page, permitted scope navigation, light/dark and
+responsive layout before Human Acceptance.
+
 
 ## HV-03 public PKI issuer inventory (review candidate)
 
