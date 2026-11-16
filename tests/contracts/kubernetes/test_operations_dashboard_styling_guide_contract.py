@@ -26,7 +26,10 @@ def test_dashboard_uses_shared_workspace_tabs_and_persists_url_state() -> None:
     assert 'dashboard_workspace.navigation(' in source
     assert '{% for tab_key, tab_label, tab_icon in dashboard_workspace.standard_tabs %}' in source
     assert source.count('dashboard_workspace.panel(') == 1
-    assert 'workspace_tabs.render(tabs if tabs is not none else standard_tabs, prefix=prefix, aria_label=aria_label)' in framework
+    assert (
+        'workspace_tabs.render(tabs if tabs is not none else standard_tabs, prefix=prefix, aria_label=aria_label)'
+        in framework
+    )
     assert "url.searchParams.set('tab', tab)" in framework
     assert "window.history.replaceState({}, '', url)" in framework
     assert 'id="{{ input_id }}"' in framework

@@ -388,10 +388,7 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert 'Committed artifact references; storage accessibility is not verified here.' in freshness
     assert 'No scaling needed; monitor trends, requests/limits, and baselines.' in capacity
     assert 'Check headroom, requests/limits, and forecast before workload growth.' in capacity
-    assert (
-        'Refresh Metrics Source and node-role evidence before capacity decisions.'
-        in capacity
-    )
+    assert 'Refresh Metrics Source and node-role evidence before capacity decisions.' in capacity
     assert "'Worker-node CPU, memory, and pod headroom.'" in kubernetes_capacity
     assert 'Data Scope:</span> worker nodes only' in kubernetes_capacity
     assert 'Apply the approved capacity/workload change' in kubernetes_capacity

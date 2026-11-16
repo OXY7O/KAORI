@@ -95,7 +95,10 @@ def test_dashboard_matches_kubernetes_operational_layout_concept() -> None:
     assert 'No live provider query on page load' in page_hero
     assert 'class="mt-5 space-y-5"' in content
     assert 'data-kaori-dashboard-framework="operational-v1"' in framework
-    assert 'workspace_tabs.render(tabs if tabs is not none else standard_tabs, prefix=prefix, aria_label=aria_label)' in framework
+    assert (
+        'workspace_tabs.render(tabs if tabs is not none else standard_tabs, prefix=prefix, aria_label=aria_label)'
+        in framework
+    )
 
 
 def test_dashboard_sections_are_object_storage_specific_and_committed_evidence_owned() -> None:
