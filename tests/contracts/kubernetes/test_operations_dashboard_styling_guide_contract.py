@@ -26,7 +26,7 @@ def test_dashboard_uses_shared_workspace_tabs_and_persists_url_state() -> None:
     assert 'dashboard_workspace.navigation(' in source
     assert '{% for tab_key, tab_label, tab_icon in dashboard_workspace.standard_tabs %}' in source
     assert source.count('dashboard_workspace.panel(') == 1
-    assert 'workspace_tabs.render(standard_tabs' in framework
+    assert 'workspace_tabs.render(tabs if tabs is not none else standard_tabs, prefix=prefix, aria_label=aria_label)' in framework
     assert "url.searchParams.set('tab', tab)" in framework
     assert "window.history.replaceState({}, '', url)" in framework
     assert 'id="{{ input_id }}"' in framework
@@ -315,7 +315,7 @@ def test_dashboard_metric_card_has_no_unused_tone_api() -> None:
 
     assert (
         "macro render(label, value, description, icon, source_label='Operational', "
-        "scope_label='Active Scope')" in metric_card
+        "scope_label='Active Scope', compact=false, status_label=none, status_tone='info')" in metric_card
     )
     assert "tone='violet'" not in metric_card
     assert 'scope_tone' not in metric_card
@@ -343,6 +343,7 @@ def test_reporting_activity_is_capped_at_four_records() -> None:
     assert 'Report.cluster_id == selected_cluster_id' in reporting_service
     assert 'Report.created_at.desc(), Report.id.desc()' in reporting_service
     assert '.limit(4)' in reporting_service
-    assert 'reporting.latest_reports[:4]' in reporting_workspace
+    assert 'recent_items[:4]' in reporting_workspace
+    assert 'else reporting.latest_reports' in reporting_workspace
     assert 'Review before reuse.' in reporting_workspace
     assert '<span class="font-semibold text-content-primary">Recurring</span> · Schedule' in reporting_workspace
