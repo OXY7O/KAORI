@@ -81,6 +81,18 @@ continues to respect independently qualified PKI evidence. The read model
 returns a safe `blocked` summary instead of raising a presentation exception;
 it must not expand limits or issue provider calls.
 
+For KV v2 source collection admission, distinguish **never collected** from
+**collection failed without a committed snapshot**. The latter is a sanitized
+source failure (`status='failed'` with `last_committed_at=None`) and must
+render a shared **Collection Failed** blocked prerequisite with a brief Hero
+instruction and a governed Inventory Job review action only when the user has
+the existing job permissions. Never display a false zero, imply successful
+collection, or re-register an already active Vault source. A later successful
+committed snapshot recovers readiness; a failure with retained historical
+commits remains **Stale**, not **Failed**. Lifecycle may still show
+independently qualified PKI evidence. Keep complete diagnosis below the Hero,
+with concise responsive Hero context guidance.
+
 The Lifecycle blocked Hero uses stage-specific, concise `lifecycle_blocker_info`
 copy rather than repeating the longer prerequisite description from the shared
 below-Hero blocker. At the unapproved-mount stage, show **Approve KV v2 mounts
