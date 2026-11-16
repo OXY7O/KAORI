@@ -59,14 +59,14 @@
         loading_active=runtime_refresh_job and runtime_refresh_job.is_active,
         loading_label='Refreshing Alertmanager runtime health',
         title_extra=info_tip.render(
-            "alertmanager-runtime-health-detail-guide",
-            "Alertmanager Runtime Health & Diagnostics",
-            "Review persisted Alertmanager runtime status, diagnostics and next operational action.",
-            [
-                "Provider core readiness is separate from runtime observation.",
-                "Consumer binding eligibility is validated independently."
-            ],
-            placement="right", variant="guide"
+        "alertmanager-runtime-health-detail-guide",
+        "Alertmanager Runtime Health & Diagnostics",
+        "Review persisted Alertmanager runtime status, diagnostics and next operational action.",
+        [
+        "Provider core readiness is separate from runtime observation.",
+        "Consumer binding eligibility is validated independently."
+        ],
+        placement="right", variant="guide"
         )
         ) %}
         <button type="button"
