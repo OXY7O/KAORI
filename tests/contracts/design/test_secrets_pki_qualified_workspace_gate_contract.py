@@ -328,3 +328,37 @@ def test_stale_or_partial_historical_kv2_does_not_open_lifecycle_without_qualifi
     assert qualified.startswith('False|')
     assert 'blocked_state_description = lifecycle_blocker_description' in source
     assert 'components/states/_blocked_state.html' in source
+
+
+
+def test_lifecycle_blocker_routes_qualified_mounts_to_inventory_for_read_only_viewers() -> None:
+    source = _read(LIFECYCLE)
+    begin = source.index('{% set lifecycle_kv2_qualified = ')
+    end = source.index('{{ lifecycle_navigation.render', begin)
+    stage = Environment().from_string(
+        source[begin:end]
+        + '{{ lifecycle_blocker_url|default("", true) }}|{{ lifecycle_inventory_review }}'
+    )
+    data = {
+        'has_evidence': True,
+        'state': 'stale',
+        'provider_count': 1,
+        'approved_mount_count': 1,
+        'source_limit_exceeded': False,
+    }
+
+    def render(mounts: int, manage: bool) -> str:
+        data['approved_mount_count'] = mounts
+        return stage.render(
+            summary=data,
+            kv2_version_posture={'status': 'incomplete_evidence'},
+            pki_validity={'status': 'not_collected'},
+            can_manage_integrations=manage,
+            url_for=lambda endpoint: '/inventory' if endpoint == 'secrets_pki.inventory' else '/vault',
+        ).strip()
+
+    assert render(1, False) == '/inventory|1'
+    assert render(0, False) == '|0'
+    assert render(0, True) == '/vault|0'
+    assert 'blocked_state_action_label = "Review Inventory Readiness" if lifecycle_inventory_review' in source
+    assert 'blocked_state_permission_granted = lifecycle_blocker_url is not none' in source
