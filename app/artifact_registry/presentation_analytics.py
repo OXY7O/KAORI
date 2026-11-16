@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 from math import isfinite
 from typing import Any
@@ -659,15 +660,22 @@ def _analytics_alert_page(
     )
 
 
+@dataclass(frozen=True, slots=True)
+class AnalyticsAlertFilters:
+    """Alert severity, state and source dimensions of the Registry evidence view."""
+
+    severity: str = 'all'
+    state: str = 'all'
+    source: str = 'all'
+
+
 def build_analytics(
     *,
     active_tab: str = 'growth',
     provider_id: int | None = None,
     snapshot_window: str = '24h',
     alert_search: str = '',
-    alert_severity: str = 'all',
-    alert_state: str = 'all',
-    alert_source: str = 'all',
+    alert_filters: AnalyticsAlertFilters = AnalyticsAlertFilters(),
     alert_page: int = 1,
     alert_per_page: int = 5,
     capacity_page: int = 1,
@@ -693,9 +701,9 @@ def build_analytics(
     alert_page_rows, alert_pagination, alert_filters = _analytics_alert_page(
         bundle['alert_rows'],
         search=alert_search,
-        severity=alert_severity,
-        state=alert_state,
-        source=alert_source,
+        severity=alert_filters.severity,
+        state=alert_filters.state,
+        source=alert_filters.source,
         page=alert_page,
         per_page=alert_per_page,
     )
