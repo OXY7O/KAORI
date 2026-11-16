@@ -15,12 +15,12 @@ def test_sidebar_toggle_icons_are_supported_by_bundled_lucide() -> None:
     navbar = (ROOT / 'app/templates/components/navigation/navbar.html').read_text(encoding='utf-8')
     lucide_bundle = (ROOT / 'app/static/vendor/lucide/lucide.min.js').read_text(encoding='utf-8')
 
-    assert 'data-lucide="chevrons-left"' in navbar
-    assert 'data-lucide="chevrons-right"' in navbar
-    assert 'ChevronsLeft' in lucide_bundle
-    assert 'ChevronsRight' in lucide_bundle
-    assert 'panel-left-close' not in navbar
-    assert 'panel-left-open' not in navbar
+    assert 'data-lucide="panel-right-open"' in navbar
+    assert 'data-lucide="panel-right-close"' in navbar
+    assert 'PanelRightOpen' in lucide_bundle
+    assert 'PanelRightClose' in lucide_bundle
+    assert 'data-lucide="chevrons-left"' not in navbar
+    assert 'data-lucide="chevrons-right"' not in navbar
 
 
 def test_bundled_lucide_license_is_committed() -> None:

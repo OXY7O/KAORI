@@ -1490,9 +1490,11 @@ def verify() -> None:
     if 'page_hero.operational_dashboard(' in assurance_hero:
         raise AssertionError('Security Posture must preserve the approved Governance-style Hero exception')
 
-    if len(profile_templates) < 7:
+    # The documented #4711 Assurance Hero exception is checked separately above.
+    # Preserve all six canonical Operational Dashboard profile consumers.
+    if len(profile_templates) < 6:
         raise AssertionError(
-            f'Operational Dashboard profile consumer inventory regressed below seven; found {len(profile_templates)}'
+            f'Operational Dashboard profile consumer inventory regressed below six; found {len(profile_templates)}'
         )
 
     identity_pairs = _verify_non_redundant_hero_identity()
