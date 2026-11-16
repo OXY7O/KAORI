@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from typing import Any
 
 from sqlalchemy import func, or_, select
@@ -122,6 +123,16 @@ def _present_cve_runtime_rows(binding_items: Any) -> list[dict[str, Any]]:
     return runtime_rows
 
 
+@dataclass(frozen=True, slots=True)
+class CveImpactFilters:
+    """Separate source-qualified scanner and runtime evidence search criteria."""
+
+    finding_search: str = ''
+    finding_severity: str = ''
+    runtime_search: str = ''
+    runtime_match: str = ''
+
+
 def build_cve_runtime_impact(
     cve_id: str,
     *,
@@ -130,10 +141,7 @@ def build_cve_runtime_impact(
     per_page: int = 5,
     finding_per_page: int | None = None,
     runtime_per_page: int | None = None,
-    finding_search: str = '',
-    finding_severity: str = '',
-    runtime_search: str = '',
-    runtime_match: str = '',
+    filters: CveImpactFilters = CveImpactFilters(),
 ) -> dict[str, Any]:
     """Read existing source-qualified scan and Kubernetes binding evidence only.
 
@@ -141,10 +149,10 @@ def build_cve_runtime_impact(
     evidence or correlation must never be presented as a clean application fleet.
     """
     canonical_cve = normalize_cve_id(cve_id)
-    finding_search = str(finding_search or '').strip()[:128]
-    runtime_search = str(runtime_search or '').strip()[:128]
-    finding_severity = str(finding_severity or '').strip().lower()
-    runtime_match = str(runtime_match or '').strip().lower()
+    finding_search = str(filters.finding_search or '').strip()[:128]
+    runtime_search = str(filters.runtime_search or '').strip()[:128]
+    finding_severity = str(filters.finding_severity or '').strip().lower()
+    runtime_match = str(filters.runtime_match or '').strip().lower()
     if finding_severity not in {'critical', 'high', 'medium', 'low', 'unknown'}:
         finding_severity = ''
     if runtime_match not in {'digest', 'other'}:
