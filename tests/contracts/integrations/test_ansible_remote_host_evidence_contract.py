@@ -67,3 +67,18 @@ def test_network_observation_allows_public_unicast_host_network_without_overlap(
         'host_network_cidrs': ['198.51.100.0/24'],
     }
     assert _valid_pilot_network(facts) is True
+
+
+def test_remote_host_identity_rejects_invisible_or_control_unicode():
+    # Unicode category C covers control, format, surrogate, private-use and
+    # unassigned characters, including bidi override and zero-width joiners.
+    for identity in ('asset-0\\n', 'asset-0\\t', 'asset-\\u200b0', 'asset-\\u202e0', 'asset-\\ue0000'):
+        hosts = _hosts()
+        hosts[0]['asset_id'] = identity
+        assert _valid_pilot_hosts({'hosts': hosts}) is False
+
+
+def test_remote_host_identity_accepts_printable_unicode_identifier():
+    hosts = _hosts()
+    hosts[0]['asset_id'] = 'asset-café'
+    assert _valid_pilot_hosts({'hosts': hosts}) is True
