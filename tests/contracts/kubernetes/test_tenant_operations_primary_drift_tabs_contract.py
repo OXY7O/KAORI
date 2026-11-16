@@ -406,6 +406,7 @@ def test_both_capsule_drift_registries_use_full_kaori_table_contract() -> None:
 
 def test_capsule_drift_filters_are_committed_and_independently_paginated() -> None:
     routes = read('app/kubernetes/tenant/routes.py')
+    route_common = read('app/kubernetes/tenant/route_common.py')
     quota = read('app/kubernetes/tenant/capsule_tenant_quota_governance.py')
     shared = read('app/kubernetes/tenant/capsule_allocation_governance.py')
     for name in (
@@ -414,7 +415,7 @@ def test_capsule_drift_filters_are_committed_and_independently_paginated() -> No
         'ops_capsule_shared_tenant_id',
         'ops_capsule_shared_search',
     ):
-        assert "request.args.get('" + name + "')" in routes
+        assert "request.args.get('" + name + "')" in route_common
     assert "'capsule_tenant_quota_filters':" in quota
     assert "'capsule_shared_drift_filters':" in shared
     for source in (quota, shared):
