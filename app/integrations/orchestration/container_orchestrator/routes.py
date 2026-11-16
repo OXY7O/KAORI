@@ -1,9 +1,13 @@
 """Kubernetes provider orchestration routes under the shared Integrations blueprint."""
 
+from celery.exceptions import CeleryError
 from flask import abort, current_app, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
+from kombu.exceptions import KombuError
+from redis.exceptions import RedisError
+from sqlalchemy.exc import SQLAlchemyError
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import permission_required
@@ -327,7 +331,7 @@ def kubernetes_capability_validate(cluster_id: str) -> ResponseReturnValue:
             },
             queue_feedback=not is_htmx,
         )
-    except Exception as exc:
+    except (CeleryError, KombuError, RedisError, SQLAlchemyError, OSError, RuntimeError, ValueError) as exc:
         validation_job = None
         feedback = record_operational_activity(
             user_id=int(current_user.id),
@@ -428,7 +432,7 @@ def kubernetes_runtime_refresh(cluster_id: str) -> ResponseReturnValue:
             },
             queue_feedback=not is_htmx,
         )
-    except Exception as exc:
+    except (CeleryError, KombuError, RedisError, SQLAlchemyError, OSError, RuntimeError, ValueError) as exc:
         validation_job = None
         feedback = record_operational_activity(
             user_id=int(current_user.id),
