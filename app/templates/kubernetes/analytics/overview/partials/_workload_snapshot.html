@@ -5,14 +5,14 @@
 {% import "kubernetes/analytics/components/_scoped_link.html" as scoped_link %}
 {% set overview_workload_guide %}
     {{ info_tip.render('kubernetes-analytics-overview-workload-guide',
-            'Workload Governance Snapshot Guide',
-            'Review committed request coverage, limit policies, and evidence-qualified right-sizing signals.',
-            items=[
-                'Missing CPU or memory requests and missing memory limits are actionable governance gaps.',
-                'Unset CPU limits are factual policy evidence, not automatically a violation.',
-                'Right-sizing conclusions require complete evidence; review workload ownership before action.'
-            ],
-            placement='right', variant='guide') }}
+        'Workload Governance Snapshot Guide',
+        'Review committed request coverage, limit policies, and evidence-qualified right-sizing signals.',
+        items=[
+        'Missing CPU or memory requests and missing memory limits are actionable governance gaps.',
+        'Unset CPU limits are factual policy evidence, not automatically a violation.',
+        'Right-sizing conclusions require complete evidence; review workload ownership before action.'
+        ],
+        placement='right', variant='guide') }}
 {% endset %}
 {% if not payload.workload_snapshot.available|default(false) %}
     {{ overview_surface.snapshot_unavailable('workload', 'Workload Governance Snapshot', 'The Analytics worker has not committed workload evidence for the selected cluster and time range.', icon='boxes', title_accessory=overview_workload_guide) }}

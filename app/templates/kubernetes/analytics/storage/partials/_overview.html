@@ -15,9 +15,9 @@
     'hard-drive',
     selected_namespace if selected_namespace else 'All Namespaces',
     title_accessory=info_tip.render('kubernetes-analytics-storage-overview-guide',
-        'Storage Analysis Overview Guide',
-        'Filesystem pressure, PVC demand, and PV provisioning have distinct scopes and denominators; missing metrics remain Unknown.',
-        placement='right', variant='guide')
+    'Storage Analysis Overview Guide',
+    'Filesystem pressure, PVC demand, and PV provisioning have distinct scopes and denominators; missing metrics remain Unknown.',
+    placement='right', variant='guide')
     ) %}
     <div class="{{ analysis_surface.evidence_shell_classes() }}">
         <div class="{{ analysis_surface.metric_grid_classes(4) }}">

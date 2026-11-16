@@ -5,14 +5,14 @@
 {% import "kubernetes/analytics/components/_scoped_link.html" as scoped_link %}
 {% set overview_consumers_guide %}
     {{ info_tip.render('kubernetes-analytics-overview-consumers-guide',
-            'Top Consumer Snapshot Guide',
-            'Read the committed rankings of CPU, memory, persistent storage, and pod consumers.',
-            items=[
-                'Rankings compare recorded demand within the selected cluster and window.',
-                'A top rank is not an incident: validate ownership, expected workload profile, and trends.',
-                'Missing committed consumer data is not equivalent to zero consumption.'
-            ],
-            placement='right', variant='guide') }}
+        'Top Consumer Snapshot Guide',
+        'Read the committed rankings of CPU, memory, persistent storage, and pod consumers.',
+        items=[
+        'Rankings compare recorded demand within the selected cluster and window.',
+        'A top rank is not an incident: validate ownership, expected workload profile, and trends.',
+        'Missing committed consumer data is not equivalent to zero consumption.'
+        ],
+        placement='right', variant='guide') }}
 {% endset %}
 {% if not payload.top_consumers.available|default(false) %}
     {{ overview_surface.snapshot_unavailable('consumers', 'Top Consumer Snapshot', 'The Analytics worker has not committed top-consumer evidence for the selected cluster.', icon='chart-no-axes-column-increasing', title_accessory=overview_consumers_guide) }}

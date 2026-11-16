@@ -6,14 +6,14 @@
 {% import "kubernetes/analytics/components/_scoped_link.html" as scoped_link %}
 {% set overview_storage_guide %}
     {{ info_tip.render('kubernetes-analytics-overview-storage-guide',
-            'Persistent Storage Snapshot Guide',
-            'Compare committed PVC requested capacity, observed use, available space, and Namespace storage risk.',
-            items=[
-                'Requests indicate demand; measured volume capacity and consumption indicate utilization.',
-                'Unavailable kubelet volume observations cannot establish a normal storage pressure posture.',
-                'Check top-risk Namespace and growth evidence before planning PVC changes.'
-            ],
-            placement='right', variant='guide') }}
+        'Persistent Storage Snapshot Guide',
+        'Compare committed PVC requested capacity, observed use, available space, and Namespace storage risk.',
+        items=[
+        'Requests indicate demand; measured volume capacity and consumption indicate utilization.',
+        'Unavailable kubelet volume observations cannot establish a normal storage pressure posture.',
+        'Check top-risk Namespace and growth evidence before planning PVC changes.'
+        ],
+        placement='right', variant='guide') }}
 {% endset %}
 {% if not payload.storage_snapshot.available|default(false) %}
     {{ overview_surface.snapshot_unavailable('storage', 'Persistent Storage Snapshot', 'The Analytics worker has not committed storage evidence for the selected cluster.', icon='database', title_accessory=overview_storage_guide) }}
