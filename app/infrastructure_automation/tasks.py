@@ -27,7 +27,11 @@ from app.infrastructure_automation.source import (
     verify_localhost_source,
     verify_read_only_runner_stats,
 )
-from app.platform_operations.jobs.execution import JobExecutionContext, JobExecutionUnavailable
+from app.platform_operations.jobs.execution import (
+    JobCancellationRequested,
+    JobExecutionContext,
+    JobExecutionUnavailable,
+)
 
 AUTOMATION_QUEUE = 'automation'
 
@@ -146,6 +150,9 @@ def materialize_kubespray_plan_review(
             raise ValueError('Plan preflight changed before evidence commit')
         context.succeed(result_type=PLAN_RESULT_TYPE, result_summary=rechecked.committed_summary())
         return {'status': 'succeeded', 'plan_fingerprint': rechecked.plan_fingerprint}
+    except JobCancellationRequested:
+        context.canceled(message='Kubespray Plan review canceled before evidence commit.')
+        return {'status': 'canceled'}
     except JobExecutionUnavailable:
         return {'status': 'blocked'}
     except Exception:
