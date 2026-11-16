@@ -427,3 +427,25 @@ def test_vault_runtime_refresh_fragment_uses_only_persisted_instance_evidence(
     assert context['evidence']['runtime_job'] is job
     assert context['template'].endswith('vault/partials/_detail_runtime.html')
 
+def test_vault_runtime_refresh_rejects_disabled_connection_before_enqueue(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from werkzeug.exceptions import Conflict
+
+    app = _app(monkeypatch)
+    monkeypatch.setattr(
+        routes, '_instance_or_404',
+        lambda instance_id: SimpleNamespace(id=instance_id, integration_instance_id=99, enabled=False),
+    )
+    def unexpected_enqueue(**kwargs: Any) -> None:
+        raise AssertionError('Disabled Vault instance must not enqueue runtime work')
+
+    monkeypatch.setattr(routes, 'enqueue_runtime_health_refresh', unexpected_enqueue)
+    with app.test_request_context(
+        '/integrations/secrets-management/secrets-pki/vault/instances/15/runtime/refresh',
+        method='POST',
+        headers={'HX-Request': 'true'},
+    ):
+        with pytest.raises(Conflict):
+            unwrap(routes.runtime_refresh)(15)
+
