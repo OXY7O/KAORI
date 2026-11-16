@@ -240,3 +240,23 @@ def test_duplicate_host_identity_unsupported_os_and_missing_capacity_are_blocked
         report = build_kubespray_preflight(_connection(), jobs=[record], now=_NOW)
         assert report.state == 'blocked'
         assert any(gate.key == 'host_facts' and gate.state == 'blocked' for gate in report.gates)
+
+
+def test_later_failed_or_running_preflight_invalidates_older_success() -> None:
+    older = _job(public_id='old-success', completed_at=_NOW - timedelta(minutes=10))
+    for status in ('failed', 'running', 'cancel_requested', 'expired'):
+        current = _job(public_id='new-attempt', status=status, completed_at=_NOW - timedelta(minutes=1))
+        report = build_kubespray_preflight(_connection(), jobs=[current, older], now=_NOW)
+        assert report.state == 'blocked'
+        assert report.facts_job_public_id is None
+
+
+def test_latest_mismatched_source_or_stale_preflight_never_reuses_prior_success() -> None:
+    older = _job(public_id='old-success', completed_at=_NOW - timedelta(minutes=10))
+    for current in (
+        _job(public_id='wrong-source', result_summary_json={'repository': REPOSITORY}),
+        _job(public_id='stale', completed_at=_NOW - timedelta(minutes=20)),
+    ):
+        report = build_kubespray_preflight(_connection(), jobs=[current, older], now=_NOW)
+        assert report.state == 'blocked'
+        assert report.facts_job_public_id is None
