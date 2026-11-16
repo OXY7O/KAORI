@@ -98,10 +98,7 @@ def test_vault_deletion_service_rechecks_guard_under_admission_lock(
     monkeypatch.setattr(
         service,
         'vault_connection_deletion_guard',
-        lambda item: (
-            events.append('guard')
-            or DeletionGuard(blocked=True, reasons=('Retained PKI evidence.',))
-        ),
+        lambda item: events.append('guard') or DeletionGuard(blocked=True, reasons=('Retained PKI evidence.',)),
     )
     monkeypatch.setattr(
         service,
@@ -122,8 +119,9 @@ def test_vault_deletion_service_removes_only_provider_and_canonical_identity(
     events: list[str] = []
     monkeypatch.setattr(service, 'acquire_resource_admission_locks', lambda *keys: events.append('lock'))
     monkeypatch.setattr(
-        service, 'vault_connection_deletion_guard',
-        lambda item: (events.append('guard') or DeletionGuard(blocked=False, reasons=())),
+        service,
+        'vault_connection_deletion_guard',
+        lambda item: events.append('guard') or DeletionGuard(blocked=False, reasons=()),
     )
     monkeypatch.setattr(
         service,

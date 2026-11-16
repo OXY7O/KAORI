@@ -1488,9 +1488,9 @@ def test_source_control_reporting_matches_shared_peer_workflow_and_qualified_evi
         schedules=0,
         latest_reports=[],
     )
-    summary_macro = env.get_template('components/reporting_dashboard_workspace.html').make_module(
-        {'url_for': url}
-    ).summary
+    summary_macro = (
+        env.get_template('components/reporting_dashboard_workspace.html').make_module({'url_for': url}).summary
+    )
     standard_summary = summary_macro(reporting_snapshot, 'Object Storage', 'System')
     assert 'Generated Reports' in standard_summary
     assert 'Report Templates' in standard_summary
@@ -1499,6 +1499,7 @@ def test_source_control_reporting_matches_shared_peer_workflow_and_qualified_evi
     assert 'Create Report Request' in standard_summary
     assert 'Reporting Tip' in standard_summary
     assert 'Evidence Only' not in standard_summary
+
 
 def test_source_control_all_installations_repository_coverage_uses_canonical_pagination(monkeypatch):
     """All is an installation register, not a sum of overlapping repository grants."""
@@ -1544,4 +1545,3 @@ def test_source_control_all_installations_repository_coverage_uses_canonical_pag
         assert routes.overview.__wrapped__() == 'rendered'
     assert not captured[-1][1]['eager_coverage_pagination']
     assert captured[-1][1]['repository_coverage'] is None
-

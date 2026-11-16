@@ -195,7 +195,6 @@ def test_failed_provider_scan_keeps_history_but_marks_stale(store):
     assert state.last_error is None
 
 
-
 def test_failed_first_inventory_collection_is_not_misreported_as_never_collected(store):
     # An initial provider failure commits no Secret metadata but does retain
     # sanitized failure evidence for operator diagnosis.
@@ -228,6 +227,7 @@ def test_failed_first_inventory_collection_is_not_misreported_as_never_collected
     assert stale['has_evidence'] is True
     assert stale['observed_secret_count'] == 1
 
+
 def test_unapproved_mount_failure_does_not_create_collection_state(store):
     mark_kv2_inventory_failed(store, 'unapproved')
     assert SecretInventoryCollectionState.query.count() == 0
@@ -259,7 +259,6 @@ def test_admin_readiness_projection_reads_committed_state_without_provider_calls
     disabled = vault_inventory_readiness(instance)
     assert disabled['state'] == 'not_configured'
     assert disabled['observed_secret_count'] is None
-
 
 
 def test_operational_overview_requires_approved_mount_and_committed_kv2_snapshot(store):
@@ -299,8 +298,6 @@ def test_operational_overview_requires_approved_mount_and_committed_kv2_snapshot
     assert ineligible['provider_count'] == 0
     assert ineligible['state'] == 'blocked'
     assert ineligible['has_evidence'] is False
-
-
 
 
 def test_excess_approved_kv2_mounts_fail_closed_without_breaking_dashboard(store):

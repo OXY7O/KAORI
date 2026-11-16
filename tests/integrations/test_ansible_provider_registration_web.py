@@ -47,6 +47,7 @@ def app(monkeypatch):
         has_permission=lambda _: True,
     )
     monkeypatch.setattr('flask_login.utils._get_user', lambda: principal)
+
     def fake_activity(**payload):
         # Use the real toast transport while isolating Audit persistence from
         # this database-backed registration test; policy is asserted separately.

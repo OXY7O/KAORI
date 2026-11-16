@@ -170,9 +170,7 @@ def test_untrusted_source_inventory_or_policy_never_generates_review_plan(mutate
 
 def test_plan_expires_at_exact_preflight_freshness_boundary() -> None:
     connection, job = _connection(), _job()
-    review = build_kubespray_plan_review(
-        connection, job, now=job.completed_at + timedelta(minutes=15)
-    )
+    review = build_kubespray_plan_review(connection, job, now=job.completed_at + timedelta(minutes=15))
     assert review.status == 'blocked'
     assert review.plan_fingerprint is None
 

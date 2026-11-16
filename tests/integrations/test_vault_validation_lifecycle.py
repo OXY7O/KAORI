@@ -228,9 +228,7 @@ def test_vault_runtime_history_fragment_rejects_unknown_connection(
 ) -> None:
     app = _app(monkeypatch)
     monkeypatch.setattr(routes, '_instance_or_404', lambda instance_id: (_ for _ in ()).throw(NotFound()))
-    with app.test_request_context(
-        '/integrations/secrets-management/secrets-pki/vault/instances/155/runtime/history'
-    ):
+    with app.test_request_context('/integrations/secrets-management/secrets-pki/vault/instances/155/runtime/history'):
         with pytest.raises(NotFound):
             unwrap(routes.runtime_history)(155)
 
@@ -306,7 +304,8 @@ def test_vault_runtime_refresh_rejects_conflicting_full_validation_task(
 ) -> None:
     app = _app(monkeypatch)
     monkeypatch.setattr(
-        routes, 'enqueue_runtime_health_refresh',
+        routes,
+        'enqueue_runtime_health_refresh',
         lambda **kwargs: ({'task_id': 'validation-task', 'operation': 'full_validation'}, False),
     )
     monkeypatch.setattr(routes, 'record_operational_activity', lambda **kwargs: {'status': kwargs['status']})
@@ -415,14 +414,23 @@ def test_vault_runtime_refresh_fragment_uses_only_persisted_instance_evidence(
     committed = object()
     pagination = {'rows': [], 'total': 0}
     monkeypatch.setattr(routes, 'latest_vault_runtime_observation', lambda instance_id: committed)
-    monkeypatch.setattr(routes, 'runtime_observation_state_view', lambda observation, **kwargs: {
-        'health_status_label': 'Degraded',
-        'observed_at': '2026-11-16T09:00:00+07:00',
-    })
+    monkeypatch.setattr(
+        routes,
+        'runtime_observation_state_view',
+        lambda observation, **kwargs: {
+            'health_status_label': 'Degraded',
+            'observed_at': '2026-11-16T09:00:00+07:00',
+        },
+    )
     monkeypatch.setattr(routes, '_vault_runtime_history_view', lambda instance: pagination)
-    monkeypatch.setattr(routes, 'render_template', lambda template, **context: {
-        'template': template, **context,
-    })
+    monkeypatch.setattr(
+        routes,
+        'render_template',
+        lambda template, **context: {
+            'template': template,
+            **context,
+        },
+    )
     job = {'task_id': 'runtime-task', 'is_active': True}
     with app.test_request_context('/'):
         context = routes._vault_runtime_refresh_fragment(instance, runtime_job=job)
@@ -433,6 +441,7 @@ def test_vault_runtime_refresh_fragment_uses_only_persisted_instance_evidence(
     assert context['runtime_history'] is pagination
     assert context['evidence']['runtime_job'] is job
     assert context['template'].endswith('vault/partials/_detail_runtime.html')
+
 
 def test_vault_runtime_refresh_rejects_disabled_connection_before_enqueue(
     monkeypatch: pytest.MonkeyPatch,
@@ -457,4 +466,3 @@ def test_vault_runtime_refresh_rejects_disabled_connection_before_enqueue(
     ):
         with pytest.raises(Conflict):
             unwrap(routes.runtime_refresh)(15)
-
