@@ -6,6 +6,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import permission_required
+from app.common.http import htmx_target, is_htmx_request
+from app.extensions.db import db
 from app.infrastructure_automation.kubernetes.plan_currentness import (
     committed_kubespray_plan_currentness,
 )
@@ -13,8 +15,6 @@ from app.infrastructure_automation.kubernetes.plan_dispatch import (
     KubesprayPlanNotQualified,
     dispatch_kubespray_plan_review,
 )
-from app.common.http import htmx_target, is_htmx_request
-from app.extensions.db import db
 from app.integrations.binding_web import binding_response as _binding_response
 from app.integrations.domain_service import (
     BindingRegistryFilters,
@@ -27,10 +27,10 @@ from app.integrations.observability.metrics_source.application.registration_web 
 )
 from app.integrations.observability.metrics_source.providers import provider_definitions
 from app.integrations.orchestration.configuration_automation.frontpage import build_ansible_frontpage
+from app.integrations.orchestration.configuration_automation.providers.ansible.forms import AnsibleSourceConnectionForm
 from app.integrations.orchestration.configuration_automation.providers.ansible.preflight import (
     committed_kubespray_preflight,
 )
-from app.integrations.orchestration.configuration_automation.providers.ansible.forms import AnsibleSourceConnectionForm
 from app.integrations.orchestration.configuration_automation.providers.ansible.proof import (
     issue_source_proof,
     verified_source_proof,
