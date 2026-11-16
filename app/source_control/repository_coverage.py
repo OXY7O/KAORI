@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Callable
 
 from flask_sqlalchemy.session import Session as FlaskSession
 from sqlalchemy import and_, case, func, literal, or_, select
@@ -93,6 +94,106 @@ def _categories(
             percent=round(counts.get(label, 0) * 100 / total) if total else 0,
         )
         for label in labels
+    )
+
+
+def _coverage_attention(
+    session: Session | scoped_session[Session] | scoped_session[FlaskSession],
+    scoped_statement: Callable[..., Any],
+    visibility_expr: Any,
+    lifecycle_expr: Any,
+    reference_expr: Any,
+) -> list[RepositoryAttention]:
+    """Bounded attention rows from the same independently authorized grants."""
+    rows = session.execute(
+        scoped_statement(
+            SourceRepository.id,
+            SourceRepository.full_name,
+            SourceRepository.native_repository_id,
+            visibility_expr,
+            lifecycle_expr,
+            reference_expr,
+        )
+        .where(
+            or_(
+                visibility_expr == 'unknown',
+                lifecycle_expr == 'Unknown',
+                reference_expr != 'Exact SHA',
+            )
+        )
+        .order_by(SourceRepository.full_name, SourceRepository.id)
+        .limit(_MAX_ATTENTION_ROWS)
+    ).all()
+    attention = []
+    for repository_id, full_name, native_id, visibility, lifecycle, reference in rows:
+        reasons = []
+        if visibility == 'unknown':
+            reasons.append('Visibility Unknown')
+        if lifecycle == 'Unknown':
+            reasons.append('Lifecycle Unknown')
+        if reference == 'Missing Branch':
+            reasons.append('Default Branch Missing')
+        elif reference == 'Branch Only':
+            reasons.append('Exact SHA Missing')
+        attention.append(
+            RepositoryAttention(
+                name=full_name or f'Repository #{native_id}',
+                repository_id=repository_id,
+                reasons=tuple(reasons),
+            )
+        )
+    return attention
+
+
+def _single_repository_profile(
+    session: Session | scoped_session[Session] | scoped_session[FlaskSession],
+    scoped_statement: Callable[..., Any],
+) -> RepositoryProfile:
+    """Present the sole authorized repo without altering grant join semantics."""
+    detail = session.execute(
+        scoped_statement(
+            SourceRepository.full_name,
+            SourceRepository.native_repository_id,
+            SourceRepository.visibility,
+            SourceRepository.archived,
+            SourceRepository.default_branch,
+            SourceRevision.commit_sha,
+            SourceRepository.last_observed_at,
+            SourceReference.last_observed_at,
+            SourceRepositoryGrant.access_status,
+            SourceRepositoryGrant.last_observed_at,
+            SourceRepository.provider_presence,
+        ).limit(1)
+    ).one()
+    (
+        full_name,
+        native_id,
+        visibility,
+        archived,
+        default_branch,
+        exact_sha,
+        repository_observed_at,
+        reference_observed_at,
+        grant_access,
+        grant_observed_at,
+        provider_presence,
+    ) = detail
+    return RepositoryProfile(
+        name=full_name or f'Repository #{native_id}',
+        native_id=native_id,
+        visibility=(
+            visibility.title()
+            if visibility and visibility.lower() in {'public', 'private', 'internal'}
+            else 'Unknown'
+        ),
+        lifecycle='Archived' if archived is True else ('Active' if archived is False else 'Unknown'),
+        default_branch=default_branch or None,
+        exact_sha=exact_sha,
+        repository_observed_at=repository_observed_at,
+        reference_observed_at=reference_observed_at,
+        access_status=grant_access,
+        grant_observed_at=grant_observed_at,
+        provider_presence=provider_presence or 'unknown',
     )
 
 
@@ -199,43 +300,9 @@ def read_repository_coverage(
         if visibility_label == 'Unknown' or lifecycle == 'Unknown' or reference != 'Exact SHA':
             attention_count += amount
 
-    rows = session.execute(
-        scoped_statement(
-            SourceRepository.id,
-            SourceRepository.full_name,
-            SourceRepository.native_repository_id,
-            visibility_expr,
-            lifecycle_expr,
-            reference_expr,
-        )
-        .where(
-            or_(
-                visibility_expr == 'unknown',
-                lifecycle_expr == 'Unknown',
-                reference_expr != 'Exact SHA',
-            )
-        )
-        .order_by(SourceRepository.full_name, SourceRepository.id)
-        .limit(_MAX_ATTENTION_ROWS)
-    ).all()
-    attention = []
-    for repository_id, full_name, native_id, visibility, lifecycle, reference in rows:
-        reasons = []
-        if visibility == 'unknown':
-            reasons.append('Visibility Unknown')
-        if lifecycle == 'Unknown':
-            reasons.append('Lifecycle Unknown')
-        if reference == 'Missing Branch':
-            reasons.append('Default Branch Missing')
-        elif reference == 'Branch Only':
-            reasons.append('Exact SHA Missing')
-        attention.append(
-            RepositoryAttention(
-                name=full_name or f'Repository #{native_id}',
-                repository_id=repository_id,
-                reasons=tuple(reasons),
-            )
-        )
+    attention = _coverage_attention(
+        session, scoped_statement, visibility_expr, lifecycle_expr, reference_expr
+    )
 
     observed_times = session.execute(
         scoped_statement(
@@ -245,53 +312,7 @@ def read_repository_coverage(
         )
     ).one()
 
-    single_profile: RepositoryProfile | None = None
-    if total == 1:
-        detail = session.execute(
-            scoped_statement(
-                SourceRepository.full_name,
-                SourceRepository.native_repository_id,
-                SourceRepository.visibility,
-                SourceRepository.archived,
-                SourceRepository.default_branch,
-                SourceRevision.commit_sha,
-                SourceRepository.last_observed_at,
-                SourceReference.last_observed_at,
-                SourceRepositoryGrant.access_status,
-                SourceRepositoryGrant.last_observed_at,
-                SourceRepository.provider_presence,
-            ).limit(1)
-        ).one()
-        (
-            full_name,
-            native_id,
-            visibility,
-            archived,
-            default_branch,
-            exact_sha,
-            repository_observed_at,
-            reference_observed_at,
-            grant_access,
-            grant_observed_at,
-            provider_presence,
-        ) = detail
-        single_profile = RepositoryProfile(
-            name=full_name or f'Repository #{native_id}',
-            native_id=native_id,
-            visibility=(
-                visibility.title()
-                if visibility and visibility.lower() in {'public', 'private', 'internal'}
-                else 'Unknown'
-            ),
-            lifecycle='Archived' if archived is True else ('Active' if archived is False else 'Unknown'),
-            default_branch=default_branch or None,
-            exact_sha=exact_sha,
-            repository_observed_at=repository_observed_at,
-            reference_observed_at=reference_observed_at,
-            access_status=grant_access,
-            grant_observed_at=grant_observed_at,
-            provider_presence=provider_presence or 'unknown',
-        )
+    single_profile = _single_repository_profile(session, scoped_statement) if total == 1 else None
 
     return RepositoryCoverage(
         installation_id=authorized_installation_id,
