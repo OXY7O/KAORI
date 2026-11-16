@@ -50,7 +50,12 @@ Secrets & PKI Overview reads eligible **active, enabled** Vault integrations
 instance/namespace/mount scopes, without a live Vault call. Its prerequisite
 message follows the earliest missing stage: no eligible Vault source;
 registered Vault with no approved KV v2 mount; source/mount configured but
-no successful committed inventory; or a bounded scope-limit violation.
+no successful committed inventory; or a bounded scope-limit violation. Exceeding the maximum approved KV v2
+source/mount combinations returns a safe `blocked` summary with
+`source_limit_exceeded=True`, not an unhandled exception. Counts and timestamps
+are withheld for the over-limit inventory scope; the existing Overview setup
+state directs an authorized operator to review source and mount scope. The
+collection budget is not raised and the read model does not call Vault.
 For an active source with no approved KV v2 mount, the Overview blocker uses
 short, naturally fitting copy: **Vault source registered. Approve a KV v2
 mount to collect inventory.** The third displayed setup step is
