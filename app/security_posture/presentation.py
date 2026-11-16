@@ -147,31 +147,30 @@ def _security_finding_rows(page_rows: Any) -> list[dict[str, Any]]:
 
 def _unauthorized_security_posture(*, search: str, page: int, per_page: int) -> dict[str, Any]:
     """Return a fail-closed projection without querying provider-backed evidence."""
-        _, pagination = paginate_sequence([], page=page, per_page=per_page)
-        return {
-            'rows': [],
-            'pagination': pagination,
-            'search': search,
-            'severity': '',
-            'severity_options': tuple(_SEVERITY_RANK),
-            'sources': 0,
-            'authorized_registry': False,
-            'affected_artifacts': 0,
-            'artifacts_total': 0,
-            'scanned_artifacts': 0,
-            'last_scan': None,
-            'scan_updated_label': 'Not Collected',
-            'scan_status': {'label': 'No Authorized Sources', 'tone': 'unknown'},
-            'runtime_status': {
-                'status': 'Not Collected',
-                'tone': 'unknown',
-                'description': 'No authorized committed Registry source.',
-            },
-            'has_complete_security_evidence': False,
-            'severity_distribution': [],
-            'runtime_binding_summary': {'digest': 0, 'reference': 0},
-        }
-
+    _, pagination = paginate_sequence([], page=page, per_page=per_page)
+    return {
+        'rows': [],
+        'pagination': pagination,
+        'search': search,
+        'severity': '',
+        'severity_options': tuple(_SEVERITY_RANK),
+        'sources': 0,
+        'authorized_registry': False,
+        'affected_artifacts': 0,
+        'artifacts_total': 0,
+        'scanned_artifacts': 0,
+        'last_scan': None,
+        'scan_updated_label': 'Not Collected',
+        'scan_status': {'label': 'No Authorized Sources', 'tone': 'unknown'},
+        'runtime_status': {
+            'status': 'Not Collected',
+            'tone': 'unknown',
+            'description': 'No authorized committed Registry source.',
+        },
+        'has_complete_security_evidence': False,
+        'severity_distribution': [],
+        'runtime_binding_summary': {'digest': 0, 'reference': 0},
+    }
 
 
 def build_security_posture(
