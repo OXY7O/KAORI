@@ -121,7 +121,13 @@ def _valid_pilot_hosts(facts: dict[str, Any]) -> bool:
             return False
         identity = host.get('asset_id')
         role = host.get('role')
-        if not isinstance(identity, str) or not identity.strip() or identity in identities:
+        if (
+            not isinstance(identity, str)
+            or not identity.strip()
+            or identity != identity.strip()
+            or len(identity) > 96
+            or identity in identities
+        ):
             return False
         if not isinstance(role, str) or role not in {'control_plane', 'worker'}:
             return False
