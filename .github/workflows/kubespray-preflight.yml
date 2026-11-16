@@ -37,6 +37,7 @@ jobs:
             tests/integrations/test_ansible_kubespray_preflight.py \
             tests/integrations/test_kubespray_plan_review_contract.py \
             tests/integrations/test_kubespray_plan_dispatch_contract.py \
+            tests/integrations/test_kubespray_plan_worker_contract.py \
             tests/contracts/integrations/test_ansible_source_posture_contract.py \
             tests/contracts/integrations/test_ansible_configuration_automation_workspace_contract.py
       - name: Ruff formatting
@@ -50,6 +51,7 @@ jobs:
             tests/integrations/test_ansible_kubespray_preflight.py \
             tests/integrations/test_kubespray_plan_review_contract.py \
             tests/integrations/test_kubespray_plan_dispatch_contract.py \
+            tests/integrations/test_kubespray_plan_worker_contract.py \
             tests/contracts/integrations/test_ansible_source_posture_contract.py \
             tests/contracts/integrations/test_ansible_configuration_automation_workspace_contract.py
       - name: Pyright static and evidence-bound preflight typing
@@ -72,5 +74,6 @@ jobs:
             tests/integrations/test_ansible_kubespray_preflight.py \
             tests/integrations/test_kubespray_plan_review_contract.py \
             tests/integrations/test_kubespray_plan_dispatch_contract.py \
+            tests/integrations/test_kubespray_plan_worker_contract.py \
             tests/contracts/integrations/test_ansible_source_posture_contract.py \
             tests/contracts/integrations/test_ansible_configuration_automation_workspace_contract.py
