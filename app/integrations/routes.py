@@ -341,7 +341,9 @@ def ansible_connection_detail(instance_id: int) -> ResponseReturnValue:
         source=connection.metadata_json or {},
         source_posture=source_validation_posture(connection),
         kubespray_preflight=committed_kubespray_preflight(connection).presentation(),
-        can_generate_review_plan=bool(getattr(current_user, 'has_permission', lambda _: False)('jobs.execute')),
+        can_generate_review_plan=bool(
+            connection.enabled and getattr(current_user, 'has_permission', lambda _: False)('jobs.execute')
+        ),
         jobs=jobs,
         pagination=pagination,
         inventory_targets=inventory_targets,
