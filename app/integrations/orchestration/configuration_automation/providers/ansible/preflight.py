@@ -164,27 +164,16 @@ def _valid_pilot_network(facts: dict[str, Any]) -> bool:
     return not any(pod.overlaps(other) or service.overlaps(other) for other in observed) and not pod.overlaps(service)
 
 
-def build_kubespray_preflight(
+def _build_pilot_readiness_gates(
     connection: IntegrationInstance,
-    *,
-    jobs: list[JobExecution] | None = None,
-    now: datetime | None = None,
-) -> KubesprayPreflight:
-    """Never infer provisionability from source, manual data or a cluster binding."""
-    checked_at = now or datetime.now(UTC)
-    metadata = connection.metadata_json if isinstance(connection.metadata_json, dict) else {}
-    posture = source_validation_posture(connection)
-    facts, facts_job_id = _committed_host_evidence(connection, jobs or [], now=checked_at)
-    verified_facts = facts_job_id is not None
-    qualified_hosts = verified_facts and _valid_pilot_hosts(facts)
-    qualified_network = verified_facts and _valid_pilot_network(facts)
-    qualified_topology = (
-        qualified_hosts
-        and facts.get('high_availability') is False
-        and facts.get('upstream_kubespray_release') == KUBESPRAY_RELEASE
-        and facts.get('kubernetes_minor') == KUBESPRAY_KUBERNETES_MINOR
-    )
-
+    posture: dict[str, Any],
+    facts: dict[str, Any],
+    verified_facts: bool,
+    qualified_hosts: bool,
+    qualified_network: bool,
+    qualified_topology: bool,
+) -> tuple[KubesprayGate, ...]:
+    """Build the existing fixed, fail-closed gate sequence from committed evidence."""
     gates = (
         KubesprayGate(
             'git_source',
@@ -269,6 +258,33 @@ def build_kubespray_preflight(
             'blocked',
             'A worker result cannot grant a Plan, maker/checker approval or maintenance window.',
         ),
+    )
+    return gates
+
+
+def build_kubespray_preflight(
+    connection: IntegrationInstance,
+    *,
+    jobs: list[JobExecution] | None = None,
+    now: datetime | None = None,
+) -> KubesprayPreflight:
+    """Never infer provisionability from source, manual data or a cluster binding."""
+    checked_at = now or datetime.now(UTC)
+    metadata = connection.metadata_json if isinstance(connection.metadata_json, dict) else {}
+    posture = source_validation_posture(connection)
+    facts, facts_job_id = _committed_host_evidence(connection, jobs or [], now=checked_at)
+    verified_facts = facts_job_id is not None
+    qualified_hosts = verified_facts and _valid_pilot_hosts(facts)
+    qualified_network = verified_facts and _valid_pilot_network(facts)
+    qualified_topology = (
+        qualified_hosts
+        and facts.get('high_availability') is False
+        and facts.get('upstream_kubespray_release') == KUBESPRAY_RELEASE
+        and facts.get('kubernetes_minor') == KUBESPRAY_KUBERNETES_MINOR
+    )
+
+    gates = _build_pilot_readiness_gates(
+        connection, posture, facts, verified_facts, qualified_hosts, qualified_network, qualified_topology
     )
     ready_count = sum(gate.state == 'ready' for gate in gates)
     # The first eight are non-mutating preflight checks. The final two belong
