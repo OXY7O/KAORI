@@ -109,9 +109,7 @@ def test_inventory_job_links_require_view_permission_of_destination() -> None:
     source = _read(INVENTORY)
     routes = _read(ROOT / 'app/secrets_pki/routes.py')
     job_routes = _read(ROOT / 'app/platform_operations/jobs/routes.py')
-    inventory_route = routes.split('def inventory()', 1)[1].split(
-        '@secrets_pki_bp.get', 1
-    )[0]
+    inventory_route = routes.split('def inventory()', 1)[1].split('@secrets_pki_bp.get', 1)[0]
 
     assert "can_execute_inventory=current_user.has_permission('secrets_pki.sync')" in inventory_route
     assert "and current_user.has_permission('jobs.execute')" in inventory_route
