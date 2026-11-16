@@ -1,3 +1,4 @@
+{% import "components/action_button.html" as action_button %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 <section class="{{ integration_ui.section_shell_classes() }}"
@@ -75,6 +76,28 @@
                 {% if kubespray_preflight.facts_job_public_id %}
                     <p class="mt-2 text-xs text-content-muted">Latest qualifying JobExecution: <code class="font-mono">{{ kubespray_preflight.facts_job_public_id }}</code></p>
                 {% endif %}
+                <div class="mt-3 flex flex-wrap items-center gap-3">
+                    {% set plan_review_allowed = kubespray_preflight.state == 'ready_for_review' and can_generate_review_plan %}
+                    <form method="post"
+                          action="{{ url_for('integrations.ansible_plan_review', instance_id=connection.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit"
+                                class="{{ action_button.classes('soft') }}"
+                                {% if not plan_review_allowed %}disabled aria-disabled="true"{% endif %}>
+                            <i data-lucide="clipboard-list" class="h-4 w-4" aria-hidden="true"></i>
+                            Generate Review-only Plan
+                        </button>
+                    </form>
+                    <p class="max-w-xl text-xs leading-5 text-content-secondary">
+                        {% if kubespray_preflight.state != 'ready_for_review' %}
+                            Requires current, qualified remote-host evidence. No operation can be queued yet.
+                        {% elif not can_generate_review_plan %}
+                            Jobs execution permission is required to queue this non-mutating Plan.
+                        {% else %}
+                            Creates only committed Plan evidence in Jobs &amp; Executions; independent approval is still required.
+                        {% endif %}
+                    </p>
+                </div>
             </footer>
         </section>
         <div class="mt-4 space-y-2">
