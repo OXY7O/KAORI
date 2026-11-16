@@ -93,6 +93,10 @@ def _normalize_resource(resource: str, item: dict[str, Any]) -> dict[str, Any]:
     )
     scheduling_resource = bool(item.get('scheduling_resource', resource != 'storage'))
     scope_label = str(item.get('scope_label') or _default_scope_label(resource))
+    if (
+        resource == 'storage'
+        and scope_label == 'Operational node-filesystem reference; not Kubernetes allocatable capacity'
+    ):
         scope_label = _default_scope_label(resource)
 
     normalized_headroom = (
