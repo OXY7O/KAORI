@@ -380,7 +380,8 @@ def ansible_plan_review(instance_id: int) -> ResponseReturnValue:
         event_type = 'ansible_kubespray_plan_review_queued'
         title = 'Kubespray Plan Review Queued'
         message = (
-            'Review-only Plan is queued in Jobs & Executions; independent approval and cluster operations remain blocked.'
+            ('Review-only Plan is queued in Jobs & Executions; independent approval '
+             'and cluster operations remain blocked.')
             if created
             else 'A review-only Plan job already exists; no duplicate dispatch was created.'
         )
