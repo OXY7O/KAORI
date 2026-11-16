@@ -122,6 +122,16 @@ def test_single_repository_shows_source_facts_and_missing_exact_sha(coverage_db)
     assert result.grant_count == result.observed_count == 1
     assert result.grant_count_matches_observation is True
     assert result.single_repository == 'org/repo-one'
+    assert result.single_profile is not None
+    assert result.single_profile.name == 'org/repo-one'
+    assert result.single_profile.native_id == '7'
+    assert result.single_profile.visibility == 'Private'
+    assert result.single_profile.lifecycle == 'Active'
+    assert result.single_profile.default_branch == 'main'
+    assert result.single_profile.exact_sha is None
+    assert result.single_profile.access_status == 'granted'
+    assert result.single_profile.grant_observed_at is not None
+    assert result.last_grant_observed_at is not None
     assert _count(result, 'visibility', 'Private') == 1
     assert _count(result, 'lifecycle', 'Active') == 1
     assert _count(result, 'references', 'Branch Only') == 1
@@ -137,6 +147,8 @@ def test_uncollected_installation_never_appears_as_verified_zero(coverage_db):
     assert missing.grant_count is None
     assert missing.observed_count is None
     assert missing.attention_count is None
+    assert missing.single_profile is None
+    assert missing.last_reference_observed_at is None
     assert not missing.visibility
     assert not missing.attention
 
@@ -161,6 +173,8 @@ def test_qualified_zero_distinguished_from_unknown_and_multi_repo(coverage_db):
     assert empty.grant_count == empty.observed_count == 0
     assert empty.attention_count == 0
     assert empty.single_repository is None
+    assert empty.single_profile is None
+    assert empty.last_reference_observed_at is None
     assert all(category.count == 0 for category in empty.visibility)
 
 
@@ -207,6 +221,8 @@ def test_multiple_repository_metadata_and_exact_sha_are_distribution_not_forecas
     result = read_repository_coverage(session, authorized_installation_id=installations[0])
     assert result.grant_count == result.observed_count == 2
     assert result.single_repository is None
+    assert result.single_profile is None
+    assert result.last_reference_observed_at is not None
     assert _count(result, 'visibility', 'Private') == 1
     assert _count(result, 'visibility', 'Public') == 1
     assert _count(result, 'lifecycle', 'Archived') == 1
@@ -247,6 +263,8 @@ def test_overlapping_grant_not_summed_or_exposed_through_another_installation(co
     two = read_repository_coverage(session, authorized_installation_id=installations[1])
     assert one.grant_count == 1
     assert two.grant_count == 1
+    assert one.single_profile is not None
+    assert two.single_profile is not None
     assert one.single_repository == two.single_repository == 'org/repo-one'
 
 
@@ -284,6 +302,52 @@ def test_attention_samples_are_bounded_to_five_and_collector_mismatch_visible(co
     assert result.attention[0].name.startswith('org/missing-')
     assert _count(result, 'visibility', 'Unknown') == 6
     assert _count(result, 'lifecycle', 'Unknown') == 6
+
+
+def test_single_repository_profile_preserves_exact_sha_and_observation_lineage(coverage_db):
+    session, installations, repo = coverage_db
+    now = datetime.now(UTC)
+    repo.last_observed_at = now
+    revision = SourceRevision(repository_id=repo.id, commit_sha='b' * 40, last_observed_at=now)
+    session.add(revision)
+    session.flush()
+    session.add(
+        SourceReference(
+            repository_id=repo.id,
+            full_ref='refs/heads/main',
+            current_revision_id=revision.id,
+            state='observed',
+            last_observed_at=now,
+        )
+    )
+    session.commit()
+    result = read_repository_coverage(session, authorized_installation_id=installations[0])
+    assert result.single_profile is not None
+    assert result.single_profile.exact_sha == 'b' * 40
+    assert result.single_profile.default_branch == 'main'
+    assert result.single_profile.repository_observed_at is not None
+    assert result.single_profile.reference_observed_at is not None
+    assert result.last_repository_observed_at is not None
+    assert result.last_reference_observed_at is not None
+    assert result.references[0].count == 1
+    assert result.attention_count == 0
+
+
+def test_unobserved_metadata_remains_unknown_in_single_repository_profile(coverage_db):
+    session, installations, repo = coverage_db
+    repo.visibility = None
+    repo.archived = None
+    repo.default_branch = None
+    session.commit()
+    result = read_repository_coverage(session, authorized_installation_id=installations[0])
+    assert result.single_profile is not None
+    assert result.single_profile.visibility == 'Unknown'
+    assert result.single_profile.lifecycle == 'Unknown'
+    assert result.single_profile.default_branch is None
+    assert result.single_profile.exact_sha is None
+    assert _count(result, 'visibility', 'Unknown') == 1
+    assert _count(result, 'references', 'Missing Branch') == 1
+    assert result.attention_count == 1
 
 
 @pytest.mark.parametrize('installation_id', [None, 0, -1, True, '1'])

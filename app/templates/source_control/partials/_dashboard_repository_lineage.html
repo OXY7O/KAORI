@@ -1,0 +1,66 @@
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/operational_evidence_tile.html" as evidence_tile %}
+{% set selected_items = scope.installations|default([], true) %}
+{% set selected_item = selected_items[0] if selected_items else none %}
+{% set account_observed = selected_item.account.last_observed_at if selected_item and selected_item.account and selected_item.account.last_observed_at else none %}
+{% set repo_observed = repository_coverage.last_repository_observed_at|default(none) if repository_coverage else none %}
+{% set grant_observed = repository_coverage.last_grant_observed_at|default(none) if repository_coverage else none %}
+{% set ref_observed = repository_coverage.last_reference_observed_at|default(none) if repository_coverage else none %}
+{% set collection_observed = repository_coverage.collection_observed_at|default(none) if repository_coverage else none %}
+{% call section_card.render(
+    'Evidence Freshness & Lineage',
+    'Timestamp provenance from retained KAORI collection, grant, account, repository and revision observations.',
+    'clock',
+    body_classes='p-5'
+    ) %}
+    {% if not repository_coverage or not repository_coverage.collected %}
+        {% set empty_state_icon = "database-zap" %}
+        {% set empty_state_label = "Not Collected" %}
+        {% set empty_state_title = "Lineage Not Yet Qualified" %}
+        {% set empty_state_description = "Collect the selected installation inventory to establish committed repository lineage." %}
+        {% set empty_state_variant = "panel" %}
+        {% include "components/states/_empty_state.html" %}
+    {% else %}
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" data-source-control-evidence-lineage>
+            {{ evidence_tile.freshness('Inventory Commit',
+                        repository_coverage.committed_at|user_datetime if repository_coverage.committed_at else 'Not Observed',
+                        'Retained' if repository_coverage.committed_at else 'Unavailable',
+                        'info' if repository_coverage.committed_at else 'unknown',
+                        'database-zap',
+                        description='Committed installation inventory generation.') }}
+            {{ evidence_tile.freshness('Repository Metadata',
+                        repo_observed|user_datetime if repo_observed else 'Not Observed',
+                        'Observed' if repo_observed else 'Unavailable',
+                        'info' if repo_observed else 'unknown',
+                        'folder-git-2',
+                        description='Latest retained repository metadata observation.') }}
+            {{ evidence_tile.freshness('Default Branch Reference',
+                        ref_observed|user_datetime if ref_observed else 'Not Observed',
+                        'Observed' if ref_observed else 'Unavailable',
+                        'info' if ref_observed else 'unknown',
+                        'git-commit-horizontal',
+                        description='Latest matching default-branch reference observation.') }}
+            {{ evidence_tile.freshness('Account Identity',
+                        account_observed|user_datetime if account_observed else 'Not Observed',
+                        'Observed' if account_observed else 'Unavailable',
+                        'info' if account_observed else 'unknown',
+                        'users',
+                        description='Retained GitHub installation account observation.') }}
+            {{ evidence_tile.freshness('Grant Observed',
+                        grant_observed|user_datetime if grant_observed else 'Not Observed',
+                        'Observed' if grant_observed else 'Unavailable',
+                        'info' if grant_observed else 'unknown',
+                        'shield-check',
+                        description='Most recent observed grant within this installation.') }}
+            {{ evidence_tile.freshness('Collection Observed',
+                        collection_observed|user_datetime if collection_observed else 'Not Observed',
+                        'Observed' if collection_observed else 'Unavailable',
+                        'info' if collection_observed else 'unknown',
+                        'scan-search',
+                        description='Collector observation time, not live provider health.') }}
+        </div>
+        <p class="mt-3 text-xs leading-5 text-content-muted">
+            Observation and commit timestamps describe retained KAORI evidence, not real-time GitHub access or successful policy enforcement.
+        </p>
+    {% endif %}
+{% endcall %}

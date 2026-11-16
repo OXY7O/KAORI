@@ -1,0 +1,44 @@
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/operational_evidence_tile.html" as evidence_tile %}
+{% import "components/operational_callout.html" as callout %}
+{% call section_card.render(
+    'Repository Controls & Governance',
+    'Source-control policy controls require an independently admitted, installation-scoped collection.',
+    'shield-check',
+    body_classes='p-5'
+    ) %}
+    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" data-source-control-governance-controls>
+        {{ evidence_tile.freshness('Branch Protection',
+                    'Not Collected',
+                    'Not Qualified',
+                    'unknown',
+                    'git-pull-request',
+                    description='Rulesets, required reviews and status checks have no committed control evidence.') }}
+        {{ evidence_tile.freshness('Security Features',
+                    'Not Collected',
+                    'Not Qualified',
+                    'unknown',
+                    'shield-alert',
+                    description='Code scanning, secret scanning and advisory settings are not collected.') }}
+        {{ evidence_tile.freshness('Actions & Automation',
+                    'Not Collected',
+                    'Not Qualified',
+                    'unknown',
+                    'workflow',
+                    description='Workflow settings, execution and CI outcomes are not qualified.') }}
+        {{ evidence_tile.freshness('Repository Settings',
+                    'Not Collected',
+                    'Not Qualified',
+                    'unknown',
+                    'settings-2',
+                    description='Issues, discussions and repository policies have no committed configuration evidence.') }}
+    </div>
+    <div class="mt-3">
+        {{ callout.render(
+            'Governance Evidence Boundary',
+            'KAORI does not infer enabled controls, security compliance, CI health or repository policy from a GitHub App grant. Source-qualified collectors and governance admission are required before these controls can be assessed.',
+            icon='info',
+            tone='unknown'
+        ) }}
+    </div>
+{% endcall %}

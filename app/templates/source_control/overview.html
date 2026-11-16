@@ -60,7 +60,7 @@
                         hx-include="#source-control-dashboard-active-tab"
                         hx-sync="closest section:replace"
                         class="{{ table_ui.filter_select_classes() }} pl-10">
-                    <option value="" {% if not selected_scope %}selected{% endif %}>All Authorized Installations</option>
+                    <option value="" {% if not selected_scope %}selected{% endif %}>All Installations</option>
                     {% for option in authorized_installations %}
                         <option value="{{ option.installation.id }}"
                                 {% if option.installation.id == selected_installation_id %}selected{% endif %}>
@@ -74,7 +74,7 @@
             {% call signal_overview.render(
                 'Committed installation and repository collection posture for the authorized GitHub App scope.',
                 '4 Indicators',
-                selected_installation_name or 'All Authorized Installations',
+                selected_installation_name or 'All Installations',
                 'git-branch',
                 scope_status,
                 scope_tone,
@@ -108,6 +108,8 @@
                     {% call dashboard_workspace.panel(tab_key, active_dashboard_tab, 'source-control-dashboard') %}
                         {% if tab_key == 'overview' and eager_health_pagination %}
                             {% include "source_control/partials/_dashboard_operations.html" %}
+                        {% elif tab_key == 'capacity' and eager_coverage_pagination %}
+                            {% include "source_control/partials/_dashboard_capacity.html" %}
                         {% else %}
                             <div id="source-control-dashboard-section-{{ tab_key }}"
                                  class="space-y-5"
