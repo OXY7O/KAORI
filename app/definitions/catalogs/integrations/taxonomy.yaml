@@ -3,7 +3,7 @@ kind: integration_taxonomy
 domains:
 - key: orchestration
   label: Orchestration
-  description: Connect infrastructure automation and cluster providers.
+  description: Connect cluster and automation providers through governed contracts.
   icon: boxes
   workspace_endpoint: integrations.orchestration
   order: 10

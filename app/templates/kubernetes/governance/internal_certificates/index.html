@@ -13,7 +13,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('shield-check', 'Kubernetes Governance', 'shield-check') %}
                         <h1 class="{{ page_hero.title_classes() }}">Internal Certificates</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Review internal Kubernetes PKI source readiness and collection coverage.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review Kubernetes PKI readiness and committed collection coverage.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('database', 'Committed Cluster Registry') }}
                             {{ page_hero.meta_label('file-badge', inventory.committed_total ~ ' Source-Reported Certificates') if inventory and inventory.committed_total else page_hero.meta_label('shield-alert', 'PKI Not Collected') }}

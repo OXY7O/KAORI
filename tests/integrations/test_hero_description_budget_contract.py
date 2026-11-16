@@ -60,7 +60,7 @@ def test_integration_domain_hero_descriptions_are_registered_with_global_budget_
 
     assert (
         descriptions['Integration domain Orchestration']
-        == 'Connect cluster providers through governed orchestration contracts.'
+        == 'Connect cluster and automation providers through governed contracts.'
     )
     assert set(descriptions) == {
         'Integration domain Orchestration',

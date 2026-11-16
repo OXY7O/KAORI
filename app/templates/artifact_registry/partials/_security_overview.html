@@ -11,7 +11,7 @@
             <div class="{{ page_hero.content_classes() }}">
                 {% call page_hero.intro('shield-check', 'Artifact Registry Security', 'shield-check') %}
                     <h1 class="{{ page_hero.title_classes() }}">{{ security.title }}</h1>
-                    <p class="mt-2 {{ page_hero.description_classes() }}">Review committed scan findings, supply-chain evidence, and runtime exposure.</p>
+                    <p class="mt-2 {{ page_hero.description_classes() }}">Review committed scan, supply-chain, and runtime exposure evidence.</p>
                     <div class="{{ page_hero.metadata_row_classes() }}">
                         {{ page_hero.meta_label('blocks', security.source_count ~ ' Security Sources') }}
                         {{ page_hero.meta_label('octagon-alert', security.critical ~ ' Critical Findings') }}
