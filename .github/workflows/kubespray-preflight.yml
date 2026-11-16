@@ -50,7 +50,9 @@ jobs:
           python -m pyright app/infrastructure_automation/kubernetes
           python -m pyright app/integrations/orchestration/configuration_automation/providers/ansible/preflight.py
       - name: djlint shared Ansible validation workspace
-        run: djlint --check app/templates/integrations/orchestration/configuration_automation/providers/ansible/_detail_validation.html
+        run: |
+          djlint --check \
+            app/templates/integrations/orchestration/configuration_automation/providers/ansible/_detail_validation.html
       - name: Existing KAORI UI reuse and style gates
         run: |
           python scripts/verify_ui_reuse.py
