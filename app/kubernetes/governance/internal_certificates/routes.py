@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import urlencode
+
 from flask import redirect, render_template, request, url_for
 
 from app.access.rbac.decorators import permission_required
@@ -37,7 +39,12 @@ def internal_certificates_index():
         for field in reset_fields:
             query.pop(field, None)
         query['evidence_tab'] = clear_tab
-        return redirect(url_for('governance.internal_certificates', **query), code=303)
+        # Preserve only URL query parameters as query data: never let an
+        # incoming key become Flask's reserved _external/_scheme arguments.
+        location = url_for('governance.internal_certificates')
+        if query:
+            location = f'{location}?{urlencode(query)}'
+        return redirect(location, code=303)
 
     active_tab = request.args.get('evidence_tab', 'sources')
     if active_tab not in {'sources', 'certificates'}:
