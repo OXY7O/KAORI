@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from jinja2 import Environment
+from jinja2 import Environment, FileSystemLoader
 
 ROOT = Path(__file__).resolve().parents[3]
 INVENTORY = ROOT / 'app/templates/secrets_pki/inventory.html'
@@ -362,3 +362,49 @@ def test_lifecycle_blocker_routes_qualified_mounts_to_inventory_for_read_only_vi
     assert render(0, True) == '/vault|0'
     assert 'blocked_state_action_label = "Review Inventory Readiness" if lifecycle_inventory_review' in source
     assert 'blocked_state_permission_granted = lifecycle_blocker_url is not none' in source
+
+
+
+def test_secrets_pki_workspaces_compile_entire_jinja_templates() -> None:
+    """Catch syntax failures on full page compilation before browser UAT."""
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
+    for name in (
+        'secrets_pki/overview.html',
+        'secrets_pki/inventory.html',
+        'secrets_pki/lifecycle.html',
+    ):
+        assert env.get_template(name).name == name
+
+
+def test_lifecycle_blocker_steps_render_for_each_readiness_stage() -> None:
+    source = _read(LIFECYCLE)
+    start = source.index(
+        '        {% if summary.source_limit_exceeded|default(false) %}',
+        source.index('{% set lifecycle_blocker_info = '),
+    )
+    end = source.index('{% set lifecycle_inventory_review = ', start)
+    template = Environment().from_string(
+        source[start:end] + "{{ lifecycle_blocker_steps|join(' | ') }}"
+    )
+    scenarios = (
+        (True, 1, 201, 'blocked', False, 'Qualify committed KV v2 or PKI evidence'),
+        (False, 0, 0, 'blocked', False, 'Collect qualified evidence'),
+        (False, 1, 0, 'blocked', False, 'Collect qualified lifecycle evidence'),
+        (False, 1, 1, 'failed', False, 'Review failed collection before retry'),
+        (False, 1, 1, 'stale', True, 'Verify qualified lifecycle evidence'),
+        (False, 1, 1, 'not_collected', False, 'Collect and verify lifecycle evidence'),
+    )
+    for over_limit, sources, mounts, state, incomplete, expected in scenarios:
+        rendered = template.render(
+            summary={
+                'source_limit_exceeded': over_limit,
+                'provider_count': sources,
+                'approved_mount_count': mounts,
+                'state': state,
+            },
+            lifecycle_version_incomplete=incomplete,
+        )
+        steps = rendered.strip().split(' | ')
+        assert len(steps) == 3
+        assert steps[-1] == expected
+
