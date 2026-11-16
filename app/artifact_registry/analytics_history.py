@@ -48,6 +48,37 @@ def history_plan(window: str, *, now: datetime | None = None) -> tuple[datetime,
     return start, end, step_seconds
 
 
+def _qualified_historical_points(
+    samples: Any, *, start_at: datetime, end_at: datetime, step_seconds: int
+) -> list[tuple[float, float]]:
+    """Validate each bounded historical interval before including it in a chart."""
+    if not isinstance(samples, list) or not samples or len(samples) > MAX_HISTORY_POINTS:
+        raise ValueError('Historical range series is empty or exceeds the sample budget.')
+    points: list[tuple[float, float]] = []
+    for sample in samples:
+        if not isinstance(sample, (list, tuple)) or len(sample) != 2:
+            raise ValueError('Historical series sample is malformed.')
+        try:
+            timestamp, value = float(sample[0]), float(sample[1])
+        except (TypeError, ValueError) as exc:
+            raise ValueError('Historical sample is nonnumeric.') from exc
+        if not isfinite(timestamp) or not isfinite(value):
+            raise ValueError('Historical sample is not finite.')
+        points.append((timestamp, value))
+    if len(points) < 2:
+        raise ValueError('Historical series has no measured growth interval.')
+    if any(next_point[0] <= prior[0] for prior, next_point in zip(points, points[1:])):
+        raise ValueError('Historical sample timestamps are not strictly increasing.')
+    if (
+        points[0][0] > start_at.timestamp() + 2 * step_seconds
+        or points[-1][0] < end_at.timestamp() - 2 * step_seconds
+        or points[0][0] < start_at.timestamp() - step_seconds
+        or points[-1][0] > end_at.timestamp() + step_seconds
+    ):
+        raise ValueError('Historical source retention did not cover the requested interval.')
+    return points
+
+
 def _bounded_matrix(
     result: Any,
     *,
@@ -81,31 +112,9 @@ def _bounded_matrix(
         project = str(labels.get('project_name') or '').strip() if project_scoped else '_aggregate'
         if not project or project in normalized:
             raise ValueError('Historical source labels are missing or ambiguous.')
-        samples = row.get('values')
-        if not isinstance(samples, list) or not samples or len(samples) > MAX_HISTORY_POINTS:
-            raise ValueError('Historical range series is empty or exceeds the sample budget.')
-        points: list[tuple[float, float]] = []
-        for sample in samples:
-            if not isinstance(sample, (list, tuple)) or len(sample) != 2:
-                raise ValueError('Historical series sample is malformed.')
-            try:
-                timestamp, value = float(sample[0]), float(sample[1])
-            except (TypeError, ValueError) as exc:
-                raise ValueError('Historical sample is nonnumeric.') from exc
-            if not isfinite(timestamp) or not isfinite(value):
-                raise ValueError('Historical sample is not finite.')
-            points.append((timestamp, value))
-        if len(points) < 2:
-            raise ValueError('Historical series has no measured growth interval.')
-        if any(next_point[0] <= prior[0] for prior, next_point in zip(points, points[1:])):
-            raise ValueError('Historical sample timestamps are not strictly increasing.')
-        if (
-            points[0][0] > start_at.timestamp() + 2 * step_seconds
-            or points[-1][0] < end_at.timestamp() - 2 * step_seconds
-            or points[0][0] < start_at.timestamp() - step_seconds
-            or points[-1][0] > end_at.timestamp() + step_seconds
-        ):
-            raise ValueError('Historical source retention did not cover the requested interval.')
+        points = _qualified_historical_points(
+            row.get('values'), start_at=start_at, end_at=end_at, step_seconds=step_seconds
+        )
         if chart_points is not None and chart_is_aligned:
             current_times = [timestamp for timestamp, _ in points]
             if chart_timestamps is None:
