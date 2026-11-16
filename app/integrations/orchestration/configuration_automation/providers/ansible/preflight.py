@@ -154,8 +154,9 @@ def _valid_pilot_network(facts: dict[str, Any]) -> bool:
         observed = [ip_network(cidr, strict=False) for cidr in raw_host_networks]
     except (ValueError, TypeError):
         return False
-    networks = [pod, service, *observed]
-    if any(not isinstance(net, IPv4Network) for net in networks):
+    if not isinstance(pod, IPv4Network) or not isinstance(service, IPv4Network):
+        return False
+    if any(not isinstance(net, IPv4Network) for net in observed):
         return False
     if any(
         net.prefixlen < 8
