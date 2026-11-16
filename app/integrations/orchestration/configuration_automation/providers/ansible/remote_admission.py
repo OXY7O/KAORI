@@ -61,6 +61,8 @@ class RemoteFactsAdmission:
     authorized_target_id: str
     authorized_host_key_fingerprint: str
     authorized_credential_reference: str
+    authorized_source_sha: str
+    authorized_ee_digest: str
     source_reviewed: bool
     ee_signature_verified: bool
     credential_scope_verified: bool
@@ -83,6 +85,8 @@ def qualify_remote_facts_admission(candidate: RemoteFactsAdmission) -> tuple[boo
         candidate.authorized_target_id,
         candidate.authorized_host_key_fingerprint,
         candidate.authorized_credential_reference,
+        candidate.authorized_source_sha,
+        candidate.authorized_ee_digest,
     )
     if any(not isinstance(value, str) for value in identity_fields):
         return False, "invalid_admission"
@@ -102,6 +106,8 @@ def qualify_remote_facts_admission(candidate: RemoteFactsAdmission) -> tuple[boo
         return False, "credential_authority_mismatch"
     if not _SHA.fullmatch(candidate.source_sha) or not _DIGEST.fullmatch(candidate.ee_digest):
         return False, "unpinned_source_or_ee"
+    if candidate.source_sha != candidate.authorized_source_sha or candidate.ee_digest != candidate.authorized_ee_digest:
+        return False, "source_ee_authority_mismatch"
     authority_flags = (
         candidate.source_reviewed,
         candidate.ee_signature_verified,
