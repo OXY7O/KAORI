@@ -139,3 +139,21 @@ def test_unhashable_node_fields_fail_closed_without_provider_call() -> None:
     assert plan.status == 'blocked'
     assert 'NODE_ROLE_UNSUPPORTED' in plan.findings
     assert 'NODE_OS_UNQUALIFIED' in plan.findings
+
+
+@pytest.mark.parametrize('invalid', [None, [], 'not-a-spec', 12, {None: 'value'}])
+def test_malformed_root_spec_is_blocked_without_exception(invalid: object) -> None:
+    plan = assess_static_kubespray_pilot(invalid)  # type: ignore[arg-type]
+    assert plan.status == 'blocked'
+    assert plan.findings == ('SPEC_SCHEMA_INVALID',)
+    assert plan.inventory_fingerprint is None
+    assert plan.mutation_authorized is False
+
+
+def test_blank_asset_identity_cannot_generate_review_fingerprint() -> None:
+    spec = _pilot()
+    spec['nodes'][0]['asset_id'] = '   '
+    plan = assess_static_kubespray_pilot(spec)
+    assert plan.status == 'blocked'
+    assert 'NODE_ASSET_ID_INVALID' in plan.findings
+    assert plan.inventory_fingerprint is None
