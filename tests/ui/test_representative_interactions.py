@@ -386,6 +386,8 @@ def test_sidebar_v21_two_level_navigation_and_page_workspace_across_canonical_vi
 
             collapse.click()
             expect(page.get_by_role('button', name='Expand navigation')).to_be_visible()
+            # Wait for the existing 200ms sidebar width transition before measuring.
+            expect(sidebar).to_have_css('width', '78px')
             collapsed_box = sidebar.bounding_box()
             assert collapsed_box is not None
             assert collapsed_box['width'] < expanded_box['width']
