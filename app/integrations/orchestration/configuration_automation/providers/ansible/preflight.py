@@ -117,11 +117,17 @@ def _valid_pilot_hosts(facts: dict[str, Any]) -> bool:
         role = host.get('role')
         if not isinstance(identity, str) or not identity.strip() or identity in identities:
             return False
-        if role not in {'control_plane', 'worker'}:
+        if not isinstance(role, str) or role not in {'control_plane', 'worker'}:
             return False
         identities.add(identity)
         roles.append(role)
-        if (host.get('os_distribution'), host.get('os_release')) not in SUPPORTED_OPERATING_SYSTEMS:
+        os_distribution = host.get('os_distribution')
+        os_release = host.get('os_release')
+        if (
+            not isinstance(os_distribution, str)
+            or not isinstance(os_release, str)
+            or (os_distribution, os_release) not in SUPPORTED_OPERATING_SYSTEMS
+        ):
             return False
         for field, minimum in (('cpu_count', 2), ('memory_mib', 4096), ('disk_gib', 40)):
             value = host.get(field)
@@ -185,7 +191,9 @@ def build_kubespray_preflight(
             'target_classification',
             'Self-managed Target Scope',
             'ready'
-            if verified_facts and connection.environment in _NONPRODUCTION and facts.get('target_class') == _APPROVED_SCOPE
+            if verified_facts
+            and connection.environment in _NONPRODUCTION
+            and facts.get('target_class') == _APPROVED_SCOPE
             else 'blocked',
             'Only existing, non-production self-managed Linux hosts may be qualified.',
         ),
@@ -210,7 +218,10 @@ def build_kubespray_preflight(
             'host_facts',
             'OS & Capacity Evidence',
             'ready'
-            if verified_facts and facts.get('os_support_verified') is True and facts.get('capacity_verified') is True and qualified_hosts
+            if verified_facts
+            and facts.get('os_support_verified') is True
+            and facts.get('capacity_verified') is True
+            and qualified_hosts
             else 'blocked',
             'Host OS, kernel, CPU, RAM, disk and package manager require observed worker facts.',
         ),
