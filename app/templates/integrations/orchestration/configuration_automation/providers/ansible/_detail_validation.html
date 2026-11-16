@@ -55,8 +55,8 @@
                 </div>
                 <div class="flex shrink-0 items-center gap-2">
                     {{ integration_status("blocked" if kubespray_preflight.state == "blocked" else "pending",
-                    "Blocked" if kubespray_preflight.state == "blocked" else "Ready for Review",
-                    display="text") }}
+                                        "Blocked" if kubespray_preflight.state == "blocked" else "Ready for Review",
+                                        display="text") }}
                     <span class="text-xs text-content-muted">{{ kubespray_preflight.verified_gates }}/{{ kubespray_preflight.required_gates }} Gates</span>
                 </div>
             </header>

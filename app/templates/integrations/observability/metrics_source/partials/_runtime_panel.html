@@ -69,14 +69,14 @@
         loading_active=runtime_refresh_job and runtime_refresh_job.is_active,
         loading_label='Refreshing metrics-source runtime health',
         title_extra=info_tip.render(
-            "metrics-source-runtime-health-detail-guide",
-            "Metrics Source Runtime Health & Diagnostics",
-            "Read committed metrics endpoint health, diagnostics and runtime observations.",
-            [
-                "Provider readiness and per-consumer binding validation remain independent.",
-                "Refresh runtime evidence when current endpoint health needs confirmation."
-            ],
-            placement="right", variant="guide"
+        "metrics-source-runtime-health-detail-guide",
+        "Metrics Source Runtime Health & Diagnostics",
+        "Read committed metrics endpoint health, diagnostics and runtime observations.",
+        [
+        "Provider readiness and per-consumer binding validation remain independent.",
+        "Refresh runtime evidence when current endpoint health needs confirmation."
+        ],
+        placement="right", variant="guide"
         )
         ) %}
         <button type="button"
