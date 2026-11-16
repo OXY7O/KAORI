@@ -12,7 +12,7 @@ def test_alert_center_quick_action_routes_to_alert_intelligence() -> None:
     marker = '>Alert Center<'
     assert marker in navbar
 
-    start = navbar.index("<a href=\"{{ url_for('alert_intelligence.index') }}\"")
+    start = navbar.index('<a href="{{ url_for(\'alert_intelligence.index\') }}"')
     action = navbar[start : navbar.index('</a>', start)]
     assert "url_for('alert_intelligence.index')" in action
     assert "url_for('analytics.alerts')" not in action

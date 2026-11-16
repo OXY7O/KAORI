@@ -65,6 +65,7 @@ EMPTY_NOTIFICATION_CENTER = {
     'notification_category_options': [],
 }
 
+
 def _browser_notification_center_page_context(
     *,
     user_id: int,
