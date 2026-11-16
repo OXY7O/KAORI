@@ -65,7 +65,19 @@ def build_secrets_pki_operational_summary() -> dict[str, Any]:
         if isinstance(mount, str) and mount
     }
     if len(scopes) > MAX_FLEET_MOUNTS:
-        raise ValueError('Secrets & PKI approved inventory source scope exceeds its collection bound.')
+        return {
+            'state': 'blocked',
+            'label': 'Inventory Scope Exceeds Limit',
+            'tone': 'warning',
+            'provider_count': len(sources),
+            'approved_mount_count': None,
+            'committed_mount_count': None,
+            'observed_secret_count': None,
+            'last_committed_at': None,
+            'updated_label': 'Not Collected',
+            'has_evidence': False,
+            'source_limit_exceeded': True,
+        }
     state_rows = (
         SecretInventoryCollectionState.query.filter(
             SecretInventoryCollectionState.integration_instance_id.in_([row.integration_instance_id for row in sources])

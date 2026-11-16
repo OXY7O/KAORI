@@ -26,7 +26,7 @@ from app.models.secrets_pki import (
     SecretVersionObservation,
 )
 from app.models.vault import VaultInstance
-from app.secrets_pki.presentation import build_secrets_pki_operational_summary
+from app.secrets_pki.presentation import MAX_FLEET_MOUNTS, build_secrets_pki_operational_summary
 
 
 @pytest.fixture
@@ -267,6 +267,34 @@ def test_operational_overview_requires_approved_mount_and_committed_kv2_snapshot
     assert ineligible['state'] == 'blocked'
     assert ineligible['has_evidence'] is False
 
+
+
+
+def test_excess_approved_kv2_mounts_fail_closed_without_breaking_dashboard(store):
+    connection = VaultInstance.query.filter_by(integration_instance_id=store).one()
+    connection.kv2_mounts = [f'approved-{index:03d}' for index in range(MAX_FLEET_MOUNTS + 1)]
+    db.session.commit()
+
+    blocked = build_secrets_pki_operational_summary()
+    assert blocked['state'] == 'blocked'
+    assert blocked['label'] == 'Inventory Scope Exceeds Limit'
+    assert blocked['tone'] == 'warning'
+    assert blocked['provider_count'] == 1
+    assert blocked['approved_mount_count'] is None
+    assert blocked['committed_mount_count'] is None
+    assert blocked['observed_secret_count'] is None
+    assert blocked['last_committed_at'] is None
+    assert blocked['has_evidence'] is False
+    assert blocked['source_limit_exceeded'] is True
+
+    # The configured budget itself remains usable; it is not quietly raised.
+    connection.kv2_mounts = connection.kv2_mounts[:MAX_FLEET_MOUNTS]
+    db.session.commit()
+    within_bound = build_secrets_pki_operational_summary()
+    assert within_bound['approved_mount_count'] == MAX_FLEET_MOUNTS
+    assert within_bound['state'] == 'not_collected'
+    assert within_bound['has_evidence'] is False
+    assert within_bound['source_limit_exceeded'] is False
 
 
 def test_version_counter_regression_does_not_reassign_existing_secret_identity(store):

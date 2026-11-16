@@ -118,3 +118,58 @@ def test_inventory_job_links_require_view_permission_of_destination() -> None:
     assert "{% if can_execute_inventory %}" in source
     assert "url_for('jobs.configuration', job_key='secrets_pki.inventory.sync')" in source
     assert 'inventory_blocker_href is not none' in source
+
+
+
+def test_over_limit_vault_inventory_uses_scope_review_not_inventory_execution() -> None:
+    source = _read(INVENTORY)
+    begin = source.index('{% set inventory_unqualified = ')
+    end = source.index('<section', begin)
+    template = Environment().from_string(
+        source[begin:end]
+        + '{{ inventory_blocker_title }}|{{ inventory_blocker_action|default("", true) }}'
+        + '|{{ inventory_blocker_href|default("", true) }}'
+    )
+    scope = {
+        'has_evidence': False,
+        'source_limit_exceeded': True,
+        'provider_count': 1,
+        'approved_mount_count': 100,
+    }
+    def render(manage: bool) -> str:
+        return template.render(
+            summary=scope,
+            can_manage_integrations=manage,
+            can_execute_inventory=True,
+            url_for=lambda endpoint, **kwargs: '/vault' if endpoint == 'vault.index' else '/jobs',
+        ).strip()
+
+    assert render(True) == 'Vault Inventory Scope Review Required|Review Vault Scope|/vault'
+    assert render(False) == 'Vault Inventory Scope Review Required||'
+    assert 'Reduce collection scope to approved limits' in source
+    assert 'not summary.source_limit_exceeded|default(false)' in source
+
+
+def test_over_limit_lifecycle_keeps_independent_pki_qualification() -> None:
+    source = _read(LIFECYCLE)
+    begin = source.index('{% set lifecycle_unqualified = ')
+    end = source.index('{{ lifecycle_navigation.render', begin)
+    template = Environment().from_string(
+        source[begin:end] + '{{ lifecycle_blocker_title }}|{{ lifecycle_blocker_info }}'
+    )
+    result = template.render(
+        summary={
+            'has_evidence': False,
+            'source_limit_exceeded': True,
+            'provider_count': 1,
+            'approved_mount_count': 100,
+        },
+        pki_validity={'status': 'not_collected'},
+        can_manage_integrations=False,
+        url_for=lambda endpoint: '/vault',
+    ).strip()
+    assert result == (
+        'Vault Inventory Scope Review Required|'
+        'Review Vault scope or qualify independent PKI evidence.'
+    )
+    assert "lifecycle_unqualified = not summary.has_evidence and pki_validity.status != 'ready'" in source
