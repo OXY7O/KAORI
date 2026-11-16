@@ -234,6 +234,7 @@ def test_vault_runtime_history_fragment_rejects_unknown_connection(
         with pytest.raises(NotFound):
             unwrap(routes.runtime_history)(155)
 
+
 @pytest.mark.parametrize('is_htmx', [False, True])
 def test_vault_runtime_refresh_uses_canonical_htmx_job_admission(
     monkeypatch: pytest.MonkeyPatch,
@@ -255,11 +256,13 @@ def test_vault_runtime_refresh_uses_canonical_htmx_job_admission(
     with app.test_request_context(url, method='POST', headers={'HX-Request': 'true'} if is_htmx else {}):
         result = unwrap(routes.runtime_refresh)(15)
 
-    assert queued == [{
-        'integration_type': 'secrets_pki',
-        'integration_instance_id': 99,
-        'requested_by_user_id': 42,
-    }]
+    assert queued == [
+        {
+            'integration_type': 'secrets_pki',
+            'integration_instance_id': 99,
+            'requested_by_user_id': 42,
+        }
+    ]
     if is_htmx:
         assert result['runtime_job'] is snapshot
         assert result['instance'].id == 15
@@ -306,9 +309,7 @@ def test_vault_runtime_refresh_rejects_conflicting_full_validation_task(
         routes, 'enqueue_runtime_health_refresh',
         lambda **kwargs: ({'task_id': 'validation-task', 'operation': 'full_validation'}, False),
     )
-    monkeypatch.setattr(
-        routes, 'record_operational_activity', lambda **kwargs: {'status': kwargs['status']}
-    )
+    monkeypatch.setattr(routes, 'record_operational_activity', lambda **kwargs: {'status': kwargs['status']})
     monkeypatch.setattr(routes, '_vault_runtime_refresh_fragment', lambda instance, **kwargs: kwargs)
     with app.test_request_context(
         '/integrations/secrets-management/secrets-pki/vault/instances/15/runtime/refresh',
@@ -361,7 +362,9 @@ def test_vault_runtime_status_polls_scoped_task_without_page_reload(
     assert response.headers['Cache-Control'] == 'no-store, max-age=0'
     assert ('HX-Trigger' in response.headers) is is_complete
     assert rendered[0]['runtime_job'] is snapshot
-    assert rendered[0]['operation_feedback'] is None if not is_complete else rendered[0]['operation_feedback']
+    assert rendered[0]['operation_feedback'] == (
+        {'status': 'success', 'title': 'Runtime Updated'} if is_complete else None
+    )
     assert feedback_users == [42]
 
 
