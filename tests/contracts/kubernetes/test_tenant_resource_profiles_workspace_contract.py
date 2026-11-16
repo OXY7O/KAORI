@@ -1521,7 +1521,8 @@ def test_tenant_operations_provider_authority_is_a_read_only_standalone_subview(
     assert 'data-tenant-provider-authority-disclosure' not in page
     assert "ops_view='provider-authority'" in page
     assert "active_view == 'provider-authority'" in page
-    assert 'Ownership reference, not drift' in page
+    assert 'Committed provider ownership and reconciliation authority for every Tenant.' in provider
+    assert 'aria-label="Provider Authority Registry"' in provider
     assert '{% set provider_authority_embedded = true %}' not in page
     assert '_operations_provider_registry.html" %}' in page
 

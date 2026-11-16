@@ -363,7 +363,11 @@ def test_capsule_shared_governance_guidance_is_read_only_and_links_only_admitted
     assert "state.get('applicable') and not state.get('supported')" in shared
     assert "if state.get('authority') == 'capsule_tenant_resource_quotas'" in shared
     assert "elif state.get('authority') == 'none_observed'" in shared
-    assert 'href="#capsule-tenant-quota-heading"' in shared
+    assert (
+        "url_for('tenant.namespace_provisioning', view='capsule-governance', capsule_tab='tenant-quota')"
+        in shared
+    )
+    assert 'Open Tenant Quota Governance' in shared
     assert 'id="capsule-tenant-quota-heading"' in quota
     assert 'data-tenant-capsule-allocation-workspace' in workspace
     assert 'No Tenant-level quota authority is recorded.' in shared

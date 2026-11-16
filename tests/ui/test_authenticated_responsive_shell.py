@@ -491,7 +491,8 @@ def test_secrets_pki_no_vault_source_1440_uses_canonical_blocker(
     expect(hero.locator('.kaori-hero-status-badge')).to_contain_text('Blocked')
     blocker = root.locator('section[data-kaori-blocked-state]')
     expect(blocker.get_by_role('heading', name=blocked_title)).to_be_visible()
-    expect(blocker.get_by_role('link', name='Configure Vault Integrations')).to_be_visible()
+    action_label = 'Configure Vault Integrations' if workspace == 'inventory' else 'Review Vault Configuration'
+    expect(blocker.get_by_role('link', name=action_label)).to_be_visible()
     assert root.get_by_text(hidden_metric, exact=True).count() == 0
     assert root.locator('[data-kaori-empty-state]').count() == 0
 
