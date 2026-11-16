@@ -25,7 +25,7 @@ A qualifying future remote worker must commit a JobExecution with integration_ty
 | Worker & Inventory | Admitted queue/exact immutable inventory | Blocked |
 | Plan & Approval | Immutable plan fingerprint, maker/checker and active change window | Blocked |
 
-Only a complete source-bound, fresh, worker-produced preflight may show **Ready for Review**. It never means Ready to Execute. An embedded declaration of attestation inside a JobExecution result is not a substitute for the separately implemented signed execution envelope or external approval authority. Future worker/approval implementation must independently enforce that boundary before use.
+Only the first **eight non-mutating evidence gates** may be satisfied by a fresh, trusted, source-bound worker observation; at that point the state is **Ready for Review**, never Ready to Execute. Worker-provided fields such as `worker_execution_admitted` or `maker_checker_approval_verified` are **ignored** for the final two gates. KAORI execution/credential authority, an immutable Plan, independent maker/checker decision and a current change window must be verified from their own committed records. An embedded declaration of attestation inside JobExecution is not a substitute for a signed execution envelope. Until those owners are implemented, the last two gates deliberately remain Blocked.
 
 ## Delivery sequence
 
