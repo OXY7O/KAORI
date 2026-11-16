@@ -35,11 +35,7 @@
             {% set inventory_blocker_info = "Approve KV v2 mounts for metadata inventory." %}
             {% set inventory_blocker_label = "Scope Approval Required" %}
             {% set inventory_blocker_description = "Vault source registered. Approve a KV v2 mount to collect inventory." %}
-            {% set inventory_blocker_steps = [
-                "Vault source registered",
-                "Approve explicit KV v2 metadata mounts",
-                "Collect KV v2 inventory"
-            ] %}
+            {% set inventory_blocker_steps = ["Vault source registered", "Approve explicit KV v2 metadata mounts", "Collect KV v2 inventory"] %}
             {% set inventory_blocker_action_url = url_for('vault.index') if can_manage_integrations else none %}
             {% set inventory_blocker_action_label = "Review Vault Mounts" if can_manage_integrations else none %}
         {% else %}
