@@ -397,7 +397,9 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert 'components/reporting_dashboard_workspace.html' in kubernetes_reporting
     assert 'components/reporting_dashboard_workspace.html' in object_reporting
     assert "'Committed cluster evidence'" in kubernetes_reporting
-    assert 'reporting_workspace.summary(dashboard.reporting,' in object_reporting
+    assert 'reporting_workspace.guidance(reporting_scope,' in object_reporting
+    assert "'Committed snapshots'" in object_reporting
+    assert "'system or storage scope'" in object_reporting
     assert "empty_title='No Object Storage Reports Generated'" in object_reporting
     assert 'Governed Reporting Flow' in reporting_workspace
     assert 'Review before reuse.' in reporting_workspace
