@@ -60,3 +60,20 @@ Focused regression:
 `python -m pytest -q -p no:cacheprovider tests/contracts/integrations/test_ansible_remote_admission_contract.py`.
 Ruff, pytest, pyright, CI and UAT have **not been run** for this connector
 increment. Reconcile #4905–#4909 and run checks before review-branch promotion.
+
+## Canonical identity and locator hardening (dependent increment)
+
+Remote target identifiers now use the same bounded, whitespace-free,
+Unicode-category-C-free, NFC-normalized check as asset identifiers. A caller
+cannot manufacture a separate authority target with invisible controls or an
+oversized identifier. Secret references reject empty, dot and parent-directory
+segments even when their outer syntax matches. Host-key fingerprints must
+encode a valid 32-byte SHA-256 digest; they remain **untrusted** until an
+independent approved known_hosts authority verifies the actual SSH key.
+
+These are pure admission-input checks only. They do not implement registry
+lookup, credential retrieval, SSH transport, host-facts collection, approval,
+or a dispatch permit. The predicate's synthetic positive test is not evidence
+of real host trust. Focused Ruff/format/pytest and source review are required
+before temporary holding-branch integration. CI, real worker execution,
+provider UAT and Human Acceptance are not established by these commits.

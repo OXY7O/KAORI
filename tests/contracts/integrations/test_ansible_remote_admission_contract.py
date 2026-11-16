@@ -92,3 +92,21 @@ def test_invisible_unicode_asset_identity_is_not_admitted(admitted_snapshot, ass
     assert qualify_remote_facts_admission(
         replace(admitted_snapshot, asset_id=asset_id, authorized_asset_id=asset_id)
     ) == (False, "invalid_asset")
+
+
+@pytest.mark.parametrize(
+    ("change", "reason"),
+    [
+        ({"target_id": "host-\\u200b001", "authorized_target_id": "host-\\u200b001"}, "invalid_target"),
+        ({"target_id": "host-\\u202e001", "authorized_target_id": "host-\\u202e001"}, "invalid_target"),
+        ({"target_id": "h" * 97, "authorized_target_id": "h" * 97}, "invalid_target"),
+        ({"asset_id": "e\\u0301", "authorized_asset_id": "e\\u0301"}, "invalid_asset"),
+        ({"credential_reference": "vault:infrastructure/../ssh", "authorized_credential_reference": "vault:infrastructure/../ssh"}, "invalid_credential_reference"),
+        ({"credential_reference": "vault:infrastructure//ssh", "authorized_credential_reference": "vault:infrastructure//ssh"}, "invalid_credential_reference"),
+        ({"host_key_fingerprint": "SHA256:" + "A" * 42 + "!", "authorized_host_key_fingerprint": "SHA256:" + "A" * 42 + "!"}, "invalid_host_key"),
+    ],
+)
+def test_canonical_remote_authority_identifiers_fail_closed(admitted_snapshot, change, reason):
+    assert qualify_remote_facts_admission(replace(admitted_snapshot, **change)) == (
+        False, reason
+    )
