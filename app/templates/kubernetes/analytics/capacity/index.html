@@ -18,16 +18,16 @@
                 <section class="space-y-4"
                          aria-labelledby="analytics-capacity-posture-heading">
                     {{ section_intro.render('Review Capacity Posture',
-                            'Assess Ready-worker headroom and operational filesystem context before capacity decisions.',
-                            'analytics-capacity-posture-heading') }}
+                                        'Assess Ready-worker headroom and operational filesystem context before capacity decisions.',
+                                        'analytics-capacity-posture-heading') }}
                     {% include "kubernetes/analytics/capacity/partials/_overview.html" %}
                 </section>
                 {% set capacity_tabs = [('summary', 'Worker Capacity Summary', 'server-cog'), ('allocation', 'Allocation & Headroom', 'chart-pie'), ('risk', 'Capacity Risk Summary', 'shield-alert'), ('recommendations', 'Capacity Recommendations', 'list-checks')] %}
                 <section class="space-y-4"
                          aria-labelledby="analytics-capacity-domains-heading">
                     {{ section_intro.render('Explore Capacity Domains',
-                            'Review worker capacity, allocation, risks, and recommendations using committed evidence.',
-                            'analytics-capacity-domains-heading') }}
+                                        'Review worker capacity, allocation, risks, and recommendations using committed evidence.',
+                                        'analytics-capacity-domains-heading') }}
                     {% call analytics_workspace.tabbed(
                         'capacity-content',
                         capacity_tabs,
@@ -38,9 +38,9 @@
                         initial_tab|default('summary'),
                         ['summary', 'allocation', 'risk', 'recommendations'],
                         title_accessory=info_tip.render('kubernetes-analytics-capacity-workspace-guide',
-                            'Capacity Analysis Workspace Guide',
-                            'Switch between worker capacity, allocation headroom, risk, and explicit capacity recommendations without losing scope.',
-                            placement='right', variant='guide')
+                        'Capacity Analysis Workspace Guide',
+                        'Switch between worker capacity, allocation headroom, risk, and explicit capacity recommendations without losing scope.',
+                        placement='right', variant='guide')
                         ) %}
                         <div id="capacity-content-panel-summary"
                              role="tabpanel"
