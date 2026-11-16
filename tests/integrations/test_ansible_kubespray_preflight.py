@@ -203,8 +203,14 @@ def test_each_critical_attestation_must_be_explicit_true(changed, gate_key) -> N
     record = _job()
     record.result_summary_json.update(changed)
     report = build_kubespray_preflight(_connection(), jobs=[record], now=_NOW)
-    assert report.state == 'blocked'
+    # Worker attestations qualify only eight non-mutating gates. Independent
+    # execution/approval authority remains blocked, irrespective of worker
+    # claims; a complete evidence preflight is never Run authorization.
+    expected_state = 'ready_for_review' if gate_key in {'execution_scope', 'approval'} else 'blocked'
+    assert report.state == expected_state
     assert any(gate.key == gate_key and gate.state == 'blocked' for gate in report.gates)
+    assert [gate.state for gate in report.gates[-2:]] == ['blocked', 'blocked']
+    assert 'mutation_authorized' not in report.presentation()
 
 
 def test_production_and_unverified_git_source_are_blocked_even_with_host_evidence() -> None:
