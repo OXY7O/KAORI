@@ -1459,7 +1459,6 @@ def verify() -> None:
         TEMPLATES / 'kubernetes/dashboard/partials/_hero.html',
         TEMPLATES / 'storage/object_storage/dashboard/partials/_hero.html',
         TEMPLATES / 'artifact_registry/partials/_overview_hero.html',
-        TEMPLATES / 'security_posture/overview.html',
         TEMPLATES / 'secrets_pki/overview.html',
         TEMPLATES / 'source_control/overview.html',
     }
@@ -1469,6 +1468,28 @@ def verify() -> None:
             'Required Operational Dashboard Hero consumer missing: '
             + ', '.join(str(path.relative_to(ROOT)) for path in missing_consumers)
         )
+    # #4711 approved Security Posture as a bounded Assurance/Governance Hero exception.
+    # Preserve the documented scanner-freshness and evidence-authority presentation;
+    # do not force the generic Operations Dashboard context onto this page.
+    assurance_hero = _read(TEMPLATES / 'security_posture/overview.html')
+    _require_tokens(
+        assurance_hero,
+        (
+            'page_hero.shell_classes()',
+            'page_hero.layout_classes()',
+            "page_hero.intro('layout-dashboard', 'Security Posture', 'shield-alert')",
+            'page_hero.context_card(',
+            'page_hero.blocked_context_body(',
+            "'Provider Authority'",
+            "'Evidence Boundary'",
+            'posture.scan_status.label',
+            'posture.scan_status.tone',
+        ),
+        'Security Posture approved Governance Hero exception',
+    )
+    if 'page_hero.operational_dashboard(' in assurance_hero:
+        raise AssertionError('Security Posture must preserve the approved Governance-style Hero exception')
+
     if len(profile_templates) < 7:
         raise AssertionError(
             f'Operational Dashboard profile consumer inventory regressed below seven; found {len(profile_templates)}'
