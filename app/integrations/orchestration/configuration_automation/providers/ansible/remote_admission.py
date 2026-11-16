@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import re
+from unicodedata import category
 
 _SHA = re.compile(r"[0-9a-f]{40}")
 _DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
@@ -38,9 +39,24 @@ def qualify_remote_facts_admission(candidate: RemoteFactsAdmission) -> tuple[boo
     """Require exact matches to independent authority evidence, never self-attestation."""
     if not isinstance(candidate, RemoteFactsAdmission):
         return False, "invalid_admission"
+    # Reject malformed caller-controlled types before applying string operations.
+    identity_fields = (
+        candidate.asset_id,
+        candidate.target_id,
+        candidate.host_key_fingerprint,
+        candidate.credential_reference,
+        candidate.source_sha,
+        candidate.ee_digest,
+        candidate.authorized_asset_id,
+        candidate.authorized_target_id,
+        candidate.authorized_host_key_fingerprint,
+        candidate.authorized_credential_reference,
+    )
+    if any(not isinstance(value, str) for value in identity_fields):
+        return False, "invalid_admission"
     if not candidate.asset_id or len(candidate.asset_id) > 96 or candidate.asset_id != candidate.asset_id.strip():
         return False, "invalid_asset"
-    if any(ord(c) < 33 or ord(c) == 127 for c in candidate.asset_id):
+    if any(category(character).startswith("C") for character in candidate.asset_id):
         return False, "invalid_asset"
     if not candidate.target_id or candidate.target_id != candidate.target_id.strip():
         return False, "invalid_target"
@@ -56,11 +72,12 @@ def qualify_remote_facts_admission(candidate: RemoteFactsAdmission) -> tuple[boo
         return False, "credential_authority_mismatch"
     if not _SHA.fullmatch(candidate.source_sha) or not _DIGEST.fullmatch(candidate.ee_digest):
         return False, "unpinned_source_or_ee"
-    if not all((
+    authority_flags = (
         candidate.source_reviewed,
         candidate.ee_signature_verified,
         candidate.credential_scope_verified,
         candidate.host_key_trust_verified,
-    )):
+    )
+    if any(flag is not True for flag in authority_flags):
         return False, "authority_evidence_missing"
     return True, "qualified_for_review_only"

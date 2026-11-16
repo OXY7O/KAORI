@@ -45,3 +45,18 @@ Python files; then relevant Ansible/JobExecution regressions, pyright and UI
 reuse/style verifiers where applicable. This connector-created increment has
 **not** run Ruff, pytest, pyright, CI or real host UAT. Do not promote without
 independent source review and executed gates. Human Acceptance remains pending.
+
+## Strict admission input boundary
+
+The review-only predicate rejects non-string authority identity fields, Unicode
+category-C asset identifiers (including zero-width and bidi controls), and
+truthy non-boolean values masquerading as independent approval evidence.
+Invalid input returns a rejection, not a worker permit or an exception.
+Canonical asset, trusted host-key, protected credential, source review and
+signed EE authorities must still supply independent evidence. No dispatch,
+SSH connection, secret retrieval or Kubernetes mutation is enabled.
+
+Focused regression:
+`python -m pytest -q -p no:cacheprovider tests/contracts/integrations/test_ansible_remote_admission_contract.py`.
+Ruff, pytest, pyright, CI and UAT have **not been run** for this connector
+increment. Reconcile #4905–#4909 and run checks before review-branch promotion.

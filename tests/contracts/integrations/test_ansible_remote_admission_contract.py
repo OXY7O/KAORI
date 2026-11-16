@@ -57,3 +57,38 @@ def test_untrusted_snapshot_fails_closed(admitted_snapshot, change, reason):
 
 def test_arbitrary_payload_cannot_claim_admission():
     assert qualify_remote_facts_admission({"source_reviewed": True}) == (False, "invalid_admission")
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"asset_id": None},
+        {"target_id": 123},
+        {"host_key_fingerprint": None},
+        {"credential_reference": ["vault:fake"]},
+        {"source_sha": None},
+        {"ee_digest": 123},
+        {"authorized_asset_id": None},
+        {"authorized_target_id": []},
+        {"authorized_host_key_fingerprint": None},
+        {"authorized_credential_reference": {}},
+    ],
+)
+def test_malformed_authority_field_types_fail_closed(admitted_snapshot, change):
+    assert qualify_remote_facts_admission(replace(admitted_snapshot, **change)) == (
+        False, "invalid_admission"
+    )
+
+
+@pytest.mark.parametrize("flag", [None, 1, "true", [], {}])
+def test_truthy_non_boolean_authority_flags_cannot_admit(admitted_snapshot, flag):
+    assert qualify_remote_facts_admission(
+        replace(admitted_snapshot, source_reviewed=flag)
+    ) == (False, "authority_evidence_missing")
+
+
+@pytest.mark.parametrize("asset_id", ["asset-\\u200b001", "asset-\\u202e001", "asset-\\ue000001"])
+def test_invisible_unicode_asset_identity_is_not_admitted(admitted_snapshot, asset_id):
+    assert qualify_remote_facts_admission(
+        replace(admitted_snapshot, asset_id=asset_id, authorized_asset_id=asset_id)
+    ) == (False, "invalid_asset")
