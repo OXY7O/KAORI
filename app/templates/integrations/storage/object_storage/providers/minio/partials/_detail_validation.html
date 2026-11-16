@@ -31,14 +31,14 @@
         loading_active=validation_job and validation_job.is_active,
         loading_label="Running MinIO Full Validation",
         title_extra=info_tip.render(
-            "minio-full-validation-detail-guide",
-            "MinIO Full Validation",
-            "Verify MinIO identity, compatibility and required S3 API capabilities.",
-            [
-                "MinIO stays authoritative for buckets, objects and storage policy.",
-                "Inventory Sync and runtime health are assessed separately."
-            ],
-            placement="right", variant="guide"
+        "minio-full-validation-detail-guide",
+        "MinIO Full Validation",
+        "Verify MinIO identity, compatibility and required S3 API capabilities.",
+        [
+        "MinIO stays authoritative for buckets, objects and storage policy.",
+        "Inventory Sync and runtime health are assessed separately."
+        ],
+        placement="right", variant="guide"
         )
         ) %}
         <form method="post"

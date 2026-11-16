@@ -34,18 +34,16 @@
             {% endif %}
         </form>
         {% if not dependency_blocker %}
-            <section class="space-y-4"
-                     aria-labelledby="analytics-alerts-posture-heading">
+            <section class="space-y-4" aria-labelledby="analytics-alerts-posture-heading">
                 {{ section_intro.render('Review Signal Posture',
-                        'Assess committed alert pressure, anomaly candidates, and routing readiness.',
-                        'analytics-alerts-posture-heading') }}
+                                'Assess committed alert pressure, anomaly candidates, and routing readiness.',
+                                'analytics-alerts-posture-heading') }}
                 {% include "kubernetes/analytics/alerts/partials/_cluster_signal_overview.html" %}
             </section>
-            <section class="space-y-4"
-                     aria-labelledby="analytics-alerts-domains-heading">
+            <section class="space-y-4" aria-labelledby="analytics-alerts-domains-heading">
                 {{ section_intro.render('Explore Alert Domains',
-                        'Review alerts, anomalies, suppression, ownership, incident readiness, and follow-up actions.',
-                        'analytics-alerts-domains-heading') }}
+                                'Review alerts, anomalies, suppression, ownership, incident readiness, and follow-up actions.',
+                                'analytics-alerts-domains-heading') }}
                 {% call analytics_workspace.tabbed(
                     'alerts-content',
                     alert_tabs,
@@ -56,9 +54,9 @@
                     active_tab,
                     allowed_tabs,
                     title_accessory=info_tip.render('kubernetes-analytics-alerts-workspace-guide',
-                        'Alerts & Anomalies Workspace Guide',
-                        'Alerts, anomalies, suppression, ownership, readiness, recommendations and response resources are separate evidence families.',
-                        placement='right', variant='guide')
+                    'Alerts & Anomalies Workspace Guide',
+                    'Alerts, anomalies, suppression, ownership, readiness, recommendations and response resources are separate evidence families.',
+                    placement='right', variant='guide')
                     ) %}
                     <div id="alerts-content-panel-alerts"
                          role="tabpanel"

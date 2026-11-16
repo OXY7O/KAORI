@@ -32,9 +32,9 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="text-base font-semibold text-content-primary">Incident Readiness</h2>
                         {{ info_tip.render('kubernetes-analytics-alerts-incident-readiness-guide',
-                            'Incident Readiness Guide',
-                            'Readiness combines signal pressure, routing, suppression, source and ownership evidence; scores guide review, not response authorization.',
-                            placement='right', variant='guide') }}
+                                                'Incident Readiness Guide',
+                                                'Readiness combines signal pressure, routing, suppression, source and ownership evidence; scores guide review, not response authorization.',
+                                                placement='right', variant='guide') }}
                     </div>
                     {{ table_label.status_label(incident_readiness.label, readiness_tone, size='compact') }}
                 </div>
