@@ -8,6 +8,9 @@ import pytest
 from flask import render_template
 
 from app import create_app
+from app.integrations.orchestration.configuration_automation.providers.ansible.preflight import (
+    build_kubespray_preflight,
+)
 from app.integrations.orchestration.configuration_automation.providers.ansible.service import (
     source_validation_posture,
 )
@@ -44,7 +47,7 @@ def _connection(*, state: str = 'source_checked', **changes):
         },
     }
     meta.update(changes)
-    return SimpleNamespace(id=12, metadata_json=meta)
+    return SimpleNamespace(id=12, environment='laboratory', metadata_json=meta)
 
 
 def test_valid_source_only_is_checked_but_all_operations_blocked():
@@ -110,9 +113,12 @@ def test_rendered_validation_status_tracks_committed_evidence(state):
             source=connection.metadata_json,
             evidence=connection.metadata_json.get('source_validation') or {},
             source_posture=status,
+            kubespray_preflight=build_kubespray_preflight(connection).presentation(),
         )
     assert status['source_label'] in rendered
     assert 'Operation Eligibility' in rendered
+    assert 'Kubespray Preflight &amp; Plan Readiness' in rendered
+    assert 'Plan, Approval &amp; Change Window' in rendered
     assert rendered.count('Blocked') >= 9
     assert 'Revalidate Source' in rendered
     assert 'csrf_token' in rendered
