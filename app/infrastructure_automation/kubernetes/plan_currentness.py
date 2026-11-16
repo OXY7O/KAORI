@@ -39,6 +39,24 @@ class KubesprayPlanCurrentness:
         return asdict(self)
 
 
+def _is_qualified_plan_job(
+    connection: IntegrationInstance, latest_plan_job: JobExecution, timestamp: datetime
+) -> bool:
+    """Validate the latest immutable job envelope before comparing plan evidence."""
+    return (
+        latest_plan_job.integration_instance_id == connection.id
+        and latest_plan_job.integration_type == 'configuration_automation'
+        and latest_plan_job.job_type == 'infrastructure_automation'
+        and latest_plan_job.operation == PLAN_OPERATION
+        and latest_plan_job.queue_name == 'automation'
+        and latest_plan_job.result_type == PLAN_RESULT_TYPE
+        and latest_plan_job.status == 'succeeded'
+        and latest_plan_job.completed_at is not None
+        and latest_plan_job.completed_at.tzinfo is not None
+        and latest_plan_job.completed_at <= timestamp
+    )
+
+
 def evaluate_kubespray_plan_currentness(
     connection: IntegrationInstance,
     *,
@@ -64,18 +82,7 @@ def evaluate_kubespray_plan_currentness(
             'not_generated',
             'No committed review-only Plan has been generated.',
         )
-    if (
-        latest_plan_job.integration_instance_id != connection.id
-        or latest_plan_job.integration_type != 'configuration_automation'
-        or latest_plan_job.job_type != 'infrastructure_automation'
-        or latest_plan_job.operation != PLAN_OPERATION
-        or latest_plan_job.queue_name != 'automation'
-        or latest_plan_job.result_type != PLAN_RESULT_TYPE
-        or latest_plan_job.status != 'succeeded'
-        or latest_plan_job.completed_at is None
-        or latest_plan_job.completed_at.tzinfo is None
-        or latest_plan_job.completed_at > timestamp
-    ):
+    if not _is_qualified_plan_job(connection, latest_plan_job, timestamp):
         return blocked
     summary = latest_plan_job.result_summary_json
     if not isinstance(summary, dict):
