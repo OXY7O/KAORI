@@ -1603,15 +1603,16 @@ def test_registry_analytics_risk_copy_stays_compact_without_changing_risk_semant
 
 def test_registry_analytics_selector_preserves_scope_through_routes_and_alerts() -> None:
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    scope = (ROOT / 'app/artifact_registry/route_scope.py').read_text()
     presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
     section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
     controls = (ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html').read_text()
 
     # A single fail-closed parser now owns explicit Registry provider scope.
-    assert "value = request.args.get('provider_id')" in routes
-    assert 'if not value.isascii() or not value.isdecimal() or len(value) > 18:' in routes
-    assert 'if int(value) <= 0:' in routes
+    assert "value = request.args.get('provider_id')" in scope
+    assert 'if not value.isascii() or not value.isdecimal() or len(value) > 18:' in scope
+    assert 'if int(value) <= 0:' in scope
     assert routes.count('provider_id=_analytics_provider_id()') >= 3
     assert 'provider_id = _analytics_provider_id()' in routes
     assert routes.count("snapshot_window=request.args.get('snapshot_window', '24h', type=str)") >= 3

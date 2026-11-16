@@ -43,6 +43,7 @@ def test_runtime_correlation_is_bounded_atomic_and_progress_aware() -> None:
 def test_runtime_usage_is_cross_domain_canonical_workspace() -> None:
     presentation = (ROOT / 'app/artifact_registry/presentation_runtime.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    scope = (ROOT / 'app/artifact_registry/route_scope.py').read_text()
     page = (ROOT / 'app/templates/artifact_registry/runtime.html').read_text()
     workspace = (ROOT / 'app/templates/artifact_registry/partials/_runtime_workspace.html').read_text()
     detail = (ROOT / 'app/templates/artifact_registry/partials/_runtime_binding_detail.html').read_text()
@@ -57,17 +58,18 @@ def test_runtime_usage_is_cross_domain_canonical_workspace() -> None:
     assert "'security_exposed': counts['security_exposed']" in presentation
     assert 'def build_runtime_binding_detail(binding_id: int)' in presentation
 
-    assert "source_id=_runtime_scope_id('source_id')" in routes
-    assert "artifact_id=_runtime_scope_id('artifact_id')" in routes
-    assert "request.args.get('cluster_id', '', type=str)" in routes
-    assert "request.args.get('namespace', '', type=str)" in routes
-    assert "request.args.get('match_type', '', type=str)" in routes
-    assert "request.args.get('exposure', '', type=str)" in routes
+    assert '_runtime_topology_filters()' in routes
+    assert "source_id=_runtime_scope_id('source_id')" in scope
+    assert "artifact_id=_runtime_scope_id('artifact_id')" in scope
+    assert "request.args.get('cluster_id', '', type=str)" in scope
+    assert "request.args.get('namespace', '', type=str)" in scope
+    assert "request.args.get('match_type', '', type=str)" in scope
+    assert "request.args.get('exposure', '', type=str)" in scope
     # Explicit malformed artifact scope must fail closed instead of widening results.
-    assert 'def _runtime_scope_id(name: str) -> int | None:' in routes
-    assert 'raw = request.args.get(name)' in routes
-    assert 'abort(404)' in routes
-    assert "artifact_id=_runtime_scope_id('artifact_id')" in routes
+    assert 'def _runtime_scope_id(name: str) -> int | None:' in scope
+    assert 'raw = request.args.get(name)' in scope
+    assert 'abort(404)' in scope
+    assert "artifact_id=_runtime_scope_id('artifact_id')" in scope
     assert "@artifact_registry_bp.get('/runtime/<int:binding_id>/details')" in routes
 
     assert 'artifact_registry/partials/_runtime_workspace.html' in page
@@ -159,6 +161,7 @@ def test_runtime_generation_freshness_and_active_scope_contract() -> None:
     presentation = (ROOT / 'app/artifact_registry/presentation_runtime.py').read_text()
     prerequisites = (ROOT / 'app/artifact_registry/correlation_sync_jobs.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    scope = (ROOT / 'app/artifact_registry/route_scope.py').read_text()
     assert 'def runtime_input_signature(' in correlation
     assert 'ClusterInventory.collected_at' in shared_evidence
     assert 'RegistryCollectionState.last_committed_at' in shared_evidence
@@ -174,7 +177,8 @@ def test_runtime_generation_freshness_and_active_scope_contract() -> None:
     assert 'RegistryProject.integration_instance_id.in_(active_source_ids)' in presentation
     assert 'RegistryProject.integration_instance_id.in_(source_ids)' in presentation
     assert 'IntegrationInstance.enabled.is_(True)' in prerequisites
-    assert 'def _runtime_scope_id(name: str)' in routes
+    assert 'def _runtime_scope_id(name: str)' in scope
+    assert '_runtime_topology_filters()' in routes
 
 
 def test_runtime_read_and_materialization_bounded_projection() -> None:

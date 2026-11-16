@@ -59,7 +59,9 @@ def test_artifact_registry_overview_scope_is_committed_and_provider_neutral() ->
     operations = read('app/templates/artifact_registry/partials/_overview_operations.html')
 
     # Explicit malformed provider selection must not silently expand to all providers.
-    assert 'from app.artifact_registry.route_scope import _inventory_source_id, _overview_provider_id' in routes
+    assert 'from app.artifact_registry.route_scope import (' in routes
+    assert '    _inventory_source_id,' in routes
+    assert '    _overview_provider_id,' in routes
     assert "raw = request.args.get('provider_id')" in scope
     assert 'def _overview_provider_id() -> int | None:' in scope
     assert 'provider_id=_overview_provider_id()' in routes

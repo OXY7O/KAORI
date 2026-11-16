@@ -209,6 +209,7 @@ def test_cve_impact_section_intros_and_filters_use_shared_kaori_contracts() -> N
 
     page = read('app/templates/artifact_registry/security_cve_impact.html')
     route = read('app/artifact_registry/routes.py')
+    scope = read('app/artifact_registry/route_scope.py')
     read_model = read('app/artifact_registry/security/cve_impact.py')
     canonical = read('app/templates/components/table_registry.html')
     Environment().parse(page)
@@ -233,7 +234,8 @@ def test_cve_impact_section_intros_and_filters_use_shared_kaori_contracts() -> N
         'runtime_per_page',
     ):
         assert f'name="{name}"' in page or f"'{name}'" in page
-        assert name in route
+        # Query keys are divided between route pagination and fail-closed scope parsing.
+        assert name in route or name in scope
 
     assert "page_param='finding_page'" in page
     assert "page_param='runtime_page'" in page
