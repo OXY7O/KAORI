@@ -11,8 +11,8 @@ from werkzeug.routing import BuildError
 import app.integrations.runtime.refresh as runtime_refresh
 from app.common.presentation import present_key_label
 from app.extensions.db import db
-from app.integrations.kernel.registry import execute_integration_operation, get_integration
 from app.integrations.contracts import IntegrationInstanceNotFound, IntegrationNotRegistered
+from app.integrations.kernel.registry import execute_integration_operation, get_integration
 from app.integrations.lifecycle import ensure_provider_operational
 from app.integrations.runtime.recovery import enqueue_recovery_work, is_runtime_recovery, latest_runtime_health
 from app.integrations.runtime.repository import persist_runtime_state
@@ -44,7 +44,14 @@ def _now_iso() -> str:
 def _action_url(integration_type: str, integration_instance_id: int, *, section: str) -> str:
     try:
         return get_integration(integration_type).detail_url(integration_instance_id, section=section)
-    except (IntegrationInstanceNotFound, IntegrationNotRegistered, SQLAlchemyError, BuildError, RuntimeError, ValueError):
+    except (
+        IntegrationInstanceNotFound,
+        IntegrationNotRegistered,
+        SQLAlchemyError,
+        BuildError,
+        RuntimeError,
+        ValueError,
+    ):
         return '/integrations/'
 
 
