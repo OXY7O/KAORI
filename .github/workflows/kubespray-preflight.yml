@@ -5,13 +5,14 @@ on:
   push:
     branches:
       - kaori/issue-4800-kubespray-preflight-plan-readiness
+      - kaori/issue-4800-kubespray-plan-evidence
 
 permissions:
   contents: read
 
 jobs:
   targeted-static:
-    name: Static plus committed evidence contracts
+    name: Static, preflight and review-only Plan contracts
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -29,25 +30,34 @@ jobs:
         run: |
           python -m ruff check \
             app/infrastructure_automation/kubernetes \
+            app/infrastructure_automation/tasks.py \
             tests/contracts/platform_operations/test_kubespray_static_preflight_contract.py \
             app/integrations/orchestration/configuration_automation/providers/ansible/preflight.py \
             app/integrations/routes.py \
             tests/integrations/test_ansible_kubespray_preflight.py \
+            tests/integrations/test_kubespray_plan_review_contract.py \
+            tests/integrations/test_kubespray_plan_dispatch_contract.py \
+            tests/integrations/test_kubespray_plan_worker_contract.py \
             tests/contracts/integrations/test_ansible_source_posture_contract.py \
             tests/contracts/integrations/test_ansible_configuration_automation_workspace_contract.py
       - name: Ruff formatting
         run: |
           python -m ruff format --check \
             app/infrastructure_automation/kubernetes \
+            app/infrastructure_automation/tasks.py \
             tests/contracts/platform_operations/test_kubespray_static_preflight_contract.py \
             app/integrations/orchestration/configuration_automation/providers/ansible/preflight.py \
             app/integrations/routes.py \
             tests/integrations/test_ansible_kubespray_preflight.py \
+            tests/integrations/test_kubespray_plan_review_contract.py \
+            tests/integrations/test_kubespray_plan_dispatch_contract.py \
+            tests/integrations/test_kubespray_plan_worker_contract.py \
             tests/contracts/integrations/test_ansible_source_posture_contract.py \
             tests/contracts/integrations/test_ansible_configuration_automation_workspace_contract.py
       - name: Pyright static and evidence-bound preflight typing
         run: |
           python -m pyright app/infrastructure_automation/kubernetes
+          python -m pyright app/infrastructure_automation/tasks.py
           python -m pyright app/integrations/orchestration/configuration_automation/providers/ansible/preflight.py
       - name: djlint shared Ansible validation workspace
         run: |
@@ -62,5 +72,8 @@ jobs:
           python -m pytest -q -p no:cacheprovider \
             tests/contracts/platform_operations/test_kubespray_static_preflight_contract.py \
             tests/integrations/test_ansible_kubespray_preflight.py \
+            tests/integrations/test_kubespray_plan_review_contract.py \
+            tests/integrations/test_kubespray_plan_dispatch_contract.py \
+            tests/integrations/test_kubespray_plan_worker_contract.py \
             tests/contracts/integrations/test_ansible_source_posture_contract.py \
             tests/contracts/integrations/test_ansible_configuration_automation_workspace_contract.py
