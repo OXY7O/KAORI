@@ -64,11 +64,11 @@ def test_webhook_ui_distinguishes_admission_from_delivery() -> None:
     ).read_text()
 
     assert 'Webhook Reconciliation' in configuration
-    assert 'request a targeted Inventory refresh' in configuration
-    assert 'Scheduled reconciliation remains the correctness and recovery path.' in configuration
+    assert 'Authenticated Harbor events trigger targeted Inventory refresh' in configuration
+    assert 'scheduled reconciliation remains authoritative.' in configuration
     assert 'Webhook Admission' in configuration
-    assert 'Ready means webhook admission is configured.' in configuration
-    assert 'It does not verify Harbor delivery or a completed Inventory refresh.' in configuration
+    assert 'Ready confirms admission setup, not delivery or Inventory completion.' in configuration
+    assert 'No event received yet' in configuration
     assert 'No event received yet' in configuration
 
 
@@ -87,7 +87,7 @@ def test_webhook_receiver_guidance_is_safe_and_localhost_aware() -> None:
     assert 'a Harbor-reachable HTTPS address' in configuration
     assert 'Authorization: Bearer &lt;token&gt;' in configuration
     assert 'X-KAORI-Webhook-Token: &lt;token&gt;' in configuration
-    assert 'The token is displayed only when generated or rotated.' in configuration
+    assert 'Tokens appear once; rotation immediately invalidates the previous credential.' in configuration
     assert "request.headers.get('X-KAORI-Webhook-Token')" in receiver
     assert "authorization.lower().startswith('bearer ')" in receiver
     assert 'hmac.compare_digest' in auth

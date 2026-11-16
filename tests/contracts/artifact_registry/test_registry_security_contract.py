@@ -112,7 +112,7 @@ def test_vulnerability_evidence_status_is_inline_and_contextual() -> None:
     from jinja2 import Environment
 
     template = read('app/templates/artifact_registry/partials/_security_workspace.html')
-    presentation = read('app/artifact_registry/security/presentation.py')
+    presentation = read('app/artifact_registry/security/posture_projection.py')
     Environment().parse(template)
 
     start = template.index('aria-labelledby="artifact-registry-vulnerability-findings-heading"')
@@ -180,6 +180,7 @@ def test_security_navigation_adds_overview_before_existing_focused_tabs() -> Non
     catalog = read('app/common/workspace_navigation_catalog.py')
     navigation = read('app/common/workspace_navigation.py')
     routes = read('app/artifact_registry/routes.py')
+    security_web = read('app/artifact_registry/security/web.py')
 
     assert "'artifact_registry_security': (" in catalog
     capability_tabs = (
@@ -205,8 +206,8 @@ def test_security_navigation_adds_overview_before_existing_focused_tabs() -> Non
     assert "@artifact_registry_bp.post('/security/sync')" in routes
     assert "@artifact_registry_bp.get('/security/sync/status/<string:public_id>')" in routes
     assert "job_key='artifact_registry.security.sync'" in routes
-    assert "section=request.args.get('section', '', type=str)" in routes
-    assert "section=request.form.get('section', '', type=str)" in routes
+    assert "section=request.args.get('section', '', type=str)" in security_web
+    assert "section=request.form.get('section', '', type=str)" in security_web
     assert "return _security_response('vulnerabilities')" in routes
 
 
@@ -394,14 +395,15 @@ def test_registry_scan_evidence_semantics_are_shared_by_dashboard_and_intelligen
 
 def test_registry_security_finding_states_use_usable_scan_coverage() -> None:
     presentation = read('app/artifact_registry/security/presentation.py')
+    posture_projection = read('app/artifact_registry/security/posture_projection.py')
     template = read('app/templates/artifact_registry/partials/_security_workspace.html')
 
     assert "coverage_count = current_scanned_artifacts if view == 'vulnerabilities' else evidence_count" in presentation
-    assert "'Security Evidence Not Collected'" in presentation
-    assert "'No Provider Scan Evidence'" in presentation
-    assert "'Partial Scan Coverage'" in presentation
-    assert "'No Vulnerabilities Observed'" in presentation
-    assert "'No Findings Match This View'" in presentation
+    assert "'Security Evidence Not Collected'" in posture_projection
+    assert "'No Provider Scan Evidence'" in posture_projection
+    assert "'Partial Scan Coverage'" in posture_projection
+    assert "'No Vulnerabilities Observed'" in posture_projection
+    assert "'No Findings Match This View'" in posture_projection
     assert 'KAORI does not trigger provider scans.' in presentation
     assert 'security.finding_empty_state.title' in template
 
