@@ -238,28 +238,22 @@ def build_kubespray_preflight(
         KubesprayGate(
             'execution_scope',
             'Worker & Operation Admission',
-            'ready'
-            if verified_facts
-            and facts.get('worker_execution_admitted') is True
-            and facts.get('exact_inventory_verified') is True
-            else 'blocked',
-            'The local-only read-only Ansible pilot cannot authorize remote Kubespray operations.',
+            'blocked',
+            'Remote worker and immutable inventory admission require independent KAORI execution authority.',
         ),
         KubesprayGate(
             'approval',
             'Plan, Approval & Change Window',
-            'ready'
-            if verified_facts
-            and facts.get('plan_fingerprint_verified') is True
-            and facts.get('maker_checker_approval_verified') is True
-            and facts.get('maintenance_window_verified') is True
-            else 'blocked',
-            'An immutable Plan, independent approval and active change window are required.',
+            'blocked',
+            'A worker result cannot grant a Plan, maker/checker approval or maintenance window.',
         ),
     )
     ready_count = sum(gate.state == 'ready' for gate in gates)
+    # The first eight are non-mutating preflight checks. The final two belong
+    # exclusively to KAORI execution/approval authority, never the remote worker.
+    preflight_complete = all(gate.state == 'ready' for gate in gates[:8])
     return KubesprayPreflight(
-        state='ready_for_review' if ready_count == len(gates) else 'blocked',
+        state='ready_for_review' if preflight_complete else 'blocked',
         verified_gates=ready_count,
         required_gates=len(gates),
         facts_job_public_id=facts_job_id,
