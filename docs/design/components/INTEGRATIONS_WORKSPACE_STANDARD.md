@@ -138,6 +138,28 @@ active consumers, issued certificates, or automatic source bindings.
 Source collection, Full Validation, runtime evidence and lifecycle
 retention are independent. No live Vault requests during rendering.
 
+**Vault Runtime Refresh in-place worker lifecycle (Human UAT #4889):**
+Vault Runtime & History now follows the already-approved Kubernetes/MinIO
+POST → HTMX workspace replacement → scoped job-status poll → terminal
+replacement pattern. The Refresh Runtime / Refresh Running button labels,
+loading bar, disabled submit, job indicator and poller are **reused from
+shared KAORI components**. The POST preserves CSRF/RBAC and the normal
+non-HTMX redirect fallback, while an HTMX POST replaces only
+`#vault-runtime-content`, never the whole detail page. That region
+contains Runtime Decision, committed Runtime Evidence and canonical Recent
+Runtime Observations together, with a single unique DOM ID and existing
+framed-tab badge OOB update.
+
+Only a snapshot with `secrets_pki` integration type, the selected canonical
+connection ID and `runtime_refresh` operation is authorized for
+`GET /instances/<id>/runtime/status/<task_id>`. Standard no-cache polling
+returns the latest independently committed observation, history, safe
+feedback/toast and tab badge. The poller disappears at terminal status;
+the standard notification refresh trigger applies. A conflicting Full
+Validation task must not be impersonated as Runtime Refresh. A missing
+or inaccessible task fails closed; no new live provider call, custom
+polling JavaScript, rendered token, or bypass of the job lock is permitted.
+
 **Vault Runtime badge and action density (Human UAT #4879):**
 The framed `Runtime & History` badge shows the **committed runtime
 observation health label** supplied by `runtime_observation_state_view`,
@@ -145,8 +167,8 @@ exactly as Kubernetes does, rather than a generic `Jobs & Evidence`
 activity label. Show Healthy, Degraded, Unhealthy, or Not Observed
 according to the latest persisted observation. Never derive that tab badge
 from Full Validation readiness, mere connection status, or a live Vault
-request. Normal POST Runtime Refresh redirects to the detail page and
-rebinding occurs on the next committed view.
+request. Only non-HTMX POST Runtime Refresh redirects to the detail page;
+HTMX refresh updates runtime and tab badge in place after the worker completes.
 
 For the horizontal Runtime Decision, all five state-specific
 `Next Operational Action` strings should be concise and fit naturally
