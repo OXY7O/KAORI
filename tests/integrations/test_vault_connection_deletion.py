@@ -12,7 +12,6 @@ from flask import Flask
 from app.integrations.deletion import DeletionBlocked, DeletionGuard
 from app.integrations.secrets_management.secrets_pki.providers.vault.application import routes, service
 
-
 DEPENDENCY_NAMES = (
     'IntegrationBinding',
     'SecretProviderRepresentation',
