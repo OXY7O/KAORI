@@ -62,7 +62,8 @@ def test_kubernetes_analytics_operator_copy_density_keeps_evidence_semantics() -
     assert 'ResourceQuota coverage, configured requests, memory-limit policy, QoS class' in workload
     assert 'runtime evidence, and selected-window pressure' in workload
     assert 'Critical/High-risk records before changing requests, limits, quota, or replicas' in workload
-    assert 'Filesystem GiB is operational only.' in capacity
+    assert "('storage', 'Node Filesystem', 'hard-drive')" in capacity
+    assert 'Filesystem does not determine scheduling posture.' in capacity
     assert 'Lowest Ready-worker scheduling margin:' in capacity
     assert 'Filesystem does not determine scheduling posture.' in capacity
     assert '{{ lowest_headroom_metric_display }}' in capacity
