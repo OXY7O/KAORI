@@ -71,6 +71,13 @@ def build_kubespray_plan_review(
     timestamp = now or datetime.now(UTC)
     if timestamp.tzinfo is None:
         return KubesprayPlanReview('blocked', 'CLOCK_UNQUALIFIED')
+    if (
+        connection.integration_type != 'configuration_automation'
+        or connection.provider_key != 'ansible'
+        or not connection.enabled
+        or connection.lifecycle_status != 'active'
+    ):
+        return KubesprayPlanReview('blocked', 'CONNECTION_NOT_ADMITTED')
     metadata = connection.metadata_json if isinstance(connection.metadata_json, dict) else {}
     source_sha = metadata.get('source_sha')
     if not isinstance(source_sha, str) or len(source_sha) != 40:
