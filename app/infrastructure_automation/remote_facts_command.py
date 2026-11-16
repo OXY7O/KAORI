@@ -6,6 +6,7 @@ independently resolve trusted inventory, host keys, credentials and signed EE.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import ipaddress
 import re
 
 _HOST = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9_.-]{0,252}\Z", re.ASCII)
@@ -36,6 +37,18 @@ def build_remote_facts_command(*, inventory_host: str) -> RemoteFactsCommand:
         raise RemoteFactsCommandDenied("Canonical inventory host key is invalid")
     if inventory_host in {".", "..", "localhost", "127.0.0.1"}:
         raise RemoteFactsCommandDenied("Local or ambiguous inventory host is prohibited")
+    # Ansible inventory group selectors must never be accepted as a host.
+    # Case-folding prevents aliases such as ALL from escaping the restriction.
+    if inventory_host.casefold() in {"all", "ungrouped", "localhost"}:
+        raise RemoteFactsCommandDenied("Inventory group or local selector is prohibited")
+    # Literal addresses are not canonical inventory aliases: resolve only through
+    # an independently trusted asset-to-inventory mapping in the future worker.
+    try:
+        ipaddress.ip_address(inventory_host)
+    except ValueError:
+        pass
+    else:
+        raise RemoteFactsCommandDenied("Literal IP is not a canonical inventory alias")
     if inventory_host.startswith("-") or ".." in inventory_host:
         raise RemoteFactsCommandDenied("Unsafe inventory host key")
     return RemoteFactsCommand(
