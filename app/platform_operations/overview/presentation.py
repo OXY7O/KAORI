@@ -21,6 +21,21 @@ def _count_value(value: object) -> int:
     return 0
 
 
+def _overall_workspace_status(
+    critical_count: int, warning_count: int, unknown_count: int, active_count: int
+) -> tuple[str, str]:
+    """Determine the aggregate badge from the authoritative workspace tones."""
+    if critical_count:
+        return 'Critical Review', 'critical'
+    if warning_count:
+        return 'Review Required', 'warning'
+    if unknown_count:
+        return 'Configuration Review', 'unknown'
+    if active_count:
+        return 'Active', 'info'
+    return 'Ready', 'normal'
+
+
 def build_platform_operations_overview_context(
     *,
     can_jobs: bool,
@@ -160,16 +175,9 @@ def build_platform_operations_overview_context(
     review_workspace_count = attention_workspace_count + unknown_workspace_count
     active_workspace_count = sum(1 for workspace in workspaces if workspace['status_tone'] == 'info')
 
-    if critical_workspace_count:
-        overall_status_label, overall_status_tone = 'Critical Review', 'critical'
-    elif warning_workspace_count:
-        overall_status_label, overall_status_tone = 'Review Required', 'warning'
-    elif unknown_workspace_count:
-        overall_status_label, overall_status_tone = 'Configuration Review', 'unknown'
-    elif active_workspace_count:
-        overall_status_label, overall_status_tone = 'Active', 'info'
-    else:
-        overall_status_label, overall_status_tone = 'Ready', 'normal'
+    overall_status_label, overall_status_tone = _overall_workspace_status(
+        critical_workspace_count, warning_workspace_count, unknown_workspace_count, active_workspace_count
+    )
 
     return {
         'workspaces': workspaces,
