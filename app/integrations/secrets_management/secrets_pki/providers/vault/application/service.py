@@ -5,8 +5,8 @@ from typing import Any
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.common.pagination import paginate_query
-from app.integrations.deletion import DeletionBlocked, DeletionGuard, provider_deletion_guard
 from app.extensions.db import db
+from app.integrations.deletion import DeletionBlocked, DeletionGuard, provider_deletion_guard
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.types import VaultConnectionInput
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import VaultClient
 from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import parse_approved_kv2_mounts
@@ -18,15 +18,15 @@ from app.integrations.secrets_management.secrets_pki.providers.vault.transport i
     validate_vault_endpoint,
 )
 from app.models.integration import IntegrationBinding, IntegrationInstance
+from app.models.runtime import IntegrationRuntimeObservation
 from app.models.secrets_pki import SecretInventoryCollectionState, SecretProviderRepresentation
 from app.models.secrets_pki_pki import PKIIssuerCollectionState, PKIIssuerIdentity
 from app.models.secrets_pki_stored_certificates import (
     PKIStoredCertificateCollectionState,
     PKIStoredCertificateObservation,
 )
-from app.platform_operations.jobs.service import acquire_resource_admission_locks
-from app.models.runtime import IntegrationRuntimeObservation
 from app.models.vault import VaultInstance
+from app.platform_operations.jobs.service import acquire_resource_admission_locks
 
 
 def _client(values: VaultConnectionInput) -> VaultClient:
