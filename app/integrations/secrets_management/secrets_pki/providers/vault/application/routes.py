@@ -507,28 +507,95 @@ def validation_status(instance_id: int, task_id: str) -> ResponseReturnValue:
     return validation_poll_response(content, snapshot=snapshot)
 
 
+def _vault_runtime_refresh_fragment(
+    instance: VaultInstance,
+    *,
+    runtime_job: dict[str, Any] | None,
+    operation_feedback: dict[str, Any] | None = None,
+) -> str:
+    """Render one complete Vault runtime workspace from persisted provider evidence."""
+    observation = latest_vault_runtime_observation(instance.id)
+    runtime_state = runtime_observation_state_view(
+        observation,
+        fallback_readiness=instance.readiness_status or 'validation_required',
+        fallback_compatibility_profile=instance.compatibility_profile,
+        fallback_capabilities=instance.capabilities,
+    )
+    return render_template(
+        'integrations/secrets_management/vault/partials/_detail_runtime.html',
+        instance=instance,
+        evidence={'runtime_job': runtime_job},
+        latest_runtime_observation=observation,
+        runtime_state=runtime_state,
+        runtime_history=_vault_runtime_history_view(instance),
+        operation_feedback=operation_feedback,
+    )
+
+
 @vault_bp.post('/instances/<int:instance_id>/runtime/refresh')
 @permission_required('integrations.manage')
 def runtime_refresh(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     if not instance.enabled:
         abort(409)
+    is_htmx = request.headers.get('HX-Request') == 'true'
+    runtime_job: dict[str, Any] | None = None
+    feedback: dict[str, Any] | None = None
     try:
-        enqueue_runtime_health_refresh(
+        runtime_job, _created = enqueue_runtime_health_refresh(
             integration_type='secrets_pki',
             integration_instance_id=instance.integration_instance_id,
             requested_by_user_id=int(current_user.id),
         )
+        if runtime_job and runtime_job.get('operation') not in (None, 'runtime_refresh'):
+            # The shared admission lock may return a conflicting Full Validation,
+            # which must not be presented as a Vault runtime refresh.
+            runtime_job = None
+            feedback = record_operational_activity(
+                user_id=int(current_user.id),
+                event_type='vault_runtime_refresh_conflict',
+                status='warning',
+                title='Vault Runtime Refresh Deferred',
+                message='Another connection validation is running. Retry after it completes.',
+                action_url=url_for('vault.detail', instance_id=instance.id, _anchor='runtime'),
+                queue_feedback=not is_htmx,
+            )
     except (CeleryError, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError, ValueError):
         logger.exception('Vault runtime refresh could not be queued.')
-        record_operational_activity(
+        feedback = record_operational_activity(
             user_id=int(current_user.id),
             event_type='vault_runtime_queue_failed',
             status='error',
             title='Vault Runtime Refresh Not Queued',
             message='Verify Redis and the integration-runtime worker.',
             detail='No Vault runtime refresh job was admitted.',
-            action_url=url_for('vault.detail', instance_id=instance.id),
-            queue_feedback=True,
+            action_url=url_for('vault.detail', instance_id=instance.id, _anchor='runtime'),
+            queue_feedback=not is_htmx,
+        )
+    if is_htmx:
+        return _vault_runtime_refresh_fragment(
+            instance,
+            runtime_job=runtime_job,
+            operation_feedback=feedback,
         )
     return redirect(url_for('vault.detail', instance_id=instance.id, _anchor='runtime'))
+
+
+@vault_bp.get('/instances/<int:instance_id>/runtime/status/<string:task_id>')
+@permission_required('integrations.manage')
+def runtime_refresh_status(instance_id: int, task_id: str) -> ResponseReturnValue:
+    """Poll an authorized runtime worker without reloading the provider detail page."""
+    instance = _instance_or_404(instance_id)
+    snapshot = build_validation_snapshot(task_id)
+    if not validate_snapshot_access(
+        snapshot,
+        integration_type='secrets_pki',
+        integration_instance_id=instance.integration_instance_id,
+    ) or snapshot.get('operation') != 'runtime_refresh':
+        abort(404)
+    content = _vault_runtime_refresh_fragment(
+        instance,
+        runtime_job=snapshot,
+        operation_feedback=snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
+    )
+    return validation_poll_response(content, snapshot=snapshot)
