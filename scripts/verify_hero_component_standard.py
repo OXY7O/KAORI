@@ -1137,6 +1137,10 @@ def _verify_registry_blocked_hero_actions() -> None:
             'security.setup_blocked or security.inventory_required',
             2,
         ),
+        'artifact_registry/partials/_security_overview.html': (
+            'security.setup_blocked or security.inventory_required',
+            1,
+        ),
         'artifact_registry/partials/_runtime_workspace.html': ('runtime.setup.is_blocked', 1),
         'artifact_registry/partials/_governance_workspace.html': ('governance.setup.is_blocked', 1),
         'artifact_registry/analytics.html': ('analytics.setup.is_blocked', 1),

@@ -59,8 +59,8 @@ def test_runtime_usage_is_cross_domain_canonical_workspace() -> None:
     assert 'def build_runtime_binding_detail(binding_id: int)' in presentation
 
     assert '_runtime_topology_filters()' in routes
-    assert "source_id=_runtime_scope_id('source_id')" in scope
-    assert "artifact_id=_runtime_scope_id('artifact_id')" in scope
+    assert "source_id=_runtime_scope_id('source_id')" in routes
+    assert "artifact_id=_runtime_scope_id('artifact_id')" in routes
     assert "request.args.get('cluster_id', '', type=str)" in scope
     assert "request.args.get('namespace', '', type=str)" in scope
     assert "request.args.get('match_type', '', type=str)" in scope
@@ -69,7 +69,7 @@ def test_runtime_usage_is_cross_domain_canonical_workspace() -> None:
     assert 'def _runtime_scope_id(name: str) -> int | None:' in scope
     assert 'raw = request.args.get(name)' in scope
     assert 'abort(404)' in scope
-    assert "artifact_id=_runtime_scope_id('artifact_id')" in scope
+    assert "'artifact_id': _runtime_scope_id('artifact_id')" in scope
     assert "@artifact_registry_bp.get('/runtime/<int:binding_id>/details')" in routes
 
     assert 'artifact_registry/partials/_runtime_workspace.html' in page
