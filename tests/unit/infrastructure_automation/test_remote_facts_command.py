@@ -43,3 +43,18 @@ def test_specification_is_immutable():
     command = build_remote_facts_command(inventory_host="worker-01")
     with pytest.raises(AttributeError):
         command.module = "ansible.builtin.shell"
+
+
+@pytest.mark.parametrize(
+    "selector",
+    ["all", "ALL", "All", "ungrouped", "UNGROUPED", "LOCALHOST",
+     "192.0.2.10", "0.0.0.0", "255.255.255.255"],
+)
+def test_rejects_inventory_groups_and_literal_ipv4(selector):
+    with pytest.raises(RemoteFactsCommandDenied):
+        build_remote_facts_command(inventory_host=selector)
+
+
+@pytest.mark.parametrize("alias", ["all-nodes", "ungrouped-worker", "worker-02.example.internal"])
+def test_preserves_explicit_inventory_aliases(alias):
+    assert build_remote_facts_command(inventory_host=alias).limit == alias
