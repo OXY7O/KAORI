@@ -20,8 +20,18 @@ def test_invalid_analytics_provider_id_fails_closed(query: str):
 
 def test_unavailable_or_disabled_selected_provider_never_becomes_all():
     identities = [SimpleNamespace(id=1)]
-    assert _registry_analytics_scope(None, identities) is None
+    # Analytics is single-source, not an implicit all-provider aggregate.
+    # An omitted selection chooses one active source deterministically.
+    assert _registry_analytics_scope(None, []) is None
+    assert _registry_analytics_scope(None, identities) == 1
     assert _registry_analytics_scope(1, identities) == 1
+    assert (
+        _registry_analytics_scope(
+            None,
+            [SimpleNamespace(id=1, readiness_status='blocked'), SimpleNamespace(id=2, readiness_status='ready')],
+        )
+        == 2
+    )
     with pytest.raises(NotFound):
         _registry_analytics_scope(3, identities)
 
