@@ -23,19 +23,23 @@ def _state(
     begin = html.index('        {% if summary.source_limit_exceeded|default(false) %}')
     end = html.index('        {{ page_hero.operational_dashboard(', begin)
     stage = html[begin:end]
-    result = Environment().from_string(
-        stage
-        + '\n{{ inventory_blocker_title }}|{{ inventory_blocker_label }}'
-        + "|{{ inventory_blocker_info }}|{{ inventory_blocker_action_url|default('', true) }}"
-        + "|{{ inventory_blocker_action_label|default('', true) }}"
-    ).render(
-        summary={
-            'provider_count': provider_count,
-            'approved_mount_count': approved_mount_count,
-            'source_limit_exceeded': source_limit_exceeded,
-        },
-        can_manage_integrations=can_manage_integrations,
-        url_for=lambda endpoint: '/vault' if endpoint == 'vault.index' else '/secrets-pki/inventory',
+    result = (
+        Environment()
+        .from_string(
+            stage
+            + '\n{{ inventory_blocker_title }}|{{ inventory_blocker_label }}'
+            + "|{{ inventory_blocker_info }}|{{ inventory_blocker_action_url|default('', true) }}"
+            + "|{{ inventory_blocker_action_label|default('', true) }}"
+        )
+        .render(
+            summary={
+                'provider_count': provider_count,
+                'approved_mount_count': approved_mount_count,
+                'source_limit_exceeded': source_limit_exceeded,
+            },
+            can_manage_integrations=can_manage_integrations,
+            url_for=lambda endpoint: '/vault' if endpoint == 'vault.index' else '/secrets-pki/inventory',
+        )
     )
     return result.strip().split('|')
 
@@ -88,7 +92,6 @@ def test_only_authorized_users_receive_provider_management_actions() -> None:
         approved_mount_count=1,
         can_manage_integrations=False,
     )[-2:] == ['/secrets-pki/inventory', 'Review Inventory Readiness']
-
 
 
 def test_mount_approval_message_is_concise_and_steps_are_operator_friendly() -> None:
