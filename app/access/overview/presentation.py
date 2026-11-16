@@ -70,9 +70,7 @@ def _identity_provider_supporting_text(summary: dict[str, Any]) -> str:
     if summary['jit_policy_review']:
         return f'{summary["jit_policy_review"]} enabled JIT provider(s) need default-role or admission-policy review.'
     if summary['enabled']:
-        return (
-            'Enabled: stored setup and admission complete.'
-        )
+        return 'Enabled: stored setup and admission complete.'
     return 'Providers are stored but disabled; enable them only after configuration and admission policy are ready.'
 
 

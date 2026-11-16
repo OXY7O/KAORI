@@ -646,11 +646,14 @@ def runtime_refresh_status(instance_id: int, task_id: str) -> ResponseReturnValu
     """Poll an authorized runtime worker without reloading the provider detail page."""
     instance = _instance_or_404(instance_id)
     snapshot = build_validation_snapshot(task_id)
-    if not validate_snapshot_access(
-        snapshot,
-        integration_type='secrets_pki',
-        integration_instance_id=instance.integration_instance_id,
-    ) or snapshot.get('operation') != 'runtime_refresh':
+    if (
+        not validate_snapshot_access(
+            snapshot,
+            integration_type='secrets_pki',
+            integration_instance_id=instance.integration_instance_id,
+        )
+        or snapshot.get('operation') != 'runtime_refresh'
+    ):
         abort(404)
     content = _vault_runtime_refresh_fragment(
         instance,

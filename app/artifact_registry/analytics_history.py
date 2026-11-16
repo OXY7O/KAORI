@@ -127,10 +127,7 @@ def _bounded_matrix(
         if all(value >= 0 and isfinite(value) for value in chart_totals):
             take = min(len(chart_timestamps), MAX_HISTORY_CHART_POINTS)
             indices = sorted({round(i * (len(chart_timestamps) - 1) / (take - 1)) for i in range(take)})
-            chart_points.extend(
-                {'timestamp': chart_timestamps[i], 'value': chart_totals[i]}
-                for i in indices
-            )
+            chart_points.extend({'timestamp': chart_timestamps[i], 'value': chart_totals[i]} for i in indices)
     return normalized
 
 
@@ -176,9 +173,7 @@ def collect_registry_metric_history(
                 f'{step}s',
                 retry_count=0,
             )
-            plot: list[dict[str, float]] | None = (
-                [] if field in {'project_artifacts', 'project_usage_bytes'} else None
-            )
+            plot: list[dict[str, float]] | None = [] if field in {'project_artifacts', 'project_usage_bytes'} else None
             values[field] = _bounded_matrix(
                 result,
                 project_scoped=field != 'request_rate_per_second',

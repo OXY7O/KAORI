@@ -107,7 +107,6 @@ def compact_recommendation_summary(value: Any, *, limit: int = 180) -> str:
     return ' '.join(words).rstrip(' ,;:-') + '.'
 
 
-
 def recommendation_summary_domain_metrics(
     findings: list[dict[str, Any]],
     domain_labels: dict[str, str],

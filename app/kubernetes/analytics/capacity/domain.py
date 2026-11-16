@@ -264,9 +264,7 @@ def allocation_status(resource: str, evidence: AllocationEvidence) -> dict[str, 
         )
     if missing:
         return _status('Limited Evidence', 'unknown', 'Some commitment or usage signals are unavailable.', missing)
-    return _status(
-        'Healthy', 'normal', 'Requests, limits, and observed usage fit capacity.'
-    )
+    return _status('Healthy', 'normal', 'Requests, limits, and observed usage fit capacity.')
 
 
 def pod_allocation_status(capacity: ScalarEvidence, current: ScalarEvidence) -> dict[str, Any]:

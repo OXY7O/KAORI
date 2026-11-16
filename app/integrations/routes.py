@@ -307,7 +307,9 @@ def ansible_new_connection() -> ResponseReturnValue:
                                 metadata={'provider': 'ansible', 'instance_id': connection.id},
                                 queue_feedback=True,
                             )
-                            return redirect(url_for('integrations.ansible_connection_detail', instance_id=connection.id))
+                            return redirect(
+                                url_for('integrations.ansible_connection_detail', instance_id=connection.id)
+                            )
     return render_template(
         'integrations/orchestration/configuration_automation/providers/ansible/form.html',
         form=form,
@@ -345,9 +347,7 @@ def ansible_connection_detail(instance_id: int) -> ResponseReturnValue:
         source=connection.metadata_json or {},
         source_posture=source_validation_posture(connection),
         kubespray_preflight=preflight.presentation(),
-        kubespray_plan_currentness=committed_kubespray_plan_currentness(
-            connection, preflight=preflight
-        ).presentation(),
+        kubespray_plan_currentness=committed_kubespray_plan_currentness(connection, preflight=preflight).presentation(),
         can_generate_review_plan=bool(
             connection.enabled and getattr(current_user, 'has_permission', lambda _: False)('jobs.execute')
         ),
@@ -389,8 +389,10 @@ def ansible_plan_review(instance_id: int) -> ResponseReturnValue:
         event_type = 'ansible_kubespray_plan_review_queued'
         title = 'Kubespray Plan Review Queued'
         message = (
-            ('Review-only Plan is queued in Jobs & Executions; independent approval '
-             'and cluster operations remain blocked.')
+            (
+                'Review-only Plan is queued in Jobs & Executions; independent approval '
+                'and cluster operations remain blocked.'
+            )
             if created
             else 'A review-only Plan job already exists; no duplicate dispatch was created.'
         )

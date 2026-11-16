@@ -665,6 +665,7 @@ def _registry_capacity_chart_rows(forecast_rows: list[dict[str, Any]]) -> list[d
     """Keep Overview chart bounded while the detail table paginates."""
     return _registry_capacity_project_rows(forecast_rows)[:5]
 
+
 def _analytics_summary_cards(
     aggregate: dict[str, Any],
     *,

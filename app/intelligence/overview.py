@@ -372,9 +372,7 @@ def _posture_items(
         {
             'label': 'Evidence Freshness',
             'value': f'{(evidence or {}).get("recent", 0)} / {(evidence or {}).get("total", 0)} Recent Inventory',
-            'supporting': (
-                '24h committed Inventory only.'
-            ),
+            'supporting': ('24h committed Inventory only.'),
             'icon': 'shield-check',
             'tone': 'normal' if evidence and evidence['complete'] else 'warning',
             'href_endpoint': 'alert_intelligence.index',
