@@ -70,6 +70,17 @@ inaccessible shortcuts without widening any authorization.
 The absence of committed evidence is not proof of zero Secrets, valid rotation
 or healthy TLS. An accessible sidebar link does not signify operational Ready.
 
+The approved-source and mount-count limits are **admission boundaries**, not
+signals of absent or healthy resources. If the bounded Secrets & PKI read model
+reports `source_limit_exceeded`, Overview, Inventory and Lifecycle must show
+**Vault Inventory Scope Review Required** rather than interpreting missing
+count values as an unregistered Vault or missing KV v2 mount. Inventory may
+direct authorized managers to review approved sources/mounts but must not offer
+an inventory execution shortcut while scope exceeds the limit. Lifecycle
+continues to respect independently qualified PKI evidence. The read model
+returns a safe `blocked` summary instead of raising a presentation exception;
+it must not expand limits or issue provider calls.
+
 The Lifecycle blocked Hero uses stage-specific, concise `lifecycle_blocker_info`
 copy rather than repeating the longer prerequisite description from the shared
 below-Hero blocker. At the unapproved-mount stage, show **Approve KV v2 mounts
