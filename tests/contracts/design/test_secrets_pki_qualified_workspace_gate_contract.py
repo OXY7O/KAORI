@@ -99,7 +99,8 @@ def test_lifecycle_hero_info_is_one_natural_desktop_line_with_full_blocker_below
     )
     for providers, mounts, expected in cases:
         result = template.render(
-            summary={'provider_count': providers, 'approved_mount_count': mounts}
+            summary={'provider_count': providers, 'approved_mount_count': mounts},
+            lifecycle_version_incomplete=False,
         )
         assert result.strip() == expected
         assert len(result.strip()) < 65
@@ -156,7 +157,7 @@ def test_over_limit_vault_inventory_uses_scope_review_not_inventory_execution() 
 
 def test_over_limit_lifecycle_keeps_independent_pki_qualification() -> None:
     source = _read(LIFECYCLE)
-    begin = source.index('{% set lifecycle_unqualified = ')
+    begin = source.index('{% set lifecycle_kv2_qualified = ')
     end = source.index('{{ lifecycle_navigation.render', begin)
     template = Environment().from_string(
         source[begin:end] + '{{ lifecycle_blocker_title }}|{{ lifecycle_blocker_info }}'
@@ -168,6 +169,7 @@ def test_over_limit_lifecycle_keeps_independent_pki_qualification() -> None:
             'provider_count': 1,
             'approved_mount_count': 100,
         },
+        kv2_version_posture={'status': 'incomplete_evidence'},
         pki_validity={'status': 'not_collected'},
         can_manage_integrations=False,
         url_for=lambda endpoint: '/vault',
@@ -250,7 +252,7 @@ def test_failed_first_collection_has_distinct_inventory_blocker_and_short_hero_i
 
 def test_lifecycle_failed_first_collection_keeps_independent_pki_path() -> None:
     source = _read(LIFECYCLE)
-    start = source.index('{% set lifecycle_unqualified = ')
+    start = source.index('{% set lifecycle_kv2_qualified = ')
     end = source.index('{{ lifecycle_navigation.render', start)
     stage = Environment().from_string(
         source[start:end]
@@ -267,6 +269,7 @@ def test_lifecycle_failed_first_collection_keeps_independent_pki_path() -> None:
     def render(pki_status: str) -> str:
         return stage.render(
             summary=summary,
+            kv2_version_posture={'status': 'incomplete_evidence'},
             pki_validity={'status': pki_status},
             can_manage_integrations=False,
             url_for=lambda endpoint: '/vault',
