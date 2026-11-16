@@ -10,10 +10,10 @@ from types import SimpleNamespace
 
 import pytest
 
+from app.infrastructure_automation.kubernetes.kubespray_preflight import KUBESPRAY_COMMIT
 from app.integrations.orchestration.configuration_automation.providers.ansible.preflight import (
     build_kubespray_preflight,
 )
-from app.infrastructure_automation.kubernetes.kubespray_preflight import KUBESPRAY_COMMIT
 from app.integrations.source_control.source_control.providers.github.public_automation_source import (
     ANSIBLE_CORE_VERSION,
     ANSIBLE_RUNNER_VERSION,
