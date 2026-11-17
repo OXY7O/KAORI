@@ -13,7 +13,6 @@ from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
-from app.extensions.db import db
 from app.integrations.deletion import DeletionBlocked
 from app.integrations.runtime.presentation import runtime_history_view, runtime_observation_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
@@ -454,7 +453,6 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
         )
         return redirect(url_for('vault.detail', instance_id=instance_id, _anchor='inventory'))
     except SQLAlchemyError:
-        db.session.rollback()
         logger.exception('Vault connection deletion failed for instance %s.', instance_id)
         record_operational_activity(
             user_id=int(current_user.id),
