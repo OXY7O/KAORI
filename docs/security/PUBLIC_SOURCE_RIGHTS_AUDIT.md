@@ -226,6 +226,34 @@ A new `Ready` security run, independent review and protected staging
 admission must actually pass before audit PR #4940 can resume.
 No scan-bypass or global security GO is inferred.
 
+**Security-gate resolution and audit-branch integration (2026-11-17):**
+The narrow two-fingerprint test-fixture disposition [#4941](https://github.com/OXY7O/KAORI/issues/4941)
+and real `dnspython==2.9.2` advisory remediation
+[#4945](https://github.com/OXY7O/KAORI/issues/4945) are **CLOSED/COMPLETED**.
+Independent review of [PR #4942](https://github.com/OXY7O/KAORI/pull/4942)
+and [Ready Full Admission #44036440202](https://github.com/OXY7O/KAORI/actions/runs/44036440202)
+passed all five selected lanes (Frontend, Runtime & DAST, Functional,
+Static & Governance, Security), CI Admission and Ready Admission Guard.
+Actual Security included Gitleaks historical scan PASS, Bandit PASS,
+Semgrep zero findings, both base and dev `pip-audit` no known vulnerabilities,
+and npm audit PASS. Protected staging merge
+`51d75e084275fec7e8530f0d96c5236874428780` passed
+[post-merge Fast Smoke and CI Admission #44039924776](https://github.com/OXY7O/KAORI/actions/runs/44039924776).
+This confirms the **KAORI staging repository's** scoped security correction,
+not global source/registry/credential exposure clearance across all repositories.
+
+The earlier [audit Ready run #44040153766](https://github.com/OXY7O/KAORI/actions/runs/44040153766)
+still failed the original two synthetic Gitleaks matches because the
+**audit branch was behind the already-fixed staging branch**; do not
+misclassify its cancelled subsequent lanes as PASS. The existing rights-audit
+work branch was therefore synchronized by a two-parent merge commit
+`f393d7dc13acf8f77d0fa24ef80d5657c3541d3f` joining the prior
+audit head and the admitted security staging head, while preserving the
+prior approved rights-audit document. Only this document differs from staging.
+A **fresh exact-head Ready Security / Full Admission** is still required
+before merging audit PR #4940, and no recurring Website publication GO
+is granted by these security outcomes.
+
 **Maintainer-operated public runtime readback (2026-11-17):**
 The authorized Website host operator supplied the read-only result for the
 current public `kaori-website` Compose service, not an assistant-initiated
