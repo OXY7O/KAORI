@@ -463,7 +463,7 @@ only: no new webhook state, provider mutation, or delivery evidence.
 
 ## Provider Front Page Contract
 
-Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor provider landing pages use one canonical front-page hierarchy. Provider-specific technical evidence may differ inside the workspace, but the navigation and visual grammar must not.
+Kubernetes, Metrics Source, Alertmanager, MinIO, Harbor, GitHub, and Vault provider landing pages use one canonical front-page hierarchy. Provider-specific technical evidence may differ inside the workspace, but the navigation and visual grammar must not.
 
 ```text
 Operational Integration Hero
@@ -473,13 +473,11 @@ Operational Integration Hero
 └── Register Connection
 
 <Provider> Integration Overview
+├── N Indicators (shared Inventory-style metadata label; no extra Info Tip)
 ├── Registered Connections
 ├── Validated Connections
 ├── Needs Attention
-├── Coverage Gaps
-├── Integration Contract
-├── Consumer Resolution
-└── Authority Boundary
+└── Coverage Gaps
 
 Provider Workspace
 ├── Integration Coverage
@@ -498,7 +496,7 @@ app/templates/components/integration_workspace_tabs.html
   └── delegates Tab Style 2 geometry to components/framed_workspace_tabs.html
 
 app/templates/integrations/components/_provider_registry.html
-  ├── canonical Connection Registry geometry
+  ├── canonical Connection Registry geometry and title-adjacent Guide
   ├── direct-provider Asset Coverage geometry
   └── observability Scope Coverage geometry
 ```
@@ -559,7 +557,7 @@ Rules:
 - Hero metadata uses `Registered Connections`, `Ready Connections`, and `Consumer Bindings`;
 - the four overview metrics retain the same order on every provider and the fourth metric is always `Coverage Gaps`;
 - the Integrations landing-page Provider Catalog shows registered count, ready count, real readiness percentage, and provider posture from persisted evidence;
-- `Integration Contract`, `Consumer Resolution`, and `Authority Boundary` retain the same three-column geometry;
+- the shared provider Overview uses `N Indicators` and four visible KPIs, without the retired three-column `Integration Contract`, `Consumer Resolution`, or `Authority Boundary` footer cards or a duplicate Info Tip; provider authority and committed evidence boundaries remain in the established Coverage, Registry, and detail Guides;
 - every provider front page exposes `Integration Coverage` and `Connection Registry` through the shared framed workspace tabs;
 - `integration_workspace_tabs.html` is a semantic adapter only; framed tablist/button/badge/keyboard geometry remains owned by `framed_workspace_tabs.html`;
 - provider-specific evidence belongs inside those two tabs rather than replacing the front-page hierarchy;
