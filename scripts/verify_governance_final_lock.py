@@ -151,10 +151,37 @@ def main() -> int:
         'Internal PKI evidence tabs must be safe query-backed server navigation.',
         errors,
     )
+    # The approved GET reset redirects with urlencoded query *data*, never
+    # untrusted request keys expanded into Flask's reserved url_for kwargs.
+    for marker in (
+        "clear_tab = request.args.get('clear_filters')",
+        "if clear_tab in {'sources', 'certificates'}:",
+        "query = request.args.to_dict(flat=True)",
+        "query.pop('clear_filters', None)",
+        "if clear_tab == 'sources':",
+        "reset_fields = ('cluster_id', 'search', 'environment', 'platform', 'page')",
+        "'cert_search',",
+        "'cert_kind',",
+        "'cert_expiry',",
+        "'cert_coverage',",
+        "'cert_freshness',",
+        "'cert_page',",
+        "for field in reset_fields:",
+        "query.pop(field, None)",
+        "query['evidence_tab'] = clear_tab",
+        "location = url_for('governance.internal_certificates')",
+        "if query:",
+        "location = f'{location}?{urlencode(query)}'",
+        "return redirect(location, code=303)",
+    ):
+        require(
+            marker in internal_routes,
+            f'Internal PKI Clear Filters canonical GET reset is missing: {marker}',
+            errors,
+        )
     require(
-        "clear_tab = request.args.get('clear_filters')" in internal_routes
-        and "return redirect(url_for('governance.internal_certificates', **query), code=303)" in internal_routes,
-        'Internal PKI Clear Filters must canonicalize reset intent server-side.',
+        "url_for('governance.internal_certificates', **query)" not in internal_routes,
+        'Internal PKI Clear Filters must not pass untrusted query keys as url_for kwargs.',
         errors,
     )
     for item in ('Internal PKI Collection Snapshot', 'components/snapshot_context_bar.html'):
