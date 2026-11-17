@@ -6,8 +6,10 @@ from types import SimpleNamespace
 
 import pytest
 from flask import render_template
+from sqlalchemy.exc import SQLAlchemyError
 
 from app import create_app
+from app.integrations.orchestration.configuration_automation.providers.ansible import service as ansible_service
 from app.integrations.orchestration.configuration_automation.providers.ansible.preflight import (
     build_kubespray_preflight,
 )
@@ -48,6 +50,71 @@ def _connection(*, state: str = 'source_checked', **changes):
     }
     meta.update(changes)
     return SimpleNamespace(id=12, environment='laboratory', metadata_json=meta)
+
+
+@pytest.mark.parametrize(('state', 'expected'), [('source_checked', 'checked'), ('blocked', 'blocked')])
+def test_provider_service_commits_revalidation_without_enabling_execution(monkeypatch, state, expected):
+    connection = _connection()
+    connection.integration_type = 'configuration_automation'
+    connection.provider_key = 'ansible'
+    connection.readiness_status = 'ready'
+    connection.health_status = 'healthy'
+    connection.metadata_json['execution_enabled'] = True
+    connection.metadata_json['mutation_authorized'] = True
+    connection.metadata_json['independent_evidence'] = 'retained'
+    proof = dict(connection.metadata_json['source_validation'])
+    if state == 'blocked':
+        proof = {'status': 'blocked', 'operation_authorized': False, 'checked_files': 0}
+    events: list[str] = []
+    monkeypatch.setattr(
+        ansible_service,
+        'db',
+        SimpleNamespace(
+            session=SimpleNamespace(
+                commit=lambda: events.append('commit'),
+                rollback=lambda: events.append('rollback'),
+            )
+        ),
+    )
+
+    ansible_service.commit_source_revalidation(connection, evidence=proof)
+
+    assert events == ['commit']
+    assert connection.metadata_json['source_validation'] == proof
+    assert connection.metadata_json['independent_evidence'] == 'retained'
+    assert connection.metadata_json['execution_enabled'] is False
+    assert connection.metadata_json['mutation_authorized'] is False
+    assert connection.readiness_status == 'validation_required'
+    assert connection.health_status is None
+    assert source_validation_posture(connection)['source_state'] == expected
+
+
+def test_provider_service_rolls_back_failed_revalidation_commit(monkeypatch):
+    connection = _connection()
+    connection.integration_type = 'configuration_automation'
+    connection.provider_key = 'ansible'
+    events: list[str] = []
+
+    def failed_commit():
+        events.append('commit')
+        raise SQLAlchemyError('synthetic revalidation commit failure')
+
+    monkeypatch.setattr(
+        ansible_service,
+        'db',
+        SimpleNamespace(
+            session=SimpleNamespace(
+                commit=failed_commit,
+                rollback=lambda: events.append('rollback'),
+            )
+        ),
+    )
+
+    with pytest.raises(SQLAlchemyError, match='synthetic revalidation commit failure'):
+        ansible_service.commit_source_revalidation(
+            connection, evidence={'status': 'blocked', 'operation_authorized': False, 'checked_files': 0}
+        )
+    assert events == ['commit', 'rollback']
 
 
 def test_valid_source_only_is_checked_but_all_operations_blocked():
