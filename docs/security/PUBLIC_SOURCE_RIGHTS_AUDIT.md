@@ -161,6 +161,76 @@ This is a dated **read-only source/metadata reconciliation** under #4212 and [We
 
 **What remains to establish an actual Website rights GO:** owner/contributor chain-of-title and rights to license software; approval of trademark/logo and AI-service terms, inputs and any third-party-derived image material; exact third-party attribution and shipped-artifact license contents; credential/secret historical and currently active exposure assessment across three repos; Git refs/tags/release/OCI/Actions-log and generated-site contents; independent security and rights acceptance, with any confidential finding handled through approved private channels. All eight original coverage-register rows remain **NOT VERIFIED**; the overall decision remains **NO-GO** for `LICENSE`, `NOTICE`, SPDX license metadata, external contribution launch, production release or deployment. No actual license grant or security configuration mutation is performed in this evidence entry.
 
+## Website recurring public RC publication boundary — 2026-11-17 (#4939)
+
+The maintainer confirmed GitHub `staging`/`production` Environment setup
+and authorized progressing the Website staging and production approval
+implementation and this rights assessment. That conversation is an
+**authorization to continue engineering and assess release rights**, not
+independent evidence of third-party redistribution rights, a blanket
+source-license grant or standing permission for every future public RC.
+
+**Current evidence, scoped to Website only:**
+
+- [Website PR #205](https://github.com/OXY7O/kaori-website/pull/205)
+  received independent `donibawono` approval and an exact-head Developer
+  Check PASS. The protected integration is
+  `kaori/staging@06f5142d7a6578485516c4a1812bc950f1835b4e`.
+  [Full Admission #44006999386](https://github.com/OXY7O/kaori-website/actions/runs/44006999386)
+  completed with all four mandatory jobs SUCCESS: Promotion Policy, Full
+  Admission, Container Admission and Browser Quality Evidence.
+  Both admitted signed-RC publication and deployment jobs were **SKIPPED**;
+  this is not a new public candidate or an accepted public rollout.
+- The recursive Website tracked tree at that exact staging SHA returned
+  **92 entries and `truncated=false`**, including active
+  `public/branding/kaori-logo.svg`,
+  `public/branding/kaori-connected-operations-hub.webp`,
+  `public/licenses/inter/OFL-1.1.txt` (Git blob
+  `40589daa9de8bc96606292ea0be712ff0f0626eb`) and
+  `public/licenses/lucide/LICENSE.txt` (Git blob
+  `718bb3f0e44153809972abed31839375804bf652`).
+  These are **source notice files**, not independent proof of their
+  exact bytes in a currently served image or HTTPS response. There is no
+  root Website `LICENSE` at this tracked staging snapshot.
+- Existing [Website #198](https://github.com/OXY7O/kaori-website/issues/198)
+  documents signed RC.9 deployed on the single public Website slot and
+  **Human UAT PASS** for exact prior staging
+  `5c14567f3c374a5f63d874edd5f624492685e8aa`.
+  This is a bounded historical public-UAT exception, not acceptance of
+  new `06f5142` or recurring releases. A direct external verification
+  of live notice URLs and current signed host/rollback receipt is still
+  required; no current serving claim is made from source alone.
+- [Website Draft PR #206](https://github.com/OXY7O/kaori-website/pull/206)
+  integrates the official staging merge on production work-branch
+  `a93716b5894ebd73c6eacb8265d4d8f4a87d9529` and passed
+  [exact-head Developer Check #44007179607](https://github.com/OXY7O/kaori-website/actions/runs/44007179607).
+  It is **not** a merged main release, accepted production Environment
+  reviewer run, or stable same-digest publication. The production activation
+  variable is not independently read or set by this audit.
+
+**Decision: HOLD / NO-GO for standing automatic public RC publication.**
+The specific additional work and approval authority is
+[KAORI #4939](https://github.com/OXY7O/KAORI/issues/4939).
+Before enabling the repository `KAORI_WEBSITE_AUTO_STAGING_ENABLED` switch,
+record a reviewed and expressly accepted recurring-publication scope:
+permitted Website source/third-party/brand boundaries, evidence of actual
+static asset notices in a signed OCI and HTTPS serving, previous signed
+rollback and recovery proof, safe source/history/artifact exposure
+disposition, and an authorized maintainer GO with clear revocation conditions.
+A one-time manually approved RC is not a perpetual publication exception.
+The maintainer's GitHub Environment verification is classified as
+**operator-attested**, not independent repository-Settings/API readback,
+and a live approval gate must still be observed for production.
+
+**Separate broader decision remains unchanged:** the cross-repository
+eight-surface rights assessment in this register is still not completed.
+Website [#136](https://github.com/OXY7O/kaori-website/issues/136)
+source licensing, KAORI/Docs licensing, contributor launch, trademark rights
+and any Apache-2.0/CC-BY grant remain **NO-GO** absent their own independent
+acceptance. Neither this audit increment nor #4939 releases an image, changes
+license metadata, edits credentials, triggers a deployment or grants public
+source reuse rights.
+
 ## Evidence handling
 
 Record repository, surface, bounded time window, scan/tool identity, reviewed ref or artifact identifier, reviewer, observation time, sanitized evidence ID and disposition in the approved private audit location. Public issues/PRs/Slack receive only non-sensitive coverage status and references. Do not paste credential values, private URLs, screenshots with sensitive data, or vulnerability reproduction. A confirmed active credential exposure is a private security incident requiring separately authorized rotation/revocation, not a public Issue attachment.
