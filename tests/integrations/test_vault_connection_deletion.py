@@ -8,6 +8,7 @@ from typing import Any
 
 import pytest
 from flask import Flask
+from sqlalchemy.exc import IntegrityError
 
 from app.integrations.deletion import DeletionBlocked, DeletionGuard
 from app.integrations.secrets_management.secrets_pki.providers.vault.application import routes, service
@@ -141,6 +142,41 @@ def test_vault_deletion_service_removes_only_provider_and_canonical_identity(
     assert events == ['lock', 'guard', 'provider', 'flush', 'canonical', 'commit']
 
 
+def test_vault_deletion_service_rolls_back_failed_commit_before_http_feedback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    instance = _provider_instance()
+    events: list[str] = []
+    monkeypatch.setattr(service, 'acquire_resource_admission_locks', lambda *keys: events.append('lock'))
+    monkeypatch.setattr(
+        service,
+        'vault_connection_deletion_guard',
+        lambda item: events.append('guard') or DeletionGuard(blocked=False, reasons=()),
+    )
+
+    def failed_commit() -> None:
+        events.append('commit')
+        raise IntegrityError('DELETE', {}, Exception('synthetic database constraint error'))
+
+    monkeypatch.setattr(
+        service,
+        'db',
+        SimpleNamespace(
+            session=SimpleNamespace(
+                delete=lambda obj: events.append('provider' if obj is instance else 'canonical'),
+                flush=lambda: events.append('flush'),
+                commit=failed_commit,
+                rollback=lambda: events.append('rollback'),
+            )
+        ),
+    )
+
+    with pytest.raises(IntegrityError):
+        service.delete_vault_connection(instance)
+
+    assert events == ['lock', 'guard', 'provider', 'flush', 'canonical', 'commit', 'rollback']
+
+
 def _web_app(monkeypatch: pytest.MonkeyPatch) -> Flask:
     app = Flask(__name__)
     app.config.update(SECRET_KEY='vault-deletion-test')
@@ -157,19 +193,13 @@ def test_vault_delete_endpoint_returns_safe_feedback(
 ) -> None:
     app = _web_app(monkeypatch)
     audit: list[dict[str, Any]] = []
-    rollbacks: list[str] = []
-    monkeypatch.setattr(
-        routes,
-        'db',
-        SimpleNamespace(session=SimpleNamespace(rollback=lambda: rollbacks.append('rolled back'))),
-    )
+    # The provider service owns rollback; this HTTP layer only audits safe feedback.
+    assert not hasattr(routes, 'db')
 
     def delete(instance: Any) -> None:
         if outcome == 'blocked':
             raise DeletionBlocked(DeletionGuard(blocked=True, reasons=('Active Vault evidence.',)))
         if outcome == 'failed':
-            from sqlalchemy.exc import IntegrityError
-
             raise IntegrityError('DELETE', {}, Exception('private provider data'))
 
     monkeypatch.setattr(routes, 'delete_vault_connection', delete)
@@ -190,7 +220,6 @@ def test_vault_delete_endpoint_returns_safe_feedback(
     assert audit[0]['status'] == expected_status
     assert audit[0]['queue_feedback'] is True
     assert 'private provider data' not in str(audit)
-    assert rollbacks == (['rolled back'] if outcome == 'failed' else [])
     if outcome == 'success':
         assert response.location.endswith('/vault/?tab=registry')
     else:
