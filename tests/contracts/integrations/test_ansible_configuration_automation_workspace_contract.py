@@ -231,9 +231,9 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
     assert 'Source validation does not authorize SSH or Kubernetes mutation.' in configuration
     assert 'Kubespray Preflight &amp; Plan Readiness' in detail
     assert '10 Gates' in detail
-    assert 'Review-only Plan Evidence' in detail
+    assert 'Review-Only Plan Evidence' in detail
     assert 'No approved Kubespray Plan exists. Execution remains blocked.' in detail
-    assert 'Generate Review-only Plan' in detail
+    assert 'Generate Review-Only Plan' in detail
     assert 'No operation can be queued yet.' in detail
     assert 'ansible_plan_review' not in detail  # Rendered URL, never a Python endpoint label.
     assert '/plan-review' in detail
