@@ -636,7 +636,9 @@ def _verify_artifact_registry_dashboard(
         routes,
         (
             "@permission_required('artifact_registry.view')",
-            'from app.artifact_registry.route_scope import _inventory_source_id, _overview_provider_id',
+            'from app.artifact_registry.route_scope import (',
+            '    _inventory_source_id,',
+            '    _overview_provider_id,',
             'provider_id=_overview_provider_id(),',
             "request.args.get('tab', 'overview', type=str)",
             "'overview': 'artifact_registry/partials/_overview_operations.html'",
