@@ -90,7 +90,7 @@ def test_runtime_security_dependency_floor_is_reproducibly_pinned() -> None:
         assert f'{name}=={vulnerable}' not in base_in
         assert f'{name}=={vulnerable}' not in base_lock
 
-    # Reject the subsequent WKS parser advisory as well as the older DNS version.
+    # Also guard the subsequently disclosed WKS parser advisory floor.
     assert 'dnspython==2.9.0' not in base_in
     assert 'dnspython==2.9.0' not in base_lock
 
