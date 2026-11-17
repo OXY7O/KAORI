@@ -156,7 +156,7 @@ def main() -> int:
     for marker in (
         "clear_tab = request.args.get('clear_filters')",
         "if clear_tab in {'sources', 'certificates'}:",
-        "query = request.args.to_dict(flat=True)",
+        'query = request.args.to_dict(flat=True)',
         "query.pop('clear_filters', None)",
         "if clear_tab == 'sources':",
         "reset_fields = ('cluster_id', 'search', 'environment', 'platform', 'page')",
@@ -166,13 +166,13 @@ def main() -> int:
         "'cert_coverage',",
         "'cert_freshness',",
         "'cert_page',",
-        "for field in reset_fields:",
-        "query.pop(field, None)",
+        'for field in reset_fields:',
+        'query.pop(field, None)',
         "query['evidence_tab'] = clear_tab",
         "location = url_for('governance.internal_certificates')",
-        "if query:",
+        'if query:',
         "location = f'{location}?{urlencode(query)}'",
-        "return redirect(location, code=303)",
+        'return redirect(location, code=303)',
     ):
         require(
             marker in internal_routes,
