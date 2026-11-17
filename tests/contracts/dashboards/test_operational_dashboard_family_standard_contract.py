@@ -400,7 +400,8 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert 'reporting_workspace.guidance(reporting_scope,' in object_reporting
     assert "'Committed snapshots'" in object_reporting
     assert "'system or storage scope'" in object_reporting
-    assert "empty_title='No Object Storage Reports Generated'" in object_reporting
+    assert "empty_title='No Object Storage Reports Generated'" in object_summary
+    assert 'reporting_workspace.summary(dashboard.reporting,' in object_summary
     assert 'Governed Reporting Flow' in reporting_workspace
     assert 'Review before reuse.' in reporting_workspace
     assert 'Choose the report and narrowest scope for accurate results.' in reporting_workspace
