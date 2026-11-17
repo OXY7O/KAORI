@@ -177,6 +177,9 @@ def test_welcome_visual_qa_light_and_dark(
 
     _login(page, kaori_authenticated_base_url)
 
+    # Capture both themes even when one baseline fails. The test still fails
+    # closed after recording independent light/dark findings and screenshots.
+    failures: list[str] = []
     for visual_theme in ('light', 'dark'):
         with _browser_evidence(page, f'welcome-{visual_theme}', viewport_name):
             _load_persisted_visual_theme(page, visual_theme)
@@ -204,7 +207,7 @@ def test_welcome_visual_qa_light_and_dark(
                         evidence=str(exc),
                     )
                 )
-                raise
+                failures.append(f'{visual_theme}: {exc}')
             else:
                 record_visual_audit_finding(
                     VisualAuditFinding(
@@ -217,6 +220,8 @@ def test_welcome_visual_qa_light_and_dark(
                         evidence=evidence_name,
                     )
                 )
+
+    assert not failures, 'Welcome visual QA failures:\n' + '\n'.join(failures)
 
 
 def test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewports(
