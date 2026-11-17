@@ -226,6 +226,30 @@ A new `Ready` security run, independent review and protected staging
 admission must actually pass before audit PR #4940 can resume.
 No scan-bypass or global security GO is inferred.
 
+**Maintainer-operated public runtime readback (2026-11-17):**
+The authorized Website host operator supplied the read-only result for the
+current public `kaori-website` Compose service, not an assistant-initiated
+deployment. The current `release.env` and previous `previous-release.env`
+both exist and are readable. `docker inspect` returned active signed
+RC.9 image `docker.io/lethisaputri/kaori-website@sha256:f34414c1308c91515feb30f1bc5aee41dd117c74bcd93dcf3979be0ac4233c19`,
+health `healthy`. HTTPS checks returned `healthy` for
+`https://kaori.cloud/healthz` and
+`https://docs.kaori.cloud/healthz`; Application
+`https://app.kaori.cloud/health/ready` returned ready with database and
+Redis both `ok`. Exact captured operator evidence was linked to
+[Website #198](https://github.com/OXY7O/kaori-website/issues/198#issuecomment-6937662655).
+
+**Remaining runtime qualifications:** presence of `previous-release.env`
+does not verify its signed image/source/version identity or a completed
+rollback exercise. Actual bytes of publicly served Inter OFL and
+Lucide/Feather notice files have **not** yet been compared to the exact
+signed RC.9 source or OCI image; do not misreport source notice paths as
+served-asset verification. The maintainer additionally reported both
+repository release activation variables enabled; that is operator
+attestation only, with no independent GitHub Settings API readback.
+These facts improve the old RC.9 operational evidence but are **not a
+standing future public publication rights GO**.
+
 **Decision: HOLD / NO-GO for standing automatic public RC publication.**
 The specific additional work and approval authority is
 [KAORI #4939](https://github.com/OXY7O/KAORI/issues/4939).
