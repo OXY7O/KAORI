@@ -102,6 +102,26 @@ def save_source_connection(values: AnsibleConnectionInput, *, evidence: dict[str
     return instance
 
 
+def commit_source_revalidation(connection: IntegrationInstance, *, evidence: dict[str, Any]) -> None:
+    """Persist Git-only source evidence without granting operation authority."""
+    if connection.integration_type != INTEGRATION_TYPE or connection.provider_key != PROVIDER_KEY:
+        raise ValueError('Source revalidation requires an Ansible connection.')
+    metadata = connection.metadata_json if isinstance(connection.metadata_json, dict) else {}
+    connection.metadata_json = {
+        **metadata,
+        'source_validation': evidence,
+        'execution_enabled': False,
+        'mutation_authorized': False,
+    }
+    connection.readiness_status = 'validation_required'
+    connection.health_status = None
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+
+
 def list_connections(*, query: str = '', environment: str = '', page: int = 1, per_page: int = 5):
     statement = IntegrationInstance.query.filter_by(integration_type=INTEGRATION_TYPE, provider_key=PROVIDER_KEY)
     totals = statement.count()
