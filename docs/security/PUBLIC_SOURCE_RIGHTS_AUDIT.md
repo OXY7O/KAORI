@@ -208,6 +208,24 @@ source-license grant or standing permission for every future public RC.
   reviewer run, or stable same-digest publication. The production activation
   variable is not independently read or set by this audit.
 
+**Cross-repository security-gate triage, bounded (2026-11-17):**
+[Ready audit PR #4940 Full Admission #44007786726](https://github.com/OXY7O/KAORI/actions/runs/44007786726)
+stopped at historical Gitleaks (`18,458` commits scanned;
+`2` `generic-api-key` matches) before downstream Security and Ready
+Admission could succeed. Read-only review of the retained diagnostic
+artifact `14295157267` and original integration contract test contexts
+confirmed both exact historical matches are literal `REDACTED` placeholders
+used for rendering identity metadata, **not provider authentication keys**.
+This is **not** proof that every repo's Git history, releases, registry
+artifacts or active credentials have been cleared. Existing narrowly scoped
+fingerprint-disposition precedent [#4171](https://github.com/OXY7O/KAORI/issues/4171)
+is being reused in [#4941](https://github.com/OXY7O/KAORI/issues/4941)
+and [PR #4942](https://github.com/OXY7O/KAORI/pull/4942) for exactly two
+specific fixture fingerprints, retaining the complete scanner policy.
+A new `Ready` security run, independent review and protected staging
+admission must actually pass before audit PR #4940 can resume.
+No scan-bypass or global security GO is inferred.
+
 **Decision: HOLD / NO-GO for standing automatic public RC publication.**
 The specific additional work and approval authority is
 [KAORI #4939](https://github.com/OXY7O/KAORI/issues/4939).
