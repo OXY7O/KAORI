@@ -17,7 +17,10 @@ def review_host_key_generation(
 ) -> str:
     """Fail closed on rotated, revoked, malformed or mismatched key evidence."""
     for record in (expected, observed):
-        if not isinstance(record, Mapping) or set(record) != _FIELDS | {"revoked"}:
+        # Only canonical decoded JSON objects are admissible. Arbitrary Mapping
+        # implementations can execute code or raise during iteration/lookup,
+        # and must never be trusted as authority evidence.
+        if type(record) is not dict or record.keys() != _FIELDS | {"revoked"}:
             return "blocked"
         if type(record["revoked"]) is not bool or record["revoked"]:
             return "blocked"
