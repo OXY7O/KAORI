@@ -273,6 +273,57 @@ acceptance. Neither this audit increment nor #4939 releases an image, changes
 license metadata, edits credentials, triggers a deployment or grants public
 source reuse rights.
 
+### Website signed RC.10: bounded third-party-license evidence and Human Acceptance (2026-11-17)
+
+**Scope:** This is a narrowly bounded evidence review of the already-public,
+maintainer-accepted KAORI Website RC, **not** approval for OSI relicensing,
+brand sublicensing, a new public deployment, or indefinite recurring RCs.
+The Website package sets `private: true`, while the public repository has no
+root `LICENSE`. Public visibility is not evidence of an OSI license grant.
+
+| Surface | Authoritative evidence | Decision / limitation |
+| --- | --- | --- |
+| Signed immutable RC.10 | [Release `v0.1.2-rc.10`](https://github.com/OXY7O/kaori-website/releases/tag/v0.1.2-rc.10), admitted source `c492b64ae2b171b80ac54a18c38cd504f6b21019`, OCI digest `sha256:d4a985e44a938911c073be2164388bb4c7c8be2a2e7a742266d6ca783c6528a7`, SPDX SBOM SHA256 `59f2bf1890beb429a16f98d375fb91556bfa850eb32d280651dd8903f74d747d`; [publisher and deploy run #44018249727](https://github.com/OXY7O/kaori-website/actions/runs/44018249727) | **PASS for published identity and technical deployment**: 4/4 Full Admission, signed provenance, zero HIGH/CRITICAL Trivy findings reported, single public-slot deployment, healthy non-root image, matching public build footer, App/Docs ready. This is not legal or license verification. |
+| Human UAT | Maintainer explicitly stated **`RC.10 APPROVED`**; [exact-source / tag / digest Human Acceptance comment](https://github.com/OXY7O/kaori-website/issues/202#issuecomment-6939870730) | **ACCEPTED for this specific RC**. Do not request repeated Human Acceptance for the same immutable identity; this is neither a blanket license grant nor authorization for later RCs. |
+| Inter fonts | Upstream `@fontsource-variable/inter@5.3.0`, OFL-1.1; official terms: https://openfontlicense.org/open-font-license-official-text/ ; RC.10 source `public/licenses/inter/OFL-1.1.txt`, Git blob `40589daa9de8bc96606292ea0be712ff0f0626eb`, 4,477 bytes | **PASS for upstream notice and static build**. Existing Full Admission verifies the produced `dist/licenses/inter/OFL-1.1.txt` with `cmp` against installed upstream package `LICENSE`. OFL permits webfont distribution with copyright + full-license notice; actual HTTPS byte readback still **NOT VERIFIED**. |
+| Lucide/Feather icons | Official https://lucide.dev/license and https://github.com/lucide-icons/lucide/blob/main/LICENSE; official file and exact RC.10 `public/licenses/lucide/LICENSE.txt` both Git blob `718bb3f0e44153809972abed31839375804bf652` (3,208 bytes) | **PASS for source notice and build presence**. License retains Lucide ISC copyright/permission and the Feather-derived icon list + MIT terms. Existing Full Admission asserts the output notice and key provisions. Inline SVG geometry alone is not ownership of the upstream icons; actual HTTPS byte readback still **NOT VERIFIED**. |
+| Static artifact assembly | RC.10 `Dockerfile` copies `/build/dist/` to `/usr/share/nginx/html/` in a digest-pinned unprivileged NGINX image; NGINX `location /` uses `try_files $uri $uri/ =404`, with no license-file exclusion; Full Admission asserts both `dist/licenses/...` files | **PASS for deterministic source-to-build-to-container-copy path**, not an independently extracted/hashed deployed OCI layer or remotely fetched static notice response. |
+| KAORI brand and AI-assisted Hero | RC.10 `public/branding/kaori-logo.svg` Git blob `d463e5e8f2f2d97718b6fb6c1d6bb0f8503bf07f` and `kaori-connected-operations-hub.webp` blob `217f093c6c04c2201a4f01a26e8e6bb7edce68a8`; README/HOMEPAGE_REVIEW origin description | **Protected assets, no new license**. Maintainer-designed logo / AI-assisted illustration provenance is recorded, but exact commercial sublicensing/exclusive copyright and external rights cannot be inferred. No Apache-2.0, CC BY, trademark or model-provider rights grant. |
+| OCI base and transitive components | Pinned `ghcr.io/nginx/nginx-unprivileged:1.30.6-alpine3.24-slim` base, published signed SPDX SBOM and Trivy scan | **Security and inventory evidence, not an all-components notice compliance opinion**. Need inspect what license notices actually ship in the published OCI; distinguish build/dev-only npm packages from runtime layers. |
+| Public-served notice and rollback readback | Expected HTTPS `/licenses/inter/OFL-1.1.txt` and `/licenses/lucide/LICENSE.txt`; prior RC.9 maintainer readback confirmed `release.env` and `previous-release.env` exist | **UNVERIFIED for RC.10**. Public DNS lookup for `kaori.cloud` failed in this audit environment; that is not evidence of website outage or missing notices. RC.9 receipt existence is not an RC.10 signed rollback-identity comparison. |
+
+**Read-only completion check (authorized Website host/operator):** The exact
+published RC.10 source files have Git blob IDs above. The following host-side
+HTTPS readback can be performed without deployment, file edits, signing,
+secret access, restart or any release mutation. Record only PASS/FAIL and
+Git blob IDs in public evidence; do not expose host credentials.
+
+```bash
+set -Eeuo pipefail
+actual_inter="$(curl -fsS --connect-timeout 5 --max-time 15 https://kaori.cloud/licenses/inter/OFL-1.1.txt | git hash-object --stdin)"
+actual_lucide="$(curl -fsS --connect-timeout 5 --max-time 15 https://kaori.cloud/licenses/lucide/LICENSE.txt | git hash-object --stdin)"
+test "$actual_inter" = 40589daa9de8bc96606292ea0be712ff0f0626eb
+test "$actual_lucide" = 718bb3f0e44153809972abed31839375804bf652
+printf 'PASS: RC.10 public Inter/Lucide notice Git blobs match signed source\n'
+```
+
+**Governance interpretation:** Standard OFL/ISC/MIT permission and the
+verified source/CI notice artifacts remove the *known source-attribution gap*
+for Inter and Lucide. They do **not** prove every OCI runtime layer, prior
+Git history, third-party image or KAORI-owned asset is cleared. The approved
+RC.10 release remains accepted and immutable. Keep one independent
+[KAORI #4939](https://github.com/OXY7O/KAORI/issues/4939) scoped
+publication-rights decision for subsequent public activation, separate from
+the cross-repository open-source/relicense [#4212](https://github.com/OXY7O/KAORI/issues/4212).
+Do not introduce repetitive human UAT or separate legal approval for every
+unmodified open-license notice; only a source/content change outside the
+approved scope warrants renewed rights review. The currently merged Website
+#208 gate uses an exact-source approval marker per staging commit: this is
+**overly strict for recurring authorization** and must be reconciled with
+the approved scope in a reviewed follow-up rather than disabled or silently
+bypassed. `KAORI_WEBSITE_AUTO_STAGING_ENABLED=false` stays operator-attested
+and release mutation is disabled until that integration is accepted.
+
 ## Evidence handling
 
 Record repository, surface, bounded time window, scan/tool identity, reviewed ref or artifact identifier, reviewer, observation time, sanitized evidence ID and disposition in the approved private audit location. Public issues/PRs/Slack receive only non-sensitive coverage status and references. Do not paste credential values, private URLs, screenshots with sensitive data, or vulnerability reproduction. A confirmed active credential exposure is a private security incident requiring separately authorized rotation/revocation, not a public Issue attachment.
