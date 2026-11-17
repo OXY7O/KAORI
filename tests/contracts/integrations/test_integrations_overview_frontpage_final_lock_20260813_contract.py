@@ -65,7 +65,17 @@ def test_provider_frontpage_consistency_verifier_uses_current_title_case_contrac
     assert "'Pre-save Requirements'" not in verifier
     assert "'Full Validation'" in verifier
     assert "assert 'Core Validation' not in form, provider" in verifier
-    assert '├── Coverage Gaps' in standard
+    assert '└── Coverage Gaps' in standard
+    assert 'N Indicators (shared Inventory-style metadata label; no extra Info Tip)' in standard
+    compact_frontpage = standard.split('## Provider Front Page Contract', 1)[1].split(
+        '## Provider Registration Action Footer Contract', 1
+    )[0]
+    assert '├── Integration Contract' not in compact_frontpage
+    assert '├── Consumer Resolution' not in compact_frontpage
+    assert '└── Authority Boundary' not in compact_frontpage
+    assert 'table_label.metadata_label(metrics|length ~ " Indicators", icon="layout-grid")' in verifier
+    assert 'integration_ui.metric_grid_classes(4)' in verifier
+    assert "'info_tip.render('" in verifier
     assert 'fourth metric is always `Coverage Gaps`' in standard
     assert 'Provider Catalog shows registered count, ready count, real readiness percentage' in standard
 
@@ -75,7 +85,7 @@ def test_current_provider_shell_standard_includes_harbor() -> None:
     verifier = read('scripts/verify_provider_frontpage_consistency.py')
 
     for marker in (
-        'Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor provider landing pages',
+        'Kubernetes, Metrics Source, Alertmanager, MinIO, Harbor, GitHub, and Vault provider landing pages',
         'Canonical Connection Registry columns for Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor',
         'New Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor connection forms',
         'Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor expose registered identity',
