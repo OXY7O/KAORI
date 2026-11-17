@@ -54,3 +54,30 @@ def test_malformed_identity_values_fail_closed():
         observed = _record()
         observed["asset_id"] = value
         assert review_host_key_generation(_record(), observed) == "blocked"
+
+
+def test_noncanonical_mapping_never_reaches_lookup_or_iteration():
+    from collections.abc import Mapping
+
+    class HostileMapping(Mapping):
+        def __iter__(self):
+            raise AssertionError("untrusted mapping iteration must not execute")
+
+        def __len__(self):
+            raise AssertionError("untrusted mapping length must not execute")
+
+        def __getitem__(self, key):
+            raise AssertionError("untrusted mapping lookup must not execute")
+
+    assert review_host_key_generation(HostileMapping(), _record()) == "blocked"
+    assert review_host_key_generation(_record(), HostileMapping()) == "blocked"
+
+
+def test_dict_subclass_and_non_mapping_records_fail_closed():
+    class OverriddenDict(dict):
+        def __getitem__(self, key):
+            raise AssertionError("untrusted overridden lookup must not execute")
+
+    for candidate in (OverriddenDict(_record()), [], (), None, "record"):
+        assert review_host_key_generation(candidate, _record()) == "blocked"
+        assert review_host_key_generation(_record(), candidate) == "blocked"
