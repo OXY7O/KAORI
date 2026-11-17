@@ -7,7 +7,6 @@ from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import permission_required
 from app.common.http import htmx_target, is_htmx_request
-from app.extensions.db import db
 from app.infrastructure_automation.kubernetes.plan_currentness import (
     committed_kubespray_plan_currentness,
 )
@@ -37,6 +36,7 @@ from app.integrations.orchestration.configuration_automation.providers.ansible.p
 )
 from app.integrations.orchestration.configuration_automation.providers.ansible.service import (
     bound_kubernetes_targets,
+    commit_source_revalidation,
     connection_jobs,
     get_connection,
     save_source_connection,
@@ -451,33 +451,18 @@ def ansible_revalidate_source(instance_id: int) -> ResponseReturnValue:
             str(values.get('source_repository') or ''), str(values.get('source_sha') or '')
         )
     except AutomationSourceRejected:
-        connection.readiness_status = 'validation_required'
-        connection.health_status = None
-        connection.metadata_json = {
-            **values,
-            'source_validation': {
-                'status': 'blocked',
-                'operation_authorized': False,
-                'checked_files': 0,
-            },
-            'execution_enabled': False,
-            'mutation_authorized': False,
+        source_validation = {
+            'status': 'blocked',
+            'operation_authorized': False,
+            'checked_files': 0,
         }
-        db.session.commit()
         state = 'warning'
         message = 'Pinned source could not be reverified. Remote execution remains blocked.'
     else:
-        connection.metadata_json = {
-            **values,
-            'source_validation': evidence.as_dict(),
-            'execution_enabled': False,
-            'mutation_authorized': False,
-        }
-        connection.readiness_status = 'validation_required'
-        connection.health_status = None
-        db.session.commit()
+        source_validation = evidence.as_dict()
         state = 'success'
         message = 'Git source files reverified. Host access and execution remain blocked.'
+    commit_source_revalidation(connection, evidence=source_validation)
     record_operational_activity(
         user_id=int(current_user.id),
         event_type='ansible_source_revalidated',
