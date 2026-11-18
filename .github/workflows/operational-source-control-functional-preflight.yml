@@ -1,0 +1,50 @@
+# #4982 isolated exact-source evidence. The official admission workflow remains unchanged.
+name: Operational and Source Control Functional Preflight
+
+on:
+  push:
+    branches:
+      - kaori/task-4982-functional-contract-preflight
+
+permissions:
+  contents: read
+
+jobs:
+  focused-functional:
+    name: Existing operational dashboard and Source Control regressions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact corrective source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: "5c243f014b3bea56ec458cf8a9b5b1074d8c4ce0"
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - name: Existing exact-source Ruff and syntax checks
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "5c243f014b3bea56ec458cf8a9b5b1074d8c4ce0"
+          python -m compileall -q tests/rendering/kubernetes/dashboard/test_kubernetes_dashboard_rendering.py tests/unit/test_source_control_product_workspace.py
+      - name: Install existing QA dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements/dev.txt
+      - name: Ruff lint and formatting
+        run: |
+          python -m ruff check tests/rendering/kubernetes/dashboard/test_kubernetes_dashboard_rendering.py tests/unit/test_source_control_product_workspace.py
+          python -m ruff format --check tests/rendering/kubernetes/dashboard/test_kubernetes_dashboard_rendering.py tests/unit/test_source_control_product_workspace.py
+      - name: Existing UI reuse and style gates
+        run: |
+          python scripts/verify_ui_reuse.py
+          python scripts/verify_ui_style.py
+      - name: Existing Jinja, dashboard, Source Control SQL and UI regressions
+        run: |
+          python -m pytest -q --tb=short -p no:cacheprovider \
+            tests/rendering/kubernetes/dashboard/test_kubernetes_dashboard_rendering.py \
+            tests/contracts/dashboards/test_operational_dashboard_application_contract.py \
+            tests/contracts/dashboards/test_operational_dashboard_family_standard_contract.py \
+            tests/unit/test_source_control_product_workspace.py \
+            tests/unit/test_source_control_repository_coverage.py \
+            tests/unit/test_source_control_repository_inventory_read.py
