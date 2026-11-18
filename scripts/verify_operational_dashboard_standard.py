@@ -1617,7 +1617,11 @@ def verify() -> None:
     _require(
         metric_card,
         (
-            "macro render(label, value, description, icon, source_label='Operational', scope_label='Active Scope')",
+            "macro render(label, value, description, icon, source_label='Operational', "
+            "scope_label='Active Scope', compact=false, status_label=none, status_tone='info')",
+            '{% if compact %}',
+            'table_label.status_indicator_label(status_label, status_tone)',
+            "table_label.metadata_label(scope_label, icon='scan-search', size='compact')",
             'components/table_label.html',
             'components/table_primitives.html',
             'table_ui.block_classes()',
