@@ -83,7 +83,7 @@ def test_shared_operational_dashboard_framework_is_valid_jinja() -> None:
     )
     default_navigation = module.navigation('admission-dashboard', 'Operational Perspectives')
     assert default_navigation.count('role="tab"') == 4
-    assert 'Capacity & Demand' in default_navigation
+    assert 'Capacity &amp; Demand' in default_navigation
     assert 'id="admission-dashboard-tab-capacity"' in default_navigation
 
     security_tabs = [
@@ -95,8 +95,10 @@ def test_shared_operational_dashboard_framework_is_valid_jinja() -> None:
     domain_navigation = module.navigation('admission-dashboard', 'Security Perspectives', tabs=security_tabs)
     assert domain_navigation.count('role="tab"') == 4
     assert 'Exposure Analysis' in domain_navigation
-    assert 'Assets & Impact' in domain_navigation
-    assert 'Capacity & Demand' not in domain_navigation
+    assert 'Assets &amp; Impact' in domain_navigation
+    assert 'Findings &amp; Investigation' in domain_navigation
+    assert 'Evidence &amp; Sources' in domain_navigation
+    assert 'Capacity &amp; Demand' not in domain_navigation
     assert 'id="admission-dashboard-tab-capacity"' in domain_navigation
     assert "('overview', 'Operations Overview', 'activity')" in source
     assert "('capacity', 'Capacity & Demand', 'gauge')" in source

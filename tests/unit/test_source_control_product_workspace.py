@@ -390,7 +390,8 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
         committed_at=committed_at,
         lifecycle=(SimpleNamespace(count=0), SimpleNamespace(count=0)),
         visibility=(),
-        references=(),
+        # Collected zero retains all three canonical reference categories at count 0.
+        references=(SimpleNamespace(count=0), SimpleNamespace(count=0), SimpleNamespace(count=0)),
         attention_count=0,
         attention=(),
         single_repository=None,
