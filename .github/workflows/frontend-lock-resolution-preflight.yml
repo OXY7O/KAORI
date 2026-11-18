@@ -1,4 +1,4 @@
-# Issue #4976 package-manager resolution evidence only; never a replacement admission gate.
+# Issue #4976 isolated exact-source verification; never replaces admission.
 name: Frontend Lock Resolution Preflight
 
 on:
@@ -10,64 +10,86 @@ permissions:
   contents: read
 
 jobs:
-  resolve:
-    name: Resolve and assess watcher-free frontend dependencies
+  verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
-      - name: Checkout exact preflight source
+      - name: Checkout clean corrective candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: "74082eab63a2936224bae1e0acb61c776b0f3980"
+          fetch-depth: 0
           persist-credentials: false
       - name: Set Up Node.js
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v4.4.0
         with:
           node-version: "22.23.2"
-      - name: Establish exact npm toolchain and baseline
+      - name: Validate exact lock and compare compiled CSS
         shell: bash
         run: |
           set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "74082eab63a2936224bae1e0acb61c776b0f3980"
           npm install --global npm@10.9.9 --no-audit --no-fund
           test "$(npm --version)" = "10.9.9"
-          mkdir -p "$RUNNER_TEMP/kaori-4976"
-          git rev-parse HEAD > "$RUNNER_TEMP/kaori-4976/source-sha"
-          git grep -n -E '@tailwindcss/cli|@parcel/watcher|node_modules/\.bin/tailwindcss|tailwindcss -i|Tailwind CLI' -- .devcontainer .vscode docs scripts tests frontend Dockerfile package.json .github > "$RUNNER_TEMP/kaori-4976/source-references.txt"
+          evidence="$RUNNER_TEMP/kaori-4976"
+          mkdir -p "$evidence"
+          git rev-parse HEAD > "$evidence/source-sha"
+          cp package.json package-lock.json "$evidence/"
+          sha256sum package.json package-lock.json > "$evidence/package-sha256.txt"
+          git show 87029de5411977944c0956ffe06a7e11283e2784:package.json > package.json
+          git show 87029de5411977944c0956ffe06a7e11283e2784:package-lock.json > package-lock.json
           npm ci --no-audit --no-fund
           npm run build-css
-          cp app/static/css/output.css "$RUNNER_TEMP/kaori-4976/baseline.css"
-      - name: Resolve pinned PostCSS integration with npm
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          npm pkg delete 'devDependencies.@tailwindcss/cli' overrides
-          npm pkg set 'scripts.build-css=node scripts/build_css.mjs && node ./scripts/verify_css_build.mjs' 'scripts.watch-css=node scripts/build_css.mjs --watch'
-          npm install --save-dev --save-exact --package-lock-only --ignore-scripts --no-audit --no-fund @tailwindcss/postcss@4.3.4 postcss@8.5.33
-          cp package.json package-lock.json "$RUNNER_TEMP/kaori-4976/"
-          sha256sum package.json package-lock.json > "$RUNNER_TEMP/kaori-4976/package-sha256.txt"
+          cp app/static/css/output.css "$evidence/baseline.css"
+          cp "$evidence/package.json" "$evidence/package-lock.json" .
           npm ci --no-audit --no-fund
-      - name: Existing Node dependency audit
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          npm audit --audit-level=high --json > "$RUNNER_TEMP/kaori-4976/npm-audit.json"
-      - name: Existing CSS and frontend checks
-        shell: bash
-        run: |
-          set -Eeuo pipefail
+          npm audit --audit-level=high --json > "$evidence/npm-audit.json"
           npm run build-frontend
           npm run verify-frontend
-          cp app/static/css/output.css "$RUNNER_TEMP/kaori-4976/candidate.css"
-          sha256sum "$RUNNER_TEMP/kaori-4976/baseline.css" "$RUNNER_TEMP/kaori-4976/candidate.css" > "$RUNNER_TEMP/kaori-4976/css-sha256.txt"
-          if cmp -s "$RUNNER_TEMP/kaori-4976/baseline.css" "$RUNNER_TEMP/kaori-4976/candidate.css"; then
-            printf 'Compiled CSS byte parity: PASS\n' | tee "$RUNNER_TEMP/kaori-4976/css-parity.txt"
-          else
-            printf 'Compiled CSS bytes differ; visual and semantic review required.\n' | tee "$RUNNER_TEMP/kaori-4976/css-parity.txt"
-          fi
-      - name: Upload exact resolution and diagnostic evidence
+          npm run check-format
+          cp app/static/css/output.css "$evidence/candidate.css"
+          sha256sum "$evidence/baseline.css" "$evidence/candidate.css" > "$evidence/css-sha256.txt"
+          cmp "$evidence/baseline.css" "$evidence/candidate.css"
+          echo 'Compiled CSS byte parity: PASS' | tee "$evidence/css-parity.txt"
+          git diff --exit-code -- package.json package-lock.json
+      - name: Verify real watch rebuild on a new template
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          evidence="$RUNNER_TEMP/kaori-4976"
+          probe=app/templates/kaori_4976_watch_probe.html
+          width=27191
+          utility="w-[${width}px]"
+          test ! -e "$probe"
+          ! grep -Fq "width:${width}px" app/static/css/output.css
+          node scripts/build_css.mjs --watch > "$evidence/watch.log" 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; rm -f "$probe"' EXIT
+          for attempt in $(seq 1 60); do
+            if grep -Fq 'Watching KAORI frontend' "$evidence/watch.log"; then break; fi
+            kill -0 "$pid"
+            sleep 1
+          done
+          grep -Fq 'Watching KAORI frontend' "$evidence/watch.log"
+          printf '<div class="%s"></div>\n' "$utility" > "$probe"
+          for attempt in $(seq 1 60); do
+            if grep -Fq "width:${width}px" app/static/css/output.css; then break; fi
+            kill -0 "$pid"
+            sleep 1
+          done
+          grep -Fq "width:${width}px" app/static/css/output.css
+          echo 'Watcher detects new template and rebuilds CSS: PASS' | tee "$evidence/watch-result.txt"
+          kill "$pid"
+          wait "$pid" || true
+          rm -f "$probe"
+          trap - EXIT
+          npm run build-css
+          cmp "$evidence/candidate.css" app/static/css/output.css
+      - name: Upload exact-source verification evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: kaori-4976-npm-resolution-${{ github.sha }}
+          name: kaori-4976-exact-source-${{ github.sha }}
           path: ${{ runner.temp }}/kaori-4976/
           if-no-files-found: error
           retention-days: 7
