@@ -1228,7 +1228,7 @@ def verify() -> None:
             "'Schedule'",
             "'Retain'",
             'Reporting Tip',
-            'reporting.latest_reports[:4]',
+            '{% for report in recent_items[:4] %}',
         ),
         'shared reporting dashboard workspace',
     )
@@ -1377,7 +1377,11 @@ def verify() -> None:
     )
     _require(
         reporting_workspace,
-        ('reporting.latest_reports[:4]',),
+        (
+            '{% set recent_items = ([evidence.activity] if evidence.activity else []) '
+            'if evidence_only else reporting.latest_reports %}',
+            '{% for report in recent_items[:4] %}',
+        ),
         'shared Recent Report Activity preview',
     )
     _require(
