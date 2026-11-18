@@ -936,17 +936,17 @@ def test_source_control_overview_compact_text_table_and_scope_gate_contract():
             assert 'components/states/_blocked_state.html' in partial
             assert 'Installation Required' in partial
             assert 'Select Installation' in partial
-        if name == 'signals':
-            assert 'alert_summary.render(' in partial
-            assert 'alert_response.render(' in partial
-            assert 'recommendation_cards.render(' in partial
-            assert 'source_available=false' in partial
-        else:
-            assert 'peer_content_grid.layout_classes()' in partial
-            assert 'source_control/partials/_dashboard_reporting_summary.html' in partial
-            assert 'source_control/partials/_dashboard_reporting_guidance.html' in partial
-            assert 'section_intro.render(' not in partial
-            assert 'info_tip.render(' not in partial
+            if name == 'signals':
+                assert 'alert_summary.render(' in partial
+                assert 'alert_response.render(' in partial
+                assert 'recommendation_cards.render(' in partial
+                assert 'source_available=false' in partial
+            else:
+                assert 'peer_content_grid.layout_classes()' in partial
+                assert 'source_control/partials/_dashboard_reporting_summary.html' in partial
+                assert 'source_control/partials/_dashboard_reporting_guidance.html' in partial
+                assert 'section_intro.render(' not in partial
+                assert 'info_tip.render(' not in partial
 
 
 def test_source_control_health_register_reflows_without_horizontal_scrolling():
