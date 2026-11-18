@@ -9,6 +9,7 @@ from flask import render_template
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import create_app
+from app.infrastructure_automation.kubernetes import committed_preflight
 from app.integrations.orchestration.configuration_automation.providers.ansible import service as ansible_service
 from app.integrations.orchestration.configuration_automation.providers.ansible.preflight import (
     build_kubespray_preflight,
@@ -120,6 +121,8 @@ def test_provider_service_rolls_back_failed_revalidation_commit(monkeypatch):
 def test_valid_source_only_is_checked_but_all_operations_blocked():
     result = source_validation_posture(_connection())
     assert result['source_state'] == 'checked'
+    assert build_kubespray_preflight is committed_preflight.build_kubespray_preflight
+    assert committed_preflight.build_kubespray_preflight(_connection()).gates[0].state == 'ready'
     assert result['source_label'] == 'Source Checked'
     assert result['checked_files'] == 5
     assert result['runtime_authorized'] is False
@@ -160,7 +163,9 @@ def test_failed_source_readback_is_blocked_not_checked(state):
     ],
 )
 def test_missing_or_mismatched_metadata_never_claims_source_checked(changes, expected):
-    result = source_validation_posture(_connection(**changes))
+    connection = _connection(**changes)
+    result = source_validation_posture(connection)
+    assert committed_preflight.build_kubespray_preflight(connection).gates[0].state == 'blocked'
     assert result['source_state'] == expected
     assert not result['source_checked']
     assert result['runtime_authorized'] is False

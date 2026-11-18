@@ -17,13 +17,28 @@ from typing import Any
 
 import requests
 
-REPOSITORY = 'OXY7O/kaori-operations'
-SOURCE_CANDIDATE_SHA = '831ab7c114b1c1ba777c08ab79c91415ad8d465d'
-PROFILE_KEY = 'kubernetes_lifecycle'
-KUBESPRAY_RELEASE = 'v2.32.0'
-KUBESPRAY_COMMIT = '9751ea6f63244e433a7a6263d9ecf381e57bb8e9'
-ANSIBLE_CORE_VERSION = '2.19.3'
-ANSIBLE_RUNNER_VERSION = '2.4.3'
+from app.infrastructure_automation.kubernetes.kubespray_preflight import KUBESPRAY_COMMIT, KUBESPRAY_RELEASE
+from app.infrastructure_automation.kubernetes.source_policy import (
+    ANSIBLE_CORE_VERSION,
+    ANSIBLE_RUNNER_VERSION,
+    PROFILE_KEY,
+    REPOSITORY,
+    SOURCE_CANDIDATE_SHA,
+)
+
+__all__ = [
+    'ANSIBLE_CORE_VERSION',
+    'ANSIBLE_RUNNER_VERSION',
+    'KUBESPRAY_COMMIT',
+    'KUBESPRAY_RELEASE',
+    'PROFILE_KEY',
+    'REPOSITORY',
+    'SOURCE_CANDIDATE_SHA',
+    'AutomationSourceRejected',
+    'PublicSourceEvidence',
+    'verify_public_kubespray_source',
+]
+
 _REQUIRED_BLOBS = {
     'automation/operations.json': '4be91c6b9b0537ffe965ebff86eb76bfd576e333',
     'ansible/playbooks/linux_host_facts.yml': 'ad8ffb5d72f6ed512c30ce5cfca29b4ffb0b4e9e',

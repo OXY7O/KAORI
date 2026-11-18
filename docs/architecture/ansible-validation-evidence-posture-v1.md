@@ -8,7 +8,7 @@ Previously the Manage Connection Validation & Capabilities tab always displayed 
 
 ## Applied principle
 
-The existing provider-owned read model `source_validation_posture(connection)` renders three states derived exclusively from persisted `IntegrationInstance.metadata_json.source_validation`, comparing the approved Git identity, revision, profile, required blob count and exact version policies:
+The existing provider-owned presentation `source_validation_posture(connection)` renders three states derived exclusively from persisted `IntegrationInstance.metadata_json.source_validation`. As required by #4978, the committed-state predicate and immutable source/version pins are shared with domain-owned Kubespray preflight in `app/infrastructure_automation/kubernetes/source_policy.py`; the provider presentation cannot diverge from the Plan/worker qualification decision. GitHub retains Git transport and blob verification. The predicate compares the approved Git identity, revision, profile, required blob count and exact version policies:
 
 - **Source Checked**: source evidence matches the currently recorded approved candidate. Does **not** imply worker/SSH/cluster readiness.
 - **Source Blocked**: revalidation failed, the revision/version policy differs, or previously checked evidence no longer matches the current source.

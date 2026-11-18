@@ -13,14 +13,12 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from app.infrastructure_automation.kubernetes.committed_preflight import build_kubespray_preflight
 from app.infrastructure_automation.kubernetes.kubespray_preflight import (
     KUBESPRAY_COMMIT,
     KUBESPRAY_KUBERNETES_MINOR,
     KUBESPRAY_RELEASE,
     assess_static_kubespray_pilot,
-)
-from app.integrations.orchestration.configuration_automation.providers.ansible.preflight import (
-    build_kubespray_preflight,
 )
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution

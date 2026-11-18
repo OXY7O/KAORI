@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
+from app.infrastructure_automation.kubernetes.committed_preflight import committed_kubespray_preflight
 from app.infrastructure_automation.kubernetes.plan_review import (
     PLAN_OPERATION,
     build_kubespray_plan_review,
 )
 from app.infrastructure_automation.tasks import AUTOMATION_QUEUE, materialize_kubespray_plan_review
-from app.integrations.orchestration.configuration_automation.providers.ansible.preflight import (
-    committed_kubespray_preflight,
-)
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
 from app.platform_operations.jobs.dispatcher import (

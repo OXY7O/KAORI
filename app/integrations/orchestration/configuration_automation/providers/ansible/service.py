@@ -10,17 +10,10 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.common.pagination import paginate_query
 from app.extensions.db import db
+from app.infrastructure_automation.kubernetes.source_policy import committed_source_state
 from app.integrations.orchestration.configuration_automation.providers.ansible.contract import (
     AnsibleConnectionInput,
     require_registration_policy,
-)
-from app.integrations.source_control.source_control.providers.github.public_automation_source import (
-    ANSIBLE_CORE_VERSION,
-    ANSIBLE_RUNNER_VERSION,
-    KUBESPRAY_RELEASE,
-    PROFILE_KEY,
-    REPOSITORY,
-    SOURCE_CANDIDATE_SHA,
 )
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -155,20 +148,8 @@ def source_validation_posture(connection: IntegrationInstance) -> dict[str, Any]
     metadata = connection.metadata_json if isinstance(connection.metadata_json, dict) else {}
     evidence = metadata.get('source_validation')
     evidence = evidence if isinstance(evidence, dict) else {}
-    observed = str(evidence.get('status') or '').strip()
-    matches_source = (
-        evidence.get('repository') == metadata.get('source_repository') == REPOSITORY
-        and evidence.get('revision') == metadata.get('source_sha') == SOURCE_CANDIDATE_SHA
-        and evidence.get('profile_key') == metadata.get('profile_key') == PROFILE_KEY
-        and evidence.get('checked_files') == 5
-        and evidence.get('operation_authorized') is False
-        and metadata.get('ansible_core_version') == ANSIBLE_CORE_VERSION
-        and metadata.get('ansible_runner_version') == ANSIBLE_RUNNER_VERSION
-        and metadata.get('kubespray_release') == KUBESPRAY_RELEASE
-    )
-    checked = observed == 'source_checked' and matches_source
-    blocked = observed in {'blocked', 'rejected', 'failed'} or (observed == 'source_checked' and not checked)
-    source_state = 'checked' if checked else ('blocked' if blocked else 'not_checked')
+    source_state = committed_source_state(metadata)
+    checked = source_state == 'checked'
     status_labels = {
         'checked': 'Source Checked',
         'blocked': 'Source Blocked',
