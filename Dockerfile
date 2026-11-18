@@ -93,6 +93,7 @@ RUN --mount=type=cache,target=/root/.npm npm ci
 COPY scripts/vendor_frontend_assets.mjs \
     scripts/verify_frontend_assets.mjs \
     scripts/verify_css_build.mjs \
+    scripts/build_css.mjs \
     ./scripts/
 COPY frontend ./frontend
 COPY app/templates ./app/templates
