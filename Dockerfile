@@ -3,6 +3,8 @@
 FROM python:3.12-slim-bookworm AS base
 
 ARG PIP_VERSION=26.2.1
+# Minimum vendor security floor invalidates stale Bookworm APT build layers.
+ARG LIBPQ5_MIN_VERSION=15.20-0+deb12u1
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -24,6 +26,7 @@ RUN apt-get update \
         libpango-1.0-0 \
         libpangoft2-1.0-0 \
         shared-mime-info \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libpq5)" ge "$LIBPQ5_MIN_VERSION" \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements/base.txt /tmp/requirements/base.txt
