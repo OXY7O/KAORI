@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from pathlib import Path
+from typing import Any
+
 import pytest
 from flask import Flask
 
@@ -11,6 +14,9 @@ from app.infrastructure_automation.source import (
     verify_localhost_source,
     verify_read_only_runner_stats,
 )
+from scripts.verify_celery_topology import parse_celery_config, parse_worker_queues, validate, validate_automation_pilot
+
+ROOT = Path(__file__).resolve().parents[3]
 
 
 def _app(environment: str) -> Flask:
@@ -89,3 +95,82 @@ def test_runner_stats_reject_unsafe_or_unproven_execution(stats: object) -> None
 @pytest.mark.parametrize('changed', ({}, {'localhost': 0}))
 def test_runner_stats_accept_successful_unchanged_localhost(changed: dict[str, int]) -> None:
     verify_read_only_runner_stats({'changed': changed, 'ok': {'localhost': 1}, 'failures': {}, 'dark': {}})
+
+
+def _pilot_topology() -> dict[str, Any]:
+    config_path = ROOT / 'app' / 'config' / 'default.py'
+    production = ROOT / 'compose.production.yml'
+    development = ROOT / '.devcontainer' / 'compose.devcontainer.yml'
+    _, routes = parse_celery_config(config_path)
+    return {
+        'routes': routes,
+        'dockerfile': (ROOT / 'Dockerfile').read_text(encoding='utf-8'),
+        'config_source': config_path.read_text(encoding='utf-8'),
+        'default_compose_source': production.read_text(encoding='utf-8') + '\n' + development.read_text(encoding='utf-8'),
+        'default_worker_queues': parse_worker_queues(production) | parse_worker_queues(development),
+    }
+
+
+def test_automation_celery_topology_is_closed_without_default_worker_activation() -> None:
+    assert validate(ROOT) == []
+    assert validate_automation_pilot(**_pilot_topology()) == []
+
+
+@pytest.mark.parametrize(
+    ('old', 'new'),
+    [
+        ('FROM base AS automation-worker', 'FROM base AS missing-worker'),
+        ('--queues=automation', '--queues=automation,inventory'),
+        ('--concurrency=1', '--concurrency=2'),
+        ('--prefetch-multiplier=1', '--prefetch-multiplier=2'),
+        ('--hostname=automation@%h', '--hostname=inventory@%h'),
+        ('USER kaori\nCMD ["celery"', 'USER root\nCMD ["celery"'),
+        ('FROM base AS production', 'FROM automation-worker AS production'),
+        ('COPY requirements/automation-worker.txt /tmp/requirements/automation-worker.txt', '# missing manifest'),
+    ],
+)
+def test_automation_topology_rejects_missing_or_drifted_isolated_worker(old: str, new: str) -> None:
+    topology = _pilot_topology()
+    assert old in topology['dockerfile']
+    topology['dockerfile'] = topology['dockerfile'].replace(old, new, 1)
+    assert validate_automation_pilot(**topology)
+
+
+@pytest.mark.parametrize(
+    'route_change',
+    [
+        {'app.infrastructure_automation.tasks.collect_localhost_facts': 'inventory'},
+        {'app.infrastructure_automation.tasks.materialize_kubespray_plan_review': 'default'},
+        {'app.kubernetes.cluster.tasks.sync_all_clusters': 'automation'},
+    ],
+)
+def test_automation_topology_rejects_wrong_or_unrelated_task_routes(route_change: dict[str, str]) -> None:
+    topology = _pilot_topology()
+    topology['routes'].update(route_change)
+    assert validate_automation_pilot(**topology)
+
+
+def test_automation_topology_rejects_default_worker_and_beat_activation() -> None:
+    topology = _pilot_topology()
+    topology['default_worker_queues'].add('automation')
+    assert validate_automation_pilot(**topology)
+
+    topology = _pilot_topology()
+    topology['default_compose_source'] += '\n  automation-worker:\n'
+    assert validate_automation_pilot(**topology)
+
+    topology = _pilot_topology()
+    topology['config_source'] += (
+        "\nunsafe_schedule = {'task': 'app.infrastructure_automation.tasks.collect_localhost_facts'}\n"
+    )
+    assert validate_automation_pilot(**topology)
+
+
+def test_ordinary_celery_queues_still_require_both_default_consumers(monkeypatch: pytest.MonkeyPatch) -> None:
+    def without_ordinary_worker(path: Path) -> set[str]:
+        return parse_worker_queues(path) - {'reports'}
+
+    monkeypatch.setattr('scripts.verify_celery_topology.parse_worker_queues', without_ordinary_worker)
+    errors = validate(ROOT)
+    assert 'Celery routed queue has no production worker: reports' in errors
+    assert 'Celery routed queue has no Dev Container worker: reports' in errors

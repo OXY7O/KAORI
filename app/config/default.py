@@ -331,6 +331,8 @@ class Config:
             'app.intelligence.resolver.tasks',
         ),
         'task_routes': {
+            'app.infrastructure_automation.tasks.collect_localhost_facts': {'queue': 'automation'},
+            'app.infrastructure_automation.tasks.materialize_kubespray_plan_review': {'queue': 'automation'},
             'app.kubernetes.analytics.tasks.materialize_analytics_snapshots': {
                 'queue': ANALYTICS_CELERY_QUEUE,
             },
