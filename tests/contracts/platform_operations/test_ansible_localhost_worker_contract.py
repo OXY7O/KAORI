@@ -106,7 +106,9 @@ def _pilot_topology() -> dict[str, Any]:
         'routes': routes,
         'dockerfile': (ROOT / 'Dockerfile').read_text(encoding='utf-8'),
         'config_source': config_path.read_text(encoding='utf-8'),
-        'default_compose_source': production.read_text(encoding='utf-8') + '\n' + development.read_text(encoding='utf-8'),
+        'default_compose_source': production.read_text(encoding='utf-8')
+        + '\n'
+        + development.read_text(encoding='utf-8'),
         'default_worker_queues': parse_worker_queues(production) | parse_worker_queues(development),
     }
 
