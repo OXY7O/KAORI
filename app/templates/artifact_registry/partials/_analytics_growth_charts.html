@@ -1,0 +1,154 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
+{% set growth_charts = analytics.growth_charts %}
+<section class="border-t border-outline-subtle" data-registry-growth-charts>
+    <header class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+        <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+                <h4 class="text-sm font-semibold text-content-primary">Source Growth Trend</h4>
+                {{ info_tip.render('registry-analytics-growth-chart-guide',
+                                'Source Growth Trend Guide',
+                                'Charts only use measured Registry Metrics Source range evidence committed by the Analytics worker.',
+                                items=[
+                                'Each plotted source is a Registry provider; fleet views do not merge independent sources with different timestamps.',
+                                'New snapshots retain up to 48 measured points per chart. Older snapshots expose two actual start/end checkpoints, not an interpolated history.',
+                                'Artifact Count and Storage Usage use separate units. The selected Registry and Time Range control both charts.',
+                                'Missing, partial, or inconsistent historical series are not converted to a flat zero line.'
+                                ], placement='right', variant='guide') }}
+            </div>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">Worker-committed measured samples for the selected Registry and Time Range.</p>
+        </div>
+        {{ table_label.metadata_label(analytics.snapshot_window|upper ~ ' History', 'calendar-range', size='compact') }}
+    </header>
+    <div class="grid gap-4 p-4 lg:grid-cols-2 sm:p-5">
+        {% set growth_chart_metrics = [('artifacts', 'Artifact Count', 'Observed Registry artifact identities per source.', 'boxes'), ('storage', 'Storage Usage', 'Observed project storage usage in bytes per source.', 'database')] %}
+        {% for key, title, description, icon in growth_chart_metrics %}
+            {% set series = growth_charts[key] %}
+            {% set single_source = series[0] if series|length == 1 else none %}
+            {% set first_value = single_source.points[0].value if single_source else none %}
+            {% set last_value = single_source.points[-1].value if single_source else none %}
+            {% set has_endpoint_only = series|selectattr('mode', 'equalto', 'checkpoints')|list|length > 0 %}
+            <article class="{{ analysis_surface.evidence_shell_classes('min-w-0') }}"
+                     data-registry-growth-chart-panel="{{ key }}"
+                     data-registry-growth-chart-series="{{ series|tojson|forceescape }}">
+                <header class="flex min-w-0 items-start justify-between gap-3 border-b border-outline-subtle px-4 py-4">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="{{ analysis_surface.role_icon_classes('brand' if key == 'artifacts' else 'insight', size='compact') }}"
+                              aria-hidden="true">
+                            <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h5 class="text-sm font-semibold text-content-primary">{{ title }}</h5>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p>
+                        </div>
+                    </div>
+                    {{ table_label.metadata_label(series|length ~ ' Sources', 'database', size='compact') }}
+                </header>
+                {% if series %}
+                    <dl class="{{ analysis_surface.guidance_fact_grid_classes(3) }}">
+                        <div class="{{ analysis_surface.guidance_fact_classes() }}">
+                            <dt class="{{ analysis_surface.metric_label_classes() }}">Latest observed</dt>
+                            <dd class="mt-1.5 break-words text-lg font-semibold tabular-nums text-content-primary">
+                                {% if single_source %}
+                                    {% if key == 'storage' %}
+                                        {{ last_value|filesizeformat(binary=true) }}
+                                    {% else %}
+                                        {{ '%g'|format(last_value) }}
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-sm">Per source</span>
+                                {% endif %}
+                            </dd>
+                            <p class="mt-0.5 text-xs text-content-muted">
+                                {% if single_source and single_source.mode == 'checkpoints' %}
+                                    Latest committed checkpoint
+                                {% elif single_source %}
+                                    Latest measured point
+                                {% else %}
+                                    Independent source values
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="{{ analysis_surface.guidance_fact_classes() }}">
+                            <dt class="{{ analysis_surface.metric_label_classes() }}">Retained observations</dt>
+                            <dd class="mt-1.5 text-lg font-semibold tabular-nums text-content-primary">
+                                {% if single_source %}
+                                    {{ single_source.sample_count }}
+                                {% else %}
+                                    <span class="text-sm">Per source</span>
+                                {% endif %}
+                            </dd>
+                            <p class="mt-0.5 text-xs text-content-muted">
+                                {% if single_source and single_source.mode == 'checkpoints' %}
+                                    Start / end only
+                                {% elif single_source %}
+                                    Measured points
+                                {% else %}
+                                    Independent series
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="{{ analysis_surface.guidance_fact_classes() }}">
+                            <dt class="{{ analysis_surface.metric_label_classes() }}">Endpoint change</dt>
+                            <dd class="mt-1.5 text-sm font-semibold text-content-primary">
+                                {% if not single_source %}
+                                    Per source
+                                {% elif first_value == last_value %}
+                                    Same endpoints
+                                {% elif last_value > first_value %}
+                                    Higher endpoint
+                                {% else %}
+                                    Lower endpoint
+                                {% endif %}
+                            </dd>
+                            <p class="mt-1 text-xs text-content-muted">Not a forecast</p>
+                        </div>
+                    </dl>
+                    <div class="p-4">
+                        <div class="relative h-48 min-w-0 rounded-lg border border-outline-subtle bg-surface-muted p-3 sm:h-52">
+                            <canvas data-registry-growth-chart
+                                    width="720"
+                                    height="208"
+                                    role="img"
+                                    aria-label="{{ title }} observed source history chart"></canvas>
+                        </div>
+                        <dl class="sr-only" aria-label="{{ title }} measured source values">
+                            {% for source in series %}
+                                <dt>{{ source.label }} ({{ source.mode }})</dt>
+                                <dd>
+                                    Start {{ source.points[0].value }} at {{ source.points[0].timestamp }} Unix seconds; end {{ source.points[-1].value }} at {{ source.points[-1].timestamp }} Unix seconds.
+                                </dd>
+                            {% endfor %}
+                        </dl>
+                        <div class="mt-3 flex items-start gap-2 border-t border-outline-subtle pt-3">
+                            <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
+                                  aria-hidden="true">
+                                <i data-lucide="info" class="h-3.5 w-3.5"></i>
+                            </span>
+                            <p class="text-xs leading-5 text-content-secondary">
+                                {% if has_endpoint_only %}
+                                    Dashed series are start/end checkpoints only; intermediate history was not retained.
+                                {% elif not single_source %}
+                                    Each Registry source is independent; no fleet-wide aggregate or projection is shown.
+                                {% elif first_value == last_value %}
+                                    First and latest measured values match; intermediate observations may still differ.
+                                {% else %}
+                                    Observed endpoint change only; it is not a growth forecast or projected rate.
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="m-4 flex min-h-52 flex-col items-center justify-center gap-2 {{ analysis_surface.empty_evidence_classes('px-5 py-6 text-center') }}">
+                        <i data-lucide="chart-no-axes-column-increasing"
+                           class="h-5 w-5 text-content-muted"
+                           aria-hidden="true"></i>
+                        <p class="text-sm font-semibold text-content-primary">Historical Chart Not Available</p>
+                        <p class="max-w-md text-xs leading-5 text-content-secondary">At least two qualified measured checkpoints are required for the selected Registry and Time Range.</p>
+                    </div>
+                {% endif %}
+            </article>
+        {% endfor %}
+    </div>
+</section>

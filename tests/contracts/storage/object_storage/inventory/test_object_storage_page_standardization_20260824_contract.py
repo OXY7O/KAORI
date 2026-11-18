@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from jinja2 import Environment
+
 ROOT = Path(__file__).resolve().parents[5]
 
 
@@ -20,10 +22,13 @@ def test_object_storage_requested_wording_is_concise_and_locked() -> None:
     presentation = read('app/storage/object_storage/inventory/presentation.py')
     summary = read('app/templates/storage/object_storage/inventory/buckets/partials/_summary_cards.html')
     detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
+    filters = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_card.html')
 
     assert 'Committed inventory is available; snapshot or provider conditions need review.' in system_presentation
     assert 'Usage metrics are optional.' in presentation
     assert 'Latest committed inventory observation.' in summary
+    assert "'Name, system, type'" in filters
+    assert 'Search name, system, provider, type, or location' not in filters
     assert (
         'Usage is collected separately from quota. Prefer provider_metrics; '
         'use full_scan only for exact object enumeration.'
@@ -242,3 +247,32 @@ def test_legacy_minio_bucket_metadata_gets_display_only_compact_copy() -> None:
     assert "'description': 'Collected MinIO S3 settings.'" in client
     assert 'section.description' in bucket
     assert 'bucket.provider_detail_sections' in bucket
+
+
+def test_object_storage_posture_titles_use_canonical_indicator_metadata_labels() -> None:
+    kubernetes = read('app/templates/kubernetes/inventory/nodes/partials/_summary_cards.html')
+    shared_label = read('app/templates/components/table_label.html')
+    assert "table_label.metadata_label(posture_metrics|length ~ ' Indicators'" in kubernetes
+    assert 'macro metadata_label(text,' in shared_label
+
+    for path, title in (
+        (
+            'app/templates/storage/object_storage/inventory/systems/partials/_summary_cards.html',
+            'System Inventory Posture',
+        ),
+        (
+            'app/templates/storage/object_storage/inventory/buckets/partials/_summary_cards.html',
+            'Object Storage Namespace Posture',
+        ),
+    ):
+        source = read(path)
+        assert 'components/table_label.html' in source
+        assert f"'{title}'" in source
+        assert "table_label.metadata_label(metrics|length ~ ' Indicators', icon='layout-grid')" in source
+        assert 'header_badge=posture_badge' in source
+        assert 'posture_grid.render(metrics, columns=4)' in source
+        assert "body_classes='p-0'" in source
+        assert 'components/info_tip.html' not in source
+        assert "variant='guide'" not in source
+        assert 'posture_guide' not in source
+        Environment().parse(source)

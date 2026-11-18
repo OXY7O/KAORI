@@ -7,6 +7,14 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+_AUTOMATION_QUEUE = 'automation'
+_AUTOMATION_TASKS = frozenset(
+    {
+        'app.infrastructure_automation.tasks.collect_localhost_facts',
+        'app.infrastructure_automation.tasks.materialize_kubespray_plan_review',
+    }
+)
+
 
 @dataclass(frozen=True, slots=True)
 class TaskDefinition:
@@ -193,14 +201,92 @@ def discover_canonical_dispatch_targets(app_root: Path) -> set[str]:
     return targets
 
 
+def validate_automation_pilot(
+    *,
+    routes: dict[str, str],
+    dockerfile: str,
+    config_source: str,
+    default_compose_source: str,
+    default_worker_queues: set[str],
+) -> list[str]:
+    """Prove the existing isolated, opt-in worker instead of activating it by default."""
+    errors: list[str] = []
+    automation_tasks = {name for name, queue in routes.items() if queue == _AUTOMATION_QUEUE}
+    if automation_tasks != _AUTOMATION_TASKS:
+        errors.append('Automation queue must route exactly the two approved Infrastructure Automation tasks.')
+    if _AUTOMATION_QUEUE in default_worker_queues or 'automation-worker' in default_compose_source:
+        errors.append('Automation pilot must not be consumed or started by the default Compose fleet.')
+    if 'KAORI_AUTOMATION_LOCALHOST_PILOT_ENABLED' in default_compose_source:
+        errors.append('Default Compose must not activate the localhost automation pilot.')
+
+    stages = re.split(r'(?m)^FROM ', dockerfile)[1:]
+    pilot_stages = [stage for stage in stages if stage.splitlines()[0] == 'base AS automation-worker']
+    if len(pilot_stages) != 1:
+        errors.append('Automation queue requires the dedicated base AS automation-worker Dockerfile target.')
+    else:
+        stage = pilot_stages[0]
+        users = re.findall(r'(?m)^USER (.+)$', stage)
+        commands = re.findall(r'(?m)^CMD (.+)$', stage)
+        expected_command = [
+            'celery',
+            '--app',
+            'celery_worker:celery_app',
+            'worker',
+            '--queues=automation',
+            '--loglevel=INFO',
+            '--concurrency=1',
+            '--prefetch-multiplier=1',
+            '--hostname=automation@%h',
+        ]
+        try:
+            command = json.loads(commands[0]) if len(commands) == 1 else None
+        except json.JSONDecodeError:
+            command = None
+        if users != ['kaori'] or command != expected_command:
+            errors.append('Automation worker must run unprivileged with the exact isolated queue and bounded command.')
+        if 'COPY requirements/automation-worker.txt /tmp/requirements/automation-worker.txt' not in stage:
+            errors.append('Automation worker requires its isolated pinned dependency manifest.')
+
+    if not stages or stages[-1].splitlines()[0] != 'base AS production':
+        errors.append('Production must remain the final independent default Dockerfile target.')
+    if re.search(r'(?im)^(?:FROM automation-worker\b|COPY .*--from=automation-worker\b)', dockerfile):
+        errors.append('No other Dockerfile target may inherit or copy from the opt-in automation worker.')
+    if 'requirements/automation-worker.txt' in ''.join(stage for stage in stages if stage not in pilot_stages):
+        errors.append('Automation worker dependencies must remain outside default image stages.')
+
+    config_tree = ast.parse(config_source)
+    for node in ast.walk(config_tree):
+        if not isinstance(node, ast.Dict):
+            continue
+        for key, value in zip(node.keys, node.values, strict=True):
+            if (
+                isinstance(key, ast.Constant)
+                and key.value == 'task'
+                and isinstance(value, ast.Constant)
+                and value.value in _AUTOMATION_TASKS
+            ):
+                errors.append(f'Opt-in automation task must not be scheduled by Beat: {value.value}')
+    return errors
+
+
 def validate(root: Path) -> list[str]:
     app_root = root / 'app'
     tasks = discover_tasks(app_root)
-    imports, routes = parse_celery_config(app_root / 'config' / 'default.py')
-    worker_queues = parse_worker_queues(root / 'compose.production.yml')
+    config_path = app_root / 'config' / 'default.py'
+    imports, routes = parse_celery_config(config_path)
+    production_compose = root / 'compose.production.yml'
+    worker_queues = parse_worker_queues(production_compose)
     development_compose = root / '.devcontainer' / 'compose.devcontainer.yml'
     development_worker_queues = parse_worker_queues(development_compose)
-    errors: list[str] = []
+    production_source = production_compose.read_text(encoding='utf-8')
+    development_source = development_compose.read_text(encoding='utf-8')
+    errors = validate_automation_pilot(
+        routes=routes,
+        dockerfile=(root / 'Dockerfile').read_text(encoding='utf-8'),
+        config_source=config_path.read_text(encoding='utf-8'),
+        default_compose_source=production_source + '\n' + development_source,
+        default_worker_queues=worker_queues | development_worker_queues,
+    )
 
     task_modules = {task.module for task in tasks.values()}
     for module in sorted(task_modules - imports):
@@ -213,7 +299,8 @@ def validate(root: Path) -> list[str]:
     for name in sorted(set(routes) - set(tasks)):
         errors.append(f'Celery route targets an unknown task: {name}')
 
-    route_queues = set(routes.values())
+    # The separately validated pilot consumer is not part of either default fleet.
+    route_queues = set(routes.values()) - {_AUTOMATION_QUEUE}
     for queue in sorted(route_queues - worker_queues):
         errors.append(f'Celery routed queue has no production worker: {queue}')
     for queue in sorted(worker_queues - route_queues):
@@ -224,7 +311,6 @@ def validate(root: Path) -> list[str]:
     for queue in sorted(development_worker_queues - route_queues):
         errors.append(f'Dev Container worker consumes a queue with no registered task route: {queue}')
 
-    development_source = development_compose.read_text(encoding='utf-8')
     canonical_development_services = {
         'inventory-worker',
         'registry-security-worker',
@@ -247,7 +333,6 @@ def validate(root: Path) -> list[str]:
     if '--hostname=registry-security@%h' not in development_source:
         errors.append('Dev Container registry-security-worker has no canonical registry-security hostname.')
 
-    production_source = (root / 'compose.production.yml').read_text(encoding='utf-8')
     if '--hostname=reports@%h' not in production_source:
         errors.append('Production reports-worker has no canonical reports hostname.')
 
@@ -256,6 +341,8 @@ def validate(root: Path) -> list[str]:
 
     devcontainer_config = json.loads((root / '.devcontainer' / 'devcontainer.json').read_text(encoding='utf-8'))
     run_services = set(devcontainer_config.get('runServices') or [])
+    if 'automation-worker' in run_services:
+        errors.append('Dev Container runServices must not start the opt-in automation worker.')
     for service in sorted(canonical_development_services):
         if service not in run_services:
             errors.append(f'Dev Container runServices does not start {service}.')
@@ -286,7 +373,7 @@ def main() -> int:
     queues = parse_worker_queues(root / 'compose.production.yml')
     print(
         f'KAORI Celery topology is closed: {len(tasks)} tasks, '
-        f'{len(routes)} explicit routes, {len(queues)} consumed queues.'
+        f'{len(routes)} explicit routes, {len(queues)} default consumed queues, 1 isolated opt-in queue.'
     )
     return 0
 

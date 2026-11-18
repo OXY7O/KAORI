@@ -77,6 +77,51 @@ def test_governance_workspace_keeps_independent_readiness_planes_out_of_posture(
     assert 'Registry reconciliation' not in template
 
 
+def test_governance_sync_guide_and_compact_snapshot_copy_follow_kaori() -> None:
+    from jinja2 import Environment
+
+    partial = (ROOT / 'app/templates/artifact_registry/partials/_governance_sync_live_state.html').read_text()
+    workspace = (ROOT / 'app/templates/artifact_registry/partials/_governance_workspace.html').read_text()
+    presenter = (ROOT / 'app/artifact_registry/presentation_governance.py').read_text()
+    info_tip = (ROOT / 'app/templates/components/info_tip.html').read_text()
+
+    for template in (partial, workspace):
+        Environment().parse(template)
+    assert '{% import "components/info_tip.html" as info_tip %}' in partial
+    assert partial.index('table_label.status_label(') < partial.index('info_tip.render(')
+    assert "info_tip.render('registry-governance-operations-guide'," in partial
+    assert "variant='guide'" in partial
+    assert 'items=[' in partial
+    assert 'data-kaori-info-tip-trigger' in info_tip
+    assert 'data-kaori-info-tip-variant' in info_tip
+    assert 'Governance displays committed provider-observed policies' in partial
+    assert 'Missing, stale, partial, unavailable, or superseded evidence requires review' in partial
+
+    # Only the operator-facing supporting copy is shortened. Full committed
+    # snapshot identity, status logic and evidence metrics retain their owners.
+    assert "'Registry inventory changed; rerun Governance Sync.'" in presenter
+    assert "'Committed provider evidence.'" in presenter
+    assert "'Review evidence exceptions.'" in presenter
+    assert "'Retention and immutability evidence.'" in presenter
+    assert "latest_supporting='Last committed evidence.'" in workspace
+    for old_text in (
+        'Committed Registry Inventory changed since Governance Sync; refresh Governance evidence.',
+        'Latest committed Governance evidence.',
+        'Provider-neutral Governance snapshots.',
+        'Missing, stale, partial, unavailable, or superseded Governance collection.',
+        'Committed project retention and immutability evidence.',
+    ):
+        assert old_text not in presenter + workspace
+    assert "if status == 'Inputs Changed'" in presenter
+    assert "'status': status" in presenter
+    assert "'latest_collected_at': summary['latest_committed_at']" in presenter
+    assert "'exception_count': exception_count" in presenter
+    assert "f'{ready_count}/{provider_count} Providers Committed'" in presenter
+    assert (
+        'resource_posture_grid.render(coverage_metrics, columns=4, status_labels=coverage_status_labels)' in workspace
+    )
+
+
 def test_governance_sync_uses_registered_jobexecution_boundary() -> None:
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     adapter = (ROOT / 'app/artifact_registry/governance_job_adapter.py').read_text()
@@ -166,7 +211,7 @@ def test_governance_sync_matches_security_htmx_workspace_contract() -> None:
     assert 'hx-trigger="every 1s"' in live
     assert 'progress_bar.job_progress' in live
     assert 'registry.footer(' in governance
-    assert 'hx_select' in governance
+    assert 'hx-select="#artifact-registry-governance-registry"' in governance
 
     # Like Security, the sync operations panel contains only JobExecution
     # state/scheduling facts; Governance coverage cards are a separate section.
@@ -209,8 +254,8 @@ def test_governance_evidence_tabs_are_badgeless_full_kaori_tables() -> None:
     workspace = (ROOT / 'app/templates/artifact_registry/partials/_governance_workspace.html').read_text()
     Environment().parse(workspace)
 
-    start = workspace.index("content_tabs.render_links('registry-governance',")
-    end = workspace.index('{% endif %}', start)
+    start = workspace.index('{% set governance_evidence_tabs = [')
+    end = workspace.index('{% set governance_result_badge %}', start)
     evidence = workspace[start:end]
     # Tabs must reset to page 1 while preserving Rows; Jinja whitespace is cosmetic.
     for tab in ('policies', 'replication'):
@@ -221,9 +266,10 @@ def test_governance_evidence_tabs_are_badgeless_full_kaori_tables() -> None:
         )
     assert 'governance.project_count)' not in evidence
     assert 'governance.replication_count)' not in evidence
+    assert 'workspace_tabs.render_query_tabs(governance_evidence_tabs,' in evidence
     assert "hx_target='#artifact-registry-governance-registry'" in evidence
-    assert "hx_select='#artifact-registry-governance-registry'" in evidence
-    assert "hx_push_url='true'" in evidence
+    assert "hx_sync='#artifact-registry-governance-registry:replace'" in evidence
+    assert 'hx-select="#artifact-registry-governance-registry"' in workspace
 
     assert 'components/table.html' in workspace
     assert workspace.count("table_ui.table_classes('min-w-[") == 2
@@ -262,7 +308,7 @@ def test_governance_evidence_reuses_entire_canonical_table_workspace() -> None:
     presentation = (ROOT / 'app/artifact_registry/presentation_governance.py').read_text()
     Environment().parse(workspace)
 
-    evidence = workspace.split("content_tabs.render_links('registry-governance',", 1)[1]
+    evidence = workspace.split('workspace_tabs.render_query_tabs(governance_evidence_tabs,', 1)[1]
     assert 'table_ui.inventory_block_header(' in evidence
     assert "'Project Policy Registry'" in evidence
     assert "'Replication Policy Registry'" in evidence
@@ -356,7 +402,8 @@ def test_governance_coverage_and_evidence_follow_canonical_section_layout() -> N
     from jinja2 import Environment
 
     workspace = (ROOT / 'app/templates/artifact_registry/partials/_governance_workspace.html').read_text()
-    tabs = (ROOT / 'app/templates/components/content_tabs.html').read_text()
+    tabs = (ROOT / 'app/templates/components/workspace_tabs.html').read_text()
+    pki = (ROOT / 'app/templates/kubernetes/governance/internal_certificates/index.html').read_text()
     intro = (ROOT / 'app/templates/components/section_intro.html').read_text()
 
     Environment().parse(workspace)
@@ -391,26 +438,33 @@ def test_governance_coverage_and_evidence_follow_canonical_section_layout() -> N
     posture = (ROOT / 'app/templates/components/resource_posture_grid.html').read_text()
     tenant = (ROOT / 'app/templates/kubernetes/tenant/overview.html').read_text()
     Environment().parse(posture)
-    assert 'macro render(metrics, columns=3, status_labels=none)' in posture
+    assert 'macro render(metrics, columns=3, status_labels=none, compact=false)' in posture
     assert 'table_label.status_indicator_label(status_labels[loop.index0], tone)' in posture
     assert 'grid gap-px bg-outline-subtle' in posture
     assert '[overflow-wrap:anywhere]' in posture
     assert 'resource_posture_grid.render(estate_metrics, columns=5)' in tenant
     assert 'status_labels=' not in tenant
 
-    # URL/HTMX-owned tabs reuse the shared content-tabs contract rather than
-    # framed workspace tabs or bespoke client-side tab state.
-    assert '{% import "components/content_tabs.html" as content_tabs %}' in workspace
+    # Match Internal PKI's canonical query-backed, top-integrated tablist.
+    # Server/URL authority, progressive navigation and HTMX selection survive.
+    assert '{% import "components/workspace_tabs.html" as workspace_tabs %}' in workspace
+    assert 'content_tabs.render_links(' not in workspace
     assert 'framed_workspace_tabs' not in workspace
-    assert "content_tabs.render_links('registry-governance'," in workspace
-    assert 'embedded=true' in workspace
+    assert 'workspace_tabs.render_query_tabs(governance_evidence_tabs,' in workspace
+    assert 'workspace_tabs.render_query_tabs(evidence_tabs,' in pki
+    assert 'data-kaori-tab-variant="query-backed-htmx"' in tabs
+    assert 'macro render_query_tabs(' in tabs
+    assert 'hx-push-url="true"' in tabs
+    assert 'hx-swap="outerHTML"' in tabs
+    assert 'id="artifact-registry-governance-registry"' in workspace
+    assert 'hx-select="#artifact-registry-governance-registry"' in workspace
     assert "hx_target='#artifact-registry-governance-registry'" in workspace
-    assert "hx_select='#artifact-registry-governance-registry'" in workspace
-    assert "hx_push_url='true'" in workspace
-    assert "hx_target='#artifact-registry-governance-registry'" in workspace
+    assert "hx_sync='#artifact-registry-governance-registry:replace'" in workspace
+    assert 'class="{{ section_card.shell_classes() }}"' in workspace
+    assert '<div class="min-w-0 p-4 sm:p-5">' in workspace
+    assert '<section class="{{ table_ui.block_classes() }}">' in workspace
     assert "url_for('artifact_registry.governance', tab='policies', page=1" in workspace
     assert "url_for('artifact_registry.governance', tab='replication', page=1" in workspace
-    assert 'macro render_links(' in tabs
     assert 'macro render(' in intro
 
     # Existing committed policy/replication views, active row page sizes and
@@ -433,4 +487,4 @@ def test_registry_guidance_copy_keeps_provider_and_committed_evidence_authority(
     )
     assert 'Harbor owns repositories, artifacts, policies, and runtime;' in harbor
     assert 'KAORI validates, normalizes, correlates, and commits evidence.' in harbor
-    assert 'Committed project retention and immutability evidence.' in governance
+    assert 'Retention and immutability evidence.' in governance

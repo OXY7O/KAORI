@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from jinja2 import Environment
+
 
 def read(path: str) -> str:
     return Path(path).read_text(encoding='utf-8')
@@ -83,9 +85,11 @@ def test_intelligence_overview_uses_clean_summary_information_architecture() -> 
     template = read('app/templates/intelligence/overview.html')
 
     for section in (
+        'Intelligence Summary',
+        'Intelligence Assessment',
         'Intelligence Posture',
+        'Workspace Navigation',
         'Intelligence Workspaces',
-        'Operational Boundary',
     ):
         assert section in template
 
@@ -99,6 +103,7 @@ def test_intelligence_overview_uses_clean_summary_information_architecture() -> 
     ):
         assert removed_section not in template
 
+    assert 'Operational Boundary' not in template
     assert 'payload.priorities' not in template
     assert '_recommendation_records.html' not in template
     assert '_alert_ops_active_table.html' not in template
@@ -137,8 +142,46 @@ def test_intelligence_overview_posture_is_compact_and_cross_workspace() -> None:
 
     assert 'current Intelligence findings may be incomplete.' in overview
     assert (
-        'Provider collection and refresh remain worker-owned; this page reads committed KAORI state only.' in template
+        'Provider collection and refresh are worker-owned; this Overview reads committed KAORI state only.' in template
     )
+
+
+def test_intelligence_posture_signals_align_titles_values_and_supporting_copy() -> None:
+    template = read('app/templates/intelligence/overview.html')
+    source = read('app/intelligence/overview.py')
+    Environment().parse(template)
+
+    assert 'data-intelligence-posture-signals' in template
+    assert template.count('data-intelligence-posture-signal>') == 1
+    region = template.split('data-intelligence-posture-signals', 1)[1].split('{% endfor %}', 1)[0]
+    assert 'group flex min-w-0 flex-col px-4 py-4' in region
+    assert 'flex min-h-10 items-center justify-between' in region
+    assert 'min-h-12 text-base font-semibold leading-6' in region
+    assert 'data-intelligence-posture-value' in region
+    assert 'data-intelligence-posture-supporting' in region
+    assert region.index('<h3 ') < region.index('data-intelligence-posture-value')
+    assert region.index('data-intelligence-posture-value') < region.index('data-intelligence-posture-supporting')
+    assert 'focus-visible:ring-outline-focus' in region
+    assert 'grid divide-y divide-outline-subtle lg:grid-cols-3 lg:divide-x lg:divide-y-0' in template
+    assert 'hover:bg-surface-hover' in region
+    assert 'focus-visible:ring-inset' in region
+    assert 'rounded-xl border' not in region
+    assert 'bg-surface-card' not in region
+    assert 'bg-surface-muted {{ icon_tone_classes }}' in region
+    assert 'text-content-primary' in region
+    assert 'text-content-muted' in region
+    assert 'bg-status-' not in region
+    assert 'text-status-critical' in region
+    assert 'text-status-warning' in region
+    assert 'text-status-normal' in region
+    assert 'url_for(item.href_endpoint)' in region
+
+    assert 'critical signals need operator review.' in source
+    assert '24h committed Inventory only.' in source
+    assert 'Evidence Freshness describes qualified committed Inventory coverage' in template
+    assert 'not a guarantee of scanner, metrics, or rule-evaluator freshness' in template
+    assert "'tone': 'normal' if evidence and evidence['complete'] else 'warning'" in source
+    assert "else automation['execution_label']" in source
 
 
 def test_intelligence_overview_exposes_four_owned_workspaces_as_simple_rows() -> None:
@@ -164,16 +207,42 @@ def test_intelligence_overview_exposes_four_owned_workspaces_as_simple_rows() ->
     assert 'Open Workspace' in template
 
 
-def test_intelligence_overview_keeps_one_explicit_operational_boundary() -> None:
+def test_intelligence_overview_reuses_section_intros_and_title_guides() -> None:
     template = read('app/templates/intelligence/overview.html')
+    shared = read('app/templates/intelligence/components/_workspace.html')
+    Environment().parse(template)
+    Environment().parse(shared)
 
-    assert 'Operational Boundary' in template
-    assert 'Overview only presents aggregate Intelligence posture.' in template
-    assert (
-        'Provider collection and refresh remain worker-owned; this page reads committed KAORI state only.' in template
-    )
+    assert "table_label.metadata_label('4 Indicators', icon='layout-dashboard')" in template
+    assert 'title_extra=summary_title_label' in template
+    assert "section_intro.render('Intelligence Assessment'" in template
+    assert "section_intro.render('Workspace Navigation'" in template
+    assert 'data-intelligence-assessment-section' in template
+    assert 'data-intelligence-navigation-section' in template
+    assert 'title_extra=posture_guide' in template
+    assert 'title_extra=workspace_guide' in template
+    assert 'title_extra=None' in shared
+    assert shared.count('{% if title_extra %}{{ title_extra }}{% endif %}') == 2
+    assert "table_label.status_label(badge_text, badge_tone, size='compact')" in shared
+
+
+def test_intelligence_overview_guides_replace_redundant_operational_boundary() -> None:
+    template = read('app/templates/intelligence/overview.html')
+    for guide, title in (
+        ('intelligence-posture-guide', 'Intelligence Posture Guide'),
+        ('intelligence-workspaces-guide', 'Intelligence Workspaces Guide'),
+    ):
+        assert guide in template
+        assert title in template
+
+    assert template.count("variant='guide'") == 2
+    assert 'No live provider collection, notification delivery or infrastructure mutation' in template
+    assert 'Provider collection and refresh are worker-owned' in template
+    assert 'operational_callout.render(' not in template
+    assert 'Operational Boundary' not in template
+    assert 'operational_callout.semantic_border_classes(item.tone)' not in template
+    assert 'operational_callout.html' not in template
     assert 'Evidence Boundary' not in template
-    assert 'Alert Lifecycle' not in template
     assert 'Automation Boundary' not in template
 
 

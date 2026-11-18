@@ -216,10 +216,13 @@ def test_integration_overview_readiness_copy_is_explicit_and_actionable() -> Non
     overview = read('app/templates/integrations/overview.html')
 
     assert 'Validated targets eligible for governed use.' in overview
-    assert (
-        'Registered targets that still lack a complete, usable connection configuration and cannot enter readiness validation.'
-        in overview
-    )
+    for short_copy in (
+        'Usable endpoint or Kubernetes connection.',
+        'Disabled, degraded, blocked, or unvalidated.',
+        'Connection setup incomplete or unusable.',
+    ):
+        assert short_copy in overview
+    assert 'readiness validation cannot start until configuration is complete.' in overview
     assert 'Validated targets eligible for governed use' in overview
 
 
@@ -264,3 +267,171 @@ def test_integration_hero_navigation_does_not_scroll_outer_shell() -> None:
     assert "hx_swap='outerHTML show:none'" in read('app/templates/integrations/overview.html')
     assert 'data-kaori-main-scroll' in shell
     assert 'h-full overflow-hidden' in shell
+
+
+def test_integration_portfolio_snapshot_owns_title_guide_and_concise_metric_copy() -> None:
+    from jinja2 import Environment
+
+    overview = read('app/templates/integrations/overview.html')
+    sql = read('app/integrations/overview_sql.py')
+    Environment().parse(overview)
+
+    header = overview.split('aria-labelledby="integration-portfolio-title"', 1)[1].split(
+        '<div class="{{ integration_ui.metric_grid_classes(4) }}">', 1
+    )[0]
+    assert '{% import "components/info_tip.html" as info_tip %}' in overview
+    assert header.count("info_tip.render('integration-portfolio-snapshot-guide'") == 1
+    assert header.index('>Integration Portfolio Snapshot</h2>') < header.index(
+        "info_tip.render('integration-portfolio-snapshot-guide'"
+    )
+    assert "variant='guide'" in header
+    assert "placement='right'" in header
+    assert "current_user.has_permission('jobs.view')" in header
+    assert 'Review Jobs' in header
+
+    assert "integration_ui.metric_card('Configured Targets', stats.configured" in overview
+    assert "integration_ui.metric_card('Ready for Use', stats.ready" in overview
+    assert "integration_ui.metric_card('Readiness Review', stats.readiness_review" in overview
+    assert "integration_ui.metric_card('Not Configured', stats.not_configured" in overview
+
+    for detail in (
+        'Usable endpoint or Kubernetes connection.',
+        'Disabled, degraded, blocked, or unvalidated.',
+        'Connection setup incomplete or unusable.',
+    ):
+        assert detail in overview
+        assert len(detail) <= 46
+    for meaning in (
+        'configuration alone is not readiness',
+        'canonical active/enabled lifecycle and validated ready state',
+        'still awaiting validation',
+        'readiness validation cannot start',
+        'External providers remain authoritative',
+    ):
+        assert meaning in header
+
+    assert 'stats.ready' in overview
+    assert 'validated' in overview.lower()
+    assert 'whitespace-nowrap' not in header
+    assert (
+        'whitespace-nowrap'
+        not in overview.split('<div class="{{ integration_ui.metric_grid_classes(4) }}">', 1)[1].split('</div>', 1)[0]
+    )
+    assert "totals['readiness_review']" in sql
+
+
+def test_runtime_overview_lifecycle_action_moves_to_authorized_header() -> None:
+    from jinja2 import Environment
+
+    runtime = read('app/templates/integrations/partials/_runtime_overview.html')
+    Environment().parse(runtime)
+
+    header = runtime.split('<header', 1)[1].split('</header>', 1)[0]
+    after_pagination = runtime.split('provider_registry.pagination_footer(runtime_pagination', 1)[1]
+
+    assert header.count('Open Data Lifecycle') == 1
+    assert "current_user.has_permission('platform_operations.view_data_lifecycle')" in header
+    assert "url_for('platform_operations.data_lifecycle.index', domain='runtime_observation')" in header
+    assert header.index('Open Data Lifecycle') < header.index('Reload Evidence')
+    assert 'class="{{ table_ui.action_classes() }}"' in header
+    assert 'Runtime Evidence Lifecycle' not in runtime
+    assert 'Open Data Lifecycle' not in after_pagination
+    assert 'data-kaori-runtime-overview-violet-icons' in runtime
+    assert 'provider_registry.pagination_footer(runtime_pagination' in runtime
+    assert '<div id="integration-runtime-modal-host"></div>' in runtime
+    assert 'hx-target="#integration-runtime-overview"' in header
+    assert 'hx-push-url="true"' in header
+    assert 'No Integration Targets Registered' in runtime
+    assert 'No Runtime Targets Match These Filters' in runtime
+
+
+def test_runtime_overview_modal_uses_single_readable_evidence_context() -> None:
+    from jinja2 import Environment
+
+    modal = read('app/templates/integrations/partials/_runtime_overview_modal.html')
+    Environment().parse(modal)
+
+    assert 'record_detail_modal.render(' in modal
+    assert 'data-kaori-runtime-overview-modal' in modal
+    assert modal.count('data-kaori-runtime-overview-evidence-context') == 1
+    assert 'data-kaori-runtime-overview-diagnostic-evidence' in modal
+    assert 'data-kaori-runtime-overview-evidence-boundary' in modal
+    assert 'data-kaori-runtime-overview-recommended-action' in modal
+    assert modal.count('class="grid gap-px bg-outline-subtle sm:grid-cols-2"') == 1
+    assert 'grid gap-px border-t border-outline-subtle bg-outline-subtle sm:grid-cols-2' in modal
+    assert 'border-t border-outline-subtle px-4 py-4 sm:px-5' in modal
+
+    for heading in (
+        'Current Runtime Gate',
+        'Capability Context',
+        'Diagnostic Evidence',
+        'Evidence Boundary',
+        'Recommended Action',
+    ):
+        assert heading in modal
+
+    assert "integration_status(detail.health_status, display='indicator')" in modal
+    assert "integration_status(detail.readiness, display='indicator')" in modal
+    assert "detail.capability_profile or 'Not Observed'" in modal
+    assert 'detail.capability_attention_display' in modal
+    assert "detail.message or 'No runtime or validation diagnostic message" in modal
+    assert 'Runtime health comes only from a persisted observation.' in modal
+    assert "if detail.health_status != 'healthy' else" in modal
+    assert 'href="{{ workspace_url }}"' in modal
+    assert '{{ workspace_label }}' in modal
+    assert '[overflow-wrap:anywhere]' in modal
+    assert 'bg-surface-hover' in modal
+    assert "footer_text='Runtime evidence is persisted independently" in modal
+
+
+def test_runtime_overview_metric_summary_is_inset_from_header_and_filters() -> None:
+    from jinja2 import Environment
+
+    runtime = read('app/templates/integrations/partials/_runtime_overview.html')
+    workspace = read('app/templates/integrations/components/_workspace.html')
+    Environment().parse(runtime)
+
+    after_header = runtime.split('</header>', 1)[1]
+    region = after_header.split('data-kaori-runtime-metrics-region', 1)[1].split(
+        'table_ui.inventory_filter_bar_classes()', 1
+    )[0]
+    assert 'class="px-5 py-4 sm:px-6"' in after_header
+    assert after_header.index('data-kaori-runtime-metrics-region') < after_header.index(
+        'table_ui.inventory_filter_bar_classes()'
+    )
+    assert 'class="{{ integration_ui.metric_grid_classes(5) }}"' in region
+    assert 'overflow-hidden rounded-xl border border-outline-subtle' in region
+    assert 'metric_grid_classes(5) }} border-b border-outline-subtle' not in region
+    assert 'integration_ui.metric_card(label, value, helper, icon, tone)' in region
+    assert 'sm:grid-cols-2 xl:grid-cols-5' in workspace
+    assert "('Healthy', runtime_stats.healthy" in region
+    assert "('Degraded', runtime_stats.degraded" in region
+    assert "('Unhealthy', runtime_stats.unhealthy" in region
+    assert "('Not Observed', runtime_stats.not_observed" in region
+    assert "('Capability Attention', runtime_stats.capability_attention" in region
+    assert 'provider_registry.pagination_footer(runtime_pagination' in runtime
+    assert 'hx-trigger="change delay:100ms"' in runtime
+    assert 'Open Data Lifecycle' in runtime
+    assert 'Reload Evidence' in runtime
+
+
+def test_runtime_final_lock_checks_authorized_lifecycle_header_instead_of_legacy_footer() -> None:
+    runtime = read('app/templates/integrations/partials/_runtime_overview.html')
+    verifier = read('scripts/verify_integrations_final_lock.py')
+
+    header = runtime.split('</header>', 1)[0]
+    assert 'Open Data Lifecycle' in header
+    assert 'Runtime Evidence Lifecycle' not in runtime
+    assert "runtime_header = runtime_overview.split('</header>', 1)[0]" in verifier
+    assert "'components/states/_empty_state.html'" in verifier
+    assert 'No Integration Targets Registered' in verifier
+    assert 'No Runtime Targets Match These Filters' in verifier
+    assert "current_user.has_permission('platform_operations.view_data_lifecycle')" in verifier
+    assert "url_for('platform_operations.data_lifecycle.index', domain='runtime_observation')" in verifier
+    assert "runtime_header.count('Open Data Lifecycle') == 1" in verifier
+    assert "'Reload Evidence' in runtime_header" in verifier
+    assert "'Runtime Evidence Lifecycle' not in runtime_overview" in verifier
+    assert 'provider_registry.pagination_footer(runtime_pagination' in verifier
+    assert '<div id="integration-runtime-modal-host"></div>' in verifier
+    assert 'Runtime Overview must expose authorized Data Lifecycle governance in header' in verifier
+    assert "'Runtime Evidence Lifecycle' in runtime_overview" not in verifier

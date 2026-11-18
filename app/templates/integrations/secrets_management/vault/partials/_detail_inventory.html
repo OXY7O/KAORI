@@ -1,146 +1,376 @@
-{% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/info_tip.html" as info_tip %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/pagination.html" as pagination_ui %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "integrations/components/_record_actions.html" as record_actions %}
+{% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-<section class="{{ integration_ui.section_shell_classes() }} overflow-hidden"
-         data-kaori-vault-inventory-lifecycle>
-    {{ connection_validation_header.render('Vault Inventory & Lifecycle',
-        'Review independently committed KV v2 metadata, public PKI issuers and stored certificate evidence.',
-        icon='database',
-        title_extra=info_tip.render('vault-inventory-evidence-guide', 'Vault Committed Inventory',
-        'Vault owns Secret values and issuance; KAORI reports source-qualified, metadata-only committed evidence.',
-        [
-        'Not Collected is not the same as a confirmed zero.',
-        'Stored PKI certificate collection requires explicit opt-in.',
-        'Secret details remain in separate authorized Secrets & PKI workspaces.'
-        ], placement='right', variant='guide') ) }}
-    <div class="space-y-4 p-4 sm:p-5">
-        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
-                 aria-labelledby="vault-stored-pki-readiness">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                    <h3 id="vault-stored-pki-readiness"
-                        class="text-sm font-semibold text-content-primary">PKI Stored Certificates</h3>
-                    <p class="mt-1 text-xs text-content-muted">Optional authenticated LIST /certs; only retained certificates, not total issuance or deployment.</p>
-                </div>
-                {% if current_user.has_permission('jobs.view') %}
-                    <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.pki.stored_certs.sync') }}"
-                       class="text-xs font-semibold text-kaori-primary hover:underline">Jobs &amp; Executions</a>
-                {% endif %}
-            </div>
-            <dl class="mt-4 grid gap-3 sm:grid-cols-3">
-                <div>
-                    <dt class="text-xs text-content-muted">Evidence</dt>
-                    <dd class="mt-1 text-sm font-semibold text-content-primary">
-                        {{ stored_cert_readiness.label }}
-                    </dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-content-muted">Committed PKI Mounts</dt>
-                    <dd class="mt-1 text-sm font-semibold text-content-primary">
-                        {{ stored_cert_readiness.committed_mounts if stored_cert_readiness.committed_mounts is not none else 'Not Collected' }}
-                    </dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-content-muted">Observed Stored Certificates</dt>
-                    <dd class="mt-1 text-sm font-semibold text-content-primary">
-                        {{ stored_cert_readiness.observed_certificates if stored_cert_readiness.observed_certificates is not none else 'Not Collected' }}
-                    </dd>
-                </div>
-            </dl>
-            <p class="mt-3 text-xs text-content-muted">Last commit: {{ stored_cert_readiness.last_committed_at|user_datetime if stored_cert_readiness.last_committed_at else 'Never' }}. no_store/imported certificates excluded; trust, revocation and delivered endpoints are not evaluated.</p>
-        </section>
-        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
-                 aria-labelledby="vault-pki-public-status">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                    <h3 id="vault-pki-public-status"
-                        class="text-sm font-semibold text-content-primary">PKI Public Issuer Evidence</h3>
-                    <p class="mt-1 text-xs text-content-muted">Committed public certificate fingerprints and issuer freshness. Provider readiness does not prove PKI LIST/read access.</p>
-                </div>
-                {% if current_user.has_permission('jobs.view') %}
-                    <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.pki.sync') }}"
-                       class="text-xs font-semibold text-kaori-primary hover:underline">Jobs &amp; Executions</a>
-                {% endif %}
-            </div>
-            <dl class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <div>
-                    <dt class="text-xs text-content-muted">Collection State</dt>
-                    <dd class="mt-1 text-sm font-semibold text-content-primary">
-                        {{ public_pki_readiness.label }}
-                    </dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-content-muted">Approved PKI Mounts</dt>
-                    <dd class="mt-1 text-sm font-semibold text-content-primary">
-                        {{ public_pki_readiness.approved_mounts if public_pki_readiness.approved_mounts is not none else 'Unavailable' }}
-                    </dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-content-muted">Committed Mount Coverage</dt>
-                    <dd class="mt-1 text-sm font-semibold text-content-primary">
-                        {{ public_pki_readiness.committed_mounts if public_pki_readiness.committed_mounts is not none else 'Not Collected' }} / {{ public_pki_readiness.approved_mounts if public_pki_readiness.approved_mounts is not none else 'Unknown' }}
-                    </dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-content-muted">Observed Public Issuers</dt>
-                    <dd class="mt-1 text-sm font-semibold text-content-primary">
-                        {{ public_pki_readiness.observed_issuers if public_pki_readiness.observed_issuers is not none else 'Not Collected' }}
-                    </dd>
-                </div>
-            </dl>
-            <p class="mt-3 text-xs text-content-muted">Last commit: {{ public_pki_readiness.last_committed_at|user_datetime if public_pki_readiness.last_committed_at else 'Never' }}. Trust/revocation and delivered certificate status are not evaluated.</p>
-        </section>
-        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
-                 aria-labelledby="vault-inventory-posture-title">
+{% set evidence_commits = [
+    inventory_readiness.last_committed_at,
+    public_pki_readiness.last_committed_at,
+    stored_cert_readiness.last_committed_at
+] %}
+{% set committed_streams = evidence_commits|select|list|length %}
+{% set inventory_tone = 'not_observed' if committed_streams == 0 else ('degraded' if inventory_readiness.state in ['stale', 'partial'] else 'info') %}
+{% set inventory_label = 'No Committed Inventory' if committed_streams == 0 else 'Committed Evidence' %}
+{% set approved_kv = inventory_readiness.approved_mount_count %}
+{% set approved_pki = public_pki_readiness.approved_mounts if public_pki_readiness.approved_mounts is not none else 0 %}
+{% set sources = [
+    {
+        'key': 'kv2',
+        'icon': 'database',
+        'name': 'KV v2 Metadata',
+        'description': 'Version and path metadata only; no Secret values.',
+        'state': inventory_readiness.state,
+        'state_label': inventory_readiness.state|replace('_', ' ')|title,
+        'approved': inventory_readiness.approved_mount_count,
+        'committed': inventory_readiness.committed_mount_count,
+        'observed': inventory_readiness.observed_secret_count,
+        'observed_label': 'Observed Secret Records',
+        'timestamp': inventory_readiness.last_committed_at,
+        'job_key': 'secrets_pki.inventory.sync',
+        'boundary': 'Vault owns Secret values and ACLs; this stream retains bounded KV v2 metadata only. Partial or stale records do not establish zero Secret count.'
+    },
+    {
+        'key': 'pki-public',
+        'icon': 'shield-check',
+        'name': 'PKI Public Issuers',
+        'description': 'Public certificate fingerprints and issuer freshness.',
+        'state': 'info' if public_pki_readiness.last_committed_at else 'not_observed',
+        'state_label': public_pki_readiness.label,
+        'approved': public_pki_readiness.approved_mounts,
+        'committed': public_pki_readiness.committed_mounts,
+        'observed': public_pki_readiness.observed_issuers,
+        'observed_label': 'Observed Public Issuers',
+        'timestamp': public_pki_readiness.last_committed_at,
+        'job_key': 'secrets_pki.pki.sync',
+        'boundary': 'Public issuer evidence cannot establish chain trust, certificate revocation status, private-key access, or delivered endpoint readiness.'
+    },
+    {
+        'key': 'pki-stored',
+        'icon': 'file-lock-2',
+        'name': 'PKI Stored Certificates',
+        'description': 'Optional retained certificate inventory; no issued-key access.',
+        'state': 'info' if stored_cert_readiness.last_committed_at else ('disabled' if not instance.pki_stored_certs_enabled else 'not_observed'),
+        'state_label': stored_cert_readiness.label,
+        'approved': public_pki_readiness.approved_mounts,
+        'committed': stored_cert_readiness.committed_mounts,
+        'observed': stored_cert_readiness.observed_certificates,
+        'observed_label': 'Observed Stored Certificates',
+        'timestamp': stored_cert_readiness.last_committed_at,
+        'job_key': 'secrets_pki.pki.stored_certs.sync',
+        'boundary': 'Requires explicit collection opt-in; LIST certs sees retained certificates only, not total issuance, no_store/imported certificates, or live deployment.'
+    }
+] %}
+<div class="space-y-4 font-sans"
+     data-kaori-vault-inventory-lifecycle
+     data-kaori-inventory-lifecycle-v4
+     data-kaori-inventory-lifecycle-v5>
+    <section class="{{ integration_ui.section_shell_classes() }}"
+             aria-labelledby="vault-inventory-lifecycle-title">
+        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                    <h3 id="vault-inventory-posture-title"
-                        class="text-sm font-semibold text-content-primary">KV v2 Inventory Evidence</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Committed metadata only. Vault API readiness does not independently prove permission to list KV v2 metadata.</p>
+                <div class="flex min-w-0 flex-1 items-start gap-3">
+                    {{ integration_ui.palette_icon('database', 'brand', size='lg', rounded='xl') }}
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 id="vault-inventory-lifecycle-title"
+                                class="text-base font-semibold text-content-primary">Inventory &amp; Lifecycle</h2>
+                            {{ info_tip.render('vault-inventory-evidence-guide',
+                                                        'Vault Committed Inventory',
+                                                        'Vault remains authoritative for Secret values, PKI keys and ACLs. KAORI reports independently qualified, read-only evidence.',
+                                                        [
+                                                        'Not Collected is not a confirmed zero, and each stream commits independently.',
+                                                        'PKI Stored Certificates requires explicit collection opt-in.',
+                                                        'Deletion is blocked by active work or retained evidence; Vault itself is never modified.'
+                                                        ],
+                                                        placement='right', variant='guide') }}
+                        </div>
+                        <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review committed KV v2 metadata, public issuers, stored certificates, consumers, and governance boundaries.</p>
+                    </div>
                 </div>
-                {% if current_user.has_permission('jobs.view') %}
-                    <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.inventory.sync') }}"
-                       class="text-xs font-semibold text-kaori-primary hover:underline">Jobs &amp; Executions</a>
-                {% endif %}
+                <div class="shrink-0">{{ integration_status(inventory_tone, inventory_label, display='text') }}</div>
             </div>
-            <dl class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <div>
-                    <dt class="text-xs text-content-muted">Collection State</dt>
-                    <dd class="mt-1 text-sm font-semibold text-content-primary">
-                        {{ inventory_readiness.state|replace('_', ' ') |title }}
-                    </dd>
+        </header>
+        <section class="border-b border-outline-subtle bg-surface-subtle"
+                 aria-labelledby="vault-inventory-lifecycle-decision-title"
+                 data-kaori-inventory-lifecycle-decision
+                 data-kaori-inventory-snapshot-strip>
+            <header class="border-b border-outline-subtle px-5 py-3.5 sm:px-6">
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        {{ integration_ui.palette_icon('database-zap', 'brand', size='md') }}
+                        <div class="min-w-0">
+                            <h3 id="vault-inventory-lifecycle-decision-title"
+                                class="text-base font-semibold leading-6 text-content-primary">Inventory &amp; Lifecycle Decision</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Freshness, independently committed evidence, approved scopes, and lifecycle boundaries are summarized before the source details.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+                        {{ table_label.metadata_label(committed_streams ~ ' / 3 Committed Streams') }}
+                        {{ integration_status('blocked' if deletion_guard.blocked else 'ready', 'Deletion Blocked' if deletion_guard.blocked else 'Guardrails Passed', display='text') }}
+                    </div>
                 </div>
-                <div>
-                    <dt class="text-xs text-content-muted">Approved Mounts</dt>
-                    <dd class="mt-1 text-sm font-semibold text-content-primary">
-                        {{ inventory_readiness.approved_mount_count }}
-                    </dd>
+            </header>
+            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4"
+                 data-kaori-inventory-decision>
+                <article class="bg-surface-card p-5">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Snapshot Freshness</p>
+                            <p class="mt-2 text-lg font-semibold text-content-primary">{{ 'Not Collected' if committed_streams == 0 else 'Source-Owned' }}</p>
+                        </div>
+                        {{ integration_ui.palette_icon('database', 'info' if committed_streams else 'unknown', size='md') }}
+                    </div>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">Each stream has its own commit timestamp; no combined snapshot is asserted.</p>
+                </article>
+                <article class="bg-surface-card p-5">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Evidence Coverage</p>
+                            <p class="mt-2 text-lg font-semibold tabular-nums text-content-primary">{{ committed_streams }} / 3 Streams</p>
+                        </div>
+                        {{ integration_ui.palette_icon('badge-check', 'info' if committed_streams else 'unknown', size='md') }}
+                    </div>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">KV v2, public PKI, and optional stored PKI commit separately; this is not a readiness score.</p>
+                </article>
+                <article class="bg-surface-card p-5">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Approved Scopes</p>
+                            <p class="mt-2 text-lg font-semibold tabular-nums text-content-primary">{{ approved_kv }} KV · {{ approved_pki }} PKI</p>
+                        </div>
+                        {{ integration_ui.palette_icon('layers-3', 'info', size='md') }}
+                    </div>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">Configured scope is not proof of successful collection or consumer authorization.</p>
+                </article>
+                <article class="bg-surface-card p-5">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Lifecycle Gate</p>
+                            <p class="mt-2 text-lg font-semibold text-content-primary">{{ 'Blocked' if deletion_guard.blocked else 'Ready' }}</p>
+                        </div>
+                        {{ integration_ui.palette_icon('shield-alert' if deletion_guard.blocked else 'shield-check', 'warning' if deletion_guard.blocked else 'normal', size='md') }}
+                    </div>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ (deletion_guard.reasons|length) ~ ' blocking condition(s) ' if deletion_guard.blocked else 'No active jobs or committed evidence dependencies block removal.' }}</p>
+                </article>
+            </div>
+            <div class="grid gap-px bg-outline-subtle lg:grid-cols-2"
+                 data-kaori-inventory-lifecycle-boundary>
+                <section class="bg-surface-card px-5 py-4 sm:px-6">
+                    <div class="flex items-start gap-3">
+                        {{ integration_ui.palette_icon('shield-check', 'brand', size='sm') }}
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-content-primary">Removed With Connection</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Only the KAORI Vault registration and encrypted AppRole SecretID are removed; Vault Secrets, leases, ACLs and PKI remain untouched.</p>
+                        </div>
+                    </div>
+                </section>
+                <section class="bg-surface-card px-5 py-4 sm:px-6">
+                    <div class="flex items-start gap-3">
+                        {{ integration_ui.palette_icon('archive-restore', 'info', size='sm') }}
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-content-primary">Retained After Removal</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime history, completed JobExecution, and Activity Audit remain. Committed Secret and PKI evidence blocks removal until separately governed.</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <section class="border-t border-outline-subtle bg-surface-card px-5 py-4 sm:px-6"
+                     aria-labelledby="vault-inventory-lifecycle-next-action">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        {{ integration_ui.palette_icon('route', 'warning' if deletion_guard.blocked else 'brand', size='sm') }}
+                        <div class="min-w-0">
+                            <h4 id="vault-inventory-lifecycle-next-action"
+                                class="text-sm font-semibold text-content-primary">Next Lifecycle Action</h4>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                {% if deletion_guard.blocked %}
+                                    Resolve {{ deletion_guard.reasons|length }} blocking condition(s) before deleting this connection.
+                                    {% if deletion_guard.reasons %}First: {{ deletion_guard.reasons[0] }}{% endif %}
+                                {% else %}
+                                    Guardrails passed. Deletion removes only the KAORI Vault registration and encrypted credential.
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% if current_user.has_permission('integrations.manage') %}
+                        <button type="button"
+                                data-delete-url="{{ url_for('vault.delete_instance', instance_id=instance.id) }}"
+                                data-delete-name="{{ instance.name }}"
+                                @click="openDelete($el.dataset.deleteUrl, $el.dataset.deleteName)"
+                                {% if deletion_guard.blocked %}disabled title="{{ deletion_guard.reasons[0] if deletion_guard.reasons else 'Deletion blocked' }}" {% endif %}
+                                class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-status-critical px-4 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-50">
+                            <i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>
+                            Delete Connection
+                        </button>
+                    {% endif %}
                 </div>
-                <div>
-                    <dt class="text-xs text-content-muted">Committed Coverage</dt>
-                    <dd class="mt-1 text-sm font-semibold text-content-primary">
-                        {{ inventory_readiness.committed_mount_count }} / {{ inventory_readiness.approved_mount_count }}
-                    </dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-content-muted">Last Observed Secret Records</dt>
-                    <dd class="mt-1 text-sm font-semibold text-content-primary">
-                        {{ inventory_readiness.observed_secret_count if inventory_readiness.observed_secret_count is not none else 'Not Collected' }}
-                    </dd>
-                </div>
-            </dl>
-            <p class="mt-3 text-xs text-content-muted">Last committed: {{ inventory_readiness.last_committed_at|user_datetime if inventory_readiness.last_committed_at else 'Never' }}. Partial or stale evidence is not a zero-count or deletion claim.</p>
+            </section>
         </section>
-    </div>
-    <div class="border-t border-outline-subtle bg-surface-subtle px-4 py-3.5 sm:px-5">
-        <div class="flex items-start gap-3">
-            <i data-lucide="shield-check"
-               class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
-               aria-hidden="true"></i>
-            <p class="text-xs leading-5 text-content-secondary">
-                Connection readiness does not prove KV v2 LIST/read, public issuer coverage, stored-certificate trust,
-                or consumer qualification. No Secret values or private key material are shown in this workspace.
-            </p>
+        <div class="space-y-4 p-4 sm:p-5" data-kaori-inventory-lifecycle-content>
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                     aria-labelledby="vault-operational-consumers-title">
+                <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
+                    <div class="flex items-start gap-3">
+                        {{ integration_ui.palette_icon('workflow', 'brand', size='sm') }}
+                        <div class="min-w-0">
+                            <h3 id="vault-operational-consumers-title"
+                                class="text-base font-semibold leading-6 text-content-primary">KAORI Operational Consumers</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Potential authorized consumers and evidence ownership, not automatically granted access or confirmed active bindings.</p>
+                        </div>
+                    </div>
+                </header>
+                <div class="divide-y divide-outline-subtle" data-kaori-consumer-list>
+                    {% set consumers = [('scan-search', 'Validation & Capabilities', 'Provider Full Validation', 'AppRole authentication, Vault API qualification, and release compatibility remain separate from collected inventory.'), ('activity', 'Runtime Monitoring', 'Committed runtime observation', 'Health, latency, diagnostics, and historical runtime evidence are independently observed.'), ('database', 'KV v2 Inventory', 'Committed metadata only', 'Approved mount and version metadata are available only after an independently qualified collection.'), ('shield-check', 'PKI & Certificates', 'Qualified public and optional stored evidence', 'Public issuers and retained certificates are source-qualified; trust and deployment are not implied.'), ('scroll-text', 'Activity Audit', 'Governed operational evidence', 'Registration, validation, and runtime operations remain traceable under their owning policies.')] %}
+                    {% for icon, title, boundary, description in consumers %}
+                        <article class="grid gap-3 px-4 py-3.5 transition hover:bg-kaori-mist sm:px-5 lg:grid-cols-[minmax(14rem,0.8fr)_minmax(15rem,0.8fr)_minmax(0,1.4fr)] lg:items-center">
+                            <div class="flex min-w-0 items-start gap-3">
+                                {{ integration_ui.palette_icon(icon, 'brand', size='sm') }}
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">KAORI Consumer</p>
+                                </div>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-content-secondary">Evidence Boundary</p>
+                                <p class="mt-1 text-xs leading-5 text-content-primary">{{ boundary }}</p>
+                            </div>
+                            <p class="text-xs leading-5 text-content-secondary">{{ description }}</p>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                     aria-labelledby="vault-evidence-sources-title"
+                     data-kaori-vault-evidence-sources>
+                <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+                    <div class="flex min-w-0 items-start gap-3">
+                        {{ integration_ui.palette_icon('layers-3', 'info', size='sm') }}
+                        <div class="min-w-0">
+                            <h3 id="vault-evidence-sources-title"
+                                class="text-base font-semibold leading-6 text-content-primary">Committed Evidence Sources</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Three independent Vault evidence streams; source state and counts reflect committed snapshots only.</p>
+                        </div>
+                    </div>
+                    {{ table_label.metadata_label("3 Evidence Streams") }}
+                </header>
+                <div class="overflow-x-auto overscroll-x-contain">
+                    <table class="{{ table_ui.table_classes('min-w-[64rem]') }}">
+                        <caption class="sr-only">Vault scoped evidence source registry.</caption>
+                        <thead class="{{ table_ui.head_classes() }}">
+                            <tr>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Evidence Source</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Collection State</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Approved Scope</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Mount Coverage</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed</th>
+                                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody class="{{ table_ui.body_classes() }}">
+                            {% for source in sources %}
+                                <tr class="{{ table_ui.row_classes() }}" data-kaori-vault-evidence-source>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        <div class="flex min-w-0 items-start gap-3">
+                                            {{ integration_ui.palette_icon(source.icon, 'brand', size='sm') }}
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-semibold text-content-primary">{{ source.name }}</p>
+                                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ source.description }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        {{ integration_status(source.state, source.state_label, display='indicator') }}
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        <span class="text-sm font-semibold text-content-primary">{{ source.approved if source.approved is not none else 'Not Configured' }}</span>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        <span class="text-sm font-semibold text-content-primary">{{ source.committed if source.committed is not none else 'Not Collected' }} / {{ source.approved if source.approved is not none else 'Unknown' }}</span>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }}">
+                                        <span class="text-sm font-semibold text-content-primary">{{ source.observed if source.observed is not none else 'Not Collected' }}</span>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes(action=true) }}">
+                                        {{ record_actions.view_more('vault-evidence-' ~ source.key ~ '-dialog', role='vault-inventory-evidence') }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <footer class="{{ pagination_ui.footer_classes() }}">
+                    <p class="text-xs text-content-secondary">Showing 1–3 of 3 Evidence Streams · Independent source ownership</p>
+                </footer>
+                {% for source in sources %}
+                    {% call record_detail_modal.render(
+                        'vault-evidence-' ~ source.key ~ '-dialog',
+                        source.key,
+                        'Vault Committed Evidence',
+                        source.name,
+                        'Scoped, provider-owned evidence status and collection boundaries.',
+                        icon=source.icon,
+                        footer_text='Read-only committed metadata; no Vault live request or Secret payload.',
+                        size='standard'
+                        ) %}
+                        <div class="space-y-4" data-kaori-vault-evidence-source-detail>
+                            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                                <header class="flex items-start justify-between gap-3 border-b border-outline-subtle p-4">
+                                    <div class="min-w-0">
+                                        <h3 class="text-sm font-semibold text-content-primary">Collection Decision</h3>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">This evidence stream is independent of Full Validation.</p>
+                                    </div>
+                                    {{ integration_status(source.state, source.state_label, display='indicator') }}
+                                </header>
+                                <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2">
+                                    {% for label, value in [
+                                        ('Approved Mounts', source.approved if source.approved is not none else 'Not Configured'),
+                                        ('Committed Mounts', source.committed if source.committed is not none else 'Not Collected'),
+                                        (source.observed_label, source.observed if source.observed is not none else 'Not Collected'),
+                                        ('Last Commit', source.timestamp|user_datetime if source.timestamp else 'Never')
+                                        ] %}
+                                        <div class="min-w-0 bg-surface-card p-4">
+                                            <dt class="text-xs font-semibold text-content-muted">{{ label }}</dt>
+                                            <dd class="mt-1 break-words text-sm font-semibold text-content-primary">
+                                                {{ value }}
+                                            </dd>
+                                        </div>
+                                    {% endfor %}
+                                </dl>
+                            </section>
+                            <section class="rounded-xl border border-outline-default bg-surface-card p-4">
+                                <h3 class="text-sm font-semibold text-content-primary">Evidence Boundary</h3>
+                                <p class="mt-2 text-xs leading-5 text-content-secondary">{{ source.boundary }}</p>
+                            </section>
+                            {% if current_user.has_permission('jobs.view') %}
+                                <section class="flex flex-col gap-3 rounded-xl border border-outline-default bg-surface-card p-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div class="min-w-0">
+                                        <h3 class="text-sm font-semibold text-content-primary">Collection Operations</h3>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Review the existing authorized job definition and execution evidence.</p>
+                                    </div>
+                                    <a href="{{ url_for('jobs.configuration', job_key=source.job_key) }}"
+                                       class="{{ table_ui.action_classes() }} shrink-0">Jobs &amp; Executions</a>
+                                </section>
+                            {% endif %}
+                        </div>
+                    {% endcall %}
+                {% endfor %}
+            </section>
+            <section class="rounded-xl border border-outline-subtle bg-surface-card px-5 py-4 sm:px-6"
+                     data-kaori-vault-evidence-ownership>
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        {{ integration_ui.palette_icon('waypoints', 'brand', size='sm') }}
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-content-primary">Evidence Ownership</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI commits scoped metadata; Vault owns Secrets and PKI; observability stays separate.</p>
+                        </div>
+                    </div>
+                    {{ table_label.metadata_label("Read-Only Evidence") }}
+                </div>
+            </section>
         </div>
-    </div>
-</section>
+    </section>
+</div>

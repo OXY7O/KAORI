@@ -128,6 +128,49 @@ def test_server_dependencies_are_private_persistent_and_immutable() -> None:
     assert '  certbot:' not in source
 
 
+def test_server_provider_ca_trust_is_scoped_read_only_and_host_managed() -> None:
+    # Keep the existing two-Compose production authority: do not introduce an
+    # untracked third deployment file or a global host/DNS override.
+    base = _read(BASE_COMPOSE)
+    server = _read(SERVER_COMPOSE)
+    bootstrap = _read(SERVER_ROOT / 'bootstrap-host.sh')
+    app_env = _read(ROOT / 'deploy/env/app.env.example')
+    secrets_env = _read(ROOT / 'deploy/env/secrets.env.example')
+    runbook = _read(ROOT / 'docs/operations/production-provider-dns-trust.md')
+
+    next_services = {
+        'web': 'worker',
+        'runtime-worker': 'validation-worker',
+        'validation-worker': 'analytics-worker',
+    }
+    # The provider-trust CA path is exposed only to web and the two
+    # integration evidence workers. Unrelated services do not inherit it.
+    for service, next_service in next_services.items():
+        section = _service_block(server, service, next_service)
+        assert 'source: /etc/kaori/trust' in section, service
+        assert 'target: /run/kaori/trust' in section, service
+        assert 'read_only: true' in section, service
+        assert 'create_host_path: false' in section, service
+        assert section.count('source: /etc/kaori/trust') == 1
+
+    assert server.count('source: /etc/kaori/trust') == len(next_services)
+    assert 'kaori_production_instance:/app/instance' in base
+    assert 'install -d -m 0755 /etc/kaori/trust' in bootstrap
+    assert 'INTEGRATION_VAULT_ALLOWED_ORIGINS=' in app_env
+    assert 'INTEGRATION_VAULT_CA_BUNDLE=' in app_env
+    assert 'KAORI_LDAP_CA_BUNDLE=' in app_env
+    assert 'KAORI_LDAP_BIND_PASSWORD=' not in app_env
+    assert 'KAORI_LDAP_BIND_PASSWORD=' in secrets_env
+
+    # The operational runbook must not treat a successful self-signed
+    # endpoint handshake as CA:TRUE or use local DevContainer paths on hosts.
+    assert 'CA:TRUE' in runbook
+    assert 'keyCertSign' in runbook
+    assert 'create_host_path: false' in runbook
+    assert 'CoreDNS' in runbook
+    assert 'rollback' in runbook
+
+
 def test_server_overlay_covers_every_canonical_app_worker_environment() -> None:
     base = _read(BASE_COMPOSE)
     overlay = _read(SERVER_COMPOSE)

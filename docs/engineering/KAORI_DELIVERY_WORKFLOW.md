@@ -244,6 +244,9 @@ The 15 PR heads still open against the review workbench at the 2026-11-01 checkp
 
 This exception remains under #2227 until an explicit documented review retires it; it does not replace the canonical two-branch delivery workflow. Current review branch and pending PR inventory must be rechecked at execution time instead of relying on historical head SHAs or PR counts.
 
+**Dated operator-accepted source admission (2026-11-16; #4921).** The operator explicitly reconfirmed DevContainer Human UAT/review approval for the then-current committed `kaori/review/staging-uat@71dd9c32600f3d67b0389f142538b524b008e2eb`, including the #4892 Lifecycle Jinja repair merged through #4920, and requested its governed admission to staging and deployment to the UAT server. This is **one additional exact-source exception**, not a change to the default issue-scoped selective-promotion rule or permission to regularly reverse-sync the workbench. The official staging baseline at intake was `3c279fc3b120637d9781fa6a1f6fae831007f130` (review ahead 1,855, behind 0); work branch `kaori/task-4921-reviewed-uat-admission-20261116` freezes only this SHA. Unmerged review-target PR heads and later workbench commits remain excluded. Any scoped remediation commit changes the admissible candidate head and requires fresh exact-source evidence; it does not retroactively alter the accepted original snapshot. Preserve the standard Draft Developer Check → Pre-Ready → independent Ready review → all Full Admission lanes → staging Fast Smoke → immutable RC/digest → governed database-safe server deployment → distinct host verification and acceptance sequence. Earlier #1710 UAT evidence cannot be reused as proof that this new source passed. The existing security-sensitive migration/role boundaries remain independent; absent approved data/restore evidence, host deployment stays HOLD, not a skipped success.
+
+
 ## Project Status Model
 
 GitHub Project `Status` is the lifecycle authority:

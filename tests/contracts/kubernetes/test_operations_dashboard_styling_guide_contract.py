@@ -26,7 +26,10 @@ def test_dashboard_uses_shared_workspace_tabs_and_persists_url_state() -> None:
     assert 'dashboard_workspace.navigation(' in source
     assert '{% for tab_key, tab_label, tab_icon in dashboard_workspace.standard_tabs %}' in source
     assert source.count('dashboard_workspace.panel(') == 1
-    assert 'workspace_tabs.render(standard_tabs' in framework
+    assert (
+        'workspace_tabs.render(tabs if tabs is not none else standard_tabs, prefix=prefix, aria_label=aria_label)'
+        in framework
+    )
     assert "url.searchParams.set('tab', tab)" in framework
     assert "window.history.replaceState({}, '', url)" in framework
     assert 'id="{{ input_id }}"' in framework
@@ -150,7 +153,8 @@ def test_primary_and_peer_operational_flows_are_static_and_controlled_flows_reus
     assert 'Governed Flow' in reporting_workspace
     assert 'sm:grid-cols-2' in reporting_workspace
     assert 'gap-px overflow-hidden' in reporting_workspace
-    assert 'components/operational_flow_steps.html' in capacity
+    assert 'components/operational_capacity_decision.html' in capacity
+    assert 'components/operational_flow_steps.html' not in capacity
     assert 'components/context_guidance_card.html' not in alert_guidance
     assert 'components/context_guidance_card.html' not in reporting_guidance
     assert 'always visible' in contract
@@ -268,7 +272,11 @@ def test_dashboard_restores_card_grid_freshness_and_visible_action_flows() -> No
     assert "body_classes='grid gap-3 p-5 sm:grid-cols-2'" in freshness
     assert 'components/operational_evidence_tile.html' in freshness
     assert 'bg-surface-elevated p-3.5' in evidence_tile
-    assert 'Recommended Capacity Action Flow' in capacity
+    assert 'capacity_decision.render(' in capacity
+    assert 'review_groups=capacity_review_groups' in capacity
+    assert 'Capacity Analysis workers; control-plane/master excluded.' in capacity
+    assert 'matching Capacity Analysis and excluding nodes with control-plane or master roles.' in capacity
+    assert 'Recommended Capacity Action Flow' not in capacity
     assert 'Controlled Alert Response Flow' in alert
     assert 'Alert Interpretation & Response' in alert_response
     assert 'components/reporting_dashboard_workspace.html' in reporting
@@ -310,7 +318,7 @@ def test_dashboard_metric_card_has_no_unused_tone_api() -> None:
 
     assert (
         "macro render(label, value, description, icon, source_label='Operational', "
-        "scope_label='Active Scope')" in metric_card
+        "scope_label='Active Scope', compact=false, status_label=none, status_tone='info')" in metric_card
     )
     assert "tone='violet'" not in metric_card
     assert 'scope_tone' not in metric_card
@@ -338,6 +346,8 @@ def test_reporting_activity_is_capped_at_four_records() -> None:
     assert 'Report.cluster_id == selected_cluster_id' in reporting_service
     assert 'Report.created_at.desc(), Report.id.desc()' in reporting_service
     assert '.limit(4)' in reporting_service
-    assert 'reporting.latest_reports[:4]' in reporting_workspace
+    assert 'recent_items[:4]' in reporting_workspace
+    assert 'else reporting.latest_reports' in reporting_workspace
     assert 'Review before reuse.' in reporting_workspace
-    assert '<span class="font-semibold text-content-primary">Recurring</span> · Schedule' in reporting_workspace
+    assert '<span class="font-semibold text-content-primary">Recurring</span>' in reporting_workspace
+    assert "{{ 'Not Qualified' if evidence_only else 'Schedule' }}" in reporting_workspace

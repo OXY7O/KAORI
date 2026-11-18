@@ -12,7 +12,7 @@ KUBERNETES_DETAIL = (
     ROOT / 'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html'
 )
 REPOSITORY = ROOT / 'app/integrations/runtime/repository.py'
-ROUTES = ROOT / 'app/integrations/routes.py'
+ROUTES = ROOT / 'app/integrations/orchestration/container_orchestrator/routes.py'
 
 
 def _text(path: Path) -> str:

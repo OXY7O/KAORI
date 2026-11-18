@@ -60,37 +60,16 @@ Activity Audit administrative presentation uses existing framed workspace naviga
 - **User Detail UAT-1(6) (#2265):** Identity, Authentication and Authorization left-hand resource-sheet headings use the existing shared `inventory_section` badge below description on xl desktop (near title at smaller widths), bound respectively to identity-source label, credential owner and effective KAORI access status/tone. Do not invent static trust/permission status, change the fact grid, provider authority, lifecycle or mutation gates. Firefox L13 and responsive human UAT pending.
 - **User Edit copy UAT-1(6) (#2253):** local password-hash/reset ownership remains in the canonical user identity read model; the credential boundary explanation stays informative (roughly two laptop lines), while the narrow violet Current Identity Source caption uses a separate one-line-friendly local label. Related User Registry summary/boundary and editable administrative steps 01–02 use balanced two-line copy. This does not change upstream provider authority, RBAC, password-reset service, lifecycle or URLs. No forced nowrap or clipping; actual Firefox Lenovo L13 line count and human acceptance pending.
 
-## Activity Audit — Shared Register Hover Guidance (#2885, 2026-10-23)
+## Access Overview Guide Placement (#4482, 2026-11-12)
 
-Explicit authority for this title-level placement is
-`docs/design/components/INFO_TIP.md` and
-`docs/design/components/TABLE_AND_LABEL.md` (Guide next to title);
-the previous Access-specific wording prescribing icon-only help was
-incorrect and is superseded. Add these consumers to the existing Guide
-design regression list to prevent repeating the error.
+The latest explicit operator Visual UAT supersedes older **per-table** Guide placement under #2885/#2888 and #2910/#2912. It does not change the canonical `docs/design/components/INFO_TIP.md` title-adjacent `variant='guide'` rule, popover/controller, accessibility or header-result-count patterns.
 
-The operator accepts Activity Audit functional UAT, with a bounded
-follow-up for read-only hover help on **Activity Register** and
-**Administrative Source Evidence**. Extend the existing section-card
-title/count flex row with one canonical compact Violet
-`components/info_tip.html::render(..., variant='guide')` title-level
-trigger **directly after each owning heading and before result-count**.
-The tiny icon-only `circle-help` variant is field/row guidance only.
-This corrects the former title-level UAT conformance error (#2885), not
-the established global Info Tip standard from #1680/#2416.
-Unique tooltip IDs, keyboard/focus/touch access, native shared Info Tip
-portal and responsive viewport clamp are required. Do **not** introduce
-a page-local tooltip implementation or shift approved header actions.
+- **Activity Audit**: one consolidated Guide beside **Audit Evidence Overview**; no Guide in the Activity Register or Administrative Source Evidence table titles. Guidance retains distinct Notification-backed immutable actor snapshots versus permission-scoped hot `AuditEvent` actor-FK references, separate source ownership and verified Data Lifecycle bundle-only archive boundaries.
+- **Identity Providers**: one consolidated Guide beside **Authentication Source Posture**; no duplicate Guide in Provider Registry or Directory Provisioning. Preserve provider-owned credentials and identity, stored setup versus live availability, enabled authentication eligibility, committed identity links, delegated provisioning and KAORI role/account authorization.
+- **Permission Catalog**, **Roles & Access**, and **User Management**: one shared Violet Guide beside **Permission Registry Overview**, **Role Registry Overview**, and **Account & Identity Posture** respectively. Keep protected Local DB Super Admin, role delegation, code-owned RBAC, inactive-role fail-closed and lifecycle semantics.
+- **Provider Registry expanded details**: reuse existing `detail_ui.inventory_section` status-badge contract on **Provider & Connection** and **Identity & Access**, driven by `row.configuration` and `row.state` labels and tones. No fabricated live connection, validation or identity-projection readiness.
 
-Activity Register guidance qualifies committed *Notification-backed hot*
-operational and audit-only evidence and immutable actor snapshots.
-Administrative guidance qualifies separate authorized hot `AuditEvent`
-source projections, actor FK non-snapshot behavior, and Source-owned/Job
-links; Archive History is **bundle-level**, not a per-job match claim.
-Framed tabs, scoped result counts, read-only modal, source permissions,
-GET/HTMX filters and archive ownership are unchanged. Visual QA for
-hover/focus, screen-reader trigger naming, mobile, zoom and light/dark
-remains a separate DevContainer acceptance gate.
+Source-scoped result counts, framed tabs, RBAC, native GET/HTMX filters, Read Only/authorized actions, compact responsive geometry and shared Info Tip keyboard/touch focus remain unchanged. These source changes require exact-SHA DevContainer, accessibility, browser/light/dark Visual QA and human acceptance; holding branch integration is not official admission.
 
 ## Authentication Security extension (AUTH-UI-01 / #3138)
 

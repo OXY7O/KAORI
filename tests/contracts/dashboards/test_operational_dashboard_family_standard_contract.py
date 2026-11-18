@@ -85,7 +85,8 @@ def test_operational_dashboards_share_peer_grid_and_reporting_proportions() -> N
     alert_response_workspace = read('app/templates/components/operational_alert_response.html')
     assert 'Controlled Response Flow' in alert_response_workspace
     assert 'Governed Reporting Flow' in reporting_workspace
-    assert '<span class="font-semibold text-content-primary">One-time</span> · Manual' in reporting_workspace
+    assert "{{ 'Evidence' if evidence_only else 'One-time' }}" in reporting_workspace
+    assert "{{ 'Manual Review' if evidence_only else 'Manual' }}" in reporting_workspace
     assert 'Generate manually' not in reporting_workspace
 
 
@@ -174,7 +175,8 @@ def test_kubernetes_capacity_decision_notes_and_forecast_helpers() -> None:
     assert 'progress_bar.bar(headroom_percent,' in capacity
     assert 'headroom unavailable' in capacity
     assert 'Capacity Decision Notes' not in capacity
-    assert 'Recommended Capacity Action Flow' in capacity
+    assert 'capacity_decision.render(' in capacity
+    assert 'Recommended Capacity Action Flow' not in capacity
     for text in (
         'Peak projected utilization',
         'Resources nearing forecast limits',
@@ -202,12 +204,111 @@ def test_kubernetes_dashboard_forecast_cards_fill_peer_width_without_clipping() 
     assert 'item.projected_percent' in forecast
 
 
+def test_capacity_decision_shared_component_renders_evidence_with_no_provider_action() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
+    render = env.get_template('components/operational_capacity_decision.html').module.render
+    review_groups = [
+        ('scan-search', 'Evidence', [('Validate', 'Confirm scope'), ('Assess', 'Review headroom')]),
+        ('list-filter', 'Decision', [('Prioritize', 'Identify pressure'), ('Act', 'Approved change')]),
+        ('clipboard-check', 'Assurance', [('Verify', 'Confirm outcome'), ('Record', 'Retain evidence')]),
+    ]
+    for risk, tone in (
+        ('Low', 'normal'),
+        ('Medium', 'warning'),
+        ('High', 'critical'),
+        ('Unknown', 'unknown'),
+    ):
+        html = render(
+            risk,
+            tone,
+            'Committed capacity insight',
+            'Evidence interpretation',
+            'Recommended operational action',
+            review_groups=review_groups,
+        )
+        assert 'Overall Capacity Risk' in html
+        assert 'What This Means' in html
+        assert 'Recommended Action' in html
+        assert risk in html
+        assert 'Committed capacity insight' in html
+        assert 'Evidence interpretation' in html
+        assert 'Recommended operational action' in html
+        assert 'data-kaori-capacity-decision' in html
+        assert 'data-kaori-capacity-review' in html
+        assert 'Capacity Review Guide' in html
+        assert 'Reference only' in html
+        assert html.count('<li class="flex min-w-0 items-start gap-2 border-b') == 6
+        assert 'grid grid-cols-1 gap-x-5 sm:grid-cols-2' in html
+        assert '<article' not in html
+        assert 'arrow-right' not in html
+        for consideration in ('Validate', 'Assess', 'Prioritize', 'Act', 'Verify', 'Record'):
+            assert f'>{consideration}</h5>' in html
+        assert 'mt-1 break-words text-xs leading-5 text-content-secondary' in html
+        assert 'data-kaori-capacity-action' in html
+        assert 'aria-label="Capacity decision from committed evidence"' in html
+        assert '<form' not in html
+        assert 'hx-post' not in html
+        assert 'Recommended Capacity Action Flow' not in html
+
+
+def test_capacity_status_action_copy_is_concise_without_forced_truncation() -> None:
+    kubernetes = read('app/kubernetes/dashboard/sections/capacity.py')
+    storage = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
+    registry = read('app/artifact_registry/presentation_common.py')
+    action_copy = {
+        'Kubernetes': (
+            kubernetes,
+            (
+                'Review top consumers, reduce load, and expand approved worker capacity.',
+                'Review high-use workloads and plan scaling before critical pressure.',
+                'Check headroom, requests/limits, and forecast before workload growth.',
+                'No scaling needed; monitor trends, requests/limits, and baselines.',
+                'Refresh Metrics Source and node-role evidence before capacity decisions.',
+            ),
+        ),
+        'Object Storage': (
+            storage,
+            (
+                'Review major buckets; approve capacity expansion or demand reduction.',
+                'Check top buckets and forecast before approving storage growth.',
+                'Maintain analytics; review bucket growth before approving changes.',
+                'Refresh committed storage analytics before capacity decisions.',
+            ),
+        ),
+        'Artifact Registry': (
+            registry,
+            (
+                'Review quota pressure; approve retention, cleanup, or quota changes.',
+                'Review top projects, retention, and quota ownership before growth.',
+                'Keep Registry analytics current; review growth after publications.',
+                'Refresh Registry Analytics after checking the Metrics Source binding.',
+            ),
+        ),
+    }
+    for source, actions in action_copy.values():
+        for action in actions:
+            assert action in source
+            assert len(action) <= 80
+    shared = read('app/templates/components/operational_capacity_decision.html')
+    assert 'data-kaori-capacity-action' in shared
+    assert '<h4 class="text-xs font-semibold text-content-primary">Recommended Action</h4>' in shared
+    assert 'mt-1 break-words text-xs leading-5 text-content-secondary' in shared
+    assert 'whitespace-nowrap' not in shared
+    assert 'truncate' not in shared
+    assert 'line-clamp' not in shared
+
+
 def test_capacity_metric_cards_follow_kubernetes_visual_grammar() -> None:
     kubernetes = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
     storage = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
     registry = read('app/templates/artifact_registry/partials/_overview_capacity_snapshot.html')
 
+    shared_metric = read('app/templates/components/operational_capacity_metric_card.html')
     for template in (kubernetes, storage, registry):
+        assert 'components/operational_capacity_metric_card.html' in template
+        assert 'capacity_metric_card.render(' in template
         assert 'Data Scope:' in template
         assert 'bg-kaori-soft p-3 text-xs leading-5 text-content-secondary' in template
         assert 'grid gap-3 lg:grid-cols-3' in template
@@ -216,15 +317,22 @@ def test_capacity_metric_cards_follow_kubernetes_visual_grammar() -> None:
         assert 'bg-status-info' in template
         assert 'bg-status-pending' in template
         assert 'bg-surface-elevated p-4' in template
-        assert 'Overall Capacity Risk' in template
-        assert 'Recommended Capacity Action Flow' in template
+        assert 'components/operational_capacity_decision.html' in template
+        assert 'capacity_decision.render(' in template
+        assert 'capacity_review_groups' in template
+        assert 'review_groups=capacity_review_groups' in template
+        for topic in ('Validate', 'Assess', 'Prioritize', 'Act', 'Verify', 'Record'):
+            assert f"'{topic}'" in template
+        assert 'Recommended Capacity Action Flow' not in template
+        assert 'components/operational_flow_steps.html' not in template
 
-    assert 'progress_bar.bar(percent,' in storage
-    assert 'percentage unavailable' in storage
+    assert 'progress_bar.bar(percent,' in shared_metric
+    assert 'percentage unavailable' in shared_metric
+    assert 'progress_bar.bar(usage_percent,' in storage
     assert 'Capacity Utilization</h3>' not in storage
-    assert 'progress_bar.bar(item.progress_percent,' in registry
-    assert 'item.progress_percent is not none' in registry
-    assert 'percentage not applicable' in registry
+    assert 'item.progress_percent' in registry
+    assert 'percent is not none' in shared_metric
+    assert 'percentage unavailable' in shared_metric
     assert "operational_callout.render('Data Scope'" not in registry
     assert 'Worker capacity headroom chart' in kubernetes
     assert 'Object Storage utilization balance chart' in storage
@@ -278,21 +386,22 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert 'has_requests = reporting_snapshot.generated_reports > 0' in freshness
     assert "status='Recorded' if has_artifacts else ('Not Ready' if has_requests else 'Not Generated')" in freshness
     assert 'Committed artifact references; storage accessibility is not verified here.' in freshness
-    assert 'No immediate scaling required.' in capacity
-    assert 'Validate requests/limits, growth, and planned deployments against current worker headroom.' in capacity
-    assert (
-        'Verify the selected cluster Metrics Source and kube-state-metrics node-role labels, then reload the snapshot.'
-        in capacity
-    )
+    assert 'No scaling needed; monitor trends, requests/limits, and baselines.' in capacity
+    assert 'Check headroom, requests/limits, and forecast before workload growth.' in capacity
+    assert 'Refresh Metrics Source and node-role evidence before capacity decisions.' in capacity
     assert "'Worker-node CPU, memory, and pod headroom.'" in kubernetes_capacity
-    assert 'Data Scope:</span> worker nodes only' in kubernetes_capacity
+    assert 'Data Scope:</span> Capacity Analysis workers; control-plane/master excluded.' in kubernetes_capacity
     assert 'Apply the approved capacity/workload change' in kubernetes_capacity
     assert 'KAORI Alert Intelligence case evidence is temporarily unavailable.' in kubernetes_alerts
     reporting_workspace = read('app/templates/components/reporting_dashboard_workspace.html')
     assert 'components/reporting_dashboard_workspace.html' in kubernetes_reporting
     assert 'components/reporting_dashboard_workspace.html' in object_reporting
     assert "'Committed cluster evidence'" in kubernetes_reporting
-    assert "'Committed storage evidence'" in object_reporting
+    assert 'reporting_workspace.guidance(reporting_scope,' in object_reporting
+    assert "'Committed snapshots'" in object_reporting
+    assert "'system or storage scope'" in object_reporting
+    assert "empty_title='No Object Storage Reports Generated'" in object_summary
+    assert 'reporting_workspace.summary(dashboard.reporting,' in object_summary
     assert 'Governed Reporting Flow' in reporting_workspace
     assert 'Review before reuse.' in reporting_workspace
     assert 'Choose the report and narrowest scope for accurate results.' in reporting_workspace
@@ -479,7 +588,8 @@ def test_recent_report_activity_is_bounded_to_four_in_both_reference_dashboards(
 
     assert 'components/reporting_dashboard_workspace.html' in kubernetes_summary
     assert 'components/reporting_dashboard_workspace.html' in object_summary
-    assert 'reporting.latest_reports[:4]' in reporting_workspace
+    assert 'recent_items[:4]' in reporting_workspace
+    assert 'else reporting.latest_reports' in reporting_workspace
     # Keep recent Kubernetes reports domain-scoped, selection-scoped, ordered, and bounded.
     assert "Report.report_domain == 'kubernetes'" in kubernetes_builder
     assert 'Report.cluster_id == selected_cluster_id' in kubernetes_builder

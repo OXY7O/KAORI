@@ -50,6 +50,7 @@ The header owns:
 - one visualization title;
 - one sentence-case description;
 - one icon surface;
+- one optional title-adjacent Violet metadata label, supplied through the existing shared `table_label.metadata_label` and backward-compatible `header_badge` slot;
 - at most one section-level action;
 - one section-owned loading bar.
 

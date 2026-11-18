@@ -154,6 +154,9 @@ install_env_if_missing() {
 
 prepare_paths_and_environment() {
   install -d -m 0755 /etc/kaori
+  # Public CA bundles are externally provisioned and never generated here.
+  # The directory is required by the server Compose read-only bind mount.
+  install -d -m 0755 /etc/kaori/trust
   install -d -m 0755 -o "$deploy_user" -g "$deploy_group" "$deploy_root" "$deploy_root/releases"
   install -d -m 0700 -o "$deploy_user" -g "$deploy_group" "$state_dir" "$backup_dir"
   install_env_if_missing "$app_env_template" "$app_env_file" 0640

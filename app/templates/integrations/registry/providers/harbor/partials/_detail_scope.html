@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
@@ -12,8 +13,18 @@
                 <div class="flex min-w-0 flex-1 items-start gap-3">
                     {{ integration_ui.palette_icon("database", "brand", size="lg", rounded="xl") }}
                     <div class="min-w-0">
-                        <h2 id="harbor-inventory-lifecycle-title"
-                            class="text-base font-semibold text-content-primary">Inventory &amp; Lifecycle</h2>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 id="harbor-inventory-lifecycle-title"
+                                class="text-base font-semibold text-content-primary">Inventory &amp; Lifecycle</h2>
+                            {{ info_tip.render("harbor-inventory-lifecycle-detail-guide",
+                                                        "Harbor Inventory & Lifecycle",
+                                                        "Review committed Registry inventory, source bindings, retention and deletion safeguards.",
+                                                        [
+                                                        "Harbor stays authoritative for projects, artifacts and policy.",
+                                                        "KAORI retains separately governed inventory and audit evidence."
+                                                        ],
+                                                        placement="right", variant="guide") }}
+                        </div>
                         <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review committed Registry inventory posture, operational consumers, observability bindings, and the KAORI connection lifecycle.</p>
                     </div>
                 </div>
@@ -83,7 +94,7 @@
                         </div>
                         {{ integration_ui.palette_icon("shield-alert" if deletion_guard.blocked else "shield-check", "warning" if deletion_guard.blocked else "normal", size="md") }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ (deletion_guard.reasons|length) ~ " blocking condition" ~ ("" if deletion_guard.reasons|length == 1 else "s") if deletion_guard.blocked else "No active KAORI jobs currently block removal; review dependent bindings and retained evidence before deleting this Registry connection." }}</p>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ (deletion_guard.reasons|length) ~ " blocking condition" ~ ("" if deletion_guard.reasons|length == 1 else "s") if deletion_guard.blocked else "No active KAORI jobs block removal. Review bindings and retained evidence before deletion." }}</p>
                 </article>
             </div>
             <div class="grid gap-px bg-outline-subtle lg:grid-cols-2"

@@ -172,6 +172,11 @@ permissions:
   action: view
   description: View Kubernetes governance workspace and navigation.
   matrix_description: Open Kubernetes governance workspaces to review available controls, operational context, and navigation.
+- key: internal_certificates.view
+  module: governance
+  action: view_internal_certificates
+  description: View registered cluster PKI source readiness and committed internal certificate evidence when available.
+  matrix_description: Review Kubernetes internal PKI source availability, collection coverage, and certificate posture without accessing private keys.
 - key: tls_certificates.view
   module: governance
   action: view_tls_certificates
@@ -394,6 +399,7 @@ permission_dependencies:
   kubernetes_secrets.manage_reveal: [kubernetes_secrets.view]
   kubernetes_secrets.rotate_tls: [kubernetes_secrets.view]
   kubernetes_secrets.bulk_rotate_tls: [kubernetes_secrets.view]
+  internal_certificates.view: [governance.view, clusters.view]
   tls_certificates.sync: [tls_certificates.view]
   tenant.manage: [tenant.view]
   reports.generate: [reports.view]
@@ -436,6 +442,7 @@ system_roles:
   - clusters.view
   - dashboard.view
   - governance.view
+  - internal_certificates.view
   - intelligence.decisions.view
   - intelligence.view
   - inventory.view
@@ -460,6 +467,7 @@ system_roles:
   - clusters.view
   - dashboard.view
   - governance.view
+  - internal_certificates.view
   - intelligence.decisions.create
   - intelligence.decisions.view
   - intelligence.view
@@ -498,6 +506,7 @@ system_roles:
   - clusters.view
   - dashboard.view
   - governance.view
+  - internal_certificates.view
   - intelligence.decisions.approve
   - intelligence.decisions.create
   - intelligence.decisions.execute
@@ -549,6 +558,7 @@ system_roles:
   - clusters.view
   - dashboard.view
   - governance.view
+  - internal_certificates.view
   - intelligence.decisions.approve
   - intelligence.decisions.create
   - intelligence.decisions.execute
@@ -618,6 +628,7 @@ system_roles:
   - clusters.view
   - dashboard.view
   - governance.view
+  - internal_certificates.view
   - intelligence.decisions.view
   - intelligence.view
   - inventory.view

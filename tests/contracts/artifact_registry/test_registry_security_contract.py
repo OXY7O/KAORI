@@ -1,4 +1,8 @@
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+
+from app.integrations.registry.providers.harbor.security import _scan_identity_changed
+from app.integrations.registry.security_contracts import RegistrySecurityTarget
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -19,6 +23,36 @@ def test_security_evidence_is_digest_oriented_and_incremental() -> None:
     assert '_scan_identity_changed' in collector
     assert 'reuse_existing_scan' in collector
     assert 'RegistryVulnerability(' in sync
+
+
+def test_new_provider_scan_generation_refreshes_even_with_same_vulnerability_counts() -> None:
+    previous = datetime.now(UTC) - timedelta(days=33)
+    current = previous + timedelta(days=32)
+    target = RegistrySecurityTarget(
+        artifact_id=7,
+        project_name='ops',
+        repository_name='sample',
+        digest='sha256:' + 'a' * 64,
+        scan_status='success',
+        scan_completed_at=previous,
+        vulnerability_summary={'critical': 2, 'high': 1},
+        signature_status=None,
+        sbom_status=None,
+        has_scan_snapshot=True,
+    )
+    unchanged_findings = {'critical': 2, 'high': 1}
+    assert _scan_identity_changed(
+        target,
+        scan_status='success',
+        scan_completed_at=current,
+        vulnerability_summary=unchanged_findings,
+    )
+    assert not _scan_identity_changed(
+        target,
+        scan_status='success',
+        scan_completed_at=previous,
+        vulnerability_summary=unchanged_findings,
+    )
 
 
 def test_security_read_model_is_committed_and_server_paginated() -> None:
@@ -78,7 +112,7 @@ def test_vulnerability_evidence_status_is_inline_and_contextual() -> None:
     from jinja2 import Environment
 
     template = read('app/templates/artifact_registry/partials/_security_workspace.html')
-    presentation = read('app/artifact_registry/security/presentation.py')
+    presentation = read('app/artifact_registry/security/posture_projection.py')
     Environment().parse(template)
 
     start = template.index('aria-labelledby="artifact-registry-vulnerability-findings-heading"')
@@ -142,12 +176,27 @@ def test_security_registry_actions_use_shared_style_and_leading_header_clear() -
     assert 'data-kaori-dialog-open' in template
 
 
-def test_security_has_two_level_three_views_above_the_hero() -> None:
+def test_security_navigation_adds_overview_before_existing_focused_tabs() -> None:
     catalog = read('app/common/workspace_navigation_catalog.py')
     navigation = read('app/common/workspace_navigation.py')
     routes = read('app/artifact_registry/routes.py')
+    security_web = read('app/artifact_registry/security/web.py')
 
     assert "'artifact_registry_security': (" in catalog
+    capability_tabs = (
+        catalog.split('_CAPABILITY_VIEWS:', 1)[1]
+        .split("'artifact_registry_security': (", 1)[1]
+        .split("'object_storage_inventory':", 1)[0]
+    )
+    assert capability_tabs.index("'overview'") < capability_tabs.index("'vulnerabilities'")
+    assert capability_tabs.index("'vulnerabilities'") < capability_tabs.index("'supply_chain'")
+    assert "'artifact_registry.security_overview'" in capability_tabs
+    assert "'artifact_registry.security'" in capability_tabs
+    assert "'artifact_registry.security_supply_chain'" in capability_tabs
+    assert "'artifact_registry.security_overview': 'overview'" in navigation
+    assert "'artifact_registry.security': 'vulnerabilities'" in navigation
+    assert "'artifact_registry.security_cve_impact': 'vulnerabilities'" in navigation
+    assert "'artifact_registry.security_supply_chain': 'supply_chain'" in navigation
     assert "'Vulnerabilities'" in catalog
     assert "'Supply Chain'" in catalog
     assert "return 'artifact_registry_security'" in navigation
@@ -157,9 +206,171 @@ def test_security_has_two_level_three_views_above_the_hero() -> None:
     assert "@artifact_registry_bp.post('/security/sync')" in routes
     assert "@artifact_registry_bp.get('/security/sync/status/<string:public_id>')" in routes
     assert "job_key='artifact_registry.security.sync'" in routes
-    assert "section=request.args.get('section', '', type=str)" in routes
-    assert "section=request.form.get('section', '', type=str)" in routes
+    assert "section=request.args.get('section', '', type=str)" in security_web
+    assert "section=request.form.get('section', '', type=str)" in security_web
     assert "return _security_response('vulnerabilities')" in routes
+
+
+def test_security_overview_reuses_committed_evidence_and_approved_ui_components() -> None:
+    from jinja2 import Environment
+
+    outer = read('app/templates/artifact_registry/security_overview.html')
+    overview = read('app/templates/artifact_registry/partials/_security_overview.html')
+    presentation = read('app/artifact_registry/security/presentation.py')
+    routes = read('app/artifact_registry/routes.py')
+
+    Environment().parse(outer)
+    Environment().parse(overview)
+    assert 'artifact_registry/partials/_security_overview.html' in outer
+    assert 'components/page_hero.html' in overview
+    assert 'components/snapshot_context_bar.html' in overview
+    assert 'components/section_intro.html' in overview
+    assert 'components/operational_section_card.html' in overview
+    assert 'components/resource_posture_grid.html' in overview
+    assert 'components/workspace_link_card.html' in overview
+    assert 'components/table_label.html' in overview
+    assert 'Security Workspace Catalog' in overview
+    assert 'Registry Security Evidence' in overview
+    assert "'2 Workspaces'" in overview
+    assert "security.posture_metrics|length ~ ' Indicators'" in overview
+    assert 'posture_grid.render(security.posture_metrics, columns=4, compact=true)' in overview
+    assert overview.count('workspace_card.render({') == 2
+    assert "url_for('artifact_registry.security', source_id=security.source_id)" in overview
+    assert "url_for('artifact_registry.security_supply_chain', source_id=security.source_id)" in overview
+    assert 'security.setup_blocked' in overview
+    assert 'security.inventory_required' in overview
+    assert 'Security Evidence Snapshot' in overview
+    assert 'No Findings = Secure' not in overview
+
+    projection = presentation.split('def build_security_overview(', 1)[1]
+    assert 'registered_sources = _registered_sources()' in projection
+    assert 'sources = _providers()' in projection
+    assert 'if source_id is not None and not any(' in projection
+    assert "raise NotFound('The selected committed Registry security source is unavailable.')" in projection
+    assert '_security_scope_evidence(' in projection
+    assert '_security_snapshot_context(' in projection
+    assert '_security_posture(evidence)' in projection
+    assert "'source_id': source_id" in projection
+    assert 'unknown = not observed_scans' in projection
+    for metric in ('critical_total', 'high_total', 'affected_artifacts', 'runtime_exposed'):
+        assert f"evidence['{metric}']" in projection
+    assert 'HarborClient' not in projection
+    assert 'dispatch_registered_job(' not in projection
+
+    assert "@artifact_registry_bp.get('/security')" in routes
+    assert 'def security_overview() -> ResponseReturnValue:' in routes
+    assert 'context = build_security_overview(source_id=_security_source_id())' in routes
+    assert "'artifact_registry/security_overview.html'" in routes
+    assert "'artifact_registry/partials/_security_overview.html'" in routes
+    assert "@artifact_registry_bp.get('/security/vulnerabilities')" in routes
+    assert "return _security_response('vulnerabilities')" in routes
+    assert "@artifact_registry_bp.get('/security/supply-chain')" in routes
+    assert routes.count("@permission_required('artifact_registry.view')") >= 3
+
+
+def test_security_operations_guidance_is_one_line_and_keeps_execution_status() -> None:
+    from jinja2 import Environment
+
+    live = read('app/templates/artifact_registry/partials/_security_sync_live_state.html')
+    jobs = read('app/artifact_registry/security/job_adapter.py')
+
+    Environment().parse(live)
+    assert 'Security Evidence Operations' in live
+    assert 'security_sync_state.compact_helper' in live
+    assert 'Read-only; no provider scans.' in live
+    assert live.count('<p class="mt-1 text-xs leading-5 text-content-muted">') == 1
+    assert 'security_sync_state.active_job' in live
+    assert 'progress_bar.job_progress(' in live
+    assert 'hx-trigger="every 1s"' in live
+    assert 'whitespace-nowrap' not in live
+    for state in ('Queued', 'Syncing', 'Sync Failed', 'Not Collected', 'Ready'):
+        assert f"'{state}':" in jobs
+    assert "'compact_helper': compact_helper" in jobs
+    assert "'helper': helper" in jobs
+
+
+def test_security_sync_guide_reuses_governance_live_status_pattern() -> None:
+    from jinja2 import Environment
+
+    security = read('app/templates/artifact_registry/partials/_security_sync_live_state.html')
+    governance = read('app/templates/artifact_registry/partials/_governance_sync_live_state.html')
+    guide = read('app/templates/components/info_tip.html')
+    for template in (security, governance):
+        Environment().parse(template)
+
+    assert '{% import "components/info_tip.html" as info_tip %}' in security
+    assert security.index('table_label.status_label(') < security.index('info_tip.render(')
+    assert "info_tip.render('registry-security-operations-guide'," in security
+    assert "variant='guide'" in security
+    assert "placement='right'" in security
+    assert "info_tip.render('registry-governance-operations-guide'," in governance
+    assert 'data-kaori-info-tip-trigger' in guide
+    assert 'data-kaori-info-tip-variant' in guide
+    assert 'Page filters only change displayed evidence.' in security
+    assert 'Browsing evidence does not perform live provider reads' in security
+    assert 'Missing, stale, partial, unavailable, or unsupported evidence needs review' in security
+    assert 'hx-trigger="every 1s"' in security
+    assert 'progress_bar.job_progress(' in security
+    assert 'security_sync_state.compact_helper' in security
+
+
+def test_security_overview_retains_unknown_evidence_and_fails_closed(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    import pytest
+    from werkzeug.exceptions import NotFound
+
+    from app.artifact_registry.security import presentation as security_presentation
+
+    source = SimpleNamespace(id=9, provider_key='harbor')
+    evidence = {
+        'artifact_total': 3,
+        'scanned_artifacts': 0,
+        'current_scanned_artifacts': 0,
+        'critical_total': 0,
+        'high_total': 0,
+        'affected_artifacts': 0,
+        'runtime_exposed': 0,
+        'signature_observed': 0,
+        'sbom_available': 0,
+        'coverage_gaps': 3,
+    }
+    monkeypatch.setattr(security_presentation, '_registered_sources', lambda: [source])
+    monkeypatch.setattr(security_presentation, '_providers', lambda: [source])
+    monkeypatch.setattr(
+        security_presentation,
+        '_security_scope_evidence',
+        lambda **kwargs: evidence,
+    )
+    monkeypatch.setattr(
+        security_presentation,
+        '_security_scope_labels',
+        lambda **kwargs: ('Selected Registry Source', 'Harbor'),
+    )
+    monkeypatch.setattr(
+        security_presentation,
+        '_security_snapshot_context',
+        lambda *args, **kwargs: {'status': 'Not Collected'},
+    )
+
+    overview = security_presentation.build_security_overview(source_id=9)
+    assert overview['source_id'] == 9
+    assert overview['source_count'] == 1
+    assert overview['posture']['label'] == 'Coverage Incomplete'
+    assert all(metric[4] == 'unknown' for metric in overview['posture_metrics'])
+    assert overview['critical'] == 0
+    assert overview['coverage_gaps'] == 3
+
+    evidence['current_scanned_artifacts'] = 2
+    evidence['critical_total'] = 4
+    observed = security_presentation.build_security_overview(source_id=9)
+    assert observed['posture_metrics'][0][2] == 4
+    assert observed['posture_metrics'][0][4] == 'critical'
+    assert observed['posture_metrics'][1][4] == 'info'
+    assert observed['posture']['label'] == 'Critical Findings'
+
+    with pytest.raises(NotFound):
+        security_presentation.build_security_overview(source_id=19)
 
 
 def test_registry_security_capabilities_are_provider_declared() -> None:
@@ -184,15 +395,16 @@ def test_registry_scan_evidence_semantics_are_shared_by_dashboard_and_intelligen
 
 def test_registry_security_finding_states_use_usable_scan_coverage() -> None:
     presentation = read('app/artifact_registry/security/presentation.py')
+    posture_projection = read('app/artifact_registry/security/posture_projection.py')
     template = read('app/templates/artifact_registry/partials/_security_workspace.html')
 
     assert "coverage_count = current_scanned_artifacts if view == 'vulnerabilities' else evidence_count" in presentation
-    assert "'Security Evidence Not Collected'" in presentation
-    assert "'No Provider Scan Evidence'" in presentation
-    assert "'Partial Scan Coverage'" in presentation
-    assert "'No Vulnerabilities Observed'" in presentation
-    assert "'No Findings Match This View'" in presentation
-    assert 'KAORI does not trigger provider scans.' in presentation
+    assert "'Security Evidence Not Collected'" in posture_projection
+    assert "'No Provider Scan Evidence'" in posture_projection
+    assert "'Partial Scan Coverage'" in posture_projection
+    assert "'No Vulnerabilities Observed'" in posture_projection
+    assert "'No Findings Match This View'" in posture_projection
+    assert 'KAORI does not trigger provider scans.' in posture_projection
     assert 'security.finding_empty_state.title' in template
 
 
@@ -271,6 +483,33 @@ def test_supply_chain_tables_use_standard_view_more_native_dialogs() -> None:
     assert 'Evidence Scope' not in modals
 
 
+def test_supply_chain_modal_explanations_remain_compact_and_provider_authoritative() -> None:
+    from jinja2 import Environment
+
+    modals = read('app/templates/artifact_registry/partials/_security_supply_chain_detail_modals.html')
+    Environment().parse(modals)
+    phrases = (
+        'Committed capability evidence; providers remain authoritative.',
+        'Providers remain authoritative; KAORI neither invents support nor runs scans.',
+        'Signature/SBOM are provider observations, not KAORI trust checks; no live requests.',
+    )
+    for phrase in phrases:
+        assert phrase in modals
+        assert len(phrase) <= 85
+
+    assert "operational_callout.render('Provider Evidence Boundary'," in modals
+    assert "operational_callout.render('Evidence Interpretation'," in modals
+    assert 'data-artifact-registry-provider-capability-detail-v2' in modals
+    assert 'data-artifact-registry-artifact-evidence-detail-v2' in modals
+    assert '{{ row.digest }}' in modals
+    assert 'row.vulnerability' in modals
+    assert 'row.signature' in modals
+    assert 'row.sbom' in modals
+    assert 'row.trust' in modals
+    assert 'No live provider request.' in modals
+    assert 'whitespace-nowrap' not in modals
+
+
 def test_harbor_security_refresh_is_repository_resilient_without_overriding_provider_timeout() -> None:
     collector = read('app/integrations/registry/providers/harbor/security.py')
     tasks = read('app/artifact_registry/security/tasks.py')
@@ -315,11 +554,11 @@ def test_vulnerability_registry_compact_rows_preserve_complete_committed_evidenc
         '{% else %}\n                                        <table', 1
     )[0]
     assert 'w-[19%]">Finding</th>' in vulns
-    assert 'w-[21%]">Artifact</th>' in vulns
-    assert 'w-[23%]">Package / Fix</th>' in vulns
+    assert 'w-[20%]">Artifact</th>' in vulns
+    assert 'w-[22%]">Package / Fix</th>' in vulns
     assert 'w-[14%]">Runtime Exposure</th>' in vulns
     assert 'w-[13%]">Evidence</th>' in vulns
-    assert 'w-[10%]">Details</th>' in vulns
+    assert 'w-[12%]">Details</th>' in vulns
     assert vulns.count('row.severity_label, severity_tone') == 1
     assert 'row.installed_version' in vulns
     assert 'row.fix_available' in vulns
@@ -329,13 +568,13 @@ def test_vulnerability_registry_compact_rows_preserve_complete_committed_evidenc
     # Restore existing icon-bearing title_cell (not a new styling component).
     # Every registry identity renders one semantic icon without duplicating
     # the severity or freshness evidence labels.
-    assert "table_ui.title_cell(row.vulnerability_id, '', 'shield-alert')" in vulns
+    assert "table_ui.title_cell(row.vulnerability_id, icon='shield-alert', supporting_content=severity_badge)" in vulns
     assert "table_ui.title_cell(row.repository, 'Project: ' ~ row.project, 'package-search')" in vulns
-    assert "table_ui.title_cell(row.source_name, '', 'blocks')" in vulns
-    assert vulns.count("table_ui.title_cell(row.vulnerability_id, '', 'shield-alert')") == 1
+    assert "table_ui.title_cell(row.source_name, icon='blocks', supporting_content=freshness_badge)" in vulns
+    assert vulns.count('supporting_content=severity_badge') == 1
     assert vulns.count("table_ui.title_cell(row.repository, 'Project: ' ~ row.project, 'package-search')") == 1
-    assert vulns.count("table_ui.title_cell(row.source_name, '', 'blocks')") == 1
-    assert 'title="{{ row.package }}"' in vulns
+    assert vulns.count('supporting_content=freshness_badge') == 1
+    assert "table_ui.title_cell(row.package, 'Installed: ' ~ row.installed_version)" in vulns
     assert "macro title_cell(name, supporting_text='', icon='', supporting_content=None)" in read(
         'app/templates/components/table_primitives.html'
     )
@@ -348,6 +587,8 @@ def test_vulnerability_registry_compact_rows_preserve_complete_committed_evidenc
     assert 'supply_chain_detail.vulnerability(row, vulnerability_dialog_id)' in vulns
     assert 'colspan="6"' in vulns
     assert 'security.finding_empty_state.title' in vulns
+    assert 'table_ui.action_grid_classes(columns=1)' in vulns
+    assert "row.runtime_exposure_count == 1 else ' Bindings'" in vulns
 
     # The shell is the existing approved, keyboard-closeable KAORI dialog.
     assert '{% macro vulnerability(row, dialog_id)' in detail
@@ -484,6 +725,8 @@ def test_security_summary_uses_registry_section_intro_and_grouped_metrics() -> N
 
     assert 'artifact-registry-security-summary-heading' in template
     assert 'section_card.render(' in summary
+    assert "table_label.metadata_label(security_metrics|length ~ ' Indicators', icon='layout-grid')" in summary
+    assert 'header_badge=summary_badge' in summary
     assert 'posture_grid.render(security_metrics, columns=4)' in summary
     assert "body_classes='p-0'" in summary
     assert "'Security Evidence Summary'" in summary
@@ -504,7 +747,65 @@ def test_security_summary_uses_registry_section_intro_and_grouped_metrics() -> N
     assert "'warning' if security.high else 'info'" in summary
     assert "'critical' if security.runtime_exposed else 'info'" in summary
     assert 'operational_metric_card' not in summary
+    for concise_copy in (
+        'Digests with critical/high findings.',
+        'Kubernetes high-risk bindings.',
+        'Provider-reported signatures.',
+        'Provider-reported SBOMs.',
+        'Registry sources in this scope.',
+    ):
+        assert concise_copy in summary
+        assert len(concise_copy) <= 38
     assert 'registry.footer(' in template
+
+
+def test_vulnerability_registry_table_uses_shared_dense_evidence_groups() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/artifact_registry/partials/_security_workspace.html')
+    shared = read('app/templates/components/table_primitives.html')
+    Environment().parse(template)
+
+    start = template.index("table_ui.table_classes('min-w-[68rem] !table-fixed')")
+    end = template.index("table_ui.table_classes('min-w-[72rem]')", start)
+    table = template[start:end]
+
+    assert 'table_ui.table_classes(' in table
+    assert 'table_ui.header_cell_classes(action=true)' in table
+    assert table.count('<th scope="col"') == 6
+    assert 'table_ui.body_classes()' in table
+    assert 'table_ui.row_classes()' in table
+    assert 'table_ui.title_cell(row.vulnerability_id,' in table
+    assert 'supporting_content=severity_badge)' in table
+    assert 'table_ui.title_cell(row.repository,' in table
+    assert "'Project: ' ~ row.project" in table
+    assert 'table_ui.title_cell(row.package,' in table
+    assert "'Installed: ' ~ row.installed_version" in table
+    assert 'table_ui.title_cell(row.source_name,' in table
+    assert 'supporting_content=freshness_badge)' in table
+    assert 'status_indicator_label(row.severity_label, severity_tone)' in table
+    assert 'status_indicator_label(row.freshness.label, row.freshness.tone)' in table
+    assert "'Fix observed' if row.fix_available else 'No fix observed'" in table
+    assert "row.runtime_exposure_count == 1 else ' Bindings'" in table
+    assert "table_label.status_indicator_label('Not Observed', 'unknown')" in table
+    assert 'table_ui.action_grid_classes(columns=1)' in table
+    assert table.count('class="{{ table_ui.action_classes() }} w-full"') == 2
+    assert 'data-kaori-dialog-open' in table
+    assert "url_for('artifact_registry.security_cve_impact'" in table
+    assert 'supply_chain_detail.vulnerability(row, vulnerability_dialog_id)' in table
+    assert 'components/states/_empty_state.html' in table
+
+    assert 'macro title_cell(' in shared
+    assert 'supporting_content=None)' in shared
+    assert 'macro action_grid_classes(columns=2)' in shared
+    assert 'macro row_classes()' in shared
+
+    # Both focused views retain the canonical HTMX filter/pagination owner.
+    assert 'registry.filter_form(' in template
+    assert 'registry.footer(' in template
+    assert 'security.pagination.per_page' in template
+    assert 'security.filters.search' in template
+    assert 'min-w-[68rem]' in template
 
 
 def test_security_sync_action_states_fleet_scope_independently_of_view_filters() -> None:

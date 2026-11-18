@@ -62,7 +62,6 @@
   },
   "function_branch_limits": {
     "app/access/activity_audit/administrative_sources.py::build_administrative_evidence_context": 33,
-    "app/artifact_registry/analytics_history.py::_bounded_matrix": 31,
     "app/artifact_registry/analytics_job_adapter.py::build_registry_analytics_readiness": 40,
     "app/artifact_registry/governance.py::sync_registry_governance": 37,
     "app/common/integration_errors.py::describe_integration_failure": 35,
@@ -78,7 +77,6 @@
     "app/intelligence/alert_intelligence/recommendation_source.py::_source_evidence_posture": 34,
     "app/intelligence/recommendation_engine.py::build_alerts_actionable_recommendations": 38,
     "app/intelligence/recommendation_engine.py::build_workload_actionable_recommendations": 49,
-    "app/intelligence/service.py::_base_payload": 37,
     "app/intelligence/tenant_governance_recommendations.py::_access_declaration_findings": 35,
     "app/kubernetes/analytics/alerts/silences.py::build_silence_summary": 35,
     "app/kubernetes/analytics/job_adapter.py::_analytics_work_items": 32,
@@ -220,10 +218,10 @@
     "app/storage/object_storage/inventory/tasks.py::sync_all_object_storage_task": 179
   },
   "module_line_limits": {
-    "app/artifact_registry/presentation_inventory.py": 938,
+    "app/artifact_registry/presentation_inventory.py": 932,
     "app/artifact_registry/presentation_runtime.py": 807,
-    "app/artifact_registry/routes.py": 936,
-    "app/artifact_registry/security/presentation.py": 893,
+    "app/artifact_registry/routes.py": 911,
+    "app/artifact_registry/security/presentation.py": 860,
     "app/integrations/delivery/notification_channels/service.py": 991,
     "app/integrations/observability/metrics_source/query_profiles/kubernetes_v1.py": 1309,
     "app/integrations/service.py": 876,
@@ -242,7 +240,7 @@
     "app/kubernetes/tenant/discovery_service.py": 992,
     "app/kubernetes/tenant/registry_context.py": 1238,
     "app/kubernetes/tenant/release_handoff_approval.py": 817,
-    "app/kubernetes/tenant/routes.py": 2488,
+    "app/kubernetes/tenant/routes.py": 2417,
     "app/kubernetes/tenant/service.py": 947,
     "app/platform_operations/data_lifecycle/retention/service.py": 821,
     "app/reports/generate/service.py": 820,

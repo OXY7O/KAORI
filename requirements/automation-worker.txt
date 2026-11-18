@@ -1,0 +1,4 @@
+# This is an isolated, opt-in image target for KAORI automation workers.
+# Keep in sync with reviewed kaori-operations/execution-environments/requirements.txt.
+ansible-core==2.19.3
+ansible-runner==2.4.3

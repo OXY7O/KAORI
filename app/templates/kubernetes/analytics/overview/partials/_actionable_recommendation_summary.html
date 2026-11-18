@@ -1,6 +1,18 @@
 {% import "components/table_label.html" as table_label %}
 {% import "analytics/components/_analysis_surfaces.html" as overview_surface %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "kubernetes/analytics/components/_scoped_link.html" as scoped_link %}
+{% set overview_actions_guide %}
+    {{ info_tip.render('kubernetes-analytics-overview-actions-guide',
+        'Actionable Recommendation Summary Guide',
+        'Prioritize source-qualified operational recommendations without treating missing worker evidence as a healthy result.',
+        items=[
+        'Review critical recommendations first, then warnings, with ownership and rollback context.',
+        'Counts summarize committed analytical evidence; no automatic remediation is launched here.',
+        'Use the originating domain tab to verify the underlying finding.'
+        ],
+        placement='right', variant='guide') }}
+{% endset %}
 {% set summary = payload.actionable_recommendations %}
 {% set summary_tone = table_label.semantic_tone(summary.tone or summary.status)|trim %}
 {% set top_sources = summary.sources|sort(attribute='count', reverse=true) %}
@@ -17,6 +29,7 @@
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h2 class="text-base font-semibold text-content-primary">Actionable Recommendation Summary</h2>
+                    {{ overview_actions_guide }}
                     {{ table_label.status_label(summary.status|replace('_', ' ') |title, summary_tone) }}
                 </div>
                 <p class="mt-1 text-xs leading-5 text-content-secondary">Consolidated action counts across all Kubernetes Analytics domains.</p>
@@ -80,7 +93,7 @@
             {% elif summary.priority_summary.critical > 0 %}
                 {{ overview_surface.interpretation_callout('Operational Triage',
                                 'Resolve Critical Recommendations First',
-                                'Validate service impact, ownership, evidence freshness, and rollback options before planned optimization work.',
+                                'Check impact, owner, fresh evidence, and rollback.',
                                 icon='siren',
                                 role='brand',
                                 tone='critical',
@@ -115,8 +128,8 @@
                 <div class="mt-3 space-y-2.5">
                     {% for icon, title, description in [
                         ('user-round-check', 'Confirm Accountable Owner', 'Identify who approves and performs the change.'),
-                        ('badge-check', 'Validate Current Evidence', 'Confirm the source snapshot and affected resource are still current.'),
-                        ('rotate-ccw', 'Prepare Change And Rollback', 'Define the execution window, validation step, and rollback condition.')
+                        ('badge-check', 'Validate Current Evidence', 'Confirm snapshot and resource are current.'),
+                        ('rotate-ccw', 'Prepare Change And Rollback', 'Set change window, validation, and rollback.')
                         ] %}
                         <div class="flex items-start gap-2.5">
                             <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-outline-subtle bg-surface-muted text-content-secondary">

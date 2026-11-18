@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from jinja2 import Environment, FileSystemLoader
+
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -335,3 +337,150 @@ def test_provider_cards_preserve_section_guide_without_field_question_icons() ->
     assert 'portal.appendChild(preview)' in controller
     assert '<style' not in selector
     assert '<script' not in selector
+
+
+def test_consumer_asset_identity_is_shared_and_omits_duplicate_taxonomy_label() -> None:
+    from jinja2 import DictLoader, Environment
+
+    shared_path = 'app/templates/integrations/components/_workspace.html'
+    shared = read(shared_path)
+    domain = read('app/templates/integrations/partials/_domain_workspace.html')
+    domain_service = read('app/integrations/domain_service.py')
+    domain_page = read('app/templates/integrations/domain.html')
+    providers = (
+        'app/templates/integrations/observability/metrics_source/partials/_binding_registry.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html',
+    )
+
+    assert (
+        'macro consumer_asset_identity(label, asset_type, metadata=none, type_label=none, metadata_is_key=false)'
+        in shared
+    )
+    assert "palette_icon(asset_icon, 'brand', size='sm')" in shared
+    assert 'type_label|trim|lower != label|trim|lower' in shared
+    assert 'show_type_inline = distinct_type and not metadata_is_key' in shared
+    assert '<span class="sr-only">Asset type: {{ type_label }}</span>' in shared
+    assert 'data-kaori-consumer-asset-identity' in shared
+    assert 'integrations/partials/_domain_workspace.html' in domain_page
+    assert "'asset_type': binding.asset_type" in domain_service
+    assert 'integration_ui.consumer_asset_identity(row.consumer_label,' in domain
+    assert 'row.asset_type,' in domain
+    assert 'metadata=row.asset_key' in domain
+    assert 'type_label=row.asset_type_label' in domain
+    assert 'metadata_is_key=true' in domain
+    assert '{{ row.asset_type_label }} · {{ row.asset_key }}' not in domain
+    assert 'row.source_name' in domain
+    assert 'binding_registry_pagination.allowed_per_page' in domain
+
+    for path in providers:
+        provider = read(path)
+        assert 'integration_ui.consumer_asset_identity(row.scope_label,' in provider
+        assert 'row.binding.asset_type' in provider
+        assert 'metadata=row.consumer_profile_label' in provider
+        assert 'type_label=row.scope_type_label' in provider
+        assert 'data-kaori-binding-registry-table' in provider
+        assert 'data-kaori-binding-view-more' in provider
+
+    templates = {
+        'integrations/components/_workspace.html': shared,
+        'components/loading_bar.html': '',
+    }
+    env = Environment(loader=DictLoader(templates), autoescape=True)
+    macro = env.get_template('integrations/components/_workspace.html').module.consumer_asset_identity
+
+    kubernetes = str(macro('Kubernetes Cluster', 'kubernetes_cluster', 'cluster-123', 'Kubernetes Cluster', True))
+    assert 'data-lucide="boxes"' in kubernetes
+    assert 'title="Kubernetes Cluster">Kubernetes Cluster</p>' in kubernetes
+    assert 'title="cluster-123"' in kubernetes
+    assert '<span class="font-mono">cluster-123</span>' in kubernetes
+    assert '<span class="text-content-secondary">Kubernetes Cluster</span>' not in kubernetes
+
+    storage = str(macro('Object Storage System', 'object_storage_system', 'storage-456', 'Object Storage System', True))
+    assert 'data-lucide="database"' in storage
+    assert '<span class="font-mono">storage-456</span>' in storage
+    assert '<span class="text-content-secondary">Object Storage System</span>' not in storage
+
+    # Custom-named domain consumers keep the same compact title + key hierarchy
+    # as Orchestration. The distinct taxonomy remains available to assistive tech.
+    custom_name = str(macro('Kubernetes X300', 'kubernetes_cluster', 'cluster-789', 'Kubernetes Cluster', True))
+    assert 'title="Kubernetes X300 · Kubernetes Cluster">Kubernetes X300</p>' in custom_name
+    assert '<span class="sr-only">Asset type: Kubernetes Cluster</span>' in custom_name
+    assert '<span class="text-content-secondary">Kubernetes Cluster</span>' not in custom_name
+    assert '<span class="font-mono">cluster-789</span>' in custom_name
+
+    minio = str(
+        macro(
+            'MinIO X300',
+            'object_storage_system',
+            '5a42bc37-4301-4dc1-85f5-f26a0d64aa06',
+            'Object Storage System',
+            True,
+        )
+    )
+    assert 'data-lucide="database"' in minio
+    assert 'title="MinIO X300 · Object Storage System">MinIO X300</p>' in minio
+    assert '<span class="sr-only">Asset type: Object Storage System</span>' in minio
+    assert '<span class="font-mono">5a42bc37-4301-4dc1-85f5-f26a0d64aa06</span>' in minio
+    assert '<span class="text-content-secondary">Object Storage System</span>' not in minio
+    assert 'Object Storage System · 5a42' not in minio
+
+    provider_scope = str(macro('Kubernetes Cluster', 'kubernetes_cluster', 'Production Profile', 'Kubernetes Cluster'))
+    assert 'Production Profile' in provider_scope
+    assert '<span class="text-content-secondary">Kubernetes Cluster</span>' not in provider_scope
+    assert '<span class="font-mono">' not in provider_scope
+
+    # Provider-owned profile registries still display distinct taxonomy context.
+    provider_custom = str(macro('MinIO X300', 'object_storage_system', 'Production Profile', 'Object Storage System'))
+    assert '<span class="text-content-secondary">Object Storage System</span>' in provider_custom
+    assert 'Production Profile' in provider_custom
+    assert '<span class="sr-only">Asset type: Object Storage System</span>' not in provider_custom
+
+
+def test_registry_consumer_asset_id_has_context_without_changing_other_domains() -> None:
+    env = Environment(loader=FileSystemLoader(ROOT / 'app/templates'), autoescape=True)
+    component = env.get_template('integrations/components/_workspace.html').module
+
+    registry_html = str(
+        component.consumer_asset_identity(
+            'Harbor X300',
+            'registry_instance',
+            metadata='6',
+            type_label='Registry Instance',
+            metadata_is_key=True,
+        )
+    )
+    assert '>Harbor X300</p>' in registry_html
+    assert '>Asset ID:</span>' in registry_html
+    assert '<span class="font-mono">6</span>' in registry_html
+    assert 'data-lucide="package"' in registry_html
+    assert 'Asset type: Registry Instance' in registry_html
+    assert 'Registry Instance · 6' not in registry_html
+
+    # Vault uses the same canonical IntegrationInstance integer-key contract.
+    vault_html = str(
+        component.consumer_asset_identity(
+            'Vault X300',
+            'vault_instance',
+            metadata='42',
+            type_label='Vault Instance',
+            metadata_is_key=True,
+        )
+    )
+    assert '>Vault X300</p>' in vault_html
+    assert '>Asset ID:</span>' in vault_html
+    assert '<span class="font-mono">42</span>' in vault_html
+    assert 'data-lucide="key-round"' in vault_html
+
+    storage_key = 'c0e9f10c-8b25-49d2-b5e1-116c06f3a289'
+    storage_html = str(
+        component.consumer_asset_identity(
+            'MinIO X300',
+            'object_storage_system',
+            metadata=storage_key,
+            type_label='Object Storage System',
+            metadata_is_key=True,
+        )
+    )
+    assert 'Asset ID:' not in storage_html
+    assert storage_key in storage_html
+    assert 'data-lucide="database"' in storage_html

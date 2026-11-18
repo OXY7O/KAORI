@@ -103,3 +103,20 @@ def test_review7_compact_operations_copy_keeps_server_safety_semantics() -> None
         ('The receipt binds deletion to reviewed resourceVersion.', secret_delete),
     ):
         assert phrase in source
+
+
+def test_compact_flow_guidance_retains_revalidation_and_hidden_secret_values() -> None:
+    configmap = (ROOT / 'app/templates/kubernetes/operations/configmaps/create.html').read_text(encoding='utf-8')
+    secret = (ROOT / 'app/templates/kubernetes/operations/secrets/replace.html').read_text(encoding='utf-8')
+
+    configmap_note = 'Revalidate after any target or input change.'
+    secret_step = 'Values hidden; only key names and type metadata shown.'
+
+    assert f'configmap_create_note = "{configmap_note}"' in configmap
+    assert f"'Review Key Names', '{secret_step}'" in secret
+    assert len(configmap_note) <= 55
+    assert len(secret_step) <= 55
+    assert 'Create the validated object; edits reset validation.' in configmap
+    assert 'Define the name, keys, types, and immutability.' in configmap
+    assert 'Replace Secret material without revealing current values.' in secret
+    assert 'Patch the same validated target while preserving every blank field.' in secret

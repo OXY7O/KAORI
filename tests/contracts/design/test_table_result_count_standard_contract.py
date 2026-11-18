@@ -118,13 +118,20 @@ def test_additional_table_workspaces_use_filtered_results_badges() -> None:
         ),
         'reports/overview/partials/_recent_reports.html': 'payload.recent_reports|length',
         'intelligence/partials/_catalog_results.html': 'payload.pagination.total_items',
-        'intelligence/partials/_recommendations_results.html': 'payload.pagination.total_items',
         'storage/object_storage/analytics/partials/_bucket_table.html': 'bucket_table.pagination.total_items',
         'storage/object_storage/analytics/partials/_bucket_forecast_table.html': 'forecast_table.pagination.total_items',
     }
     for path, count in cases.items():
         source = _template(path)
         assert f'table_label.result_count({count})' in source or f'result_count={count}' in source
+
+    # Recommendations retain filtered counts in their OOB summary,
+    # not a duplicate badge inside the paginated HTMX fragment.
+    recommendations = _template('intelligence/partials/_recommendations_results.html')
+    summary = _template('intelligence/partials/_recommendation_workspace_info.html')
+    assert '_recommendation_workspace_info.html' in recommendations
+    assert "'Matching Findings', matching_items" in summary
+    assert 'payload.result_context.matching_items' in summary
 
     channels = _template('integrations/delivery/notification_channels/partials/_channels_workspace.html')
     assert 'table_block.inventory_block_header(' in channels

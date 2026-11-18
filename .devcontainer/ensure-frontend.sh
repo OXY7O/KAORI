@@ -58,7 +58,7 @@ fi
 install_required=false
 if [[ "${1:-}" == '--install-always' ]]; then
     install_required=true
-elif [[ ! -x node_modules/.bin/tailwindcss ]]; then
+elif [[ ! -f node_modules/@tailwindcss/postcss/package.json || ! -f node_modules/postcss/package.json ]]; then
     install_required=true
 elif [[ ! -f node_modules/lucide/dist/umd/lucide.min.js ]]; then
     install_required=true
@@ -75,7 +75,7 @@ if [[ "$install_required" == true ]]; then
     if ! npm ci --no-audit --no-fund --prefer-offline --fetch-retries=1 --fetch-timeout=30000; then
         fail 'npm ci failed. Inspect the npm registry/network error above; node_modules is not ready.'
     fi
-    [[ -x node_modules/.bin/tailwindcss ]] || fail 'Tailwind CLI was not installed in node_modules/.bin.'
+    [[ -f node_modules/@tailwindcss/postcss/package.json && -f node_modules/postcss/package.json ]] || fail 'Pinned Tailwind PostCSS build dependencies are missing.'
     printf '%s\n' "$lock_hash" > "$stamp_file"
 else
     log 'Frontend dependencies match package-lock.json.'
@@ -92,6 +92,7 @@ inputs_hash="$(
         sha256sum package.json package-lock.json \
             scripts/vendor_frontend_assets.mjs \
             scripts/verify_frontend_assets.mjs \
+            scripts/build_css.mjs \
             scripts/verify_css_build.mjs
         find frontend app/templates app/static/js -type f -print0 \
             | LC_ALL=C sort -z \

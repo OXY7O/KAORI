@@ -1,6 +1,8 @@
 from pathlib import Path
 
-from scripts.verify_architecture_boundaries import ImportRecord, validate_boundaries
+from scripts.verify_architecture_boundaries import ImportRecord, scan_imports, validate_boundaries
+
+ROOT = Path(__file__).resolve().parents[3]
 
 
 def _two_domain_cycle(app_root: Path) -> list[ImportRecord]:
@@ -32,3 +34,16 @@ def test_existing_approved_envelope_remains_unchanged(tmp_path: Path) -> None:
     )
 
     assert errors == []
+
+
+def test_infrastructure_automation_does_not_import_integration_provider_modules() -> None:
+    app_root = ROOT / 'app'
+    records = scan_imports(app_root)
+    reverse_edges = [
+        (record.source.relative_to(ROOT).as_posix(), record.line, record.target)
+        for record in records
+        if record.source.is_relative_to(app_root / 'infrastructure_automation')
+        and (record.target == 'app.integrations' or record.target.startswith('app.integrations.'))
+    ]
+
+    assert not reverse_edges

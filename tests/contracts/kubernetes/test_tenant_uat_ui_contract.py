@@ -244,8 +244,161 @@ def test_namespace_allocation_workflow_uses_distinct_primary_provider_tabs() -> 
     assert "url_for('tenant.namespace_provisioning')" in routes  # Provision default.
 
 
+def test_capsule_scope_tabs_reuse_jobs_framed_navigation_with_htmx_fallback() -> None:
+    from jinja2 import Environment
+
+    workspace = _read('app/templates/kubernetes/tenant/namespace_provisioning.html')
+    framed = _read('app/templates/components/framed_workspace_tabs.html')
+    jobs = _read('app/templates/platform_operations/jobs/index.html')
+
+    for source in (workspace, framed):
+        Environment(autoescape=True).parse(source)
+
+    assert 'framed_workspace_tabs.render_navigation(top_tabs,' in jobs
+    assert 'framed_workspace_tabs.render_navigation(capsule_scope_tabs,' in workspace
+    assert "prefix='capsule-governance-scope'" in workspace
+    assert 'data-tenant-capsule-active-view="{{ active_capsule_view }}"' in workspace
+    assert 'data-kaori-tab-variant="framed-workspace-v2-server"' in framed
+    assert "hx_target='#namespace-provisioning-workspace'" in workspace
+    assert "hx_select='#namespace-provisioning-workspace'" in workspace
+    assert "hx_swap='outerHTML show:none focus-scroll:false'" in workspace
+    assert "hx_push_url='true'" in workspace
+    assert 'hx-indicator="#namespace-provisioning-workspace-loading"' in workspace
+    assert 'hx-sync="#namespace-provisioning-workspace:replace"' in workspace
+    assert 'if active_key == tab_key' in framed
+    assert 'aria-current="page"' in framed
+    assert 'href="{{ tab_href }}"' in framed
+    assert workspace.count('_capsule_governance_overview.html') == 1
+    assert workspace.count('_capsule_tenant_quota_cutover.html') == 1
+    assert workspace.count('_capsule_shared_allocation_cutover.html') == 1
+
+
+def test_capsule_governance_legacy_captions_are_compact_without_losing_authority() -> None:
+    from jinja2 import Environment
+
+    tenant = _read('app/templates/kubernetes/tenant/partials/_capsule_tenant_quota_cutover.html')
+    shared = _read('app/templates/kubernetes/tenant/partials/_capsule_shared_allocation_cutover.html')
+    overview = _read('app/templates/kubernetes/tenant/partials/_capsule_governance_overview.html')
+    for source in (tenant, shared, overview):
+        Environment(autoescape=True).parse(source)
+
+    captions = (
+        (
+            tenant,
+            'For legacy Adopted / Observed allocation only: govern Capsule Tenant quota.',
+            'capsule-tenant-quota-tip',
+            'Managed-on-Adopt already performs governed takeover',
+        ),
+        (
+            shared,
+            'For legacy Adopted / Observed Capsule allocation only: govern GlobalResourceQuota.',
+            'capsule-shared-cutover-tip',
+            'KAORI never substitutes a Native ResourceQuota write',
+        ),
+    )
+    for source, caption, guide_id, preserved_contract in captions:
+        header = source.split('</header>', 1)[0]
+        assert caption in header
+        assert len(caption) < 90
+        assert 'whitespace-nowrap' not in header
+        assert header.count(f"'{guide_id}'") == 1
+        assert "variant='guide'" in header
+        assert preserved_contract in header
+        assert 'name="csrf_token"' in source
+
+    assert 'Capsule Governance Overview</h2>' in overview
+    assert 'capsule-governance-overview-guide' in overview
+    assert 'table_label.special_label' in overview
+    assert 'Generated Namespace ResourceQuotas are provider effects' in overview
+
+
+def test_capsule_authority_copy_and_blocker_rows_retain_complete_evidence() -> None:
+    from jinja2 import Environment
+
+    overview = _read('app/templates/kubernetes/tenant/partials/_capsule_governance_overview.html')
+    shared = _read('app/templates/kubernetes/tenant/partials/_capsule_shared_allocation_cutover.html')
+    for source in (overview, shared):
+        Environment(autoescape=True).parse(source)
+
+    assert 'Capsule Governance Overview' in overview
+    assert 'Choose the committed Tenant or shared quota source' in overview
+    assert 'Generated Namespace ResourceQuotas are provider effects' in overview
+    assert 'not shared budgets.' in overview
+    assert 'Capsule authoritative' in overview
+    header = overview.split('<div class="grid items-stretch gap-4 lg:grid-cols-2">', 1)[0]
+    assert header.index('Capsule Governance Overview</h2>') < header.index(
+        "info_tip.render('capsule-governance-overview-guide'"
+    )
+    assert header.index("info_tip.render('capsule-governance-overview-guide'") < header.index(
+        "table_label.special_label('Capsule authoritative'"
+    )
+    assert header.index("table_label.special_label('Capsule authoritative'") < header.index(
+        'Choose the committed Tenant'
+    )
+    assert header.count("info_tip.render('capsule-governance-overview-guide'") == 1
+    assert "placement='right', variant='guide'" in header
+    assert 'data-lucide="layout-grid"' in header
+    assert 'h-9 w-9' in header
+    assert 'text-base font-semibold text-content-primary' in header
+    assert 'text-sm leading-6 text-content-secondary' in header
+    assert header.count('<p ') == 1
+    assert 'max-w-4xl' not in header
+    assert 'items-start justify-between' not in header
+    assert 'border-b border-outline-subtle px-5 py-4' in header
+    assert (
+        '<section class="overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm"'
+        in overview
+    )
+    assert '<div class="space-y-4 p-4 sm:p-5">' in overview
+    assert overview.index('<div class="space-y-4 p-4 sm:p-5">') < overview.index(
+        '<div class="grid items-stretch gap-4 lg:grid-cols-2">'
+    )
+    assert 'capsule_tenant_quota_managed|length' in overview
+    assert 'capsule_tenant_quota_cutover_tenants|length' in overview
+    assert 'capsule_shared_tenants|length' in overview
+
+    for marker in (
+        'GlobalResourceQuota governance blockers',
+        'Other Capsule allocation authorities',
+        'GlobalResourceQuota · Control Unavailable',
+        'blocked_grq = capsule_shared_cutover_state.values()',
+        "|selectattr('applicable')|rejectattr('supported')|list",
+        'other_authorities = capsule_shared_cutover_state.values()',
+        "|rejectattr('applicable')|list",
+        "if state.get('applicable') and not state.get('supported')",
+        "if not state.get('applicable')",
+        'state.get("reason")',
+        'state.get("provider_api_version")',
+        "state.get('source_count', 0)",
+        'state.get("detected_authority")',
+        "state.get('authority') == 'capsule_tenant_resource_quotas'",
+        "state.get('authority') == 'none_observed'",
+        "state.get('authority') == 'native_namespaced'",
+        "state.get('no_tenant_quota_configured')",
+    ):
+        assert marker in shared, marker
+    assert 'break-words' in shared
+    assert 'divide-y divide-outline-subtle' in shared
+    assert "table_label.special_label('Blocked', 'warning', 'triangle-alert')" in shared
+    assert "capsule_tab='tenant-quota')" in shared
+    assert 'href="#capsule-tenant-quota-heading"' not in shared
+    assert 'hx-target="#namespace-provisioning-workspace"' in shared
+    assert 'hx-select="#namespace-provisioning-workspace"' in shared
+    assert 'hx-push-url="true"' in shared
+
+    # All provider mutation and read-back guards remain in the same form.
+    for marker in (
+        'name="csrf_token"',
+        'data-tenant-capsule-apply-button',
+        'not can_manage or not capsule_shared_cutover_supported or not profiles',
+        "url_for('tenant.cutover_capsule_shared_allocation_route')",
+        "coverage_comparison.capsule_sections('capsule_global_resource_quota'",
+    ):
+        assert marker in shared, marker
+
+
 def test_capsule_governance_scope_navigation_is_url_owned() -> None:
-    """#3001: scope-specific Capsule controls render one workflow per URL."""
+    """#3001/#4652: framed Capsule scope controls remain server URL-owned."""
     from jinja2 import Environment
 
     workspace = _read('app/templates/kubernetes/tenant/namespace_provisioning.html')
@@ -253,7 +406,9 @@ def test_capsule_governance_scope_navigation_is_url_owned() -> None:
     routes = _read('app/kubernetes/tenant/routes.py')
     for source in (workspace, overview):
         Environment(autoescape=True).parse(source)
-    assert "content_tabs.render_links('capsule-governance-scope'," in workspace
+    assert 'components/framed_workspace_tabs.html' in workspace
+    assert 'framed_workspace_tabs.render_navigation(capsule_scope_tabs,' in workspace
+    assert "content_tabs.render_links('capsule-governance-scope'," not in workspace
     assert 'active_capsule_view' in workspace
     assert 'data-tenant-capsule-active-view="{{ active_capsule_view }}"' in workspace
     for key, label in [

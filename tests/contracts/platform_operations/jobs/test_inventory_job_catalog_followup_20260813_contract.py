@@ -40,7 +40,7 @@ def test_quick_sync_all_inventory_dispatches_all_authorized_inventory_domains() 
     assert 'Sync All Inventory' in navbar
     assert "can_sync_kubernetes_inventory = current_user.has_permission('clusters.sync')" in navbar
     assert "can_sync_object_storage_inventory = current_user.has_permission('storage.sync')" in navbar
-    assert 'every eligible managed domain' in navbar
+    assert 'Queue inventory sync for eligible domains.' in navbar
     assert "@bp.post('/quick-actions/inventory/sync-all')" in routes
     assert "job_keys.append('kubernetes.inventory.sync')" in routes
     assert "job_keys.append('object_storage.inventory.sync')" in routes

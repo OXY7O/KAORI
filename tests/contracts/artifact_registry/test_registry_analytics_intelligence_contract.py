@@ -131,9 +131,352 @@ def test_registry_historical_snapshots_use_measured_source_range_and_scope() -> 
     assert 'size_growth_bytes_per_day' in history
 
 
+def test_registry_growth_history_chart_points_are_bounded_measured_and_aligned() -> None:
+    from datetime import UTC, datetime, timedelta
+
+    from app.artifact_registry.analytics_history import (
+        MAX_HISTORY_CHART_POINTS,
+        _bounded_matrix,
+    )
+    from app.artifact_registry.presentation_analytics import _committed_growth_chart_points
+
+    start = datetime(2026, 11, 13, tzinfo=UTC)
+    end = start + timedelta(minutes=99)
+    origin = start.timestamp()
+
+    def samples(baseline: float, factor: float, offset: int = 0) -> list[list[str]]:
+        return [[str(origin + i * 60 + offset), str(baseline + i * factor)] for i in range(100)]
+
+    aligned = {
+        'status': 'success',
+        'data': {
+            'resultType': 'matrix',
+            'result': [
+                {'metric': {'project_name': 'alpha'}, 'values': samples(10, 1)},
+                {'metric': {'project_name': 'beta'}, 'values': samples(5, 2)},
+            ],
+        },
+    }
+    chart: list[dict[str, float]] = []
+    summary = _bounded_matrix(
+        aligned,
+        project_scoped=True,
+        start_at=start,
+        end_at=end,
+        step_seconds=60,
+        chart_points=chart,
+    )
+    assert MAX_HISTORY_CHART_POINTS == 48
+    assert len(chart) == MAX_HISTORY_CHART_POINTS
+    assert chart[0] == {'timestamp': origin, 'value': 15.0}
+    assert chart[-1] == {'timestamp': origin + 99 * 60, 'value': 312.0}
+    assert summary['alpha']['samples'] == 100
+    assert all(chart[i]['timestamp'] < chart[i + 1]['timestamp'] for i in range(len(chart) - 1))
+    points, mode, count = _committed_growth_chart_points(
+        {'chart_series': {'project_artifacts': chart}}, 'project_artifacts'
+    )
+    assert points == chart and mode == 'measured' and count == 48
+
+    unaligned = {
+        'status': 'success',
+        'data': {
+            'resultType': 'matrix',
+            'result': [
+                {'metric': {'project_name': 'alpha'}, 'values': samples(10, 1)},
+                {'metric': {'project_name': 'beta'}, 'values': samples(5, 2, offset=60)},
+            ],
+        },
+    }
+    chart = []
+    _bounded_matrix(
+        unaligned,
+        project_scoped=True,
+        start_at=start,
+        end_at=end,
+        step_seconds=60,
+        chart_points=chart,
+    )
+    assert chart == []  # No timestamp mixing or interpolated filler.
+
+
+def test_registry_growth_chart_legacy_uses_only_committed_endpoints() -> None:
+    from types import SimpleNamespace
+
+    from app.artifact_registry.presentation_analytics import (
+        _committed_growth_chart_points,
+        _registry_growth_charts,
+    )
+
+    legacy = {
+        'source': 'metrics_source_query_range',
+        'status': 'ready',
+        'time_range': '24h',
+        'series': {
+            'project_artifacts': {
+                'demo': {'start_time': 10, 'end_time': 20, 'first': 3, 'last': 5, 'samples': 100},
+            },
+        },
+    }
+    points, mode, count = _committed_growth_chart_points(legacy, 'project_artifacts')
+    assert mode == 'checkpoints' and count == 2
+    assert points == [{'timestamp': 10.0, 'value': 3.0}, {'timestamp': 20.0, 'value': 5.0}]
+    view = {
+        'identity': SimpleNamespace(name='Harbor X300'),
+        'snapshot': SimpleNamespace(payload_json={'history': legacy}),
+    }
+    result = _registry_growth_charts([view], snapshot_window='24h')
+    assert len(result['artifacts']) == 1
+    assert result['artifacts'][0]['mode'] == 'checkpoints'
+    assert result['storage'] == []
+    assert _registry_growth_charts([view], snapshot_window='current') == {
+        'artifacts': [],
+        'storage': [],
+    }
+    assert _registry_growth_charts([view], snapshot_window='7d')['artifacts'] == []
+    legacy['series']['project_artifacts']['demo']['last'] = float('nan')
+    assert _committed_growth_chart_points(legacy, 'project_artifacts')[0] == []
+
+
+def test_registry_growth_overview_charts_and_summary_reuse_canonical_patterns() -> None:
+    from jinja2 import Environment
+
+    summary = (ROOT / 'app/templates/artifact_registry/partials/_analytics_summary.html').read_text()
+    growth = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_charts.html').read_text()
+    panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
+    page = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    script = (ROOT / 'app/static/js/artifact_registry/analytics_growth_chart.js').read_text()
+    worker = (ROOT / 'app/artifact_registry/analytics_history.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    inventory = (ROOT / 'app/templates/artifact_registry/partials/_inventory_workspace.html').read_text()
+    for template in (summary, growth, panel):
+        Environment().parse(template)
+
+    assert 'header_badge=posture_badge' in summary
+    assert 'table_label.metadata_label(analytical_metrics|length' in summary
+    assert 'header_badge=posture_badge' in inventory
+    assert 'artifact_registry/partials/_analytics_growth_charts.html' in panel
+    assert 'data-registry-growth-chart-panel' in growth
+    assert 'data-registry-growth-chart-series' in growth
+    assert 'data-registry-growth-chart' in growth
+    assert 'Historical Chart Not Available' in growth
+    assert 'Source Growth Trend Guide' in growth
+    assert "analysis_surface.evidence_shell_classes('min-w-0')" in growth
+    assert 'analysis_surface.guidance_fact_grid_classes(3)' in growth
+    assert "analysis_surface.empty_evidence_classes('px-5 py-6 text-center')" in growth
+    assert 'maxTicksLimit: 3' in script
+    assert 'pointRadiusForSeries(source)' in script
+    assert 'source.points.length <= 6 ? 3 : 0' in script
+    assert 'chart.umd.min.js' in page
+    assert 'js/artifact_registry/analytics_growth_chart.js' in page
+    assert 'new Chart(' in script
+    assert "document.body.addEventListener('htmx:afterSwap'" in script
+    assert 'data-registry-growth-chart-series' in growth
+    assert 'MAX_HISTORY_CHART_POINTS = 48' in worker
+    assert "'chart_series': chart_series" in worker
+    assert "_registry_growth_charts(bundle['latest_rows'], snapshot_window=selected_window)" in presentation
+    assert 'MetricsConsumer' not in presentation
+    assert 'consumer.query_range(' in worker
+
+
+def test_registry_growth_chart_summary_renders_committed_endpoint_evidence() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    template = env.get_template('artifact_registry/partials/_analytics_growth_charts.html')
+
+    measured = {
+        'label': 'Harbor X300',
+        'mode': 'measured',
+        'sample_count': 2,
+        'points': [{'timestamp': 10.0, 'value': 4.0}, {'timestamp': 20.0, 'value': 4.0}],
+    }
+    checkpoints = {
+        'label': 'Harbor X300',
+        'mode': 'checkpoints',
+        'sample_count': 2,
+        'points': [
+            {'timestamp': 10.0, 'value': 129_499_136.0},
+            {'timestamp': 20.0, 'value': 129_499_136.0},
+        ],
+    }
+    rendered = template.render(
+        analytics={
+            'snapshot_window': '24h',
+            'growth_charts': {'artifacts': [measured], 'storage': [checkpoints]},
+        }
+    )
+    assert rendered.count('data-registry-growth-chart-panel=') == 2
+    assert rendered.count('data-registry-growth-chart-series=') == 2
+    assert rendered.count('data-registry-growth-chart\n') == 2
+    assert rendered.count('Latest observed') == 2
+    assert 'Latest measured point' in rendered
+    assert 'Latest committed checkpoint' in rendered
+    assert rendered.count('Retained observations') == 2
+    assert rendered.count('Endpoint change') == 2
+    assert rendered.count('Same endpoints') == 2
+    assert '123.5 MiB' in rendered
+    assert 'Start / end only' in rendered
+    assert 'intermediate history was not retained' in rendered
+    assert 'intermediate observations may still differ' in rendered
+    assert 'No forecast' not in rendered
+    assert 'Not a forecast' in rendered
+
+    mixed = template.render(
+        analytics={
+            'snapshot_window': '24h',
+            'growth_charts': {
+                'artifacts': [measured, {**measured, 'label': 'Other Harbor'}],
+                'storage': [],
+            },
+        }
+    )
+    assert mixed.count('Per source') >= 3
+    assert 'Independent source values' in mixed
+    assert 'no fleet-wide aggregate or projection' in mixed
+    assert 'Historical Chart Not Available' in mixed
+    assert mixed.count('data-registry-growth-chart\n') == 1
+    assert 'data-registry-growth-chart-panel="storage"' in mixed
+
+    empty = template.render(analytics={'snapshot_window': '24h', 'growth_charts': {'artifacts': [], 'storage': []}})
+    assert empty.count('Historical Chart Not Available') == 2
+    assert 'data-registry-growth-chart\n' not in empty
+    assert 'Latest observed' not in empty
+
+
+def test_registry_growth_detail_child_tabs_use_shared_analytics_navigation_and_bound_evidence() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
+    workspace = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_workspace.html').read_text()
+    overview = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_overview.html').read_text()
+    sources = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_source_deltas.html').read_text()
+    history = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_history_evidence.html').read_text()
+    js = (ROOT / 'app/static/js/analytics/controls.js').read_text()
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    for source in (section, workspace, overview, sources, history):
+        env.parse(source)
+
+    assert 'artifact_registry/partials/_analytics_growth_workspace.html' in section
+    assert 'Registry Growth' in section
+    assert 'data-analytics-tabset-id="artifact-registry-growth-content"' in workspace
+    assert 'data-analytics-update-query="false"' in workspace
+    assert "content_tabs.render_buttons('artifact-registry-growth-content'," in workspace
+    assert 'growth_tabs,' in workspace
+    assert "('overview', 'Overview', 'layout-dashboard')" in workspace
+    assert "('sources', 'Source Deltas', 'chart-no-axes-column-increasing')" in workspace
+    assert "('history', 'History & Evidence', 'chart-spline')" in workspace
+    assert workspace.count('role="tabpanel"') == 3
+    assert workspace.count('data-analytics-tab-panel=') == 3
+    for key in ('overview', 'sources', 'history'):
+        assert f'id="artifact-registry-growth-content-panel-{key}"' in workspace
+        assert f'aria-labelledby="artifact-registry-growth-content-tab-{key}"' in workspace
+    assert workspace.count('\n             hidden\n') == 2
+    assert 'stabilizeAnalyticsTabsets(root)' in js
+    assert "document.body.addEventListener('htmx:afterSwap'" in js
+
+    assert 'Storage Footprint' in overview
+    assert 'Artifact Velocity' in overview
+    assert 'Stale Candidates' in overview
+    assert "analytics.aggregate.stale_candidates if analytics.snapshot_count else 'N/A'" in overview
+    assert 'Qualified Growth Comparison Not Available' in overview
+    assert "spotlight.artifact_delta if spotlight.artifact_delta is not none else 'N/A'" in overview
+    assert 'zero net change does not prove there was no intermediate activity' in overview
+    assert 'md:grid-cols-3 md:divide-x md:divide-y-0' in overview
+    assert 'Qualified Source Spotlight' in overview
+    assert 'Materialization Basis' in overview
+    assert 'qualified_growth[0]' in overview
+
+    assert 'qualified_growth[:5]' in sources
+    assert 'divide-y divide-outline-subtle' in sources
+    assert 'grid gap-px overflow-hidden rounded-lg' in sources
+    assert 'row.artifact_growth_display' in sources
+    assert 'row.size_growth_display' in sources
+    assert 'row.size_delta_display' in sources
+    assert 'row.elapsed_days' in sources
+    assert 'Source Deltas Not Available' in sources
+    assert 'Missing source evidence is not zero growth.' in sources
+
+    assert 'Artifact History Sources' not in history
+    assert 'Storage History Sources' not in history
+    assert 'Selected Time Range' not in history
+    assert 'analysis_surface.evidence_shell_classes()' in history
+    assert 'artifact_registry/partials/_analytics_growth_charts.html' in history
+    assert 'source_rows[:5]' in history
+    assert 'row.status_label, row.tone' in history
+    assert 'Previous committed snapshot; not current' in history
+    charts = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_charts.html').read_text()
+    assert 'has_endpoint_only' in charts
+    assert 'Dashed series are start/end checkpoints only' in charts
+    assert 'No projection is shown.' in history
+
+
+def test_registry_growth_detail_child_tabs_render_observed_zero_missing_and_history_lineage() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    growth_row = {
+        'registry_name': 'Harbor X300',
+        'provider_key': 'harbor',
+        'artifact_delta': 0,
+        'artifact_growth_display': '+0.0/day',
+        'size_delta_display': '0 B',
+        'size_growth_display': '0 B/day',
+        'elapsed_days': 1.0,
+    }
+    current = {
+        'identity': {'name': 'Harbor X300'},
+        'snapshot': {'status': 'ready'},
+        'is_current': True,
+        'status_label': 'Current Snapshot',
+        'tone': 'normal',
+    }
+    analytics = {
+        'summary_cards': [{'value': '123.61 MiB'}, {'value': '+0.0/day'}],
+        'aggregate': {'artifacts': 3, 'stale_candidates': 0},
+        'growth_rows': [growth_row],
+        'growth_charts': {'artifacts': [], 'storage': []},
+        'latest_rows': [current],
+        'snapshot_count': 1,
+        'provider_count': 1,
+        'snapshot_window': '24h',
+    }
+    rendered = env.get_template('artifact_registry/partials/_analytics_growth_workspace.html').render(
+        analytics=analytics, growth_detail_label='Registry Growth'
+    )
+    assert rendered.count('role="tabpanel"') == 3
+    assert 'Storage Footprint' in rendered
+    assert '123.61 MiB' in rendered
+    assert '0 B' in rendered
+    assert '+0.0/day' in rendered
+    assert 'Committed Comparison' in rendered
+    assert '24H Window' in rendered
+    assert 'Source Growth Trend' in rendered
+    assert 'Historical Chart Not Available' in rendered
+    assert 'Current committed snapshot' in rendered
+    assert 'No projection is shown.' in rendered
+
+    analytics['growth_rows'] = []
+    analytics['snapshot_count'] = 0
+    analytics['latest_rows'] = []
+    analytics['summary_cards'] = [{'value': 'N/A'}, {'value': 'N/A'}]
+    unavailable = env.get_template('artifact_registry/partials/_analytics_growth_workspace.html').render(
+        analytics=analytics, growth_detail_label='Registry Growth'
+    )
+    assert 'Qualified Growth Comparison Not Available' in unavailable
+    assert 'Source Deltas Not Available' in unavailable
+    assert 'Snapshot Lineage Not Available' in unavailable
+    assert 'Stale Candidates' in unavailable
+    assert 'N/A' in unavailable
+    assert 'No committed source snapshot' in unavailable
+
+
 def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> None:
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
     section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
+    usage_detail = (ROOT / 'app/templates/artifact_registry/partials/_analytics_usage_detail.html').read_text()
+    overview_tabs = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_workspace.html').read_text()
+    overview_panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
     presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
 
@@ -141,34 +484,801 @@ def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> 
     assert 'framed_workspace_tabs.render_navigation' not in shell
     assert 'artifact-registry-analytics-workspace' in shell
     assert 'Explore Analytics' in shell
-    for title in (
-        'Registry Growth',
-        'Capacity Outlook',
-        'Artifact Usage',
-        'Risk Concentration',
-        'Governance Gaps',
-        'Operational Alerts',
-        'Derived Insights',
-        'Central Intelligence',
-    ):
+    for title in ('Registry Growth',):
         assert title in section
+    detail_partials = {
+        'risk': ('Risk Concentration', 'Security × Runtime'),
+        'governance': ('Governance Gaps', 'Policy coverage concentration'),
+        'alerts': ('Operational Alerts', 'Alertmanager + Metrics Source evidence'),
+        'insights': ('Derived Insights', 'Central Intelligence'),
+    }
+    for name, titles in detail_partials.items():
+        assert f'artifact_registry/partials/_analytics_{name}_detail.html' in section
+        partial = (ROOT / f'app/templates/artifact_registry/partials/_analytics_{name}_detail.html').read_text()
+        assert all(title in partial for title in titles)
 
     for tab in ('growth', 'capacity', 'usage', 'risk', 'governance', 'alerts', 'insights'):
-        assert f"'artifact_registry.analytics_{tab}'" in shell
+        assert f"('{tab}'," in overview_tabs
         assert f"'{tab}'" in presentation
+    assert "url_for('artifact_registry.analytics_' ~ overview_domain" in overview_panel
 
     assert "return _render_registry_analytics_page('overview')" in routes
     assert "legacy_tab = request.args.get('tab', '', type=str)" in routes
     assert 'never waits on live Harbor, Alertmanager, Prometheus, or Thanos requests' in shell
-    assert 'never auto-cleaned' in section
+    growth_overview = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_overview.html').read_text()
+    assert 'never auto-cleaned' in growth_overview
+    capacity_detail = (ROOT / 'app/templates/artifact_registry/partials/_analytics_capacity_outlook.html').read_text()
+    assert 'Artifact Usage' in usage_detail
+    assert 'artifact_registry/partials/_analytics_usage_detail.html' in section
+    assert 'Capacity Outlook' in capacity_detail
+    capacity_projects = (
+        ROOT / 'app/templates/artifact_registry/partials/_analytics_capacity_project_quotas.html'
+    ).read_text()
+    assert 'Qualified Quota Comparison' in capacity_projects
+    insights_detail = (ROOT / 'app/templates/artifact_registry/partials/_analytics_insights_detail.html').read_text()
     assert (
         'central Intelligence owns recommendation semantics, Accepted Risk, escalation, and automation control'
-        in section
+        in insights_detail
     )
-    assert "url_for('intelligence.recommendations', domain='registry')" in shell
+    assert "url_for('integrations.registry')" in shell
+    assert "url_for('intelligence.recommendations', domain='registry')" in insights_detail
 
     assert "aggregate['inflight_requests'] > 100" not in presentation
     assert "aggregate['task_queue_size'] > 0" not in presentation
+
+
+def test_registry_analytics_overview_uses_shared_tabs_and_bounded_committed_panels() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    tabs = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_workspace.html').read_text()
+    panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    common = (ROOT / 'app/templates/components/content_tabs.html').read_text()
+    js = (ROOT / 'app/static/js/analytics/controls.js').read_text()
+    k8 = (ROOT / 'app/templates/kubernetes/analytics/overview/index.html').read_text()
+    storage = (ROOT / 'app/templates/storage/object_storage/analytics/partials/_overview_workspace.html').read_text()
+
+    for template in (shell, tabs, panel):
+        Environment().parse(template)
+    assert 'artifact_registry/partials/_analytics_overview_workspace.html' in shell
+    assert "section='summary'" in shell
+    assert (
+        "'Analytical Evidence Summary'"
+        in (ROOT / 'app/templates/artifact_registry/partials/_analytics_summary.html').read_text()
+    )
+    assert 'analytics_domains =' not in shell
+    assert 'Analytics Domains' not in shell
+
+    assert '{% import "components/content_tabs.html" as content_tabs %}' in tabs
+    assert "content_tabs.render_buttons('artifact-registry-overview-content'," in tabs
+    assert "content_tabs.render_buttons('overview-content'," in k8
+    assert "content_tabs.render_buttons('object-storage-overview-content'," in storage
+    assert 'data-analytics-tabset-id="artifact-registry-overview-content"' in tabs
+    assert 'data-analytics-update-query="false"' in tabs
+    assert 'data-default-tab="growth"' in tabs
+    assert 'hx-trigger="kaori:analytics-tab-activated once"' in tabs
+    assert 'data-overview-lazy-section="true"' in tabs
+    assert 'hx_sync=' not in tabs
+    assert 'hx-sync="this:replace"' in tabs
+    assert "overview_panel='1'" in tabs
+    assert 'provider_id=analytics.selected_provider_id' in tabs
+    assert 'snapshot_window=analytics.snapshot_window' in tabs
+    assert 'render_buttons(' in common
+    assert "tabset.dataset.analyticsUpdateQuery !== 'false'" in js
+
+    for key, label in (
+        ('growth', 'Growth'),
+        ('capacity', 'Capacity'),
+        ('usage', 'Usage'),
+        ('risk', 'Risk'),
+        ('governance', 'Governance'),
+        ('alerts', 'Alerts'),
+        ('insights', 'Insights'),
+        ('evidence', 'Data & Evidence'),
+    ):
+        assert f"('{key}', '{label}'," in tabs
+
+    # Test the actual shared tab geometry and unique panel identity after Jinja rendering.
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    env.globals['url_for'] = lambda endpoint, **kwargs: f'/{endpoint.replace(".", "/")}'
+    rendered = env.get_template('artifact_registry/partials/_analytics_overview_workspace.html').render(
+        analytics={
+            'snapshot_count': 1,
+            'provider_count': 1,
+            'snapshot_window': '24h',
+            'selected_provider_id': 5,
+        }
+    )
+    assert rendered.count('data-analytics-tab-button=') == 8
+    assert rendered.count('data-analytics-tab-panel=') == 8
+    assert rendered.count('data-overview-lazy-section="true"') == 8
+    assert rendered.count('hx-trigger="kaori:analytics-tab-activated once"') == 8
+    assert rendered.count('data-kaori-tab-variant="content-tabs"') == 1
+    assert 'data-kaori-info-tip-variant="guide"' in rendered
+
+    # The Overview-only variant cannot expose Data & Evidence as a detail route.
+    assert "overview_panel = request.args.get('overview_panel', '', type=str) == '1'" in routes
+    assert "overview_panel and section == 'evidence'" in routes
+    assert "overview_panel and section == 'summary'" in routes
+    assert "context['data_readiness'] = build_registry_analytics_readiness(" in routes
+    assert "'artifact_registry/partials/_analytics_overview_panel.html'" in routes
+    assert 'return render_template(template, analytics=context)' in routes
+    assert "@permission_required('artifact_registry.view')" in routes
+    assert (
+        'dispatch_registered_job('
+        not in routes.split('def analytics_section(', 1)[1].split('def analytics_alerts_table(', 1)[0]
+    )
+    assert 'MetricsConsumer' not in routes
+
+
+def test_registry_analytics_overview_panels_preserve_missing_data_and_evidence_authority() -> None:
+    from jinja2 import Environment
+
+    panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
+    Environment().parse(panel)
+
+    assert 'analytics.snapshot_count > 0' in panel
+    assert 'if analytics.activity_rows else unknown' in panel
+    assert 'if analytics.capacity_outlook.highest_utilization is not none else unknown' in panel
+    assert "if analytics.capacity_outlook.nearest_quota_days is not none else 'No forecast'" in panel
+    assert 'aggregate.governance_projects_assessed > 0' in panel
+    assert 'if alerts_ready else unknown' in panel
+    assert 'if has_snapshot else unknown' in panel
+    insight_panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_insights_evidence.html').read_text()
+    evidence_panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_evidence_readiness.html').read_text()
+    assert 'artifact_registry/partials/_analytics_insights_evidence.html' in panel
+    assert 'artifact_registry/partials/_analytics_evidence_readiness.html' in panel
+    assert 'Committed Source Coverage' in evidence_panel
+    assert 'source_rows[:5]' in evidence_panel
+    assert 'readiness.current_count' in panel
+    assert 'readiness.execution_label' in panel
+    assert 'row.status_label, row.tone' in evidence_panel
+    assert 'No committed snapshots for the selected Registry and Time Range.' in evidence_panel
+    charts = (ROOT / 'app/templates/artifact_registry/partials/_analytics_growth_charts.html').read_text()
+    assert 'artifact_registry/partials/_analytics_growth_charts.html' in panel
+    assert 'data-registry-growth-chart-panel' in charts
+    capacity_chart = (ROOT / 'app/templates/artifact_registry/partials/_analytics_capacity_chart.html').read_text()
+    assert 'artifact_registry/partials/_analytics_capacity_chart.html' in panel
+    assert 'analytics.capacity_chart_rows' in capacity_chart
+    assert 'data-registry-capacity-quota-series' in capacity_chart
+    usage_chart = (ROOT / 'app/templates/artifact_registry/partials/_analytics_usage_chart.html').read_text()
+    assert 'artifact_registry/partials/_analytics_usage_chart.html' in panel
+    assert 'analytics.usage_chart_rows' in usage_chart
+    assert 'data-registry-usage-chart' in usage_chart
+    assert 'review_facts[:3]' in insight_panel
+    alert_sources = (ROOT / 'app/templates/artifact_registry/partials/_analytics_alert_sources.html').read_text()
+    assert 'artifact_registry/partials/_analytics_alert_sources.html' in panel
+    assert 'source_rows[:3]' in alert_sources
+    assert 'Source Selection' in alert_sources
+    assert 'Evidence Coverage' in alert_sources
+    assert 'no automatic cleanup' in panel
+    assert 'Missing pull metrics do not imply zero demand.' in panel
+    assert 'not interchangeable' in panel
+    assert 'Not Configured differs from Not Collected' in panel
+    assert 'Intelligence owns Recommendations' in panel
+    assert 'scanner_observed = has_snapshot and aggregate.scanned_artifacts > 0' in panel
+    assert 'aggregate.alert_sources_ready == analytics.provider_count' in panel
+
+
+def test_registry_alert_source_overview_reuses_committed_selection_and_fallback_evidence() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    partial = (ROOT / 'app/templates/artifact_registry/partials/_analytics_alert_sources.html').read_text()
+    overview = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
+    presenter = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    Environment().parse(partial)
+    assert 'artifact_registry/partials/_analytics_alert_sources.html' in overview
+    assert 'data-registry-alert-sources' in partial
+    assert 'Committed Alert Sources Guide' in partial
+    assert "analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-3')" in partial
+    assert "analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-2')" in partial
+    assert "analysis_surface.ranked_item_classes('min-w-0 p-3 sm:p-4')" in partial
+    assert "source_rows|selectattr('status', 'equalto', 'ready')" in partial
+    assert "source_rows|selectattr('fallback_used', 'equalto', true)" in partial
+    assert 'source_rows[:3]' in partial
+    assert "'alert_source_rows': bundle['alert_source_rows']" in presenter
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    template = env.get_template('artifact_registry/partials/_analytics_alert_sources.html')
+    primary = {
+        'registry_name': 'Harbor X300',
+        'status': 'ready',
+        'source_label': 'Alertmanager',
+        'resolved_source': 'alertmanager',
+        'fallback_used': False,
+        'detail': 'Primary committed source evidence.',
+    }
+    fallback = {
+        'registry_name': 'Harbor B',
+        'status': 'ready',
+        'source_label': 'Prometheus Metrics Source',
+        'resolved_source': 'metrics_source',
+        'fallback_used': True,
+        'detail': 'Active-alert fallback evidence.',
+    }
+    unavailable = {
+        'registry_name': 'Harbor C',
+        'status': 'unavailable',
+        'source_label': 'Unavailable',
+        'resolved_source': 'none',
+        'fallback_used': False,
+        'detail': 'Alert source could not be collected.',
+    }
+    rendered = template.render(analytics={'alert_source_rows': [primary, fallback, unavailable]})
+    assert rendered.count('id="registry-alert-sources-title"') == 1
+    assert rendered.count('id="registry-alert-coverage-title"') == 1
+    assert 'Harbor X300' in rendered and 'Prometheus Metrics Source' in rendered
+    assert 'Source Ready' in rendered
+    assert 'Fallback Selected' in rendered
+    assert 'Evidence Unavailable' in rendered
+    assert 'Primary committed source evidence.' in rendered
+    assert 'Ready sources' in rendered and 'Fallback records' in rendered
+    assert 'Primary authority · Alertmanager' in rendered
+    assert 'Fallback · Metrics Source' in rendered
+    assert 'Alert Source Evidence Not Available' not in rendered
+
+    failed_fallback = {**fallback, 'status': 'unavailable'}
+    blocked = template.render(analytics={'alert_source_rows': [failed_fallback]})
+    assert 'Fallback Unavailable' in blocked
+    assert 'Source Ready' not in blocked
+
+    fourth = {**primary, 'registry_name': 'Harbor D'}
+    limited = template.render(analytics={'alert_source_rows': [primary, fallback, unavailable, fourth]})
+    assert 'Showing 3 of 4 committed sources' in limited
+    assert 'Harbor D' not in limited
+
+    empty = template.render(analytics={'alert_source_rows': []})
+    assert 'Alert Source Evidence Not Available' in empty
+    assert 'Source Ready' not in empty
+    assert 'Missing source evidence does not indicate zero alerts.' in empty
+
+
+def test_registry_insights_overview_renders_factual_review_cards_and_ownership() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    template = env.get_template('artifact_registry/partials/_analytics_insights_evidence.html')
+    critical = {
+        'icon': 'shield-alert',
+        'title': 'Critical findings intersect runtime usage',
+        'detail': '1 runtime artifact requires review.',
+        'tone': 'critical',
+    }
+    growth = {
+        'icon': 'trending-up',
+        'title': 'Registry growth is materialized',
+        'detail': '+0.0 artifacts/day measured.',
+        'tone': 'info',
+    }
+    rendered = template.render(analytics={'snapshot_count': 1, 'insights': [growth, critical]})
+    assert 'data-registry-insights-evidence' in rendered
+    assert 'Derived Review Signals Guide' in rendered
+    assert rendered.count('id="registry-insights-facts-title"') == 1
+    assert rendered.count('id="registry-insights-governance-title"') == 1
+    assert 'Registry growth is materialized' in rendered
+    assert 'Critical findings intersect runtime usage' in rendered
+    assert '1 runtime artifact requires review.' in rendered
+    assert 'Interpretation & Ownership' in rendered
+    assert 'Central Intelligence' in rendered
+    assert 'Review overlapping signals; they are not distinct affected assets.' in rendered
+    assert 'Intelligence owns Recommendations, Accepted Risk, escalation and automation.' in rendered
+    assert 'Review Signal Evidence Not Available' not in rendered
+
+    extra = [
+        growth,
+        critical,
+        {**growth, 'title': 'Stale inventory candidates exist'},
+        {**growth, 'title': 'Hidden fourth signal'},
+    ]
+    limited = template.render(analytics={'snapshot_count': 1, 'insights': extra})
+    assert 'Showing 3 of 4 derived facts' in limited
+    assert 'Hidden fourth signal' not in limited
+
+    absent = template.render(analytics={'snapshot_count': 0, 'insights': []})
+    assert 'Review Signal Evidence Not Available' in absent
+    assert 'Missing evidence is not proof of no risk.' in absent
+    no_facts = template.render(analytics={'snapshot_count': 1, 'insights': []})
+    assert 'No Derived Review Facts' in no_facts
+    assert 'clean risk posture' in no_facts
+
+    placeholder = {**growth, 'title': 'No derived review signal'}
+    sentinel = template.render(analytics={'snapshot_count': 1, 'insights': [placeholder]})
+    assert 'No Derived Review Facts' in sentinel
+    assert '1 Facts' not in sentinel
+
+
+def test_registry_evidence_overview_preserves_snapshot_freshness_vs_worker_status() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    template = env.get_template('artifact_registry/partials/_analytics_evidence_readiness.html')
+    readiness = {
+        'label': 'Stale Snapshot',
+        'tone': 'warning',
+        'execution_label': 'Last Collection Completed',
+        'execution_tone': 'normal',
+        'helper': 'All snapshots expired; old evidence remains readable.',
+        'execution_helper': 'Collection has committed a previous snapshot.',
+    }
+    stale = {
+        'identity': {'name': 'Harbor X300'},
+        'snapshot': {'status': 'ready'},
+        'is_current': False,
+        'status_label': 'Inputs Changed',
+        'tone': 'warning',
+    }
+    current = {
+        'identity': {'name': 'Harbor X400'},
+        'snapshot': {'status': 'ready'},
+        'is_current': True,
+        'status_label': 'Current',
+        'tone': 'normal',
+    }
+    missing = {
+        'identity': {'name': 'Harbor X500'},
+        'snapshot': None,
+        'status_label': 'Not Materialized',
+        'tone': 'unknown',
+    }
+    rendered = template.render(analytics={'latest_rows': [stale, current, missing], 'data_readiness': readiness})
+    assert 'data-registry-evidence-readiness' in rendered
+    assert 'Committed Source Coverage Guide' in rendered
+    assert rendered.count('id="registry-evidence-sources-title"') == 1
+    assert rendered.count('id="registry-evidence-context-title"') == 1
+    assert 'Harbor X300' in rendered and 'Inputs Changed' in rendered
+    assert 'Previous evidence remains readable; not current' in rendered
+    assert 'Harbor X400' in rendered and 'Current committed snapshot' in rendered
+    assert 'Harbor X500' in rendered and 'No snapshot committed for the selected window' in rendered
+    assert 'Stale Snapshot' in rendered
+    assert 'Last Collection Completed' in rendered
+    assert 'All snapshots expired; old evidence remains readable.' in rendered
+    partial = (ROOT / 'app/templates/artifact_registry/partials/_analytics_evidence_readiness.html').read_text()
+    assert 'space-y-3 p-4 sm:p-5' in partial
+    assert "analysis_surface.evidence_shell_classes('min-w-0')" in partial
+    assert 'grid gap-3 sm:grid-cols-2' in partial
+    assert 'lg:col-span' not in partial
+    assert "interpretation_content('Evidence boundary'" not in partial
+    assert 'Snapshot Freshness' in rendered
+    assert 'Latest Worker Outcome' in rendered
+    assert rendered.count('id="registry-evidence-worker-title"') == 1
+    assert 'Eligible ≠ Current' not in rendered
+    assert 'No committed snapshots for the selected Registry and Time Range.' not in rendered
+
+    more = [stale, current, missing, current, stale, {**current, 'identity': {'name': 'Hidden Harbor'}}]
+    limited = template.render(analytics={'latest_rows': more, 'data_readiness': readiness})
+    assert 'Showing 5 of 6 source records' in limited
+    assert 'Hidden Harbor' not in limited
+
+    empty = template.render(analytics={'latest_rows': [], 'data_readiness': readiness})
+    assert 'Source Snapshots Not Available' in empty
+    assert 'No committed snapshots for the selected Registry and Time Range.' in empty
+    assert 'Last Collection Completed' in empty
+    assert 'Latest Worker Outcome' in empty
+
+
+def test_registry_overview_panels_render_unknown_without_fabricating_evidence() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    env.globals['url_for'] = lambda endpoint, **kwargs: f'/{endpoint.replace(".", "/")}'
+    aggregate_keys = (
+        'artifacts',
+        'stale_candidates',
+        'running_artifacts',
+        'runtime_bindings',
+        'tag_only_bindings',
+        'scanned_artifacts',
+        'critical_findings',
+        'critical_runtime_artifacts',
+        'runtime_scan_gaps',
+        'governance_projects_assessed',
+        'retention_configured',
+        'immutability_configured',
+        'retention_not_configured',
+        'alert_sources_ready',
+        'active_alerts',
+        'critical_alerts',
+        'suppressed_alerts',
+        'alert_source_fallbacks',
+        'pull_activity',
+    )
+    context = {
+        'aggregate': dict.fromkeys(aggregate_keys, 0),
+        'snapshot_count': 0,
+        'provider_count': 1,
+        'summary_cards': [{'value': 'N/A'} for _ in range(4)],
+        'capacity_outlook': {
+            'highest_utilization': None,
+            'nearest_quota_days': None,
+            'quota_headroom_display': 'N/A',
+            'growth_display': 'N/A',
+        },
+        'growth_rows': [],
+        'growth_charts': {'artifacts': [], 'storage': []},
+        'forecast_rows': [],
+        'capacity_chart_rows': [],
+        'activity_rows': [],
+        'alert_source_rows': [],
+        'insights': [],
+        'latest_rows': [],
+        'recommendation_count': 0,
+        'active_signal_count': 0,
+        'posture': {'label': 'Materialization Required', 'tone': 'warning'},
+        'selected_provider_id': None,
+        'snapshot_window': '24h',
+        'data_readiness': {
+            'label': 'Historical Materialization Required',
+            'tone': 'warning',
+            'eligible_count': 1,
+            'covered_count': 0,
+            'current_count': 0,
+            'last_attempt_label': 'Never',
+            'execution_label': 'Not Collected',
+            'execution_tone': 'warning',
+            'helper': 'Historical range evidence unavailable.',
+        },
+    }
+    template = env.get_template('artifact_registry/partials/_analytics_overview_panel.html')
+    domains = ('growth', 'capacity', 'usage', 'risk', 'governance', 'alerts', 'insights', 'evidence')
+    for domain in domains:
+        rendered = template.render(analytics=context, overview_domain=domain)
+        assert f'data-registry-analytics-overview-domain="{domain}"' in rendered
+        assert 'Provider Health' not in rendered
+        if domain != 'evidence':
+            assert 'Materialization Required' in rendered
+            assert 'N/A' in rendered
+            assert f'/artifact_registry/analytics_{domain}' in rendered
+        else:
+            assert 'Historical Materialization Required' in rendered
+            assert 'No committed snapshots for the selected Registry and Time Range.' in rendered
+
+
+def test_registry_capacity_chart_projection_requires_committed_valid_quota_evidence() -> None:
+    from app.artifact_registry.presentation_analytics import _registry_capacity_chart_rows
+
+    def project(name: str, usage: float, quota: float, *, registry: str = 'Harbor X300') -> dict[str, object]:
+        return {
+            'project_name': name,
+            'registry_name': registry,
+            'usage_bytes': usage,
+            'quota_bytes': quota,
+            'usage_display': f'{usage} B',
+            'quota_display': f'{quota} B',
+            'days_to_quota_display': 'No forecast',
+        }
+
+    rows = [
+        project('zero', 0, 100),
+        project('small', 6, 1000),
+        project('over-quota', 150, 100),
+        project('half', 50, 100),
+        project('third', 30, 100),
+        project('quarter', 25, 100),
+        project('seven', 10, 100),
+        project('missing-quota', 10, 0),
+        project('negative-usage', -10, 100),
+        project('nonfinite-usage', float('nan'), 100),
+        project('nonfinite-quota', 5, float('inf')),
+        project('invalid-type', True, 100),
+        project('', 20, 100),
+    ]
+    projected = _registry_capacity_chart_rows(rows)
+    assert len(projected) == 5
+    assert [row['project_name'] for row in projected] == [
+        'over-quota',
+        'half',
+        'third',
+        'quarter',
+        'seven',
+    ]
+    assert projected[0]['utilization_percent'] == 150.0
+    assert projected[0]['utilization_display'] == '150.0%'
+    assert projected[0]['usage_bytes'] == 150.0
+    assert projected[0]['quota_bytes'] == 100.0
+    assert projected[0]['forecast_label'] == 'No forecast'
+    assert _registry_capacity_chart_rows([project('zero', 0, 100)])[0]['utilization_percent'] == 0.0
+    assert _registry_capacity_chart_rows([project('missing-quota', 10, 0)]) == []
+    assert _registry_capacity_chart_rows([]) == []
+
+
+def test_registry_capacity_overview_chart_reuses_evidence_and_htmx_chart_contract() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    partial = (ROOT / 'app/templates/artifact_registry/partials/_analytics_capacity_chart.html').read_text()
+    overview = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
+    page = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    chart = (ROOT / 'app/static/js/artifact_registry/analytics_capacity_chart.js').read_text()
+    present = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    shared = (ROOT / 'app/templates/components/table_label.html').read_text()
+    Environment().parse(partial)
+    assert 'artifact_registry/partials/_analytics_capacity_chart.html' in overview
+    assert 'data-registry-capacity-quota-series' in partial
+    assert 'data-registry-capacity-quota-chart' in partial
+    assert 'Project Quota Utilization Guide' in partial
+    assert 'Quota Chart Not Available' in partial
+    assert "analysis_surface.empty_evidence_classes('px-5 py-6 text-center')" in partial
+    assert 'data-kaori-empty-state' in partial
+    assert "project_count_label = 'Top ' ~ quota_rows|length ~ ' of ' ~ qualified_total ~ ' Projects'" in partial
+    assert "table_label.metadata_label(project_count_label, 'gauge', size='compact')" in partial
+    assert 'analytics.capacity_chart_rows' in partial
+    assert 'grid items-start gap-4 p-4 lg:grid-cols-5 lg:items-stretch sm:p-5' in partial
+    assert "analysis_surface.evidence_shell_classes('flex min-w-0 flex-col lg:col-span-3')" in partial
+    assert 'flex min-h-0 flex-1 flex-col p-4' in partial
+    assert 'relative mt-3 min-w-0 flex-1 {{ chart_min_height_classes }}' in partial
+    assert 'overflow-hidden' not in partial
+    assert 'data-registry-capacity-quota-series="{{ quota_rows|tojson|forceescape }}"' in partial
+    assert "analysis_surface.evidence_shell_classes('flex min-w-0 flex-col lg:col-span-3')" in partial
+    assert "analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-2')" in partial
+    assert 'Peak observed utilization' in partial
+    assert '100% = quota limit' in partial
+    assert "analysis_surface.ranked_item_classes('min-w-0 p-3 sm:p-4')" not in partial
+    assert 'divide-y divide-outline-subtle' in partial
+    assert 'chart_min_height_classes = "min-h-36 sm:min-h-40"' in partial
+    assert 'chart_min_height_classes = "min-h-44 sm:min-h-48"' in partial
+    assert 'chart_min_height_classes = "min-h-52 sm:min-h-56"' in partial
+    assert 'data-registry-capacity-axis-note' in partial
+    assert 'aria-describedby="registry-capacity-chart-note"' in partial
+    assert 'if (maxObserved <= 1) axisMax = 1' in chart
+    assert 'else if (maxObserved <= 5) axisMax = 5' in chart
+    assert 'else if (maxObserved <= 25) axisMax = 25' in chart
+    assert 'else if (maxObserved > 100) axisMax = Math.ceil(maxObserved / 25) * 25' in chart
+    assert 'axisNote.textContent =' in chart
+    assert 'lg:col-span-3' in partial
+    assert 'lg:col-span-2' in partial
+    assert 'aria-labelledby="registry-capacity-chart-title"' in partial
+    assert 'aria-labelledby="registry-capacity-evidence-title"' in partial
+    assert "table_label.status_label('Observed', 'normal', size='compact')" in partial
+    assert 'Committed usage, quota and forecast status.' in partial
+    assert '<dt class="text-content-muted">Used</dt>' in partial
+    assert '<dt class="text-content-muted">Quota</dt>' in partial
+    assert '<dt class="text-content-muted">Forecast</dt>' in partial
+    assert 'Review Capacity Analysis for complete project evidence.' not in partial
+    assert 'Quota utilization is observed; exhaustion forecasts require qualified growth history.' in overview
+    assert 'metadata_label(' in shared
+    assert '[:5]' in present or '[:5]' in partial
+    assert "'capacity_chart_rows': _registry_capacity_chart_rows(forecast_rows)" in present
+    assert 'js/artifact_registry/analytics_capacity_chart.js' in page
+    assert 'vendor/chartjs/chart.umd.min.js' in page
+    assert "type: 'bar'" in chart
+    assert "indexAxis: 'y'" in chart
+    assert 'new Chart(' in chart
+    assert 'htmx:beforeSwap' in chart
+    assert 'htmx:afterSwap' in chart
+    assert 'kaori:analytics-tab-visible' in chart
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    rows = [
+        {
+            'project_name': 'demo',
+            'registry_name': 'Harbor X300',
+            'utilization_percent': 0.6,
+            'utilization_display': '0.6%',
+            'usage_bytes': 6.0,
+            'quota_bytes': 1000.0,
+            'usage_display': '6 B',
+            'quota_display': '1000 B',
+            'forecast_label': 'No forecast',
+        }
+    ]
+    rendered = env.get_template('artifact_registry/partials/_analytics_capacity_chart.html').render(
+        analytics={'capacity_chart_rows': rows}
+    )
+    assert 'demo' in rendered
+    assert 'Harbor X300' in rendered
+    assert '0.6%' in rendered
+    assert rendered.count('Peak observed utilization') == 1
+    assert 'Peak observed utilization' in rendered
+    assert '100% = quota limit' in rendered
+    assert 'registry-capacity-chart-note' in rendered
+    assert 'data-registry-capacity-axis-note' in rendered
+    assert 'No forecast' in rendered
+    assert 'Observed' in rendered
+    assert 'Used' in rendered and 'Quota' in rendered
+    assert rendered.count('id="registry-capacity-chart-title"') == 1
+    assert rendered.count('id="registry-capacity-evidence-title"') == 1
+    assert 'data-registry-capacity-quota-chart' in rendered
+    assert 'data-registry-capacity-chart-height="1"' in rendered
+    assert 'min-h-36 sm:min-h-40' in rendered
+    assert 'Quota Chart Not Available' not in rendered
+    assert 'data-kaori-empty-state' not in rendered
+    assert 'Top 1 of' not in rendered
+
+    top_five = [{**rows[0], 'project_name': f'project-{i}', 'utilization_display': f'{i}.0%'} for i in range(1, 6)]
+    bounded = env.get_template('artifact_registry/partials/_analytics_capacity_chart.html').render(
+        analytics={'capacity_chart_rows': top_five, 'capacity_project_count': 10}
+    )
+    assert 'Top 5 of 10 Projects' in bounded
+    assert bounded.count('<article ') == 5
+    assert 'data-registry-capacity-chart-height="5"' in bounded
+    assert 'min-h-52 sm:min-h-56' in bounded
+    for index in range(1, 6):
+        assert f'project-{index}' in bounded
+    assert 'project-6' not in bounded
+    assert 'flex min-h-0 flex-1 flex-col p-4' in bounded
+    assert 'lg:items-stretch' in bounded
+    assert bounded.count('data-registry-capacity-chart-height="5"') == 1
+    assert bounded.count('<article ') == 5
+
+    all_five = env.get_template('artifact_registry/partials/_analytics_capacity_chart.html').render(
+        analytics={'capacity_chart_rows': top_five, 'capacity_project_count': 5}
+    )
+    assert '5 Projects' in all_five
+    assert 'Top 5 of 5' not in all_five
+
+    four = env.get_template('artifact_registry/partials/_analytics_capacity_chart.html').render(
+        analytics={'capacity_chart_rows': top_five[:4], 'capacity_project_count': 7}
+    )
+    assert 'Top 4 of 7 Projects' in four
+    assert four.count('<article ') == 4
+    assert 'data-registry-capacity-chart-height="4"' in four
+    assert 'min-h-44 sm:min-h-48' in four
+    assert 'project-5' not in four
+
+    two = env.get_template('artifact_registry/partials/_analytics_capacity_chart.html').render(
+        analytics={'capacity_chart_rows': top_five[:2], 'capacity_project_count': 2}
+    )
+    assert two.count('<article ') == 2
+    assert 'data-registry-capacity-chart-height="2"' in two
+    assert 'min-h-36 sm:min-h-40' in two
+
+    empty = env.get_template('artifact_registry/partials/_analytics_capacity_chart.html').render(
+        analytics={'capacity_chart_rows': []}
+    )
+    assert 'Quota Chart Not Available' in empty
+    assert 'data-registry-capacity-quota-chart' not in empty
+    assert empty.count('data-kaori-empty-state') == 1
+    assert 'border-dashed border-outline-strong bg-surface-muted' in empty
+    assert 'role="status"' in empty
+    assert 'Missing evidence is not zero utilization.' in empty
+
+
+def test_registry_usage_detail_reuses_kaori_evidence_and_distinguishes_missing_from_zero() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    path = ROOT / 'app/templates/artifact_registry/partials/_analytics_usage_detail.html'
+    partial = path.read_text()
+    section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
+    assert '{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}' in partial
+    assert 'analysis_surface.snapshot_shell_classes()' in partial
+    assert 'analysis_surface.metric_grid_classes(4)' in partial
+    assert 'analysis_surface.empty_evidence_classes(' in partial
+    assert 'table_label.status_label(' in partial
+    assert "url_for('artifact_registry.runtime')" in partial
+    assert 'analytics.usage_chart_rows|default([], true)' in partial
+    assert 'usage_rows[:5]' in partial
+    assert "set pull_value = ('%.0f'|format(analytics.aggregate.pull_activity)) if has_pulls else 'N/A'" in partial
+    assert '{% include "artifact_registry/partials/_analytics_usage_detail.html" %}' in section
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    detail = env.get_template('artifact_registry/partials/_analytics_usage_detail.html')
+    aggregate = {
+        'running_artifacts': 1,
+        'runtime_bindings': 1,
+        'pull_activity': 0.0,
+        'stale_candidates': 0,
+        'tag_only_bindings': 1,
+    }
+    common = {'aggregate': aggregate, 'snapshot_count': 1, 'snapshot_window': '24h'}
+
+    def render(rows: list[dict[str, object]]) -> str:
+        total = sum(float(row['pull_count']) for row in rows)
+        return detail.render(
+            analytics={
+                **common,
+                'aggregate': {**aggregate, 'pull_activity': total},
+                'usage_chart_rows': rows,
+            },
+            url_for=lambda endpoint: '/artifact-registry/runtime',
+        )
+
+    missing = render([])
+    assert 'Pull Counter Evidence Not Available' in missing
+    assert 'No qualified project pull counters' in missing
+    assert 'Missing metrics are not zero demand.' in missing
+    assert missing.count('data-kaori-empty-state') == 1
+    assert 'bg-surface-muted' in missing
+    assert 'N/A' in missing
+    assert 'data-registry-usage-project-rows' not in missing
+    assert missing.count('Observed pulls</p>') == 0
+
+    no_snapshot = detail.render(
+        analytics={**common, 'snapshot_count': 0, 'usage_chart_rows': []},
+        url_for=lambda endpoint: '/artifact-registry/runtime',
+    )
+    assert 'Pull Counter Evidence Not Available' in no_snapshot
+    assert no_snapshot.count('N/A') >= 4
+
+    observed_zero = render(
+        [{'project_name': 'sandbox', 'registry_name': 'Harbor X300', 'pull_count': 0, 'pull_display': '0'}]
+    )
+    assert 'Pull Counter Evidence Not Available' not in observed_zero
+    assert 'data-kaori-empty-state' not in observed_zero
+    assert 'data-registry-usage-project-rows' in observed_zero
+    assert 'sandbox' in observed_zero
+    assert 'Harbor X300' in observed_zero
+    assert '1 qualified project counter' in observed_zero
+    assert 'Observed pulls</p>' in observed_zero
+
+    six = [
+        {
+            'project_name': f'project-{index}',
+            'registry_name': 'Harbor X300',
+            'pull_count': 6 - index,
+            'pull_display': str(6 - index),
+        }
+        for index in range(6)
+    ]
+    five_visible = render(six)
+    assert five_visible.count('Observed pulls</p>') == 5
+    assert 'project-4' in five_visible
+    assert 'project-5' not in five_visible
+    assert 'Showing 5 of 6 qualified project records.' in five_visible
+    assert '/artifact-registry/runtime' in five_visible
+
+
+def test_registry_usage_chart_projection_and_rendered_evidence() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    from app.artifact_registry.presentation_analytics import _registry_usage_chart_rows
+
+    raw_rows = [
+        {'project_name': 'sandbox', 'registry_name': 'Harbor X300', 'pull_count': 0},
+        {'project_name': 'demo', 'registry_name': 'Harbor X300', 'pull_count': 6},
+        {'project_name': 'library', 'registry_name': 'Harbor X300', 'pull_count': 2},
+        {'project_name': 'other', 'registry_name': 'Harbor X300', 'pull_count': 1},
+        {'project_name': 'extra', 'registry_name': 'Harbor X300', 'pull_count': 3},
+        {'project_name': 'last', 'registry_name': 'Harbor X300', 'pull_count': 4},
+        {'project_name': 'invalid', 'registry_name': 'Harbor X300', 'pull_count': float('nan')},
+        {'project_name': 'negative', 'registry_name': 'Harbor X300', 'pull_count': -1},
+        {'project_name': 'boolean', 'registry_name': 'Harbor X300', 'pull_count': True},
+        {'project_name': 'missing', 'registry_name': '', 'pull_count': 9},
+    ]
+    rows = _registry_usage_chart_rows(raw_rows)
+    assert [row['project_name'] for row in rows] == ['demo', 'last', 'extra', 'library', 'other']
+    assert rows[0]['pull_display'] == '6'
+    assert _registry_usage_chart_rows(raw_rows[:3])[-1]['pull_count'] == 0.0
+    assert _registry_usage_chart_rows(raw_rows[-4:]) == []
+    assert _registry_usage_chart_rows([]) == []
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    usage = env.get_template('artifact_registry/partials/_analytics_usage_chart.html')
+    rendered = usage.render(analytics={'usage_chart_rows': _registry_usage_chart_rows(raw_rows[:3])})
+    assert 'data-registry-usage-series=' in rendered
+    assert 'data-registry-usage-chart' in rendered
+    assert 'Observed Pull Activity by Project' in rendered
+    assert 'Observed Pull Activity Guide' in rendered
+    assert 'Highest observed pulls' in rendered
+    assert 'Qualified projects' in rendered
+    assert 'data-kaori-empty-state' not in rendered
+    assert 'demo' in rendered and 'library' in rendered and 'sandbox' in rendered
+    assert '0' in rendered
+    assert rendered.count('id="registry-usage-chart-title"') == 1
+    assert rendered.count('id="registry-usage-evidence-title"') == 1
+    assert 'Missing pull metrics are not zero demand.' not in rendered
+
+    empty = usage.render(analytics={'usage_chart_rows': []})
+    assert 'Pull Activity Chart Not Available' in empty
+    assert 'data-registry-usage-chart' not in empty
+    assert empty.count('data-kaori-empty-state') == 1
+    assert 'border-dashed border-outline-strong bg-surface-muted' in empty
+    assert 'role="status"' in empty
+    assert 'Missing pull metrics are not zero demand.' in empty
+
+    page = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    js = (ROOT / 'app/static/js/artifact_registry/analytics_usage_chart.js').read_text()
+    overview = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
+    presenter = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    assert "usage_chart_rows': _registry_usage_chart_rows(bundle['activity_rows'])" in presenter
+    assert 'analytics_usage_chart.js' in page
+    assert 'vendor/chartjs/chart.umd.min.js' in page
+    assert "type: 'bar'" in js
+    assert "indexAxis: 'y'" in js
+    assert 'min: 0' in js
+    assert 'htmx:beforeSwap' in js and 'htmx:afterSwap' in js
+    assert 'kaori:analytics-tab-visible' in js
+    assert 'artifact_registry/partials/_analytics_usage_chart.html' in overview
+    assert 'analytics.activity_rows[:3]' not in overview
 
 
 def test_registry_analytics_uses_fast_shell_and_bounded_fragments() -> None:
@@ -220,7 +1330,8 @@ def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons
     assert "eyebrow='Analytics Overview' if analytics.active_tab == 'overview'" in registry
     assert "'Registry'" in registry
     assert "'Time Range'" in registry
-    assert 'All Registries' in registry
+    assert 'All Registries' not in registry
+    assert "empty_label='No Registries Available' if not analytics.provider_options else none" in registry
     assert 'analytics.time_range_options' in registry
     assert "'time_range_options': get_allowed_time_ranges()" in presenter
     assert "legacy_label='Current (Instant)'" in registry
@@ -266,6 +1377,34 @@ def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons
     assert 'hx-indicator="#artifact-registry-analytics-refresh-indicator"' in page
     assert 'hx-select="#artifact-registry-analytics-page"' in page
     assert 'artifactRegistryAnalyticsMaterializationFinished from:body' in page
+
+
+def test_registry_analytics_guide_explains_committed_source_and_history_boundaries() -> None:
+    from jinja2 import Environment
+
+    controls = (ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html').read_text()
+    shared = (ROOT / 'app/templates/analytics/components/_controls_readiness.html').read_text()
+    guide = (ROOT / 'app/templates/components/info_tip.html').read_text()
+    Environment().parse(controls)
+
+    assert '{% import "components/info_tip.html" as info_tip %}' in controls
+    assert "info_tip.render('registry-analytics-controls-guide'," in controls
+    assert "variant='guide'" in controls
+    assert 'title_accessory=analytics_controls_guide' in controls
+    assert 'macro frame(title, description, icon, indicator_id,' in shared
+    assert "title_accessory=''" in shared
+    assert 'data-kaori-info-tip-trigger' in guide
+    assert 'Time Range selects a qualified analytics snapshot.' in controls
+    assert 'Current (Instant) is not historical telemetry.' in controls
+    assert 'Stale committed evidence remains readable but is not current.' in controls
+    assert 'registered Analytics JobExecution workflow' in controls
+    assert 'Normal page reads use committed KAORI state' in controls
+
+    # Guide is read-only: never add an independent collection control or
+    # substitute for the registered worker materialization boundary.
+    assert 'hx-post=' not in controls
+    assert 'Collect Analytics Data' not in controls
+    assert 'Configure Collection' not in controls
 
 
 def test_kubernetes_and_registry_render_shared_readiness_without_duplicate_shells() -> None:
@@ -327,6 +1466,9 @@ def test_kubernetes_and_registry_render_shared_readiness_without_duplicate_shell
     registry_source = (ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html').read_text()
     assert "eyebrow='Analytics Overview' if analytics.active_tab == 'overview'" in registry_source
     assert 'Analytics Overview' in registry
+    assert 'data-kaori-info-tip-variant="guide"' in registry
+    assert 'registry-analytics-controls-guide-tooltip' in registry
+    assert 'Registry Analytics Controls Guide' in registry
     assert 'Collect Analytics Data' not in registry
     assert 'Configure Collection' not in registry
 
@@ -348,7 +1490,16 @@ def test_registry_analytics_scope_and_committed_measured_range_are_real_filters(
     assert _registry_analytics_scope(9, identities) == 9
     with pytest.raises(NotFound):
         _registry_analytics_scope(999, identities)
-    assert _registry_analytics_scope(None, identities) is None
+    assert _registry_analytics_scope(None, identities) == 4
+    assert _registry_analytics_scope(None, []) is None
+    ready_first = [
+        SimpleNamespace(id=4, readiness_status='blocked'),
+        SimpleNamespace(id=9, readiness_status='ready'),
+    ]
+    assert _registry_analytics_scope(None, ready_first) == 9
+    assert _registry_analytics_scope(4, ready_first) == 4
+    with pytest.raises(NotFound):
+        _registry_analytics_scope(999, ready_first)
 
     assert normalize_registry_analytics_window('bogus') == '24h'
     assert normalize_registry_analytics_window('current') == 'current'
@@ -363,17 +1514,105 @@ def test_registry_analytics_scope_and_committed_measured_range_are_real_filters(
     assert 'RegistryAnalyticsSnapshot.time_range == normalized_window' in readiness_source
 
 
+def test_registry_analytics_selector_renders_only_explicit_registry_sources() -> None:
+    from types import SimpleNamespace
+
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    env.filters['user_datetime'] = lambda value, default='Unavailable': str(value or default)
+    env.globals['url_for'] = lambda endpoint, **kwargs: f'/{endpoint.replace(".", "/")}'
+    source_options = [
+        SimpleNamespace(id=4, name='Harbor X300'),
+        SimpleNamespace(id=9, name='Harbor X400'),
+    ]
+    page = {
+        'active_tab': 'overview',
+        'provider_options': source_options,
+        'selected_provider_id': 9,
+        'snapshot_window': '24h',
+        'alert_filters': {},
+        'data_readiness': {
+            'eligible_count': 1,
+            'registered_count': 1,
+            'covered_count': 1,
+            'current_count': 1,
+            'label': 'Current Snapshot',
+            'tone': 'normal',
+            'latest_generated_at': None,
+            'latest_expiry_at': None,
+            'last_attempt_label': 'Never',
+            'helper': 'Current evidence.',
+            'is_active': False,
+            'execution_tone': 'normal',
+            'collection_warning': None,
+        },
+    }
+    html = env.get_template('artifact_registry/partials/_analytics_controls_readiness.html').render(analytics=page)
+    assert 'All Registries' not in html
+    assert 'Harbor X300' in html and 'Harbor X400' in html
+    selector = html.split('id="artifact-registry-analytics-provider"', 1)[1].split('</select>', 1)[0]
+    assert selector.count('<option') == 2
+    assert '<option value=""' not in selector
+    assert 'value="9"' in selector and 'selected' in selector
+
+    # Without registered sources, the control declares unavailability, not
+    # an implicit All Registries or a widened committed query.
+    page['provider_options'] = []
+    page['selected_provider_id'] = None
+    empty = env.get_template('artifact_registry/partials/_analytics_controls_readiness.html').render(analytics=page)
+    assert 'No Registries Available' in empty
+    assert 'All Registries' not in empty
+
+    # A completed manual JobExecution for current does not validate the
+    # separately selected 24h committed snapshot.
+    page['provider_options'] = source_options
+    page['data_readiness'] = {
+        **page['data_readiness'],
+        'label': 'Inputs Changed',
+        'tone': 'warning',
+        'current_count': 0,
+        'eligible_count': 1,
+        'helper': 'Committed Registry inputs changed after materialization.',
+        'last_attempt_window': 'current',
+    }
+    attention = env.get_template('artifact_registry/partials/_analytics_controls_readiness.html').render(analytics=page)
+    assert 'Committed Snapshot Requires Review' in attention
+    assert 'Last worker attempt targeted CURRENT; this view selects 24H.' in attention
+    assert 'Committed Snapshot Needs Refresh' not in attention
+
+    page['data_readiness']['label'] = 'Stale Snapshot'
+    page['data_readiness']['last_attempt_window'] = '24h'
+    expired = env.get_template('artifact_registry/partials/_analytics_controls_readiness.html').render(analytics=page)
+    assert 'Committed Snapshot Needs Refresh' in expired
+    assert 'Last worker attempt targeted CURRENT' not in expired
+
+
+def test_registry_analytics_risk_copy_stays_compact_without_changing_risk_semantics() -> None:
+    from app.artifact_registry.presentation_analytics import _analytics_summary_cards
+
+    aggregate = {'total_size_bytes': 1024, 'artifacts': 3, 'running_artifacts': 1}
+    growth = {'size_per_day': 0, 'artifacts_per_day': 0, 'runtime_usage_percent': 33.3}
+    cards = _analytics_summary_cards(aggregate, growth_rows=[], growth=growth, risk_candidate_count=1)
+    risk = next(card for card in cards if card['label'] == 'Risk Candidates')
+    assert risk['value'] == '1'
+    assert risk['tone'] == 'warning'
+    assert risk['detail'] == 'Cross-domain signals may overlap.'
+    assert len(risk['detail']) <= 36
+
+
 def test_registry_analytics_selector_preserves_scope_through_routes_and_alerts() -> None:
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    scope = (ROOT / 'app/artifact_registry/route_scope.py').read_text()
     presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
     section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
     controls = (ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html').read_text()
 
     # A single fail-closed parser now owns explicit Registry provider scope.
-    assert "value = request.args.get('provider_id')" in routes
-    assert 'if not value.isascii() or not value.isdecimal() or len(value) > 18:' in routes
-    assert 'if int(value) <= 0:' in routes
+    assert "value = request.args.get('provider_id')" in scope
+    assert 'if not value.isascii() or not value.isdecimal() or len(value) > 18:' in scope
+    assert 'if int(value) <= 0:' in scope
     assert routes.count('provider_id=_analytics_provider_id()') >= 3
     assert 'provider_id = _analytics_provider_id()' in routes
     assert routes.count("snapshot_window=request.args.get('snapshot_window', '24h', type=str)") >= 3
@@ -481,7 +1720,55 @@ def test_registry_analytics_posture_classifies_missing_partial_and_current_snaps
     assert _analytics_snapshot_posture(eligible_count=2, covered_count=0, current_count=0)[0] == 'Not Materialized'
     assert _analytics_snapshot_posture(eligible_count=2, covered_count=2, current_count=2)[0] == 'Current Snapshot'
     assert _analytics_snapshot_posture(eligible_count=3, covered_count=2, current_count=1)[0] == 'Partial Coverage'
-    assert _analytics_snapshot_posture(eligible_count=2, covered_count=2, current_count=0)[0] == 'Stale Snapshot'
+    assert _analytics_snapshot_posture(eligible_count=2, covered_count=2, current_count=0)[0] == 'Snapshot Attention'
+
+    expired = {'label': 'Stale Snapshot', 'is_stale': True, 'is_current': False}
+    inputs_changed = {'label': 'Inputs Changed', 'is_stale': False, 'is_current': False}
+    partial = {'label': 'Partial Evidence', 'is_stale': False, 'is_current': False}
+
+    stale_label, _, stale_helper = _analytics_snapshot_posture(
+        eligible_count=2, covered_count=2, current_count=0, snapshot_views=[expired, expired]
+    )
+    assert stale_label == 'Stale Snapshot'
+    assert 'have expired' in stale_helper
+
+    inputs_label, _, inputs_helper = _analytics_snapshot_posture(
+        eligible_count=1, covered_count=1, current_count=0, snapshot_views=[inputs_changed]
+    )
+    assert inputs_label == 'Inputs Changed'
+    assert 'inputs changed' in inputs_helper
+    assert 'expired' not in inputs_helper
+
+    partial_label, _, partial_helper = _analytics_snapshot_posture(
+        eligible_count=1, covered_count=1, current_count=0, snapshot_views=[partial]
+    )
+    assert partial_label == 'Partial Evidence'
+    assert 'incomplete' in partial_helper
+    assert 'expired' not in partial_helper
+
+    mixed_label, _, mixed_helper = _analytics_snapshot_posture(
+        eligible_count=2, covered_count=2, current_count=0, snapshot_views=[expired, partial]
+    )
+    assert mixed_label == 'Snapshot Attention'
+    assert 'snapshots are not current' in mixed_helper
+
+    missing_label, _, missing_helper = _analytics_snapshot_posture(
+        eligible_count=2, covered_count=1, current_count=0, snapshot_views=[expired]
+    )
+    assert missing_label == 'Partial Coverage'
+    assert 'no selected-window snapshot' in missing_helper
+
+
+def test_registry_analytics_latest_job_scope_distinguishes_manual_current_from_selected_history() -> None:
+    from types import SimpleNamespace
+
+    from app.artifact_registry.analytics_job_adapter import _registry_analytics_last_job_window
+
+    assert _registry_analytics_last_job_window(SimpleNamespace(scope_key='all:current')) == 'current'
+    assert _registry_analytics_last_job_window(SimpleNamespace(scope_key='all:24h')) == '24h'
+    assert _registry_analytics_last_job_window(SimpleNamespace(scope_key='all:unknown')) is None
+    assert _registry_analytics_last_job_window(SimpleNamespace(scope_key='registry:24h')) is None
+    assert _registry_analytics_last_job_window(None) is None
 
 
 def test_registry_analytics_auto_collection_cooldown_and_evidence_checks() -> None:
@@ -540,28 +1827,132 @@ def test_registry_alert_source_is_worker_materialized_and_provider_neutral() -> 
 
 def test_registry_alert_workspace_reuses_committed_alert_evidence_contract() -> None:
     template = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
-    shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
-
-    assert "'artifact_registry.analytics_alerts'" in shell
-    assert 'Alertmanager is primary. Metrics Source is fallback evidence.' in template
-    assert 'committed Analytics materialization' in template
+    overview_tabs = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_workspace.html').read_text()
+    overview_panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
+    assert "('alerts', 'Alerts', 'triangle-alert')" in overview_tabs
+    assert "url_for('artifact_registry.analytics_' ~ overview_domain" in overview_panel
+    alerts_detail = (ROOT / 'app/templates/artifact_registry/partials/_analytics_alerts_detail.html').read_text()
+    assert 'Alertmanager is primary. Metrics Source is fallback evidence.' in alerts_detail
+    assert 'committed Analytics materialization' in alerts_detail
     assert 'alert_per_page' in template
     assert '[5, 10, 25, 50]' in template
     assert "url_for('artifact_registry.analytics_alerts_table')" in template
 
 
+def test_registry_capacity_project_table_paginates_all_qualified_rows_without_changing_chart_limit() -> None:
+    from app.artifact_registry.presentation_analytics import (
+        _registry_capacity_chart_rows,
+        _registry_capacity_project_rows,
+    )
+    from app.common.pagination import paginate_sequence
+
+    projects = [
+        {
+            'project_name': f'project-{i:02d}',
+            'registry_name': 'Harbor X300',
+            'usage_bytes': float(i),
+            'quota_bytes': 100.0,
+            'usage_display': f'{i} B',
+            'quota_display': '100 B',
+            'days_to_quota_display': 'No forecast',
+            'growth_display': '0 B/day',
+        }
+        for i in range(1, 13)
+    ]
+    projects.append({**projects[0], 'project_name': 'invalid', 'quota_bytes': 0})
+    qualified = _registry_capacity_project_rows(projects)
+    chart = _registry_capacity_chart_rows(projects)
+    assert len(qualified) == 12
+    assert len(chart) == 5
+    assert [row['project_name'] for row in chart] == [
+        'project-12',
+        'project-11',
+        'project-10',
+        'project-09',
+        'project-08',
+    ]
+    first, first_page = paginate_sequence(qualified, page=1, per_page=5)
+    second, second_page = paginate_sequence(qualified, page=2, per_page=5)
+    last, last_page = paginate_sequence(qualified, page=3, per_page=5)
+    assert (len(first), len(second), len(last)) == (5, 5, 2)
+    assert first_page['total_pages'] == 3 and first_page['total_items'] == 12
+    assert second_page['start_item'] == 6 and second_page['end_item'] == 10
+    assert last_page['start_item'] == 11 and last_page['end_item'] == 12
+    assert {row['project_name'] for row in first}.isdisjoint({row['project_name'] for row in second})
+    ten, ten_page = paginate_sequence(qualified, page=2, per_page=10)
+    assert len(ten) == 2 and ten_page['per_page'] == 10
+    invalid, fallback_page = paginate_sequence(qualified, page=3, per_page=999)
+    assert len(invalid) == 2 and fallback_page['per_page'] == 5
+
+
 def test_registry_capacity_outlook_table_reuses_canonical_primitives() -> None:
-    """Keep the materialized forecast content while reusing shared table geometry."""
-    from jinja2 import Environment
+    """Three canonical tabs separate quota posture, project evidence and forecast provenance."""
+    from jinja2 import Environment, FileSystemLoader
 
-    template = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text(encoding='utf-8')
-    # Verify the real owning template parses, without requiring a live Registry provider.
-    Environment().parse(template)
-    capacity = template.split("{% elif analytics.active_tab == 'capacity' %}", 1)[1].split(
-        "{% elif analytics.active_tab == 'usage' %}", 1
-    )[0]
-    shared = (ROOT / 'app/templates/components/table_primitives.html').read_text(encoding='utf-8')
+    root = ROOT / 'app/templates/artifact_registry/partials'
+    section = (root / '_analytics_section.html').read_text()
+    workspace = (root / '_analytics_capacity_outlook.html').read_text()
+    overview = (root / '_analytics_capacity_overview.html').read_text()
+    projects = (root / '_analytics_capacity_project_quotas.html').read_text()
+    evidence = (root / '_analytics_capacity_forecast_evidence.html').read_text()
+    shared = (ROOT / 'app/templates/components/table_primitives.html').read_text()
+    navigation = (ROOT / 'app/static/js/analytics/controls.js').read_text()
 
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    for source in (section, workspace, overview, projects, evidence):
+        env.parse(source)
+
+    assert '{% include "artifact_registry/partials/_analytics_capacity_outlook.html" %}' in section
+    assert 'data-analytics-tabset-id="artifact-registry-capacity-content"' in workspace
+    assert 'data-analytics-update-query="false"' in workspace
+    assert "content_tabs.render_buttons('artifact-registry-capacity-content'," in workspace
+    assert "('overview', 'Overview', 'layout-dashboard')" in workspace
+    assert "('projects', 'Project Quotas', 'table-properties')" in workspace
+    assert "('evidence', 'Forecast & Evidence', 'clipboard-check')" in workspace
+    assert workspace.count('role="tabpanel"') == 3
+    assert 'data-default-tab="{{ capacity_default_tab }}"' in workspace
+    assert 'active_key=capacity_default_tab' in workspace
+    assert workspace.count('data-analytics-tab-panel=') == 3
+    for key in ('overview', 'projects', 'evidence'):
+        assert f'id="artifact-registry-capacity-content-panel-{key}"' in workspace
+        assert f'aria-labelledby="artifact-registry-capacity-content-tab-{key}"' in workspace
+    assert 'htmx:afterSwap' in navigation
+    assert 'Capacity Reading' in overview
+    assert 'md:grid-cols-3' in overview
+    assert 'Observed quota pressure' in evidence
+    assert 'Forecast Boundary' in overview
+    assert 'Evidence Coverage' in overview
+    assert 'Project Quota Pressure' in overview
+    assert 'Nearest Exhaustion' in overview
+    assert 'Quota Headroom' in overview
+    assert 'qualified_projects[:5]' in overview
+    assert 'for row in qualified_projects' in projects
+    assert 'pager.numeric_pages' in projects
+    assert 'pager.page_size_classes()' in projects
+    assert 'source_rows[:5]' in evidence
+    assert 'Qualified Quota Comparison' in projects
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    page = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    assert 'def analytics_capacity_table() -> ResponseReturnValue:' in routes
+    assert "capacity_page=request.args.get('capacity_page', 1, type=int)" in routes
+    assert "capacity_page=request.args.get('capacity_page', 1, type=int)" in page
+    assert "'capacity_project_rows': capacity_page_rows" in presentation
+    assert "'capacity_pagination': capacity_pagination" in presentation
+    assert 'Project Forecast Evidence' in evidence
+    assert 'Committed Snapshot Lineage' in evidence
+    assert "table_ui.table_classes('min-w-[960px]')" in projects
+    assert 'table_ui.head_classes()' in projects
+    assert projects.count('table_ui.header_cell_classes()') == 6
+    assert projects.count('scope="col"') == 6
+    assert projects.count('table_ui.cell_classes()') == 6
+    assert 'table_ui.row_classes()' in projects
+    assert 'table_ui.title_cell(row.project_name, row.registry_name' in projects
+    assert 'row.utilization_percent > 100' in projects
+    assert 'aria-valuetext="{{ row.utilization_display }} observed utilization"' in projects
+    assert 'Qualified Quota Evidence Not Available' in projects
+    assert 'Previous committed snapshot; not current' in evidence
+    assert 'qualified_projects = analytics.capacity_project_rows' in projects
     for macro in (
         'table_classes',
         'head_classes',
@@ -569,34 +1960,213 @@ def test_registry_capacity_outlook_table_reuses_canonical_primitives() -> None:
         'body_classes',
         'row_classes',
         'cell_classes',
+        'title_cell',
     ):
         assert f'macro {macro}(' in shared
-    assert '{% import "components/table_primitives.html" as table_ui %}' in template
-    assert "table_ui.table_classes('min-w-[760px]')" in capacity
-    assert 'table_ui.head_classes()' in capacity
-    assert capacity.count('table_ui.header_cell_classes()') == 5
-    assert capacity.count('scope="col"') == 5
-    assert 'table_ui.body_classes()' in capacity
-    assert 'table_ui.row_classes()' in capacity
-    assert capacity.count('table_ui.cell_classes()') == 6
-    assert 'overflow-x-auto' in capacity
-    assert '<table class="min-w-full divide-y divide-outline-subtle text-sm">' not in capacity
-    assert '<th class="px-4 py-3">' not in capacity
 
-    for label in ('Registry / Project', 'Usage / Quota', 'Utilization', 'Growth', 'Forecast'):
-        assert f'>{label}</th>' in capacity
-    for value in (
-        'row.project_name',
-        'row.registry_name',
-        'row.usage_display',
-        'row.quota_display',
-        'row.utilization_display',
-        'row.growth_display',
-        "table_label.status_indicator_label(row.days_to_quota_display, 'info')",
-    ):
-        assert value in capacity
-    assert 'analytics.forecast_rows[:5]' in capacity
-    assert 'colspan="5"' in capacity
-    assert 'No qualified project quota forecast is available.' in capacity
-    assert 'analytics.capacity_outlook.nearest_quota_days' in capacity
-    assert 'analytics.capacity_outlook.quota_headroom_display' in capacity
+    demo = {
+        'project_name': 'demo',
+        'registry_name': 'Harbor X300',
+        'usage_display': '62.87 MiB',
+        'quota_display': '10.00 GiB',
+        'utilization_percent': 0.6,
+        'utilization_display': '0.6%',
+        'growth_display': '0 B/day',
+        'forecast_label': 'No forecast',
+    }
+    sandbox = {
+        **demo,
+        'project_name': 'sandbox',
+        'usage_display': '0 B',
+        'quota_display': '1.00 GiB',
+        'utilization_percent': 0.0,
+        'utilization_display': '0.0%',
+    }
+    analytic_data = {
+        'snapshot_window': '24h',
+        'capacity_chart_rows': [demo, sandbox],
+        'latest_rows': [
+            {
+                'identity': {'name': 'Harbor X300'},
+                'snapshot': {'status': 'ready'},
+                'is_current': True,
+                'status_label': 'Current Snapshot',
+                'tone': 'normal',
+            }
+        ],
+        'capacity_outlook': {
+            'nearest_quota_days': None,
+            'highest_utilization': 0.6,
+            'growth_bytes_per_day': 0,
+            'growth_display': '0 B/day',
+            'quota_headroom_display': '10.94 GiB',
+        },
+    }
+    template = env.get_template('artifact_registry/partials/_analytics_capacity_outlook.html')
+    rendered = template.render(analytics=analytic_data)
+    assert rendered.count('role="tabpanel"') == 3
+    assert 'demo' in rendered and 'sandbox' in rendered
+    assert '62.87 MiB' in rendered and '10.00 GiB' in rendered
+    assert '0.6%' in rendered and '0.0%' in rendered
+    assert '0 B/day' in rendered and 'No forecast' in rendered
+    assert '10.94 GiB' in rendered
+    assert 'No qualified forecast' in rendered
+    assert 'Zero net growth does not prove' in rendered
+    assert 'Qualified Quota Evidence Not Available' not in rendered
+    assert rendered.count('<progress ') == 6
+    assert 'Current committed snapshot' in rendered
+    assert 'Capacity Reading' in rendered
+
+    over_quota = {**demo, 'utilization_percent': 125.0, 'utilization_display': '125.0%'}
+    analytic_data['capacity_chart_rows'] = [over_quota]
+    above = template.render(analytics=analytic_data)
+    assert '125.0%' in above
+    assert 'Over quota' in above
+    assert 'value="100"' in above
+
+    analytic_data['capacity_chart_rows'] = []
+    analytic_data['latest_rows'] = []
+    analytic_data['capacity_outlook']['growth_bytes_per_day'] = None
+    analytic_data['capacity_outlook']['growth_display'] = 'N/A'
+    missing = template.render(analytics=analytic_data)
+    assert 'Quota Pressure Evidence Not Available' in missing
+    assert 'Qualified Quota Evidence Not Available' in missing
+    assert 'Project Forecast Evidence Not Available' in missing
+    assert 'Snapshot Lineage Not Available' in missing
+    assert 'Qualified materialized growth history is unavailable.' in missing
+    assert '<progress ' not in missing
+
+
+def test_registry_analytics_four_detail_surfaces_reuse_shared_evidence_and_qualify_missing() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    folder = ROOT / 'app/templates/artifact_registry/partials'
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    fixtures = {
+        'snapshot_count': 1,
+        'provider_count': 1,
+        'snapshot_window': '24h',
+        'aggregate': {
+            'scanned_artifacts': 0,
+            'running_artifacts': 1,
+            'runtime_bindings': 2,
+            'critical_findings': 0,
+            'critical_runtime_artifacts': 0,
+            'unsigned_runtime_artifacts': 1,
+            'runtime_scan_gaps': 1,
+            'governance_projects_assessed': 1,
+            'projects': 6,
+            'retention_configured': 1,
+            'retention_not_configured': 5,
+            'immutability_configured': 1,
+            'immutability_not_configured': 5,
+            'alert_sources_ready': 0,
+            'active_alerts': 0,
+            'critical_alerts': 0,
+            'warning_alerts': 0,
+            'suppressed_alerts': 0,
+        },
+        'coverage': {'retention': 16.7, 'immutability': 16.7},
+        'alert_source_rows': [],
+        'insights': [{'title': 'No derived review signal', 'detail': '', 'icon': 'info'}],
+        'recommendations': [],
+    }
+
+    def render_url(endpoint: str, **kwargs: object) -> str:
+        return '/' + endpoint.replace('.', '/')
+
+    for domain in ('risk', 'governance', 'alerts', 'insights'):
+        source = (folder / f'_analytics_{domain}_detail.html').read_text()
+        assert '{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}' in source
+        assert 'analysis_surface.snapshot_shell_classes()' in source
+        assert 'info_tip.render(' in source
+        assert 'data-registry-' + domain + '-detail' in source
+        env.parse(source)
+
+    risk = env.get_template('artifact_registry/partials/_analytics_risk_detail.html')
+    missing_scan = risk.render(analytics=fixtures, url_for=render_url)
+    assert 'Critical Findings' in missing_scan
+    assert 'N/A' in missing_scan
+    assert 'Unscanned + Running' in missing_scan
+    assert 'Open Security' in missing_scan and 'Open Runtime' in missing_scan
+    observed_scan = risk.render(
+        analytics={
+            **fixtures,
+            'aggregate': {**fixtures['aggregate'], 'scanned_artifacts': 1},
+        },
+        url_for=render_url,
+    )
+    assert 'Scan Evidence Unavailable' not in observed_scan
+    assert '0</p>' in observed_scan
+
+    governance = env.get_template('artifact_registry/partials/_analytics_governance_detail.html')
+    observed_policy = governance.render(analytics=fixtures, url_for=render_url)
+    assert '16.7%' in observed_policy
+    assert 'Retention Not Configured' in observed_policy
+    assert '5</p>' in observed_policy
+    missing_policy = governance.render(analytics={**fixtures, 'snapshot_count': 0}, url_for=render_url)
+    assert 'Policy Evidence Unavailable' in missing_policy
+    assert 'N/A' in missing_policy
+
+    alerts = env.get_template('artifact_registry/partials/_analytics_alerts_detail.html')
+    missing_source = alerts.render(analytics=fixtures)
+    assert 'Alert Source Evidence Not Available' in missing_source
+    assert 'N/A' in missing_source
+    ready = {
+        'registry_name': 'Harbor X300',
+        'source_label': 'Alertmanager',
+        'status': 'ready',
+        'fallback_used': False,
+        'detail': 'Committed primary source',
+    }
+    observed_zero = alerts.render(
+        analytics={
+            **fixtures,
+            'aggregate': {**fixtures['aggregate'], 'alert_sources_ready': 1},
+            'alert_source_rows': [ready],
+        }
+    )
+    assert 'Harbor X300' in observed_zero
+    assert 'Alert Source Evidence Not Available' not in observed_zero
+    assert '0</p>' in observed_zero
+    six_sources = alerts.render(
+        analytics={
+            **fixtures,
+            'aggregate': {**fixtures['aggregate'], 'alert_sources_ready': 1},
+            'alert_source_rows': [{**ready, 'registry_name': f'source-{index}'} for index in range(6)],
+        }
+    )
+    assert 'Showing 5 of 6 committed sources.' in six_sources
+    assert 'source-4' in six_sources and 'source-5' not in six_sources
+
+    insights = env.get_template('artifact_registry/partials/_analytics_insights_detail.html')
+    no_facts = insights.render(analytics=fixtures, url_for=render_url)
+    assert 'No Derived Review Facts' in no_facts
+    assert 'data-registry-insight-facts' not in no_facts
+    active = insights.render(
+        analytics={
+            **fixtures,
+            'insights': [
+                {
+                    'title': f'fact-{index}',
+                    'detail': 'Observed',
+                    'icon': 'shield-alert',
+                    'tone': 'warning',
+                }
+                for index in range(6)
+            ],
+            'recommendations': [
+                {
+                    'title': 'Investigate runtime CVE',
+                    'summary': 'Committed finding',
+                    'severity_label': 'Critical',
+                    'severity': 'critical',
+                }
+            ],
+        },
+        url_for=render_url,
+    )
+    assert 'Showing 5 of 6 derived review facts.' in active
+    assert 'fact-4' in active and 'fact-5' not in active
+    assert 'Investigate runtime CVE' in active
+    assert '/intelligence/recommendations' in active

@@ -36,6 +36,7 @@
 
 ## Decision rule
 
-Use this component when the flow is one of two peer main-content boxes or is part of a primary operational section.
+Use this component only when ordered, directional **operator execution** is the actual task, not merely because a section is prominent. A main-content location alone does not justify a procedural flow.
+The three canonical **Capacity & Demand** dashboards intentionally use `components/operational_capacity_decision.html` instead: source-qualified risk, interpretation, concise suggested action and six retained reference considerations in a compact **2×3 checklist-style matrix** without individual flow boxes, numbered steps or arrows. Keep Validate, Assess, Prioritize, Act, Verify and Record domain copy as reference information, never as an implicit provider execution sequence. The component remains read-only. Controlled Alert Interpretation & Response and Governed Reporting workflows retain their approved directional components.
 
 Use `info_flow.html` for a page-level primary process. Use `context_guidance_card.html` only for optional secondary guidance in a genuine supporting rail. Do not collapse a flow that drives the current dashboard decision.

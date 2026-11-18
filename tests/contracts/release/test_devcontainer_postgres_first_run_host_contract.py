@@ -32,6 +32,7 @@ def _sandbox(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             'ADMIN_ENV': secret_dir / 'postgres-bootstrap.env',
             'MIGRATOR_ENV': secret_dir / 'postgres-migrate.env',
             'BACKUP_ENV': secret_dir / 'application-env-before-three-role.bak',
+            'HOST_OVERRIDES': secret_dir / 'compose.host-overrides.yml',
         }
     )
     (workspace / '.env.example').write_text(
@@ -77,6 +78,40 @@ def test_fresh_volume_generates_repo_ignored_credentials_and_runtime_url(
     assert s['APP_ENV'].read_text() == runtime
     assert s['ADMIN_ENV'].read_text() == bootstrap
     assert s['MIGRATOR_ENV'].read_text() == migrator
+
+
+def test_ignored_compose_host_overlay_is_empty_by_default_and_preserves_operator_mapping(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    main, scope = _sandbox(tmp_path, monkeypatch)
+
+    main()
+    overlay = scope['HOST_OVERRIDES']
+    assert overlay.is_file()
+    assert overlay.read_text(encoding='utf-8') == 'services: {}\n'
+
+    # Real IP and any operator-owned mapping must survive later initialization.
+    operator_content = 'services:\n  workspace:\n    extra_hosts:\n      - "adds.kaori.cloud=192.0.2.10"\n'
+    overlay.write_text(operator_content, encoding='utf-8')
+    main()
+    assert overlay.read_text(encoding='utf-8') == operator_content
+
+
+def test_ignored_compose_host_overlay_cannot_be_a_symlink(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    main, scope = _sandbox(tmp_path, monkeypatch)
+    scope['SECRET_DIR'].mkdir(parents=True, exist_ok=True)
+    override = scope['HOST_OVERRIDES']
+    real_file = tmp_path / 'unexpected-host-file'
+    real_file.write_text('do not replace', encoding='utf-8')
+    override.symlink_to(real_file)
+
+    with pytest.raises(SystemExit, match='must not be a symlink'):
+        main()
+    assert real_file.read_text(encoding='utf-8') == 'do not replace'
 
 
 def test_old_local_db_url_with_empty_pg_volume_is_backed_up_before_reconciliation(
@@ -193,6 +228,7 @@ def test_native_windows_docker_command_checks_actual_db_volume() -> None:
     assert 'db-bootstrap' not in spec['runServices']
     compose = (ROOT / '.devcontainer/compose.devcontainer.yml').read_text()
     assert 'postgres-bootstrap.env' in compose
+    assert spec['dockerComposeFile'][-1] == '../secrets/devcontainer/compose.host-overrides.yml'
     assert 'postgres-migrate.env' in compose
     assert 'external: true' in compose
     assert 'kaori-dev_kaori_postgres_data' in compose

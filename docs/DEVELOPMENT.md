@@ -233,6 +233,8 @@ npm 12.0.2 was reviewed but is deliberately **deferred**. Its Node 22 engine flo
 
 The frontend dependency intake now pins **Tailwind 4.3.4** and **Prettier 3.9.10** in `package.json` and `package-lock.json`. These replace the previously deferred patch candidates. Each grouped version update must be adopted from the package-manager-generated lockfile through the **normal package-manager workflow** on an issue-linked trusted KAORI branch, then verified against generated CSS, formatting, vendor assets, security, responsive/visual browser gates and applicable human UAT. The lockfile must never be edited manually to force package versions or integrity hashes.
 
+The #4976 security remediation for CVE-2026-112366 uses Tailwind's official `@tailwindcss/postcss` 4.3.4 integration and PostCSS 8.5.33, with the existing Tailwind engine and Lightning CSS minification. It removes the CLI/Parcel watcher/picomatch dependency path rather than excluding development dependencies from npm audit. `npm run build-css` and `npm run watch-css` both use `scripts/build_css.mjs`; watch mode uses Node's built-in filesystem events for `frontend`, `app/templates`, and `app/static/js`, without a separate glob-matching package. The same generated CSS path, browser assets, package-manager version, and admission gates remain authoritative. Restart the manually started watcher after changing its build script or installing a changed lockfile.
+
 Edit `requirements/base.in` for runtime dependencies and `requirements/dev.in`
 for development-only tools. Then run inside the Dev Container:
 

@@ -1,0 +1,19 @@
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_registry.html" as registry_ui %}
+<div id="recommendation-workspace-header-actions"
+     class="flex flex-wrap items-center justify-end gap-2"
+     {% if recommendation_summary_oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}>
+    {% if payload.active_filter_count|default(0) > 0 %}
+        {{ registry_ui.clear_filters_action(url_for('intelligence.recommendations', per_page=payload.pagination.per_page) ,
+        table_ui.action_classes(size='header'),
+        hx_get=url_for('intelligence.recommendations', per_page=payload.pagination.per_page),
+        target='#recommendations-workspace-content',
+        indicator='#recommendations-loading-bar',
+        swap='outerHTML show:none focus-scroll:false',
+        push_url='true',
+        sync='#recommendations-workspace-content:replace'
+        ) }}
+    {% endif %}
+    {{ table_label.status_label(payload.posture.label, payload.posture.tone, size='compact') }}
+</div>

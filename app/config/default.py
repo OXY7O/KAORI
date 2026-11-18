@@ -323,6 +323,7 @@ class Config:
             'app.integrations.runtime.notification_delivery_task',
             'app.integrations.validation.tasks',
             'app.platform_operations.jobs.tasks',
+            'app.infrastructure_automation.tasks',
             'app.platform_operations.jobs.notification_delivery_task',
             'app.reports.schedules.tasks',
             'app.reports.jobs.tasks',
@@ -330,6 +331,8 @@ class Config:
             'app.intelligence.resolver.tasks',
         ),
         'task_routes': {
+            'app.infrastructure_automation.tasks.collect_localhost_facts': {'queue': 'automation'},
+            'app.infrastructure_automation.tasks.materialize_kubespray_plan_review': {'queue': 'automation'},
             'app.kubernetes.analytics.tasks.materialize_analytics_snapshots': {
                 'queue': ANALYTICS_CELERY_QUEUE,
             },

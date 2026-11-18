@@ -53,6 +53,9 @@ def test_tenants_page_keeps_summary_above_the_tabbed_workspace() -> None:
     assert "'Multi-Cluster Posture'" in page
     assert "'Tenant Estate'" in page
     assert 'tenant_summary_metrics' in page
+    assert 'components/table_label.html' in page
+    assert 'header_badge=table_label.metadata_label((tenant_summary_metrics|length)' in page
+    assert "~ ' Indicators', icon='layout-grid')" in page
     assert "'Governed Administration'" in page
     assert page.index("'Multi-Cluster Posture'") < page.index("'Governed Administration'")
     assert page.index("'Governed Administration'") < page.index('partials/_tenant_admin_workspace.html')
@@ -215,8 +218,8 @@ def test_membership_registries_use_settings_query_tabs_without_desktop_overflow(
         assert 'registry_ui.footer' in registry
         assert 'registry_ui.clear_filters_link' in registry
 
-    assert "table_ui.table_classes('min-w-[840px] table-fixed xl:min-w-0')" in groups
-    assert "table_ui.table_classes('min-w-[800px] table-fixed xl:min-w-0')" in membership
+    assert "table_ui.table_classes('min-w-[960px] table-fixed xl:min-w-0')" in groups
+    assert "table_ui.table_classes('min-w-[960px] table-fixed xl:min-w-0')" in membership
     assert 'min-w-[1250px]' not in groups
     assert 'min-w-[1100px]' not in membership
     assert 'title="{{ group.subject_name }}"' in groups
@@ -290,7 +293,8 @@ def test_access_grant_registry_uses_expandable_evidence_without_reconciliation_h
     capsule = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
     form = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
 
-    assert 'components/info_tip.html' not in registry
+    assert 'components/info_tip.html' in registry
+    assert "info_tip.render('tenant-access-grant-registry-guide'" in registry
     assert 'access-grant-reconciliation-' not in registry
     assert 'table_label.status_label(grant.reconciliation_status|title, reconciliation_tone)' in registry
     assert 'detail_row.toggle_button(' in registry
@@ -437,7 +441,8 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     assert 'human-credential-tip' in workspace
     assert 'deployer-credential-tip' in workspace
     assert workspace.count('hx-target="#tenant-admin-workspace"') >= 2
-    assert "table_ui.table_classes('min-w-[760px] table-fixed lg:min-w-0')" in registry
+    assert "table_ui.table_classes('min-w-[1000px] table-fixed lg:min-w-0')" in registry
+    assert '<span class="sr-only">Valid until:</span>{{ credential.valid_until|user_datetime }}' in registry
     assert 'min-w-[1180px]' not in registry
     assert 'table_ui.action_grid_classes(2)' not in registry
     assert 'detail_row.toggle_button(' in registry
@@ -483,8 +488,8 @@ def test_namespace_access_is_a_paginated_non_secret_registry() -> None:
 
     assert 'Effective Namespace Access' in workspace
     assert 'Security Boundary' in workspace
-    assert 'components/info_tip.html' in workspace
-    assert 'namespace-access-tip' in workspace
+    assert 'components/info_tip.html' not in workspace
+    assert 'namespace-access-tip' not in workspace
     assert 'Derived Evidence' in workspace
     assert 'Credential Context' in workspace
     assert '_namespace_access_registry.html' in workspace
@@ -515,7 +520,6 @@ def test_tenant_card_guidance_is_title_adjacent_and_hover_overflow_is_visible() 
         ('Apply Access Grant', 'access-grant-form-tip', grants),
         ('Human Access Credential', 'human-credential-tip', credentials),
         ('Workload Deployment Credential', 'deployer-credential-tip', credentials),
-        ('Effective Namespace Access', 'namespace-access-tip', namespace_access),
     ):
         title_index = source.index(title)
         tip_index = source.index(tip_id)
@@ -526,6 +530,8 @@ def test_tenant_card_guidance_is_title_adjacent_and_hover_overflow_is_visible() 
     assert 'flex h-full flex-col overflow-visible' in grants
     assert credentials.count('flex h-full flex-col overflow-visible') >= 2
     assert 'overflow-visible rounded-xl' in namespace_access
+    assert 'Effective Namespace Access' in namespace_access
+    assert 'namespace-access-tip' not in namespace_access
 
     # Capsule ownership has one section-owned Guide; distinct field helpers remain.
     assert "'capsule-initial-owner-guide-tip'" in tenant_form
@@ -1256,8 +1262,9 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'Current effective values become the initial committed KAORI contract.' in preflight
     assert 'Managed cutover performs admitted provider writes and verifies equivalent read-back.' in preflight
     assert 'Capsule-generated values stay provider-mirrored and sync into KAORI without false drift.' in preflight
-    assert 'Adopt with governed provider cutover and equivalent allocation values.' in preflight
-    assert 'Attach to the existing Capsule Tenant; keep provider constraints mirrored.' in preflight
+    assert 'Adopted / Managed · Governed provider cutover.' in preflight
+    assert 'Exact provider reason' in preflight
+    assert 'Provider Mirrored · No provider writes.' in preflight
     assert 'Adopt as Observed' not in preflight
     assert 'Observed · Read Only' not in preflight
     assert 'No provider mutation.' not in preflight
@@ -1458,6 +1465,18 @@ def test_adoption_modal_uses_wide_review_geometry_and_compact_live_copy() -> Non
     live = read('app/kubernetes/tenant/live_connection.py')
 
     assert 'max-w-5xl' in preflight
+    assert 'Tenant Discovery</p>' in preflight
+    assert 'Live Provider Preflight</p>' in preflight
+    assert 'data-tenant-adoption-close' in preflight
+    assert 'bg-surface-card px-5 py-4 sm:px-6' in preflight
+    assert 'min-h-0 flex flex-1 flex-col' in preflight
+    assert 'overflow-x-hidden overflow-y-auto overscroll-contain' in preflight
+    assert 'flex shrink-0 flex-col gap-3 border-t border-outline-subtle bg-surface-card' in preflight
+    assert 'Control Unavailable. No adoption committed.' in preflight
+    assert 'data-tenant-adoption-create-copy' in preflight
+    assert 'data-tenant-adoption-attach-copy' in preflight
+    assert "action_button.classes('secondary')" in preflight
+    assert "action_button.classes('primary')" in preflight
     assert 'lg:grid-cols-2' in preflight
     assert 'grid grid-cols-3 gap-px border-t border-outline-subtle bg-outline-subtle' in preflight
     assert "description = 'Live Kubernetes API is reachable.'" in live

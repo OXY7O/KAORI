@@ -2,6 +2,7 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/resource_posture_grid.html" as resource_posture_grid %}
 {% import "components/section_intro.html" as section_intro %}
+{% import "components/table_label.html" as table_label %}
 {% block tenant_content %}
     {% set can_manage = current_user.has_permission('tenant.manage') %}
     {% set tenant_summary_metrics = [
@@ -19,6 +20,7 @@
             'Tenant Estate',
             'Committed Tenant scope across the current Kubernetes estate. Open the workspace below for registry and lifecycle administration.',
             'layout-dashboard',
+            header_badge=table_label.metadata_label((tenant_summary_metrics|length) ~ ' Indicators', icon='layout-grid'),
             body_classes='p-0',
             aria_label='Tenant governance summary'
             ) %}

@@ -52,9 +52,10 @@ def test_expanded_detail_reuses_unified_resource_sheet_instead_of_four_cards() -
     assert 'row.access_model.label' in detail
     assert 'provider.default_role' in detail
     assert 'row.identity_links' in detail
-    # The main table already owns configuration and enabled indicators.
-    assert 'row.configuration.label' not in detail
-    assert 'row.state.label' not in detail
+    # Same committed state as the registry, without claiming live validation.
+    assert "badge=row.configuration.label, badge_type='status', badge_tone=row.configuration.tone" in detail
+    assert "badge=row.state.label, badge_type='status', badge_tone=row.state.tone" in detail
+    assert detail.count("badge_type='status'") == 2
 
 
 def test_actions_match_activity_audit_table_buttons_and_preserve_permission_gates() -> None:

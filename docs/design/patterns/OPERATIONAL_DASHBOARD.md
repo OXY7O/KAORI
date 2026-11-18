@@ -5,7 +5,8 @@
 **Canonical framework:** `app/templates/components/operational_dashboard_workspace.html`  
 **Reference consumers:** `app/templates/kubernetes/dashboard/partials/_content.html` and `app/templates/storage/object_storage/dashboard/partials/_content.html`  
 **Additional conforming consumer:** `Artifact Registry → Overview` through `app/templates/artifact_registry/partials/_overview_content.html`
-**Security Posture first-slice consumer (#2613):** `Security → Overview` at `app/templates/security_posture/overview.html` consumes the same Operational Dashboard Hero, Operational Signal Overview, independent metric cards and four-tab framework. Its limited Registry/Kubernetes source scope is explicit; without authorized committed Registry evidence, it renders the approved blocked Hero and a readiness section instead of fabricated KPIs.
+**Security Posture first-slice consumer (#2613, revised by #4711):** `Security → Overview` at `app/templates/security_posture/overview.html` retains the shared Violet Hero primitives and four-tab workspace controller, with the normal Hero presentation **exactly following `Kubernetes Governance → Overview`**: `page_hero.shell_classes/layout_classes/intro/context_card` (not the operational dashboard profile). The context uses a single source-qualified scanner status, `Provider Authority` (Artifact Registry) and `Evidence Boundary` (Committed), plus the `Review CVE Findings` handoff; a blocked source uses shared `blocked_context_body`. A grouped Security Snapshot and one shared Exposure/Runtime analysis card follow. The Exposure Analysis panel uses **Finding Highlights**, a compact three-CVE source-qualified preview without filters, loading or pagination. The separate **Security → Findings** page owns the full canonical CVE registry with HTMX filters, loading, pagination, and exact-CVE investigation. This is a bounded Assurance consumer of committed Registry + Kubernetes evidence; no global security score, provider read, mutation, or fabricated KPI.
+**Security assurance UI refinement (#4711):** The existing four panel keys and shared controller remain unchanged, but this scoped Assurance domain supplies source-appropriate labels through the optional `navigation(..., tabs=...)` argument. All other dashboard consumers retain canonical labels; the variant does not introduce another tab renderer or change URL normalization.
 
 ## Purpose
 
@@ -51,6 +52,66 @@ A blocked Operational Dashboard uses the same canonical right-side grammar in ev
 
 **Secrets & PKI Overview admission regression (#4130):** a Dashboard blocked on absent qualified Vault KV v2 inventory uses a short single-line Hero guidance strip, while the below-Hero setup steps and permission-aware Vault action use the existing section `_blocked_state.html`. A page-level missing prerequisite is not a section-local empty result. Preserve missing-evidence-is-not-zero and no Secret material disclosure.
 
+**Secrets & PKI Inventory/Lifecycle qualification extension (#4892):** Sidebar links
+and `secrets_pki.view`-authorized routes remain accessible for diagnostic
+navigation. Inventory shows the canonical page-level blocked prerequisite whenever
+`summary.has_evidence` is false, including when one active Vault connection
+exists but `approved_mount_count = 0` or no committed KV v2 snapshot exists.
+Do not render operational KPI cards that imply normal inventory until evidence
+qualifies. Lifecycle & Assurance blocks its ordinary operational workspace
+unless **current-generation qualified KV v2 version posture** (the existing
+`kv2_version_posture.status in ('ready', 'observed_empty')` contract) or
+independently qualified public-PKI validity evidence is available. Retained
+fleet `summary.has_evidence` is not the same as qualified current-generation
+Lifecycle evidence; it can remain true for stale or partial snapshots. Show
+a canonical **KV v2 Evidence Not Qualified** blocker with brief Hero guidance
+when historical evidence exists but current lifecycle qualification fails,
+rather than implying Lifecycle is Ready or incorrectly claiming it was never
+collected. When a Vault source and mount are approved, even read-only viewers
+may follow the existing **Review Inventory Readiness** link; access to Vault
+configuration still requires `integrations.manage` and actual JobExecution
+still requires the existing job permissions. Keep independently qualified PKI
+evidence visible if KV v2 has not qualified. Both pages reuse `page_hero.blocked_context_body` and shared
+`components/states/_blocked_state.html`, with permission-aware setup links. Inventory links to Platform Operations Job
+Configuration only when the operator also has `jobs.view`, alongside the
+existing `secrets_pki.sync` and `jobs.execute` capabilities, since the
+configuration destination itself is protected by `jobs.view`. This hides
+inaccessible shortcuts without widening any authorization.
+The absence of committed evidence is not proof of zero Secrets, valid rotation
+or healthy TLS. An accessible sidebar link does not signify operational Ready.
+
+The approved-source and mount-count limits are **admission boundaries**, not
+signals of absent or healthy resources. If the bounded Secrets & PKI read model
+reports `source_limit_exceeded`, Overview, Inventory and Lifecycle must show
+**Vault Inventory Scope Review Required** rather than interpreting missing
+count values as an unregistered Vault or missing KV v2 mount. Inventory may
+direct authorized managers to review approved sources/mounts but must not offer
+an inventory execution shortcut while scope exceeds the limit. Lifecycle
+continues to respect independently qualified PKI evidence. The read model
+returns a safe `blocked` summary instead of raising a presentation exception;
+it must not expand limits or issue provider calls.
+
+For KV v2 source collection admission, distinguish **never collected** from
+**collection failed without a committed snapshot**. The latter is a sanitized
+source failure (`status='failed'` with `last_committed_at=None`) and must
+render a shared **Collection Failed** blocked prerequisite with a brief Hero
+instruction and a governed Inventory Job review action only when the user has
+the existing job permissions. Never display a false zero, imply successful
+collection, or re-register an already active Vault source. A later successful
+committed snapshot recovers readiness; a failure with retained historical
+commits remains **Stale**, not **Failed**. Lifecycle may still show
+independently qualified PKI evidence. Keep complete diagnosis below the Hero,
+with concise responsive Hero context guidance.
+
+The Lifecycle blocked Hero uses stage-specific, concise `lifecycle_blocker_info`
+copy rather than repeating the longer prerequisite description from the shared
+below-Hero blocker. At the unapproved-mount stage, show **Approve KV v2 mounts
+or qualify independent PKI evidence.** It fits naturally on a standard desktop
+context line and may wrap accessibly on smaller screens; do not force
+`whitespace-nowrap` or truncate. Keep the full operational rationale and
+permission-aware action in the canonical shared blocker.
+
+
 The blocked Dashboard body immediately below the Hero uses the shared section blocked-state grammar: setup title/status, concise explanation, ordered setup steps when useful, and one permission-aware primary action. Kubernetes and Object Storage must not maintain separate local blocker geometry.
 
 ## Canonical composition
@@ -77,9 +138,15 @@ Tab Style 1 — Integrated Workspace Tabs
 
 Kubernetes maps the health table to clusters and Object Storage maps it to registered systems. Future dashboards may substitute a domain-specific health register, but page hierarchy and peer relationships stay the same.
 
+### Object Storage Operations Overview section hierarchy (#4427)
+
+In the Object Storage **Operations Overview** tab, the shared `section_intro.render` owns two plain, accessible section titles above existing content cards: **Operational Health** above **System Health Summary**, and **Committed Evidence** above the Inventory Snapshot / Data Freshness peer grid. The inner cards retain their evidence, status, navigation, loading, and bounded HTMX ownership. This is the approved Kubernetes Operations Overview section-intro/section-card grammar applied only to the Object Storage dashboard's Overview section, not a new dashboard family, live provider query or additional navigation tab.
+
+Object Storage Reporting passes concise **Committed snapshots** as its domain-owned Evidence Backed guardrail copy to the existing shared Reporting Workflow renderer; Kubernetes and Registry retain their independent scope/source wording. The three Capacity Snapshot metric cards preserve their full Used/Free/Usable labels and semantic percentages. At narrower card widths the title occupies its own line above the right-aligned percentage, allowing natural wrapping on mobile without `whitespace-nowrap`, truncation or reducing type. The separate Object Storage **Inventory** System and Namespace Posture titles use the shared static `Indicators` metadata label (four metrics each), not `Guide` popovers, following the Kubernetes Node Inventory reference. Their committed values and statuses remain unchanged; Object Storage Inventory Overview applies the same section-card hierarchy while keeping domain-specific inventory metrics rather than copying the Kubernetes execution model.
+
 ## Visual contract
 
-- Use `components/page_hero.html` and the `operational_dashboard(...)` profile renderer for the Hero.
+- Use `components/page_hero.html` and the `operational_dashboard(...)` profile renderer for the canonical **Operations Dashboard** Hero. The **Security Assurance** consumer is the explicit Governance-style exception approved in #4711: compose the shared Hero shell/intro and `context_card(...)` exactly as Kubernetes Governance Overview, while keeping the operational workspace tab controller.
 - Kubernetes, Object Storage, and Artifact Registry render Operational Signal KPI indicators as **independent cards** through `components/operational_metric_card.html`, inside the existing `components/operational_signal_overview.html` scope/status/update/selector shell with canonical body padding and `gap-3` spacing. Registry uses four bounded committed-inventory indicators; the shared card preserves icon-left hierarchy, evidence-source footer, and fixed `Active Scope` badge. The grouped `components/resource_posture_grid.html` presentation remains appropriate for Registry Inventory, Security, Runtime Usage, Governance, and Analytics summaries, but **not** for the Operational Dashboard KPI slot. This supersedes the earlier Registry Overview grouped-KPI exception under #1087 after human design review.
 - Operational Signal KPI cards use the fixed context badge **Active Scope**. The selected cluster, system, or provider identity is rendered once in the shared scope row/selector and is not repeated as a dynamic KPI-card badge.
 - The shared Operational Signal scope row displays **Updated** as the relative age of the latest committed inventory snapshot (for example, `Updated 28m ago`), matching Kubernetes and Object Storage; when no committed snapshot exists, show `Not Collected`. Registry derives the display-ready relative age through existing `_human_time` in the Fast Shell rather than formatting an absolute `user_datetime` in its template. Inventory Snapshot tiles distinguish `Not Collected` from genuine committed numeric zero through explicit evidence readiness, never an undeclared KPI-local variable.
@@ -88,7 +155,8 @@ Kubernetes maps the health table to clusters and Object Storage maps it to regis
 - Consume `components/operational_dashboard_workspace.html` for canonical four-tab navigation, URL state, keyboard behavior, and panel geometry. It delegates tab rendering to `components/workspace_tabs.html` with semantic key `integrated-workspace`.
 - Use `components/operational_section_card.html` for repeated section shells and `components/operational_evidence_tile.html` for the repeated Inventory Snapshot / Data Freshness evidence-tile geometry.
 - Use `components/peer_content_grid.html` for equal-height peer content.
-- Use `components/operational_flow_steps.html` for capacity and other directional action flows where arrow-connected progression remains meaningful.
+- Use `components/operational_capacity_decision.html` in Capacity & Demand across Kubernetes, Object Storage, and Artifact Registry. It combines committed **Overall Capacity Risk**, **What This Means**, a full-width concise **Recommended Action**, and a light, unboxed **Capacity Review Guide** matrix. Preserve all six domain-specific considerations (Validate, Assess, Prioritize, Act, Verify, Record) as a two-column by three-row reference list on desktop and one column on mobile. Do not put the six items into arrow-linked steps, three peer cards, or a wizard. Risk/advice and reference descriptions stay domain-owned; no automatic provider action.
+- Use `components/operational_flow_steps.html` only for genuine directional operational procedures outside the read-only Capacity & Demand projection, not a generic action checklist embedded in evidence dashboards.
 - Use `components/operational_alert_summary.html` for the bounded AlertCase summary/insight presentation.
 - Use `components/operational_alert_response.html` for **Alert Interpretation & Response**; it delegates the six-step flow to `components/numbered_governance_steps.html` and accepts domain-specific response wording plus optional handoff content.
 - Use `components/operational_recommendation_cards.html` for central Intelligence recommendation cards.
@@ -103,6 +171,104 @@ Kubernetes maps the health table to clusters and Object Storage maps it to regis
 - The dashboard remains neutral-first in dark mode. Violet is limited to identity, active state, focus, links, progress, and primary actions.
 - Operational Dashboard content is a read-only committed-state projection. Navigation/handoff links are allowed, but job initiation and mutation controls such as inventory synchronization do not render inside dashboard KPI or evidence cards; those actions remain in their owning operational workflow.
 
+### Security Posture: evidence-qualified assurance perspective (#4711)
+
+Security Overview is a **source-scoped Assurance** presentation, not a global fleet security verdict or integration health dashboard. Its initial evidence is committed Registry scanner findings and Registry-to-Kubernetes runtime correlation. For its Hero, reuse the **Kubernetes Governance** pattern (`page_hero.shell_classes`, `layout_classes`, `intro`, and `context_card` / `blocked_context_body`) rather than applying the Operations Dashboard-specific Hero grammar. Preserve `operational_dashboard_workspace` panel keys/keyboard/URL semantics, shared section cards, shared resource posture grid, and canonical read-only source boundaries. The Security-only grouping deliberately does **not** reuse the independent `operational_metric_card` grid or the `operational_signal_overview` wrapper used by Kubernetes, Object Storage, and Artifact Registry. A domain-specific *label variant*, not a new navigation component, maps the same four keys:
+
+| Existing panel key / deep link | Security label | Evidence purpose |
+| --- | --- | --- |
+| `overview` | Exposure Analysis | Qualified CVE severity + bounded three-CVE finding highlights (no full table) |
+| `capacity` | Assets & Impact | Affected artifact digests and runtime binding evidence, **not** infrastructure capacity |
+| `signals` | Findings & Investigation | Ownership handoff to canonical Findings and Intelligence |
+| `reporting` | Evidence & Sources | Scanner/runtime authority, freshness, and Reports handoff |
+
+**Scanner freshness Guide (#4711):** Security Snapshot retains one primary source-qualified scanner status badge and includes the shared Guide explaining why scanner evidence can remain stale even when an hourly Security Sync succeeds. The oldest usable snapshot in the authorized Registry scope must meet the 24-hour window; successful provider rescans with unchanged CVE totals still count as new evidence only when their completion identity changes and a subsequent sync commits the report. Read-only Refresh View **on Findings** never triggers a provider scan or changes freshness. The Exposure analysis avoids repeating the same Stale badge while retaining persistent dated warnings and explicit unknown/all-clear caveats.
+
+**Security Assurance peer-tab Visual UAT refinement (#4711, 2026-11-15):**
+Use the same `operational_section_card` and canonical `info_tip.render(variant='guide')`
+for the three non-Exposure perspectives. The **Assets & Impact** panel has two
+balanced authority cards with footer-aligned links and a persistent
+digest-vs-container ownership boundary. The **Findings & Investigation** panel
+has one source-qualified three-metric summary plus one primary `Open Findings`
+handoff, with Intelligence link gated by permission. Only a `Ready`
+runtime correlation allows a binding total to be displayed; otherwise the
+value is **Unknown**. The **Evidence & Sources** panel has two provider source
+cards with a single compact **Publication Boundary** strip, not a separate
+`Security Reporting` outer card. All three header-level Guide popovers
+explain authority and operational interpretation; no page-local JS/CSS,
+unapproved risk score, provider query or workflow state is added.
+
+For Security Exposure Analysis (#4711), the shared `section_intro.render` provides a plain **Security Exposure Assessment** title and short scope description *above* the combined analysis card, following the established Analytics/Governance section hierarchy. The combined `operational_section_card` header uses the existing `info_tip.render(..., variant='guide')` to explain scanner authority, Kubernetes binding semantics, stale/missing evidence and the Findings handoff. The normal Hero Evidence Boundary helper and non-Ready Runtime Impact text remain concise (a single line at desktop); the latter explicitly states exposure is unknown, never inferred as zero. This refinement introduces neither a new tooltip nor a new UI family.
+
+Security Snapshot groups four source-qualified metrics in one shared
+section card: `scanned_artifacts / artifacts_total`, affected digests, runtime
+correlation status and scan update age. This Security-only variant uses shared
+`resource_posture_grid` and `progress_bar.semantic_bar` for scope metrics,
+severity proportions and coverage. Runtime Impact counts distinct observed
+container bindings across all qualifying CVE artifacts, separated into
+immutable digest versus weaker reference matches; these are **not** summed
+per-CVE. Distinct-CVE severity distribution is aggregated over **all
+authorized grouped CVEs**, independently of preview bounds or later Findings
+filters; raw scanner findings are not the number of distinct CVEs.
+
+**Latest operator-reviewed division of responsibility (#4711 + #4772,
+2026-11-15):** `/security/?tab=overview` is **Overview**, never a second
+complete CVE registry. Its `Finding Highlights` card projects only the
+first **three** severity-ordered grouped CVEs from a fixed five-row
+server-backed source window, shows source-wide scope indicators and provides
+an `Open Findings` handoff. Do not render a searchable table, loading bar,
+page-size selector, multi-page pagination or query-driven filters in Overview.
+No CVE observation, Digest, correlation or impact link may imply a business
+risk rank or global safety verdict.
+
+`/security/findings` is the sole canonical full CVE registry. Use the approved
+**Kubernetes Governance-style Hero** (`page_hero.shell_classes/layout_classes/
+intro/context_card`, or shared blocked context when evidence is unavailable)
+with Provider Authority (Artifact Registry), Evidence Boundary (Committed),
+source-qualified scanner status and a return to Overview. The compact
+`Evidence Qualification` section separates scanner freshness from runtime
+correlation readiness with a Guide. The full-width table uses
+`table_ui.block_classes`, `inventory_block_header` (Guide/count/loader),
+`table_registry.filter_form`, `clear_filters_link`, `footer`,
+semantic row labels, exact-CVE source drill-down, the canonical empty state
+and 5/10/25/50 pagination. An unready correlation displays **Unknown**,
+not a misleading numeric zero. Remediation actions, unapproved workflow
+states, trend charts, business risk scores and provider calls are excluded.
+The two Security routes retain independent `security_posture.view` and
+`artifact_registry.view` source-authorization boundaries.
+
+**Security Overview Finding Highlights human Visual UAT refinement (#4711,
+2026-11-15):** The earlier nested three-metric-card plus three-row-card
+design is superseded. Inside **one** `operational_section_card`, present
+three source-derived values in a flat responsive `dl` using a thin
+`gap-px bg-outline-subtle` divider and `bg-surface-card` column surfaces.
+Follow with **one** compact ordered CVE list, using only horizontal
+`divide-y` separators, concise inline CVE/severity identity, observed
+digest/finding counts and existing permission-qualified View Impact action.
+Do not wrap each finding in an additional rounded, bordered or shadowed
+card. The section header owns Guide and `Open Findings`, while the footer
+retains the source-evidence interpretation boundary. At most three
+severity-ordered CVEs are previewed; full query/filter/loading/pagination
+remain exclusively on Security Findings. **Findings Evidence Qualification human
+Visual UAT update (#4772, 2026-11-15):** replace the interim nested
+three-card layout with an **Inventory-style flat three-column evidence strip**
+inside the one existing `operational_section_card` shell. Use the approved
+neutral `gap-px` divider and `bg-surface-card` column surfaces, no separate
+rounded borders/shadows per metric, and responsive stacked columns on mobile.
+Columns retain Scanner Coverage, Runtime Correlation, and Evidence Freshness,
+compact source labels and status pills, with authentic Stale/Inputs Changed,
+Unknown when not Ready, and no fabricated `Current` state. Keep one muted
+semantic evidence boundary footer outside the divided columns. Add the shared
+`section_intro.render` title and description directly above the canonical
+Findings registry. The first table column uses `table_ui.title_cell` and
+shared severity status labels, not custom HTML/CSS. Retain the canonical
+Guide, HTMX filter/loading/pagination, CVE impact links, source permissions,
+missing-evidence warnings and independent scanner/runtime authority.
+
+**Earlier Human Visual UAT correction (2026-11-14, #4711, superseded for Hero):** The Security normal Hero initially used the Operations Dashboard two-metric Active Scope/Data Authority context. The current approved reference is **Kubernetes Governance → Overview**. Security now uses the shared Governance-style Hero with two different semantic slots: *Provider Authority* (Artifact Registry) and *Evidence Boundary* (Committed), scanner-freshness status, and a Findings CTA. The previous Security-only dashboard context was rejected; no new Hero CSS or macro has been introduced. Other dashboard consumers retain their existing Hero action behavior; the blocked Security readiness state still offers permission-aware setup guidance. A single **Security Snapshot** card contains the shared four-metric `resource_posture_grid` (responsive two/four columns), including Evidence Freshness. A `space-y-5` content wrapper explicitly separates Hero-adjacent Snapshot, analysis and tabs: none of these sections may touch. One **Exposure & Runtime Evidence** `operational_section_card` contains two internal regions in an asymmetric 7/5 desktop grid, with a shared subtle divider (top border on mobile, left border on desktop): Severity distribution on the left, Runtime Impact and Evidence Confidence stacked as content **within the same card** on the right. No duplicate outer card shells or nested mini-cards. Existing semantic bars, source-qualified stale/unknown states, canonical four tab keys, bounded Overview findings preview and separately paginated Findings registry remain supported. This is a bounded Security Assurance variant; no new Hero/layout family is introduced.
+
+This approval is a bounded semantic variant for the Security consumer, **not** permission to rename the fixed tabs of Kubernetes, Object Storage, or Registry operational dashboards. Retain shared-component regression and human visual acceptance.
+
 ## Information hierarchy
 
 ```text
@@ -116,7 +282,42 @@ The Hero establishes identity, evidence boundary, and readiness. Operational Sig
 `Alert Interpretation & Response` keeps the shared six-step sequence `Validate → Triage → Investigate → Respond → Verify → Record`, rendered through `components/numbered_governance_steps.html`.
 The Operational Dashboard verifier protects the **ordered six-step sequence**, shared response component, committed alert-source validation, accountable ownership, safety guardrails, and follow-up evidence. Domain-specific explanatory copy may be shortened for UAT readability; the verifier must not lock obsolete sentence fragments that are no longer part of the approved content contract.
 
-`Governed Reporting Flow` remains `Validate → Select → Create → Generate → Schedule → Retain`, but its geometry is owned by `components/reporting_dashboard_workspace.html`. Domain wrappers provide scope/evidence wording only. Capacity remains on `components/operational_flow_steps.html` where directional action progression is the intended semantic.
+`Governed Reporting Flow` remains `Validate → Select → Create → Generate → Schedule → Retain`, but its geometry is owned by `components/reporting_dashboard_workspace.html`. Domain wrappers provide scope/evidence wording only. Capacity & Demand keeps all six Validate / Assess / Prioritize / Act / Verify / Record considerations in one compact, non-sequential **2×3 reference matrix**, not an arrow-linked flow or three stacked explanatory cards. The shared `operational_capacity_decision.html` displays risk, source-backed interpretation, and a short domain-owned recommended action on a full-width text row. Kubernetes Data Scope is concise for one-line desktop display, with the full original scope retained as a native title; status copy across Kubernetes, Object Storage and Registry targets one readable line at the reference viewport, wrapping naturally on mobile. Preserve real headroom, forecast and top-consumer evidence; no provider action is triggered by reading guidance. The `operational_flow_steps.html` renderer remains for genuine directional workflows.
+
+### Security Assurance: bounded Overview, full Findings (#4711, #4772)
+
+**Human Visual UAT supersession (2026-11-15):** The earlier #4751 decision
+to place the entire canonical CVE table in `Security → Overview` is
+superseded. The original #4711 dashboard boundary is restored: render at
+most **three** severity-ordered CVE highlights, source-wide counts, evidence
+qualification and a route-backed `Open Findings` handoff. Overview has
+**no registry filter form, loading state or pagination controls**. The
+underlying grouped CVE projection remains source-qualified and bounded;
+overview summary totals still cover the whole authorized scope.
+
+**Full investigation on Findings:** the route `/security/findings` owns CVE
+search, severity filtering, pagination 5/10/25/50 (default five), Guide,
+loading bar, conditional leading Clear Filters and `Refresh View` in the
+standard block header. Reuse `table_ui.inventory_block_header`,
+`table_registry.filter_form/clear_filters_link/footer`, and existing
+`table_label` and empty-state primitives. Page/Rows/search/severity must
+remain in the URL, with filter or Rows changes resetting page one. Every
+HTMX update targets **only** `#security-posture-findings-registry` with
+latest-request-wins synchronization, keeping the Hero and Evidence
+Qualification visible and preserving full navigation without JavaScript.
+Header actions never exceed two. Refresh View reads **committed KAORI state
+only**, not provider reports or Security Sync JobExecutions.
+
+Do not manufacture status, owner/team, remediation lifecycle, risk score,
+sort support or bulk actions. If source authorization or committed evidence
+is missing, show the approved blocked/readiness/empty state. If scanner
+status is Stale, retain it; `Ready` runtime correlation does not make
+scanner evidence current. When correlation is not Ready, **binding totals
+must display Unknown**, not zero, while qualified exact-CVE links may
+still navigate to the existing source-owned impact view. An empty filter
+never establishes organizational safety. All controls remain responsive,
+keyboard accessible and subject to exact-head Developer Check plus
+human light/dark/mobile Visual UAT.
 
 ### Alerts Summary preview contract
 
@@ -243,9 +444,10 @@ Use consistent evidence terminology such as `Cluster Signals Available`, `Select
 - Artifact Registry security summaries must distinguish absent scan evidence from a clean scan result; missing evidence is `N/A` / not collected, never an inferred zero-finding posture.
 - Artifact Registry **Capacity & Demand** uses the same semantic composition as the references: `Capacity Snapshot → Forecast & Growth Risk → Top Consumers`. Registry-specific evidence comes from committed inventory and Registry Analytics snapshots; unsupported quota or forecast evidence remains explicit rather than inferred.
 - Artifact Registry **Forecast & Growth Risk** uses the paired dashboards' compact forecast metric tiles, evidence/basis interpretation, and risk conclusion, **not** Operational Signal Overview KPI cards with repeated provider/source footers. Registry Analytics currently supplies committed snapshot-to-snapshot daily footprint/artifact growth deltas and project quota horizons, not a historical daily trend series. Preserve true `N/A`/unknown evidence and explain the missing trend; never fabricate historical points or a chart merely for visual symmetry. The selected-provider blocker, Registry Analytics handoff, and existing section-local dashed empty states remain unchanged.
-- **Registry Capacity & Demand visual parity (#1161):** preserve the paired dashboards' `Data Scope → compact capacity metrics → risk/action flow` sequence using the reference Kubernetes compact Violet scope strip. Forecast retains its three committed summary metrics, then a **shared dashed historical-series unavailable panel** with committed analytics/quota coverage facts, followed by the canonical Forecast Conclusion. This deliberately does **not** plot a historical/forward line: Registry workers currently commit adjacent-snapshot growth rates and project-specific numeric quota horizon, not a daily series or guaranteed 90-day projection. `Top Consumers` uses two equal-height ranked Top 3 panels (`Storage Usage` and `Nearest Quota`) plus a consumer-insights footer; the latter ranks **all** already-read committed project forecasts with numeric ETA, independently from highest usage. Draw quota utilization bars only with numeric committed percentages, clamp bar width to 0–100% while preserving the true textual value; absent percentage/ETA remains `N/A`, never a fabricated 0. Existing Registry Analytics handoff, selected-provider guard and section-local unavailable states remain.
-- **Capacity Snapshot compact metric grammar (#1166):** the reference Kubernetes Violet Data Scope strip (small info icon, soft surface, and inline label) plus three compact outlined metric cards (colored dot, label, right-aligned semantic percentage or evidence-unavailable label, bounded progress track, primary value and helper) is also used by Object Storage and Artifact Registry. Storage reports Used and Free as complementary fractions of committed usable capacity; the Usable Capacity card labels its boundary explicitly as Total, not Used. Missing utilization must not become false 0% on the bar. Registry keeps Artifact Footprint inventory-only without inventing a percentage, labels Quota Utilization as Used and the shortened Quota Left card as Free, and shows neutral tracks for absent quota evidence. The former separate Storage Capacity Utilization panel is retired as duplicate evidence; Risk, Flow, forecast and consumers remain intact.
-- **Capacity peer-footprint visualization (#1171, #1166, #1161):** the selected-instance Capacity Snapshot ends with an evidence-backed **visual** rather than duplicating the six-step action flow in text. Kubernetes renders three compact **Available Capacity** horizontal bars for CPU, Memory, and Pods from committed worker-node headroom percentages; Object Storage renders **Capacity Balance** Used/Free percentages derived from its existing committed usable-capacity utilization; Artifact Registry renders **Project Quota Balance** Used/Free percentages from the selected provider's committed quota evidence. Reuse `components/progress_bar.html` and existing dashboard cards/tokens, with explicit `N/A` or no-percentage states and **no fabricated history, provider calls, false-zero percentage, or mutation**. A progress bar represents a current percentage only, never a forecast. Render the visuals only inside the corresponding selected-scope/available-evidence branch; retain six-step action flow, risks, forecast, consumers, and handoffs. The top three Kubernetes Forecast summary cards retain one-line source-qualified helpers.
+- **Registry Capacity & Demand visual parity (#1161):** preserve the paired dashboards' `Data Scope → compact capacity metrics → risk/action + review matrix` sequence using the reference Kubernetes compact Violet scope strip. Forecast retains its three committed summary metrics, then a **shared dashed historical-series unavailable panel** with committed analytics/quota coverage facts, followed by the canonical Forecast Conclusion. This deliberately does **not** plot a historical/forward line: Registry workers currently commit adjacent-snapshot growth rates and project-specific numeric quota horizon, not a daily series or guaranteed 90-day projection. `Top Consumers` uses two equal-height ranked Top 3 panels (`Storage Usage` and `Nearest Quota`) plus a consumer-insights footer; the latter ranks **all** already-read committed project forecasts with numeric ETA, independently from highest usage. Draw quota utilization bars only with numeric committed percentages, clamp bar width to 0–100% while preserving the true textual value; absent percentage/ETA remains `N/A`, never a fabricated 0. Existing Registry Analytics handoff, selected-provider guard and section-local unavailable states remain.
+- **Shared Capacity Snapshot card ownership (#4448):** Kubernetes, Object Storage and Artifact Registry Capacity & Demand must call `components/operational_capacity_metric_card.html` rather than copying page-local metric-card markup. The shared macro owns the Violet compact card anatomy (colored dot, full naturally wrapping label, right-aligned sourced percentage/meaning, bounded progress bar or neutral unavailable track, primary value and helper). Its `progress_bar.html` dependency only receives known numeric percentages: observed zero remains 0%; missing percent remains a neutral track with an explicit evidence label, never a fabricated zero or quota. The macro is a *presentation* component only, not a new metrics read model. Domain templates retain their original three-column responsive grid and provide source-specific value, descriptions, numeric usage, progress meaning, tone, and accessible bar label. Kubernetes worker CPU/Memory/Pods retains existing committed usage precision; Storage Used/Free/Usable semantics and Registry footprint Inventory vs quota Used/Free meaning remain distinct. Risk/forecast/consumer/action/source scope and blocked/empty states remain domain-owned. Verify desktop/mobile, dark/light, keyboard/screen-reader labeling at the exact reviewed SHA.
+- **Capacity Snapshot compact metric grammar (#1166):** the reference Kubernetes Violet Data Scope strip (small info icon, soft surface, and inline label) plus three compact outlined metric cards (colored dot, label, right-aligned semantic percentage or evidence-unavailable label, bounded progress track, primary value and helper) is also used by Object Storage and Artifact Registry. Storage reports Used and Free as complementary fractions of committed usable capacity; the Usable Capacity card labels its boundary explicitly as Total, not Used. Missing utilization must not become false 0% on the bar. Registry keeps Artifact Footprint inventory-only without inventing a percentage, labels Quota Utilization as Used and the shortened Quota Left card as Free, and shows neutral tracks for absent quota evidence. The former separate Storage Capacity Utilization panel is retired as duplicate evidence; Risk, review guidance, forecast and consumers remain intact.
+- **Capacity peer-footprint visualization (#1171, #1166, #1161):** the selected-instance Capacity Snapshot ends with an evidence-backed **visual** rather than duplicating the six-step action flow in text. Kubernetes renders three compact **Available Capacity** horizontal bars for CPU, Memory, and Pods from committed worker-node headroom percentages; Object Storage renders **Capacity Balance** Used/Free percentages derived from its existing committed usable-capacity utilization; Artifact Registry renders **Project Quota Balance** Used/Free percentages from the selected provider's committed quota evidence. Reuse `components/progress_bar.html` and existing dashboard cards/tokens, with explicit `N/A` or no-percentage states and **no fabricated history, provider calls, false-zero percentage, or mutation**. A progress bar represents a current percentage only, never a forecast. Render the visuals only inside the corresponding selected-scope/available-evidence branch; retain six reference considerations, risks, forecast, consumers, and handoffs. The top three Kubernetes Forecast summary cards retain one-line source-qualified helpers.
 - Artifact Registry **Signals & Actions** uses `Alerts Summary → Alert Interpretation & Response → Recommended Actions`. Active cases come from KAORI Alert Intelligence; recommendation cards come from central Intelligence and the Registry rule catalog. The dashboard does not define local recommendation rules.
 - Artifact Registry **Reporting** uses the shared `reporting_dashboard_workspace.summary(...) + guidance(...)` contract and canonical Reports state. Report definitions, generation, schedules, retained artifacts, storage, and audit remain owned by Reports.
 - A retained committed Registry inventory snapshot remains available even when the latest refresh attempt fails. Freshness is derived from `last_committed_at`; a stale retained snapshot is presented as stale/attention, never as `Not Collected`.

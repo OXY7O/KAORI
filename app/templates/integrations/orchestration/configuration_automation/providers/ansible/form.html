@@ -1,0 +1,208 @@
+{% extends "layouts/app.html" %}
+{% import "integrations/components/_provider_registration_hero.html" as registration_hero %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "integrations/components/_provider_registration_context.html" as registration_context %}
+{% import "integrations/components/_provider_registration_actions.html" as registration_actions %}
+{% import "components/form_with_context_rail.html" as form_context %}
+{% import "components/form_field.html" as form_field %}
+{% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "components/info_tip.html" as info_tip %}
+{% import "components/action_button.html" as action_button %}
+{% block title %}Add Ansible Kubernetes Connection · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div class="kaori-integration-semantic space-y-6"
+         data-kaori-ansible-connection-form>
+        {{ registration_hero.render("workflow",
+                "Configuration Automation",
+                "boxes",
+                "Add Kubernetes Lifecycle Connection",
+                "Register reviewed Ansible and Kubespray Git source before any operational preflight.",
+                "git-commit",
+                "Pinned Public Git Source",
+                url_for("integrations.ansible") ,
+        "Ansible source registration",
+        binding_label="Runtime & Inventory Governed Separately",
+        after_save_label="Host Preflight",
+        after_save_description="Requires separate approval",
+        before_save_label="Validate Source") }}
+        <form id="ansible-source-registration-form"
+              method="post"
+              action="{{ url_for('integrations.ansible_new_connection') }}"
+              class="{{ form_context.layout_classes() }}"
+              autocomplete="off"
+              x-data="{ connectionVerified: {{ 'true' if source_test_proof else 'false' }}, invalidate(event) { const key = event.target.name; if (['csrf_token', 'source_test_proof', 'action'].includes(key)) return; this.connectionVerified = false; this.$refs.connectionProof.value = ''; } }"
+              x-on:input.capture="invalidate($event)"
+              x-on:change.capture="invalidate($event)">
+            {{ form.csrf_token }}
+            <input id="ansible-proof-field"
+                   x-ref="connectionProof"
+                   type="hidden"
+                   name="source_test_proof"
+                   value="{{ source_test_proof or '' }}">
+            <section class="{{ integration_ui.section_shell_classes() }} {{ form_context.main_classes() }}">
+                {{ integration_ui.section_header("settings-2",
+                                "Connection Configuration",
+                                "Define connection identity, pinned Git source and compatibility policy. No credentials are requested.") }}
+                <div class="space-y-6 p-5 sm:p-6">
+                    <section aria-labelledby="ansible-identity-heading">
+                        <div class="mb-4 flex min-w-0 items-start gap-3">
+                            {{ integration_ui.palette_icon("fingerprint", "brand", size="sm") }}
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h3 id="ansible-identity-heading"
+                                        class="text-sm font-semibold text-content-primary">Connection Identity</h3>
+                                    {{ info_tip.render("ansible-connection-identity-guide",
+                                                                        "Connection Identity",
+                                                                        "Define the reusable non-production source identity owned by KAORI.",
+                                                                        [
+                                                                        "Choose a stable connection name and its approved non-production environment.",
+                                                                        "Description is optional and records operational purpose and ownership.",
+                                                                        "Source registration does not grant host or Kubernetes execution permission."
+                                                                        ],
+                                                                        placement="right",
+                                                                        variant="guide") }}
+                                </div>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">A reusable KAORI source identity, limited to non-production environments.</p>
+                            </div>
+                        </div>
+                        <div class="grid gap-4 md:grid-cols-2">
+                            {% for field in [form.name, form.environment] %}
+                                <div class="min-w-0">
+                                    <label for="{{ field.id }}" class="block">{{ form_field.label_row(field.label.text) }}</label>
+                                    {{ field(class=form_field.select_classes() if field.name == 'environment' else form_field.input_classes(), aria_invalid="true" if field.errors else "false") }}
+                                    {% for error in field.errors %}
+                                        <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                            <div class="min-w-0 md:col-span-2">
+                                <label for="{{ form.description.id }}" class="block">{{ form_field.label_row(form.description.label.text) }}</label>
+                                {{ form.description(class=form_field.input_classes() ~ ' min-h-24 py-2.5', placeholder="Operational purpose and ownership context", aria_invalid="true" if form.description.errors else "false") }}
+                                {% for error in form.description.errors %}
+                                    <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </section>
+                    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated"
+                             aria-label="Git Source and Validation">
+                        {% call connection_validation_header.render(
+                            "Git Source & Validation",
+                            "Verify the reviewed Git source before registration.",
+                            icon="git-commit",
+                            title_extra=info_tip.render(
+                            "ansible-git-source-validation-guide",
+                            "Git Source & Validation",
+                            "Validate the immutable Git source before Save Connection is permitted.",
+                            [
+                            "This pilot accepts only the reviewed OXY7O/kaori-operations revision; the server enforces the source policy.",
+                            "Validate Source checks commit, tree, expected blob hashes, Kubespray files and pinned dependencies.",
+                            "The signed proof is bound to the current operator and exact inputs. Editing the form requires revalidation.",
+                            "Source validation never authorizes SSH, playbook execution or Kubernetes changes."
+                            ],
+                            placement="right",
+                            variant="guide")
+                            ) %}
+                            <button type="submit"
+                                    name="action"
+                                    value="test"
+                                    class="{{ action_button.classes('secondary') }}">
+                                <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
+                                Validate Source
+                            </button>
+                        {% endcall %}
+                        <div class="space-y-4 p-4 sm:p-5">
+                            <div class="grid gap-4 md:grid-cols-2">
+                                {% for field in [form.profile_key, form.repository] %}
+                                    <div class="min-w-0">
+                                        <label for="{{ field.id }}" class="block">{{ form_field.label_row(field.label.text) }}</label>
+                                        {{ field(class=form_field.select_classes() if field.name == 'profile_key' else form_field.input_classes(), aria_invalid="true" if field.errors else "false") }}
+                                        {% for error in field.errors %}
+                                            <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
+                                        {% endfor %}
+                                    </div>
+                                {% endfor %}
+                                <div class="min-w-0 md:col-span-2">
+                                    <label for="{{ form.revision.id }}" class="block">{{ form_field.label_row(form.revision.label.text) }}</label>
+                                    {{ form.revision(class=form_field.input_classes() ~ ' font-mono', aria_invalid="true" if form.revision.errors else "false") }}
+                                    {% for error in form.revision.errors %}
+                                        <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="border-t border-outline-subtle pt-6"
+                             aria-labelledby="ansible-compatibility-heading">
+                        <div class="mb-4 flex min-w-0 items-start gap-3">
+                            {{ integration_ui.palette_icon("badge-check", "brand", size="sm") }}
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h3 id="ansible-compatibility-heading"
+                                        class="text-sm font-semibold text-content-primary">Compatibility &amp; Execution References</h3>
+                                    {{ info_tip.render("ansible-compatibility-policy-guide",
+                                                                        "Compatibility & Execution References",
+                                                                        "Candidate version policy is separate from runtime and infrastructure admission.",
+                                                                        [
+                                                                        "Ansible Core, Ansible Runner and Kubespray versions are approved source compatibility candidates, not detected runtime versions.",
+                                                                        "The optional Execution Environment digest is a reference only, not proof of image admission.",
+                                                                        "Runtime use requires separately approved image provenance, trusted inventory and worker evidence."
+                                                                        ],
+                                                                        placement="right",
+                                                                        variant="guide") }}
+                                </div>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Candidate versions do not establish image, inventory, worker or cluster readiness.</p>
+                            </div>
+                        </div>
+                        <div class="grid gap-4 md:grid-cols-3">
+                            {% for field in [form.ansible_core_version, form.ansible_runner_version, form.kubespray_release] %}
+                                <div class="min-w-0">
+                                    <label for="{{ field.id }}" class="block">{{ form_field.label_row(field.label.text) }}</label>
+                                    {{ field(class=form_field.select_classes() , aria_invalid="true" if field.errors else "false") }}
+                                    {% for error in field.errors %}
+                                        <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="mt-4 min-w-0">
+                            <label for="{{ form.execution_environment_digest.id }}" class="block">{{ form_field.label_row(form.execution_environment_digest.label.text) }}</label>
+                            {{ form.execution_environment_digest(class=form_field.input_classes() ~ ' font-mono', placeholder="sha256:... (optional; not proof of image admission)", aria_invalid="true" if form.execution_environment_digest.errors else "false") }}
+                            {% for error in form.execution_environment_digest.errors %}
+                                <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    </section>
+                </div>
+                {{ registration_actions.render(url_for('integrations.ansible') ,
+                aria_label="Ansible Connection Actions",
+                register_label="Save Connection",
+                loading_label="Saving Connection...",
+                submit_name="action",
+                submit_value="save",
+                required_title="Source Validation Required",
+                verified_title="Source Validated",
+                required_description="Validate Source before saving this connection.",
+                verified_description="The exact submitted source is eligible for registration.",
+                disabled_title="Validate Source before saving",
+                enabled_title="Save this source-validated connection") }}
+            </section>
+            <aside class="{{ form_context.rail_classes() }}"
+                   aria-label="Ansible registration guidance">
+                {% set registration_steps = [('Define Connection Identity', 'Name this source and choose a non-production environment.'), ('Configure Pinned Git Source', 'Select Kubernetes Lifecycle, approved repository and immutable commit.'), ('Validate Source', 'Verify the Git revision, Kubespray files and version policy before Save is enabled.'), ('Save Connection', 'Register the source; runtime and inventory admission remain separate.')] %}
+                {{ registration_context.render("Kubernetes Source Registration Flow",
+                                "Register a reusable, source-validated Ansible connection.",
+                                registration_steps,
+                                "Orchestration Integrations",
+                                "Source registration is not runtime readiness.",
+                                url_for('integrations.orchestration') ,
+                "Open Orchestration Integrations",
+                flow_icon="workflow",
+                flow_note="Source validation does not authorize host or Kubernetes execution.",
+                flow_note_icon="shield-check",
+                related_icon="waypoints",
+                authority_boundary="Git defines the source; Ansible executes when separately authorized. KAORI governs registration, correlation and evidence.") }}
+            </aside>
+        </form>
+    </div>
+{% endblock dashboard_content %}

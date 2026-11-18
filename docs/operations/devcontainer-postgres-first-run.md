@@ -57,6 +57,56 @@
    logs; successful migrations alone do not establish ready workers.
 
 
+## Stale `db-bootstrap` image — missing Python dependency before migration (#4465)
+
+**Recorded local UAT failure (2026-11-12):** the operator-only `db-bootstrap
+--upgrade-only` service passed `Database ready` and
+`PASS: trusted, non-superuser migration identity admitted`, then Flask
+application import failed with
+`ModuleNotFoundError: No module named 'qrcode'` while importing
+`app/access/authentication/mfa/qr.py`. The subsequent
+`Error: No such command 'db'` is a consequence of the application not
+loading. **No Alembic upgrade, privilege refresh, or RBAC action was proven
+complete by this run.**
+
+The dependency is already declared as **`qrcode==8.2`** in
+`requirements/base.txt` and is installed by the shared `Dockerfile`
+base stage inherited by its `development` stage. The
+`db-bootstrap` Compose service uses that `development` target. A stale
+local build is the first suspect; **do not** add duplicate requirements,
+`pip install` manually in a running container, disable MFA import, or
+grant elevated database privileges.
+
+From **Windows PowerShell at the trusted KAORI repository root**,
+after confirming the intended checkout and local `kaori-dev` project:
+
+```powershell
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml config --quiet
+
+# Rebuild the existing development image used by the one-shot operator service.
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml build db-bootstrap
+
+# Non-mutating Python dependency preflight in the actual db-bootstrap image.
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap python -c "import qrcode; print('PASS: qrcode import available in db-bootstrap')"
+
+# Only after the preflight passes and the schema upgrade is approved:
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap sh scripts/devcontainer/bootstrap-db.sh --upgrade-only
+```
+
+The import preflight does **not** run Alembic; Compose may still start
+healthy dependent containers. Rebuilding an image is not the same as
+deleting the PostgreSQL data volume. If the import still fails after
+the build, inspect the actual Compose image/build result and installed
+distribution without printing environment secrets; stop instead of
+bypassing the dependency. Recheck every failure independently.
+
+Success requires a complete `db-bootstrap` result including
+`PASS: Alembic schema upgraded by kaori_migrator`, controlled runtime
+grants/RBAC and `PASS: migrations, RBAC/admin and immutable Capsule runtime guard complete`.
+Then confirm the current Alembic head from the regular restricted runtime
+and inspect migration effects. A preflight PASS alone does **not** imply
+the Internal PKI migration was applied.
+
 ## Windows PowerShell: WSL/OneDrive secret permission-denied recovery (local UAT 2026-10-13)
 
 **Scenario:** An existing, non-empty local `kaori-dev` database has correct

@@ -481,38 +481,34 @@ def test_uat_administrative_evidence_uses_shared_title_result_count() -> None:
     assert "loading_bar.render('administrative-activity-loading'" in header
 
 
-def test_activity_audit_registers_use_shared_accessible_source_hover_info() -> None:
+def test_activity_audit_overview_owns_single_shared_accessible_evidence_guide() -> None:
+    from jinja2 import Environment
+
+    overview = read('app/templates/access/activity_audit/partials/_activity_summary_cards.html')
     activity = read('app/templates/access/activity_audit/partials/_activity_table_card.html')
     administrative = read('app/templates/access/activity_audit/partials/_administrative_evidence.html')
     shared = read('app/templates/components/info_tip.html')
     workspace = read('app/templates/access/activity_audit/partials/_audit_records_workspace.html')
 
+    for fragment in (overview, activity, administrative):
+        Environment().parse(fragment)
+    assert '{% import "components/info_tip.html" as info_tip %}' in overview
+    assert overview.count('info_tip.render(') == 1
+    assert overview.count("variant='guide'") == 1
+    assert (
+        overview.index('>Audit Evidence Overview</h2>')
+        < overview.index("info_tip.render('activity-audit-overview-guide'")
+        < overview.index('Recent evidence volume')
+    )
     for fragment in (activity, administrative):
-        assert '{% import "components/info_tip.html" as info_tip %}' in fragment
-        assert fragment.count('info_tip.render(') == 1
-        assert fragment.count("variant='guide'") == 1
-        # Title-level context must be a Guide; default icon remains for fields only.
-    activity_header = activity.split('</header>', 1)[0]
-    admin_header = administrative.split('</header>', 1)[0]
-    assert (
-        activity_header.index('>Activity Register</h2>')
-        < activity_header.index("'activity-audit-register-source-info'")
-        < activity_header.index('table_label.result_count(pagination.total)')
-    )
-    assert (
-        admin_header.index('>Administrative Source Evidence</h2>')
-        < admin_header.index("'activity-audit-administrative-source-info'")
-        < admin_header.index('table_label.result_count(administrative_evidence.pagination.total_items)')
-    )
+        assert 'info_tip.render(' not in fragment
+        assert "variant='guide'" not in fragment
 
-    assert 'Activity Register Evidence' in activity
-    assert 'Hot committed Notification-backed operational activity' in activity
-    assert 'Actor identity is snapshotted' in activity
-    assert 'this register is not an archived-record search' in activity
-    assert 'Separate permission-scoped hot AuditEvent' in administrative
-    assert 'Automatic Jobs and Tenant Inventory Sync remain source-owned' in administrative
-    assert 'source foreign key, not an immutable actor snapshot' in administrative
-    assert 'Archive browsing lists bundles only' in administrative
+    assert 'Notification-backed activity with actor identity snapshotted at commit' in overview
+    assert 'hot AuditEvent records; actor references are foreign keys' in overview
+    assert 'Automatic Jobs and Tenant Inventory Sync remain source-owned' in overview
+    assert 'Register filters and totals do not cover administrative sources' in overview
+    assert 'browsing archive bundles does not prove a specific job match' in overview
 
     assert 'data-kaori-info-tip-trigger' in shared
     assert 'aria-expanded="false"' in shared

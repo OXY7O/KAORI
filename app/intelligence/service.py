@@ -21,6 +21,9 @@ from app.intelligence.finding_presentation import (
     compact_recommendation_summary,
     finding_scope_details,
     format_affected_summary,
+    recommendation_detail_header_summary,
+    recommendation_summary_domain_metrics,
+    recommendation_table_scope_title,
     recommendation_table_summary,
     recommendation_table_title,
 )
@@ -55,6 +58,7 @@ from app.intelligence.rule_presentation import (
     SIGNAL_SOURCE_OPTIONS,
     SOURCE_KIND_OPTIONS,
     STATUS_OPTIONS,
+    _summary_counts,
     clean,
     domain_label,
     matches,
@@ -163,29 +167,28 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
         for item in items:
             scope_title, scope_supporting = finding_scope_details(item)
             item['scope_title'] = scope_title
+            item['list_scope_title'] = recommendation_table_scope_title(scope_title)
             item['scope_supporting'] = scope_supporting
-            item['list_title'] = recommendation_table_title(item, limit=96)
-            item['list_summary'] = recommendation_table_summary(item, limit=72)
+            item['list_title'] = recommendation_table_title(item, limit=64)
+            item['list_summary'] = recommendation_table_summary(item, limit=64)
 
-    result_context = {
-        'matching_items': total_items,
-        'source_items': len(source_items),
-        'active_filters': active_filter_count,
-        'kubernetes_items': sum(1 for item in filtered if item.get('domain') == 'kubernetes'),
-        'object_storage_items': sum(1 for item in filtered if item.get('domain') == 'object_storage'),
-        'registry_items': sum(1 for item in filtered if item.get('domain') == 'registry'),
-        'matched_domains': len({str(item.get('domain')) for item in filtered if item.get('domain')}),
-        'critical_items': sum(1 for item in filtered if item.get('severity') == 'critical'),
-        'warning_items': sum(1 for item in filtered if item.get('severity') == 'warning'),
-    }
-    if page_mode == 'catalog':
-        result_context.update(
-            {
-                'available_items': sum(1 for rule in filtered if rule.get('status') == 'available'),
-                'reserved_items': sum(1 for rule in filtered if rule.get('status') == 'reserved'),
-                'imported_items': sum(1 for rule in filtered if rule.get('status') == 'imported_signal'),
-            }
+    domain_metrics = (
+        recommendation_summary_domain_metrics(
+            filtered,
+            {option['value']: option['label'] for option in DOMAIN_OPTIONS if option['value']},
         )
+        if page_mode != 'catalog'
+        else []
+    )
+
+    result_context = _summary_counts(
+        filtered,
+        domain_metrics=domain_metrics,
+        total_items=total_items,
+        source_count=len(source_items),
+        active_filter_count=active_filter_count,
+        page_mode=page_mode,
+    )
 
     return {
         'page_mode': page_mode,
@@ -586,6 +589,7 @@ def get_recommendation_finding(recommendation_key: str) -> dict[str, Any] | None
         finding['scope_supporting'] = scope_supporting
         finding['list_title'] = recommendation_table_title(finding, limit=96)
         finding['list_summary'] = recommendation_table_summary(finding, limit=72)
+        finding['detail_header_summary'] = recommendation_detail_header_summary(finding)
         decorate_recommendation_findings([finding])
         return finding
 

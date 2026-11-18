@@ -1,4 +1,5 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
          aria-label="Authentication Source Posture"
          data-kaori-idp-overview>
@@ -10,7 +11,20 @@
                     <i data-lucide="fingerprint" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">Authentication Source Posture</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Authentication Source Posture</h2>
+                        {{ info_tip.render('identity-provider-posture-guide',
+                                                'Authentication Source Posture',
+                                                'Read committed provider configuration, eligibility, projection, and authorization boundaries.',
+                                                items=[
+                                                'Configured means stored adapter setup is complete, not that the upstream provider is reachable.',
+                                                'Enabled controls authentication eligibility; Identity Links counts committed KAORI account projections.',
+                                                'External providers retain identity and credentials; KAORI owns roles, account lifecycle and access.',
+                                                'Directory provisioning requires delegated permission; enabled sources and source-owned identity are not proof of live provider health.'
+                                                ],
+                                                placement='right',
+                                                variant='guide') }}
+                    </div>
                     <p class="mt-0.5 text-xs leading-5 text-content-muted">
                         Committed provider configuration, authentication eligibility, and account projection.
                     </p>

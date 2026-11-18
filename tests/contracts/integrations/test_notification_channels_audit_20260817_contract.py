@@ -44,7 +44,7 @@ def test_notification_overview_summarizes_committed_workspaces_not_provider_cata
     assert "'overview': notification_overview_metrics() if include_overview else None" in service
     routes = read('app/integrations/delivery/notification_channels/routes.py')
     assert "include_overview=active_tab == 'overview'" in routes
-    assert "'ownership': 'Consumers emit governed events; Notification Channels delivers.'" in service
+    assert "'ownership': 'Consumers emit; KAORI delivers.'" in service
     assert 'credential_payload' not in overview
 
 
@@ -122,8 +122,14 @@ def test_notification_overview_uses_one_card_below_shared_section_intro() -> Non
     assert 'grid-cols-[minmax(0,1fr)_auto]' in snapshot
     assert 'sm:grid-cols-[minmax(0,1fr)_minmax(0,11rem)_auto]' in snapshot
     assert '{% if payload.overview.recent %}' in snapshot
-    assert 'title="{{ delivery.event_label }}"' in snapshot
-    assert 'title="{{ delivery.channel_name }}"' in snapshot
+    assert "table_ui.title_cell(delivery.event_label, delivery.channel_name, 'bell-ring')" in snapshot
+    shared_title_cell = (
+        read('app/templates/components/table_primitives.html')
+        .split('{% macro title_cell(', 1)[1]
+        .split('{%- endmacro %}', 1)[0]
+    )
+    assert 'title="{{ name }}"' in shared_title_cell
+    assert 'title="{{ supporting_text }}"' in shared_title_cell
     assert 'delivery.created_at|user_datetime("Unknown time")' in snapshot
     assert 'Delivery outcome:' in snapshot
     assert 'table_label.status_label(delivery.status_label, delivery.status_tone' in snapshot
@@ -209,7 +215,7 @@ def test_notification_setup_summaries_and_ownership_remain_concise() -> None:
     assert 'Encrypt Telegram bot tokens as channel secrets' in providers
     assert 'STARTTLS, TLS/SMTPS, or an explicitly trusted relay policy.' in providers
     assert 'The Workflow trigger configured for Anyone authentication' in providers
-    assert ("'ownership': 'Consumers emit governed events; Notification Channels delivers.'") in service
+    assert "'ownership': 'Consumers emit; KAORI delivers.'" in service
 
 
 def test_notification_tab_macro_namespace_cannot_be_shadowed_by_local_assignment() -> None:
@@ -1102,3 +1108,205 @@ def test_review6_provider_guide_summaries_keep_security_coverage_and_copy_densit
     assert 'Anyone' in ' '.join(found['microsoft_teams'][2])
     for value in found.values():
         assert any(term in value[1] for term in ('read', 'recipient', 'receipt'))
+
+
+def test_recent_delivery_preview_uses_canonical_icon_and_subtle_info_footer() -> None:
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split("{% elif active_tab == 'channels' %}", 1)[0]
+    preview = overview.split('aria-label="Recent committed delivery attempts"', 1)[1].split('{% else %}', 1)[0]
+    footer = overview.split('Showing up to 5 committed records.', 1)[0].rsplit(
+        '<div class="flex flex-wrap items-center justify-between', 1
+    )[1]
+
+    assert "table_ui.title_cell(delivery.event_label, delivery.channel_name, 'bell-ring')" in preview
+    assert 'grid-cols-[minmax(0,1fr)_auto]' in preview
+    assert 'delivery.created_at|user_datetime("Unknown time")' in preview
+    assert "table_label.status_label(delivery.status_label, delivery.status_tone, size='compact')" in preview
+    assert 'data-lucide="info"' in footer
+    assert 'border-outline-subtle bg-surface-hover' in footer
+    assert 'aria-hidden="true"' in footer
+    assert 'Showing up to 5 committed records.' in overview
+    assert '.limit(5)' in service
+    assert "tab='delivery'" in overview
+    assert 'hx-target="#notification-channels-workspace"' in overview
+    assert 'Provider acceptance does not prove human receipt.' in overview
+    assert 'whitespace-nowrap' not in preview
+
+
+def test_notification_delivery_overview_guide_and_compact_ownership_preserve_authority() -> None:
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    shared = read('app/templates/integrations/components/_workspace.html')
+    Environment().parse(page)
+
+    overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split("{% elif active_tab == 'channels' %}", 1)[0]
+    section = page.split('{% macro notification_section(', 1)[1].split('{%- endmacro %}', 1)[0]
+
+    assert '{% import "components/info_tip.html" as info_tip %}' in page
+    assert 'title_extra=none' in section
+    assert 'title_extra=title_extra' in section
+    assert 'title_extra=delivery_overview_guide' in overview
+    assert overview.count("info_tip.render('notification-delivery-overview-guide'") == 1
+    assert "variant='guide'" in overview
+    assert "placement='right'" in overview
+    assert 'title_extra' in shared
+    assert 'Read committed notification delivery posture, not live provider health.' in overview
+    assert 'Outcome totals cover all-time committed attempts' in overview
+    assert 'provider acceptance, not confirmation' in overview
+    assert 'Consumers own event meaning, destinations and delivery policy' in overview
+    assert "('Ownership', payload.delivery_contract.ownership, 'waypoints')" in overview
+    assert "'ownership': 'Consumers emit; KAORI delivers.'" in service
+    assert len('Consumers emit; KAORI delivers.') <= 36
+    assert "notification_section('Delivery Governance'" not in overview
+    assert 'payload.delivery_contract.retry' in overview
+    assert 'payload.delivery_contract.deduplication' in overview
+
+
+def test_channel_registry_guide_and_primary_action_follow_shared_kaori_contract() -> None:
+    source = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    modal = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+    shared = read('app/templates/components/action_button.html')
+    Environment().parse(source)
+    header = source.split('<header', 1)[1].split('</header>', 1)[0]
+
+    assert '{% import "components/action_button.html" as action_button %}' in source
+    assert header.count("info_tip.render('notification-channel-registry-guide'") == 1
+    assert header.index('>Channel Registry</h2>') < header.index(
+        "info_tip.render('notification-channel-registry-guide'"
+    )
+    assert "variant='guide'" in header
+    assert "placement='right'" in header
+    assert 'configured totals count saved channel instances' in header
+    assert 'Test Delivery' in header
+    assert 'table_label.status_label(payload.posture.label, payload.posture.tone' in header
+    assert "action_button.classes('primary')" in header
+    assert 'data-dialog-target="notification-channel-config-dialog"' in header
+    assert '@click="provider = ' in header
+    assert 'Setup Guide' not in header
+    assert 'data-dialog-target="notification-channel-guide-dialog"' not in header
+    assert 'inline-flex h-10' in shared
+    assert 'hover:bg-kaori-primary-hover active:bg-kaori-primary-dark' in shared
+    assert 'aria-label="Open {{ provider.label }} setup guide"' in source
+    assert 'data-dialog-target="notification-channel-guide-dialog"' in source
+    assert 'id="notification-channel-guide-dialog"' in modal
+    assert "table_label.metadata_label('Guided Setup', icon='book-open-check')" in modal
+
+
+def test_delivery_evidence_boundary_guide_retains_persistent_delivery_truth() -> None:
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    shared = read('app/templates/components/operational_section_card.html')
+    Environment().parse(page)
+    delivery = page.split("{% elif active_tab == 'delivery' %}", 1)[1]
+
+    assert delivery.count("info_tip.render('notification-delivery-evidence-boundary-guide'") == 1
+    assert "variant='guide'" in delivery
+    assert "placement='right'" in delivery
+    assert 'header_badge=delivery_evidence_boundary_guide' in delivery
+    assert delivery.index('delivery_evidence_boundary_guide') < delivery.index(
+        '{% call operational_section_card.render('
+    )
+    assert '{% if header_badge %}{{ header_badge }}{% endif %}' in shared
+    assert 'Provider Accepted ≠ Recipient Read' in delivery
+    assert 'not receipt or readership by a person.' in delivery
+    assert 'Independent Activity Audit' in delivery
+    assert 'sending a notification does not create an audit event.' in delivery
+    assert 'Hot delivery records and verified Data Lifecycle archive bundles' in delivery
+
+
+def test_channel_details_drawer_uses_compact_inspection_without_nested_outcome_cards() -> None:
+    drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
+    shared = read('app/templates/components/side_drawer.html')
+    Environment().parse(drawer)
+
+    assert 'data-kaori-channel-details-layout' in drawer
+    assert 'flex min-h-full flex-col gap-3' in drawer
+    assert drawer.count('side_drawer.section(') == 5
+    assert "badge=table_label.status_label(channel.status, channel.tone, size='compact')" in drawer
+
+    evidence = drawer.split("side_drawer.section('Delivery Evidence'", 1)[1].split('{% endcall %}', 1)[0]
+    assert 'grid grid-cols-2 divide-x divide-outline-subtle' in evidence
+    assert 'rounded-lg border border-outline-subtle bg-surface-hover p-3' not in evidence
+    assert 'Last Test' in evidence and 'Last Delivery' in evidence
+    assert 'channel.last_tested_at|user_datetime' in evidence
+    assert 'channel.last_delivery_at|user_datetime' in evidence
+    assert 'Provider delivery does not prove human receipt.' in evidence
+    assert 'data-lucide="info"' in evidence
+
+    policy = drawer.split("side_drawer.section('Delivery Policy'", 1)[1].split('{% endcall %}', 1)[0]
+    assert "side_drawer.context_fact('Minimum Severity'" in policy
+    assert "side_drawer.context_fact('Routing Domains'" in policy
+    assert 'for group in channel.event_type_groups' in policy
+    assert 'for event_label in group.events' in policy
+    assert 'data-kaori-channel-event-groups' in policy
+    assert 'data-kaori-channel-event-group' in policy
+    assert '<details class="group"' in policy
+    assert '<summary class="flex cursor-pointer list-none' in policy
+    assert 'group-open:rotate-180' in policy
+    assert 'group.events|length' in policy
+    assert 'data-lucide="chevron-down"' in policy
+    assert 'Expand a group to inspect allowed events.' in policy
+    assert '<details open' not in policy
+    assert 'aria-label="{{ group.label }} allowed events"' in policy
+    assert 'border-l-2 border-brand-outline pl-3' not in policy
+    assert 'bg-surface-hover p-3' not in policy
+
+    lifecycle = drawer.split("side_drawer.section('Lifecycle & Governance'", 1)[1].split('{% endcall %}', 1)[0]
+    assert "side_drawer.metric('Committed Deliveries'" in lifecycle
+    assert "side_drawer.metric('Report References'" in lifecycle
+    assert "variant='plain'" in lifecycle
+    assert 'Retirement Record' in lifecycle
+    assert 'channel.retired_at|user_datetime' in lifecycle
+    assert 'channel.retired_by_user_id' in lifecycle
+    assert 'channel.retirement_reason' in lifecycle
+    assert "table_label.status_label('Archived'" not in lifecycle
+    assert 'data-kaori-channel-archived-boundary' in drawer
+    assert 'Archived channels are read-only; committed evidence remains available.' in drawer
+    assert 'mt-auto flex items-center gap-2 border-t' in drawer
+    assert 'channel.report_schedule_names' in lifecycle
+
+    assert "channel.lifecycle_state == 'active' and can_manage" in drawer
+    assert drawer.index("'Delivery Evidence'") < drawer.index("'Channel Actions'") < drawer.index("'Delivery Policy'")
+    assert 'name="csrf_token" value="{{ csrf_token() }}"' in drawer
+    assert 'data-destructive-modal-open' in drawer
+    assert 'data-dialog-target="notification-channel-retire-{{ channel.id }}"' in drawer
+    assert 'delegate_clicks=true' in drawer
+    assert 'x-data="kaoriSideDrawer"' in shared
+    assert 'credential_payload' not in drawer
+
+
+def test_channel_event_disclosures_preserve_nested_inspection_and_action_security() -> None:
+    drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
+    policy = drawer.split("side_drawer.section('Delivery Policy'", 1)[1].split('{% endcall %}', 1)[0]
+    active = drawer.split("{% if channel.lifecycle_state == 'active' and can_manage %}", 1)[1].split(
+        '{% endcall %}', 1
+    )[0]
+    Environment().parse(drawer)
+    assert 'data-kaori-channel-event-groups' in policy
+    assert policy.count('<details class="group"') == 1
+    assert policy.count('<summary class=') == 1
+    assert '<details open' not in policy
+    assert 'group.events|length' in policy
+    assert '{% for event_label in group.events %}' in policy
+    assert 'aria-label="{{ group.label }} allowed events"' in policy
+    assert 'No allowed events.' in policy
+    assert "channel.event_type_labels|length ~ ' Allowed Uses'" in drawer
+    assert 'data-destructive-modal-open' in drawer
+    assert 'data-kaori-dialog-open' in drawer
+    assert 'name="csrf_token" value="{{ csrf_token() }}"' in active
+    assert 'channel.retirement_reason' in drawer
+    assert 'data-kaori-channel-archived-boundary' in drawer
+
+
+def test_notification_snapshot_verifier_accepts_shared_recent_delivery_title_cell() -> None:
+    verifier = read('scripts/verify_notification_channels.py')
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    shared = read('app/templates/components/table_primitives.html')
+    assert "table_ui.title_cell(delivery.event_label, delivery.channel_name, 'bell-ring')" in page
+    assert "table_ui.title_cell(delivery.event_label, delivery.channel_name, 'bell-ring')" in verifier
+    assert "read('app/templates/components/table_primitives.html')" in verifier
+    assert 'title="{{ name }}"' in shared
+    assert 'title="{{ supporting_text }}"' in shared
+    assert 'title="{{ delivery.event_label }}"' not in verifier
+    assert 'title="{{ delivery.channel_name }}"' not in verifier
+    assert "'unified notification snapshot outside-card section intro'" in verifier

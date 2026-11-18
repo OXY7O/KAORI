@@ -237,3 +237,36 @@ def matches(rule: dict[str, Any], filters: dict[str, str]) -> bool:
     ]
     haystack = ' '.join([str(rule.get(field, '')) for field in searchable_fields] + [evidence_text, fix_steps_text])
     return query in haystack.lower()
+
+
+def _summary_counts(
+    filtered: list[dict[str, Any]],
+    *,
+    domain_metrics: list[dict[str, Any]],
+    total_items: int,
+    source_count: int,
+    active_filter_count: int,
+    page_mode: str,
+) -> dict[str, Any]:
+    """Summarize existing committed catalog/finding rows without new reads."""
+    result = {
+        'domain_metrics': domain_metrics,
+        'matching_items': total_items,
+        'source_items': source_count,
+        'active_filters': active_filter_count,
+        'kubernetes_items': sum(1 for item in filtered if item.get('domain') == 'kubernetes'),
+        'object_storage_items': sum(1 for item in filtered if item.get('domain') == 'object_storage'),
+        'registry_items': sum(1 for item in filtered if item.get('domain') == 'registry'),
+        'matched_domains': len({str(item.get('domain')) for item in filtered if item.get('domain')}),
+        'critical_items': sum(1 for item in filtered if item.get('severity') == 'critical'),
+        'warning_items': sum(1 for item in filtered if item.get('severity') == 'warning'),
+    }
+    if page_mode == 'catalog':
+        result.update(
+            {
+                'available_items': sum(1 for rule in filtered if rule.get('status') == 'available'),
+                'reserved_items': sum(1 for rule in filtered if rule.get('status') == 'reserved'),
+                'imported_items': sum(1 for rule in filtered if rule.get('status') == 'imported_signal'),
+            }
+        )
+    return result

@@ -19,6 +19,9 @@ from app.kubernetes.tenant.admin_workspace import (
     get_namespace_access_registry_context,
     get_tenant_summary_context,
 )
+from app.kubernetes.tenant.allocation_drift import build_allocation_drift_action_state
+from app.kubernetes.tenant.capsule_allocation_governance import get_capsule_shared_allocation_context
+from app.kubernetes.tenant.capsule_tenant_quota_governance import get_capsule_tenant_quota_context
 from app.kubernetes.tenant.discovery_service import get_tenant_discovery_context
 from app.kubernetes.tenant.registry_context import (
     get_tenant_namespace_profile_mapping_context,
@@ -104,6 +107,57 @@ def _operations_active_tab() -> str:
     }:
         return 'provisioning'
     return active_tab
+
+
+def _operations_active_view(active_tab: str) -> str:
+    """Use URL-owned registry subviews; retain legacy table-specific bookmarks."""
+    requested = str(request.args.get('ops_view') or '').strip()
+    if active_tab == 'allocation-drift':
+        if requested in {'tenant-quota', 'shared-allocation'}:
+            return requested
+        if any(
+            key in request.args
+            for key in (
+                'ops_capsule_shared_page',
+                'ops_capsule_shared_per_page',
+                'ops_capsule_shared_tenant_id',
+                'ops_capsule_shared_search',
+            )
+        ):
+            return 'shared-allocation'
+        return 'tenant-quota'
+    if active_tab == 'operational-reconcile':
+        if requested in {'namespace-drift', 'access-reconciliation', 'provider-authority'}:
+            return requested
+        for view, keys in (
+            (
+                'provider-authority',
+                (
+                    'ops_provider_page',
+                    'ops_provider_per_page',
+                    'ops_provider_search',
+                    'ops_provider_cluster_id',
+                    'ops_provider_environment',
+                    'ops_provider_lifecycle',
+                ),
+            ),
+            (
+                'access-reconciliation',
+                (
+                    'ops_access_page',
+                    'ops_access_per_page',
+                    'ops_access_search',
+                    'ops_access_tenant_id',
+                    'ops_access_status',
+                    'ops_access_reconciliation',
+                    'ops_access_scope',
+                ),
+            ),
+        ):
+            if any(key in request.args for key in keys):
+                return view
+        return 'namespace-drift'
+    return ''
 
 
 def _operations_provisioning_context() -> dict[str, Any]:
@@ -480,3 +534,73 @@ def _required_int(name: str) -> int:
 def _optional_int(name: str) -> int | None:
     value = str(request.form.get(name) or '').strip()
     return int(value) if value else None
+
+
+def _operations_drift_context() -> dict[str, Any]:
+    drift_context = get_namespace_registry_context(
+        page=request.args.get('ops_drift_page', 1, type=int) or 1,
+        per_page=request.args.get('ops_drift_per_page', 5, type=int) or 5,
+        search=str(request.args.get('ops_drift_search') or ''),
+        tenant_id=str(request.args.get('ops_drift_tenant_id') or ''),
+        environment=str(request.args.get('ops_drift_environment') or ''),
+        status='drifted',
+        include_workflow_support=False,
+    )
+    provider_context = get_tenant_registry_context(
+        page=request.args.get('ops_provider_page', 1, type=int) or 1,
+        per_page=request.args.get('ops_provider_per_page', 5, type=int) or 5,
+        search=str(request.args.get('ops_provider_search') or ''),
+        cluster_id=str(request.args.get('ops_provider_cluster_id') or ''),
+        environment=str(request.args.get('ops_provider_environment') or ''),
+        lifecycle_status=str(request.args.get('ops_provider_lifecycle') or ''),
+        include_decommission_preflight=False,
+    )
+    access_context = get_access_grant_registry_context(
+        page=request.args.get('ops_access_page', 1, type=int) or 1,
+        per_page=request.args.get('ops_access_per_page', 5, type=int) or 5,
+        tenant_id=str(request.args.get('ops_access_tenant_id') or ''),
+        status=str(request.args.get('ops_access_status') or ''),
+        reconciliation_status=str(request.args.get('ops_access_reconciliation') or ''),
+        scope_type=str(request.args.get('ops_access_scope') or ''),
+        search=str(request.args.get('ops_access_search') or ''),
+    )
+    context = get_capsule_shared_allocation_context(
+        drift_page=request.args.get('ops_capsule_shared_page', 1, type=int) or 1,
+        drift_per_page=request.args.get('ops_capsule_shared_per_page', 5, type=int) or 5,
+        drift_tenant_id=str(request.args.get('ops_capsule_shared_tenant_id') or ''),
+        drift_search=str(request.args.get('ops_capsule_shared_search') or ''),
+    )
+    context.update(
+        get_capsule_tenant_quota_context(
+            drift_page=request.args.get('ops_capsule_tenant_quota_page', 1, type=int) or 1,
+            drift_per_page=request.args.get('ops_capsule_tenant_quota_per_page', 5, type=int) or 5,
+            drift_tenant_id=str(request.args.get('ops_capsule_tenant_quota_tenant_id') or ''),
+            drift_search=str(request.args.get('ops_capsule_tenant_quota_search') or ''),
+        )
+    )
+    context.update(
+        {
+            'operations_drift_rows': drift_context['namespaces'],
+            'operations_allocation_drift_state': {
+                str(item.id): build_allocation_drift_action_state(item) for item in drift_context['namespaces']
+            },
+            'operations_drift_pagination': drift_context['namespace_pagination'],
+            'operations_drift_filters': drift_context['namespace_registry_filters'],
+            'operations_drift_tenant_options': drift_context['namespace_registry_tenant_options'],
+            'operations_drift_environment_options': drift_context['namespace_environment_filter_options'],
+            'operations_provider_rows': provider_context['tenant_rows'],
+            'operations_provider_pagination': provider_context['tenant_pagination'],
+            'operations_provider_filters': provider_context['tenant_registry_filters'],
+            'operations_provider_cluster_options': provider_context['tenant_cluster_options'],
+            'operations_provider_environment_options': provider_context['tenant_environment_filter_options'],
+            'operations_provider_lifecycle_options': provider_context['tenant_lifecycle_filter_options'],
+            'operations_access_rows': access_context['access_grant_rows'],
+            'operations_access_pagination': access_context['access_grant_pagination'],
+            'operations_access_filters': access_context['access_grant_filters'],
+            'operations_access_tenant_options': access_context['access_grant_tenant_options'],
+            'operations_access_status_options': access_context['access_grant_status_options'],
+            'operations_access_reconciliation_options': access_context['access_grant_reconciliation_options'],
+            'operations_access_scope_options': access_context['access_grant_scope_options'],
+        }
+    )
+    return context

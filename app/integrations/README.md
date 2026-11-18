@@ -7,6 +7,41 @@ core a small, stable API while provider implementation remains isolated.
 Route → Domain Service → Integration Registry → Adapter → External System
 ```
 
+## Capsule Cluster RBAC — canonical operational feedback (#4569)
+
+**Kubernetes Integration → Validation & Capabilities → Capsule Cluster RBAC Bootstrap**
+uses the canonical Operational Action Feedback contract for both **Check RBAC**
+and explicitly authorized **Bootstrap Missing Roles**. The prior Flask flash
+banner above the hero is not used. Each normal browser action sends scoped
+HTMX POST, preserves CSRF and role permissions, and refreshes only the committed
+Capsule RBAC section. The response includes the shared out-of-band
+`operational_toast.html` in `#operational-toast-stack`, with success, warning,
+and error feedback differentiated by the provider operation outcome.
+
+KAORI commits the role check/bootstrap evidence through the original Tenant
+Capsule `AuditEvent` authority and separately records normalized operational
+Activity Audit feedback. The toast is a presentation of the outcome, **not**
+a proof of access to a Capsule controller or namespaced RoleBinding. Ready
+means four canonical ClusterRoles have exact permission equivalence; Missing,
+Conflict and Failed do **not** imply readiness, and Check RBAC never mutates
+ClusterRoles. Bootstrap still requires `clusters.manage` and
+`integrations.manage`, CSRF, a fresh approved check, and explicit operator
+acknowledgement; the provider service continues to fail closed on conflicting
+or foreign role policies. A non-HTMX client falls back to a normal redirect
+to the Validation tab with a queued canonical toast instead of `flash()`.
+
+## Integrations Runtime Overview — evidence inspection and actions (#4526)
+
+The Runtime Overview uses the existing KAORI shared record-detail dialog to inspect committed observations. Below its four-item persisted metric strip, the overview detail now composes one bordered evidence context instead of five peer cards: a two-column runtime/capability gate, full-width diagnostic evidence, and a quieter paired Evidence Boundary / Recommended Action interpretation. Long capability profiles and diagnostic messages wrap naturally. Runtime health and Full Validation readiness remain separate persisted signals; healthy alone does not imply validation or human delivery.
+
+The five Runtime Overview KPI tiles are inset within the section with existing responsive padding and a single subtle rounded grid boundary. This leaves breathing room between the header, persisted health summary and filters instead of attaching the KPI strip directly to both adjacent sections. The shared metric-card rendering and five-column desktop/two-column tablet stacking remain unchanged.
+
+The permitted **Open Data Lifecycle** action is now beside **Reload Evidence** in the Runtime Overview header, including no-target views. It retains the exact `platform_operations.view_data_lifecycle` permission and existing `runtime_observation` domain-scoped Data Lifecycle URL. The redundant lifecycle footer beneath the canonical five-row pagination has been removed; the runtime modal host, HTMX scoped reload, filters, empty state and pagination still follow existing contracts. Platform Operations remains authoritative for retention/archive/cleanup. This is presentation only: no provider refresh, new state or data-model change.
+
+## Integrations Overview — portfolio guidance (#4516)
+
+The global **Integration Portfolio Snapshot** has one title-adjacent Violet `Guide` using the approved `info_tip.render(..., variant='guide')` behavior. Compact KPI helper copy keeps the four-column desktop row readable without CSS nowrap, ellipsis or font shrinking; smaller viewports may wrap naturally. The Guide preserves each SQL-backed count boundary: **Configured Targets** have a usable endpoint or canonical Kubernetes connection; **Ready for Use** additionally requires canonical enabled/active lifecycle and validated ready readiness; **Readiness Review** includes configured but disabled, degraded, blocked or awaiting-validation targets; **Not Configured** lacks usable connection settings and cannot enter validation until setup is complete. The external provider remains authoritative for native runtime state; KAORI presents committed registry, validation and correlation evidence. Review Jobs stays an independent permissioned action.
+
 ## Integration taxonomy
 
 Providers are registered under a stable domain and capability. Taxonomy is
@@ -285,6 +320,22 @@ Metrics Source and Alertmanager are source-owned mutation workspaces. Their bind
 
 A saved binding starts in `Validation Required`. Selector changes clear stale binding evidence and return the record to `Validation Required`; only the explicit binding `Validate` action rebuilds consumer-specific evidence. Provider Full Validation is intentionally provider-core only and never revalidates consumer bindings implicitly. Object Storage binding validation additionally persists canonical metric-family, label-schema, and executable-query readiness so Analytics can distinguish contract gaps from current runtime reachability. Kubernetes and Object Storage inventory/lifecycle pages show the relationship read-only and link operators back to the source workspace for mutation.
 
+
+### Channel Details progressive event inspection (#4505)
+
+The latest Active-channel Visual UAT supersedes the #4499 always-expanded event-list presentation: the Details drawer keeps the same status, independent test/delivery evidence, protected actions, severity/domains and lifecycle records, but displays each source-owned Allowed Event Capability group as a compact **native `details/summary` row**. The group name and committed event count remain immediately visible; activating a row with mouse, touch, Enter, or Space reveals every allowed event, and the same control closes it. Groups start collapsed to avoid a long event-list dominating the initial inspection screen. This is an interaction for revealing existing committed policy, **not** a change to eligibility, event ownership or routing. Reuse existing Violet semantic tokens and avoid any new JavaScript or inner scroll surfaces. The active/archived action and security contracts remain unchanged.
+
+## Notification Channels — Channel Details inspection hierarchy (#4499)
+
+The Details-only right drawer follows **Summary → Inspect → Act** using the existing `components/side_drawer.html` sections. Archived and active channels retain the same source-backed status/destination, independent last test and last delivery, routing severity/domains, grouped allowed event capabilities, delivery/report counts and governance. The operator-approved density refinement replaces nested outcome tiles with aligned two-column status/date facts, uses a low-emphasis information row to preserve the permanent provider-acknowledgement-versus-human-receipt boundary, presents grouped Allowed Event Capabilities as native, keyboard-accessible disclosure rows (collapsed by default, each showing source-owned category and count, with all event names on expansion), and shows retirement time, actor and reason under one `Retirement Record` without repeating the Archived status badge. A low-emphasis read-only boundary anchors the bottom of Archived drawers rather than filling empty space with decorative nested cards. Only domain presentation changed; the standard full-height side-drawer overlay, scroll/focus/Escape, semantic Violet tokens, and breakpoint wrapping remain authoritative.
+
+Authorized active channels still expose the **same unchanged Edit, Test Delivery, Retire, Locked-dependency/Hard Delete confirmation actions** between Delivery Evidence and Delivery Policy. Archived channels remain read-only. No credential exposure, provider call, delivered-status reinterpretation, RBAC/CSRF change or database mutation results from the redesign.
+
+## Notification Channels — title guidance and provider setup (#4492)
+
+Notification Channels distinguishes **contextual Guide labels** from **provider setup workflows**. The Channel Registry header has one title-adjacent Violet Guide explaining committed configuration, validation and provider ownership. Its right-hand actions show the committed posture plus the canonical primary **Add Channel** action; the redundant general Setup Guide button is no longer necessary. Each provider card retains its own **Guide** button opening the real provider-specific native setup dialog, with guided prerequisites and governed configuration steps. The Channel Inventory Guide remains independently scoped to validation and audit evidence.
+
+Delivery Evidence Boundary also has one title-level Guide via the shared operational-section `header_badge` slot. The permanent **Provider Accepted ≠ Recipient Read** warning and independent Activity Audit boundary remain visible outside the Guide: transport acknowledgement does not prove human receipt. These changes do not change provider integration, credentials, automatic eligibility, committed delivery records or recovery policy.
 
 ## Notification Channels — durable delivery recovery (#1431)
 

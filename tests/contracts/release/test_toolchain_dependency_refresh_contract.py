@@ -6,7 +6,8 @@ NODE_VERSION = '22.23.2'
 NPM_VERSION = '10.9.9'
 PYRIGHT_VERSION = '1.1.414'
 PYPDF_VERSION = '6.21.4'
-PARCEL_WATCHER_VERSION = '2.6.0'
+TAILWIND_VERSION = '4.3.4'
+POSTCSS_VERSION = '8.5.33'
 BROTLI_VERSION = '1.2.1'
 DNSPYTHON_VERSION = '2.9.2'
 URLLIB3_VERSION = '2.8.0'
@@ -102,20 +103,30 @@ def test_frontend_dependency_lock_remains_package_manager_owned() -> None:
     assert package['devDependencies'] == package_lock['packages']['']['devDependencies']
 
 
-def test_tailwind_watcher_security_override_is_exact_and_prunes_vulnerable_chain() -> None:
+def test_tailwind_postcss_build_prunes_vulnerable_watcher_dependency_chain() -> None:
     package = json.loads(read('package.json'))
     package_lock = json.loads(read('package-lock.json'))
     packages = package_lock['packages']
-    watcher = packages['node_modules/@parcel/watcher']
+    direct = package['devDependencies']
+    plugin = packages['node_modules/@tailwindcss/postcss']
 
-    assert package['devDependencies']['@tailwindcss/cli'] == '4.3.4'
-    assert package['devDependencies']['tailwindcss'] == '4.3.4'
-    assert package['overrides']['@parcel/watcher'] == PARCEL_WATCHER_VERSION
-    assert watcher['version'] == PARCEL_WATCHER_VERSION
-    assert watcher['dependencies']['picomatch'].startswith('^4.')
-    assert 'micromatch' not in watcher['dependencies']
-    assert 'node_modules/micromatch' not in packages
-    assert 'node_modules/braces' not in packages
+    assert direct['@tailwindcss/postcss'] == TAILWIND_VERSION
+    assert direct['tailwindcss'] == TAILWIND_VERSION
+    assert direct['postcss'] == POSTCSS_VERSION
+    assert plugin['version'] == TAILWIND_VERSION
+    assert plugin['dependencies']['tailwindcss'] == TAILWIND_VERSION
+    assert plugin['dependencies']['@tailwindcss/node'] == TAILWIND_VERSION
+    assert plugin['dependencies']['@tailwindcss/oxide'] == TAILWIND_VERSION
+    assert packages['node_modules/postcss']['version'] == POSTCSS_VERSION
+
+    # CVE-2026-112366: remove the dependency path, not the audit finding.
+    retired = {'@tailwindcss/cli', '@parcel/watcher', 'picomatch', 'micromatch', 'braces'}
+    assert retired.isdisjoint(direct)
+    assert '@parcel/watcher' not in package.get('overrides', {})
+    for path in packages:
+        name = path.rsplit('node_modules/', 1)[-1]
+        assert name not in retired
+        assert not name.startswith('@parcel/watcher-')
 
 
 def test_npm_12_major_upgrade_is_deliberately_deferred() -> None:

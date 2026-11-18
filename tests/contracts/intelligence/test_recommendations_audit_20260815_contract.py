@@ -26,10 +26,11 @@ def test_recommendation_summary_is_a_standalone_filter_aware_section_above_works
     info = read('app/templates/intelligence/partials/_recommendation_workspace_info.html')
     routes = read('app/intelligence/routes.py')
     service = read('app/intelligence/service.py')
+    projection = read('app/intelligence/rule_presentation.py')
 
     assert page.index('_recommendation_workspace_info.html') < page.index("'Recommendation Workspace'")
     assert 'Recommendation Summary' in info
-    for token in ('scan-search', 'ship-wheel', 'database-zap', 'triangle-alert'):
+    for token in ('scan-search', 'triangle-alert'):
         assert token in info
     assert 'intelligence_ui.posture_panel' in info
     assert 'intelligence_ui.posture_metric' in info
@@ -37,21 +38,22 @@ def test_recommendation_summary_is_a_standalone_filter_aware_section_above_works
     assert 'hx-swap-oob="outerHTML"' in info
     assert 'operational_callout.render' not in info
     assert 'Matching Findings' in info
-    assert 'Kubernetes' in info
-    assert 'Object Storage' in info
+    assert 'for domain_metric in domain_metrics' in info
+    assert 'recommendation_summary_domain_metrics(' in service
     assert 'Critical' in info
     assert 'Committed Evidence' in info
     assert 'recommendation_summary_oob|default(false)' in results
     assert results.index('_recommendation_workspace_info.html') < results.index('_recommendation_records.html')
     assert 'recommendation_summary_oob=True' in routes
     assert "'result_context':" in service
-    assert "'matching_items': total_items" in service
-    assert "'source_items': len(source_items)" in service
-    assert "'active_filters': active_filter_count" in service
-    assert "'kubernetes_items': sum(1 for item in filtered if item.get('domain') == 'kubernetes')" in service
-    assert "'object_storage_items': sum(1 for item in filtered if item.get('domain') == 'object_storage')" in service
-    assert "'critical_items': sum(1 for item in filtered if item.get('severity') == 'critical')" in service
-    assert "'warning_items': sum(1 for item in filtered if item.get('severity') == 'warning')" in service
+    assert "'matching_items': total_items" in projection
+    assert "'source_items': source_count" in projection
+    assert "'active_filters': active_filter_count" in projection
+    assert "'kubernetes_items': sum(1 for item in filtered if item.get('domain') == 'kubernetes')" in projection
+    assert "'object_storage_items': sum(1 for item in filtered if item.get('domain') == 'object_storage')" in projection
+    assert "'critical_items': sum(1 for item in filtered if item.get('severity') == 'critical')" in projection
+    assert "'warning_items': sum(1 for item in filtered if item.get('severity') == 'warning')" in projection
+    assert '_summary_counts(' in service
 
 
 def test_recommendations_remain_committed_evidence_read_side_and_governed_action_boundary() -> None:
@@ -99,6 +101,8 @@ def test_recommendation_filters_disable_browser_autofill_state_restoration() -> 
     assert 'autocomplete="off"' in filters
     assert filters.count('autocomplete="off"') >= 8
     results = read('app/templates/intelligence/partials/_recommendations_results.html')
-    assert 'clear_filters_action' in results
-    assert "target='#recommendations-workspace-content'" in results
-    assert 'lead=false' in results
+    actions = read('app/templates/intelligence/partials/_recommendation_workspace_header_actions.html')
+    assert '_recommendation_workspace_header_actions.html' in results
+    assert 'clear_filters_action' in actions
+    assert "target='#recommendations-workspace-content'" in actions
+    assert 'hx-swap-oob="outerHTML"' in actions

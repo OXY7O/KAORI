@@ -12,10 +12,11 @@ def test_alert_center_quick_action_routes_to_alert_intelligence() -> None:
     marker = '>Alert Center<'
     assert marker in navbar
 
-    action = navbar[navbar.index(marker) - 700 : navbar.index(marker) + 700]
+    start = navbar.index('<a href="{{ url_for(\'alert_intelligence.index\') }}"')
+    action = navbar[start : navbar.index('</a>', start)]
     assert "url_for('alert_intelligence.index')" in action
     assert "url_for('analytics.alerts')" not in action
-    assert 'Review active alert cases, ownership, suppression, and response state.' in action
+    assert 'Review alert cases and response state.' in action
 
 
 def test_notification_deck_change_event_bridge_keeps_three_tab_state() -> None:

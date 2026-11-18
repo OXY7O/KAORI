@@ -63,7 +63,8 @@ def inventory() -> ResponseReturnValue:
         ),
         can_manage_integrations=current_user.has_permission('integrations.manage'),
         can_execute_inventory=current_user.has_permission('secrets_pki.sync')
-        and current_user.has_permission('jobs.execute'),
+        and current_user.has_permission('jobs.execute')
+        and current_user.has_permission('jobs.view'),
         can_view_analytics=current_user.has_permission('analytics.view'),
     )
 

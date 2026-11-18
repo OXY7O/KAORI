@@ -10,6 +10,11 @@ from werkzeug.exceptions import NotFound
 
 from app.artifact_registry.security.contracts import SUCCESSFUL_REGISTRY_SCAN_STATUSES
 from app.artifact_registry.security.job_adapter import build_registry_security_sync_state
+from app.artifact_registry.security.posture_projection import (
+    _security_finding_empty_state,
+    _security_finding_interpretation,
+    _security_posture,
+)
 from app.artifact_registry.security.presentation_scope import (
     _evidence_state,
     _security_scope_labels,
@@ -627,118 +632,6 @@ def _security_supply_evidence_page(
     return rows, pagination
 
 
-def _security_finding_interpretation(evidence: dict[str, Any]) -> dict[str, str]:
-    snapshot = evidence['snapshot']
-    scanned_artifacts = evidence['scanned_artifacts']
-    artifact_total = evidence['artifact_total']
-    finding_total = evidence['finding_total']
-    if snapshot['status'] == 'No Artifacts':
-        return {
-            'title': 'No Artifacts to Scan',
-            'description': 'The selected Registry inventory has a committed empty snapshot.',
-            'tone': 'info',
-            'icon': 'package',
-        }
-    if snapshot['status'] == 'Not Collected':
-        return {
-            'title': 'Security Evidence Not Collected',
-            'description': 'Run Security Sync before interpreting an empty vulnerability result.',
-            'tone': 'unknown',
-            'icon': 'clock-alert',
-        }
-    if snapshot['status'] == 'Refresh Failed':
-        return {
-            'title': 'Previous Findings Retained',
-            'description': 'The latest refresh failed; committed findings still reflect the last successful Security Sync.',
-            'tone': 'warning',
-            'icon': 'shield-alert',
-        }
-    if scanned_artifacts == 0:
-        return {
-            'title': 'No Provider Scan Evidence',
-            'description': 'Security Sync found no usable vulnerability scan evidence. KAORI does not trigger provider scans.',
-            'tone': 'warning',
-            'icon': 'scan-search',
-        }
-    if scanned_artifacts < artifact_total:
-        return {
-            'title': 'Partial Scan Coverage',
-            'description': f'Findings cover {scanned_artifacts} of {artifact_total} artifacts with usable committed scan evidence.',
-            'tone': 'warning',
-            'icon': 'scan-search',
-        }
-    if finding_total == 0:
-        return {
-            'title': 'No Vulnerabilities Observed',
-            'description': 'No findings were observed in the current committed scan evidence for this scope.',
-            'tone': 'normal',
-            'icon': 'shield-check',
-        }
-    return {
-        'title': 'Committed Evidence',
-        'description': (
-            'Findings reflect the latest committed provider scan evidence for the selected Registry scope. '
-            'Critical and high severity are shown separately in the snapshot and finding rows.'
-        ),
-        'tone': 'info',
-        'icon': 'database',
-    }
-
-
-def _security_finding_empty_state(
-    evidence: dict[str, Any],
-    *,
-    filters_active: bool,
-) -> dict[str, str]:
-    if filters_active:
-        return {
-            'label': 'Filtered Security Evidence',
-            'title': 'No Findings Match This View',
-            'description': 'Adjust the active filters to review other committed vulnerability findings.',
-        }
-    if evidence['snapshot']['status'] == 'No Artifacts':
-        return {
-            'label': 'Committed Security',
-            'title': 'No Artifacts to Scan',
-            'description': 'The selected Registry has a committed empty inventory; no security findings are expected.',
-        }
-    if evidence['snapshot']['status'] == 'Not Collected':
-        return {
-            'label': 'Committed Security',
-            'title': 'Security Evidence Not Collected',
-            'description': 'Run Security Sync to collect provider security evidence for committed artifacts.',
-        }
-    if evidence['scanned_artifacts'] == 0:
-        return {
-            'label': 'Committed Security',
-            'title': 'No Vulnerability Scan Evidence',
-            'description': 'No usable provider scan evidence is committed for this scope. KAORI does not trigger scans.',
-        }
-    if evidence['finding_total'] == 0:
-        return {
-            'label': 'Committed Security',
-            'title': 'No Vulnerabilities Observed',
-            'description': 'No vulnerability findings were observed in the current committed scan evidence.',
-        }
-    return {
-        'label': 'Committed Security',
-        'title': 'No Findings Match This Page',
-        'description': 'No committed vulnerability finding is available on this page.',
-    }
-
-
-def _security_posture(evidence: dict[str, Any]) -> dict[str, str]:
-    if evidence['critical_total']:
-        return {'label': 'Critical Findings', 'tone': 'critical'}
-    if evidence['high_total']:
-        return {'label': 'Review Required', 'tone': 'warning'}
-    if evidence['artifact_total'] and evidence['scanned_artifacts'] < evidence['artifact_total']:
-        return {'label': 'Coverage Incomplete', 'tone': 'warning'}
-    if evidence['artifact_total']:
-        return {'label': 'No High-Risk Findings', 'tone': 'normal'}
-    return {'label': 'No Evidence', 'tone': 'unknown'}
-
-
 def build_security(
     *,
     kind: str = 'vulnerabilities',
@@ -890,4 +783,78 @@ def build_security(
         'rows': rows,
         'pagination': pagination,
         'active_pagination': active_pagination,
+    }
+
+
+def build_security_overview(*, source_id: int | None = None) -> dict[str, Any]:
+    """Read-only security landing derived from the existing committed evidence projection."""
+    registered_sources = _registered_sources()
+    sources = _providers()
+    if source_id is not None and not any(int(item.id) == source_id for item in sources):
+        raise NotFound('The selected committed Registry security source is unavailable.')
+    scoped_sources = _scoped_sources(sources, provider='', source_id=source_id)
+    evidence = _security_scope_evidence(
+        sources=sources,
+        scoped_sources=scoped_sources,
+        explicit_scope=source_id is not None,
+        view='vulnerabilities',
+    )
+    scope_label, source_label = _security_scope_labels(
+        provider_value='',
+        source_id=source_id,
+        scoped_sources=scoped_sources,
+    )
+    snapshot = _security_snapshot_context(
+        evidence,
+        active_scope_label=scope_label,
+        source_label=source_label,
+        view='vulnerabilities',
+    )
+    observed_scans = bool(evidence['current_scanned_artifacts'])
+    unknown = not observed_scans
+    return {
+        'title': 'Security Overview',
+        'source_id': source_id,
+        'setup_blocked': not registered_sources,
+        'inventory_required': bool(registered_sources) and not sources,
+        'snapshot': snapshot,
+        'posture': _security_posture(evidence),
+        'critical': int(evidence['critical_total']),
+        'high': int(evidence['high_total']),
+        'affected_artifacts': int(evidence['affected_artifacts']),
+        'runtime_exposed': int(evidence['runtime_exposed']),
+        'signature_observed': int(evidence['signature_observed']),
+        'sbom_available': int(evidence['sbom_available']),
+        'coverage_gaps': int(evidence['coverage_gaps']),
+        'source_count': len(scoped_sources),
+        'posture_metrics': [
+            (
+                'octagon-alert',
+                'Critical Findings',
+                int(evidence['critical_total']),
+                'Committed critical findings.',
+                'unknown' if unknown else 'critical' if evidence['critical_total'] else 'info',
+            ),
+            (
+                'triangle-alert',
+                'High Findings',
+                int(evidence['high_total']),
+                'Committed high-severity findings.',
+                'unknown' if unknown else 'warning' if evidence['high_total'] else 'info',
+            ),
+            (
+                'package-search',
+                'Affected Artifacts',
+                int(evidence['affected_artifacts']),
+                'Distinct high-risk artifact digests.',
+                'unknown' if unknown else 'warning' if evidence['affected_artifacts'] else 'info',
+            ),
+            (
+                'waypoints',
+                'Runtime Exposed',
+                int(evidence['runtime_exposed']),
+                'Correlated runtime bindings.',
+                'unknown' if unknown else 'critical' if evidence['runtime_exposed'] else 'info',
+            ),
+        ],
     }
