@@ -34,6 +34,7 @@ jobs:
       - name: Ruff lint and format
         run: |
           python -m ruff check app/config/default.py scripts/verify_celery_topology.py tests/contracts/platform_operations/test_ansible_localhost_worker_contract.py
+          python -m ruff format --diff app/config/default.py scripts/verify_celery_topology.py tests/contracts/platform_operations/test_ansible_localhost_worker_contract.py
           python -m ruff format --check app/config/default.py scripts/verify_celery_topology.py tests/contracts/platform_operations/test_ansible_localhost_worker_contract.py
       - name: Focused topology and pilot worker/dispatch regressions
         run: |
