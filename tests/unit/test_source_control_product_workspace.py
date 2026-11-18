@@ -417,7 +417,9 @@ def test_product_dashboard_reuses_operational_framework_and_keeps_scoped_invento
             assert 'Installation Repository Coverage' in blocked
             assert 'Installation Collection Register' in blocked
             assert 'GitHub OXY7O UAT' in blocked
-            assert '1 repository' in blocked
+            assert '0 repositories' in blocked
+            assert '1 repository' not in blocked
+            assert 'Inspect Installation' in blocked
             assert 'data-kaori-blocked-state' not in blocked
         else:
             assert 'data-kaori-blocked-state' in blocked, name
@@ -920,14 +922,21 @@ def test_source_control_overview_compact_text_table_and_scope_gate_contract():
     for name in ('capacity', 'signals', 'reporting'):
         partial = (root / 'partials' / f'_dashboard_{name}.html').read_text()
         assert '{% if not selected_scope %}' in partial
-        assert 'components/states/_blocked_state.html' in partial
-        assert 'Installation Required' in partial
-        assert 'Select Installation' in partial
         if name == 'capacity':
+            # #4901 supersedes the old Capacity blocker with a bounded, per-installation register.
+            assert 'source_control/partials/_dashboard_repository_installations.html' in partial
+            assert 'components/states/_blocked_state.html' not in partial
+            assert 'Installation Required' not in partial
+            assert 'Select Installation' not in partial
             assert 'source_control/partials/_dashboard_repository_portfolio.html' in partial
             assert 'source_control/partials/_dashboard_repository_composition.html' in partial
             assert 'source_control/partials/_dashboard_repository_attention.html' in partial
-        elif name == 'signals':
+        else:
+            # Signals and Reporting still need an explicitly selected installation.
+            assert 'components/states/_blocked_state.html' in partial
+            assert 'Installation Required' in partial
+            assert 'Select Installation' in partial
+        if name == 'signals':
             assert 'alert_summary.render(' in partial
             assert 'alert_response.render(' in partial
             assert 'recommendation_cards.render(' in partial
