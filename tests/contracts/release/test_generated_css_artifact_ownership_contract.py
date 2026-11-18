@@ -18,15 +18,37 @@ def test_compiled_css_is_gitignored_and_generated_from_canonical_source() -> Non
     dockerignore = _read('.dockerignore').splitlines()
     package = json.loads(_read('package.json'))
     verifier = _read('scripts/verify_css_build.mjs')
+    builder = _read('scripts/build_css.mjs')
 
     assert f'/{CSS_PATH}' in gitignore
     assert f'/{CSS_PATH}' in dockerignore
-    assert 'frontend/styles.css' in package['scripts']['build-css']
-    assert f'-o ./{CSS_PATH} --minify' in package['scripts']['build-css']
+    assert 'node scripts/build_css.mjs' in package['scripts']['build-css']
+    assert "resolve(root, 'frontend/styles.css')" in builder
+    assert f"resolve(root, '{CSS_PATH}')" in builder
+    assert 'tailwindcss({ base: root, optimize: { minify: true } })' in builder
+    assert 'processor.process(source' in builder
+    assert 'await rename(temporaryPath, outputPath)' in builder
     assert 'node ./scripts/verify_css_build.mjs' in package['scripts']['build-css']
     assert CSS_PATH in verifier
     assert '--kaori-brand-primary' in verifier
     assert '.bg-surface-card' in verifier
+
+
+def test_development_watcher_uses_the_same_builder_and_canonical_sources() -> None:
+    package = json.loads(_read('package.json'))
+    builder = _read('scripts/build_css.mjs')
+    bootstrap = _read('.devcontainer/ensure-frontend.sh')
+
+    assert package['scripts']['watch-css'] == 'node scripts/build_css.mjs --watch'
+    assert "import { watch } from 'node:fs'" in builder
+    assert "['frontend', 'app/templates', 'app/static/js']" in builder
+    assert 'watch(resolve(root, directory), { recursive: true }, schedule)' in builder
+    assert 'if (running) return' in builder
+    assert 'await build()' in builder
+    assert 'scripts/build_css.mjs' in bootstrap
+    assert 'node_modules/@tailwindcss/postcss/package.json' in bootstrap
+    assert 'node_modules/postcss/package.json' in bootstrap
+    assert 'node_modules/.bin/tailwindcss' not in bootstrap
 
 
 def test_runtime_zip_builds_and_checks_compiled_css_before_packaging() -> None:
@@ -67,6 +89,7 @@ def test_production_image_uses_an_independent_frontend_build() -> None:
     assert 'npm ci' in frontend
     assert 'npm run build-frontend' in frontend
     assert 'npm run verify-frontend' in frontend
+    assert 'scripts/build_css.mjs' in frontend
     assert 'COPY --from=frontend-build --chown=kaori:kaori' in production
     assert '/build/app/static/css/output.css' in production
     assert 'build-css' in package['scripts']
