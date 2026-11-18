@@ -1,0 +1,73 @@
+# Issue #4976 package-manager resolution evidence only; never a replacement admission gate.
+name: Frontend Lock Resolution Preflight
+
+on:
+  push:
+    branches:
+      - kaori/task-4976-npm-audit-preflight
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    name: Resolve and assess watcher-free frontend dependencies
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact preflight source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set Up Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v4.4.0
+        with:
+          node-version: "22.23.2"
+      - name: Establish exact npm toolchain and baseline
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --global npm@10.9.9 --no-audit --no-fund
+          test "$(npm --version)" = "10.9.9"
+          mkdir -p "$RUNNER_TEMP/kaori-4976"
+          git rev-parse HEAD > "$RUNNER_TEMP/kaori-4976/source-sha"
+          git grep -n -E '@tailwindcss/cli|@parcel/watcher|node_modules/\.bin/tailwindcss|tailwindcss -i|Tailwind CLI' -- .devcontainer .vscode docs scripts tests frontend Dockerfile package.json .github > "$RUNNER_TEMP/kaori-4976/source-references.txt"
+          npm ci --no-audit --no-fund
+          npm run build-css
+          cp app/static/css/output.css "$RUNNER_TEMP/kaori-4976/baseline.css"
+      - name: Resolve pinned PostCSS integration with npm
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm pkg delete 'devDependencies.@tailwindcss/cli' overrides
+          npm pkg set 'scripts.build-css=node scripts/build_css.mjs && node ./scripts/verify_css_build.mjs' 'scripts.watch-css=node scripts/build_css.mjs --watch'
+          npm install --save-dev --save-exact --package-lock-only --ignore-scripts --no-audit --no-fund @tailwindcss/postcss@4.3.4 postcss@8.5.33
+          cp package.json package-lock.json "$RUNNER_TEMP/kaori-4976/"
+          sha256sum package.json package-lock.json > "$RUNNER_TEMP/kaori-4976/package-sha256.txt"
+          npm ci --no-audit --no-fund
+      - name: Existing Node dependency audit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm audit --audit-level=high --json > "$RUNNER_TEMP/kaori-4976/npm-audit.json"
+      - name: Existing CSS and frontend checks
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm run build-frontend
+          npm run verify-frontend
+          cp app/static/css/output.css "$RUNNER_TEMP/kaori-4976/candidate.css"
+          sha256sum "$RUNNER_TEMP/kaori-4976/baseline.css" "$RUNNER_TEMP/kaori-4976/candidate.css" > "$RUNNER_TEMP/kaori-4976/css-sha256.txt"
+          if cmp -s "$RUNNER_TEMP/kaori-4976/baseline.css" "$RUNNER_TEMP/kaori-4976/candidate.css"; then
+            printf 'Compiled CSS byte parity: PASS\n' | tee "$RUNNER_TEMP/kaori-4976/css-parity.txt"
+          else
+            printf 'Compiled CSS bytes differ; visual and semantic review required.\n' | tee "$RUNNER_TEMP/kaori-4976/css-parity.txt"
+          fi
+      - name: Upload exact resolution and diagnostic evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: kaori-4976-npm-resolution-${{ github.sha }}
+          path: ${{ runner.temp }}/kaori-4976/
+          if-no-files-found: error
+          retention-days: 7
