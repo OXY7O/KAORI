@@ -76,9 +76,11 @@ def test_shared_operational_dashboard_framework_is_valid_jinja() -> None:
     assert 'macro navigation(prefix, aria_label, tabs=none)' in source
 
     # #4711 admits domain labels without changing canonical defaults or panel keys.
-    module = Environment(loader=FileSystemLoader(ROOT / 'app/templates'), autoescape=True).get_template(
-        'components/operational_dashboard_workspace.html'
-    ).module
+    module = (
+        Environment(loader=FileSystemLoader(ROOT / 'app/templates'), autoescape=True)
+        .get_template('components/operational_dashboard_workspace.html')
+        .module
+    )
     default_navigation = module.navigation('admission-dashboard', 'Operational Perspectives')
     assert default_navigation.count('role="tab"') == 4
     assert 'Capacity & Demand' in default_navigation
