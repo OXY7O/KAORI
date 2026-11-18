@@ -11,14 +11,14 @@ from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+from app.infrastructure_automation.kubernetes.committed_preflight import (
+    KubesprayPreflight,
+    committed_kubespray_preflight,
+)
 from app.infrastructure_automation.kubernetes.plan_review import (
     PLAN_OPERATION,
     PLAN_RESULT_TYPE,
     build_kubespray_plan_review,
-)
-from app.integrations.orchestration.configuration_automation.providers.ansible.preflight import (
-    KubesprayPreflight,
-    committed_kubespray_preflight,
 )
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution

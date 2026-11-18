@@ -9,6 +9,7 @@ from typing import Any
 from celery import shared_task
 
 from app.extensions.db import db
+from app.infrastructure_automation.kubernetes.committed_preflight import committed_kubespray_preflight
 from app.infrastructure_automation.kubernetes.plan_review import (
     PLAN_RESULT_TYPE,
     build_kubespray_plan_review,
@@ -21,9 +22,6 @@ from app.infrastructure_automation.source import (
     normalize_facts,
     verify_localhost_source,
     verify_read_only_runner_stats,
-)
-from app.integrations.orchestration.configuration_automation.providers.ansible.preflight import (
-    committed_kubespray_preflight,
 )
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
