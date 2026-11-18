@@ -174,7 +174,7 @@ def source_validation_posture(connection: IntegrationInstance) -> dict[str, Any]
     return {
         'source_state': source_state,
         'source_label': status_labels[source_state],
-        'source_tone': 'normal' if checked else ('critical' if blocked else 'unknown'),
+        'source_tone': 'normal' if checked else ('critical' if source_state == 'blocked' else 'unknown'),
         'source_description': description[source_state],
         'source_checked': checked,
         'checked_files': evidence.get('checked_files') if checked else 0,

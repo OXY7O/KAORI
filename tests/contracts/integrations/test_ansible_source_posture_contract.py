@@ -124,6 +124,7 @@ def test_valid_source_only_is_checked_but_all_operations_blocked():
     assert build_kubespray_preflight is committed_preflight.build_kubespray_preflight
     assert committed_preflight.build_kubespray_preflight(_connection()).gates[0].state == 'ready'
     assert result['source_label'] == 'Source Checked'
+    assert result['source_tone'] == 'normal'
     assert result['checked_files'] == 5
     assert result['runtime_authorized'] is False
     assert result['mutation_authorized'] is False
@@ -145,6 +146,7 @@ def test_valid_source_only_is_checked_but_all_operations_blocked():
 def test_failed_source_readback_is_blocked_not_checked(state):
     result = source_validation_posture(_connection(state=state))
     assert result['source_state'] == 'blocked'
+    assert result['source_tone'] == 'critical'
     assert result['checked_files'] == 0
     assert result['observed_at'] is None
     assert result['runtime_authorized'] is False
@@ -167,6 +169,7 @@ def test_missing_or_mismatched_metadata_never_claims_source_checked(changes, exp
     result = source_validation_posture(connection)
     assert committed_preflight.build_kubespray_preflight(connection).gates[0].state == 'blocked'
     assert result['source_state'] == expected
+    assert result['source_tone'] == ('critical' if expected == 'blocked' else 'unknown')
     assert not result['source_checked']
     assert result['runtime_authorized'] is False
 
