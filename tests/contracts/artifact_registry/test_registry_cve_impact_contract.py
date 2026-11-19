@@ -404,7 +404,7 @@ def test_cve_impact_canonical_filter_form_handles_required_identity_and_htmx() -
     app.add_url_rule(
         '/artifact-registry/security/cve/<string:cve_id>/impact',
         endpoint='artifact_registry.security_cve_impact',
-        view_func=lambda cve_id: cve_id,
+        view_func=lambda cve_id: 'ok',
     )
     with app.test_request_context('/artifact-registry/security/cve/CVE-2022-1586/impact'):
         rendered = render_template_string(
@@ -448,7 +448,7 @@ def test_cve_impact_footer_renders_required_path_identity_for_rows_and_pages() -
     app.add_url_rule(
         '/artifact-registry/security/cve/<string:cve_id>/impact',
         endpoint='artifact_registry.security_cve_impact',
-        view_func=lambda cve_id: cve_id,
+        view_func=lambda cve_id: 'ok',
     )
     page = pagination_payload(build_pagination_window(total_items=12, page=2, per_page=5))
     with app.test_request_context('/artifact-registry/security/cve/CVE-2022-1586/impact?finding_page=2&runtime_page=3'):
@@ -493,7 +493,7 @@ def test_cve_impact_runtime_footer_keeps_other_table_page() -> None:
     app.add_url_rule(
         '/artifact-registry/security/cve/<string:cve_id>/impact',
         endpoint='artifact_registry.security_cve_impact',
-        view_func=lambda cve_id: cve_id,
+        view_func=lambda cve_id: 'ok',
     )
     page = pagination_payload(build_pagination_window(total_items=12, page=3, per_page=5))
     with app.test_request_context('/artifact-registry/security/cve/CVE-2022-1586/impact?finding_page=2&runtime_page=3'):
