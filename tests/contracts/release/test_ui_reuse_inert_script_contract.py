@@ -28,7 +28,8 @@ def test_ui_reuse_still_counts_executable_inline_script() -> None:
     ],
 )
 def test_ui_reuse_parses_quoted_tag_closers_without_false_inline_debt(
-    source: str, expected: int
+    source: str,
+    expected: int,
 ) -> None:
     assert _metrics('app/templates/example.html', source)['inline_scripts'] == expected
 
@@ -38,8 +39,9 @@ def _app_shell_prepaint_source(body: str) -> str:
         '<head><script data-kaori-prepaint-bootstrap="app-shell">'
         + body
         + '</script>'
-        + "<link href=\"{{ url_for('static', filename='css/output.css') }}\" rel=\"stylesheet\">"
-        + '</head>'
+        + '<link href="{{ url_for('
+        + "'static', filename='css/output.css'"
+        + ') }}" rel="stylesheet"></head>'
     )
 
 
