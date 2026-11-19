@@ -182,10 +182,12 @@ def _storage_provider_label(backend: str, endpoint_url: str | None) -> str:
     host_label = hostname.partition('.')[0]
     if host_label == 'minio' or host_label.startswith('minio-') or port in {9000, 9001}:
         return 'MinIO'
-    if hostname in {'amazonaws.com', 'amazonaws.com.cn'} or hostname.endswith((
-        '.amazonaws.com',
-        '.amazonaws.com.cn',
-    )):
+    if hostname in {'amazonaws.com', 'amazonaws.com.cn'} or hostname.endswith(
+        (
+            '.amazonaws.com',
+            '.amazonaws.com.cn',
+        )
+    ):
         return 'Amazon S3'
     return 'S3-compatible'
 
