@@ -106,7 +106,9 @@ def test_global_sync_redirect_response_is_same_origin(
     assert response.headers['Location'] == expected_location
 
 
-@pytest.mark.parametrize(('flow', 'expected_status'), [('empty', 204), ('accepted', 202), ('blocked', 204), ('enqueue_error', 204)])
+@pytest.mark.parametrize(
+    ('flow', 'expected_status'), [('empty', 204), ('accepted', 202), ('blocked', 204), ('enqueue_error', 204)]
+)
 def test_global_sync_htmx_keeps_original_status_without_redirect(
     monkeypatch: pytest.MonkeyPatch, redirect_app: Flask, flow: str, expected_status: int
 ) -> None:
