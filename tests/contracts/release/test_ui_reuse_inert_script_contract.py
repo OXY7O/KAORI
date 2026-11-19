@@ -55,7 +55,7 @@ def test_ui_reuse_preserves_exact_app_shell_prepaint_exemption() -> None:
 
 def test_ui_reuse_counts_tampered_or_duplicate_app_shell_prepaint() -> None:
     body = str(_APPROVED_PREPAINT_BOOTSTRAPS['app/templates/layouts/app.html']['body'])
-    modified = _app_shell_prepaint_source(body.replace("const theme =", "const compromisedTheme ="))
+    modified = _app_shell_prepaint_source(body.replace('const theme =', 'const compromisedTheme ='))
     duplicate = _app_shell_prepaint_source(body).replace(
         '</head>',
         '<script data-kaori-prepaint-bootstrap="app-shell">' + body + '</script></head>',
