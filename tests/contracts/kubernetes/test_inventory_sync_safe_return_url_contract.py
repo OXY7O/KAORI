@@ -50,9 +50,18 @@ def redirect_app() -> Flask:
     app.add_url_rule(
         '/integrations/kubernetes/<int:cluster_id>',
         endpoint='integrations.kubernetes_detail',
-        view_func=lambda cluster_id: str(cluster_id),
+        view_func=lambda cluster_id: 'ok',
     )
     return app
+
+
+@pytest.mark.parametrize('cluster_id', (1, 19))
+def test_synthetic_cluster_detail_route_does_not_reflect_route_input(
+    redirect_app: Flask, cluster_id: int
+) -> None:
+    response = redirect_app.test_client().get(f'/integrations/kubernetes/{cluster_id}')
+    assert response.status_code == 200
+    assert response.get_data(as_text=True) == 'ok'
 
 
 @pytest.mark.parametrize('flow', ('empty', 'accepted', 'blocked', 'enqueue_error'))
