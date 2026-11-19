@@ -117,6 +117,7 @@ def test_redactor_detects_private_key_markers_without_backtracking() -> None:
         assert redact_operational_text(marker + ' synthetic-hidden-private') == '[REDACTED]'
     assert redact_operational_text('PRIVATE KEY----- no PEM header') == 'PRIVATE KEY----- no PEM header'
 
+
 def test_redactor_handles_url_userinfo_delimiters_without_regex_ambiguity() -> None:
     assert (
         redact_operational_text('endpoint=https://operator:synthetic-hidden:second@storage.example.invalid/data')
