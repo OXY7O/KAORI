@@ -11,7 +11,6 @@ from app.common.sensitive_uploads import (
 
 DNS_LABEL_PATTERN = re.compile(r'^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$')
 SECRET_DATA_KEY_PATTERN = re.compile(r'^[-._a-zA-Z0-9]+$')
-EMAIL_PATTERN = re.compile(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
 MAX_KUBERNETES_SECRET_BYTES = 1024 * 1024
 
 
@@ -64,7 +63,21 @@ def read_optional_upload(upload: Any, label: str) -> str | None:
 
 
 def validate_optional_email(email: str) -> None:
-    if email and not EMAIL_PATTERN.fullmatch(email):
+    if not email:
+        return
+    # Partitioning is bounded and avoids overlapping-domain-regex
+    # backtracking on long or malformed user-provided addresses.
+    local, separator, host = email.partition('@')
+    domain, dot, suffix = host.rpartition('.')
+    if (
+        not local
+        or not separator
+        or '@' in host
+        or not dot
+        or not domain
+        or not suffix
+        or any(character.isspace() for character in email)
+    ):
         raise ValueError('Registry email address is invalid.')
 
 

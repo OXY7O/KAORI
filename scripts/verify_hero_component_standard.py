@@ -1137,6 +1137,10 @@ def _verify_registry_blocked_hero_actions() -> None:
             'security.setup_blocked or security.inventory_required',
             2,
         ),
+        'artifact_registry/partials/_security_overview.html': (
+            'security.setup_blocked or security.inventory_required',
+            1,
+        ),
         'artifact_registry/partials/_runtime_workspace.html': ('runtime.setup.is_blocked', 1),
         'artifact_registry/partials/_governance_workspace.html': ('governance.setup.is_blocked', 1),
         'artifact_registry/analytics.html': ('analytics.setup.is_blocked', 1),
@@ -1176,15 +1180,31 @@ def _verify_registry_blocked_hero_actions() -> None:
 
 
 def _verify_secrets_pki_missing_vault_source_prerequisites() -> None:
-    """Guard canonical blocked Hero and section grammar when Vault is absent."""
-    for name, section, expected_title in (
-        ('inventory', 'Committed Inventory Coverage', 'Vault Inventory Source Required'),
-        ('lifecycle', 'Version Lifecycle', 'Vault Lifecycle Source Required'),
+    """Enforce fail-closed Vault prerequisites using the current qualified-evidence gates."""
+    for name, section, guard, authority, expected_title in (
+        (
+            'inventory',
+            'Committed Inventory Coverage',
+            'inventory_unqualified',
+            'not summary.has_evidence',
+            'Vault Source Required',
+        ),
+        (
+            'lifecycle',
+            'Version Lifecycle',
+            'lifecycle_unqualified',
+            "not lifecycle_kv2_qualified and pki_validity.status != 'ready'",
+            'Vault Lifecycle Source Required',
+        ),
     ):
         source = _read(TEMPLATES / f'secrets_pki/{name}.html')
         owner = f'Secrets & PKI {name} missing-source readiness'
-        if source.count('summary.provider_count == 0') != 2:
-            raise AssertionError(f'{owner}: both Hero and body require no-source branching')
+        if f'{{% set {guard} = {authority} %}}' not in source:
+            raise AssertionError(f'{owner}: qualified evidence must own blocked state')
+        if source.count(f'{{% if {guard} %}}') != 2:
+            raise AssertionError(f'{owner}: both Hero and body require the same blocked gate')
+        if 'not summary.provider_count' not in source or expected_title not in source:
+            raise AssertionError(f'{owner}: missing-source prerequisite or operator title')
         hero, body = source.split('</section>', 1)
         if 'page_hero.blocked_context_body(' not in hero:
             raise AssertionError(f'{owner}: blocked Hero must reuse canonical renderer')
@@ -1194,7 +1214,7 @@ def _verify_secrets_pki_missing_vault_source_prerequisites() -> None:
             raise AssertionError(f'{owner}: missing explicit blocked Hero state')
 
         branch = re.search(
-            r'{%\s*if summary\.provider_count == 0\s*%}(?P<blocked>.*?){%\s*else\s*%}',
+            r'{%\s*if ' + re.escape(guard) + r'\s*%}(?P<blocked>.*?){%\s*else\s*%}',
             body,
             re.S,
         )
@@ -1207,14 +1227,16 @@ def _verify_secrets_pki_missing_vault_source_prerequisites() -> None:
             raise AssertionError(f'{owner}: do not expose false-zero metrics or empty panels')
         for required in (
             'blocked_state_steps',
-            'Register an active Vault source',
-            'blocked_state_permission_granted = can_manage_integrations',
-            'blocked_state_show_admin_required = not can_manage_integrations',
-            "blocked_state_action_url = url_for('vault.index') if can_manage_integrations else none",
-            expected_title,
+            'blocked_state_title',
+            'blocked_state_action_url',
+            'blocked_state_action_label',
+            'blocked_state_permission_granted',
+            'blocked_state_show_admin_required = not blocked_state_permission_granted',
         ):
             if required not in blocked:
                 raise AssertionError(f'{owner}: missing prerequisite or authorization: {required}')
+        if "url_for('vault.index') if can_manage_integrations" not in source:
+            raise AssertionError(f'{owner}: missing RBAC-scoped Vault configuration action')
         if source.index(section) < source.index('{% else %}', source.index('</section>')):
             raise AssertionError(f'{owner}: operational evidence cannot precede the no-source blocker')
         if not source.rstrip().endswith('{% endif %}\n    </div>\n{% endblock dashboard_content %}'):
@@ -1229,16 +1251,18 @@ def _verify_secrets_pki_missing_vault_source_prerequisites() -> None:
 
 
 def _verify_secrets_pki_overview_blocked_dashboard() -> None:
-    """Reject noncanonical prerequisites and verbose blocked Hero summary."""
+    """Retain five concise evidence-specific blockers and shared, permissioned UI."""
     overview = _read(TEMPLATES / 'secrets_pki/overview.html')
     owner = 'Secrets & PKI Overview blocked Dashboard'
     if 'page_hero.operational_dashboard(' not in overview:
         raise AssertionError(f'{owner}: canonical shared Dashboard Hero is required')
-    hero_copy = re.search(r"blocked_info='([^']+)'", overview)
-    if not hero_copy or len(hero_copy.group(1)) > 52 or '\n' in hero_copy.group(1):
+    if 'blocked_info=inventory_blocker_info' not in overview:
+        raise AssertionError(f'{owner}: blocked Dashboard must consume current evidence-specific guidance')
+    copies = re.findall(r'{%\s*set inventory_blocker_info = "([^"]+)"\s*%}', overview)
+    if len(copies) != 5 or any(len(copy) > 52 or '\n' in copy for copy in copies):
         raise AssertionError(f'{owner}: compact Hero info exceeds one-line copy budget')
-    if 'Vault' not in hero_copy.group(1) or 'KV v2' not in hero_copy.group(1):
-        raise AssertionError(f'{owner}: compact Hero must retain Vault/KV v2 prerequisite')
+    if any('Vault' not in copy and 'KV v2' not in copy for copy in copies):
+        raise AssertionError(f'{owner}: each compact Hero copy must retain Vault/KV v2 qualification')
     branch = re.search(
         r'{%\s*if not summary\.has_evidence\s*%}(?P<body>.*?){%\s*else\s*%}',
         overview,
@@ -1251,17 +1275,23 @@ def _verify_secrets_pki_overview_blocked_dashboard() -> None:
         raise AssertionError(f'{owner}: prerequisite must use canonical _blocked_state.html')
     if '_empty_state.html' in blocked or 'empty_state_variant' in blocked:
         raise AssertionError(f'{owner}: missing prerequisite cannot use dashed empty-state panel')
-    for contract in (
+    for required in (
         'blocked_state_steps',
-        'Approve KV v2 metadata mounts',
-        'Run the Inventory Job',
-        'Missing evidence does not prove zero Secrets',
-        'blocked_state_permission_granted = can_manage_integrations',
-        'blocked_state_show_admin_required = not can_manage_integrations',
-        "blocked_state_action_url = url_for('vault.index') if can_manage_integrations else none",
+        'blocked_state_title',
+        'blocked_state_action_url = inventory_blocker_action_url',
+        'blocked_state_permission_granted = inventory_blocker_action_url is not none',
+        'blocked_state_show_admin_required = not blocked_state_permission_granted',
     ):
-        if contract not in blocked:
-            raise AssertionError(f'{owner}: missing setup/evidence/permission contract: {contract}')
+        if required not in blocked:
+            raise AssertionError(f'{owner}: missing setup/evidence/permission contract: {required}')
+    for required in (
+        'Approve KV v2 metadata mounts',
+        'Run secrets_pki.inventory.sync and verify its committed evidence',
+        'missing evidence is not zero Secrets.',
+        "url_for('vault.index') if can_manage_integrations else none",
+    ):
+        if required not in overview:
+            raise AssertionError(f'{owner}: missing setup/evidence/permission contract: {required}')
 
 
 def _verify_secrets_pki_lifecycle_compact_hero() -> None:
@@ -1429,7 +1459,6 @@ def verify() -> None:
         TEMPLATES / 'kubernetes/dashboard/partials/_hero.html',
         TEMPLATES / 'storage/object_storage/dashboard/partials/_hero.html',
         TEMPLATES / 'artifact_registry/partials/_overview_hero.html',
-        TEMPLATES / 'security_posture/overview.html',
         TEMPLATES / 'secrets_pki/overview.html',
         TEMPLATES / 'source_control/overview.html',
     }
@@ -1439,9 +1468,33 @@ def verify() -> None:
             'Required Operational Dashboard Hero consumer missing: '
             + ', '.join(str(path.relative_to(ROOT)) for path in missing_consumers)
         )
-    if len(profile_templates) < 7:
+    # #4711 approved Security Posture as a bounded Assurance/Governance Hero exception.
+    # Preserve the documented scanner-freshness and evidence-authority presentation;
+    # do not force the generic Operations Dashboard context onto this page.
+    assurance_hero = _read(TEMPLATES / 'security_posture/overview.html')
+    _require_tokens(
+        assurance_hero,
+        (
+            'page_hero.shell_classes()',
+            'page_hero.layout_classes()',
+            "page_hero.intro('layout-dashboard', 'Security Posture', 'shield-alert')",
+            'page_hero.context_card(',
+            'page_hero.blocked_context_body(',
+            "'Provider Authority'",
+            "'Evidence Boundary'",
+            'posture.scan_status.label',
+            'posture.scan_status.tone',
+        ),
+        'Security Posture approved Governance Hero exception',
+    )
+    if 'page_hero.operational_dashboard(' in assurance_hero:
+        raise AssertionError('Security Posture must preserve the approved Governance-style Hero exception')
+
+    # The documented #4711 Assurance Hero exception is checked separately above.
+    # Preserve all six canonical Operational Dashboard profile consumers.
+    if len(profile_templates) < 6:
         raise AssertionError(
-            f'Operational Dashboard profile consumer inventory regressed below seven; found {len(profile_templates)}'
+            f'Operational Dashboard profile consumer inventory regressed below six; found {len(profile_templates)}'
         )
 
     identity_pairs = _verify_non_redundant_hero_identity()

@@ -1,0 +1,20 @@
+{% import "components/reporting_dashboard_workspace.html" as reporting_workspace %}
+{# Facts are drawn only from the selected installation's committed KAORI scope. #}
+{% set reporting_evidence = {
+    'available': has_collection,
+    'metrics': [
+        ('Retained Inventory', 1 if has_collection else 'Unknown', 'database-zap'),
+        ('Account Observed', 1 if account_observed else 'Unknown', 'users'),
+        ('Repositories Observed', selected_item.observed_count if has_collection and selected_item.observed_count is not none else 'Unknown', 'folder-git-2')
+    ],
+    'activity': {
+        'title': 'Retained Installation Inventory',
+        'generated_at': scope.latest_committed_at|user_datetime if scope.latest_committed_at else 'Timestamp Not Observed',
+        'status': 'Retained'
+    } if has_collection else none,
+    'empty_title': 'No Retained Inventory Activity',
+    'empty_description': 'This installation has no committed inventory generation. Missing evidence is not a verified zero.',
+    'action_href': url_for('source_control.repositories', installation_id=selected_installation_id),
+    'tip': 'Inventory snapshots and account observations are evidence, not generated engineering reports. PR, CI, DORA, report templates, schedules and deployment lineage require independently qualified sources.'
+} %}
+{{ reporting_workspace.summary(none, 'Source Control', 'Installation', evidence=reporting_evidence) }}

@@ -1,0 +1,249 @@
+# Issue-scoped pre-admission QA for #4799.
+# This is NOT the official Developer Check or Full Admission.
+name: Ansible Worker Pilot Preflight
+
+on:
+  push:
+    branches:
+      - kaori/issue-4799-ansible-localhost-worker-pilot
+
+permissions:
+  contents: read
+
+jobs:
+  focused-checks:
+    name: Ruff, Pyright and focused worker contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - name: Install KAORI development dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements/dev.txt
+      - name: Ruff lint
+        run: |
+          python -m ruff check \
+            app/infrastructure_automation \
+            app/commands/__init__.py \
+            app/config/default.py \
+            tests/contracts/platform_operations/test_ansible_localhost_worker_contract.py
+      - name: Ruff format
+        run: |
+          python -m ruff format --check \
+            app/infrastructure_automation \
+            app/commands/__init__.py \
+            app/config/default.py \
+            tests/contracts/platform_operations/test_ansible_localhost_worker_contract.py
+      - name: Pyright focused typing
+        run: python -m pyright app/infrastructure_automation
+      - name: Focused contract tests
+        run: |
+          python -m pytest -q -p no:cacheprovider \
+            tests/contracts/platform_operations/test_ansible_localhost_worker_contract.py
+      - name: Validate Celery and Flask CLI registration
+        run: |
+          python - <<'PY'
+          from app import create_app
+          app = create_app('testing')
+          celery = app.extensions['celery']
+          celery.loader.import_default_modules()
+          assert 'app.infrastructure_automation.tasks.collect_localhost_facts' in celery.tasks
+          assert 'automation-localhost-probe' in app.cli.commands
+          print('Pre-admission registration PASS')
+          PY
+
+  localhost-celery-integration:
+    name: Real Celery and PostgreSQL localhost smoke
+    needs: focused-checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: kaori_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d kaori_test"
+          --health-interval 5s --health-timeout 3s --health-retries 12
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 12
+    env:
+      APP_ENV: testing
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/kaori_test
+      CELERY_BROKER_URL: redis://localhost:6379/1
+      CELERY_RESULT_BACKEND: redis://localhost:6379/3
+      KAORI_AUTOMATION_LOCALHOST_PILOT_ENABLED: "true"
+    steps:
+      - name: Checkout exact KAORI candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Checkout immutable public automation source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: OXY7O/kaori-operations
+          ref: a182ddd04b353497021b3a089d3289128e999f78
+          path: kaori-operations
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - name: Install KAORI and Ansible pilot toolchains
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements/dev.txt
+          python -m pip install --disable-pip-version-check -r requirements/automation-worker.txt
+      - name: Prepare ephemeral JobExecution schema
+        run: |
+          python - <<'PY'
+          from app import create_app
+          from app.extensions.db import db
+          import app.models
+          app = create_app('testing')
+          with app.app_context():
+              db.create_all()
+              print('Ephemeral PostgreSQL canonical JobExecution schema ready')
+          PY
+      - name: Start dedicated automation queue worker and verify registration
+        run: |
+          set -eu
+          celery --app celery_worker:celery_app worker \
+            --queues=automation \
+            --pool=solo \
+            --concurrency=1 \
+            --loglevel=WARNING \
+            --hostname=automation@localtest \
+            > /tmp/kaori-automation-worker.log 2>&1 &
+          echo "$!" > /tmp/kaori-automation-worker.pid
+          python - <<'PY'
+          from time import monotonic, sleep
+          from celery_worker import celery_app
+          task_name = 'app.infrastructure_automation.tasks.collect_localhost_facts'
+          deadline = monotonic() + 45
+          while monotonic() < deadline:
+              active = celery_app.control.inspect(timeout=1).active_queues() or {}
+              registered = celery_app.control.inspect(timeout=1).registered() or {}
+              consumers = {
+                  worker for worker, queues in active.items()
+                  if any(q.get('name') == 'automation' for q in queues)
+              }
+              if any(task_name in registered.get(worker, ()) for worker in consumers):
+                  print('Dedicated automation queue worker and registered task verified')
+                  break
+              sleep(1)
+          else:
+              raise SystemExit('Dedicated worker readiness or task registry unverified')
+          PY
+      - name: Dispatch canonical JobExecution through KAORI CLI
+        run: |
+          flask --app run:app automation-localhost-probe \
+            --source-path "$GITHUB_WORKSPACE/kaori-operations" \
+            --source-sha a182ddd04b353497021b3a089d3289128e999f78
+      - name: Verify durable job and actual Ansible readback
+        run: |
+          python - <<'PY'
+          from time import monotonic, sleep
+          from app import create_app
+          from app.extensions.db import db
+          from app.models.job import JobExecution
+          app = create_app('testing')
+          deadline = monotonic() + 120
+          with app.app_context():
+              while monotonic() < deadline:
+                  db.session.expire_all()
+                  job = (
+                      JobExecution.query
+                      .filter_by(operation='automation_localhost_host_facts')
+                      .order_by(JobExecution.id.desc())
+                      .first()
+                  )
+                  if job and job.is_terminal:
+                      assert job.status == 'succeeded', f'Unexpected canonical status: {job.status}'
+                      evidence = job.result_summary_json or {}
+                      assert evidence.get('source_sha') == 'a182ddd04b353497021b3a089d3289128e999f78'
+                      assert evidence.get('operation_id') == 'linux.host_facts.v1'
+                      assert evidence.get('changed') is False
+                      assert evidence.get('environment_attestation') == 'NOT VERIFIED'
+                      assert evidence.get('facts', {}).get('ansible_kernel')
+                      assert evidence.get('facts', {}).get('ansible_distribution')
+                      assert job.queue_name == 'automation'
+                      assert job.celery_task_id
+                      print('KAORI REAL INTEGRATION PASS: canonical JobExecution succeeded,')
+                      print('Celery automation queue, pinned Git source, read-only Runner facts,')
+                      print('PostgreSQL committed bounded evidence and changed=false.')
+                      break
+                  sleep(1)
+              else:
+                  raise SystemExit('Canonical JobExecution did not reach a terminal state')
+          PY
+      - name: Reject disabled and unapproved source without creating a job
+        run: |
+          set -eu
+          if KAORI_AUTOMATION_LOCALHOST_PILOT_ENABLED=false \
+            flask --app run:app automation-localhost-probe \
+            --source-path "$GITHUB_WORKSPACE/kaori-operations" \
+            --source-sha a182ddd04b353497021b3a089d3289128e999f78 \
+            >/tmp/disabled-probe.out 2>&1; then
+            echo 'Blocked: disabled pilot unexpectedly enqueued a job' >&2
+            exit 1
+          fi
+          if flask --app run:app automation-localhost-probe \
+            --source-path "$GITHUB_WORKSPACE/kaori-operations" \
+            --source-sha 0000000000000000000000000000000000000000 \
+            >/tmp/invalid-source-probe.out 2>&1; then
+            echo 'Blocked: invalid Git SHA unexpectedly enqueued a job' >&2
+            exit 1
+          fi
+          python - <<'PY'
+          from app import create_app
+          from app.models.job import JobExecution
+          app = create_app('testing')
+          with app.app_context():
+              count = JobExecution.query.filter_by(operation='automation_localhost_host_facts').count()
+              assert count == 1, f'Unauthorized dispatch created additional jobs: {count}'
+          print('Negative dispatch guards PASS: no extra PostgreSQL JobExecution')
+          PY
+      - name: Show sanitized diagnostic on failure
+        if: failure()
+        run: |
+          echo 'Worker test did not complete; showing bounded error categories only.'
+          tail -n 30 /tmp/kaori-automation-worker.log 2>/dev/null \
+            | sed -E 's/(password|token|secret|key)=([^ ]+)/\1=REDACTED/gi' || true
+
+  automation-worker-image:
+    name: Build isolated non-production worker image
+    needs: focused-checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build pinned automation worker Docker target
+        run: docker build --target automation-worker --tag kaori-automation-worker:preflight .
+      - name: Check Ansible, Celery and non-root image identity
+        run: |
+          docker run --rm --entrypoint python kaori-automation-worker:preflight -c "
+          import os
+          import ansible_runner
+          import ansible
+          from app import create_app
+          assert os.geteuid() != 0, 'Automation worker must not run as root'
+          print('Pinned image dependencies and non-root identity PASS')
+          "

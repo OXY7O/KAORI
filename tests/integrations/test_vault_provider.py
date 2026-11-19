@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from types import SimpleNamespace
 
 import pytest
 import requests
 from flask import Flask
 
-from app.integrations.secrets_management.secrets_pki.providers.vault.application.forms import VaultConnectionInput
+from app.integrations.secrets_management.secrets_pki.providers.vault.application.forms import (
+    VaultConnectionForm,
+    VaultConnectionInput,
+)
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.registration import (
     issue_proof,
     verified_secret,
@@ -58,6 +62,178 @@ def test_mount_cannot_be_arbitrary_path():
     for value in ('', 'approle/another', '../approle', 'approle?x=1'):
         with pytest.raises(ValueError):
             validate_auth_mount(value)
+
+
+@pytest.mark.parametrize(
+    ('action', 'secret', 'proof', 'is_valid'),
+    [
+        ('test', '', '', False),
+        ('test', '', 'stale-proof', False),
+        ('test', 'fresh-test-secret', '', True),
+        ('save', '', '', False),
+        ('save', '', 'signed-proof', True),
+    ],
+)
+def test_vault_registration_requires_secret_id_for_test_but_allows_signed_save(
+    monkeypatch: pytest.MonkeyPatch,
+    action: str,
+    secret: str,
+    proof: str,
+    is_valid: bool,
+) -> None:
+    monkeypatch.setenv('INTEGRATION_VAULT_ALLOWED_ORIGINS', 'https://vault.example.internal:8200')
+    app = Flask(__name__)
+    app.config.update(SECRET_KEY='test-only', WTF_CSRF_ENABLED=False)
+    data = {
+        'name': 'Vault Lab',
+        'environment': 'development',
+        'endpoint': 'https://vault.example.internal:8200',
+        'auth_mount_mode': 'approle',
+        'auth_mount': 'approle',
+        'role_id': 'test-role',
+        'secret_id': secret,
+        'connection_test_proof': proof,
+        'timeout': '5',
+        'action': action,
+    }
+    with app.test_request_context('/', method='POST', data=data):
+        form = VaultConnectionForm()
+        assert form.validate() is is_valid, form.errors
+        if not is_valid:
+            assert 'secret_id' in form.errors
+            assert 'AppRole SecretID is required for Test Connection.' in form.errors['secret_id']
+
+
+def test_vault_connection_placeholders_render_without_prefilling_credentials() -> None:
+    app = Flask(__name__)
+    app.config.update(SECRET_KEY='test-only', WTF_CSRF_ENABLED=False)
+    with app.test_request_context('/'):
+        form = VaultConnectionForm()
+        expected = (
+            (form.name, 'e.g. Vault X300'),
+            (form.description, 'Describe the connection purpose (optional)'),
+            (form.endpoint, 'https://vault.example.internal:8200'),
+            (form.namespace, 'e.g. team-platform (Enterprise only)'),
+            (form.role_id, 'Paste AppRole RoleID'),
+            (form.secret_id, 'Enter AppRole SecretID'),
+        )
+        for field, placeholder in expected:
+            assert field.render_kw is not None
+            assert field.render_kw['placeholder'] == placeholder
+        assert form.namespace.label.text == 'Vault Namespace'
+        assert form.kv2_mounts.label.text == 'Approved KV v2 Mounts'
+        assert form.pki_mounts.label.text == 'Approved PKI Mounts'
+        assert form.secret_id.data in (None, '')
+
+
+def _vault_form_data(*, mode: str, mount: str) -> dict[str, str]:
+    return {
+        'name': 'Vault Lab',
+        'environment': 'development',
+        'endpoint': 'https://vault.example.internal:8200',
+        'auth_mount_mode': mode,
+        'auth_mount': mount,
+        'role_id': 'read-only-role',
+        'secret_id': 'test-only-secret',
+        'timeout': '5',
+        'enabled': 'y',
+    }
+
+
+@pytest.mark.parametrize(
+    ('mode', 'submitted_mount', 'expected_mount'),
+    [
+        ('approle', 'approle', 'approle'),
+        ('approle', '../stale-custom-mount', 'approle'),
+        ('custom', 'kaori-reader', 'kaori-reader'),
+    ],
+)
+def test_vault_approle_mount_selector_normalizes_existing_connection_input(
+    monkeypatch, mode: str, submitted_mount: str, expected_mount: str
+) -> None:
+    monkeypatch.setenv('INTEGRATION_VAULT_ALLOWED_ORIGINS', 'https://vault.example.internal:8200')
+    app = Flask(__name__)
+    app.config.update(SECRET_KEY='test-only', WTF_CSRF_ENABLED=False)
+    with app.test_request_context('/', method='POST', data=_vault_form_data(mode=mode, mount=submitted_mount)):
+        form = VaultConnectionForm()
+        assert form.validate(), form.errors
+        assert form.to_input().auth_mount == expected_mount
+
+
+def test_vault_blank_optional_evidence_scopes_remain_disabled(monkeypatch) -> None:
+    monkeypatch.setenv('INTEGRATION_VAULT_ALLOWED_ORIGINS', 'https://vault.example.internal:8200')
+    app = Flask(__name__)
+    app.config.update(SECRET_KEY='test-only', WTF_CSRF_ENABLED=False)
+    with app.test_request_context(
+        '/',
+        method='POST',
+        data=_vault_form_data(mode='approle', mount='approle'),
+    ):
+        form = VaultConnectionForm()
+        assert form.validate(), form.errors
+        values = form.to_input()
+        assert values.kv2_mounts == ()
+        assert values.pki_mounts == ()
+        assert values.pki_stored_certs_enabled is False
+        assert values.enabled is True
+        assert values.auth_mount == 'approle'
+
+
+def test_vault_legacy_form_post_keeps_existing_custom_approle_mount(monkeypatch) -> None:
+    monkeypatch.setenv('INTEGRATION_VAULT_ALLOWED_ORIGINS', 'https://vault.example.internal:8200')
+    app = Flask(__name__)
+    app.config.update(SECRET_KEY='test-only', WTF_CSRF_ENABLED=False)
+    payload = _vault_form_data(mode='approle', mount='team-approle')
+    del payload['auth_mount_mode']
+    with app.test_request_context('/', method='POST', data=payload):
+        form = VaultConnectionForm()
+        assert form.validate(), form.errors
+        assert form.auth_mount_mode.data == 'custom'
+        assert form.to_input().auth_mount == 'team-approle'
+
+
+@pytest.mark.parametrize(
+    ('mode', 'mount'),
+    [
+        ('custom', ''),
+        ('custom', '../approle'),
+        ('custom', 'approle/deeper'),
+        ('kubernetes', 'approle'),
+    ],
+)
+def test_vault_approle_mount_selector_rejects_invalid_or_unsupported_choices(
+    monkeypatch, mode: str, mount: str
+) -> None:
+    monkeypatch.setenv('INTEGRATION_VAULT_ALLOWED_ORIGINS', 'https://vault.example.internal:8200')
+    app = Flask(__name__)
+    app.config.update(SECRET_KEY='test-only', WTF_CSRF_ENABLED=False)
+    with app.test_request_context('/', method='POST', data=_vault_form_data(mode=mode, mount=mount)):
+        form = VaultConnectionForm()
+        assert not form.validate()
+        assert ('auth_mount_mode' if mode == 'kubernetes' else 'auth_mount') in form.errors
+
+
+@pytest.mark.parametrize(
+    ('stored_mount', 'expected_mode'),
+    [('approle', 'approle'), ('team-approle', 'custom')],
+)
+def test_vault_edit_preselects_approved_mount_without_decrypting_secret_id(
+    stored_mount: str, expected_mode: str
+) -> None:
+    app = Flask(__name__)
+    app.config.update(SECRET_KEY='test-only', WTF_CSRF_ENABLED=False)
+    existing = SimpleNamespace(
+        auth_mount=stored_mount,
+        secret_id='encrypted-not-for-form',
+        kv2_mounts=[],
+        pki_mounts=[],
+        pki_stored_certs_enabled=False,
+    )
+    with app.test_request_context('/'):
+        form = VaultConnectionForm(existing=existing, obj=existing)
+        assert form.auth_mount_mode.data == expected_mode
+        assert form.auth_mount.data == stored_mount
+        assert form.secret_id.data == ''
 
 
 @pytest.mark.parametrize(
@@ -152,3 +328,4 @@ def test_registration_proof_bound_to_exact_secret_and_user():
         assert verified_secret(proof, values, 43) is None
         assert verified_secret(proof, replace(values, secret_id='rotated'), 42) is None
         assert verified_secret(proof, replace(values, endpoint='https://elsewhere'), 42) is None
+        assert verified_secret(proof, replace(values, auth_mount='other-approle'), 42) is None

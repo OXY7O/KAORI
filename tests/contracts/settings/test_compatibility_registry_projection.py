@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from app.integrations.compatibility import PRODUCT_POLICIES
 from app.settings.general.compatibility_registry import PAGE_SIZE, build_compatibility_registry
 
 
@@ -124,3 +125,9 @@ def test_registry_filter_reset_empty_and_untrusted_query_inputs_remain_bounded()
     assert invalid['support'] == 'all'
     assert invalid['page'] == 1
     assert invalid['total'] == 2
+
+
+def test_thanos_qualification_copy_retains_prometheus_http_core_contract() -> None:
+    policy = PRODUCT_POLICIES['thanos']
+    assert policy.capability_summary == 'Long-retention PromQL via Prometheus HTTP API v1.'
+    assert policy.contract_profile == 'prometheus-http-core-v1'

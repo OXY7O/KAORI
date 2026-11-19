@@ -10,7 +10,7 @@
 {% set evidence_items = [
     ("server", "brand", "MinIO S3 API Endpoint", instance.endpoint, "Canonical S3-compatible API base endpoint KAORI uses for identity checks, governed provider discovery, validation, capability probing, and subsequent inventory access."),
     ("shield-check", "success" if instance.verify_ssl else "warning", "TLS Verification", "Enabled" if instance.verify_ssl else "Disabled", "TLS certificate validation policy applied to the configured MinIO API endpoint."),
-    ("key-round", "info", "Access Contract", instance.access_key, "Secret keys stay encrypted; registration and Full Validation use governed S3 discovery."),
+    ("key-round", "info", "Access Contract", instance.access_key, "Secrets stay encrypted; S3 discovery is governed."),
     ("database", "success", "Storage Authority", "Object Storage System", "MinIO owns S3 state; observability sources remain independent consumers.")
 ] %}
 {% set flow_items = [('Configure', 'Register S3 identity, credentials, TLS, region, and request policy.', 'settings-2'), ('Validate', 'Resolve MinIO product identity, release compatibility, S3 access, and provider capabilities.', 'badge-check'), ('Observe', 'Persist runtime health and endpoint diagnostics independently from consumer bindings.', 'activity'), ('Bind', 'Associate reusable Metrics Source and Alertmanager sources only when required.', 'waypoints')] %}

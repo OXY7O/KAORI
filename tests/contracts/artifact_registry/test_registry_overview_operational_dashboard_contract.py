@@ -59,7 +59,9 @@ def test_artifact_registry_overview_scope_is_committed_and_provider_neutral() ->
     operations = read('app/templates/artifact_registry/partials/_overview_operations.html')
 
     # Explicit malformed provider selection must not silently expand to all providers.
-    assert 'from app.artifact_registry.route_scope import _inventory_source_id, _overview_provider_id' in routes
+    assert 'from app.artifact_registry.route_scope import (' in routes
+    assert '    _inventory_source_id,' in routes
+    assert '    _overview_provider_id,' in routes
     assert "raw = request.args.get('provider_id')" in scope
     assert 'def _overview_provider_id() -> int | None:' in scope
     assert 'provider_id=_overview_provider_id()' in routes
@@ -292,11 +294,23 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
     assert 'bg-kaori-soft p-3 text-xs leading-5 text-content-secondary' in capacity_snapshot
     assert 'grid gap-3 lg:grid-cols-3' in capacity_snapshot
     assert 'components/progress_bar.html' in capacity_snapshot
-    assert 'progress_bar.bar(item.progress_percent,' in capacity_snapshot
+    assert 'components/operational_capacity_metric_card.html' in capacity_snapshot
+    assert 'capacity_metric_card.render(item.label,' in capacity_snapshot
     assert 'item.progress_label' in capacity_snapshot
-    assert 'item.progress_percent is not none' in capacity_snapshot
-    assert 'percentage not applicable' in capacity_snapshot
-    assert 'Refresh evidence; verify headroom' in capacity_snapshot
+    assert 'item.progress_percent' in capacity_snapshot
+    assert "missing_label='Inventory' if item.progress_label == 'Inventory' else 'No Quota'" in capacity_snapshot
+    shared_capacity = read('app/templates/components/operational_capacity_metric_card.html')
+    assert 'percent is not none' in shared_capacity
+    assert 'percentage unavailable' in shared_capacity
+    assert 'capacity_decision.render(' in capacity_snapshot
+    assert 'review_groups=capacity_review_groups' in capacity_snapshot
+    registry_source = read('app/artifact_registry/presentation_common.py')
+    assert 'Keep Registry analytics current; review growth after publications.' in registry_source
+    for topic in ('Validate', 'Assess', 'Prioritize', 'Act', 'Verify', 'Record'):
+        assert f"'{topic}'" in capacity_snapshot
+    assert 'overview.capacity.risk_detail' in capacity_snapshot
+    assert 'overview.capacity.recommended_action' in capacity_snapshot
+    assert 'Recommended Capacity Action Flow' not in capacity_snapshot
     assert 'Registry project quota balance chart' in capacity_snapshot
     assert 'Project Quota Balance' in capacity_snapshot
     assert 'overview.capacity.metrics[1].progress_percent' in capacity_snapshot
@@ -477,6 +491,9 @@ def test_artifact_registry_data_freshness_uses_evidence_age_not_coverage_counts(
     assert '_freshness_value(' in presentation
     assert 'latest_security_at' in projection
     assert 'latest_analytics_at' in projection
+    assert 'Current and stale Registry analytics are assessed separately.' in presentation
+    retired_copy = 'Current and stale materialized Registry analytics are assessed separately across this scope.'
+    assert retired_copy not in presentation
 
 
 def test_artifact_registry_signals_match_object_storage_scope_and_alert_logic() -> None:
@@ -692,11 +709,13 @@ def test_artifact_registry_overview_visual_uat_copy_preserves_shared_evidence_co
     assert 'Quota ETA: positive growth only' in consumers
 
     # Screenshot 2: labels never collide with Used/Inventory provenance.
-    assert 'whitespace-nowrap text-xs font-semibold text-content-primary' in capacity
-    assert 'flex flex-col items-start gap-1' in capacity
+    shared_capacity = read('app/templates/components/operational_capacity_metric_card.html')
+    assert 'capacity_metric_card.render(item.label,' in capacity
+    assert 'block text-right text-xs font-semibold' in shared_capacity
+    assert 'whitespace-nowrap' not in shared_capacity
     assert "item.progress_label == 'Inventory'" in capacity
-    assert 'item.progress_percent is not none' in capacity
-    assert 'progress_bar.bar(item.progress_percent,' in capacity
+    assert 'item.progress_percent' in capacity
+    assert 'progress_bar.bar(percent,' in shared_capacity
     assert 'Committed daily size delta.' in forecast
     assert 'risk_conclusion.get(overview.capacity.risk' in forecast
     for risk in ('Critical', 'Medium', 'Low', 'Unknown'):

@@ -90,7 +90,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         navigation_endpoints=(
             'artifact_registry.overview',
             'artifact_registry.inventory',
-            'artifact_registry.security',
+            'artifact_registry.security_overview',
             'artifact_registry.runtime_overview',
             'artifact_registry.governance',
             'artifact_registry.analytics',

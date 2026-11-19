@@ -6,10 +6,10 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/table_label.html" as table_label %}
 {% macro header(title, description, policy) -%}
-    <header class="border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4 sm:px-6">
+    <header class="border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary shadow-sm"
                       aria-hidden="true">
                     <i data-lucide="settings-2" class="h-4 w-4"></i>
                 </span>
@@ -81,10 +81,10 @@
     </div>
 {%- endmacro %}
 {% macro manual_header(title, description) -%}
-    <header class="border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4 sm:px-6">
+    <header class="border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary shadow-sm"
                       aria-hidden="true">
                     <i data-lucide="shield-check" class="h-4 w-4"></i>
                 </span>

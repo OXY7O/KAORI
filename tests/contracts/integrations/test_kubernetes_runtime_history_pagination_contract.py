@@ -46,7 +46,7 @@ def test_runtime_history_pagination_uses_provider_owned_routing() -> None:
 
 
 def test_full_page_kubernetes_detail_reads_requested_history_page() -> None:
-    routes = read('app/integrations/routes.py')
+    routes = read('app/integrations/orchestration/container_orchestrator/routes.py')
 
     assert "request.args.get('page', 1, type=int)" in routes
     assert "request.args.get('per_page', 5, type=int)" in routes

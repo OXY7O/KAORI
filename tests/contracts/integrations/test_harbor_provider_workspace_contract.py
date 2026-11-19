@@ -84,10 +84,7 @@ def test_harbor_registration_copy_is_concise_and_preserves_authority_boundaries(
         in form
     )
     assert 'Disabled connections remain registered but are not resolved for use.' in form
-    assert (
-        'Harbor executes Registry APIs; KAORI owns normalized identity, evidence, readiness, runtime, and audit.'
-        in form
-    )
+    assert 'Harbor runs Registry APIs; KAORI governs evidence.' in form
     assert 'How KAORI registers a reusable Registry connection.' in form
     assert 'How changes restore Registry provider readiness.' in form
     assert (
@@ -131,14 +128,8 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
     validation = read('app/templates/integrations/registry/providers/harbor/partials/_detail_validation.html')
 
     assert 'Harbor remains authoritative for native Registry state and policies.' in configuration
-    assert (
-        'Certificate validation policy applied to Harbor API requests to ensure secure HTTPS connections '
-        'and trusted server identity verification.' in configuration
-    )
-    assert (
-        'Revalidate the Harbor integration after upgrades, credential rotations, permission updates, '
-        'or changes to API accessibility and configuration.' in validation
-    )
+    assert 'Verify Harbor TLS certificates and trusted server identity.' in configuration
+    assert 'Rerun Full Validation after upgrades or changes to credentials, permissions or API access.' in validation
     assert (
         'Harbor API base URL used for secure, read-only discovery of Registry identity, compatibility, '
         'supported capabilities, and provider evidence.' in configuration
@@ -164,7 +155,10 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
     assert 'Required API reads:' in access_reference
     assert 'GET /api/v2.0/systeminfo' in access_reference
     assert 'Optional Metadata Reader' in access_reference
-    assert 'Harbor role and permission labels can differ by qualified release.' in access_reference
+    assert (
+        'Harbor permission labels vary by release; grant only required read access, never broad administration.'
+        in access_reference
+    )
     assert 'Required Harbor readiness and read-capability evidence.' in validation
     assert 'Optional capability evidence; does not affect readiness.' in validation
     assert (
@@ -199,10 +193,7 @@ def test_harbor_detail_uses_shared_provider_domains_with_inventory_lifecycle() -
     assert 'Snapshot Freshness' in inventory
     assert 'Lifecycle Gate' in inventory
     assert 'inventory_status.detail|trim|trim(".")' in inventory
-    assert (
-        'No active KAORI jobs currently block removal; review dependent bindings and retained evidence '
-        'before deleting this Registry connection.' in inventory
-    )
+    assert 'No active KAORI jobs block removal. Review bindings and retained evidence before deletion.' in inventory
     assert 'Detailed artifact metadata and management remain available in Artifact Registry.' in inventory
     assert 'KAORI Operational Consumers' in inventory
     assert 'Bound Observability Sources' in read(
@@ -467,3 +458,171 @@ def test_harbor_full_coverage_is_not_required_for_core_provider_readiness() -> N
     assert 'Core readiness is separate.' in overview
     assert 'optional integration dimensions do not gate core provider readiness.' in coverage
     assert 'not a failed connection test' in docs
+
+
+def test_harbor_connection_registry_uses_aligned_cells_and_compact_binding_identity() -> None:
+    """Retain provider evidence and the shared six-column Registry contract."""
+
+    from jinja2 import Environment
+
+    registry = read('app/templates/integrations/registry/providers/harbor/partials/_registry.html')
+    Environment().parse(registry)
+    populated = registry.split('{% for row in rows %}', 1)[1].split('{% else %}', 1)[0]
+    assert populated.count('align-top') == 6
+    assert populated.count('<td class="{{ table_ui.cell_classes') == 6
+    assert 'provider_registry.connection_registry_colgroup()' in registry
+    assert 'provider_registry.connection_registry_head()' in registry
+    assert 'provider_registry.pagination_footer(pagination,' in registry
+    assert 'provider_registry.registry_header(' in registry
+    assert 'hx-target="#harbor-connection-registry"' in registry
+    assert '{{ row.name }}' in populated
+    assert 'row.environment|default("Unspecified")' in populated
+    assert '{{ row.endpoint }}' in populated
+    assert 'title="{{ row.endpoint }}"' in populated
+    assert 'Harbor API v2.0' in populated
+    assert 'integration_status(row.readiness_status' in populated
+    assert '{{ row.compatibility_profile or "Not Validated" }}' in populated
+    assert '{{ row.detected_version or "Version Not Observed" }}' in populated
+    assert "table_label.metadata_label(table_label.count_text(row.binding_count, 'Binding') )" in populated
+    assert 'Metrics Source consumer associations' in populated
+    assert 'Metrics Source binding{{' in populated
+    assert '<p class="font-semibold tabular-nums text-content-primary">{{ row.binding_count }}</p>' not in populated
+    assert "url_for('harbor.instance_detail', instance_id=row.id)" in populated
+
+
+def test_harbor_compact_flow_notes_preserve_full_validation_and_provider_authority() -> None:
+    """Copy is concise, without making registration equivalent to readiness."""
+
+    from jinja2 import Environment
+
+    form = read('app/templates/integrations/registry/providers/harbor/instance_form.html')
+    Environment().parse(form)
+    assert 'Registration checks access; Full Validation gates readiness.' in form
+    assert 'Changes reset readiness; rerun Full Validation.' in form
+    assert 'Harbor runs Registry APIs; KAORI governs evidence.' in form
+    assert "harbor_flow_items = [('Define Connection Identity'" in form
+    assert "'Run Full Validation'" in form
+    assert 'provider_registration_context.render(' in form
+    assert 'Harbor remains authoritative for native projects' in form
+    assert 'Connection-sensitive changes reset readiness; Test Configuration never substitutes' not in form
+
+
+def test_harbor_webhook_configuration_layout_preserves_admission_and_credential_contracts() -> None:
+    configuration = read('app/templates/integrations/registry/providers/harbor/partials/_detail_configuration.html')
+    token_result = read('app/templates/artifact_registry/partials/_webhook_token_created.html')
+    access_reference = read(
+        'app/templates/integrations/registry/providers/harbor/partials/_minimum_validation_access.html'
+    )
+
+    # Human UAT copy budgets: natural wrap on mobile, no forced clipping.
+    tls_copy = 'Verify Harbor TLS certificates and trusted server identity.'
+    webhook_copy = (
+        'Authenticated Harbor events trigger targeted Inventory refresh; '
+        'scheduled reconciliation remains authoritative.'
+    )
+    permission_copy = (
+        'Harbor permission labels vary by release; grant only required read access, never broad administration.'
+    )
+    assert tls_copy in configuration and len(tls_copy) <= 65
+    assert webhook_copy in configuration and len(webhook_copy) <= 120
+    assert permission_copy in access_reference and len(permission_copy) <= 115
+    assert 'whitespace-nowrap' not in access_reference
+
+    # Existing semantic status remains server-owned. No invented delivery or sync success.
+    assert 'data-kaori-harbor-webhook-configuration' in configuration
+    assert 'table_label.status_indicator_label(webhook_status.label,' in configuration
+    assert 'Ready confirms admission setup, not delivery or Inventory completion.' in configuration
+    assert 'webhook_endpoint.last_event_at|user_datetime' in configuration
+    assert 'No event received yet' in configuration
+
+    # Shared KAORI Violet surfaces and palette icons; desktop side-by-side,
+    # mobile stacked, with the credential actions in a separate aligned row.
+    assert 'grid overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle' in configuration
+    assert 'lg:grid-cols-5' in configuration
+    assert 'lg:col-span-2' in configuration
+    assert 'lg:col-span-3' in configuration
+    assert 'harbor-webhook-admission-title' in configuration
+    assert 'harbor-webhook-receiver-title' in configuration
+    assert 'integration_ui.palette_icon("shield-check", "brand", size="sm")' in configuration
+    assert 'integration_ui.palette_icon("link-2", "brand", size="sm")' in configuration
+
+    # Exact existing authenticated admission and one-time credential lifecycle.
+    assert "url_for('artifact_registry.webhook_receive'" in configuration
+    assert 'Authorization: Bearer &lt;token&gt;' in configuration
+    assert 'X-KAORI-Webhook-Token: &lt;token&gt;' in configuration
+    assert 'Accepted Harbor webhook authentication headers' in configuration
+    assert 'Auth headers' in configuration
+    assert 'Configure Harbor with a generated credential using' not in configuration
+    assert 'This loopback URL is normally unreachable' not in configuration
+    warning_copy = 'Remote Harbor cannot reach loopback. Use a Harbor-reachable HTTPS address.'
+    assert warning_copy in configuration and len(warning_copy) <= 85
+    assert "receiver_host in ['localhost', '127.0.0.1']" in configuration
+    assert "request.host.startswith('[::1]')" in configuration
+    assert 'Harbor-reachable HTTPS address' in configuration
+    assert "operational_callout.semantic_surface_classes('warning')" in configuration
+    assert "url_for('harbor.webhook_token', instance_id=instance.id)" in configuration
+    assert "url_for('harbor.webhook_disable', instance_id=instance.id)" in configuration
+    assert configuration.count('name="csrf_token" value="{{ csrf_token() }}"') == 2
+    assert 'hx-target="#harbor-webhook-token-result"' in configuration
+    assert 'hx-swap="innerHTML"' in configuration
+    assert 'hx-disabled-elt="find button"' in configuration
+    assert "action_button.classes('primary')" in configuration
+    assert "action_button.classes('secondary')" in configuration
+
+    # HTMX response keeps token once, with no persistence or premature display.
+    assert "operational_callout.semantic_surface_classes('warning')" in token_result
+    assert 'integration_ui.palette_icon("key-round", "warning", size="sm")' in token_result
+    assert '{{ webhook_token }}' in token_result
+    assert 'cannot reveal it later' in token_result
+    assert 'w-full' in token_result
+    assert 'sm:grid-cols-2 sm:items-center' in token_result
+    assert 'max-w-3xl' not in token_result
+    assert 'id="harbor-webhook-token-result"' in configuration
+
+    # Existing Jinja syntax for provider and HTMX fragment must remain valid.
+    from jinja2 import Environment
+
+    Environment().parse(configuration)
+    Environment().parse(token_result)
+
+
+def test_harbor_accepted_visual_uat_copy_budgets_preserve_evidence_boundaries() -> None:
+    from jinja2 import Environment
+
+    validation = read('app/templates/integrations/registry/providers/harbor/partials/_detail_validation.html')
+    runtime = read('app/templates/integrations/registry/providers/harbor/partials/_detail_runtime.html')
+    lifecycle = read('app/templates/integrations/registry/providers/harbor/partials/_detail_scope.html')
+    configuration = read('app/templates/integrations/registry/providers/harbor/partials/_detail_configuration.html')
+
+    evidence = 'Full Validation: identity, compatibility, health and capabilities. Runtime Refresh: live health.'
+    ready_action = 'Rerun Full Validation after upgrades or changes to credentials, permissions or API access.'
+    healthy_action = 'No action needed; refresh runtime after Harbor or infrastructure changes.'
+    clear_guard = 'No active KAORI jobs block removal. Review bindings and retained evidence before deletion.'
+
+    # Copy budgets target natural 2 / 2 / 1 / 2 desktop lines, not forced clipping.
+    assert evidence in validation and len(evidence) <= 100
+    assert ready_action in validation and len(ready_action) <= 95
+    assert healthy_action in runtime and len(healthy_action) <= 78
+    assert clear_guard in lifecycle and len(clear_guard) <= 95
+    for source in (validation, runtime, lifecycle):
+        assert 'whitespace-nowrap' not in source
+
+    # Scoped ready/healthy/clear states: no change to alternative decisions.
+    assert '{% if readiness == "ready" %}' in validation
+    assert '{% elif readiness == "degraded" %}' in validation
+    assert '{% elif readiness == "blocked" %}' in validation
+    assert '{% elif runtime_state.readiness == "degraded" %}' in runtime
+    assert '{% elif runtime_attention %}' in runtime
+    assert 'if deletion_guard.blocked else' in lifecycle
+    assert 'deletion_guard.reasons|length' in lifecycle
+    assert 'inventory_status.detail|trim|trim(".")' in lifecycle
+
+    # Keep shared KAORI decision components, runtime source and Jinja parseability.
+    assert 'capability_readiness.render(' in validation
+    assert 'runtime_decision.render(' in runtime
+    assert 'asset_owner_delete_modal.render(' in read(
+        'app/templates/integrations/registry/providers/harbor/partials/_delete_modal.html'
+    )
+    assert 'webhook_endpoint.last_event_at|user_datetime' in configuration
+    for source in (validation, runtime, lifecycle, configuration):
+        Environment().parse(source)

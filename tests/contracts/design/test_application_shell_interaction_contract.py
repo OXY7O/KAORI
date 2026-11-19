@@ -24,6 +24,38 @@ def test_navbar_uses_named_alpine_component_instead_of_inline_program() -> None:
     assert layout.index("filename='js/navbar.js'") < layout.index("filename='vendor/alpine/alpine.min.js'")
 
 
+def test_desktop_sidebar_toggle_uses_state_aware_panel_icons() -> None:
+    navbar = read('app/templates/components/navigation/navbar.html')
+    layout = read('app/templates/layouts/app.html')
+    icons = read('app/static/vendor/lucide/lucide.min.js')
+    trigger = navbar.split('@click="toggleSidebar()"', 1)[1].split('</button>', 1)[0]
+
+    assert 'PanelRightOpen:' in icons
+    assert 'PanelRightClose:' in icons
+
+    assert trigger.count('data-lucide="panel-right-open"') == 1
+    assert trigger.count('data-lucide="panel-right-close"') == 1
+    assert 'data-lucide="chevrons-left"' not in trigger
+    assert 'data-lucide="chevrons-right"' not in trigger
+
+    expanded = trigger.index('x-show="sidebarExpanded"')
+    collapse_icon = trigger.index('data-lucide="panel-right-open"')
+    collapsed = trigger.index('x-show="!sidebarExpanded"')
+    expand_icon = trigger.index('data-lucide="panel-right-close"')
+    assert expanded < collapse_icon < collapsed < expand_icon
+    assert ":title=\"sidebarExpanded ? 'Collapse navigation' : 'Expand navigation'\"" in trigger
+    assert ":aria-label=\"sidebarExpanded ? 'Collapse navigation' : 'Expand navigation'\"" in trigger
+    assert ':aria-expanded="sidebarExpanded.toString()"' in trigger
+    assert 'aria-controls="app-sidebar"' in trigger
+    assert 'lg:inline-flex' in trigger
+    assert "localStorage.setItem('kaori.sidebarExpanded'" in layout
+    assert "document.documentElement.classList.toggle('sidebar-collapsed'" in layout
+
+    # Mobile navigation remains owned by its separate off-canvas control.
+    mobile = navbar.split('data-mobile-menu-trigger', 1)[1].split('</button>', 1)[0]
+    assert 'data-lucide="menu"' in mobile
+
+
 def test_quick_notification_and_account_controls_share_one_controller() -> None:
     navbar = read('app/templates/components/navigation/navbar.html')
     notification_center = read('app/templates/components/navigation/_notification_center.html')
@@ -39,6 +71,41 @@ def test_quick_notification_and_account_controls_share_one_controller() -> None:
     assert 'toggleUserMenu()' in script
     assert 'openAbout()' in script
     assert 'closeMenus()' in script
+
+
+def test_quick_actions_distinguish_queued_work_from_navigation() -> None:
+    navbar = read('app/templates/components/navigation/navbar.html')
+    quick = navbar.split('<!-- Quick actions -->', 1)[1].split('<!-- Theme remains', 1)[0]
+    sync = quick.split('<form id="quick-sync-form"', 1)[1].split('</form>', 1)[0]
+
+    assert quick.count('data-quick-action-card="true"') == 4
+    assert quick.count('>Queue</span>') == 1
+    assert quick.count('>Open</span>') == 3
+    assert 'Queue operational work or open a workspace.' in quick
+    assert 'class="space-y-1.5 p-2.5"' in quick
+    assert quick.count('bg-surface-card px-3 py-2.5 text-left') == 4
+    assert quick.count('focus-visible:ring-outline-focus') == 4
+    assert 'Queue inventory sync for eligible domains.' in sync
+    assert 'data-lucide="play"' in sync
+    assert 'method="POST"' in sync
+    assert 'type="submit"' in sync
+    assert 'csrf_token()' in sync
+    assert "url_for('jobs.quick_sync_all_inventory')" in sync
+    assert 'hx-disabled-elt="this"' in sync
+    assert "current_user.has_permission('jobs.execute')" in quick
+    assert 'can_sync_artifact_registry_inventory' in quick
+
+    for endpoint in (
+        'reports.generate_report',
+        'jobs.executions',
+        'alert_intelligence.index',
+    ):
+        assert f"url_for('{endpoint}')" in quick
+    assert "current_user.has_permission('jobs.view')" in quick
+    assert quick.count('data-lucide="chevron-right"') == 3
+    assert 'Open governed report creation.' in quick
+    assert 'Review queues and execution outcomes.' in quick
+    assert 'Review alert cases and response state.' in quick
 
 
 def test_navbar_javascript_is_syntax_checked() -> None:

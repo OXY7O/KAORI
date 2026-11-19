@@ -13,10 +13,11 @@ def test_vault_stored_pki_checkbox_title_excludes_descriptive_help() -> None:
     parser.feed(source)
 
     labels = [text for _, text in parser.labels]
-    title = 'Enable Stored PKI Certificate Collection (Explicit Opt-In)'
-    assert title in labels
+    title = 'Collect Stored PKI Certificates (Explicit Opt-In)'
+    assert 'operational_toggle.render("Collect Stored PKI Certificates (Explicit Opt-In)"' in source
     assert _title_case_error(title) is None
-    assert 'Enable This Connection' in labels
+    assert 'operational_toggle.render("Allow KAORI to Use This Connection"' in source
+    assert _title_case_error('Allow KAORI to Use This Connection') is None
     assert all('Adds optional authenticated LIST /certs reads' not in label for label in labels)
 
 

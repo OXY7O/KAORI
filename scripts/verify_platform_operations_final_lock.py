@@ -203,12 +203,25 @@ def main() -> int:
             errors.append(f'Platform Operations Overview domain projection missing: {required}')
     for required in (
         'review_workspace_count = attention_workspace_count + unknown_workspace_count',
-        "overall_status_label, overall_status_tone = 'Configuration Review', 'unknown'",
+        'def _overall_workspace_status(',
+        'if critical_count:',
+        "return 'Critical Review', 'critical'",
+        'if warning_count:',
+        "return 'Review Required', 'warning'",
+        'if unknown_count:',
+        "return 'Configuration Review', 'unknown'",
+        'if active_count:',
+        "return 'Active', 'info'",
+        "return 'Ready', 'normal'",
+        'overall_status_label, overall_status_tone = _overall_workspace_status(',
+        'critical_workspace_count, warning_workspace_count, unknown_workspace_count, active_workspace_count',
         "status_label = str(kubernetes['administration_status_label'])",
         "status_tone = str(kubernetes['administration_status_tone'])",
     ):
         if required not in overview_presentation:
             errors.append(f'Platform Operations Overview semantic posture contract missing: {required}')
+    if "overall_status_label, overall_status_tone = 'Configuration Review', 'unknown'" in overview_presentation:
+        errors.append('Platform Operations Overview must not hard-code Configuration Review as its overall status.')
 
     for forbidden in (
         'inspect_celery_topology',

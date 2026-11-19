@@ -6,7 +6,7 @@ import pytest
 from flask import Flask
 from werkzeug.exceptions import NotFound
 
-from app.artifact_registry import routes
+from app.artifact_registry import route_scope, routes
 
 
 @pytest.mark.parametrize(
@@ -30,7 +30,7 @@ def test_invalid_runtime_filters_are_not_treated_as_unfiltered(query):
 
 def test_disabled_registry_source_cannot_be_selected(monkeypatch):
     app = Flask(__name__)
-    monkeypatch.setattr(routes, '_active_registry_sources', lambda: [SimpleNamespace(id=7)])
+    monkeypatch.setattr(route_scope, '_active_registry_sources', lambda: [SimpleNamespace(id=7)])
     with app.test_request_context('/artifact-registry/runtime?source_id=8'):
         with pytest.raises(NotFound):
             routes._runtime_scope_id('source_id')

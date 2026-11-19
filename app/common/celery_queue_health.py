@@ -4,7 +4,10 @@ from threading import Lock
 from time import monotonic
 from typing import Any
 
+from celery.exceptions import CeleryError
 from flask import current_app
+from kombu.exceptions import KombuError
+from redis.exceptions import RedisError
 
 _TOPOLOGY_CACHE_LOCK = Lock()
 _TOPOLOGY_INSPECTION_LOCK = Lock()
@@ -115,7 +118,8 @@ def _inspect_celery_topology_once(
                 ),
                 'error_type': None,
             }
-        except Exception as exc:  # pragma: no cover - broker/runtime dependent
+        except (CeleryError, KombuError, RedisError, OSError, RuntimeError, TypeError, ValueError) as exc:
+            # Broker/inspector boundary failure is Unknown; programming errors are not suppressed.
             current_app.logger.warning('Could not inspect Celery worker topology: %s', exc)
             snapshot = {
                 'status': 'unknown',

@@ -42,9 +42,51 @@ The Vault provider connection remains under
 ## Evidence and blocked states
 
 A successful Vault API check does not prove KV v2 inventory readability.
+
+A saved Vault connection must be distinguished from domain readiness.
+Secrets & PKI Overview reads eligible **active, enabled** Vault integrations
+(`secrets_pki`/`vault`), their explicitly approved `kv2_mounts`, and
+`SecretInventoryCollectionState.last_committed_at` for exact permitted
+instance/namespace/mount scopes, without a live Vault call. Its prerequisite
+message follows the earliest missing stage: no eligible Vault source;
+registered Vault with no approved KV v2 mount; source/mount configured but
+no successful committed inventory; or a bounded scope-limit violation. Exceeding the maximum approved KV v2
+source/mount combinations returns a safe `blocked` summary with
+`source_limit_exceeded=True`, not an unhandled exception. Counts and timestamps
+are withheld for the over-limit inventory scope; the existing Overview setup
+state directs an authorized operator to review source and mount scope. The
+collection budget is not raised and the read model does not call Vault.
+For an active source with no approved KV v2 mount, the Overview blocker uses
+short, naturally fitting copy: **Vault source registered. Approve a KV v2
+mount to collect inventory.** The third displayed setup step is
+**Collect KV v2 inventory** instead of exposing an internal job key. The
+underlying governed operation remains `secrets_pki.inventory.sync` and
+must still run through the existing authorized JobExecution workflow.
+Do not use `whitespace-nowrap`, truncation or a fabricated Ready state
+to force a single line; narrower screens must wrap accessibly.
+
+The final stage requires the canonical governed manual job
+`secrets_pki.inventory.sync`, its completed JobExecution, and committed
+inventory evidence. The Overview remains Blocked before that evidence is
+present, while the blocker itself accurately shows `Collection Required`
+instead of sending an already-configured operator back to re-register Vault.
+Read-only viewers may open Inventory readiness; only `integrations.manage`
+may configure sources or approve mounts. No credential, Secret path or
+runtime provider call is introduced into page rendering.
+
 A valid **zero** is shown only after an actual committed snapshot; missing
-snapshots are `Not Collected`. Counts from stale or partial committed sources
-remain explicitly labelled stale/partial; absent source is not deletion.
+snapshots are `Not Collected`. A failed first KV v2 metadata collection
+creates a sanitized collection-state record with `status='failed'` and no
+committed snapshot. The read-only fleet summary must show **Inventory Collection
+Failed**, `has_evidence=False`, and unknown observed counts—not silently
+downgrade a known failure to **Not Collected**. Overview, Inventory and
+Lifecycle use the existing canonical blocked prerequisites to offer retry/
+diagnostic guidance; an independent qualified PKI source may still admit
+Lifecycle. After a successful governed commit the state is committed. Failure
+after a previous commit must remain **Stale**, with historical evidence
+retained and explicitly qualified rather than represented as current.
+Counts from stale or partial committed sources remain explicitly labelled
+stale/partial; absent source is not deletion.
 PKI issuance/certificates, lease posture, consumer correlation, Vault
 Metrics Source, Alert Source, canonical Recommendations and Reporting are
 shown as unavailable/not materialized until their dedicated workstreams are
@@ -80,6 +122,19 @@ Use existing Developer Check, Ruff, Djlint, Pytest, Pyright, visual QA, RBAC
 negative checks, PostgreSQL migration tests, Celery worker and actual Vault
 KV2/read ACL UAT. No CI/DevContainer/UAT pass is claimed by the existence of
 this source.
+
+**Lifecycle Jinja parser incident (2026-11-16, #4892):** A missing closing
+parenthesis in a nested `lifecycle_blocker_steps` assignment caused a
+`TemplateSyntaxError` and HTTP 500 on `GET /secrets-pki/lifecycle`, before
+any readiness or permission-aware page content could render. The step selection
+now uses explicit Jinja `if/elif/else` branches. Run the existing
+`test_secrets_pki_qualified_workspace_gate_contract.py` in Developer Check:
+it compiles all three workspace templates through Jinja `get_template` and
+renders six blocked-state step scenarios. A source-only structural review or
+successful tests against a previous commit **cannot** qualify a new template
+commit for UAT. Confirm the exact merged SHA and then test the authenticated
+Lifecycle HTTP 200/blocked page, permitted scope navigation, light/dark and
+responsive layout before Human Acceptance.
 
 
 ## HV-03 public PKI issuer inventory (review candidate)
@@ -258,6 +313,20 @@ gates and real Vault/PostgreSQL, RBAC, Visual QA/UAT remain required.
   lifecycle, opted-in public PKI validity and Kubernetes TLS candidate overlap
   read models. The sidebar entry uses the existing Infrastructure Secrets & PKI
   workspace registry, not a Vault-specific navigation root.
+- Lifecycle page admission uses the existing **current-generation KV v2
+  version posture** (status `ready` or `observed_empty`) OR independently
+  qualified public PKI validity (`pki_validity.status='ready'`). A historical
+  inventory snapshot, represented by fleet `summary.has_evidence=True`, is
+  **not sufficient** for lifecycle admission when its versions are stale,
+  partial, generation-mismatched or otherwise unqualified. This corrects the
+  older historical-evidence gate without hiding independently qualified PKI.
+  Historical snapshots remain inspectable in Overview/Inventory as
+  source-qualified retained evidence with stale/partial warnings. When an
+  approved Vault scope exists but current lifecycle evidence is unqualified,
+  the shared blocker links to **Inventory Readiness**, including for a user
+  holding `secrets_pki.view` without `integrations.manage`. Missing source
+  or mount approval still routes eligible managers to Vault configuration;
+  it does not grant configuration or job execution permissions.
 - KPI cards only render numeric values after the respective source-qualified
   complete/current generation. `observed_empty` is a valid KV2 zero; blocked,
   stale and partial statuses show text, never invented zero counts.

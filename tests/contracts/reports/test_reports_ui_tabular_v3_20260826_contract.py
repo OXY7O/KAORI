@@ -74,14 +74,15 @@ def test_quick_actions_use_one_card_shell_and_include_jobs_executions() -> None:
 
     assert quick.count('data-quick-action-card="true"') == 4
     for title, badge in (
-        ('Sync All Inventory', 'Inventory'),
-        ('Generate Report', 'Reports'),
-        ('Jobs &amp; Executions', 'Operations'),
-        ('Alert Center', 'Intelligence'),
+        ('Sync All Inventory', 'Queue'),
+        ('Generate Report', 'Open'),
+        ('Jobs &amp; Executions', 'Open'),
+        ('Alert Center', 'Open'),
     ):
         assert title in quick
         assert f'>{badge}</span>' in quick
     assert "url_for('jobs.executions')" in quick
-    assert 'Create a new operational report from a governed report contract.' in quick
-    assert 'Review worker-backed executions, queues, and recent job outcomes.' in quick
+    assert 'Open governed report creation.' in quick
+    assert 'Review queues and execution outcomes.' in quick
+    assert 'hx-post="{{ url_for(\'jobs.quick_sync_all_inventory\') }}"' in quick
     assert 'bg-status-warning-soft text-status-warning-text' not in quick

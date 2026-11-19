@@ -34,9 +34,9 @@ def test_every_primary_intelligence_page_uses_reference_posture_directly_below_h
     automation = read('app/templates/intelligence/automation_control.html')
 
     assert overview.index('page_hero.shell_classes()') < overview.index('intelligence_ui.posture_panel(')
-    assert overview.index('intelligence_ui.posture_panel(') < overview.index(
-        "{% call intelligence_ui.section(\n            'Intelligence Posture'"
-    )
+    # The hero context card also names Intelligence Posture; compare with the later assessment section.
+    posture_panel_index = overview.index('intelligence_ui.posture_panel(')
+    assert posture_panel_index < overview.index("'Intelligence Posture',", posture_panel_index)
 
     assert recommendations.index('page_hero.shell_classes()') < recommendations.index(
         '_recommendation_workspace_info.html'
@@ -58,7 +58,6 @@ def test_every_primary_intelligence_page_uses_reference_posture_directly_below_h
 def test_reference_posture_keeps_four_divided_metrics_and_contextual_footer_actions() -> None:
     surfaces = (
         (read('app/templates/intelligence/overview.html'), 4),
-        (read('app/templates/intelligence/partials/_recommendation_workspace_info.html'), 5),
         (read('app/templates/intelligence/partials/_catalog_summary.html'), 4),
         (read('app/templates/intelligence/partials/_alert_intelligence_summary.html'), 4),
         (read('app/templates/intelligence/automation_control.html'), 4),
@@ -72,3 +71,12 @@ def test_reference_posture_keeps_four_divided_metrics_and_contextual_footer_acti
             f'xl:grid-cols-{metric_columns}'
         ) in source
         assert 'actions=[' in source
+
+    recommendation = read('app/templates/intelligence/partials/_recommendation_workspace_info.html')
+    assert 'intelligence_ui.posture_panel(' in recommendation
+    assert 'intelligence_ui.posture_metric(' in recommendation
+    assert 'grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0' in recommendation
+    assert "'xl:grid-cols-5' if indicator_count == 5" in recommendation
+    assert "'xl:grid-cols-6' if indicator_count == 6" in recommendation
+    assert 'for domain_metric in domain_metrics' in recommendation
+    assert 'actions=[' in recommendation

@@ -199,6 +199,17 @@ It must retain:
 
 Baseline artifacts are review evidence. They do not silently become source authority.
 
+A capture run may need to build the pinned CI toolchain before Playwright starts.
+When reviewing a candidate, verify the workflow's **terminal conclusion and
+exact source SHA**, not only the presence of an uploaded artifact or the
+capture-mode pytest PASS count: `KAORI_UPDATE_VISUAL_BASELINES=1` records
+candidate signatures and does not validate them against the approved manifest.
+A cancelled or timed-out run can still upload partial or completed screenshot
+artifacts; preserve the evidence, diagnose the runner/toolchain failure, and
+repeat the existing governed capture workflow. Do not promote candidate hashes
+until original-reference visual review and normal strict Developer Check pass.
+For the timeout investigation and retained dual-run evidence, see #4936.
+
 ## Finding Vocabulary
 
 Visual QA uses exactly three finding states:

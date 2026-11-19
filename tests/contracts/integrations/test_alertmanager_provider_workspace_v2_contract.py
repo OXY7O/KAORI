@@ -134,14 +134,11 @@ def test_observability_connection_copy_is_concise_and_binding_scoped():
     )
     metrics = read('app/templates/integrations/observability/metrics_source/instance_form.html')
 
-    assert (
-        'One Alertmanager runtime can serve multiple integrations through independent bindings and selectors.'
-        in alertmanager
-    )
+    assert 'One Alertmanager serves multiple integrations.' in alertmanager
     assert 'Update metrics access while preserving validation and bindings.' in metrics
     assert 'Maintain governed validation and consumer-binding context.' not in metrics
     assert 'Update Alertmanager access while preserving consumer bindings.' in alertmanager
-    assert 'Review Alertmanager coverage, readiness, and alert consumer bindings.' in alertmanager
+    assert 'Review Alertmanager readiness and bindings.' in alertmanager
     assert 'Maintain governed validation and consumer-binding context.' not in alertmanager
 
 
@@ -176,3 +173,110 @@ def test_alertmanager_review_copy_is_concise_and_explicit():
     assert 'Identity changes clear stale evidence and require revalidation.' in binding_modal
     assert 'How saved changes return to governed use.' in alert_form
     assert 'How saved changes return to governed use.' in metrics_form
+
+
+def test_alertmanager_registration_guidance_is_compact_without_losing_gates() -> None:
+    """The four human-marked hints are single-line desktop copy, not clipped UI."""
+
+    from jinja2 import Environment
+
+    form = read('app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html')
+    Environment().parse(form)
+    messages = (
+        'Configure endpoint access, then test connectivity.',
+        'Registration only; Full Validation gates use.',
+        'One Alertmanager serves multiple integrations.',
+        'Disabled connections stay stored, not resolved.',
+    )
+    for message in messages:
+        assert form.count(message) == 1
+        assert len(message) <= 50
+
+    for obsolete in (
+        'Define Alertmanager endpoint access and authentication, then verify reachability before registration.',
+        'Registration creates the reusable connection identity only;',
+        'One Alertmanager runtime can serve multiple integrations through',
+        'Disabled connections stay stored but are excluded from scope resolution.',
+    ):
+        assert obsolete not in form
+
+    # The detailed flow still owns the separately governed consumer gate.
+    assert 'then complete Full Validation before attaching consumer bindings.' in form
+    assert 'alertmanager_related_description ~' in form
+    assert 'provider_registration_context.render(' in form
+    assert 'connection_validation_header.render(' in form
+    assert 'operational_toggle.render(' in form
+    assert 'whitespace-nowrap' not in form
+    assert 'line-clamp' not in form
+
+
+def test_alertmanager_connection_registry_row_has_aligned_semantic_cells() -> None:
+    """Keep full provider identity while displaying a compact binding count."""
+
+    from jinja2 import Environment
+
+    registry = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_inventory_content.html'
+    )
+    Environment().parse(registry)
+    populated = registry.split('{% for row in rows %}', 1)[1].split('{% else %}', 1)[0]
+    cells = populated.split('<td class="{{ table_ui.cell_classes')
+    assert len(cells) == 7  # Six populated cells, including titled Bindings and Actions.
+    assert populated.count('align-top') == 6
+
+    identity, endpoint, readiness, compatibility, bindings, actions = cells[1:]
+    assert '{{ row.instance.name }}' in identity
+    assert "{{ row.instance.description or 'Reusable alert source' }}" in identity
+    assert 'truncate' not in identity
+    assert '[overflow-wrap:anywhere]' in identity
+    assert '{{ row.endpoint }}' in endpoint
+    assert 'Alertmanager API v2' in endpoint
+    assert '[overflow-wrap:anywhere]' in endpoint
+    assert 'integration_status(row.readiness, display="indicator")' in readiness
+    assert 'integration_status(row.compatibility, display="indicator")' in compatibility
+    assert '{{ row.profile or "Capability profile pending" }}' in compatibility
+    assert '{{ row.version or "Version not detected" }}' in compatibility
+
+    assert "table_label.metadata_label(table_label.count_text(row.binding_count, 'Binding') )" in bindings
+    assert "scope_labels|join(', ') if scope_labels else 'No scope bindings'" in bindings
+    assert 'scope_labels|join(", ") if scope_labels else' in bindings
+    assert 'Bound scope types:' in bindings
+    assert 'truncate' not in bindings
+    assert 'scope_labels.append(scope_type_labels.get(' in populated
+    assert 'row.scope_types or []' in populated
+    assert "url_for('alertmanager.instance_detail', instance_id=row.instance.id)" in actions
+    assert '<td class="{{ table_ui.cell_classes(action=true) }} align-top">' in populated
+    assert 'provider_registry.connection_registry_colgroup()' in registry
+    assert 'provider_registry.connection_registry_head()' in registry
+    assert 'provider_registry.pagination_footer(pagination,' in registry
+
+
+def test_observability_edit_guidance_is_one_line_copy_with_full_validation_gate() -> None:
+    """Shared edit flows stay concise without changing provider authority."""
+
+    from jinja2 import Environment
+
+    metrics = read('app/templates/integrations/observability/metrics_source/instance_form.html')
+    alertmanager = read(
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/instance_form.html'
+    )
+    for form in (metrics, alertmanager):
+        Environment().parse(form)
+        assert 'flow_note="Saved changes require successful Full Validation."' in form
+        assert 'Saving changes does not establish readiness until Full Validation succeeds.' not in form
+        assert 'return readiness to Validation Required.' in form
+        assert 'provider_registration_context.render(' in form
+
+    assert '"Review " ~ metrics_source_label ~ " readiness and bindings."' in metrics
+    assert '"Review Alertmanager readiness and bindings."' in alertmanager
+    assert 'coverage, connection readiness, and consumer bindings from the observability workspace.' not in metrics
+    assert 'Review Alertmanager coverage, readiness, and alert consumer bindings.' not in alertmanager
+
+    catalog = read('app/definitions/catalogs/integrations/observability/metrics_source/contract.yaml')
+    thanos = catalog.split('- key: thanos', 1)[1].split('\n- key:', 1)[0]
+    assert 'description: PromQL queries with long-term retention.' in thanos
+    assert 'adapter_key: prometheus_http' in thanos
+    assert 'query_language: promql' in thanos
+    assert 'default_query_horizon: historical' in thanos
+    assert 'Thanos Query endpoint using the Prometheus HTTP API' not in thanos
+    assert '{{ provider.description }}' in metrics

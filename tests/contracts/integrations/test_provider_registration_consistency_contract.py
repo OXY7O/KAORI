@@ -204,6 +204,36 @@ def test_provider_registration_actions_and_placeholders_are_consistent() -> None
     assert "'placeholder': 'Enter secret key'" in minio_form
 
 
+def test_ansible_registration_uses_existing_actions_with_source_specific_copy() -> None:
+    actions = read('app/templates/integrations/components/_provider_registration_actions.html')
+    ansible = read('app/templates/integrations/orchestration/configuration_automation/providers/ansible/form.html')
+    minio = read('app/templates/integrations/storage/object_storage/providers/minio/instance_form.html')
+
+    # Existing providers retain their default Test Connection wording and proof state.
+    for default in (
+        'required_title="Connection Test Required"',
+        'verified_title="Connection Verified"',
+        'required_description="Complete Test Connection before registration."',
+        'verified_description="Verified connection payload is ready to register."',
+        'x-bind:disabled="!connectionVerified"',
+    ):
+        assert default in actions
+    assert 'provider_registration_actions.render(' in minio
+
+    # Ansible supplies truthful source-check wording without creating a separate footer.
+    assert 'integrations/components/_provider_registration_actions.html' in ansible
+    assert 'registration_actions.render(' in ansible
+    assert 'required_title="Source Validation Required"' in ansible
+    assert 'verified_title="Source Validated"' in ansible
+    assert 'register_label="Save Connection"' in ansible
+    assert 'submit_name="action"' in ansible
+    assert 'submit_value="save"' in ansible
+    assert 'connectionVerified:' in ansible
+    assert "this.$refs.connectionProof.value = ''" in ansible
+    assert 'connection_validation_header.render(' in ansible
+    assert 'registration_context.render(' in ansible
+
+
 def test_minio_connection_test_separates_s3_access_from_product_identity() -> None:
     client = read('app/integrations/storage/object_storage/providers/minio/client.py')
     s3_adapter = read('app/integrations/storage/object_storage/adapters/s3/client.py')
@@ -255,6 +285,54 @@ def test_metrics_source_and_alertmanager_detail_configuration_link_to_edit_pages
     assert "@alertmanager_bp.route('/instances/<int:instance_id>/edit'" in am_routes
 
 
+def test_prometheus_registration_reuses_compact_shared_guidance_and_aligned_contract_cards() -> None:
+    from jinja2 import Environment
+
+    metrics = read('app/templates/integrations/observability/metrics_source/instance_form.html')
+    context = read('app/templates/integrations/components/_provider_registration_context.html')
+    flow = read('app/templates/components/info_flow.html')
+    related = read('app/templates/components/related_page_card.html')
+    toggle = read('app/templates/components/operational_toggle.html')
+    Environment().parse(metrics)
+
+    # Three highlighted lines retain their operational gate/authority.
+    assert 'flow_note="Test Connection must pass before registration."' in metrics
+    assert '"One source supports independent asset bindings."' in metrics
+    assert "'Disabled sources stay stored, not resolved.'" in metrics
+    assert 'Registration requires a successful Test Connection' not in metrics
+    assert 'One metrics source can serve multiple managed assets through' not in metrics
+    assert 'Disabled connections stay stored but are excluded from scope resolution.' not in metrics
+    assert 'Register Connection' in metrics
+    assert 'connectionVerified' in metrics
+    assert 'x-bind:disabled="!connectionVerified"' in read(
+        'app/templates/integrations/components/_provider_registration_actions.html'
+    )
+
+    # Shared components still own the flow note, related workspace and toggle.
+    assert 'info_flow.render(' in context
+    assert 'related_page_card.render(' in context
+    assert '{% if note %}' in flow
+    assert '{% if boundary %}' in related
+    assert 'caller()' in toggle
+    assert metrics.count('provider_registration_context.render(') == 2
+
+    # The two cards use a common grid and surface hierarchy.
+    assert 'grid items-stretch gap-4 md:grid-cols-2' in metrics
+    assert (
+        metrics.count(
+            'flex h-full min-w-0 flex-col rounded-lg border border-outline-subtle bg-surface-subtle px-4 py-3'
+        )
+        == 3
+    )
+    assert metrics.count('mt-3 border-t border-outline-subtle pt-2') == 3
+    assert 'flex-1 text-xs leading-5 text-content-secondary' in metrics
+    assert 'Provider identity is immutable.' in metrics
+    assert 'Contract · Prometheus HTTP API v1 / PromQL' in metrics
+    assert "required=provider.version_detection_mode == 'manual'" in metrics
+    assert 'form.compatibility_profile_override' in metrics
+    assert "provider.adapter_key|replace('_', ' ') |title" in metrics
+
+
 def test_provider_registration_and_metrics_validation_guidance_stays_concise() -> None:
     kubernetes_add = read('app/templates/kubernetes/cluster/add.html')
     kubernetes_edit = read('app/templates/kubernetes/cluster/edit.html')
@@ -263,18 +341,12 @@ def test_provider_registration_and_metrics_validation_guidance_stays_concise() -
         'app/templates/integrations/observability/metrics_source/partials/_detail_validation_content.html'
     )
 
-    assert (
-        'Review Kubernetes integration coverage, API readiness, and governed consumer bindings before operational use.'
-        in kubernetes_add
-    )
+    assert 'Review coverage, API readiness, and bindings.' in kubernetes_add
     assert (
         'Kubernetes owns live cluster state. KAORI governs connection readiness, synchronized evidence, and consumer bindings.'
         in kubernetes_add
     )
-    assert (
-        'Review Kubernetes integration coverage, API readiness, and governed consumer bindings before operational use.'
-        in kubernetes_edit
-    )
+    assert 'Review coverage, API readiness, and bindings.' in kubernetes_edit
     assert (
         'Kubernetes owns live resources and API authorization. KAORI governs provider readiness, normalized evidence, and consumer resolution.'
         in kubernetes_edit
@@ -284,10 +356,7 @@ def test_provider_registration_and_metrics_validation_guidance_stays_concise() -
         'Provider identity is immutable. Bindings use the global Metrics Source contract; adapter and query-language details remain provider-defined.'
         in metrics_source
     )
-    assert (
-        'One metrics source can serve multiple managed assets through independent bindings and horizon-aware routing.'
-        in metrics_source
-    )
+    assert 'One source supports independent asset bindings.' in metrics_source
     assert (
         'executes queries; the source owns collection and retention. KAORI governs readiness, bindings, and resolution.'
         in metrics_source

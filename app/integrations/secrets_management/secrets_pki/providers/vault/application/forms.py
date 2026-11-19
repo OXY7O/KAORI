@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from flask import request
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, IntegerField, PasswordField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, ValidationError
@@ -18,28 +19,68 @@ from app.models.vault import VaultInstance
 
 
 class VaultConnectionForm(FlaskForm):
-    name = StringField('Connection Name', validators=[DataRequired(), Length(min=2, max=160)])
+    name = StringField(
+        'Connection Name',
+        validators=[DataRequired(), Length(min=2, max=160)],
+        render_kw={'placeholder': 'e.g. Vault X300'},
+    )
     environment = SelectField('Environment', choices=ENVIRONMENTS, validators=[DataRequired()])
-    description = TextAreaField('Description', validators=[Optional(), Length(max=2000)])
-    endpoint = StringField('HTTPS Endpoint', validators=[DataRequired(), Length(max=500)])
-    namespace = StringField('Vault Namespace (optional)', validators=[Optional(), Length(max=255)])
-    auth_mount = StringField('AppRole Auth Mount', default='approle', validators=[DataRequired(), Length(max=160)])
-    role_id = StringField('AppRole RoleID', validators=[DataRequired(), Length(max=255)])
-    secret_id = PasswordField('AppRole SecretID', validators=[Length(max=4096)])
+    description = TextAreaField(
+        'Description',
+        validators=[Optional(), Length(max=2000)],
+        render_kw={'placeholder': 'Describe the connection purpose (optional)'},
+    )
+    endpoint = StringField(
+        'HTTPS Endpoint',
+        validators=[DataRequired(), Length(max=500)],
+        render_kw={'placeholder': 'https://vault.example.internal:8200'},
+    )
+    namespace = StringField(
+        'Vault Namespace',
+        validators=[Optional(), Length(max=255)],
+        render_kw={'placeholder': 'e.g. team-platform (Enterprise only)'},
+    )
+    # The mount path is not the authentication method. Limit the normal UI
+    # to the default AppRole mount; retain a controlled custom-path escape hatch.
+    auth_mount_mode = SelectField(
+        'AppRole Mount',
+        choices=[('approle', 'Default AppRole Mount (approle)'), ('custom', 'Custom AppRole Mount')],
+        default='approle',
+        validators=[DataRequired()],
+    )
+    auth_mount = StringField('Custom AppRole Mount', default='approle')
+    role_id = StringField(
+        'AppRole RoleID',
+        validators=[DataRequired(), Length(max=255)],
+        render_kw={'placeholder': 'Paste AppRole RoleID'},
+    )
+    secret_id = PasswordField(
+        'AppRole SecretID',
+        validators=[Length(max=4096)],
+        render_kw={'placeholder': 'Enter AppRole SecretID'},
+    )
     timeout = IntegerField(
         'Request Timeout (seconds)', default=5, validators=[DataRequired(), NumberRange(min=1, max=30)]
     )
     enabled = BooleanField('Enable Provider Connection', default=True)
-    kv2_mounts = StringField('Approved KV v2 Mounts (comma-separated)', validators=[Optional(), Length(max=1500)])
-    pki_mounts = StringField('Approved PKI Mounts (comma-separated)', validators=[Optional(), Length(max=650)])
+    kv2_mounts = StringField('Approved KV v2 Mounts', validators=[Optional(), Length(max=1500)])
+    pki_mounts = StringField('Approved PKI Mounts', validators=[Optional(), Length(max=650)])
     pki_stored_certs_enabled = BooleanField('Enable Stored PKI Certificate Collection', default=False)
     connection_test_proof = StringField('Connection Test Proof', validators=[Optional()])
 
     def __init__(self, *args, existing: VaultInstance | None = None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.existing = existing
+        # Compatibility for Vault forms opened before the selector was added:
+        # retain their custom AppRole mount rather than silently using default.
+        if self.is_submitted() and not self.auth_mount_mode.raw_data:
+            submitted_mount = str(self.auth_mount.data or '').strip('/')
+            self.auth_mount_mode.data = 'custom' if submitted_mount not in {'', 'approle'} else 'approle'
         # Never hydrate a decrypted AppRole SecretID into rendered form data.
         if not self.is_submitted():
+            self.auth_mount_mode.data = (
+                'custom' if existing is not None and existing.auth_mount != 'approle' else 'approle'
+            )
             self.secret_id.data = ''
             self.kv2_mounts.data = ', '.join(existing.kv2_mounts or ()) if existing is not None else ''
             self.pki_mounts.data = ', '.join(existing.pki_mounts or ()) if existing is not None else ''
@@ -59,6 +100,10 @@ class VaultConnectionForm(FlaskForm):
             raise ValidationError('Vault namespace contains invalid characters.')
 
     def validate_auth_mount(self, field: StringField) -> None:
+        if self.auth_mount_mode.data == 'approle':
+            # Ignore stale hidden custom input when switching back to default.
+            field.data = 'approle'
+            return
         try:
             field.data = validate_auth_mount(str(field.data or ''))
         except ValueError as exc:
@@ -77,8 +122,12 @@ class VaultConnectionForm(FlaskForm):
             raise ValidationError(str(exc)) from exc
 
     def validate_secret_id(self, field: PasswordField) -> None:
-        if not str(field.data or '') and self.existing is None and not self.connection_test_proof.data:
-            raise ValidationError('AppRole SecretID is required.')
+        # Testing a new connection always requires plaintext SecretID from
+        # the current form. A prior signed proof may only authorize Save.
+        if self.existing is None and not str(field.data or ''):
+            action = str(request.form.get('action') or 'test').strip().lower()
+            if action == 'test' or not self.connection_test_proof.data:
+                raise ValidationError('AppRole SecretID is required for Test Connection.')
 
     def to_input(self) -> VaultConnectionInput:
         secret_id = str(self.secret_id.data or '') or (
@@ -90,7 +139,9 @@ class VaultConnectionForm(FlaskForm):
             description=str(self.description.data or '').strip() or None,
             endpoint=str(self.endpoint.data or '').strip(),
             namespace=str(self.namespace.data or '').strip('/') or None,
-            auth_mount=str(self.auth_mount.data or 'approle').strip('/'),
+            auth_mount=(
+                'approle' if self.auth_mount_mode.data == 'approle' else str(self.auth_mount.data or '').strip('/')
+            ),
             role_id=str(self.role_id.data or '').strip(),
             secret_id=secret_id,
             timeout=int(self.timeout.data or 5),

@@ -523,7 +523,7 @@ def _fleet_freshness(
                 stats['latest_analytics_at'],
                 missing='No analytics snapshot',
             ),
-            'description': 'Current and stale materialized Registry analytics are assessed separately across this scope.',
+            'description': 'Current and stale Registry analytics are assessed separately.',
             'icon': 'chart-no-axes-combined',
         },
     ]

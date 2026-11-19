@@ -63,15 +63,12 @@ def test_shared_overview_owns_summary_and_boundary_geometry() -> None:
     assert 'page_hero.context_action_classes()' in overview
     assert 'data-kaori-provider-integration-overview' in overview
     assert 'integration_ui.metric_grid_classes(4)' in overview
-    assert 'Integration Contract' in overview
-    assert 'Consumer Resolution' in overview
-    assert 'Authority Boundary' in overview
-    # Architectural explanations live in the shared Guide, not persistent footer cards.
+    # The obsolete Overview Info Tip content was removed by approved Visual UAT (#4666).
+    # Four KPI cells and an Inventory-style indicator remain the actual contract.
     assert 'md:grid-cols-3' not in overview
     assert '<article class="bg-surface-card px-5 py-4 sm:px-6">' not in overview
-    assert 'info_tip.render(' in overview
-    for section in ('Integration Contract', 'Consumer Resolution', 'Authority Boundary'):
-        assert f'"{section} — "' in overview
+    assert 'table_label.metadata_label(metrics|length ~ " Indicators", icon="layout-grid")' in overview
+    assert 'info_tip.render(' not in overview
 
 
 def test_kubernetes_frontpage_uses_same_coverage_and_registry_contract() -> None:
@@ -82,7 +79,7 @@ def test_kubernetes_frontpage_uses_same_coverage_and_registry_contract() -> None
     registry = read(
         'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html'
     )
-    routes = read('app/integrations/routes.py')
+    routes = read('app/integrations/orchestration/container_orchestrator/routes.py')
     frontpage_service = read('app/integrations/orchestration/container_orchestrator/frontpage.py')
 
     assert 'Kubernetes Integration Overview' in page
@@ -243,9 +240,8 @@ def test_harbor_frontpage_uses_registry_evidence_coverage_contract() -> None:
     assert 'RegistryWebhookEndpoint' in presentation
 
 
-def test_every_provider_integration_overview_inherits_canonical_title_guide() -> None:
+def test_every_provider_overview_uses_inventory_indicator_without_redundant_help() -> None:
     shared = read('app/templates/integrations/components/_provider_frontpage.html')
-    tip = read('app/templates/components/info_tip.html')
     pages = (
         'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/frontpage.html',
         'app/templates/integrations/observability/metrics_source/frontpage.html',
@@ -256,18 +252,15 @@ def test_every_provider_integration_overview_inherits_canonical_title_guide() ->
         'app/templates/integrations/source_control/github/index.html',
     )
 
-    assert 'components/info_tip.html' in shared
-    assert shared.count('info_tip.render(') == 1
-    # Whitespace around the Jinja replace call is owned by djLint.
-    assert '"provider-overview-" ~ (title|lower|replace(" ", "-")' in shared
-    assert 'title ~ " Guide"' in shared
-    assert 'items=overview_guide_items' in shared
+    assert 'components/info_tip.html' not in shared
+    assert 'info_tip.render(' not in shared
+    assert 'overview_guide_items' not in shared
+    assert 'components/table_label.html' in shared
+    assert 'table_label.metadata_label(metrics|length ~ " Indicators", icon="layout-grid")' in shared
     assert 'md:grid-cols-3' not in shared
     assert 'integration_ui.metric_grid_classes(4)' in shared
-    for section in ('Integration Contract', 'Consumer Resolution', 'Authority Boundary'):
-        assert f'"{section} — "' in shared
     assert 'bg-surface-card px-5 py-4 sm:px-6' not in shared
-    assert 'placement="right", variant="guide"' in shared
+    # Keep the provider call interface stable until a separate contract migration.
     for token in (
         'contract_title',
         'contract_description',
@@ -277,15 +270,13 @@ def test_every_provider_integration_overview_inherits_canonical_title_guide() ->
         'authority_description',
     ):
         assert token in shared
-    assert 'data-kaori-info-tip-trigger' in tip
-    assert 'data-kaori-info-tip-variant' in tip
 
     for path in pages:
         page = read(path)
         assert 'integrations/components/_provider_frontpage.html' in page, path
         assert page.count('provider_front.overview(') == 1, path
         if path == 'app/templates/integrations/secrets_management/vault/index.html':
-            # The Vault registry owns a second title-level Guide, not an Overview duplicate.
+            # Vault owns its registry Guide; the shared Overview uses a metadata indicator.
             assert page.count('info_tip.render(') == 1, path
             assert "info_tip.render('vault-connection-registry-guide'," in page
             assert 'title_extra=header_guide' in page
@@ -323,14 +314,16 @@ def test_provider_workspace_tabs_share_title_description_and_existing_tab_geomet
     outer_heading = tabs.split('data-kaori-integration-workspace-tabs')[0]
     assert 'integration_ui.palette_icon(' not in outer_heading
     assert tabs.index('integration_ui.workspace_section_intro(') < tabs.index('data-kaori-integration-workspace-tabs')
-    assert 'components/info_tip.html' in tabs
-    assert tabs.count('info_tip.render(') == 1
-    assert '"integration-workspace-" ~ provider_key' in tabs
-    assert 'placement="right"' in tabs
-    assert 'variant="guide"' in tabs
-    assert 'items=workspace_guide_items' in tabs
-    for section in ('Integration Coverage —', 'Connection Registry —', 'Authority Boundary —'):
-        assert section in tabs
+    # Operator UAT keeps Inventory-style Overview indicators, the Registry Guide,
+    # and no duplicate Guide inside the Integration Workspace.
+    assert 'components/info_tip.html' not in tabs
+    assert 'info_tip.render(' not in tabs
+    assert 'workspace_guide_items' not in tabs
+    assert 'title_extra=workspace_guide' not in tabs
+    overview = read('app/templates/integrations/components/_provider_frontpage.html')
+    assert 'info_tip.render(' not in overview
+    assert 'components/info_tip.html' not in overview
+    assert 'table_label.metadata_label(metrics|length ~ " Indicators", icon="layout-grid")' in overview
     shared_header = read('app/templates/integrations/components/_workspace.html')
     assert 'macro workspace_section_intro(title, description, aria_label)' in shared_header
     assert '<header class="min-w-0 px-1" aria-label="{{ aria_label }}">' in shared_header
@@ -339,7 +332,6 @@ def test_provider_workspace_tabs_share_title_description_and_existing_tab_geomet
     )
     assert 'title_extra=None' in shared_header
     assert '{% if title_extra %}{{ title_extra }}{% endif %}' in shared_header
-    assert 'title_extra=workspace_guide' in tabs
     assert tabs.index('integration_ui.section_header(') < tabs.index('framed_workspace_tabs.render(')
     assert 'framed_workspace_tabs.render(workspace_tabs, workspace_prefix, workspace_label)' in tabs
     assert "('coverage', 'Integration Coverage'" in tabs
@@ -347,3 +339,192 @@ def test_provider_workspace_tabs_share_title_description_and_existing_tab_geomet
     assert 'x-on:popstate.window="syncTab()"' in tabs
     for page in pages:
         assert 'components/integration_workspace_tabs.html' in read(page), page
+
+
+def test_shared_provider_registry_header_has_single_guide_in_all_six_consumers() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    shared = read('app/templates/integrations/components/_provider_registry.html')
+    paths = (
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html',
+        'app/templates/integrations/observability/metrics_source/partials/_instance_inventory.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_inventory_card.html',
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_registry.html',
+        'app/templates/integrations/registry/providers/harbor/partials/_registry.html',
+        'app/templates/integrations/source_control/github/partials/_connection_registry.html',
+    )
+    assert shared.count('info_tip.render(') == 1
+    assert 'variant="guide"' in shared
+    assert '"connection-registry-" ~ loading_id ~ "-guide"' in shared
+    for path in paths:
+        assert 'provider_registry.registry_header(' in read(path), path
+    vault = read('app/templates/integrations/secrets_management/vault/index.html')
+    assert vault.count('vault-connection-registry-guide') == 1
+    assert 'title_extra=header_guide' in vault
+
+    environment = Environment(loader=FileSystemLoader(ROOT / 'app' / 'templates'), autoescape=True)
+    # The imported global table macro contains a custom filter not used by
+    # this Registry Guide render; register it for standalone Jinja compilation.
+    environment.filters['environment_name'] = str
+    header = str(
+        environment.get_template('integrations/components/_provider_registry.html').module.registry_header(
+            'Metrics Source Registry',
+            'Review registered Metrics Source connections.',
+            'database-zap',
+            'metrics-source-inventory-loading',
+        )
+    )
+    assert 'data-kaori-info-tip-variant="guide"' in header
+    assert header.count('data-kaori-info-tip-trigger') == 1
+    assert '<span>Guide</span>' in header
+    assert 'connection-registry-metrics-source-inventory-loading-guide-tooltip' in header
+    assert 'Core readiness comes from Full Validation.' in header
+
+
+def test_overview_indicator_has_no_extra_info_trigger_on_all_provider_landings() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    overview = read('app/templates/integrations/components/_provider_frontpage.html')
+    assert 'table_label.metadata_label(metrics|length ~ " Indicators", icon="layout-grid")' in overview
+    metrics_page = read('app/templates/integrations/observability/metrics_source/frontpage.html')
+    assert 'Govern provider-neutral Metrics Sources, query routing, and consumer bindings.' in metrics_page
+    assert 'whitespace-nowrap' not in metrics_page
+    assert 'line-clamp' not in metrics_page
+
+    environment = Environment(loader=FileSystemLoader(ROOT / 'app' / 'templates'), autoescape=True)
+    metric = {'label': 'Ready Sources', 'value': 2, 'description': 'Committed readiness', 'icon': 'badge-check'}
+    html = str(
+        environment.get_template('integrations/components/_provider_frontpage.html').module.overview(
+            'chart-spline',
+            'Metrics Source Overview',
+            'Govern provider-neutral Metrics Sources, query routing, and consumer bindings.',
+            [metric, metric, metric, metric],
+            'Provider Contract',
+            'External metrics platform remains authoritative.',
+            'Consumer Resolution',
+            'Select by scope and capability.',
+            'Authority Boundary',
+            'KAORI correlates committed evidence.',
+        )
+    )
+    assert '4 Indicators' in html
+    assert 'data-kaori-info-tip' not in html
+    assert 'data-kaori-info-tip-trigger' not in html
+    assert 'data-kaori-provider-integration-overview' in html
+
+
+def test_tabular_provider_coverage_headers_share_filtered_result_counts() -> None:
+    """All tabular provider coverage cards label filtered totals, not page length."""
+
+    direct_coverage = (
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_integration_coverage.html',
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_coverage.html',
+        'app/templates/integrations/registry/providers/harbor/partials/_coverage.html',
+        'app/templates/integrations/source_control/github/partials/_integration_coverage.html',
+    )
+    for path in direct_coverage:
+        template = read(path)
+        assert 'provider_registry.registry_header(' in template, path
+        assert 'result_count=coverage_pagination.total_items' in template, path
+        assert 'result_count=coverage_rows|length' not in template, path
+
+    # MinIO owns pagination in the separately refreshed table-body partial.
+    minio_content = read(
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_coverage_content.html'
+    )
+    assert 'provider_registry.pagination_footer(coverage_pagination,' in minio_content
+    for path in (direct_coverage[0], direct_coverage[2], direct_coverage[3]):
+        assert 'provider_registry.pagination_footer(coverage_pagination,' in read(path), path
+
+    shared = read('app/templates/components/integration_coverage.html')
+    assert 'provider_registry.registry_header(' in shared
+    assert 'result_count=pagination.total_items' in shared
+    metrics = read('app/templates/integrations/observability/metrics_source/frontpage.html')
+    alertmanager = read('app/templates/integrations/observability/alert_source/providers/alertmanager/frontpage.html')
+    for provider in (metrics, alertmanager):
+        assert 'integrations/partials/_coverage_card.html' in provider
+    coverage_adapter = read('app/templates/integrations/partials/_coverage_card.html')
+    assert 'components/integration_coverage.html' in coverage_adapter
+    assert 'coverage_pagination,' in coverage_adapter
+
+    vault = read('app/templates/integrations/secrets_management/vault/index.html')
+    assert "table_label.metadata_label('Integration Coverage', 'route')" in vault
+    assert 'Source Qualification Boundaries' in vault
+
+    shared_header = read('app/templates/integrations/components/_provider_registry.html')
+    assert 'table_label.result_count(result_count)' in shared_header
+    assert 'variant="guide"' in shared_header
+    assert 'result_count=pagination.total_items' in read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html'
+    )
+
+
+def test_coverage_result_badge_uses_canonical_singular_and_plural() -> None:
+    """One/zero/many counts reuse the existing KAORI table-label macro."""
+
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(ROOT / 'app' / 'templates'), autoescape=True)
+    result_count = env.get_template('components/table_label.html').module.result_count
+    for count, expected in ((0, '0 Results'), (1, '1 Result'), (2, '2 Results')):
+        badge = str(result_count(count))
+        assert expected in badge
+        assert 'data-lucide="list-filter"' in badge
+
+
+def test_all_seven_connection_registries_display_filtered_results_and_refresh_header() -> None:
+    """Registry Guide and Results must stay in sync with filtered pagination."""
+
+    shared_header = read('app/templates/integrations/components/_provider_registry.html')
+    assert 'table_label.result_count(result_count)' in shared_header
+    assert 'variant="guide"' in shared_header
+
+    normal_registries = (
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html',
+        'app/templates/integrations/storage/object_storage/providers/minio/partials/_registry.html',
+        'app/templates/integrations/registry/providers/harbor/partials/_registry.html',
+        'app/templates/integrations/source_control/github/partials/_connection_registry.html',
+        'app/templates/integrations/observability/metrics_source/partials/_instance_inventory.html',
+        'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/_inventory_card.html',
+    )
+    for path in normal_registries:
+        source = read(path)
+        assert 'provider_registry.registry_header(' in source, path
+        assert 'result_count=pagination.total_items' in source, path
+        assert 'result_count=rows|length' not in source, path
+        assert 'result_count=stats.total' not in source, path
+
+    vault = read('app/templates/integrations/secrets_management/vault/index.html')
+    assert 'title_extra=header_guide' in vault
+    assert 'result_count=pagination.total_items' in vault
+    assert 'vault-connection-registry-guide' in vault
+
+    # Metrics Source and Alertmanager formerly replaced only the table,
+    # leaving a newly displayed header count stale after filtering/paging.
+    routes = read('app/integrations/routes.py')
+    for provider, header_path, content_path, card_path in (
+        (
+            'metrics-source',
+            normal_registries[4],
+            'app/templates/integrations/observability/metrics_source/partials/_inventory_content.html',
+            'integrations/observability/metrics_source/partials/_instance_inventory.html',
+        ),
+        (
+            'alertmanager',
+            normal_registries[5],
+            'app/templates/integrations/observability/alert_source/providers/alertmanager/partials/'
+            '_inventory_content.html',
+            'integrations/observability/alert_source/providers/alertmanager/partials/_inventory_card.html',
+        ),
+    ):
+        card_target = f'{provider}-inventory-card'
+        header = read(header_path)
+        content = read(content_path)
+        assert f'hx-target="#{card_target}"' in header
+        assert 'hx-swap="outerHTML"' in header
+        assert f"'{card_target}'" in routes
+        assert f"'{card_path}'" in routes
+        assert f"'#{card_target}'" in content
+        assert "swap='outerHTML'" in content
+        assert f'hx-target="#{provider}-inventory-content"' not in header
+        assert f"'#{provider}-inventory-content'" not in content

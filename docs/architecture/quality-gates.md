@@ -67,6 +67,8 @@ This gate performs, in order:
 17. Jinja syntax, reusable UI boundary, and inline-debt validation.
 18. Architecture and migration contract tests.
 
+The Celery topology check requires every ordinary task to have an explicit route and each ordinary routed queue to have a production and a Dev Container worker. The Infrastructure Automation pilot (#4799/#4800/#4980) is the separately validated opt-in `automation-worker` Dockerfile target, not an additional default service. Only the two reviewed non-mutating tasks may route to its dedicated `automation` queue. The verifier checks that the target is isolated and unprivileged, uses exactly one queue, concurrency 1 and prefetch 1, and cannot be activated by default Compose or Beat; it rejects drift or missing target rather than accepting an orphan route. Production remains the final independent image target. Static topology evidence is distinct from a live registered worker, pilot enablement, source or host qualification, and infrastructure mutation authority.
+
 ### Functional Gate
 
 ```bash

@@ -66,6 +66,101 @@ def test_resource_profiles_use_server_owned_kaori_content_tabs_and_snapshot_stat
     assert 'destructive_confirmation_modal.js' in page
 
 
+def test_resource_profile_namespace_titles_use_canonical_guides_and_committed_metadata() -> None:
+    profile_form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
+    profile_registry = read('app/templates/kubernetes/tenant/partials/_resource_profile_registry.html')
+    allocation = read('app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html')
+    namespace = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
+    namespace_registry = read('app/templates/kubernetes/tenant/partials/_namespace_registry.html')
+
+    for source, title, guide_id in (
+        (profile_form, 'Create Resource Profile', 'resource-profile-create-guide'),
+        (allocation, 'Tenant Allocation Overview', 'tenant-allocation-overview-guide'),
+    ):
+        header = source.split('</header>', 1)[0]
+        assert header.index(title) < header.index(guide_id)
+        assert header.count(f"'{guide_id}'") == 1
+        assert "variant='guide'" in header
+        assert 'items-center gap-1.5' in header
+
+    for source, title, guide_id, count in (
+        (
+            profile_registry,
+            'Resource Profile Registry',
+            'resource-profile-registry-guide',
+            'profile_pagination.total_items',
+        ),
+        (
+            namespace_registry,
+            'Namespace Provisioning Registry',
+            'namespace-provisioning-registry-guide',
+            'namespace_pagination.total_items',
+        ),
+    ):
+        assert f"'{title}'" in source
+        assert source.count(f"'{guide_id}'") == 1
+        assert 'title_extra=title_info' in source
+        assert f'result_count={count}' in source
+        assert 'registry_ui.filter_form(' in source
+
+    assert 'header_badge=table_label.result_count(namespace_total)' in namespace
+    assert "('folder-tree', 'Namespace Records', namespace_total" in namespace
+    assert "'Committed managed/adopted records'" in namespace
+    assert "'Intent differs from provider state'" in namespace
+    assert 'Committed managed/adopted Namespace records in KAORI' not in namespace
+    assert 'Committed intent differs from provider observation' not in namespace
+    assert "info_tip.render('namespace-administration-guide'" in namespace
+    assert namespace.count("'namespace-administration-guide'") == 1
+    assert "placement='right', variant='guide'" in namespace
+    assert 'resource_posture_grid.render(namespace_metrics, columns=4)' in namespace
+    assert "hx_target='#namespace-provisioning-workspace'" in namespace
+
+    assert "info_tip.render('resource-profile-identity-tip'" in profile_form
+    assert "info_tip.render('namespace-provisioning-contract-tip'" in read(
+        'app/templates/kubernetes/tenant/partials/_namespace_form.html'
+    )
+
+
+def test_resource_profile_summary_guides_and_modal_chrome_match_inventory_pattern() -> None:
+    page = read('app/templates/kubernetes/tenant/resource_profiles.html')
+    workflow = read('app/templates/kubernetes/tenant/partials/_resource_profile_workflow.html')
+    manage = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
+    allocation = read('app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html')
+    adoption = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
+
+    assert 'components/info_tip.html' in page
+    assert 'components/table_label.html' in page
+    assert 'header_badge=table_label.metadata_label((profile_metrics|length)' in page
+    assert "info_tip.render('resource-profile-administration-guide'" in page
+    assert "variant='guide'" in page
+    assert "info_tip.render('resource-profile-lifecycle-guide'" in workflow
+    assert "variant='guide'" in workflow
+    assert "action_href=url_for('tenant.namespace_provisioning')" in workflow
+
+    assert 'Committed Profile Contract' in manage
+    assert 'data-kaori-dialog-close' in manage
+    assert 'aria-label="Resource Profile destructive action"' in manage
+    assert manage.index('aria-label="Resource Profile destructive action"') < manage.index('<footer')
+    assert "url_for('tenant.delete_resource_profile_route', profile_id=profile.id)" in manage
+    assert manage.count('data-destructive-modal-open') == 1
+    assert 'data-destructive-submit-button-id="resource-profile-delete-submit-{{ profile.id }}"' in manage
+    assert '{% if not can_manage or usage.total %}disabled aria-disabled="true"{% endif %}' in manage
+    assert 'form="resource-profile-update-form-{{ profile.id }}"' in manage
+    assert 'Versioned intent · Existing Namespace snapshots remain pinned.' in manage
+    assert 'class="kaori-native-dialog' in manage
+
+    budget_modal = allocation.split('<dialog id="{{ budget_guide_dialog_id }}"', 1)[1]
+    budget_modal = budget_modal.split('</dialog>', 1)[0]
+    assert 'max-w-3xl' in budget_modal
+    assert 'max-w-2xl' not in budget_modal
+    assert 'Ready-worker allocatable' in budget_modal
+    assert 'unmanaged commitment' in budget_modal
+    assert 'Human confirmation.' in adoption
+    assert 'Managed adoption blocked until Capsule quota authority is admitted; revalidate before retry.' in adoption
+    assert 'Exact provider reason' in adoption
+    assert 'row.adoption_management_blocker' in adoption
+
+
 def test_capacity_decisions_registry_is_compact_and_exposes_read_only_evidence() -> None:
     template = read('app/templates/kubernetes/tenant/partials/_capacity_decisions.html')
     model = read('app/models/tenant.py')
@@ -1290,9 +1385,10 @@ def test_resource_profile_copy_is_compact_and_version_intent_remains_clear() -> 
         in dialogs
     )
     assert 'Managed takeover where authority exists; provider-owned constraints stay mirrored.' not in adoption
-    assert 'Adopt with governed provider cutover and equivalent allocation values.' in adoption
-    assert 'Attach to the existing Capsule Tenant; keep provider constraints mirrored.' in adoption
-    assert 'Adopted / Managed.' in adoption
+    assert 'Adopted / Managed · Governed provider cutover.' in adoption
+    assert 'Exact provider reason' in adoption
+    assert 'Provider Mirrored · No provider writes.' in adoption
+    assert 'Adopted / Managed · Governed provider cutover.' in adoption
     assert 'Namespace Attached · Managed Allocation.' in adoption
     assert 'Adopted / Provider Mirrored' in adoption
 
@@ -1410,7 +1506,7 @@ def test_tenant_operations_empty_registries_keep_canonical_pagination_without_ho
     assert 'data-kaori-canonical-registry-rows' in footer
 
 
-def test_tenant_operations_provider_authority_remains_optional_without_nested_card() -> None:
+def test_tenant_operations_provider_authority_is_a_read_only_standalone_subview() -> None:
     from jinja2 import Environment
 
     page = read('app/templates/kubernetes/tenant/operations.html')
@@ -1420,21 +1516,18 @@ def test_tenant_operations_provider_authority_remains_optional_without_nested_ca
     for src in (page, provider, access):
         Environment().parse(src)
 
-    # #960 owns one Operations primary tab row, and keeps authority as an
-    # optional, explanatory reference rather than another visible drift queue.
-    assert 'data-tenant-provider-authority-disclosure' in page
-    assert 'Provider Authority Reference' in page
-    assert 'Reference only—not a drift finding.' in page
-    assert 'View Records' in page
-    assert '{% set provider_authority_embedded = true %}' in page
+    # #4718 supersedes the former hidden disclosure: authority remains a
+    # dedicated, read-only Registry and is never mixed into a drift queue.
+    assert 'data-tenant-provider-authority-disclosure' not in page
+    assert "ops_view='provider-authority'" in page
+    assert "active_view == 'provider-authority'" in page
+    assert 'Committed provider ownership and reconciliation authority for every Tenant.' in provider
+    assert 'aria-label="Provider Authority Registry"' in provider
+    assert '{% set provider_authority_embedded = true %}' not in page
     assert '_operations_provider_registry.html" %}' in page
-    assert 'View Provider Authority' not in page
-    assert 'open>' not in page.split('data-tenant-provider-authority-disclosure', 1)[1].split('<summary', 1)[0]
-    assert 'group-open:rotate-180' in page
 
-    # The existing authoritative per-Tenant registry is still present and
-    # filterable. Embedded mode removes only its duplicate shell/header; no
-    # endpoint, query scope, pagination or provider metadata is discarded.
+    # Existing embedded mode remains supported in the partial, but Tenant
+    # Operations now uses its standalone header/filter/Rows pagination.
     assert 'provider_authority_embedded|default(false)' in provider
     assert 'if provider_authority_embedded' in provider
     assert '{% else %}' in provider
@@ -1546,6 +1639,73 @@ def test_adoption_and_legacy_cutover_guidance_match_approved_current_authority()
     assert 'Capsule Tenant Quota Governance' in operator
     assert 'Capsule Shared Allocation Governance' in operator
     assert 'Adopted Native Governance Cutover' in operator
+
+
+def test_native_cutover_visual_density_keeps_admission_and_provider_blockers_visible() -> None:
+    from jinja2 import Environment
+
+    change = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    cutover = read('app/templates/kubernetes/tenant/partials/_allocation_cutover.html')
+    Environment(autoescape=True).parse(change)
+    Environment(autoescape=True).parse(cutover)
+
+    # Copy is short enough for one desktop line without no-wrap clipping.
+    for copy in (
+        'CPU, memory, Pods and storage must fit budget.',
+        'Provider read-back must match before commit.',
+    ):
+        assert copy in change
+        assert len(copy) < 55
+    assert 'whitespace-nowrap' not in change.split('allocation-change-gates-heading', 1)[1].split('</ol>', 1)[0]
+    assert 'Governance Gates' in change
+    assert 'Capacity Admission' in change
+    assert 'Provider Reconcile' in change
+    assert 'Read-back & Commit' in change
+
+    header = cutover.split('<header', 1)[1].split('</header>', 1)[0]
+    guide_id = 'allocation-cutover-tip'
+    assert header.index('Adopted Native Governance Cutover') < header.index(guide_id)
+    assert header.index(guide_id) < header.index('Explicit Takeover')
+    assert header.count(guide_id) == 1
+    assert 'For legacy Adopted / Observed allocation only:' in header
+    assert 'Managed-on-Adopt needs no repeat.' in header
+    assert 'capacity admission, provider authority, ownership' in header
+    assert "variant='guide'" in header
+    assert 'whitespace-nowrap' not in header
+
+    journey = cutover.split('data-tenant-native-cutover-journey', 1)[1].split('</div>\n            <div', 1)[0]
+    assert 'Observed to governed Native allocation transition' in journey
+    assert 'Observed Provider Baseline' in cutover
+    assert 'Proposed KAORI Managed Contract' in cutover
+    assert 'Only committed after admitted provider read-back.' in cutover
+    assert 'md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]' in cutover
+    assert 'md:hidden' in cutover
+    assert 'md:block' in cutover
+
+    blocker = cutover.split('aria-label="Unavailable Native cutover targets"', 1)[1]
+    assert 'Control Unavailable' in blocker
+    assert 'review each provider reason before any cutover' in blocker
+    assert '<ul class=' in blocker
+    assert 'md:grid-cols-3' in blocker
+    assert 'md:col-span-2' in blocker
+    assert 'break-words' in blocker
+    assert 'cutover.get("authority")' in blocker
+    assert 'cutover.get("reason")' in blocker
+    assert "if not cutover.get('supported')" in blocker
+    assert "namespace_cutover_state.values()|rejectattr('supported')|list" in cutover
+
+    # Read-only comparison and provider-mutation guard stay unchanged.
+    for critical in (
+        'data-tenant-allocation-change-form',
+        'name="csrf_token"',
+        'data-tenant-allocation-change-namespace',
+        'data-tenant-allocation-change-profile',
+        'data-tenant-allocation-metric-side="{{ side }}"',
+        'coverage_comparison.native_sections(resource_profile_advanced_controls)',
+        "url_for('tenant.cutover_namespace_allocation_route')",
+        'not can_manage or not namespace_cutover_supported or not profiles',
+    ):
+        assert critical in cutover
 
 
 def test_adopted_native_cutover_reuses_committed_allocation_comparison() -> None:

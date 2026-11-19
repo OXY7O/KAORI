@@ -18,7 +18,9 @@ def test_catalog_hero_and_summary_refresh_out_of_band() -> None:
 
 def test_catalog_posture_uses_scoped_result_context_not_global_catalog() -> None:
     source = read('app/intelligence/service.py')
-    assert "'matched_domains': len({str(item.get('domain')) for item in filtered if item.get('domain')})" in source
+    projection = read('app/intelligence/rule_presentation.py')
+    assert "'matched_domains': len({str(item.get('domain')) for item in filtered if item.get('domain')})" in projection
+    assert 'domain_metrics=domain_metrics' in source
     assert "context = payload['result_context']" in source
     assert "label, tone = 'No Matching Rules', 'unknown'" in source
     assert "label, tone = 'Reserved Plan', 'unknown'" in source

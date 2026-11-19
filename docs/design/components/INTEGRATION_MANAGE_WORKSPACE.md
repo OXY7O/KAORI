@@ -39,7 +39,9 @@ The tab bar, summary row, content shell, loading states, empty states, and pagin
 
 ## Configuration contract
 
-Configuration is edited inside the manage workspace. Do not require a second edit page or place an `Edit Configuration` action inside the tab.
+Configuration is edited inside the manage workspace for providers with an admitted edit contract. Do not require a second edit page or place an `Edit Configuration` action inside the tab.
+
+**Immutable source-only exception:** The initial reviewed Ansible/Kubespray source profile deliberately has no Edit route or approved execution authority. Its Configuration tab must use the shared `_provider_configuration_contract.html` read-only variant with a noninteractive **Immutable Source** label, not a dead Configure link or an invented editing workflow. Source Git, toolchain policy and committed evidence remain visible through the same summary/evidence/Operational Context hierarchy. Editing must only be introduced through a separately approved implementation issue. Existing provider edit actions and default shared copy remain unchanged.
 
 The Configuration tab contains:
 

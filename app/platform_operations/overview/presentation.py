@@ -21,6 +21,21 @@ def _count_value(value: object) -> int:
     return 0
 
 
+def _overall_workspace_status(
+    critical_count: int, warning_count: int, unknown_count: int, active_count: int
+) -> tuple[str, str]:
+    """Determine the aggregate badge from the authoritative workspace tones."""
+    if critical_count:
+        return 'Critical Review', 'critical'
+    if warning_count:
+        return 'Review Required', 'warning'
+    if unknown_count:
+        return 'Configuration Review', 'unknown'
+    if active_count:
+        return 'Active', 'info'
+    return 'Ready', 'normal'
+
+
 def build_platform_operations_overview_context(
     *,
     can_jobs: bool,
@@ -57,9 +72,19 @@ def build_platform_operations_overview_context(
                 'status_label': status_label,
                 'status_tone': status_tone,
                 'metrics': (
-                    ('activity', 'Active', active),
-                    ('triangle-alert', 'Execution / Policy Alerts', f'{attention} / {policy_attention}'),
-                    ('circle-check', 'Completed · 24H', _count_value(job_stats.get('completed_24h', 0))),
+                    ('activity', 'Active', active, 'Active'),
+                    (
+                        'triangle-alert',
+                        'Exec / Policy',
+                        f'{attention} / {policy_attention}',
+                        'Execution / Policy Alerts',
+                    ),
+                    (
+                        'circle-check',
+                        'Completed · 24H',
+                        _count_value(job_stats.get('completed_24h', 0)),
+                        'Completed · 24H',
+                    ),
                 ),
                 'action_endpoint': ('jobs.configuration' if policy_attention and not attention else 'jobs.executions'),
                 'action_label': (
@@ -67,9 +92,7 @@ def build_platform_operations_overview_context(
                 ),
                 'boundary_label': 'Canonical execution evidence',
                 'boundary_title': 'Execution Evidence',
-                'boundary_description': (
-                    'Jobs & Executions owns queues, retries, cancellation, results, and worker evidence.'
-                ),
+                'boundary_description': 'Jobs owns queues, retries and execution evidence.',
             }
         )
 
@@ -96,21 +119,21 @@ def build_platform_operations_overview_context(
                         'shield-check',
                         'Policies Enabled',
                         f'{lifecycle["enabled_domain_count"]} / {lifecycle["managed_domain_count"]}',
+                        'Policies Enabled',
                     ),
                     (
                         'archive',
-                        'Active Archives / Jobs',
+                        'Archives / Jobs',
                         f'{lifecycle["active_archive_total"]} / {lifecycle["active_job_total"]}',
+                        'Active Archives / Jobs',
                     ),
-                    ('circle-x', 'Failed · 24H', lifecycle['failed_archive_24h']),
+                    ('circle-x', 'Failed · 24H', lifecycle['failed_archive_24h'], 'Failed · 24H'),
                 ),
                 'action_endpoint': 'platform_operations.data_lifecycle.index',
                 'action_label': 'Open Data Lifecycle',
                 'boundary_label': 'Archive-first governance',
                 'boundary_title': 'Lifecycle Governance',
-                'boundary_description': (
-                    'Data Lifecycle owns retention intent, verified archives, and safe cleanup boundaries.'
-                ),
+                'boundary_description': 'Data Lifecycle owns retention and verified archives.',
             }
         )
 
@@ -133,18 +156,15 @@ def build_platform_operations_overview_context(
                 'status_label': status_label,
                 'status_tone': status_tone,
                 'metrics': (
-                    ('badge-check', 'Ready Clusters', f'{ready_count} / {cluster_count}'),
-                    ('boxes', 'Protected Namespaces', protected_namespaces),
-                    ('shield', 'Global Reveal', 'Enabled' if global_enabled else 'Disabled'),
+                    ('badge-check', 'Ready Clusters', f'{ready_count} / {cluster_count}', 'Ready Clusters'),
+                    ('boxes', 'Protected NS', protected_namespaces, 'Protected Namespaces'),
+                    ('shield', 'Global Reveal', 'Enabled' if global_enabled else 'Disabled', 'Global Reveal'),
                 ),
                 'action_endpoint': 'platform_operations.kubernetes.index',
                 'action_label': 'Open Kubernetes Administration',
                 'boundary_label': 'Protected control boundary',
                 'boundary_title': 'Protected Administration',
-                'boundary_description': (
-                    'Kubernetes Administration owns readiness and reveal policy; live secret values remain in '
-                    'Secret Management.'
-                ),
+                'boundary_description': 'Kubernetes governs readiness and reveal access.',
             }
         )
 
@@ -155,16 +175,9 @@ def build_platform_operations_overview_context(
     review_workspace_count = attention_workspace_count + unknown_workspace_count
     active_workspace_count = sum(1 for workspace in workspaces if workspace['status_tone'] == 'info')
 
-    if critical_workspace_count:
-        overall_status_label, overall_status_tone = 'Critical Review', 'critical'
-    elif warning_workspace_count:
-        overall_status_label, overall_status_tone = 'Review Required', 'warning'
-    elif unknown_workspace_count:
-        overall_status_label, overall_status_tone = 'Configuration Review', 'unknown'
-    elif active_workspace_count:
-        overall_status_label, overall_status_tone = 'Active', 'info'
-    else:
-        overall_status_label, overall_status_tone = 'Ready', 'normal'
+    overall_status_label, overall_status_tone = _overall_workspace_status(
+        critical_workspace_count, warning_workspace_count, unknown_workspace_count, active_workspace_count
+    )
 
     return {
         'workspaces': workspaces,

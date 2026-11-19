@@ -1,0 +1,33 @@
+{% extends "layouts/app.html" %}
+{% import "integrations/components/_provider_frontpage.html" as provider_front %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/action_button.html" as action_button %}
+{% block title %}Ansible Integrations · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div class="kaori-integration-semantic space-y-6"
+         data-kaori-ansible-workspace>
+        {{ provider_front.hero("workflow", "terminal-square",
+                "Ansible Integrations",
+                "Register governed automation sources. Providers execute workflows.",
+                stats.total,
+                stats.ready,
+                0,
+                "Attention" if stats.attention else "Not Configured",
+                url_for("integrations.ansible_choose") ,
+        register_label="Add Connection",
+        association_label="Qualified Targets",
+        association_description="Validated cluster asset bindings") }}
+        <section class="{{ integration_ui.section_shell_classes() }}"
+                 aria-label="Ansible source connection registry">
+            {{ integration_ui.section_header("server-cog",
+                        "Connection Registry",
+                        "Review Ansible automation profiles, source qualification, and registration readiness. No live host requests are performed.") }}
+            <div class="{{ integration_ui.metric_grid_classes(3) }}">
+                {{ integration_ui.metric_card("Registered Connections", stats.total, "Canonical automation identities", "server-cog") }}
+                {{ integration_ui.metric_card("Operationally Ready", stats.ready, "Requires provider and target validation", "badge-check") }}
+                {{ integration_ui.metric_card("Needs Admission", stats.attention, "Source check is not runtime readiness", "shield-alert") }}
+            </div>
+            {% include "integrations/orchestration/configuration_automation/providers/ansible/_connection_registry.html" %}
+        </section>
+    </div>
+{% endblock dashboard_content %}

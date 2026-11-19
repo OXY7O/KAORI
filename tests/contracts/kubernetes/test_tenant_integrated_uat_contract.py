@@ -130,7 +130,10 @@ def test_tenant_operations_keeps_provider_policy_audit_and_reports_evidence_expl
     assert 'domain-reservation' in evidence
     assert 'exposure-policy' in evidence
     assert 'Tenant Governance' in overview
-    assert 'Governance &amp; Reports' in operations
+    assert 'Canonical Activity and Governance Workspaces' in operations
+    assert "url_for('access.activity_audit.index')" in operations
+    assert "url_for('intelligence.recommendations')" in operations
+    assert "url_for('reports.generate_report')" in operations
     assert 'Reports' in operations
 
 

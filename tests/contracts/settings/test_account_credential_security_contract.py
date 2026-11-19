@@ -71,6 +71,8 @@ def test_credential_workspace_explains_session_effect_without_reopening_external
 
     assert 'Minimum 12 characters' in change_password
     assert 'Password reuse is blocked' in change_password
+    assert 'Password, sessions, and audit.' in credential_information
+    assert 'Provider ownership, KAORI access, and audit boundary.' in credential_information
     assert 'Session Handling' in credential_information
     assert 'Revoke Others' in credential_information
     assert 'Keep current browser' in credential_information

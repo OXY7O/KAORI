@@ -47,9 +47,9 @@ def test_selected_disabled_or_uncommitted_source_does_not_become_all_sources(mon
 
 
 def test_unavailable_numeric_security_sync_post_is_rejected_before_dispatch(monkeypatch) -> None:
-    from app.artifact_registry import routes
+    from app.artifact_registry import route_scope, routes
 
-    monkeypatch.setattr(routes, '_eligible_security_sources', lambda: [])
+    monkeypatch.setattr(route_scope, '_eligible_security_sources', lambda: [])
     app = Flask(__name__)
     with app.test_request_context(
         '/artifact-registry/security/sync',

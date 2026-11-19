@@ -1,5 +1,6 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/resource_posture_grid.html" as posture_grid %}
+{% import "components/table_label.html" as table_label %}
 {% set coverage_exceptions = (payload.summary.coverage_partial or 0) + (payload.summary.coverage_uncovered or 0) + (payload.summary.coverage_not_reported or 0) %}
 {% set metrics = [
     ('circle-check', 'Valid', payload.summary.healthy, 'Certificates outside the renewal window.', 'normal'),
@@ -9,10 +10,14 @@
     ('badge-x', 'Invalid', payload.summary.invalid, 'Certificates that could not be parsed or validated.', 'critical' if payload.summary.invalid else 'normal'),
     ('shield-alert', 'Host Coverage Exceptions', coverage_exceptions, 'Partial, uncovered, or unavailable host mapping evidence.', 'warning' if coverage_exceptions else 'normal')
 ] %}
+{% set posture_badge %}
+    {{ table_label.metadata_label(metrics|length ~ ' Indicators', icon='layout-grid') }}
+{% endset %}
 {% call operational_section_card.render(
     'Certificate Validity',
     'Lifecycle and declared-host coverage for the active governance filters.',
     'gauge',
+    header_badge=posture_badge,
     body_classes='p-0'
     ) %}
     {{ posture_grid.render(metrics, columns=3) }}

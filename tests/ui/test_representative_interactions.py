@@ -177,6 +177,9 @@ def test_welcome_visual_qa_light_and_dark(
 
     _login(page, kaori_authenticated_base_url)
 
+    # Capture both themes even when one baseline fails. The test still fails
+    # closed after recording independent light/dark findings and screenshots.
+    failures: list[str] = []
     for visual_theme in ('light', 'dark'):
         with _browser_evidence(page, f'welcome-{visual_theme}', viewport_name):
             _load_persisted_visual_theme(page, visual_theme)
@@ -204,7 +207,7 @@ def test_welcome_visual_qa_light_and_dark(
                         evidence=str(exc),
                     )
                 )
-                raise
+                failures.append(f'{visual_theme}: {exc}')
             else:
                 record_visual_audit_finding(
                     VisualAuditFinding(
@@ -217,6 +220,8 @@ def test_welcome_visual_qa_light_and_dark(
                         evidence=evidence_name,
                     )
                 )
+
+    assert not failures, 'Welcome visual QA failures:\n' + '\n'.join(failures)
 
 
 def test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewports(
@@ -236,14 +241,40 @@ def test_welcome_catalog_content_search_and_card_geometry_across_canonical_viewp
         assert response.ok
 
         expect(page.get_by_role('heading', name='Welcome to KAORI')).to_be_visible()
+        secrets_card = page.get_by_role('link', name='Open Secrets & PKI Workspace')
         tenant_card = page.get_by_role('link', name='Open Tenant Management Workspace')
         access_card = page.get_by_role('link', name='Open Access Workspace')
+        expect(secrets_card).to_be_visible()
         expect(tenant_card).to_be_visible()
         expect(access_card).to_be_visible()
+        expect(secrets_card).to_contain_text('Secret values')
         expect(tenant_card).to_contain_text('Governed Tenancy')
         expect(tenant_card).to_contain_text(re.compile(r'namespace provisioning', re.I))
         expect(access_card).to_contain_text(re.compile(r'identity providers', re.I))
         expect(access_card).to_contain_text('directory-projected external identities')
+
+        # Operator-reviewed Welcome card copy must fit naturally without clipping.
+        if viewport_name in {'large-desktop', 'laptop'}:
+            for title, card in (
+                ('Secrets & PKI', secrets_card),
+                ('Tenant Management', tenant_card),
+                ('Access', access_card),
+            ):
+                description = card.locator('p').last
+                dimensions = description.evaluate(
+                    """element => ({
+                        height: element.getBoundingClientRect().height,
+                        lineHeight: parseFloat(getComputedStyle(element).lineHeight),
+                        scrollHeight: element.scrollHeight,
+                        clientHeight: element.clientHeight
+                    })"""
+                )
+                assert dimensions['height'] <= dimensions['lineHeight'] * 2 + 1, (
+                    f'{title} Welcome description exceeds two desktop lines: {dimensions}'
+                )
+                assert dimensions['scrollHeight'] <= dimensions['clientHeight'] + 1, (
+                    f'{title} Welcome description is clipped: {dimensions}'
+                )
 
         assert_document_fits_viewport(page)
         cards = page.locator('[data-workspace-card]')
@@ -360,6 +391,8 @@ def test_sidebar_v21_two_level_navigation_and_page_workspace_across_canonical_vi
 
             collapse.click()
             expect(page.get_by_role('button', name='Expand navigation')).to_be_visible()
+            # Wait for the existing 200ms sidebar width transition before measuring.
+            expect(sidebar).to_have_css('width', '78px')
             collapsed_box = sidebar.bounding_box()
             assert collapsed_box is not None
             assert collapsed_box['width'] < expanded_box['width']

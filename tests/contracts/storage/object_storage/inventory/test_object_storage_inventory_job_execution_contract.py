@@ -91,7 +91,8 @@ def test_inventory_pages_and_minio_lifecycle_read_only_committed_job_snapshot() 
     assert ').count(),' in minio_presentation
     assert 'instance.object_storage_system.inventory_observed_at' in minio_presentation
     assert 'Inventory Snapshot · ' in scope
-    assert 'Object Storage Inventory Sync' in scope
+    assert 'Inventory &amp; Lifecycle' in scope
+    assert 'Snapshot Freshness' in scope
     assert 'Manage Inventory Jobs' not in scope
     assert "job_key='object_storage.inventory.sync'" not in scope
     assert 'Open Observability' in scope

@@ -4,6 +4,7 @@
     {% call detail_ui.resource_sheet() %}
         {% call detail_ui.inventory_section('Provider & Connection', 'plug-zap',
             description='Adapter identity and connection.',
+            badge=row.configuration.label, badge_type='status', badge_tone=row.configuration.tone,
             compact_layout=true) %}
             <div class="grid min-w-0 gap-x-8 gap-y-1 sm:grid-cols-2 [&>div]:border-0 [&>div]:py-1.5"
                  data-kaori-idp-connection-facts>
@@ -17,6 +18,7 @@
         {% endcall %}
         {% call detail_ui.inventory_section('Identity & Access', 'contact-round',
             description='Identity projection and KAORI access.',
+            badge=row.state.label, badge_type='status', badge_tone=row.state.tone,
             compact_layout=true) %}
             <div class="grid min-w-0 gap-x-8 gap-y-1 sm:grid-cols-2 [&>div]:border-0 [&>div]:py-1.5"
                  data-kaori-idp-access-facts>

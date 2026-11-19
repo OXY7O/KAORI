@@ -1,0 +1,118 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
+{% set source_rows = analytics.alert_source_rows|default([], true) %}
+{% set ready_sources = source_rows|selectattr('status', 'equalto', 'ready')|list %}
+{% set has_alert_evidence = analytics.snapshot_count|default(0) > 0 and ready_sources|length > 0 %}
+{% set alert_metrics = [
+    ('bell-ring', 'Active Alerts', analytics.aggregate.active_alerts if has_alert_evidence else 'N/A', 'Committed source-reported records', 'brand'),
+    ('shield-alert', 'Critical', analytics.aggregate.critical_alerts if has_alert_evidence else 'N/A', 'Committed critical-severity records', 'evidence'),
+    ('triangle-alert', 'Warning', analytics.aggregate.warning_alerts if has_alert_evidence else 'N/A', 'Committed warning-severity records', 'evidence'),
+    ('bell-off', 'Suppressed', analytics.aggregate.suppressed_alerts if has_alert_evidence else 'N/A', 'Source-reported suppressed records', 'evidence')
+] %}
+<section class="{{ analysis_surface.snapshot_shell_classes() }}"
+         data-registry-alerts-detail
+         aria-labelledby="registry-alerts-detail-title">
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ analysis_surface.role_icon_classes('brand', size='compact') }}"
+                  aria-hidden="true"><i data-lucide="bell-ring" class="h-4 w-4"></i></span>
+            <div class="min-w-0">
+                <p class="{{ analysis_surface.role_label_classes('brand') }}">Operational Alerts</p>
+                <div class="mt-1 flex flex-wrap items-center gap-2">
+                    <h3 id="registry-alerts-detail-title"
+                        class="text-base font-semibold text-content-primary">Alertmanager + Metrics Source evidence</h3>
+                    {{ info_tip.render('registry-alerts-detail-guide',
+                                        'Registry Alerts Analytics Guide',
+                                        'Alertmanager is primary. Metrics Source is fallback evidence. All records shown here came from committed Analytics materialization.',
+                                        items=[
+                                        'A ready source is committed evidence availability, not live provider health.',
+                                        'Metrics Source fallback does not carry every Alertmanager lifecycle state.',
+                                        'Unavailable source evidence means N/A, not zero active alerts.',
+                                        'Review source selection and fallback before interpreting the alert counts.',
+                                        'Search, Severity, State and Source filters operate on committed alert records only.'
+                                        ], placement='right', variant='guide') }}
+                </div>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Alertmanager is primary. Metrics Source is fallback evidence. All records shown here came from committed Analytics materialization.</p>
+            </div>
+        </div>
+        {{ table_label.status_indicator_label(analytics.aggregate.alert_sources_ready ~ '/' ~ analytics.provider_count ~ ' Sources Ready' if analytics.provider_count else 'Sources Unavailable',
+                'normal' if analytics.provider_count and analytics.aggregate.alert_sources_ready == analytics.provider_count else ('warning' if ready_sources else 'unknown') ) }}
+    </header>
+    <div class="{{ analysis_surface.metric_grid_classes(4) }}">
+        {% for icon, label, value, detail, role in alert_metrics %}
+            <article class="{{ analysis_surface.metric_cell_classes() }}">
+                <div class="flex items-center gap-2">
+                    <span class="{{ analysis_surface.metric_icon_classes('compact', role=role) }}"
+                          aria-hidden="true"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
+                    <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                </div>
+                <p class="mt-3 text-xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ detail }}</p>
+            </article>
+        {% endfor %}
+    </div>
+    <div class="grid gap-4 border-t border-outline-subtle p-4 lg:grid-cols-5 sm:p-5">
+        <section class="{{ analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-3') }}"
+                 aria-labelledby="registry-alert-source-title">
+            <header class="flex items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
+                          aria-hidden="true"><i data-lucide="network" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <h4 id="registry-alert-source-title"
+                            class="text-sm font-semibold text-content-primary">Committed Alert Sources</h4>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Selected primary or qualified fallback by Registry.</p>
+                    </div>
+                </div>
+                {{ table_label.metadata_label(table_label.count_text(source_rows|length, 'Source') , 'database') }}
+            </header>
+            {% if source_rows %}
+                <div class="divide-y divide-outline-subtle"
+                     data-registry-alert-source-rows>
+                    {% for source in source_rows[:5] %}
+                        <article class="flex min-w-0 flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:px-5">
+                            <div class="min-w-0">
+                                <h5 class="break-words text-sm font-semibold text-content-primary">{{ source.registry_name }}</h5>
+                                <p class="mt-1 break-words text-xs leading-5 text-content-secondary">{{ source.detail }}</p>
+                            </div>
+                            <div class="shrink-0">
+                                {{ table_label.status_indicator_label(source.source_label ~ (' · Fallback' if source.fallback_used else '') ,
+                                'warning' if source.fallback_used else ('normal' if source.status == 'ready' else 'unknown')) }}
+                            </div>
+                        </article>
+                    {% endfor %}
+                    {% if source_rows|length > 5 %}
+                        <p class="px-4 py-3 text-xs leading-5 text-content-muted sm:px-5">Showing 5 of {{ source_rows|length }} committed sources.</p>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="p-4 sm:p-5">
+                    <div class="{{ analysis_surface.empty_evidence_classes('px-5 py-6 text-center') }}"
+                         data-kaori-empty-state
+                         role="status">
+                        <p class="text-sm font-semibold text-content-primary">Alert Source Evidence Not Available</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">No committed source selection is available for this Registry and Time Range. Missing source evidence is not a clean alert posture.</p>
+                    </div>
+                </div>
+            {% endif %}
+        </section>
+        <aside class="{{ analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-2') }}"
+               aria-labelledby="registry-alert-readout-title">
+            <header class="flex items-start gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
+                <span class="{{ analysis_surface.role_icon_classes('insight', size='compact') }}"
+                      aria-hidden="true"><i data-lucide="scan-eye" class="h-4 w-4"></i></span>
+                <div class="min-w-0">
+                    <h4 id="registry-alert-readout-title"
+                        class="text-sm font-semibold text-content-primary">Alert Evidence Reading</h4>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">A zero only when the source is qualified.</p>
+                </div>
+            </header>
+            <div class="space-y-3 px-4 py-4 sm:px-5">
+                {{ table_label.status_label('Observed source' if has_alert_evidence else 'Source unavailable', 'info' if has_alert_evidence else 'unknown') }}
+                <p class="text-xs leading-5 text-content-secondary">Committed alert records are not an on-demand Alertmanager query. A fallback Metrics Source can have narrower lifecycle semantics.</p>
+                <p class="text-xs leading-5 text-content-secondary">Filters and pagination below retain the committed selected-window evidence boundary.</p>
+            </div>
+        </aside>
+    </div>
+</section>

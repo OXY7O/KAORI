@@ -1,0 +1,11 @@
+# Local-only Docker Compose extension for approved lab DNS host aliases.
+# Copy only the required mapping into ignored:
+# secrets/devcontainer/compose.host-overrides.yml
+#
+# Example IP is RFC 5737 documentation-only: replace with the verified IP of
+# your own AD DNS/LDAPS endpoint. Do not commit private environment addresses.
+# Prefer authoritative AD DNS instead of a static hostname override.
+services:
+  workspace:
+    extra_hosts:
+      - "adds.kaori.cloud=192.0.2.10"

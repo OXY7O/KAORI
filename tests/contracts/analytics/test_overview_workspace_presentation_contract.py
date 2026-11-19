@@ -13,6 +13,80 @@ def has_jinja_assignment(source: str, variable: str, value: str) -> bool:
     return re.search(pattern, source) is not None
 
 
+def test_kubernetes_overview_title_guides_cover_all_tabs_and_unavailable_states() -> None:
+    """#4736: title-owned Guides remain visible with and without worker snapshots."""
+    from jinja2 import Environment, FileSystemLoader
+
+    environment = Environment(loader=FileSystemLoader('app/templates'), autoescape=True)
+    panel_guides = {
+        'partials/_resource_snapshot.html': 'usage',
+        'partials/_capacity_snapshot.html': 'capacity',
+        'partials/_workload_snapshot.html': 'workload',
+        'partials/_storage_snapshot.html': 'storage',
+        'partials/_top_consumers_snapshot.html': 'consumers',
+        'partials/_forecast_snapshot.html': 'forecast',
+        'partials/_alerts_snapshot.html': 'alerts',
+        'partials/_actionable_recommendation_summary.html': 'actions',
+        'partials/_recommendations.html': 'guidance',
+    }
+    seen_ids = set()
+    for filename, key in panel_guides.items():
+        source = read(filename)
+        environment.parse(source)
+        guide_id = f'kubernetes-analytics-overview-{key}-guide'
+        assert source.count(f"'{guide_id}'") == 1, filename
+        assert guide_id not in seen_ids, filename
+        seen_ids.add(guide_id)
+        assert 'components/info_tip.html' in source
+        assert "placement='right', variant='guide'" in source
+        assert source.count('info_tip.render(') == 1
+        assert 'overview_surface.snapshot_header_classes()' in source
+        if 'overview_surface.metric_grid_classes(' in source:
+            assert source.index('{{ overview_' + key + '_guide }}') < source.index(
+                'overview_surface.metric_grid_classes('
+            )
+        if key not in {'actions', 'guidance'}:
+            assert 'title_accessory=overview_' + key + '_guide' in source
+
+    controls = read('partials/_health_summary.html')
+    overview = read('index.html')
+    environment.parse(controls)
+    environment.parse(overview)
+    assert 'title_accessory=analytics_controls_guide' in controls
+    assert "'kubernetes-analytics-overview-controls-guide'" in controls
+    assert "'kubernetes-analytics-overview-health-guide'" in controls
+    assert "'kubernetes-analytics-overview-workspace-guide'" in overview
+    assert overview.count('info_tip.render(') == 1
+    assert "variant='guide'" in overview
+    assert controls.count("variant='guide'") == 2
+    assert 'Overview' in overview and 'data-analytics-tabset' in overview
+    assert 'hx-get="{{ url_for(' in overview
+    assert 'Review headroom, forecasts, and alerts before scheduling remediation.' in controls
+    assert 'Compare the affected domain with current headroom' not in controls
+
+    shared_source = Path('app/templates/analytics/components/_analysis_surfaces.html').read_text(encoding='utf-8')
+    environment.parse(shared_source)
+    assert (
+        "macro snapshot_unavailable(panel, title, description, icon='database-zap', title_accessory='')"
+        in shared_source
+    )
+    assert '{{ title_accessory }}' in shared_source
+    rendered = environment.from_string(
+        "{% import 'analytics/components/_analysis_surfaces.html' as surface %}"
+        "{{ surface.snapshot_unavailable('usage', 'Example', 'Missing evidence',"
+        " title_accessory='Guide') }}"
+    ).render()
+    assert 'Guide' in rendered
+    assert 'Snapshot Unavailable' in rendered
+    assert 'Missing evidence' in rendered
+    default_rendered = environment.from_string(
+        "{% import 'analytics/components/_analysis_surfaces.html' as surface %}"
+        "{{ surface.snapshot_unavailable('usage', 'Example', 'Missing evidence') }}"
+    ).render()
+    assert 'Guide' not in default_rendered
+    assert 'Snapshot Unavailable' in default_rendered
+
+
 def test_overview_controls_and_readiness_follow_shared_analytics_standard() -> None:
     source = read('partials/_health_summary.html')
     hero = read('partials/_hero.html')
@@ -52,6 +126,40 @@ def test_metrics_source_status_uses_one_canonical_card_contract() -> None:
     assert 'Checked At' in source
     assert 'flat=' not in source
     assert 'compact=' not in source
+
+
+def test_overview_major_sections_reuse_shared_intro_outside_cards() -> None:
+    """#4736 Visual UAT: contextual introductions before Health and Analytics tabs."""
+    from jinja2 import Environment
+
+    health = read('partials/_health_summary.html')
+    overview = read('index.html')
+
+    for source in (health, overview):
+        Environment(autoescape=True).parse(source)
+        assert '{% import "components/section_intro.html" as section_intro %}' in source
+        assert source.count('section_intro.render(') == 1
+        assert 'section class="space-y-4"' in source
+
+    assert health.index('</form>') < health.index('section_intro.render(')
+    assert health.index('section_intro.render(') < health.index(
+        '<section class="{{ overview_surface.snapshot_shell_classes() }}">'
+    )
+    assert 'aria-labelledby="analytics-overview-health-review-heading"' in health
+    assert "'Operational Health Review'" in health
+    assert 'evidence coverage, and priority risks' in health
+    assert health.count('Operational Health Summary</h2>') == 1
+    assert '6 Health Signals' in health
+
+    assert overview.index('id="overview-health-summary"') < overview.index('section_intro.render(')
+    assert overview.index('section_intro.render(') < overview.index('id="analytics-overview-workspace"')
+    assert 'aria-labelledby="analytics-overview-domain-review-heading"' in overview
+    assert "'Explore Analytics Domains'" in overview
+    assert 'committed evidence, operational signals' in overview
+    assert overview.count('Analytics Overview Workspace</h2>') == 1
+    assert overview.count('content_tabs.render_buttons(') == 1
+    assert 'hx-trigger="load delay:150ms once"' in overview
+    assert 'hx-trigger="kaori:analytics-tab-activated once"' in overview
 
 
 def test_operational_health_summary_has_separate_vertical_rhythm() -> None:

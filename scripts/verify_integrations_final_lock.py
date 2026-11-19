@@ -169,7 +169,7 @@ def main() -> int:
         errors,
     )
     require(
-        'Open Bindings & Consumers → View More on the affected binding for exact missing capability evidence and remediation.'
+        'Open Bindings &amp; Consumers → View More for exact missing capability evidence and remediation.'
         in metrics_scope
         and 'Missing technical capability:' not in metrics_scope
         and 'Binding coverage missing:' not in metrics_scope,
@@ -660,7 +660,8 @@ def main() -> int:
         'app/templates/integrations/observability/metrics_source/partials/_runtime_panel.html'
     )
     require(
-        'Prometheus HTTP API v1 / PromQL core contract' in metrics_form
+        'Contract · Prometheus HTTP API v1 / PromQL' in metrics_form
+        and 'KAORI detects provider runtime independently of API compatibility.' in metrics_form
         and 'Prometheus HTTP API v2' not in metrics_form
         and 'Prometheus HTTP API v3' not in metrics_form
         and 'Provider Runtime Profile' in metrics_runtime_template
@@ -826,9 +827,28 @@ def main() -> int:
         'Integration Domain Coverage must not report 0-of-0 target domains as Ready',
         errors,
     )
+    runtime_header = runtime_overview.split('</header>', 1)[0]
     require(
-        'Runtime Evidence Lifecycle' in runtime_overview and 'components/states/_empty_state.html' in runtime_overview,
-        'Runtime Overview must use canonical empty-state ownership and expose shared lifecycle governance',
+        "'components/states/_empty_state.html'" in runtime_overview
+        and 'No Integration Targets Registered' in runtime_overview
+        and 'No Runtime Targets Match These Filters' in runtime_overview,
+        'Runtime Overview must retain canonical empty-state ownership for unregistered and filtered targets',
+        errors,
+    )
+    require(
+        "current_user.has_permission('platform_operations.view_data_lifecycle')" in runtime_header
+        and "url_for('platform_operations.data_lifecycle.index', domain='runtime_observation')" in runtime_header
+        and runtime_header.count('Open Data Lifecycle') == 1
+        and 'Reload Evidence' in runtime_header
+        and runtime_header.index('Open Data Lifecycle') < runtime_header.index('Reload Evidence')
+        and 'Runtime Evidence Lifecycle' not in runtime_overview,
+        'Runtime Overview must expose authorized Data Lifecycle governance in header without redundant footer',
+        errors,
+    )
+    require(
+        'provider_registry.pagination_footer(runtime_pagination' in runtime_overview
+        and '<div id="integration-runtime-modal-host"></div>' in runtime_overview,
+        'Runtime Overview must retain standard pagination and record detail host after removing lifecycle footer',
         errors,
     )
     for marker in (

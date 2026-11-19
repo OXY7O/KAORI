@@ -86,11 +86,26 @@ def main() -> int:
         'Ready Connections',
         'Consumer Bindings',
         'Register Connection',
-        'Integration Contract',
-        'Consumer Resolution',
-        'Authority Boundary',
+        'data-kaori-provider-integration-overview',
+        'table_label.metadata_label(metrics|length ~ " Indicators", icon="layout-grid")',
+        'integration_ui.metric_grid_classes(4)',
+        'integration_ui.metric_card(item.label, item.value, item.description, item.icon)',
     ):
         assert marker in shared_frontpage
+
+    # The approved compact Overview has four KPIs but no duplicate help glyph
+    # or always-visible architecture footer. Detail/Registry Guides own context.
+    for retired in ('Integration Contract', 'Consumer Resolution', 'Authority Boundary', 'info_tip.render('):
+        assert retired not in shared_frontpage, retired
+    assert '<article class="bg-surface-card px-5 py-4 sm:px-6">' not in shared_frontpage
+    for marker in (
+        'components/info_tip.html',
+        'info_tip.render("connection-registry-" ~ loading_id ~ "-guide"',
+        'variant="guide"',
+        'The external provider owns live resources and effective access;',
+        'Core readiness comes from Full Validation.',
+    ):
+        assert marker in shared_registry
 
     overview = read('app/templates/integrations/overview.html')
     overview_service = read('app/integrations/service.py')

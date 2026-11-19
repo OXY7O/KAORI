@@ -107,6 +107,78 @@ def compact_recommendation_summary(value: Any, *, limit: int = 180) -> str:
     return ' '.join(words).rstrip(' ,;:-') + '.'
 
 
+def recommendation_summary_domain_metrics(
+    findings: list[dict[str, Any]],
+    domain_labels: dict[str, str],
+) -> list[dict[str, str | int]]:
+    """Project authorized matching findings, not integration inventory, into domain KPIs."""
+
+    counts: dict[str, int] = {}
+    for finding in findings:
+        domain = _clean(finding.get('domain'))
+        if domain in domain_labels:
+            counts[domain] = counts.get(domain, 0) + 1
+
+    core_domains = (
+        ('kubernetes', 'ship-wheel', 'Committed Kubernetes finding(s)'),
+        ('object_storage', 'database-zap', 'Committed Object Storage finding(s)'),
+        ('registry', 'package', 'Committed Registry finding(s)'),
+    )
+    metrics: list[dict[str, str | int]] = [
+        {
+            'key': key,
+            'icon': icon,
+            'label': domain_labels[key],
+            'count': counts.get(key, 0),
+            'description': description,
+        }
+        for key, icon, description in core_domains
+    ]
+
+    extra_icons = {
+        'secrets_pki': 'shield-check',
+        'server': 'server',
+        'hci': 'network',
+    }
+    primary_keys = {key for key, _, _ in core_domains}
+    for domain, label in domain_labels.items():
+        if domain in primary_keys or not counts.get(domain):
+            continue
+        metrics.append(
+            {
+                'key': domain,
+                'icon': extra_icons.get(domain, 'layers'),
+                'label': label,
+                'count': counts[domain],
+                'description': f'Committed {label} finding(s)',
+            }
+        )
+    return metrics
+
+
+def recommendation_detail_header_summary(item: dict[str, Any]) -> str:
+    """Keep the review header concise using committed restart evidence only."""
+
+    summary = ' '.join(str(item.get('summary') or '').split())
+    if not _clean(item.get('rule_key')).startswith('kubernetes.pod.high_restart_count'):
+        return summary
+
+    evidence = _mapping(item.get('evidence'))
+    try:
+        affected_count = int(evidence['affected_count'])
+        total_restarts = int(evidence['total_restart_count'])
+        peak_restarts = int(evidence['max_restart_count'])
+    except (KeyError, TypeError, ValueError):
+        return summary
+
+    if affected_count < 1 or peak_restarts < 0 or total_restarts < peak_restarts:
+        return summary
+
+    source = _clean(evidence.get('evidence_window')) or 'Committed Kubernetes evidence'
+    pod_label = 'pod' if affected_count == 1 else 'pods'
+    return f'{source} · {affected_count} affected {pod_label} · {total_restarts} total restarts · peak {peak_restarts}'
+
+
 def recommendation_table_title(item: dict[str, Any], *, limit: int = 96) -> str:
     """Return a compact finding title for recommendation list and review surfaces."""
 
@@ -125,10 +197,25 @@ def recommendation_table_title(item: dict[str, Any], *, limit: int = 96) -> str:
             return f'{count} {resource} in {namespace} {verb} repeated restarts'
 
     title = ' '.join(str(item.get('title') or 'Recommendation').split())
+    if rule_key.startswith('kubernetes.tenant.') and title.startswith('Tenant allocation posture for '):
+        capacity_state = _clean(evidence.get('capacity_state'))
+        if capacity_state:
+            return f'Tenant allocation: {capacity_state.replace("_", " ").title()}'
     if len(title) <= limit:
         return title
     shortened = title[:limit].rsplit(' ', 1)[0].strip()
     return f'{shortened or title[:limit].strip()}…'
+
+
+def recommendation_table_scope_title(scope_title: str, *, limit: int = 44) -> str:
+    """Show a short scope descriptor; retain full committed identity in Review."""
+
+    scope = ' '.join(str(scope_title or 'Asset Scope').split())
+    if scope.startswith('@tenant:') and scope.endswith(':resource-quotas'):
+        return 'Tenant resource quotas'
+    if len(scope) <= limit:
+        return scope
+    return f'{scope[: limit - 1].rstrip()}…'
 
 
 def recommendation_table_summary(item: dict[str, Any], *, limit: int = 72) -> str:

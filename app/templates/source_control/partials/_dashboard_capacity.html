@@ -1,0 +1,18 @@
+{% import "components/peer_content_grid.html" as peer_grid %}
+{% if not selected_scope %}
+    {% include "source_control/partials/_dashboard_repository_installations.html" %}
+{% else %}
+    <div class="space-y-5" data-source-control-repository-coverage>
+        <div class="{{ peer_grid.layout_classes() }}">
+            <div class="{{ peer_grid.column_classes('primary') }}">
+                {% include "source_control/partials/_dashboard_repository_portfolio.html" %}
+            </div>
+            <div class="{{ peer_grid.column_classes('secondary') }}">
+                {% include "source_control/partials/_dashboard_repository_composition.html" %}
+            </div>
+        </div>
+        {% include "source_control/partials/_dashboard_repository_governance.html" %}
+        {% include "source_control/partials/_dashboard_repository_lineage.html" %}
+        {% include "source_control/partials/_dashboard_repository_attention.html" %}
+    </div>
+{% endif %}

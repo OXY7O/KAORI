@@ -10,8 +10,8 @@ def test_recommendation_list_uses_presentation_owned_compact_summary():
     assert 'def recommendation_table_title' in presentation
     assert 'def recommendation_table_summary' in presentation
     assert "for marker in (' Examples:', ' Example:', ' Examples include:')" in presentation
-    assert "item['list_title'] = recommendation_table_title(item, limit=96)" in service
-    assert "item['list_summary'] = recommendation_table_summary(item, limit=72)" in service
+    assert "item['list_title'] = recommendation_table_title(item, limit=64)" in service
+    assert "item['list_summary'] = recommendation_table_summary(item, limit=64)" in service
     assert 'item.list_title|default(item.title, true)' in records
     assert 'item.list_summary|default(item.summary, true)' in records
     assert 'line-clamp-1' in records
@@ -26,9 +26,14 @@ def test_pagination_and_filters_have_separate_htmx_ownership():
     route = Path('app/intelligence/routes.py').read_text()
     assert "filter_results_target|default('#recommendations-results-content')" in filters
     assert 'hx-target="{{ resolved_results_target }}"' in filters
-    assert 'clear_filters_action' in results
-    assert "target='#recommendations-workspace-content'" in results
-    assert "sync='#recommendations-workspace-content:replace'" in results
+    header_actions = Path(
+        'app/templates/intelligence/partials/_recommendation_workspace_header_actions.html'
+    ).read_text()
+    assert 'clear_filters_action' in header_actions
+    assert "target='#recommendations-workspace-content'" in header_actions
+    assert '_recommendation_workspace_header_actions.html' in results
+    assert 'hx-swap-oob="outerHTML"' in header_actions
+    assert "sync='#recommendations-workspace-content:replace'" in header_actions
     assert "target == 'recommendations-results-content'" in route
     assert 'hx-sync="{{ target }}:replace"' in pagination
     assert "hx_swap='innerHTML show:none focus-scroll:false'" in pagination

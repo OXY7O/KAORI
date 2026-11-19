@@ -7,17 +7,16 @@ ROUTES = ROOT / 'app/integrations/secrets_management/secrets_pki/providers/vault
 DETAIL = ROOT / 'app/templates/integrations/secrets_management/vault/detail.html'
 
 
-def test_vault_operational_links_are_explicitly_role_gated():
+def test_vault_detail_uses_canonical_tabs_not_cross_domain_shortcuts() -> None:
+    """The provider detail is scoped; Secrets & PKI navigation stays domain-owned."""
     route = ROUTES.read_text(encoding='utf-8')
     page = DETAIL.read_text(encoding='utf-8')
-    assert "can_view_secrets_pki=current_user.has_permission('secrets_pki.view')" in route
-    assert "and current_user.has_permission('analytics.view')" in route
-    assert '{% if can_view_secrets_pki %}' in page
-    assert '{% if can_view_cert_analytics %}' in page
-    for endpoint in ('overview', 'inventory', 'lifecycle', 'certificate_analytics'):
-        assert "url_for('secrets_pki." + endpoint + "')" in page
-    assert 'The independent <code>secrets_pki.view</code> permission is required' in page
-    assert (
-        'instance_id=instance.id'
-        not in page.split('id="vault-operational-evidence-title"')[1].split('id="vault-detail-tabs"')[0]
-    )
+    assert 'id="vault-operational-evidence-title"' not in page
+    assert 'Secrets and PKI operational workspaces' not in page
+    assert "url_for('secrets_pki." not in page
+    assert 'id="vault-detail-tabs"' in page
+    assert 'app/templates/integrations/secrets_management/vault/detail.html' not in route
+    assert 'integrations/secrets_management/vault/detail.html' in route
+    # No permissions broadened: the provider detail still requires
+    # integrations.manage, rather than implying a scoped secrets_pki grant.
+    assert "@permission_required('integrations.manage')\ndef detail(" in route

@@ -111,7 +111,14 @@ class LdapDirectoryClient:
         return max(2, min(value, 30))
 
     def _server(self) -> Server:
-        tls = Tls(validate=ssl.CERT_REQUIRED) if self.transport.use_ssl or self.transport.start_tls else None
+        tls = None
+        if self.transport.use_ssl or self.transport.start_tls:
+            ca_bundle = os.getenv('KAORI_LDAP_CA_BUNDLE', '').strip()
+            if ca_bundle and (
+                not os.path.isabs(ca_bundle) or not os.path.isfile(ca_bundle) or not os.access(ca_bundle, os.R_OK)
+            ):
+                raise ExternalProviderError('Configured LDAP CA bundle is unavailable or unreadable.')
+            tls = Tls(validate=ssl.CERT_REQUIRED, ca_certs_file=ca_bundle or None)
         return Server(
             self.transport.host,
             port=self.transport.port,
