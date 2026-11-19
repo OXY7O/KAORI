@@ -137,7 +137,6 @@ def test_old_local_db_url_with_empty_pg_volume_is_backed_up_before_reconciliatio
     assert 'old-owner-secret' not in updated
 
 
-
 @pytest.mark.skipif(os.name == 'nt', reason='POSIX permissions require a POSIX test filesystem')
 def test_existing_local_env_is_restricted_before_secret_bearing_rewrite(
     tmp_path: Path,
