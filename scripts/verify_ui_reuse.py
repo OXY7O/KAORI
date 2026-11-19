@@ -15,6 +15,8 @@ _EVENT_HANDLER = re.compile(
     r'\bon(?:click|change|input|submit|load|error|keyup|keydown)\s*=',
     re.IGNORECASE,
 )
+
+
 @dataclass
 class _ScriptTag:
     start: int
