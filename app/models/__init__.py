@@ -28,6 +28,7 @@ from app.models.intelligence import (
     IntelligenceDecisionCandidate,
     IntelligenceExecutionJournal,
 )
+from app.models.internal_certificates import InternalPKICertificateInventory, InternalPKIEvidenceBatch
 from app.models.inventory import (
     ClusterInventory,
     ConfigurationInventory,
@@ -180,6 +181,8 @@ __all__ = [
     'DataLifecyclePolicy',
     'IntegrationInstance',
     'IntegrationBinding',
+    'InternalPKICertificateInventory',
+    'InternalPKIEvidenceBatch',
     'IntelligenceDecision',
     'IntelligenceDecisionApproval',
     'IntelligenceDecisionCandidate',

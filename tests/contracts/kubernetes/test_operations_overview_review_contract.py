@@ -42,6 +42,77 @@ def test_operations_overview_is_permission_scoped_navigation() -> None:
     assert 'components/workspace_link_card.html' in page
 
 
+def test_operations_overview_follows_inventory_section_hierarchy_with_metadata_badges() -> None:
+    page = read('app/templates/kubernetes/operations/overview.html')
+    inventory = read('app/templates/kubernetes/inventory/overview/index.html')
+    catalog = read('app/templates/kubernetes/inventory/overview/partials/_kpi_cards.html')
+
+    assert 'components/section_intro.html' in inventory
+    assert 'components/section_intro.html' in page
+    assert 'components/table_label.html' in page
+    assert 'table_label.metadata_label(' in catalog
+    assert 'header_badge=capability_badge' in page
+    assert "available_capabilities ~ (' Workspace' if available_capabilities == 1 else ' Workspaces')" in page
+    assert 'components/info_tip.html' in page
+    assert "info_tip.render('operations-execution-evidence-guide'" in page
+    assert "'Execution & Evidence Model Guide'" in page
+    assert "variant='guide'" in page
+    assert "placement='right'" in page
+    assert "table_label.metadata_label('Info', icon='info')" not in page
+    assert 'header_badge=execution_guide' in page
+
+    for heading, section_id in (
+        ('Operational Capabilities', 'operations-capabilities-heading'),
+        ('Execution Governance', 'operations-execution-heading'),
+    ):
+        assert f"section_intro.render('{heading}'" in page
+        assert f'aria-labelledby="{section_id}"' in page
+        assert f"'{section_id}'" in page
+
+    assert page.index("section_intro.render('Operational Capabilities'") < page.index("'Operation Workspace Catalog'")
+    assert page.index("section_intro.render('Execution Governance'") < page.index("'Execution & Evidence Model'")
+    assert page.index("'Operation Workspace Catalog'") < page.index("'Execution & Evidence Model'")
+
+
+def test_operations_cards_opt_into_compact_navigation_without_changing_defaults() -> None:
+    page = read('app/templates/kubernetes/operations/overview.html')
+    shared = read('app/templates/components/workspace_link_card.html')
+
+    assert 'macro render(workspace, compact=false)' in shared
+    assert 'min-h-40' in shared
+    assert 'min-h-56' in shared
+    assert 'set body_classes = "mt-4 min-w-0 flex-1"' in shared
+    assert 'workspace.href' in shared
+    assert 'workspace.search_text' in shared
+    assert 'workspace.scope' in shared
+    assert 'aria-label="Open {{ workspace.title }} Workspace"' in shared
+    assert 'data-workspace-card' in shared
+
+    assert page.count('compact=true) }}') == 2
+    assert 'sm:grid-cols-2' in page
+    assert "url_for('kubernetes_operations.configmap_management')" in page
+    assert "url_for('kubernetes_operations.secret_management')" in page
+    assert '{% if can_configmaps %}' in page
+    assert '{% if can_secrets %}' in page
+
+
+def test_execution_evidence_guide_uses_shared_hover_focus_accessible_popover() -> None:
+    overview = read('app/templates/kubernetes/operations/overview.html')
+    guide = read('app/templates/components/info_tip.html')
+
+    assert "info_tip.render('operations-execution-evidence-guide'" in overview
+    assert "'Select and verify a live Kubernetes target inside the authorized capability workspace.'" in overview
+    assert "'Enforce permission checks and operation-specific validation before attempting mutation.'" in overview
+    assert "'Kubernetes executes the operation; KAORI retains the resulting audit evidence.'" in overview
+    assert "variant='guide'" in overview
+    assert 'data-kaori-info-tip-variant=' in guide
+    assert 'data-kaori-info-tip-trigger' in guide
+    assert 'data-kaori-info-tip-preview' in guide
+    assert 'aria-expanded="false"' in guide
+    assert 'role="tooltip"' in guide
+    assert '<span>Guide</span>' in guide
+
+
 def test_both_delete_pages_use_shared_governed_confirmation() -> None:
     component = read('app/templates/components/destructive_confirmation_modal.html')
     script = read('app/static/js/destructive_confirmation_modal.js')
@@ -101,6 +172,57 @@ def test_operations_catalog_headings_use_canonical_title_guide() -> None:
         assert title in page
         assert f"info_id='{guide_id}'" in page
         assert 'info_items=[' in page
+
+
+def test_configmap_and_secret_catalogs_use_external_section_intros_and_one_guide() -> None:
+    shared_intro = read('app/templates/components/section_intro.html')
+    shared_catalog = read('app/templates/components/operational_workflow_catalog.html')
+    assert 'macro render(title, description, id=None, supporting=None' in shared_intro
+    assert "variant='guide'" in shared_catalog
+
+    for domain, title, intro, description, anchor_id, heading_id, guide_id in (
+        (
+            'configmaps',
+            'Choose a ConfigMap Operation',
+            'ConfigMap Workflows',
+            'Select a validated workflow for live ConfigMap configuration.',
+            'configmap-workflows',
+            'configmap-workflows-heading',
+            'configmap-operation-catalog-guide',
+        ),
+        (
+            'secrets',
+            'Choose a Secret Operation',
+            'Secret Workflows',
+            'Choose governed workflows for Secrets, protected reveal, and TLS rotation.',
+            'secret-workflows',
+            'secret-workflows-heading',
+            'secret-operation-catalog-guide',
+        ),
+    ):
+        page = read(f'app/templates/kubernetes/operations/{domain}/index.html')
+        assert 'components/section_intro.html' in page
+        assert f"section_intro.render('{intro}'" in page
+        assert description in page
+        assert f'aria-labelledby="{heading_id}"' in page
+        assert f"'{heading_id}'" in page
+        assert f'id="{anchor_id}"' in page
+        assert page.index(f"section_intro.render('{intro}'") < page.index(f"'{title}'")
+        assert page.count(f"info_id='{guide_id}'") == 1
+        assert page.count('workflow_catalog.render(') == 1
+        assert 'components/operational_workflow_card.html' in page
+        assert 'current_user.has_permission(' in page
+        assert 'operation_evidence_boundary.html' in page
+        assert 'whitespace-nowrap' not in page
+        assert 'truncate' not in page
+
+    configmaps = read('app/templates/kubernetes/operations/configmaps/index.html')
+    secrets = read('app/templates/kubernetes/operations/secrets/index.html')
+    for name in ('Create ConfigMap', 'Update ConfigMap', 'Delete ConfigMap'):
+        assert name in configmaps
+    for name in ('Create Secret', 'Replace Secret Data', 'Delete Secret', 'Protected Secret Reveal', 'TLS Rotation'):
+        assert name in secrets
+    assert "url_for('platform_operations.kubernetes.secret_reveal.index')" in secrets
 
 
 def test_operations_overview_uses_committed_cluster_connection_evidence() -> None:

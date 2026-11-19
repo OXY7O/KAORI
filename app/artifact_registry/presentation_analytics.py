@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
+from math import isfinite
 from typing import Any
 
 from werkzeug.exceptions import NotFound
@@ -9,6 +11,14 @@ from app.artifact_registry.analytics_job_adapter import (
     analytics_snapshot_matches_window,
     build_registry_analytics_readiness,
     normalize_registry_analytics_window,
+)
+from app.artifact_registry.presentation_analytics_charts import (
+    _analytics_insights,
+    _analytics_summary_cards,
+    _decorate_analytics_rows,
+    _registry_capacity_chart_rows,
+    _registry_capacity_project_rows,
+    _registry_usage_chart_rows,
 )
 from app.artifact_registry.presentation_common import _fmt_bytes, _providers
 from app.artifact_registry.presentation_overview import build_overview
@@ -50,7 +60,14 @@ def _registry_analytics_scope(
     identities: list[Any],
 ) -> int | None:
     if provider_id is None:
-        return None
+        if not identities:
+            return None
+        # Analytics presents one Registry source at a time. Prefer a Ready
+        # active source; keep the existing deterministic name ordering.
+        return next(
+            (int(row.id) for row in identities if getattr(row, 'readiness_status', None) == 'ready'),
+            int(identities[0].id),
+        )
     if not any(int(row.id) == provider_id for row in identities):
         raise NotFound('The selected Registry instance is not active or is unavailable.')
     return provider_id
@@ -355,6 +372,109 @@ def _collect_analytics_rows(identities: list[Any], *, snapshot_window: str = '24
     return bundle
 
 
+def _committed_growth_chart_points(history: dict[str, Any], metric: str) -> tuple[list[dict[str, float]], str, int]:
+    """Use worker-measured samples, or explicit legacy start/end checkpoints."""
+    plotted = history.get('chart_series')
+    series = plotted.get(metric) if isinstance(plotted, dict) else None
+    if isinstance(series, list) and 2 <= len(series) <= 48:
+        points: list[dict[str, float]] = []
+        for sample in series:
+            if not isinstance(sample, dict):
+                return [], 'unavailable', 0
+            timestamp, value = sample.get('timestamp'), sample.get('value')
+            if not (
+                isinstance(timestamp, (int, float))
+                and isinstance(value, (int, float))
+                and isfinite(timestamp)
+                and isfinite(value)
+            ):
+                return [], 'unavailable', 0
+            if value < 0 or (points and timestamp <= points[-1]['timestamp']):
+                return [], 'unavailable', 0
+            points.append({'timestamp': float(timestamp), 'value': float(value)})
+        return points, 'measured', len(points)
+
+    # Older committed worker snapshots retain only first/last, not the intervening
+    # samples. Chart two observed checkpoints, never interpolate missing history.
+    legacy = history.get('series')
+    projects = legacy.get(metric) if isinstance(legacy, dict) else None
+    if not isinstance(projects, dict) or not projects:
+        return [], 'unavailable', 0
+    first_times: set[float] = set()
+    last_times: set[float] = set()
+    first_total = last_total = 0.0
+    for pair in projects.values():
+        if not isinstance(pair, dict):
+            return [], 'unavailable', 0
+        start, end, first, last = (
+            pair.get('start_time'),
+            pair.get('end_time'),
+            pair.get('first'),
+            pair.get('last'),
+        )
+        if not (
+            isinstance(start, (int, float))
+            and isinstance(end, (int, float))
+            and isinstance(first, (int, float))
+            and isinstance(last, (int, float))
+            and all(isfinite(value) for value in (start, end, first, last))
+        ):
+            return [], 'unavailable', 0
+        if start >= end or first < 0 or last < 0:
+            return [], 'unavailable', 0
+        first_times.add(float(start))
+        last_times.add(float(end))
+        first_total += float(first)
+        last_total += float(last)
+    if len(first_times) != 1 or len(last_times) != 1:
+        return [], 'unavailable', 0
+    return (
+        [
+            {'timestamp': next(iter(first_times)), 'value': first_total},
+            {'timestamp': next(iter(last_times)), 'value': last_total},
+        ],
+        'checkpoints',
+        2,
+    )
+
+
+def _registry_growth_charts(
+    latest_rows: list[dict[str, Any]], *, snapshot_window: str
+) -> dict[str, list[dict[str, Any]]]:
+    """At most three per-provider plots from matching, committed measured ranges."""
+    result: dict[str, list[dict[str, Any]]] = {'artifacts': [], 'storage': []}
+    if snapshot_window == 'current':
+        return result
+    for view in latest_rows:
+        snapshot = view.get('snapshot')
+        if snapshot is None or not isinstance(snapshot.payload_json, dict):
+            continue
+        history = snapshot.payload_json.get('history')
+        if (
+            not isinstance(history, dict)
+            or history.get('source') != 'metrics_source_query_range'
+            or history.get('time_range') != snapshot_window
+            or history.get('status') not in {'ready', 'partial'}
+        ):
+            continue
+        for label, metric in (('artifacts', 'project_artifacts'), ('storage', 'project_usage_bytes')):
+            if len(result[label]) >= 3:
+                continue
+            points, mode, count = _committed_growth_chart_points(history, metric)
+            if points:
+                result[label].append(
+                    {
+                        'label': str(view['identity'].name),
+                        'points': points,
+                        'mode': mode,
+                        'sample_count': count,
+                    }
+                )
+        if all(len(series) >= 3 for series in result.values()):
+            break
+    return result
+
+
 def _analytics_recommendations(active_tab: str) -> list[dict[str, str]]:
     from app.intelligence.service import get_active_recommendation_findings
 
@@ -491,152 +611,6 @@ def _analytics_capacity_outlook(
     }
 
 
-def _analytics_summary_cards(
-    aggregate: dict[str, Any],
-    *,
-    growth_rows: list[dict[str, Any]],
-    growth: dict[str, Any],
-    risk_candidate_count: int,
-) -> list[dict[str, Any]]:
-    return [
-        {
-            'icon': 'database',
-            'label': 'Storage Footprint',
-            'value': _fmt_bytes(int(aggregate['total_size_bytes'])),
-            'detail': (
-                f'{_fmt_bytes(round(growth["size_per_day"]))}/day materialized growth'
-                if growth['size_per_day'] is not None
-                else 'Historical storage-growth evidence is unavailable'
-            ),
-            'tone': 'brand',
-        },
-        {
-            'icon': 'chart-no-axes-combined',
-            'label': 'Artifact Growth',
-            'value': f'{growth["artifacts_per_day"]:+.1f}/day' if growth['artifacts_per_day'] is not None else 'N/A',
-            'detail': f'{aggregate["artifacts"]} committed artifacts',
-            'tone': 'info' if growth['artifacts_per_day'] is not None else 'unknown',
-        },
-        {
-            'icon': 'boxes',
-            'label': 'Runtime-used',
-            'value': str(aggregate['running_artifacts']),
-            'detail': (
-                f'{growth["runtime_usage_percent"]:.1f}% of committed artifact estate'
-                if growth['runtime_usage_percent'] is not None
-                else 'No committed artifact denominator'
-            ),
-            'tone': 'normal' if aggregate['running_artifacts'] else 'unknown',
-        },
-        {
-            'icon': 'triangle-alert',
-            'label': 'Risk Candidates',
-            'value': str(risk_candidate_count),
-            'detail': 'Cross-domain review signals; candidates may overlap',
-            'tone': 'warning' if risk_candidate_count else 'normal',
-        },
-    ]
-
-
-def _analytics_insights(
-    aggregate: dict[str, Any],
-    *,
-    growth_rows: list[dict[str, Any]],
-    growth: dict[str, Any],
-) -> list[dict[str, str]]:
-    insights: list[dict[str, str]] = []
-    candidates = (
-        (
-            growth['artifacts_per_day'] is not None and growth['size_per_day'] is not None,
-            {
-                'icon': 'trending-up',
-                'title': 'Registry growth is materialized',
-                'detail': (
-                    f'{float(growth["artifacts_per_day"] or 0):+.1f} artifacts/day and '
-                    f'{_fmt_bytes(round(float(growth["size_per_day"] or 0)))}/day across current providers.'
-                ),
-                'tone': 'info',
-            },
-        ),
-        (
-            bool(aggregate['critical_runtime_artifacts']),
-            {
-                'icon': 'shield-alert',
-                'title': 'Critical findings intersect runtime usage',
-                'detail': (
-                    f'{aggregate["critical_runtime_artifacts"]} running artifacts carry '
-                    'critical security evidence and require Intelligence review.'
-                ),
-                'tone': 'critical',
-            },
-        ),
-        (
-            bool(aggregate['stale_candidates']),
-            {
-                'icon': 'archive',
-                'title': 'Stale inventory candidates exist',
-                'detail': (
-                    f'{aggregate["stale_candidates"]} artifacts are review candidates only; '
-                    'Analytics never performs automatic cleanup.'
-                ),
-                'tone': 'warning',
-            },
-        ),
-        (
-            bool(aggregate['runtime_scan_gaps']),
-            {
-                'icon': 'scan-search',
-                'title': 'Runtime scan evidence is incomplete',
-                'detail': (
-                    f'{aggregate["runtime_scan_gaps"]} running artifacts have no normalized successful scan evidence.'
-                ),
-                'tone': 'warning',
-            },
-        ),
-    )
-    insights.extend(item for enabled, item in candidates if enabled)
-    return insights or [
-        {
-            'icon': 'circle-check',
-            'title': 'No derived review signal',
-            'detail': 'Current committed analytics evidence has no derived review signal.',
-            'tone': 'normal',
-        }
-    ]
-
-
-def _decorate_analytics_rows(
-    growth_rows: list[dict[str, Any]],
-    forecast_rows: list[dict[str, Any]],
-) -> None:
-    for row in growth_rows:
-        size_growth = row.get('size_growth_bytes_per_day')
-        size_delta = row.get('size_delta_bytes')
-        artifact_growth = row.get('artifact_growth_per_day')
-        row['size_growth_display'] = (
-            f'{_fmt_bytes(round(float(size_growth)))}/day' if isinstance(size_growth, (int, float)) else 'N/A'
-        )
-        row['size_delta_display'] = (
-            _fmt_bytes(round(float(size_delta))) if isinstance(size_delta, (int, float)) else 'N/A'
-        )
-        row['artifact_growth_display'] = (
-            f'{float(artifact_growth):+.1f}/day' if isinstance(artifact_growth, (int, float)) else 'N/A'
-        )
-    for row in forecast_rows:
-        usage = row.get('usage_bytes')
-        quota = row.get('quota_bytes')
-        growth = row.get('growth_bytes_per_day')
-        days = row.get('days_to_quota')
-        utilization = row.get('utilization_percent')
-        row['usage_display'] = _fmt_bytes(round(float(usage))) if isinstance(usage, (int, float)) else 'N/A'
-        row['quota_display'] = _fmt_bytes(round(float(quota))) if isinstance(quota, (int, float)) else 'N/A'
-        row['growth_display'] = (
-            f'{_fmt_bytes(round(float(growth)))}/day' if isinstance(growth, (int, float)) else 'Insufficient history'
-        )
-        row['days_to_quota_display'] = f'{float(days):.1f} days' if isinstance(days, (int, float)) else 'No forecast'
-        row['utilization_display'] = f'{float(utilization):.1f}%' if isinstance(utilization, (int, float)) else 'N/A'
-
-
 def _analytics_alert_page(
     alert_rows: list[dict[str, Any]],
     *,
@@ -701,17 +675,26 @@ def _analytics_alert_page(
     )
 
 
+@dataclass(frozen=True, slots=True)
+class AnalyticsAlertFilters:
+    """Alert severity, state and source dimensions of the Registry evidence view."""
+
+    severity: str = 'all'
+    state: str = 'all'
+    source: str = 'all'
+
+
 def build_analytics(
     *,
     active_tab: str = 'growth',
     provider_id: int | None = None,
     snapshot_window: str = '24h',
     alert_search: str = '',
-    alert_severity: str = 'all',
-    alert_state: str = 'all',
-    alert_source: str = 'all',
+    alert_filters: AnalyticsAlertFilters = AnalyticsAlertFilters(),
     alert_page: int = 1,
     alert_per_page: int = 5,
+    capacity_page: int = 1,
+    capacity_per_page: int = 5,
 ) -> dict[str, Any]:
     overview = build_overview()
     identities = _providers()
@@ -730,14 +713,18 @@ def build_analytics(
         bundle['latest_rows'],
     )
     growth = _analytics_growth_summary(aggregate, growth_rows)
-    alert_page_rows, alert_pagination, alert_filters = _analytics_alert_page(
+    alert_page_rows, alert_pagination, active_alert_filters = _analytics_alert_page(
         bundle['alert_rows'],
         search=alert_search,
-        severity=alert_severity,
-        state=alert_state,
-        source=alert_source,
+        severity=alert_filters.severity,
+        state=alert_filters.state,
+        source=alert_filters.source,
         page=alert_page,
         per_page=alert_per_page,
+    )
+    capacity_project_rows = _registry_capacity_project_rows(forecast_rows)
+    capacity_page_rows, capacity_pagination = paginate_sequence(
+        capacity_project_rows, page=capacity_page, per_page=capacity_per_page
     )
     normalized_tab = (
         active_tab
@@ -765,12 +752,18 @@ def build_analytics(
             growth_rows=growth_rows,
             growth=growth,
         ),
+        'capacity_chart_rows': _registry_capacity_chart_rows(forecast_rows),
+        'capacity_project_rows': capacity_page_rows,
+        'capacity_project_count': len(capacity_project_rows),
+        'capacity_pagination': capacity_pagination,
+        'usage_chart_rows': _registry_usage_chart_rows(bundle['activity_rows']),
         'insights': _analytics_insights(aggregate, growth_rows=growth_rows, growth=growth)[:5],
         'coverage': coverage,
         'activity_rows': sorted(
             bundle['activity_rows'],
             key=lambda row: (-float(row['pull_count']), row['project_name'].casefold()),
         )[:5],
+        'growth_charts': _registry_growth_charts(bundle['latest_rows'], snapshot_window=selected_window),
         'growth_rows': sorted(
             growth_rows,
             key=lambda row: (
@@ -792,7 +785,7 @@ def build_analytics(
         'alert_rows': alert_page_rows,
         'alert_source_rows': bundle['alert_source_rows'],
         'alert_pagination': alert_pagination,
-        'alert_filters': alert_filters,
+        'alert_filters': active_alert_filters,
         'recommendations': recommendation_rows,
         'recommendation_count': len(recommendation_rows),
         'active_signal_count': active_signal_count,

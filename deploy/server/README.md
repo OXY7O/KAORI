@@ -25,6 +25,31 @@ sudo ./deploy/server/bootstrap-host.sh --ssh-public-key-file ~/.ssh/kaori-deploy
 
 Keep the private key outside the repository and provide it only through the protected GitHub Environment used for UAT deployment. The bootstrap prepares Docker Engine, Docker Compose, the `kaori-deploy` identity, `/opt/kaori`, `/etc/kaori`, and `/var/lib/kaori` without overwriting an existing environment file.
 
+## Production provider trust and internal DNS
+
+The governed server adapter mounts externally approved **public CA bundles**
+from `/etc/kaori/trust` to `/run/kaori/trust`, read-only, for
+`web`, `validation-worker` and `runtime-worker` only. The initial host
+bootstrap creates the empty directory, **never a certificate or private key**.
+Compose long bind syntax uses `create_host_path: false`; existing
+servers that were initialized before this feature must provision the
+empty directory before applying this newer Compose contract.
+The base `/app/instance` named volume remains unchanged.
+
+Optional trust/allowlist settings belong to `/etc/kaori/app.env` using
+the safe blank values documented in `deploy/env/app.env.example`. LDAP
+service-account credentials remain only in `secrets.env`. Corporate DNS
+and directory PKI are authoritative; do not turn lab-only
+`secrets/devcontainer/compose.host-overrides.yml` into the production
+deployment input. The certificate currently used in local LDAP UAT was
+self-signed without observed `CA:TRUE`; a successful local TLS handshake
+does not approve it for normal production CA distribution.
+
+See [Production internal DNS and provider CA trust](../../docs/operations/production-provider-dns-trust.md)
+for the full operational configuration, certificate checks, render
+inspection, service-scoped restart, rollback and future Kubernetes
+reference. This change is not a live host deployment or DNS mutation.
+
 ## Bundled PostgreSQL identity boundary
 
 The server adapter intentionally retains bundled PostgreSQL/Redis and the

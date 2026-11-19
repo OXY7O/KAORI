@@ -1,0 +1,15 @@
+{# Canonical KAORI runtime observation registry; provider supplies only identity and persisted projection. #}
+{% with
+    runtime_history_id='vault-runtime-history',
+    runtime_history_loading_id='vault-history-loading',
+    runtime_history_url=url_for('vault.runtime_history', instance_id=instance.id),
+    runtime_history_endpoint='vault.runtime_history',
+    runtime_history_route_args={'instance_id': instance.id, '_anchor': 'runtime'},
+    runtime_history_detail_url=url_for('vault.detail', instance_id=instance.id, _anchor='runtime'),
+    runtime_history_detail_endpoint='vault.detail',
+    runtime_history_filters_enabled=true,
+    provider_label='Vault',
+    runtime_history_oob=false
+    %}
+    {% include 'integrations/partials/_runtime_history.html' %}
+{% endwith %}

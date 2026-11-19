@@ -70,6 +70,7 @@ def test_minio_bound_source_registry_keeps_canonical_empty_pagination_and_source
     assert 'pagination_ui.footer_classes()' in registry
     assert 'binding_pagination.total_items }}</span> Observability Sources' in registry
     assert 'Metrics Source or Alertmanager' in registry
-    assert 'Metrics Source and Alertmanager remain reusable source-owned connections' in scope
+    assert 'reusable Metrics Source or Alertmanager connections remain retained.' in scope
+    assert 'Runtime history, JobExecution history, Activity Audit evidence' in scope
     assert 'MinIO owns S3 storage state' in index
     assert 'asset-scoped binding evidence' in index

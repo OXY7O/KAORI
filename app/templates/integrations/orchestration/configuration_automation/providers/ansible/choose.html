@@ -1,0 +1,157 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/action_button.html" as action_button %}
+{% import "components/info_tip.html" as info_tip %}
+{% import "components/table_label.html" as table_label %}
+{% block title %}Choose Ansible Automation Profile · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div class="kaori-integration-semantic space-y-6"
+         data-kaori-ansible-profile-choose>
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro("workflow", "Orchestration / Ansible", "package-search") %}
+                        <h1 class="{{ page_hero.title_classes() }}">Choose Automation Profile</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Select an automation profile to register a connection.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('package-search', '1 Available Profile') }}
+                            {{ page_hero.meta_label('shield-check', 'Provider-Owned Registration') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Automation profile admission">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        {{ page_hero.context_header('Profile Admission', 'Source-First Setup', 'layers-3') }}
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric('package-search', 'Available', '1', 'Eligible for registration') }}
+                            {{ page_hero.context_metric('lock-keyhole', 'Runtime', 'Blocked', 'Host admission pending') }}
+                        </div>
+                        {{ page_hero.context_info('shield-check', 'Source validation does not authorize execution.') }}
+                    </div>
+                </aside>
+            </div>
+        </section>
+        <section class="{{ integration_ui.section_shell_classes() }}"
+                 aria-label="Choose Ansible automation profile">
+            <header class="flex flex-wrap items-center justify-between gap-4 border-b border-outline-subtle px-5 py-4 sm:px-6">
+                <div class="flex min-w-0 items-center gap-3">
+                    {{ integration_ui.palette_icon("layers-3", "brand", size="lg") }}
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="text-base font-semibold text-content-primary">Choose an Automation Profile</h2>
+                            {{ info_tip.render("ansible-automation-profile-choices",
+                                                        "Automation Profile Registration",
+                                                        "Only admitted profiles can register Git source. Planned profiles have no registration endpoint. Source validation never grants permission to execute playbooks or change hosts.",
+                                                        placement="right",
+                                                        variant="guide") }}
+                        </div>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Choose an available profile to register its source.</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('integrations.ansible') }}"
+                   class="{{ action_button.classes('secondary') }}">
+                    <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+                    Back to Ansible
+                </a>
+            </header>
+            <div class="p-5 sm:p-6">
+                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+                     data-kaori-ansible-profile-grid
+                     data-kaori-provider-card-grid>
+                    <article data-kaori-ansible-profile="kubernetes_lifecycle"
+                             data-kaori-provider-lifecycle="available"
+                             class="flex h-full min-w-0 flex-col rounded-xl border border-outline-subtle bg-surface-elevated p-5 transition-colors hover:border-brand-outline focus-within:border-brand-outline">
+                        <div class="flex min-w-0 items-start gap-3">
+                            {{ integration_ui.palette_icon("boxes", "brand", size="lg") }}
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h3 class="text-base font-semibold text-content-primary">Kubernetes Lifecycle</h3>
+                                    {{ table_label.status_label('Available', 'normal') }}
+                                </div>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">Automation profile</p>
+                            </div>
+                        </div>
+                        <p class="mt-4 min-h-10 text-sm leading-5 text-content-secondary">Register a Kubespray Git source.</p>
+                        <dl class="mt-4 grid grid-cols-2 gap-3 border-t border-outline-subtle pt-4">
+                            <div class="min-w-0">
+                                <dt class="text-xs font-semibold text-content-muted">Engine</dt>
+                                <dd class="mt-1 break-words text-xs font-medium leading-5 text-content-primary">
+                                    Ansible Runner
+                                </dd>
+                            </div>
+                            <div class="min-w-0">
+                                <dt class="text-xs font-semibold text-content-muted">Source</dt>
+                                <dd class="mt-1 break-words text-xs font-medium leading-5 text-content-primary">
+                                    Git-defined
+                                </dd>
+                            </div>
+                        </dl>
+                        <div class="mt-auto pt-5">
+                            <a href="{{ url_for('integrations.ansible_new_connection') }}"
+                               data-kaori-provider-register
+                               class="{{ action_button.classes('primary', full=true) }}">
+                                <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                                Register Kubernetes Lifecycle
+                            </a>
+                        </div>
+                    </article>
+                    {% for item in [
+                        ("server-cog", "Linux Hosts", "Linux Host Management"),
+                        ("database", "Middleware & Database", "Middleware & Database"),
+                        ("network", "Network Automation", "Network Automation")
+                        ] %}
+                        <article data-kaori-ansible-profile="{{ item[2]|lower|replace(' ', '_') |replace('&', 'and') }}"
+                                 data-kaori-provider-lifecycle="planned"
+                                 class="flex h-full min-w-0 flex-col rounded-xl border border-outline-subtle bg-surface-elevated p-5 opacity-90">
+                            <div class="flex min-w-0 items-start gap-3">
+                                {{ integration_ui.palette_icon(item[0], "unknown", size="lg") }}
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="text-base font-semibold text-content-primary"
+                                            aria-label="{{ item[2] }}"
+                                            title="{{ item[2] }}">{{ item[1] }}</h3>
+                                        {{ table_label.status_label('Planned', 'unknown') }}
+                                    </div>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Future automation profile</p>
+                                </div>
+                            </div>
+                            <p class="mt-4 min-h-10 text-sm leading-5 text-content-secondary">Registration is not yet available.</p>
+                            <dl class="mt-4 grid grid-cols-2 gap-3 border-t border-outline-subtle pt-4">
+                                <div class="min-w-0">
+                                    <dt class="text-xs font-semibold text-content-muted">Engine</dt>
+                                    <dd class="mt-1 break-words text-xs font-medium leading-5 text-content-primary">
+                                        Ansible Runner
+                                    </dd>
+                                </div>
+                                <div class="min-w-0">
+                                    <dt class="text-xs font-semibold text-content-muted">Source</dt>
+                                    <dd class="mt-1 break-words text-xs font-medium leading-5 text-content-primary">
+                                        Git-defined
+                                    </dd>
+                                </div>
+                            </dl>
+                            <div class="mt-auto pt-5">
+                                <button type="button"
+                                        data-kaori-provider-disabled
+                                        class="{{ action_button.classes('locked-info', full=true) }}"
+                                        disabled
+                                        aria-label="{{ item[2] }} registration not available">
+                                    <i data-lucide="lock" class="h-4 w-4" aria-hidden="true"></i>
+                                    Registration Unavailable
+                                </button>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+                <div class="mt-5 flex items-start gap-2 border-t border-outline-subtle pt-4 text-xs leading-5 text-content-secondary">
+                    <i data-lucide="shield-check"
+                       class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary dark:text-kaori-accent"
+                       aria-hidden="true"></i>
+                    <p>External engines own execution; KAORI governs registration and evidence.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+{% endblock dashboard_content %}

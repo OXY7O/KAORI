@@ -201,6 +201,34 @@ def test_devcontainer_role_init_and_secret_preparation_are_non_elevated() -> Non
     assert "drop_value(source, 'KAORI_DEV_RUNTIME_DATABASE_URL')" in prep
 
 
+def test_devcontainer_operator_bootstrap_image_has_mfa_dependency_and_rebuild_runbook() -> None:
+    requirements = (ROOT / 'requirements/base.txt').read_text()
+    dockerfile = (ROOT / 'Dockerfile').read_text()
+    compose = COMPOSE.read_text()
+    app_qr = (ROOT / 'app/access/authentication/mfa/qr.py').read_text()
+    guide = (ROOT / 'docs/operations/devcontainer-postgres-first-run.md').read_text()
+    pki_guide = (ROOT / 'docs/design/patterns/KUBERNETES_INTERNAL_CERTIFICATES_EVIDENCE_IMPORT.md').read_text()
+
+    assert 'qrcode==8.2' in requirements
+    assert 'import qrcode' in app_qr
+    assert 'COPY requirements/base.txt /tmp/requirements/base.txt' in dockerfile
+    assert 'python -m pip install -r /tmp/requirements/base.txt' in dockerfile
+    assert 'FROM base AS development' in dockerfile
+
+    bootstrap = _services(compose)['db-bootstrap']
+    assert 'dockerfile: Dockerfile' in bootstrap
+    assert 'target: development' in bootstrap
+
+    command_prefix = 'docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml'
+    assert f'{command_prefix} build db-bootstrap' in guide
+    assert f'{command_prefix} run --rm db-bootstrap python -c "import qrcode;' in guide
+    upgrade_command = f'{command_prefix} run --rm db-bootstrap sh scripts/devcontainer/bootstrap-db.sh --upgrade-only'
+    assert upgrade_command in guide
+    assert 'No Alembic upgrade' in guide
+    assert 'devcontainer-postgres-first-run.md' in pki_guide
+    assert 'no schema migration completed' in pki_guide
+
+
 def test_devcontainer_operator_bootstrap_orders_schema_grants_and_app_admin() -> None:
     command = (ROOT / 'scripts/devcontainer/bootstrap-db.sh').read_text()
     grants = (ROOT / 'scripts/devcontainer/grant_postgres_runtime.sql').read_text()

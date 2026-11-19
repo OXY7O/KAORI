@@ -14,6 +14,7 @@ A developer should be able to start from the product concept and predict the pac
 
 - `app/access/` — authentication, users, identity providers, RBAC, roles, permissions, Activity Audit.
 - `app/integrations/` — provider-neutral integration contracts, providers/adapters, registration and binding workspaces.
+- `app/infrastructure_automation/` — bounded KAORI orchestration for source-pinned, non-mutating automation pilots, canonical job dispatch and review-only plans (#556, #4796, #4799, #4800). Ansible remains the external executor; provider registration belongs in `app/integrations/orchestration/`, Kubernetes asset ownership stays in `app/kubernetes/`, and execution/approval requires independent admission. This is not an arbitrary command console or a second scheduler.
 - `app/source_control/` — provider-neutral committed repository, delivery, and governance evidence; GitHub connectivity remains under `app/integrations/source_control/`.
 - `app/secrets_pki/` — provider-neutral secrets, certificates, leases, consumers, and lifecycle evidence; Vault connectivity remains under `app/integrations/secrets_management/`.
 - `app/security_posture/` — cross-domain committed security findings, correlation, and assurance; not a duplicate scanner or shared authentication/security infrastructure under `app/security/`.
@@ -70,6 +71,7 @@ Canonical examples:
 - `app/access/users/` <-> `app/templates/access/users/`
 - `app/access/authentication/` <-> `app/templates/access/authentication/`
 - `app/kubernetes/analytics/` <-> `app/templates/kubernetes/analytics/`
+- `app/infrastructure_automation/kubernetes/` orchestrates review-only Kubespray policy; live Kubernetes state remains under `app/kubernetes/`, and Ansible adapter/connection state remains under `app/integrations/orchestration/`.
 - `app/kubernetes/inventory/` <-> `app/templates/kubernetes/inventory/`
 - `app/storage/object_storage/analytics/` <-> `app/templates/storage/object_storage/analytics/`
 - `app/integrations/observability/metrics_source/application/` <-> `app/templates/integrations/observability/metrics_source/`

@@ -1,0 +1,223 @@
+{% import "components/table_label.html" as table_label %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% set status_tone = result.status_key %}
+{% set decision_title = 'Capability Available' if result.observed else ('Optional Discovery Limited' if result.limited else ('Required Capability Gap' if result.gap else 'Capability Not Observed')) %}
+{% if result.observed %}
+    {% set decision_message = "Full Validation verified this API; runtime and compatibility stay independent." %}
+{% elif result.limited %}
+    {% set decision_message = "Optional mount discovery is denied; core API readiness is unaffected." %}
+{% elif result.gap %}
+    {% set decision_message = "Required API evidence is missing; provider readiness is unqualified." %}
+{% else %}
+    {% set decision_message = "No qualifying Full Validation evidence exists for this API." %}
+{% endif %}
+{% if row.key == 'health' %}
+    {% set auth_boundary = "Root health · no token" %}
+    {% set auth_description = "Root health needs no token and grants no Secret access." %}
+    {% set impact_ready = "Vault health was qualified during Full Validation; separately collected Runtime Health may change afterward." %}
+    {% set verification_command = "set -euo pipefail\n# Operator CLI context; output suppressed. Not KAORI worker evidence.\nvault status -format=json >/dev/null" %}
+{% elif row.key == 'approle' %}
+    {% set auth_boundary = "Approved AppRole" %}
+    {% set auth_description = "The worker uses an encrypted SecretID; its token is temporary." %}
+    {% set impact_ready = "AppRole login succeeded during Full Validation. No Secret read, lifecycle privilege, or inventory permission is implied." %}
+    {% set verification_command = "" %}
+{% elif row.key == 'token_lookup' %}
+    {% set auth_boundary = "AppRole token" %}
+    {% set auth_description = "The worker checks its token without persisting its value." %}
+    {% set impact_ready = "The required token identity check succeeded during Full Validation. Access to individual Secrets is not established." %}
+    {% set verification_command = "set -euo pipefail\n# Uses an independently authorized operator CLI identity.\n# It does not verify the managed KAORI AppRole identity.\nvault token lookup -format=json >/dev/null" %}
+{% else %}
+    {% set auth_boundary = "Optional mount read" %}
+    {% set auth_description = "Optional mount read uses scoped access; 403/404 is Limited." %}
+    {% set impact_ready = "Optional mount names were discoverable during Full Validation; this does not qualify KV v2 or PKI inventory." %}
+    {% set verification_command = "set -euo pipefail\n# Requires approved optional discovery access for the operator identity.\n# Suppress mount metadata output; this is not KAORI worker evidence.\nvault read -format=json sys/mounts >/dev/null" %}
+{% endif %}
+{% if result.observed %}
+    {% set operational_impact = impact_ready %}
+    {% set next_action = "Revalidate after Vault upgrades, AppRole policy changes or TLS changes. Review release qualification separately." %}
+{% elif result.limited %}
+    {% set operational_impact = "Only optional mount discovery is limited. The required health, AppRole and token-lookup contracts remain separately qualified." %}
+    {% set next_action = "Grant read-only sys/mounts only after a separate approved operational need; otherwise keep optional discovery Limited." %}
+{% elif result.gap %}
+    {% set operational_impact = "A required API contract is not qualified. Dependent provider readiness must not be inferred." %}
+    {% set next_action = "Check the approved Vault origin, AppRole access and provider version, then rerun Full Validation." %}
+{% else %}
+    {% set operational_impact = "The present connection has no qualifying observation for this capability; an earlier result must not be treated as current." %}
+    {% set next_action = "Run Full Validation for this connection, then inspect newly committed capability evidence." %}
+{% endif %}
+{% if result.observed %}
+    {% set observation_description = "This API was observed in the latest Full Validation." %}
+{% elif result.limited %}
+    {% set observation_description = "Mount discovery denied; core checks remain unaffected." %}
+{% elif result.gap %}
+    {% set observation_description = "Required API was not qualified by the current validation." %}
+{% else %}
+    {% set observation_description = "No current Full Validation observation exists for this API." %}
+{% endif %}
+{% set evidence_steps = [
+    ('01', 'API Contract', row.contract, 'The adapter declares this API; validation proves its status.'),
+    ('02', 'Identity & Access', auth_boundary, auth_description),
+    ('03', 'Committed Observation', result.status_label, observation_description)
+] %}
+<div class="space-y-4"
+     data-kaori-vault-capability-detail
+     data-kaori-capability-modal-content
+     data-kaori-capability-modal-v2
+     data-kaori-capability-modal-v3>
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
+             data-kaori-capability-decision-summary>
+        <div class="p-5 sm:p-6">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex min-w-0 items-start gap-3.5">
+                    {{ integration_ui.palette_icon('circle-check' if result.observed else ('triangle-alert' if result.limited else 'circle-help') , 'normal' if result.observed else ('warning' if result.limited else 'info'), size='lg', rounded='xl') }}
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Capability Decision</p>
+                        <h3 class="mt-1 text-lg font-semibold text-content-primary">{{ decision_title }}</h3>
+                        <p class="mt-2 max-w-3xl text-sm leading-6 text-content-secondary lg:line-clamp-1"
+                           title="{{ decision_message }}">{{ decision_message }}</p>
+                    </div>
+                </div>
+                <span class="shrink-0">{{ integration_status(status_tone, result.status_label, display='indicator') }}</span>
+            </div>
+        </div>
+        <div class="border-t border-outline-subtle bg-surface-subtle px-5 py-4 sm:px-6"
+             data-kaori-capability-contract-snapshot>
+            <div class="flex items-center gap-2">
+                {{ integration_ui.palette_icon('file-check-2', 'brand', size='sm') }}
+                <p class="text-sm font-semibold text-content-primary">Contract Snapshot</p>
+            </div>
+            <dl class="mt-3 grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
+                {% set context_rows = [
+                                    ('Requirement', 'Required' if row.required else 'Optional'),
+                                    ('API Contract', row.contract),
+                                    ('Identity Boundary', auth_boundary),
+                                    ('Evidence Owner', 'Vault Full Validation')
+                                ] %}
+                {% for label, value in context_rows %}
+                    <div class="min-w-0 bg-surface-card px-4 py-3">
+                        <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
+                        <dd class="mt-1 break-words text-xs font-semibold text-content-primary [overflow-wrap:anywhere] {% if label == 'Identity Boundary' %}lg:line-clamp-1{% endif %}"
+                            title="{{ value }}">
+                            {{ value }}
+                        </dd>
+                    </div>
+                {% endfor %}
+            </dl>
+        </div>
+    </section>
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
+             data-kaori-capability-validation-evidence>
+        <header class="border-b border-outline-subtle px-5 py-4">
+            <div class="flex items-start gap-3">
+                {{ integration_ui.palette_icon('list-checks', 'info', size='md') }}
+                <div class="min-w-0">
+                    <h3 class="text-sm font-semibold text-content-primary">Validation Evidence</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Adapter contract, authorization boundary, and latest committed observation. These are not three independently stored check results.</p>
+                </div>
+            </div>
+        </header>
+        <ol class="grid gap-px bg-outline-subtle lg:grid-cols-3">
+            {% for number, title, evidence, description in evidence_steps %}
+                <li class="min-w-0 bg-surface-card p-4 sm:p-5">
+                    <div class="flex items-start gap-3">
+                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-xs font-semibold text-kaori-primary-dark dark:text-kaori-accent">{{ number }}</span>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                            <p class="mt-1 break-words text-xs font-semibold text-content-secondary [overflow-wrap:anywhere]">{{ evidence }}</p>
+                        </div>
+                    </div>
+                    <p class="mt-3 text-xs leading-5 text-content-muted lg:line-clamp-2"
+                       title="{{ description }}">{{ description }}</p>
+                </li>
+            {% endfor %}
+        </ol>
+    </section>
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
+             data-kaori-capability-operational-decision>
+        <header class="border-b border-outline-subtle px-5 py-4">
+            <div class="flex items-start gap-3">
+                {{ integration_ui.palette_icon('route', 'brand', size='md') }}
+                <div class="min-w-0">
+                    <h3 class="text-sm font-semibold text-content-primary">Operational Decision</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Interpret the committed Vault provider evidence and the next controlled operator action.</p>
+                </div>
+            </div>
+        </header>
+        <div class="grid gap-px bg-outline-subtle lg:grid-cols-2">
+            <article class="min-w-0 bg-surface-card p-5">
+                <div class="flex items-start gap-3">
+                    {{ integration_ui.palette_icon('activity', 'neutral', size='sm') }}
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-content-secondary">Operational Impact</p>
+                        <p class="mt-1.5 text-sm leading-6 text-content-primary">{{ operational_impact }}</p>
+                    </div>
+                </div>
+            </article>
+            <article class="min-w-0 bg-surface-card p-5">
+                <div class="flex items-start gap-3">
+                    {{ integration_ui.palette_icon('arrow-right-circle', 'brand', size='sm') }}
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-content-secondary">Recommended Action</p>
+                        <p class="mt-1.5 text-sm leading-6 text-content-primary">{{ next_action }}</p>
+                    </div>
+                </div>
+            </article>
+        </div>
+        <div class="border-t border-outline-subtle bg-surface-subtle px-5 py-4"
+             data-kaori-capability-governance-boundary>
+            <div class="flex items-start gap-3">
+                {{ integration_ui.palette_icon('shield-check', 'neutral', size='sm') }}
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold text-content-primary">Governance Boundary</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Vault owns API authorization, tokens, Secret values, leases and PKI operations. KAORI displays committed Full Validation API evidence only; Runtime Refresh, KV v2/PKI inventory and per-Secret access are separate.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    {% if verification_command %}
+        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
+                 data-kaori-capability-verification-command
+                 x-data="{ copied: false }">
+            <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex min-w-0 items-start gap-3">
+                    {{ integration_ui.palette_icon('terminal-square', 'info', size='md') }}
+                    <div class="min-w-0">
+                        <h3 class="text-sm font-semibold text-content-primary">Verification Command</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary lg:line-clamp-1">Read-only CLI check; not proof of the KAORI AppRole.</p>
+                    </div>
+                </div>
+                <button type="button"
+                        @click="navigator.clipboard.writeText($refs.script.textContent.trim()).then(() => { copied = true; setTimeout(() => copied = false, 1600) })"
+                        class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-surface-subtle hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                    <i data-lucide="copy" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                    <span x-text="copied ? 'Copied' : 'Copy Script'">Copy Script</span>
+                </button>
+            </header>
+            <div class="border-b border-outline-subtle bg-surface-subtle px-5 py-3">
+                <div class="flex flex-wrap gap-2">
+                    {{ table_label.metadata_label("Scope · Approved operator CLI context") }}
+                    {{ table_label.metadata_label("Identity · Operator-managed, not KAORI AppRole") }}
+                </div>
+            </div>
+            <pre class="max-h-64 overflow-auto whitespace-pre-wrap break-words bg-surface-card px-5 py-4 text-xs leading-5 text-content-secondary"><code x-ref="script">{{ verification_command }}</code></pre>
+        </section>
+    {% else %}
+        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
+                 data-kaori-capability-verification-command
+                 data-kaori-capability-verification-unavailable>
+            <header class="border-b border-outline-subtle px-5 py-4">
+                <div class="flex items-start gap-3">
+                    {{ integration_ui.palette_icon('terminal-square', 'neutral', size='md') }}
+                    <div class="min-w-0">
+                        <h3 class="text-sm font-semibold text-content-primary">Verification Command</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary lg:line-clamp-1">AppRole login is verified securely by the KAORI worker.</p>
+                    </div>
+                </div>
+            </header>
+            <div class="bg-surface-subtle px-5 py-4">
+                <p class="text-xs leading-5 text-content-secondary">Use Run Full Validation with the approved managed AppRole identity. No copyable login command or SecretID is provided.</p>
+            </div>
+        </section>
+    {% endif %}
+</div>

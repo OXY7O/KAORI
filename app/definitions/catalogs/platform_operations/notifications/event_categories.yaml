@@ -49,6 +49,7 @@ routes:
     prefixes:
       - metrics_source_
       - alertmanager_
+      - ansible_source_
       - cluster_
       - kubernetes_capability_
       - kubernetes_runtime_

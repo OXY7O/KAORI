@@ -61,6 +61,28 @@ Inventory Overview uses `Inventory Assets` above the asset catalog and `Multi-Cl
 
 The section title and child card title must not repeat the same phrase. Preserve the child's existing shared component ownership and HTMX target boundaries.
 
+## Title-adjacent posture indicator labels
+
+The Kubernetes Inventory Asset Catalog uses a compact Violet metadata label
+(`N Asset Types`) beside the owning card title. Eight resource Posture cards
+reuse **the same existing** `table_label.metadata_label` through
+`operational_section_card.render(header_badge=...)`, presenting
+`N Indicators` from the already-rendered `posture_metrics` / `metrics` list
+(6 for Nodes, Namespaces, Workloads, Services, Ingresses, Storage and
+Configuration; 8 for Pods). This counts **displayed indicator slots**, not
+collected resources, healthy results, alerts, or evidence completeness.
+
+Topology's separate Adaptive Explorer displays `N Relationships` from the
+scope-filtered committed graph summary, updating the same badge when the
+existing filter/reload changes that graph. Its number is visible graph-edge
+coverage, not proof of complete Kubernetes collection; the existing graph
+truncation/evidence warnings remain authoritative.
+
+All nine use the shared compact metadata-label appearance alongside the
+existing title, with readable natural wrapping on narrow screens. Do not
+duplicate badge geometry, invent new status semantics, or change resource
+read models, filtering, source authority, or section hierarchy.
+
 ## Authorization and readiness request contract
 
 **Authorization before blocker evaluation** is mandatory.
@@ -216,3 +238,17 @@ fleet rather than displaying a false empty Snapshot scope. Topology uses the
 normalized graph filter scope for the shared snapshot. A fleet with one member
 remains labeled as fleet scope unless the operator explicitly selects that cluster.
 Page/HTMX interactions preserve existing authorization-before-blocker order.
+
+## Structured metadata values in Inventory details
+
+The existing `technical_metadata_collection.html` owns read-only metadata rendering
+across Kubernetes and Artifact Registry. Its existing `pretty_structured_json` filter
+formats either native JSON objects/lists from committed JSON columns or JSON-encoded
+object/array strings into indented, escaped `<pre>` content. It must not stringify
+native dictionaries as Python repr or execute/interpret non-JSON input. Scalar values,
+invalid JSON strings and unsupported non-JSON objects retain the existing plain-text
+fallback. This is a presentation-only normalization: provider metadata, committed
+snapshot values, source provenance and the original nested structure remain
+authoritative and unchanged. Maintain natural wrapping, autoescaping and responsive
+width; never insert raw HTML or a new custom inspector for this case.
+

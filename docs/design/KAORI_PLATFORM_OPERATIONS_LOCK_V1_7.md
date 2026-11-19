@@ -19,6 +19,27 @@ v1.7 keeps the v1.6 global kill-switch, configured-policy evidence, least-privil
 7. **Dark mode remains neutral-first.** Activation guidance uses semantic/shared surfaces and does not introduce hardcoded light surfaces or oversized Violet informational blocks.
 8. **Security behavior is unchanged.** Cluster readiness, Namespace Policy, live Namespace verification, live Secret validation, approval separation, step-up authentication, and one-time reveal revalidation remain mandatory.
 
+## Kubernetes Administration Guide and Boundary Copy UAT Refinement
+
+Two overview section headings now expose contextual, read-only **Guide** triggers
+using the existing `components/info_tip.html` `variant='guide'` in
+`operational_section_card.html`'s title/metadata group:
+
+- **Administration Coverage:** explain that managed control, registered cluster,
+  configured prerequisite and protected Namespace counts are committed KAORI
+  configuration evidence, not provider access proof.
+- **Secret Reveal Configuration:** clarify the deployment-managed global gate,
+  protected cluster/Namespace policy scope and independent runtime authorization
+  requirements. Global gate, Namespace policy, session/user authorization and
+  Kubernetes RBAC remain visible, mandatory security boundaries.
+
+The **Kubernetes Boundary** helper descriptions for Namespace Scope and Credential
+Scope stay short enough for normal four-column desktop layout: they continue to
+recommend namespace `Role`/`RoleBinding` and periodic kubeconfig scope review.
+Responsive wrapping is allowed where the columns become narrow. This is copy and
+Guide composition only: no change to live authorization, Secret operations,
+recorded evidence, policy writes, or deployment-level enablement.
+
 ## Enforcement
 
 ```bash

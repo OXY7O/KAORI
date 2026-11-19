@@ -1,11 +1,19 @@
-from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
+from flask import abort, current_app, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
+from sqlalchemy.exc import SQLAlchemyError
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import permission_required
 from app.common.http import htmx_target, is_htmx_request
+from app.infrastructure_automation.kubernetes.plan_currentness import (
+    committed_kubespray_plan_currentness,
+)
+from app.infrastructure_automation.kubernetes.plan_dispatch import (
+    KubesprayPlanNotQualified,
+    dispatch_kubespray_plan_review,
+)
 from app.integrations.binding_web import binding_response as _binding_response
 from app.integrations.domain_service import (
     BindingRegistryFilters,
@@ -17,45 +25,85 @@ from app.integrations.observability.metrics_source.application.registration_web 
     test_new_instance_connection_response,
 )
 from app.integrations.observability.metrics_source.providers import provider_definitions
-from app.integrations.orchestration.container_orchestrator.frontpage import (
-    KubernetesCoverageFilters,
-    KubernetesFrontPageFilters,
-    KubernetesRegistryFilters,
-    build_kubernetes_page,
-    build_kubernetes_registry_row,
+from app.integrations.orchestration.configuration_automation.frontpage import build_ansible_frontpage
+from app.integrations.orchestration.configuration_automation.providers.ansible.forms import AnsibleSourceConnectionForm
+from app.integrations.orchestration.configuration_automation.providers.ansible.preflight import (
+    committed_kubespray_preflight,
 )
-from app.integrations.orchestration.container_orchestrator.tenant_capsule_web import capsule_rbac_operation
+from app.integrations.orchestration.configuration_automation.providers.ansible.proof import (
+    issue_source_proof,
+    verified_source_proof,
+)
+from app.integrations.orchestration.configuration_automation.providers.ansible.service import (
+    bound_kubernetes_targets,
+    commit_source_revalidation,
+    connection_jobs,
+    get_connection,
+    save_source_connection,
+    source_validation_posture,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
+    _capsule_rbac_feedback_response as _capsule_rbac_feedback_response,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
+    _kubernetes_detail_context as _kubernetes_detail_context,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
+    kubernetes as kubernetes,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
+    kubernetes_binding_registry as kubernetes_binding_registry,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
+    kubernetes_capability_registry as kubernetes_capability_registry,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
+    kubernetes_capability_validate as kubernetes_capability_validate,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
+    kubernetes_capability_validation_status as kubernetes_capability_validation_status,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
+    kubernetes_capsule_rbac_bootstrap as kubernetes_capsule_rbac_bootstrap,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
+    kubernetes_capsule_rbac_check as kubernetes_capsule_rbac_check,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
+    kubernetes_detail as kubernetes_detail,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
+    kubernetes_registry_details as kubernetes_registry_details,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
+    kubernetes_runtime_history as kubernetes_runtime_history,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
+    kubernetes_runtime_refresh as kubernetes_runtime_refresh,
+)
+from app.integrations.orchestration.container_orchestrator.routes import (
+    kubernetes_runtime_refresh_status as kubernetes_runtime_refresh_status,
+)
 from app.integrations.overview_workspace import build_integrations_overview
 from app.integrations.provider_matrix import provider_kinds
-from app.integrations.repository import get_kubernetes_connection_by_cluster_id
-from app.integrations.runtime.presentation import runtime_history_view
-from app.integrations.runtime.repository import paginate_runtime_history
+from app.integrations.route_common import integrations_bp
 from app.integrations.service import (
     MetricsSourceRegistryFilters,
     build_alertmanager_page,
     build_integration_runtime_detail,
-    build_kubernetes_capability_registry,
-    build_kubernetes_detail,
     build_metrics_source_page,
 )
+from app.integrations.source_control.source_control.providers.github.public_automation_source import (
+    AutomationSourceRejected,
+    verify_public_kubespray_source,
+)
 from app.integrations.taxonomy import get_domain_definition
-from app.integrations.validation.state import (
-    build_validation_snapshot,
-    get_active_validation_task_id,
-)
-from app.integrations.validation.web import (
-    enqueue_instance_validation,
-    enqueue_runtime_health_refresh,
-    snapshot_feedback_for_user,
-    validate_snapshot_access,
-    validation_poll_response,
-)
+from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable
+from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 from app.platform_operations.notifications.service import (
     get_navigation_notification_context,
     record_operational_activity,
 )
-
-integrations_bp = Blueprint('integrations', __name__, url_prefix='/integrations')
 
 
 @integrations_bp.get('/')
@@ -109,6 +157,327 @@ def orchestration() -> ResponseReturnValue:
     return _render_domain_page('orchestration')
 
 
+@integrations_bp.get('/ansible')
+@permission_required('integrations.manage')
+def ansible() -> ResponseReturnValue:
+    """Connection-first Ansible provider landing backed by canonical state."""
+    context = build_ansible_frontpage(
+        query=request.args.get('q', '').strip()[:80],
+        environment=request.args.get('environment', '').strip(),
+        page=request.args.get('page', 1, type=int) or 1,
+        per_page=request.args.get('per_page', 5, type=int) or 5,
+    )
+    if is_htmx_request() and htmx_target() == 'ansible-connection-registry':
+        return render_template(
+            'integrations/orchestration/configuration_automation/providers/ansible/_connection_registry.html', **context
+        )
+    return render_template(
+        'integrations/orchestration/configuration_automation/providers/ansible/frontpage.html', **context
+    )
+
+
+@integrations_bp.get('/ansible/profiles')
+@permission_required('integrations.manage')
+def ansible_choose() -> ResponseReturnValue:
+    """Reusable automation profile selection; future profiles remain disabled."""
+    return render_template('integrations/orchestration/configuration_automation/providers/ansible/choose.html')
+
+
+def _ansible_registration_feedback(*, event_type: str, status: str, title: str, message: str) -> None:
+    """Emit canonical toast/Audit; source checks must not spam Notification Deck."""
+    record_operational_activity(
+        user_id=int(current_user.id),
+        event_type=event_type,
+        status=status,
+        title=title,
+        message=message,
+        action_url=url_for('integrations.ansible_new_connection'),
+        action_label='Review Ansible Source',
+        action_icon='git-commit',
+        metadata={'provider': 'ansible', 'registration_phase': 'source_only', 'feedback_delivery': 'toast'},
+        queue_feedback=True,
+        delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY,
+    )
+
+
+def _ansible_registration_validation_message(form: AnsibleSourceConnectionForm) -> str:
+    """Return safe labels, never user-entered values or raw validation errors."""
+    if 'csrf_token' in form.errors:
+        return 'Form session expired. Reload the page and retry Validate Source.'
+    labels = {
+        'name': 'Connection Name',
+        'environment': 'Environment',
+        'description': 'Description',
+        'profile_key': 'Automation Profile',
+        'repository': 'Git Repository',
+        'revision': 'Git Commit SHA',
+        'ansible_core_version': 'Ansible Core Version',
+        'ansible_runner_version': 'Ansible Runner Version',
+        'kubespray_release': 'Kubespray Release',
+        'execution_environment_digest': 'Execution Environment Digest',
+    }
+    invalid = [label for field, label in labels.items() if field in form.errors]
+    if not invalid:
+        return 'Review required fields before continuing.'
+    visible = ', '.join(invalid[:3])
+    suffix = f' (+{len(invalid) - 3} other fields)' if len(invalid) > 3 else ''
+    return f'Review required fields: {visible}{suffix} before continuing.'
+
+
+@integrations_bp.route('/ansible/connections/new', methods=['GET', 'POST'])
+@permission_required('integrations.manage')
+def ansible_new_connection() -> ResponseReturnValue:
+    """Register only after immutable Git source proof; use shared operational feedback."""
+    form = AnsibleSourceConnectionForm()
+    proof = ''
+    if request.method == 'POST':
+        action = str(request.form.get('action') or '').strip()
+        if not form.validate_on_submit():
+            _ansible_registration_feedback(
+                event_type='ansible_source_registration_input_rejected',
+                status='warning',
+                title='Ansible Source Registration Needs Attention',
+                message=_ansible_registration_validation_message(form),
+            )
+        elif action not in {'test', 'save'}:
+            _ansible_registration_feedback(
+                event_type='ansible_source_registration_action_rejected',
+                status='warning',
+                title='Ansible Registration Action Rejected',
+                message='Use Validate Source before saving this connection.',
+            )
+        else:
+            try:
+                values = form.to_input()
+            except ValueError:
+                _ansible_registration_feedback(
+                    event_type='ansible_source_registration_policy_rejected',
+                    status='warning',
+                    title='Ansible Source Policy Rejected',
+                    message='The automation profile, Git source or version does not match the reviewed candidate.',
+                )
+            else:
+                if action == 'test':
+                    try:
+                        evidence = verify_public_kubespray_source(values.repository, values.revision)
+                        proof = issue_source_proof(values, evidence, int(current_user.id))
+                    except (AutomationSourceRejected, ValueError):
+                        _ansible_registration_feedback(
+                            event_type='ansible_source_validation_failed',
+                            status='error',
+                            title='Ansible Source Validation Failed',
+                            message='Unable to verify the reviewed Git source. Check the approved revision and retry.',
+                        )
+                    else:
+                        _ansible_registration_feedback(
+                            event_type='ansible_source_validation_checked',
+                            status='success',
+                            title='Ansible Source Validated',
+                            message='Git objects and version policy match the reviewed candidate. '
+                            'Host and cluster readiness remain blocked.',
+                        )
+                else:
+                    evidence = verified_source_proof(
+                        str(form.source_test_proof.data or ''), values, int(current_user.id)
+                    )
+                    if evidence is None:
+                        _ansible_registration_feedback(
+                            event_type='ansible_source_registration_proof_rejected',
+                            status='warning',
+                            title='Ansible Source Verification Required',
+                            message='Re-run Validate Source after changes; a current proof is required to register.',
+                        )
+                    else:
+                        try:
+                            connection = save_source_connection(values, evidence=evidence)
+                        except SQLAlchemyError:
+                            current_app.logger.exception('Ansible source connection registration failed.')
+                            _ansible_registration_feedback(
+                                event_type='ansible_source_registration_failed',
+                                status='error',
+                                title='Ansible Source Registration Failed',
+                                message='Unable to commit the connection. Review the registry and retry.',
+                            )
+                        except ValueError as exc:
+                            duplicate = str(exc) == 'An automation connection with this name already exists.'
+                            _ansible_registration_feedback(
+                                event_type='ansible_source_registration_rejected',
+                                status='warning',
+                                title='Ansible Source Registration Rejected',
+                                message=(
+                                    'An automation connection with this name already exists. Choose another name.'
+                                    if duplicate
+                                    else 'Registration was rejected by the reviewed source policy. '
+                                    'Run Validate Source again.'
+                                ),
+                            )
+                        else:
+                            record_operational_activity(
+                                user_id=int(current_user.id),
+                                event_type='ansible_source_connection_registered',
+                                status='success',
+                                title='Ansible Source Connection Registered',
+                                message='Git source was checked; remote execution and provider readiness are not enabled.',
+                                action_url=url_for('integrations.ansible_connection_detail', instance_id=connection.id),
+                                action_label='Open Ansible Connection',
+                                action_icon='workflow',
+                                metadata={'provider': 'ansible', 'instance_id': connection.id},
+                                queue_feedback=True,
+                            )
+                            return redirect(
+                                url_for('integrations.ansible_connection_detail', instance_id=connection.id)
+                            )
+    return render_template(
+        'integrations/orchestration/configuration_automation/providers/ansible/form.html',
+        form=form,
+        source_test_proof=proof,
+        notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
+    )
+
+
+@integrations_bp.get('/ansible/connections/<int:instance_id>')
+@permission_required('integrations.manage')
+def ansible_connection_detail(instance_id: int) -> ResponseReturnValue:
+    """Four reusable provider tabs; only committed facts, no host/provider calls."""
+    connection = get_connection(instance_id)
+    if connection is None:
+        abort(404)
+    jobs, pagination = connection_jobs(
+        connection,
+        page=request.args.get('page', 1, type=int) or 1,
+        per_page=request.args.get('per_page', 5, type=int) or 5,
+    )
+    inventory_targets, inventory_pagination = bound_kubernetes_targets(
+        connection,
+        page=request.args.get('inventory_page', 1, type=int) or 1,
+        per_page=request.args.get('inventory_per_page', 5, type=int) or 5,
+    )
+    template = (
+        'integrations/orchestration/configuration_automation/providers/ansible/_detail_inventory.html'
+        if is_htmx_request() and htmx_target() == 'ansible-inventory-registry'
+        else 'integrations/orchestration/configuration_automation/providers/ansible/detail.html'
+    )
+    preflight = committed_kubespray_preflight(connection)
+    return render_template(
+        template,
+        connection=connection,
+        source=connection.metadata_json or {},
+        source_posture=source_validation_posture(connection),
+        kubespray_preflight=preflight.presentation(),
+        kubespray_plan_currentness=committed_kubespray_plan_currentness(connection, preflight=preflight).presentation(),
+        can_generate_review_plan=bool(
+            connection.enabled and getattr(current_user, 'has_permission', lambda _: False)('jobs.execute')
+        ),
+        jobs=jobs,
+        pagination=pagination,
+        inventory_targets=inventory_targets,
+        inventory_pagination=inventory_pagination,
+    )
+
+
+@integrations_bp.post('/ansible/connections/<int:instance_id>/plan-review')
+@permission_required('integrations.manage')
+@permission_required('jobs.execute')
+def ansible_plan_review(instance_id: int) -> ResponseReturnValue:
+    """Dispatch only DB-backed, non-mutating Plan review; no Kubernetes Run."""
+    connection = get_connection(instance_id)
+    if connection is None:
+        abort(404)
+    try:
+        validate_csrf(str(request.form.get('csrf_token') or ''))
+    except ValidationError:
+        abort(400)
+
+    try:
+        job, created = dispatch_kubespray_plan_review(connection, user_id=int(current_user.id))
+    except (KubesprayPlanNotQualified, JobWorkerUnavailable):
+        status = 'warning'
+        event_type = 'ansible_kubespray_plan_review_blocked'
+        title = 'Kubespray Plan Review Blocked'
+        message = 'Source, host preflight or plan worker is not qualified. No operation was dispatched.'
+    except SQLAlchemyError:
+        current_app.logger.exception('Kubespray Plan review dispatch failed.')
+        status = 'error'
+        event_type = 'ansible_kubespray_plan_review_failed'
+        title = 'Kubespray Plan Review Failed'
+        message = 'Unable to record the review-only Plan job. No cluster mutation was authorized.'
+    else:
+        status = 'info'
+        event_type = 'ansible_kubespray_plan_review_queued'
+        title = 'Kubespray Plan Review Queued'
+        message = (
+            (
+                'Review-only Plan is queued in Jobs & Executions; independent approval '
+                'and cluster operations remain blocked.'
+            )
+            if created
+            else 'A review-only Plan job already exists; no duplicate dispatch was created.'
+        )
+        # No JobExecution identifier or secret is needed in toast metadata.
+        del job
+
+    record_operational_activity(
+        user_id=int(current_user.id),
+        event_type=event_type,
+        status=status,
+        title=title,
+        message=message,
+        action_url=url_for('integrations.ansible_connection_detail', instance_id=connection.id) + '#runtime',
+        action_label='Review Jobs',
+        action_icon='clipboard-list',
+        metadata={'provider': 'ansible', 'instance_id': connection.id, 'feedback_delivery': 'toast'},
+        queue_feedback=True,
+        delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY,
+    )
+    return redirect(url_for('integrations.ansible_connection_detail', instance_id=connection.id) + '#validation')
+
+
+@integrations_bp.post('/ansible/connections/<int:instance_id>/validate-source')
+@permission_required('integrations.manage')
+def ansible_revalidate_source(instance_id: int) -> ResponseReturnValue:
+    """Re-read only approved GitHub objects; never execute Ansible or probe hosts."""
+    from flask_login import current_user
+
+    connection = get_connection(instance_id)
+    if connection is None:
+        abort(404)
+    try:
+        validate_csrf(str(request.form.get('csrf_token') or ''))
+    except ValidationError:
+        abort(400)
+    values = connection.metadata_json or {}
+    try:
+        evidence = verify_public_kubespray_source(
+            str(values.get('source_repository') or ''), str(values.get('source_sha') or '')
+        )
+    except AutomationSourceRejected:
+        source_validation = {
+            'status': 'blocked',
+            'operation_authorized': False,
+            'checked_files': 0,
+        }
+        state = 'warning'
+        message = 'Pinned source could not be reverified. Remote execution remains blocked.'
+    else:
+        source_validation = evidence.as_dict()
+        state = 'success'
+        message = 'Git source files reverified. Host access and execution remain blocked.'
+    commit_source_revalidation(connection, evidence=source_validation)
+    record_operational_activity(
+        user_id=int(current_user.id),
+        event_type='ansible_source_revalidated',
+        status=state,
+        title='Ansible Source Validation',
+        message=message,
+        action_url=url_for('integrations.ansible_connection_detail', instance_id=connection.id) + '#validation',
+        action_label='Review Validation',
+        action_icon='scan-search',
+        metadata={'provider': 'ansible', 'instance_id': connection.id},
+        queue_feedback=True,
+    )
+    return redirect(url_for('integrations.ansible_connection_detail', instance_id=connection.id) + '#validation')
+
+
 @integrations_bp.get('/observability')
 @permission_required('integrations.manage')
 def observability() -> ResponseReturnValue:
@@ -143,6 +512,7 @@ def source_control() -> ResponseReturnValue:
 # remain provider-owned routes, never a second KAORI registration implementation.
 _PROVIDER_REGISTRATION_ENDPOINTS = {
     ('container_orchestrator', 'kubernetes'): 'cluster.add_cluster',
+    ('configuration_automation', 'ansible'): 'integrations.ansible_choose',
     ('alert_source', 'alertmanager'): 'alertmanager.new_instance',
     ('object_storage', 'minio'): 'minio.new_instance',
     ('registry', 'harbor'): 'harbor.new_instance',
@@ -204,424 +574,6 @@ def runtime_overview_details(detail_key: str) -> ResponseReturnValue:
     return render_template(
         'integrations/partials/_runtime_overview_modal.html',
         detail=detail,
-    )
-
-
-@integrations_bp.get('/kubernetes')
-@permission_required('integrations.manage')
-def kubernetes() -> ResponseReturnValue:
-    context = build_kubernetes_page(
-        KubernetesFrontPageFilters(
-            registry=KubernetesRegistryFilters(
-                query=request.args.get('q', '').strip(),
-                environment=request.args.get('environment', '').strip(),
-                readiness=request.args.get('readiness', '').strip(),
-                coverage=request.args.get('coverage', '').strip(),
-                page=request.args.get('page', 1, type=int) or 1,
-                per_page=request.args.get('per_page', 5, type=int) or 5,
-            ),
-            coverage=KubernetesCoverageFilters(
-                query=request.args.get('coverage_q', '').strip(),
-                environment=request.args.get('coverage_environment', '').strip(),
-                status=request.args.get('coverage_status', '').strip(),
-                page=request.args.get('coverage_page', 1, type=int) or 1,
-                per_page=request.args.get('coverage_per_page', 5, type=int) or 5,
-            ),
-        )
-    )
-    requested_tab = request.args.get('tab', 'coverage').strip()
-    context['active_tab'] = requested_tab if requested_tab in {'coverage', 'registry'} else 'coverage'
-    if request.headers.get('HX-Request') == 'true':
-        target = request.headers.get('HX-Target')
-        if target == 'kubernetes-integration-coverage':
-            return render_template(
-                'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_integration_coverage.html',
-                **context,
-            )
-        if target == 'kubernetes-connection-registry':
-            return render_template(
-                'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html',
-                **context,
-            )
-    return render_template(
-        'integrations/orchestration/container_orchestrator/providers/kubernetes/frontpage.html', **context
-    )
-
-
-def _kubernetes_detail_context(
-    cluster_id: str,
-    *,
-    include_history: bool = False,
-    history_page: int | None = None,
-    history_per_page: int | None = None,
-) -> dict[str, object]:
-    context = build_kubernetes_detail(
-        cluster_id,
-        binding_page=request.args.get('binding_page', 1, type=int) or 1,
-        binding_per_page=request.args.get('binding_per_page', 5, type=int) or 5,
-    )
-    if context is None:
-        abort(404)
-    connection = context['connection']
-    capability_task_id = get_active_validation_task_id(
-        integration_type='container_orchestrator',
-        operation='full_validation',
-        integration_instance_id=connection.integration_instance_id,
-    )
-    runtime_task_id = get_active_validation_task_id(
-        integration_type='container_orchestrator',
-        operation='runtime_refresh',
-        integration_instance_id=connection.integration_instance_id,
-    )
-    context['capability_validation_job'] = build_validation_snapshot(capability_task_id) if capability_task_id else None
-    context['runtime_validation_job'] = build_validation_snapshot(runtime_task_id) if runtime_task_id else None
-    context['capsule_rbac_bootstrap'] = capsule_rbac_operation('latest_capsule_role_bootstrap_evidence')(cluster_id)
-    context['capability_registry'] = build_kubernetes_capability_registry(
-        context['feature_rows'],
-        query=request.args.get('capability_q', '').strip(),
-        requirement=request.args.get('capability_requirement', '').strip(),
-        status=request.args.get('capability_status', '').strip(),
-        page=request.args.get('capability_page', 1, type=int) or 1,
-        per_page=request.args.get('capability_per_page', 5, type=int) or 5,
-    )
-    if include_history:
-        resolved_page = history_page if history_page is not None else (request.args.get('page', 1, type=int) or 1)
-        resolved_per_page = (
-            history_per_page if history_per_page is not None else (request.args.get('per_page', 5, type=int) or 5)
-        )
-        rows, pagination = paginate_runtime_history(
-            'container_orchestrator',
-            str(connection.id),
-            page=resolved_page,
-            per_page=resolved_per_page,
-            trigger_type=request.args.get('history_trigger', '').strip(),
-            health_status=request.args.get('history_health', '').strip(),
-            readiness=request.args.get('history_readiness', '').strip(),
-        )
-        context['history'] = runtime_history_view(rows, pagination=pagination)
-    return context
-
-
-@integrations_bp.get('/kubernetes/<string:cluster_id>/bindings/registry')
-@permission_required('clusters.view')
-def kubernetes_binding_registry(cluster_id: str) -> ResponseReturnValue:
-    context = _kubernetes_detail_context(cluster_id)
-    return render_template(
-        'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_binding_registry.html',
-        **context,
-    )
-
-
-@integrations_bp.get('/kubernetes/<string:cluster_id>/registry-details')
-@permission_required('integrations.manage')
-def kubernetes_registry_details(cluster_id: str) -> ResponseReturnValue:
-    row = build_kubernetes_registry_row(cluster_id)
-    if row is None:
-        abort(404)
-    return render_template(
-        'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry_detail_content.html',
-        row=row,
-    )
-
-
-@integrations_bp.get('/kubernetes/<string:cluster_id>')
-@permission_required('clusters.view')
-def kubernetes_detail(cluster_id: str) -> ResponseReturnValue:
-    return render_template(
-        'integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html',
-        **_kubernetes_detail_context(cluster_id, include_history=True),
-    )
-
-
-@integrations_bp.post('/kubernetes/<string:cluster_id>/capsule-rbac/check')
-@permission_required('clusters.sync')
-def kubernetes_capsule_rbac_check(cluster_id: str) -> ResponseReturnValue:
-    if get_kubernetes_connection_by_cluster_id(cluster_id) is None:
-        abort(404)
-    try:
-        validate_csrf(str(request.form.get('csrf_token') or ''))
-    except ValidationError:
-        abort(400)
-    result = capsule_rbac_operation('check_capsule_role_bootstrap')(cluster_id, int(current_user.id))
-    flash(
-        'Capsule RBAC check: '
-        + (
-            'all canonical roles match.'
-            if result['status'] == 'ready'
-            else 'review missing or conflicting role prerequisites in the cluster panel.'
-        ),
-        'success' if result['status'] == 'ready' else 'warning',
-    )
-    return redirect(url_for('integrations.kubernetes_detail', cluster_id=cluster_id, tab='validation'))
-
-
-@integrations_bp.post('/kubernetes/<string:cluster_id>/capsule-rbac/bootstrap')
-@permission_required('clusters.manage')
-@permission_required('integrations.manage')
-def kubernetes_capsule_rbac_bootstrap(cluster_id: str) -> ResponseReturnValue:
-    if get_kubernetes_connection_by_cluster_id(cluster_id) is None:
-        abort(404)
-    try:
-        validate_csrf(str(request.form.get('csrf_token') or ''))
-    except ValidationError:
-        abort(400)
-    if request.form.get('confirm_cluster_rbac') != 'approved':
-        abort(400)
-    result = capsule_rbac_operation('bootstrap_missing_capsule_roles')(cluster_id, int(current_user.id), approved=True)
-    flash(
-        'Capsule ClusterRole bootstrap '
-        + (
-            'completed and verified.'
-            if result['status'] == 'ready'
-            else 'requires operator attention; no conflicting roles were overwritten.'
-        ),
-        'success' if result['status'] == 'ready' else 'warning',
-    )
-    return redirect(url_for('integrations.kubernetes_detail', cluster_id=cluster_id, tab='validation'))
-
-
-@integrations_bp.get('/kubernetes/<string:cluster_id>/capabilities/registry')
-@permission_required('clusters.view')
-def kubernetes_capability_registry(cluster_id: str) -> ResponseReturnValue:
-    context = _kubernetes_detail_context(cluster_id)
-    return render_template(
-        'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_registry.html',
-        validation_job=context.get('capability_validation_job'),
-        **context,
-    )
-
-
-@integrations_bp.post('/kubernetes/<string:cluster_id>/capabilities/validate')
-@permission_required('clusters.sync')
-def kubernetes_capability_validate(cluster_id: str) -> ResponseReturnValue:
-    connection = get_kubernetes_connection_by_cluster_id(cluster_id)
-    if connection is None:
-        abort(404)
-    is_htmx = request.headers.get('HX-Request') == 'true'
-    try:
-        validation_job, created = enqueue_instance_validation(
-            integration_type='container_orchestrator',
-            integration_instance_id=connection.integration_instance_id,
-            requested_by_user_id=int(current_user.id),
-        )
-        feedback = record_operational_activity(
-            user_id=int(current_user.id),
-            event_type='kubernetes_capability_validation_queued'
-            if created
-            else 'kubernetes_capability_validation_already_running',
-            status='info' if created else 'warning',
-            title='Kubernetes capability validation queued' if created else 'Kubernetes validation already running',
-            message=(
-                f'KAORI queued full capability validation for {connection.cluster.name}.'
-                if created
-                else f'A Kubernetes validation job is already running for {connection.cluster.name}.'
-            ),
-            detail=(
-                'The dedicated validation worker will discover served APIs, effective RBAC, stable adapters, and fallback requirements.'
-                if created
-                else 'KAORI retained the active worker task and did not enqueue a duplicate validation job.'
-            ),
-            action_url=url_for('integrations.kubernetes_detail', cluster_id=cluster_id) + '#validation',
-            action_label='Review capability validation',
-            action_icon='scan-search',
-            metadata={
-                'task_id': validation_job.get('task_id'),
-                'cluster_id': cluster_id,
-                'connection_id': connection.id,
-                'queue': current_app.config.get('INTEGRATION_VALIDATION_CELERY_QUEUE', 'integration-validation'),
-            },
-            queue_feedback=not is_htmx,
-        )
-    except Exception as exc:
-        validation_job = None
-        feedback = record_operational_activity(
-            user_id=int(current_user.id),
-            event_type='kubernetes_capability_validation_enqueue_failed',
-            status='error',
-            title='Kubernetes capability validation not queued',
-            message=f'KAORI could not queue capability validation for {connection.cluster.name}.',
-            detail='Verify Redis, the Celery broker, and the integration-validation worker before retrying.',
-            action_url=url_for('integrations.kubernetes_detail', cluster_id=cluster_id) + '#validation',
-            action_label='Review capability validation',
-            action_icon='scan-search',
-            metadata={'cluster_id': cluster_id, 'connection_id': connection.id, 'reason': type(exc).__name__},
-            queue_feedback=not is_htmx,
-        )
-    if is_htmx:
-        context = _kubernetes_detail_context(cluster_id)
-        context.update(
-            {
-                'validation_job': validation_job,
-                'capability_validation_job': validation_job,
-                'operation_feedback': feedback,
-                'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
-            }
-        )
-        return render_template(
-            'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html',
-            **context,
-        )
-    return redirect(url_for('integrations.kubernetes_detail', cluster_id=cluster_id) + '#validation')
-
-
-@integrations_bp.get('/kubernetes/<string:cluster_id>/capabilities/validate/status/<string:task_id>')
-@permission_required('clusters.view')
-def kubernetes_capability_validation_status(cluster_id: str, task_id: str) -> ResponseReturnValue:
-    connection = get_kubernetes_connection_by_cluster_id(cluster_id)
-    if connection is None:
-        abort(404)
-    snapshot = build_validation_snapshot(task_id)
-    if not validate_snapshot_access(
-        snapshot,
-        integration_type='container_orchestrator',
-        integration_instance_id=connection.integration_instance_id,
-    ):
-        abort(404)
-    context = _kubernetes_detail_context(cluster_id)
-    context.update(
-        {
-            'validation_job': snapshot,
-            'capability_validation_job': snapshot,
-            'operation_feedback': snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
-            'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
-            'runtime_history_oob': True,
-        }
-    )
-    content = render_template(
-        'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_workspace.html',
-        **context,
-    )
-    return validation_poll_response(content, snapshot=snapshot)
-
-
-@integrations_bp.post('/kubernetes/<string:cluster_id>/runtime/refresh')
-@permission_required('clusters.sync')
-def kubernetes_runtime_refresh(cluster_id: str) -> ResponseReturnValue:
-    connection = get_kubernetes_connection_by_cluster_id(cluster_id)
-    if connection is None:
-        abort(404)
-    is_htmx = request.headers.get('HX-Request') == 'true'
-    try:
-        validation_job, created = enqueue_runtime_health_refresh(
-            integration_type='container_orchestrator',
-            integration_instance_id=connection.integration_instance_id,
-            requested_by_user_id=int(current_user.id),
-        )
-        feedback = record_operational_activity(
-            user_id=int(current_user.id),
-            event_type='kubernetes_runtime_refresh_queued' if created else 'kubernetes_runtime_refresh_already_running',
-            status='info' if created else 'warning',
-            title='Kubernetes runtime refresh queued' if created else 'Kubernetes runtime refresh already running',
-            message=(
-                f'KAORI queued a lightweight runtime health refresh for {connection.cluster.name}.'
-                if created
-                else f'A validation or runtime refresh is already running for {connection.cluster.name}.'
-            ),
-            detail=(
-                'The dedicated runtime worker will check reachability and runtime health while preserving full capability evidence.'
-                if created
-                else 'KAORI kept the existing task and did not enqueue a duplicate validation job.'
-            ),
-            action_url=url_for('integrations.kubernetes_detail', cluster_id=cluster_id) + '#runtime',
-            action_label='Review Kubernetes runtime',
-            action_icon='activity',
-            metadata={
-                'task_id': validation_job.get('task_id'),
-                'cluster_id': cluster_id,
-                'connection_id': connection.id,
-                'queue': current_app.config.get('INTEGRATION_RUNTIME_CELERY_QUEUE', 'integration-runtime'),
-            },
-            queue_feedback=not is_htmx,
-        )
-    except Exception as exc:
-        validation_job = None
-        feedback = record_operational_activity(
-            user_id=int(current_user.id),
-            event_type='kubernetes_runtime_refresh_enqueue_failed',
-            status='error',
-            title='Kubernetes runtime refresh not queued',
-            message=f'KAORI could not queue runtime health refresh for {connection.cluster.name}.',
-            detail='Verify Redis, the Celery broker, and the integration-runtime worker before retrying.',
-            action_url=url_for('integrations.kubernetes_detail', cluster_id=cluster_id) + '#runtime',
-            action_label='Review Kubernetes runtime',
-            action_icon='activity',
-            metadata={'cluster_id': cluster_id, 'connection_id': connection.id, 'reason': type(exc).__name__},
-            queue_feedback=not is_htmx,
-        )
-    if is_htmx:
-        context = _kubernetes_detail_context(cluster_id, include_history=True)
-        context.update(
-            {
-                'validation_job': validation_job,
-                'runtime_validation_job': validation_job,
-                'operation_feedback': feedback,
-                'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
-                'runtime_history_oob': True,
-            }
-        )
-        return render_template(
-            'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html',
-            **context,
-        )
-    return redirect(url_for('integrations.kubernetes_detail', cluster_id=cluster_id) + '#runtime')
-
-
-@integrations_bp.get('/kubernetes/<string:cluster_id>/runtime/refresh/status/<string:task_id>')
-@permission_required('clusters.view')
-def kubernetes_runtime_refresh_status(cluster_id: str, task_id: str) -> ResponseReturnValue:
-    connection = get_kubernetes_connection_by_cluster_id(cluster_id)
-    if connection is None:
-        abort(404)
-    snapshot = build_validation_snapshot(task_id)
-    if not validate_snapshot_access(
-        snapshot,
-        integration_type='container_orchestrator',
-        integration_instance_id=connection.integration_instance_id,
-    ):
-        abort(404)
-    context = _kubernetes_detail_context(cluster_id, include_history=True)
-    context.update(
-        {
-            'validation_job': snapshot,
-            'runtime_validation_job': snapshot,
-            'operation_feedback': snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
-            'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
-        }
-    )
-    content = render_template(
-        'integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_runtime_workspace.html',
-        **context,
-    )
-    return validation_poll_response(content, snapshot=snapshot)
-
-
-@integrations_bp.get('/kubernetes/<string:cluster_id>/runtime/history')
-@permission_required('clusters.view')
-def kubernetes_runtime_history(cluster_id: str) -> ResponseReturnValue:
-    connection = get_kubernetes_connection_by_cluster_id(cluster_id)
-    if connection is None:
-        abort(404)
-    rows, pagination = paginate_runtime_history(
-        'container_orchestrator',
-        str(connection.id),
-        page=request.args.get('page', 1, type=int) or 1,
-        per_page=request.args.get('per_page', 5, type=int) or 5,
-        trigger_type=request.args.get('history_trigger', '').strip(),
-        health_status=request.args.get('history_health', '').strip(),
-        readiness=request.args.get('history_readiness', '').strip(),
-    )
-    return render_template(
-        'integrations/partials/_runtime_history.html',
-        runtime_history=runtime_history_view(rows, pagination=pagination),
-        runtime_history_id='kubernetes-runtime-history',
-        runtime_history_loading_id='kubernetes-history-loading',
-        runtime_history_url=url_for('integrations.kubernetes_runtime_history', cluster_id=cluster_id),
-        runtime_history_endpoint='integrations.kubernetes_runtime_history',
-        runtime_history_route_args={'cluster_id': cluster_id},
-        runtime_history_detail_url=url_for('integrations.kubernetes_detail', cluster_id=cluster_id),
-        runtime_history_detail_endpoint='integrations.kubernetes_detail',
-        runtime_history_filters_enabled=True,
-        provider_label='Kubernetes',
     )
 
 

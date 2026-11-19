@@ -194,7 +194,10 @@ def test_domain_provider_open_is_read_first_and_add_is_registration_only() -> No
     assert '"Integration Workspace"' in tabs
     assert '"Switch between integration coverage and registered connections."' in tabs
     assert 'Provider Connections & Coverage' in tabs
-    assert 'title_extra=workspace_guide' in tabs
+    # #4544 removed the redundant inner Workspace Guide. That legacy
+    # assertion was invalid even though source and navigation were correct.
+    assert 'title_extra=workspace_guide' not in tabs
+    assert 'info_tip.render(' not in tabs
 
 
 def test_domain_binding_registry_is_cross_domain_and_asset_centric() -> None:
@@ -234,3 +237,111 @@ def test_breadcrumbs_insert_domain_between_integrations_and_provider() -> None:
     assert "'integrations.storage': 'Storage'" in navigation
     assert "'integrations.registry': 'Registry'" in navigation
     assert "'domain_label': module.domain.label" in integration_navigation
+
+
+def test_provider_sidebar_uses_registry_owner_not_default_overview(monkeypatch) -> None:
+    """Breadcrumb and sidebar must agree for provider and instance endpoints."""
+
+    from types import SimpleNamespace
+
+    from app.common import workspace_navigation as sidebar
+    from app.integrations.navigation import integration_endpoint_owner
+
+    monkeypatch.setattr(sidebar, 'url_for', lambda endpoint, **_kwargs: f'/{endpoint}')
+    monkeypatch.setattr(sidebar, 'local_super_admin', lambda _user: False)
+    user = SimpleNamespace(
+        is_authenticated=True,
+        has_permission=lambda permission: permission == 'integrations.manage',
+    )
+
+    def active_keys(endpoint: str, override: str | None = None) -> list[str]:
+        sections = sidebar.build_sidebar_navigation(endpoint, user, active_capability_override=override)
+        workspace = next(item for section in sections for item in section['items'] if item['key'] == 'integrations')
+        assert workspace['active']
+        return [child['key'] for child in workspace['children'] if child['active']]
+
+    provider_routes = {
+        'integrations.metrics_sources': 'observability',
+        'integrations.alertmanager': 'observability',
+        'metrics.instance_detail': 'observability',
+        'alertmanager.instance_detail': 'observability',
+        'integrations.kubernetes': 'orchestration',
+        'minio.index': 'storage',
+        'harbor.index': 'registry',
+        'vault.index': 'secrets_management',
+        'github_source.index': 'source_control',
+    }
+    for endpoint, expected in provider_routes.items():
+        owner = integration_endpoint_owner(endpoint)
+        assert owner is not None, endpoint
+        assert owner['domain_key'] == expected, endpoint
+        assert active_keys(endpoint, owner['domain_key']) == [expected], endpoint
+
+    assert active_keys('integrations.overview') == ['overview']
+    assert active_keys('integrations.observability') == ['observability']
+    assert active_keys('integrations.choose_integration_provider', 'observability') == ['observability']
+
+    # Unknown selector ownership must not arbitrarily activate an unavailable capability.
+    assert active_keys('integrations.choose_integration_provider', 'invalid-domain') == ['overview']
+
+
+def test_presentation_reuses_provider_owner_for_sidebar_and_breadcrumb() -> None:
+    presentation = read('app/bootstrap/presentation.py')
+    sidebar = read('app/common/workspace_navigation.py')
+
+    assert 'integration_owner = integration_endpoint_owner(request.endpoint)' in presentation
+    assert (
+        "active_integration_domain_key = integration_owner['domain_key'] if integration_owner else None" in presentation
+    )
+    assert "active_integration_domain_key = selector_domain['key']" in presentation
+    assert 'active_capability_override=active_integration_domain_key' in presentation
+    assert 'integration_owner=integration_owner' in presentation
+    assert "workspace.key == 'integrations'" in sidebar
+    assert 'active_workspace == workspace.key' in sidebar
+    assert 'active_capability_override in {capability.key for capability in visible_capabilities}' in sidebar
+
+
+def test_registry_domain_consumer_bindings_project_asset_owned_observability_sources() -> None:
+    """Registry owns registry_instance assets; cross-domain sources remain independent."""
+
+    from app.integrations.taxonomy import asset_types_for_domain, domain_key_for_asset_type
+
+    assert asset_types_for_domain('registry') == ('registry_instance',)
+    assert domain_key_for_asset_type('registry_instance') == 'registry'
+    assert domain_key_for_asset_type('kubernetes_cluster') == 'orchestration'
+    assert domain_key_for_asset_type('object_storage_system') == 'storage'
+
+    taxonomy_catalog = read('app/definitions/catalogs/integrations/taxonomy.yaml')
+    registry_capability = taxonomy_catalog.split('- key: registry\n  domain_key: registry\n', 1)[1].split(
+        '\n- key: secrets_pki', 1
+    )[0]
+    assert '  asset_types:\n  - registry_instance' in registry_capability
+    assert '- asset_type: registry_instance' in taxonomy_catalog
+    assert '  integration_type: registry' in taxonomy_catalog
+
+    domain_service = read('app/integrations/domain_service.py')
+    related = domain_service.split('def _load_related_bindings(', 1)[1].split('def _integration_type_rows(', 1)[0]
+    assert 'owned_asset_types = asset_types_for_domain(domain_key)' in related
+    assert 'IntegrationInstance.integration_type.in_(integration_types)' in related
+    assert 'IntegrationBinding.asset_type.in_(owned_asset_types)' in related
+    assert '.filter(or_(*clauses))' in related
+
+    # The existing domain flow loads the provider and owned-asset evidence
+    # together, but never counts native provider ownership as a consumer.
+    owner_filter = (
+        'consumer_bindings = [binding for binding in related_bindings if not _is_owner_asset_binding(binding)]'
+    )
+    assert owner_filter in domain_service
+    assert "'bindings': sum(1 for binding in consumer_bindings if binding.enabled)" in domain_service
+    assert 'all_binding_rows = _binding_registry_rows(' in domain_service
+    assert 'filtered_binding_rows = _filter_binding_rows(' in domain_service
+    assert 'binding_registry_rows, binding_pagination = paginate_sequence(' in domain_service
+
+    registry_observability = read('app/integrations/registry/observability.py')
+    harbor_presentation = read('app/integrations/registry/providers/harbor/application/presentation.py')
+    harbor_service = read('app/integrations/registry/providers/harbor/application/service.py')
+    assert "IntegrationBinding.asset_type == 'registry_instance'" in registry_observability
+    assert "IntegrationInstance.integration_type == 'metrics_source'" in registry_observability
+    assert "asset_type='registry_instance'" in harbor_presentation
+    assert "'asset_type': 'registry_instance'" in harbor_service
+    assert "'asset_key': str(canonical.id)" in harbor_service

@@ -65,6 +65,43 @@ EMPTY_NOTIFICATION_CENTER = {
     'notification_category_options': [],
 }
 
+
+def _browser_notification_center_page_context(
+    *,
+    user_id: int,
+    page: int,
+    per_page: int,
+    job_limit: int,
+    include_all_jobs: bool,
+    status: str = 'all',
+    read_state: str = 'all',
+    category: str = 'all',
+    search: str = '',
+) -> dict[str, object]:
+    """Stub committed records, not the request-dependent pagination/filter contract.
+
+    The isolated browser server has no notification database. Returning the
+    same five-row fixture for every request hides real HTMX state transitions
+    and makes a successful page-size request render the wrong selected value.
+    """
+    del user_id, job_limit, include_all_jobs
+    allowed_per_page = (5, 10, 25, 50)
+    return {
+        **EMPTY_NOTIFICATION_CENTER,
+        'notification_pagination': {
+            **EMPTY_NOTIFICATION_CENTER['notification_pagination'],
+            'page': max(page, 1),
+            'per_page': per_page if per_page in allowed_per_page else allowed_per_page[0],
+        },
+        'notification_filters': {
+            'search': search.strip(),
+            'category': category,
+            'status': status,
+            'read_state': read_state,
+        },
+    }
+
+
 HIDDEN_CLUSTER_ONBOARDING = {
     'show_banner': False,
     'is_kubernetes_scope': False,
@@ -286,7 +323,7 @@ def kaori_authenticated_base_url() -> Iterator[str]:
         ),
         patch(
             'app.platform_operations.notifications.routes.get_notification_center_page_context',
-            return_value=EMPTY_NOTIFICATION_CENTER,
+            side_effect=_browser_notification_center_page_context,
         ),
         patch(
             'app.kubernetes.inventory.routes.get_inventory_overview',

@@ -306,22 +306,22 @@ def _registry_capacity_posture(project_forecasts: list[dict[str, Any]]) -> dict[
         'Critical': (
             'Committed project quota evidence shows immediate Registry capacity pressure.',
             'At least one project is inside the 30-day quota horizon or aggregate utilization is at least 90%.',
-            'Validate growth and ownership, then prepare an approved quota, retention, or cleanup change.',
+            'Review quota pressure; approve retention, cleanup, or quota changes.',
         ),
         'Medium': (
             'Committed Registry analytics shows developing project capacity pressure.',
             'Quota utilization or projected exhaustion is inside the planning threshold.',
-            'Review top project consumers, stale artifacts, retention policy, and quota ownership.',
+            'Review top projects, retention, and quota ownership before growth.',
         ),
         'Low': (
             'Committed quota evidence currently shows usable project headroom.',
             'Project quota forecasts remain outside warning thresholds, with sufficient headroom.',
-            'Continue worker materialization and review growth after major publication changes.',
+            'Keep Registry analytics current; review growth after publications.',
         ),
         'Unknown': (
             'Project quota risk cannot be calculated from the currently committed analytics evidence.',
             'Inventory footprint remains available, but project quota or growth evidence is incomplete.',
-            'Refresh Registry Analytics after validating the Registry Metrics Source binding.',
+            'Refresh Registry Analytics after checking the Metrics Source binding.',
         ),
     }
     insight, risk_detail, recommended_action = copy[risk]

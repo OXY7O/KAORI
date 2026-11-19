@@ -66,6 +66,14 @@ A form-local progress indicator may remain inside a form action area when it onl
 - Ordinary status, numeric, timestamp, and operational cells are not centered merely for decoration.
 - A documented analytics table may use numeric alignment when comparison accuracy requires it.
 - All body cells use vertical alignment `middle`.
+- For dense credential/entitlement tables, avoid redundant visible text such as
+  `Valid until` inside a column already named **Validity**. Keep the entire
+  localized date/time/timezone together on desktop with enough reserved width,
+  maintain a screen-reader label and full native tooltip, and preserve bounded
+  horizontal table overflow on small screens rather than clipping or dropping
+  the timezone. The Credential Lifecycle registry is the approved instance
+  (23/15/17/11/18/16 columns, 1000px mobile minimum); never change timezone
+  semantics or the underlying validity state for presentation alignment.
 
 ## 6. Table header typography
 
@@ -134,6 +142,8 @@ Geometry:
 Standard status labels use the global semantic palette with a soft background and semantic text. They are borderless. Use `table_label.status_label(...)` for text-first status and `table_label.status_indicator_label(...)` when a small status dot improves scanning.
 
 Metadata labels use borderless Violet or neutral context styling through `table_label.metadata_label(...)`. Timestamps stay plain text.
+
+For a metadata count that changes within an existing client-side committed-data view (for example Topology graph filters/reload), the optional `text_id` hook identifies only the label's text span. Updating its `textContent` preserves the shared badge geometry and does not authorize live provider reads; a static section heading need not use this hook.
 
 A compact icon + border treatment is an explicit exception for a special posture, eligibility, security, or high-attention state. It must use `table_label.special_label(...)`. Do not add borders or icons to ordinary status labels inline.
 

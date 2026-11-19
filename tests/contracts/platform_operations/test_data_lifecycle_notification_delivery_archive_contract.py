@@ -76,7 +76,8 @@ def test_owner_and_coverage_are_truthful() -> None:
     presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
     assert "'notification_delivery': 'Notification Delivery'" in presentation
     assert "'notification_delivery': 'send'" in presentation
-    assert 'Hot records retain deduplication, channel dependencies and lifetime counts' in presentation
+    assert 'Eligible delivery records require a manual archive request.' in presentation
+    assert 'Queued and failed/retry-eligible records, payload content, credential replay envelope' in presentation
     assert 'per-record archive search' in presentation
 
 

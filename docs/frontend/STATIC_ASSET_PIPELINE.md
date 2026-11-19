@@ -8,7 +8,7 @@ KAORI serves frontend runtime assets from its own Flask static directory. Runtim
 
 | Asset | Source of truth | Runtime output |
 |---|---|---|
-| Tailwind CSS | `frontend/styles.css` and scanned templates/scripts | `app/static/css/output.css` |
+| Tailwind CSS | `frontend/styles.css` and scanned templates/scripts through `scripts/build_css.mjs` | `app/static/css/output.css` |
 | Alpine.js | exact package version in `package.json` and `package-lock.json` | `app/static/vendor/alpine/alpine.min.js` |
 | HTMX | exact package version in `package.json` and `package-lock.json` | `app/static/vendor/htmx/htmx.min.js` |
 | Lucide | exact package version in `package.json` and `package-lock.json` | `app/static/vendor/lucide/lucide.min.js` |
@@ -57,9 +57,9 @@ npm run verify-frontend
 3. During template or styling work, run `npm run watch-css` in a dedicated terminal.
 4. Before commit, stop the watcher and run `npm run prepare-frontend` again.
 5. Run frontend functional and contract tests.
-6. Commit source, lockfile, generated vendor files, compiled CSS, tests, and documentation together.
+6. Commit source, lockfile, intentional generated vendor files, tests, and documentation together. Compiled `app/static/css/output.css` is generated and ignored; do not commit it.
 
-`watch-css` is a developer convenience only. It must not run in production, Celery workers, or Kubernetes application pods.
+`watch-css` is a developer convenience only. It must not run in production, Celery workers, or Kubernetes application pods. The #4976 security correction replaces the vulnerable Tailwind CLI watcher dependency path with Tailwind's official PostCSS 4.3.4 integration (`postcss` 8.5.33). The shared builder keeps the existing source paths, root scanning and Lightning CSS minification, and writes the generated stylesheet atomically. Node's built-in recursive filesystem watcher observes the canonical frontend, template, and JavaScript directories; restart it after changing the build adapter or lockfile. A failed watch rebuild retains the last complete CSS and reports its error. The existing `npm audit --audit-level=high`, CSS checks, frontend verification and visual/admission gates remain unchanged.
 
 ## Dependency Update Flow
 
@@ -76,7 +76,6 @@ Review and commit:
 - `package.json`
 - `package-lock.json`
 - `app/static/vendor/**`
-- `app/static/css/output.css`
 - related tests
 - this documentation when the process changes
 

@@ -50,7 +50,7 @@ def test_user_directory_uses_shared_surface_shell_authority() -> None:
     # Canonical HTMX semantics are owned by a shared registry macro, not by
     # obsolete page-local attribute copies. The swap targets the registry.
     for marker in (
-        'hx-get="{{ url_for(endpoint) }}"',
+        'hx-get="{{ url_for(endpoint, **(path_params or {}) ) }}"',
         'hx-target="#{{ registry_id }}"',
         'hx-select="#{{ registry_id }}"',
         'hx-swap="outerHTML"',

@@ -21,7 +21,7 @@ def test_workload_table_pagination_uses_full_page_and_partial_endpoint_ownership
     mapping = read('app/templates/kubernetes/analytics/workload/partials/_workload_mapping_section.html')
 
     assert (
-        "numeric_pages(current_page, total_pages, page_param='page', hx_target=None, hx_indicator=None, endpoint=None, query_params=None, hx_swap='innerHTML', href_endpoint=None)"
+        "numeric_pages(current_page, total_pages, page_param='page', hx_target=None, hx_indicator=None, endpoint=None, query_params=None, hx_swap='innerHTML', href_endpoint=None, path_params=none)"
         in pagination
     )
     assert 'href_endpoint_name = href_endpoint or endpoint_name' in pagination

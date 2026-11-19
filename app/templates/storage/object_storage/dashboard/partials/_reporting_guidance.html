@@ -1,5 +1,5 @@
 {% import "components/reporting_dashboard_workspace.html" as reporting_workspace %}
 {% set reporting_scope = dashboard.selected_system.name if dashboard.selected_system else 'All Systems' %}
 {{ reporting_workspace.guidance(reporting_scope,
-'Committed storage evidence',
+'Committed snapshots',
 'system or storage scope') }}

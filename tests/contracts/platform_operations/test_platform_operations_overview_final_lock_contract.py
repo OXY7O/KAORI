@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from jinja2 import Environment
+
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -141,7 +143,16 @@ def test_platform_operations_overview_does_not_collapse_unknown_or_disabled_post
 
     assert 'unknown_workspace_count' in presentation
     assert 'review_workspace_count = attention_workspace_count + unknown_workspace_count' in presentation
-    assert "overall_status_label, overall_status_tone = 'Configuration Review', 'unknown'" in presentation
+    # The aggregate status now has one shared owner. Assert the behavior, not
+    # a page-local assignment that was removed by the approved refactor.
+    from app.platform_operations.overview.presentation import _overall_workspace_status
+
+    assert _overall_workspace_status(0, 0, 1, 0) == ('Configuration Review', 'unknown')
+    assert _overall_workspace_status(0, 0, 1, 1) == ('Configuration Review', 'unknown')
+    assert _overall_workspace_status(0, 1, 1, 1) == ('Review Required', 'warning')
+    assert _overall_workspace_status(1, 1, 1, 1) == ('Critical Review', 'critical')
+    assert _overall_workspace_status(0, 0, 0, 1) == ('Active', 'info')
+    assert _overall_workspace_status(0, 0, 0, 0) == ('Ready', 'normal')
     assert "status_label = str(kubernetes['administration_status_label'])" in presentation
     assert "status_tone = str(kubernetes['administration_status_tone'])" in presentation
     assert 'elif ready_count < cluster_count:' not in presentation
@@ -172,3 +183,73 @@ def test_platform_operations_workspace_description_is_compact_and_accessible() -
     assert "'description': 'Protected Kubernetes controls with readiness and authorization gates.'" not in presentation
     assert 'lg:grid-cols-3' in template
     assert 'for workspace in platform_overview.workspaces' not in presentation
+
+
+def test_workspace_posture_has_one_shared_guide_after_authoritative_status() -> None:
+    template = read('app/templates/platform_operations/overview/index.html')
+    Environment().parse(template)
+
+    assert '{% import "components/info_tip.html" as info_tip %}' in template
+    assert template.count("info_tip.render('operations-overview-workspace-posture-guide'") == 1
+    assert template.count("variant='guide'") == 1
+    assert 'header_badge=workspace_posture_context' in template
+
+    posture = template.index('table_label.status_indicator_label(platform_overview.overall_status_label')
+    guide = template.index("info_tip.render('operations-overview-workspace-posture-guide'")
+    assert posture < guide < template.index('{% endset %}', guide)
+    assert 'permission-scoped, committed operational signals' in template
+    assert 'the Overview does not execute jobs' in template
+    assert 'archive-first cleanup' in template
+    assert 'Secret values stay in Secret Management' in template
+    assert 'live access is verified at execution' in template
+
+
+def test_operating_boundary_copy_is_compact_without_dropping_authority() -> None:
+    template = read('app/templates/platform_operations/overview/index.html')
+    presentation = read('app/platform_operations/overview/presentation.py')
+
+    expected = (
+        'Jobs owns queues, retries and execution evidence.',
+        'Data Lifecycle owns retention and verified archives.',
+        'Kubernetes governs readiness and reveal access.',
+    )
+    for copy in expected:
+        assert f"'boundary_description': '{copy}'" in presentation
+        assert len(copy) <= 55
+
+    assert 'title="{{ workspace.boundary_description }}"' in template
+    assert 'text-content-muted lg:truncate' in template
+    assert '{{ workspace.boundary_description }}' in template
+    assert '{% for workspace in platform_overview.workspaces %}' in template
+    assert 'lg:grid-cols-3' in template
+    assert 'hx-post=' not in template
+
+
+def test_workspace_posture_metric_labels_are_compact_and_accessible() -> None:
+    template = read('app/templates/platform_operations/overview/index.html')
+    presentation = read('app/platform_operations/overview/presentation.py')
+    Environment().parse(template)
+
+    expected_labels = (
+        ('Exec / Policy', 'Execution / Policy Alerts'),
+        ('Archives / Jobs', 'Active Archives / Jobs'),
+        ('Protected NS', 'Protected Namespaces'),
+    )
+    for short, full in expected_labels:
+        assert f"'{short}'" in presentation
+        assert f"'{full}'" in presentation
+        assert len(short) <= 15
+
+    assert 'for icon, label, value, full_label in workspace.metrics' in template
+    assert 'title="{{ full_label }}"' in template
+    assert '<span class="min-w-0 truncate" aria-hidden="true">{{ label }}</span>' in template
+    assert '<span class="sr-only">{{ full_label }}</span>' in template
+    assert 'grid grid-cols-3 divide-x divide-outline-subtle' in template
+    assert 'for workspace in platform_overview.workspaces' in template
+
+    # Preserve separate source-owned counts; never combine archive and job
+    # activity or turn execution vs. policy attention into one total.
+    assert "f'{attention} / {policy_attention}'" in presentation
+    archive_job_expression = '{lifecycle["active_archive_total"]} / {lifecycle["active_job_total"]}'
+    assert f'f{archive_job_expression!r}' in presentation
+    assert 'protected_namespaces' in presentation

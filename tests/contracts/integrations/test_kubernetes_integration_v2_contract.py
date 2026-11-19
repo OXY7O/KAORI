@@ -40,7 +40,7 @@ def test_kubernetes_registry_uses_one_line_htmx_filters_and_inventory_table() ->
     registry = read(
         'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html'
     )
-    routes = read('app/integrations/routes.py')
+    routes = read('app/integrations/orchestration/container_orchestrator/routes.py')
     frontpage_service = read('app/integrations/orchestration/container_orchestrator/frontpage.py')
 
     assert 'components/table.html' in registry
@@ -143,7 +143,7 @@ def test_kubernetes_actions_are_permission_aware() -> None:
     assert "current_user.has_permission('clusters.sync')" in detail
     assert 'show_primary_action' in detail_posture
     assert "current_user.has_permission('integrations.manage')" in detail
-    routes = read('app/integrations/routes.py')
+    routes = read('app/integrations/orchestration/container_orchestrator/routes.py')
     assert "@integrations_bp.get('/kubernetes')" in routes
     assert 'def kubernetes() -> ResponseReturnValue:' in routes
     assert "url_for('integrations.kubernetes')" in detail or 'url_for("integrations.kubernetes")' in detail
@@ -565,3 +565,111 @@ def test_kubernetes_registry_detail_actions_use_shared_semantic_border_authority
     assert 'Alert Source' in template
     assert 'Open Observability' in template
     assert template_path not in baseline['files']
+
+
+def test_kubernetes_registry_bindings_use_compact_source_count_label() -> None:
+    from jinja2 import Environment
+
+    registry = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html'
+    )
+    labels = read('app/templates/components/table_label.html')
+    shared = read('app/templates/integrations/components/_provider_registry.html')
+    Environment().parse(registry)
+
+    assert '{% import "components/table_label.html" as table_label %}' in registry
+    assert "table_label.metadata_label(table_label.count_text(row.source_binding_count, 'Source') )" in registry
+    assert 'title="{{ table_label.count_text(row.source_binding_count, \'Consumer association\') }}"' in registry
+    assert '{% macro count_text(count, singular, plural=None)' in labels
+    assert '{% macro metadata_label(text, icon=None, wrap=false' in labels
+    assert 'whitespace-nowrap' in labels
+    assert 'Consumer associations</p>' not in registry
+    assert (
+        '<p class="font-semibold tabular-nums text-content-primary">{{ row.source_binding_count }}</p>' not in registry
+    )
+    assert 'provider_registry.connection_registry_colgroup()' in registry
+    assert 'provider_registry.connection_registry_head()' in registry
+    assert '<th class="{{ table_ui.header_cell_classes() }}">Bindings</th>' in shared
+    assert "url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id)" in registry
+    assert 'provider_registry.pagination_footer(pagination' in registry
+
+
+def test_kubernetes_validation_copy_is_compact_without_changing_capability_or_rbac_contract() -> None:
+    from jinja2 import Environment
+
+    capability = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/'
+        '_capability_workspace.html'
+    )
+    rbac = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/'
+        '_capsule_rbac_bootstrap.html'
+    )
+    shared_readiness = read('app/templates/integrations/components/_capability_readiness.html')
+
+    Environment().parse(capability)
+    Environment().parse(rbac)
+
+    assert "'label': 'Required Blocks'" in capability
+    assert "'description': 'Blocked by API discovery or RBAC.'" in capability
+    assert 'Core capability contracts blocked by API discovery or RBAC.' not in capability
+    assert "'value': blocked_features|length" in capability
+    assert "'tone': 'critical' if blocked_features else 'normal'" in capability
+    assert 'capability_readiness.render(' in capability
+    assert 'data-kaori-provider-capability-readiness' in shared_readiness
+
+    assert 'Capsule Cluster RBAC Bootstrap' in rbac
+    assert 'Reusable ClusterRoles for governed Capsule Access Grants.' in rbac
+    assert 'Provision once per cluster and reuse across Tenants.' not in rbac
+    assert 'Check RBAC' in rbac
+    assert 'Bootstrap Missing Roles' in rbac
+    assert 'name="confirm_cluster_rbac"' in rbac
+    assert 'data-capsule-rbac-bootstrap' in rbac
+    assert "{% include 'components/operation_feedback_oob.html' %}" in rbac
+
+    assert 'metric.description' in shared_readiness
+    assert 'whitespace-nowrap' not in shared_readiness
+    assert 'text-ellipsis' not in rbac
+    assert '<p class="mt-1 max-w-2xl text-xs leading-5 text-content-secondary">' in rbac
+
+
+def test_kubernetes_connection_registry_cells_follow_header_semantics() -> None:
+    """Read-only row identity and timestamp remain readable at narrow widths."""
+
+    from jinja2 import Environment
+
+    registry = read(
+        'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_registry.html'
+    )
+    Environment().parse(registry)
+    populated = registry.split('{% for row in rows %}', 1)[1].split('{% else %}', 1)[0]
+    cells = populated.split('<td class="{{ table_ui.cell_classes() }}"')
+    assert len(cells) == 6
+
+    # Connection: canonical cluster identity and environment, not an API URL.
+    assert '{{ row.cluster_name }}' in cells[1]
+    assert '{{ row.environment }}' in cells[1]
+    assert '{{ row.server }}' not in cells[1]
+    assert 'integration_ui.palette_icon("server-cog", connection_icon_tone)' in cells[1]
+
+    # Endpoint / Scope: complete provider endpoint plus owning API context.
+    assert '{{ row.server }}' in cells[2]
+    assert 'Kubernetes API' in cells[2]
+    assert '{{ row.environment }}' not in cells[2]
+    assert '[overflow-wrap:anywhere]' in cells[2]
+    assert 'truncate' not in cells[2]
+
+    # Readiness: full observed time, accessible label, no redundant visible prefix.
+    assert 'integration_status(row.readiness, display="indicator")' in cells[3]
+    assert '<span class="sr-only">Last validation:</span> {{ row.last_validated_at }}' in cells[3]
+    assert 'title="Last validation: {{ row.last_validated_at }}"' in cells[3]
+    assert 'Validated {{ row.last_validated_at }}' not in cells[3]
+
+    assert '{{ row.compatibility_profile or "Validation Required" }}' in cells[4]
+    assert '{{ row.version or "Version not discovered" }}' in cells[4]
+    assert "table_label.count_text(row.source_binding_count, 'Source')" in cells[5]
+
+    assert 'provider_registry.connection_registry_colgroup()' in registry
+    assert 'provider_registry.pagination_footer(pagination,' in registry
+    assert "url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id)" in registry
+    assert 'table-fixed' not in registry

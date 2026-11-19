@@ -96,6 +96,25 @@ These repo-local secrets are convenient for **trusted development** but
 visible to anyone/process with access to the bind-mounted source.
 They are never Git-tracked or copied into Docker images; production
 continues using separate controlled secrets and DBA migration authority.
+
+**Existing local `.env` permissions (#4993):** On a POSIX filesystem, the
+DevContainer initializer restricts an existing `.env` to mode `0600` and
+verifies the mode **before reading or rewriting credential-bearing content**.
+If it cannot apply or verify private permissions, initialization stops;
+re-running with an unchanged `.env` also checks its mode. This guard does
+not encrypt the local file or replace the host's access controls.
+
+On a Windows Docker Desktop bind mount, Linux `chmod` or a reported `0600`
+inside the container **does not attest the effective Windows NTFS ACL**.
+OneDrive, WSL/DrvFs, and synced/shared workspaces may have independent host
+access rules. Use only a trusted local checkout, review and restrict the
+actual Windows host ACL and authorized workspace access before storing
+credentials; if that cannot be established, treat confidentiality as
+**NOT VERIFIED** and stop sensitive local setup. Do not assume running
+`chmod`/`chown` in WSL fixes Windows host permissions or use privileged
+Compose, weakened file permissions, or regenerated database credentials
+as a workaround. The [first-run runbook](operations/devcontainer-postgres-first-run.md)
+retains the data-preserving recovery procedure.
 See [Environment Configuration](deployment/ENVIRONMENT_CONFIGURATION.md)
 and [first-run runbook](operations/devcontainer-postgres-first-run.md).
 
@@ -232,6 +251,8 @@ KAORI targets **Node 22.23.2** and declares **npm 10.9.9** as the package-manage
 npm 12.0.2 was reviewed but is deliberately **deferred**. Its Node 22 engine floor is satisfied by Node 22.23.2, but adopting npm 12 would introduce a separate package-manager major lifecycle across Dev Container, CI, and frontend builds. KAORI stays on the latest reviewed npm 10 patch for this maintenance line instead.
 
 The frontend dependency intake now pins **Tailwind 4.3.4** and **Prettier 3.9.10** in `package.json` and `package-lock.json`. These replace the previously deferred patch candidates. Each grouped version update must be adopted from the package-manager-generated lockfile through the **normal package-manager workflow** on an issue-linked trusted KAORI branch, then verified against generated CSS, formatting, vendor assets, security, responsive/visual browser gates and applicable human UAT. The lockfile must never be edited manually to force package versions or integrity hashes.
+
+The #4976 security remediation for CVE-2026-112366 uses Tailwind's official `@tailwindcss/postcss` 4.3.4 integration and PostCSS 8.5.33, with the existing Tailwind engine and Lightning CSS minification. It removes the CLI/Parcel watcher/picomatch dependency path rather than excluding development dependencies from npm audit. `npm run build-css` and `npm run watch-css` both use `scripts/build_css.mjs`; watch mode uses Node's built-in filesystem events for `frontend`, `app/templates`, and `app/static/js`, without a separate glob-matching package. The same generated CSS path, browser assets, package-manager version, and admission gates remain authoritative. Restart the manually started watcher after changing its build script or installing a changed lockfile.
 
 Edit `requirements/base.in` for runtime dependencies and `requirements/dev.in`
 for development-only tools. Then run inside the Dev Container:

@@ -67,7 +67,8 @@ def test_domain_guidance_is_available_before_both_workspace_tabs() -> None:
 def test_integrations_overview_remains_outside_domain_info_tip_refinement() -> None:
     overview = read('app/templates/integrations/overview.html')
 
-    assert 'components/info_tip.html' not in overview
-    assert 'info_tip.render(' not in overview
+    assert 'components/info_tip.html' in overview
+    assert "info_tip.render('integration-portfolio-snapshot-guide'," in overview
+    assert "info_tip.render('integration-domain-guidance'" not in overview
     assert 'Integration Portfolio Snapshot' in overview
     assert 'Connection and Authority Boundary' in overview

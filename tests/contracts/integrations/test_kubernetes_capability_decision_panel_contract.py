@@ -7,7 +7,7 @@ REGISTRY = Path(
     'app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/partials/_capability_registry.html'
 )
 READINESS = Path('app/templates/integrations/components/_capability_readiness.html')
-ROUTES = Path('app/integrations/routes.py')
+ROUTES = Path('app/integrations/orchestration/container_orchestrator/routes.py')
 SERVICE = Path('app/integrations/service.py')
 
 

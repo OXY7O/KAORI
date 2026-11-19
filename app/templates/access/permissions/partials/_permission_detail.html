@@ -34,7 +34,7 @@
         <div class="min-w-0 px-3 py-3 sm:px-5 sm:py-4"
              data-kaori-permission-detail-layout="unified-resource-sheet">
             {% call detail_ui.resource_sheet() %}
-                {% call detail_ui.inventory_section('Permission Identity', 'badge-info', description='Authorization contract', compact_layout=true) %}
+                {% call detail_ui.inventory_section('Permission Identity', 'badge-info', description='Authorization contract', badge='Code-Owned' if permission.code_owned else 'Database-Only', compact_layout=true) %}
                     <div class="grid min-w-0 gap-x-6 gap-y-3 sm:grid-cols-2"
                          data-kaori-permission-identity-facts>
                         {{ detail_ui.stacked_detail_row('Permission Key', permission.key) }}
@@ -47,7 +47,7 @@
                         <p class="mt-1 max-w-3xl break-words text-sm font-medium leading-6 text-content-primary [overflow-wrap:anywhere]">{{ permission.description or 'No permission description is defined.' }}</p>
                     </div>
                 {% endcall %}
-                {% call detail_ui.inventory_section('Dependency Contract', 'git-merge', description='Permission requirements', compact_layout=true) %}
+                {% call detail_ui.inventory_section('Dependency Contract', 'git-merge', description='Permission requirements', badge='Has Dependencies' if effective_requires else 'No Dependencies', compact_layout=true) %}
                     <div class="grid min-w-0 gap-x-6 gap-y-3 sm:grid-cols-2"
                          data-kaori-permission-dependency-facts>
                         <div class="min-w-0">
@@ -78,7 +78,7 @@
                         {% endif %}
                     </div>
                 {% endcall %}
-                {% call detail_ui.inventory_section('Delegation Boundary', permission.delegation_tier.icon, description='Delegation authority', compact_layout=true) %}
+                {% call detail_ui.inventory_section('Delegation Boundary', permission.delegation_tier.icon, description='Delegation authority', badge=permission.delegation_tier.label, badge_type='status', badge_tone=permission.delegation_tier.tone, compact_layout=true) %}
                     <div class="min-w-0 max-w-3xl" data-kaori-permission-policy>
                         <p class="text-xs font-semibold text-content-secondary">Authority</p>
                         {% if permission.is_access_administration %}

@@ -142,7 +142,7 @@ def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() ->
     navigation_service = (ROOT / 'app/common/workspace_navigation.py').read_text()
 
     assert 'components/snapshot_context_bar.html' in overview_template
-    assert 'components/inventory_asset_card.html' in overview_template
+    assert 'components/workspace_link_card.html' in overview_template
     assert 'components/section_intro.html' in overview_template
     assert 'components/operational_callout.html' not in overview_template
     assert 'components/operational_section_card.html' in overview_template
@@ -151,7 +151,13 @@ def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() ->
     assert 'Fleet Inventory Posture' in overview_template
     assert 'Registry Asset Catalog' in overview_template
     assert 'Inventory Assets' in overview_template
-    assert 'posture_grid.render(inventory.fleet_posture_metrics, columns=3)' in overview_template
+    assert 'posture_grid.render(inventory.fleet_posture_metrics, columns=3, compact=true)' in overview_template
+    assert "inventory.fleet_posture_metrics|length ~ ' Indicators'" in overview_template
+    assert overview_template.index('registry-assets-heading') < overview_template.index(
+        'registry-fleet-posture-heading'
+    )
+    assert 'header_badge=posture_badge' in resource_template
+    assert "inventory.resource_posture_metrics|length ~ ' Indicators'" in resource_template
     assert 'inventory.fleet_readings' not in overview_template
     assert 'url_for(asset.endpoint)' in overview_template
     assert 'components/snapshot_context_bar.html' in resource_template
@@ -207,39 +213,260 @@ def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() ->
     assert "row['provider_name']" in presentation
 
 
-def test_registry_inventory_catalog_matches_canonical_kubernetes_card_hierarchy() -> None:
+def test_registry_inventory_catalog_matches_approved_object_storage_composition() -> None:
     from jinja2 import Environment
 
     overview = (ROOT / 'app/templates/artifact_registry/partials/_inventory_overview.html').read_text()
-    kubernetes = (ROOT / 'app/templates/kubernetes/inventory/overview/partials/_kpi_cards.html').read_text()
-    cards = (ROOT / 'app/templates/components/inventory_asset_card.html').read_text()
+    resource = (ROOT / 'app/templates/artifact_registry/partials/_inventory_workspace.html').read_text()
+    object_storage = (
+        ROOT / 'app/templates/storage/object_storage/inventory/overview/partials/_summary_cards.html'
+    ).read_text()
+    workspace_card = (ROOT / 'app/templates/components/workspace_link_card.html').read_text()
     presentation = (ROOT / 'app/artifact_registry/presentation_inventory.py').read_text()
 
-    for source in (overview, kubernetes, cards):
+    for source in (overview, resource, object_storage, workspace_card):
         Environment().parse(source)
 
     assert "section_intro.render('Inventory Assets'," in overview
     assert "id='registry-asset-catalog'" in overview
-    assert 'operational_section_card.render(' in overview
     assert 'header_badge=asset_badge' in overview
     assert "table_label.metadata_label(inventory.asset_catalog|length ~ ' Asset Types', icon='layers-3')" in overview
-    assert "body_classes='p-5'" in overview
     assert 'sm:grid-cols-2 xl:grid-cols-3' in overview
-    assert 'inventory_asset_card.render(asset.title' in overview
+    assert 'components/workspace_link_card.html' in overview
+    assert 'workspace_card.render({' in overview
+    assert '}, compact=true)' in overview
+    assert "'action_label': asset.action_label" in overview
+    assert "'scope': asset_scope" in overview
+    assert 'asset.count' in overview
+    assert "asset.title == 'Repositories'" in overview
     assert 'url_for(asset.endpoint)' in overview
-    assert 'header_badge=asset_badge' in kubernetes
-    assert 'data-kaori-inventory-identity-icon' in cards
+    assert 'inventory_asset_card.render' not in overview
+    assert 'components/workspace_link_card.html' in object_storage
+    assert "workspace.action_label|default('Open Workspace', true)" in workspace_card
+    assert overview.index('registry-assets-heading') < overview.index('registry-fleet-posture-heading')
 
     assert "section_intro.render('Fleet Inventory Posture'," in overview
     assert "'Registry Fleet Evidence'" in overview
-    assert "body_classes='p-0'" in overview
-    assert 'posture_grid.render(inventory.fleet_posture_metrics, columns=3)' in overview
+    assert "inventory.fleet_posture_metrics|length ~ ' Indicators'" in overview
+    assert 'header_badge=fleet_badge' in overview
+    assert "body_classes='p-5'" in overview
+    assert 'posture_grid.render(inventory.fleet_posture_metrics, columns=3, compact=true)' in overview
     assert 'operational_callout.render(' not in overview
     assert "'fleet_posture_metrics': [" in presentation
     for label in ('Committed Providers', 'Snapshot Attention', 'Project Visibility'):
         assert f"'label': '{label}'" in presentation
     for state in ('No Registry Providers', 'No Snapshot Attention', 'No Visibility Evidence'):
         assert state in presentation
+
+    assert 'header_badge=posture_badge' in resource
+    assert "inventory.resource_posture_metrics|length ~ ' Indicators'" in resource
+    assert 'posture_grid.render(inventory.resource_posture_metrics, columns=4)' in resource
+    assert 'components/info_tip.html' in resource
+    assert 'title_extra=registry_title_tip' in resource
+    assert resource.count('info_tip.render(') == 3
+
+
+def test_registry_fleet_evidence_descriptions_are_compact_and_source_qualified() -> None:
+    presentation = (ROOT / 'app/artifact_registry/presentation_inventory.py').read_text()
+
+    descriptions = (
+        'Register a provider for committed inventory.',
+        'All configured providers have committed snapshots.',
+        'Some providers still lack committed snapshots.',
+        'Review stale, pending, or failed snapshots.',
+        'No stale, pending, or failed snapshots.',
+        'No committed projects to assess visibility.',
+    )
+    for description in descriptions:
+        assert description in presentation
+        assert len(description) <= 55
+
+    assert "f'{public_projects} confirmed public; visibility evidence incomplete.'" in presentation
+    assert "f'All visibility observed; {public_projects} confirmed public.'" in presentation
+    for evidence_source in (
+        "int(overview['provider_count'])",
+        "int(overview['snapshot_count'])",
+        "int(overview['stale_snapshot_count'])",
+        "int(overview['pending_snapshot_count'])",
+        "int(overview['failed_refresh_count'])",
+        'RegistryProject.public.is_not(None)',
+        'RegistryProject.public.is_(True)',
+    ):
+        assert evidence_source in presentation
+
+
+def test_registry_resource_posture_descriptions_are_compact_and_evidence_qualified() -> None:
+    presentation = (ROOT / 'app/artifact_registry/presentation_inventory.py').read_text()
+    current_metrics = presentation.split('def _inventory_resource_posture_metrics(', 1)[1].split(
+        'def _inventory_posture_copy(', 1
+    )[0]
+    expected = (
+        'Committed Registry projects.',
+        'Providers with project evidence.',
+        'Provider-confirmed public projects.',
+        'Projects lacking visibility data.',
+        'Committed Registry repositories.',
+        'Providers with repository evidence.',
+        'Artifacts in committed repositories.',
+        'Repositories with pull-count data.',
+        'Committed Registry artifacts.',
+        'Providers with artifact evidence.',
+        'Artifacts with committed tags.',
+        'Artifacts without current tags.',
+    )
+    for description in expected:
+        assert description in current_metrics
+        assert len(description) <= 40
+
+    assert 'RegistryProject.public.is_(True)' in current_metrics
+    assert 'RegistryProject.public.is_(None)' in current_metrics
+    assert 'func.count(RegistryRepository.pull_count)' in current_metrics
+    assert 'RegistryArtifact.tags.any()' in current_metrics
+
+
+def test_registry_detail_modals_reuse_kubernetes_compact_header_and_short_section_copy() -> None:
+    from jinja2 import Environment
+
+    root = ROOT / 'app/templates'
+    kubernetes_path = root / 'kubernetes/inventory/namespaces/partials/_namespace_detail_content.html'
+    kubernetes = kubernetes_path.read_text()
+    assert 'compact=true' in kubernetes
+    assert 'detail.header_identity_row()' in kubernetes
+    assert 'detail.inventory_section(' in kubernetes
+
+    for resource, title, sections in (
+        ('project', 'project.name', ('Project Identity', 'Registry Source', 'Repository Coverage', 'Snapshot Context')),
+        (
+            'repository',
+            'repository.name',
+            (
+                'Repository Identity',
+                'Registry Source',
+                'Artifact Coverage',
+                'Provider Timing',
+                'Snapshot Context',
+            ),
+        ),
+        (
+            'artifact',
+            'artifact.digest_short',
+            (
+                'Artifact Identity',
+                'Registry Location',
+                'Tag References',
+                'Artifact Timing',
+                'Registry Source',
+                'Snapshot Context',
+            ),
+        ),
+    ):
+        source = (root / f'artifact_registry/partials/_inventory_{resource}_detail.html').read_text()
+        Environment().parse(source)
+        assert 'detail.workspace_header(' in source
+        assert 'compact=true' in source
+        assert 'context_items=' in source
+        assert f'detail.inventory_title({title}, compact=true)' in source
+        assert 'detail.header_identity_row()' in source
+        assert 'detail.resource_sheet()' in source
+        assert 'detail.inspector_summary_strip(' in source
+        assert 'detail.inventory_section(' in source
+        assert "description='Provider and environment.'" in source
+        for heading in sections:
+            assert f"'{heading}'" in source
+        assert "description='Snapshot freshness.'" in source
+        for line in source.splitlines():
+            if "description='" in line:
+                description = line.split("description='", 1)[1].split("'", 1)[0]
+                assert len(description) <= 28
+
+    project = (root / 'artifact_registry/partials/_inventory_project_detail.html').read_text()
+    assert 'table_label.status_indicator_label(project.visibility.label' in project
+    assert "context_items=[{'label': project.provider_name, 'icon': 'boxes'}]" in project
+    repository = (root / 'artifact_registry/partials/_inventory_repository_detail.html').read_text()
+    assert "'label': repository.project_name" in repository
+    assert "'label': repository.provider_name" in repository
+    artifact = (root / 'artifact_registry/partials/_inventory_artifact_detail.html').read_text()
+    assert "'label': artifact.repository_name" in artifact
+    assert "'label': artifact.provider_name" in artifact
+
+
+def test_registry_nested_provider_metadata_reuses_kubernetes_pretty_json_pattern() -> None:
+    import html
+    import json
+    import re
+
+    from jinja2 import Environment, FileSystemLoader
+
+    from app.common.presentation import pretty_structured_json
+
+    templates = ROOT / 'app/templates'
+    artifact = (templates / 'artifact_registry/partials/_inventory_artifact_detail.html').read_text()
+    node = (templates / 'kubernetes/inventory/nodes/partials/_node_detail_content.html').read_text()
+    metadata_source = (templates / 'components/technical_metadata_collection.html').read_text()
+    assert "metadata_collection.render('Provider Metadata'" in artifact
+    assert "metadata_collection.render('Node Labels'" in node
+    assert 'value|pretty_structured_json' in metadata_source
+    assert 'data-kaori-inventory-json-value' in metadata_source
+
+    env = Environment(loader=FileSystemLoader(str(templates)), autoescape=True)
+    env.filters['pretty_structured_json'] = pretty_structured_json
+    render = env.get_template('components/technical_metadata_collection.html').module.render
+
+    extra_attrs = {
+        'architecture': 'amd64',
+        'author': '',
+        'config': {'Cmd': ['redis-server'], 'Entrypoint': ['docker-entrypoint.sh']},
+        'ExposedPorts': {'6379/tcp': {}},
+        'html': '<script>alert(1)</script>',
+    }
+    evidence = {'manifest_media_type': 'application/vnd.oci.image.manifest.v1+json', 'extra_attrs': extra_attrs}
+    output = str(render('Provider Metadata', evidence, embedded=True))
+    assert output.count('data-kaori-inventory-json-value') == 1
+    assert '<script>' not in output
+    assert '&lt;script&gt;' in output
+    match = re.search(r'<pre[^>]*data-kaori-inventory-json-value[^>]*>(.*?)</pre>', output, re.DOTALL)
+    assert match is not None
+    assert json.loads(html.unescape(match.group(1))) == extra_attrs
+    assert 'manifest_media_type' in output
+    assert 'application/vnd.oci.image.manifest.v1+json' in output
+    assert 'whitespace-pre-wrap break-words' in output
+    assert 'data-kaori-copy-' not in output
+
+
+def test_registry_compact_catalog_cards_preserve_actions_and_counts() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(
+        loader=FileSystemLoader(str(ROOT / 'app/templates')),
+        autoescape=True,
+    )
+    render = env.get_template('components/workspace_link_card.html').module.render
+    entries = (
+        ('Projects', '3 Projects', '/inventory/projects', 'Browse Projects'),
+        ('Repositories', '1 Repository', '/inventory/repositories', 'Browse Repositories'),
+        ('Artifacts', '0 Artifacts', '/inventory/artifacts', 'Browse Artifacts'),
+    )
+    for title, scope, href, action in entries:
+        html = render(
+            {
+                'href': href,
+                'title': title,
+                'label': 'Committed Inventory',
+                'description': 'Committed Registry evidence.',
+                'icon': 'package-open',
+                'scope': scope,
+                'search_text': title,
+                'action_label': action,
+            },
+            compact=True,
+        )
+        assert scope in html
+        assert title in html
+        assert f'href="{href}"' in html
+        assert action in html
+        assert 'data-workspace-card' in html
+        assert 'focus-visible:ring-outline-focus' in html
+        assert 'data-lucide="arrow-up-right"' in html
 
 
 def test_registry_inventory_overview_restores_asset_counts_from_existing_kpis() -> None:

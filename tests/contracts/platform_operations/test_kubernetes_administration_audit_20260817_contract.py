@@ -1,6 +1,8 @@
 import re
 from pathlib import Path
 
+from jinja2 import Environment
+
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -71,3 +73,57 @@ def test_kubernetes_administration_no_cluster_and_namespace_states_are_canonical
     assert has_jinja_assignment(namespace, 'empty_state_title', 'No Namespace Matches the Current Filters')
     assert has_jinja_assignment(namespace, 'blocked_state_title', 'Live Namespace Source Unavailable')
     assert has_jinja_assignment(namespace, 'empty_state_title', 'No Live Namespace Available')
+
+
+def test_kubernetes_administration_summaries_use_title_adjacent_shared_guides() -> None:
+    overview = read('app/templates/platform_operations/kubernetes/_overview_workspace.html')
+    reveal = read('app/templates/platform_operations/kubernetes/_secret_reveal_workspace.html')
+    card = read('app/templates/components/operational_section_card.html')
+    guide = read('app/templates/components/info_tip.html')
+
+    for source, guide_id, badge in (
+        (
+            overview,
+            'kubernetes-administration-coverage-guide',
+            'table_label.status_indicator_label(administration_status_label, administration_status_tone)',
+        ),
+        (
+            reveal,
+            'kubernetes-secret-reveal-configuration-guide',
+            "table_label.status_indicator_label('Global Gate Enabled' if global_reveal_enabled",
+        ),
+    ):
+        Environment().parse(source)
+        assert '{% import "components/info_tip.html" as info_tip %}' in source
+        assert source.count("variant='guide'") == 1
+        badge_position = source.index(badge)
+        trigger_position = source.index(f"'{guide_id}'")
+        assert badge_position < trigger_position < source.index('{% endset %}', trigger_position)
+        assert "placement='right'" in source
+        assert 'header_badge=' in source
+
+    assert 'flex flex-wrap items-center gap-2' in card
+    assert '{% if header_badge %}{{ header_badge }}{% endif %}' in card
+    assert 'data-kaori-info-tip-variant=' in guide
+    assert 'data-kaori-info-tip-trigger' in guide
+    assert "'Open guide: '" in guide
+    assert 'Counts represent committed KAORI configuration.' in overview
+    assert 'Configured prerequisites and policies do not prove live access.' in reveal
+    assert 'Kubernetes RBAC' in reveal
+    assert "info_tip.render('kubernetes-administration-coverage-guide'" in overview
+    assert "info_tip.render('kubernetes-secret-reveal-configuration-guide'" in reveal
+
+
+def test_kubernetes_secret_boundary_copy_fits_compact_desktop_columns() -> None:
+    boundary = read('app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html')
+    Environment().parse(boundary)
+
+    assert "'Namespace Scope', 'Use namespace Role and RoleBinding.'" in boundary
+    assert "'Credential Scope', 'Review kubeconfig scope as roles change.'" in boundary
+    assert 'Prefer namespace Role and RoleBinding where practical.' not in boundary
+    assert 'Review kubeconfig access when responsibilities change.' not in boundary
+    assert 'sm:grid-cols-2 xl:grid-cols-4' in boundary
+    assert 'text-xs leading-5 text-content-secondary' in boundary
+    assert 'Kubernetes RBAC remains the final authorization boundary.' in boundary
+    assert 'Configured readiness does not establish live Secret access.' in boundary
+    assert 'whitespace-nowrap' not in boundary.split('Namespace Scope', 1)[1].split('{% endfor %}', 1)[0]

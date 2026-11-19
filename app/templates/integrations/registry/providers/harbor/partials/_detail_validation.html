@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_validation_poller.html" as validation_poller %}
@@ -12,7 +13,7 @@
     {% set gate_label = "Registry Provider Eligible" %}
     {% set gate_body = "Required Harbor contracts are usable." %}
     {% set gate_tone = "normal" %}
-    {% set next_action = "Revalidate the Harbor integration after upgrades, credential rotations, permission updates, or changes to API accessibility and configuration." %}
+    {% set next_action = "Rerun Full Validation after upgrades or changes to credentials, permissions or API access." %}
 {% elif readiness == "degraded" %}
     {% set readiness_label = "Degraded" %}
     {% set gate_label = "Eligible with Attention" %}
@@ -53,7 +54,17 @@
         icon="scan-search",
         loading_id="harbor-validation-loading",
         loading_active=validation_job and validation_job.is_active,
-        loading_label="Running Harbor Full Validation"
+        loading_label="Running Harbor Full Validation",
+        title_extra=info_tip.render(
+        "harbor-full-validation-detail-guide",
+        "Harbor Full Validation",
+        "Verify Harbor API compatibility, identity and required read-only capabilities.",
+        [
+        "Harbor stays authoritative for registry data and policy.",
+        "Artifact inventory collection and runtime observation are separate workflows."
+        ],
+        placement="right", variant="guide"
+        )
         ) %}
         <form method="post"
               action="{{ url_for('harbor.validate_instance', instance_id=instance.id) }}"
@@ -91,7 +102,7 @@
                 gate_label,
                 gate_body,
                 gate_tone,
-                "Full Validation owns Harbor identity, compatibility, health, and capability evidence. Runtime Refresh owns lightweight live health only.",
+                "Full Validation: identity, compatibility, health and capabilities. Runtime Refresh: live health.",
                 next_action) }}
         {% if readiness == "ready" %}
             {% set readiness_decision_title = "Provider Readiness Is Ready" %}

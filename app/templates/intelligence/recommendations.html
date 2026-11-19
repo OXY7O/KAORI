@@ -1,6 +1,9 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
+{% import "components/info_tip.html" as info_tip %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/section_intro.html" as section_intro %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% block title %}Recommendations{% endblock title %}
 {% block dashboard_content %}
@@ -10,7 +13,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('brain-circuit', 'Intelligence', 'sparkles') %}
                         <h1 class="{{ page_hero.title_classes() }}">Recommendations</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Review grounded guidance for Kubernetes, Storage, and Registry.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review committed operational guidance across supported domains.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('boxes', payload.scope_label) }}
                             {{ page_hero.meta_label('database', 'Committed Evidence') }}
@@ -22,14 +25,31 @@
             </div>
         </section>
         {% include 'intelligence/partials/_recommendation_workspace_info.html' %}
+        {{ section_intro.render('Recommendation Review',
+                'Review committed findings by scope, evidence, and priority before operational follow-up.',
+                'recommendation-review') }}
+        {% set workspace_title_extra %}
+            {{ table_label.metadata_label('Filtered Review', 'list-filter') }}
+            {{ info_tip.render('recommendation-workspace-guide', 'Recommendations Guide',
+                        'Review committed findings by scope, priority, and evidence. Search and filters refresh matching results automatically.',
+                        items=[
+                        'Recommendations owns findings and affected assets. Rule Catalog owns detection definitions.',
+                        'Alert Intelligence owns related AlertCase investigation and lifecycle. Recommendations do not execute remediation.',
+                        'Filtered counts cover all matching findings, not just the current page; pagination and Summary remain synchronized.',
+                        'Clear Filters restores default values and updates the browser URL. Current committed evidence does not guarantee live provider or scanner health.'
+                        ], variant='guide', placement='left') }}
+        {% endset %}
+        {% set workspace_header_actions %}
+            {% include 'intelligence/partials/_recommendation_workspace_header_actions.html' %}
+        {% endset %}
         {% call intelligence_ui.section(
             'Recommendation Workspace',
             'Filter and review evidence-backed operational guidance. Recommendations are findings; rule definitions remain in Rule Catalog.',
             'sparkles',
-            payload.posture.label,
-            payload.posture.tone,
             indicator_id='recommendations-loading-bar',
-            loading_label='Refreshing Recommendations'
+            loading_label='Refreshing Recommendations',
+            title_extra=workspace_title_extra,
+            header_actions=workspace_header_actions
             ) %}
             {% include 'intelligence/partials/_recommendations_workspace.html' %}
         {% endcall %}

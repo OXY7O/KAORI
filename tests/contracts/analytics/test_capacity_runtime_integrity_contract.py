@@ -83,7 +83,7 @@ def test_capacity_domain_separates_schedulable_capacity_from_filesystem_referenc
 
     assert "SCHEDULING_RESOURCES = ('cpu', 'memory', 'pods')" in domain
     assert "'scheduling_resource': False" in domain
-    assert 'not Kubernetes allocatable capacity' in domain
+    assert "'scope_label': 'Filesystem: not Kubernetes allocatable.'" in domain
     assert "if item['scheduling_resource'] and item['headroom'] is not None:" in presenter
     assert "item.get('scheduling_resource') is False" in recommendation_engine
 

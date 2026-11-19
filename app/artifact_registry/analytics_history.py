@@ -28,6 +28,8 @@ REGISTRY_HISTORY_WINDOWS: dict[str, timedelta] = {
 }
 MAX_HISTORY_POINTS = 240
 MAX_HISTORY_SERIES = 250
+# Keep chart materialization smaller than the qualified Metrics Source range budget.
+MAX_HISTORY_CHART_POINTS = 48
 HISTORY_QUERIES = {
     'project_usage_bytes': 'registry.project.quota.usage_bytes',
     'project_quota_bytes': 'registry.project.quota.bytes',
@@ -46,6 +48,37 @@ def history_plan(window: str, *, now: datetime | None = None) -> tuple[datetime,
     return start, end, step_seconds
 
 
+def _qualified_historical_points(
+    samples: Any, *, start_at: datetime, end_at: datetime, step_seconds: int
+) -> list[tuple[float, float]]:
+    """Validate each bounded historical interval before including it in a chart."""
+    if not isinstance(samples, list) or not samples or len(samples) > MAX_HISTORY_POINTS:
+        raise ValueError('Historical range series is empty or exceeds the sample budget.')
+    points: list[tuple[float, float]] = []
+    for sample in samples:
+        if not isinstance(sample, (list, tuple)) or len(sample) != 2:
+            raise ValueError('Historical series sample is malformed.')
+        try:
+            timestamp, value = float(sample[0]), float(sample[1])
+        except (TypeError, ValueError) as exc:
+            raise ValueError('Historical sample is nonnumeric.') from exc
+        if not isfinite(timestamp) or not isfinite(value):
+            raise ValueError('Historical sample is not finite.')
+        points.append((timestamp, value))
+    if len(points) < 2:
+        raise ValueError('Historical series has no measured growth interval.')
+    if any(next_point[0] <= prior[0] for prior, next_point in zip(points, points[1:])):
+        raise ValueError('Historical sample timestamps are not strictly increasing.')
+    if (
+        points[0][0] > start_at.timestamp() + 2 * step_seconds
+        or points[-1][0] < end_at.timestamp() - 2 * step_seconds
+        or points[0][0] < start_at.timestamp() - step_seconds
+        or points[-1][0] > end_at.timestamp() + step_seconds
+    ):
+        raise ValueError('Historical source retention did not cover the requested interval.')
+    return points
+
+
 def _bounded_matrix(
     result: Any,
     *,
@@ -53,6 +86,7 @@ def _bounded_matrix(
     start_at: datetime,
     end_at: datetime,
     step_seconds: int,
+    chart_points: list[dict[str, float]] | None = None,
 ) -> dict[str, dict[str, float]]:
     if not isinstance(result, dict) or result.get('status') != 'success':
         raise ValueError('Metrics Source range query did not report success.')
@@ -66,6 +100,9 @@ def _bounded_matrix(
         raise ValueError('Historical series count exceeds the Registry source budget.')
 
     normalized: dict[str, dict[str, float]] = {}
+    chart_timestamps: list[float] | None = None
+    chart_totals: list[float] = []
+    chart_is_aligned = True
     for row in rows:
         if not isinstance(row, dict):
             raise ValueError('A historical series record is malformed.')
@@ -75,31 +112,19 @@ def _bounded_matrix(
         project = str(labels.get('project_name') or '').strip() if project_scoped else '_aggregate'
         if not project or project in normalized:
             raise ValueError('Historical source labels are missing or ambiguous.')
-        samples = row.get('values')
-        if not isinstance(samples, list) or not samples or len(samples) > MAX_HISTORY_POINTS:
-            raise ValueError('Historical range series is empty or exceeds the sample budget.')
-        points: list[tuple[float, float]] = []
-        for sample in samples:
-            if not isinstance(sample, (list, tuple)) or len(sample) != 2:
-                raise ValueError('Historical series sample is malformed.')
-            try:
-                timestamp, value = float(sample[0]), float(sample[1])
-            except (TypeError, ValueError) as exc:
-                raise ValueError('Historical sample is nonnumeric.') from exc
-            if not isfinite(timestamp) or not isfinite(value):
-                raise ValueError('Historical sample is not finite.')
-            points.append((timestamp, value))
-        if len(points) < 2:
-            raise ValueError('Historical series has no measured growth interval.')
-        if any(next_point[0] <= prior[0] for prior, next_point in zip(points, points[1:])):
-            raise ValueError('Historical sample timestamps are not strictly increasing.')
-        if (
-            points[0][0] > start_at.timestamp() + 2 * step_seconds
-            or points[-1][0] < end_at.timestamp() - 2 * step_seconds
-            or points[0][0] < start_at.timestamp() - step_seconds
-            or points[-1][0] > end_at.timestamp() + step_seconds
-        ):
-            raise ValueError('Historical source retention did not cover the requested interval.')
+        points = _qualified_historical_points(
+            row.get('values'), start_at=start_at, end_at=end_at, step_seconds=step_seconds
+        )
+        if chart_points is not None and chart_is_aligned:
+            current_times = [timestamp for timestamp, _ in points]
+            if chart_timestamps is None:
+                chart_timestamps = current_times
+                chart_totals = [value for _, value in points]
+            elif current_times == chart_timestamps:
+                chart_totals = [total + value for total, (_, value) in zip(chart_totals, points, strict=True)]
+            else:
+                # A fleet graph must not sum unlike timestamps or partial series.
+                chart_is_aligned = False
         normalized[project] = {
             'start_time': points[0][0],
             'end_time': points[-1][0],
@@ -107,6 +132,11 @@ def _bounded_matrix(
             'last': points[-1][1],
             'samples': len(points),
         }
+    if chart_points is not None and chart_is_aligned and chart_timestamps:
+        if all(value >= 0 and isfinite(value) for value in chart_totals):
+            take = min(len(chart_timestamps), MAX_HISTORY_CHART_POINTS)
+            indices = sorted({round(i * (len(chart_timestamps) - 1) / (take - 1)) for i in range(take)})
+            chart_points.extend({'timestamp': chart_timestamps[i], 'value': chart_totals[i]} for i in indices)
     return normalized
 
 
@@ -129,6 +159,8 @@ def collect_registry_metric_history(
     }
     errors: dict[str, str] = {}
     values: dict[str, dict[str, dict[str, float]]] = {}
+    # Persist only bounded measured aggregate chart samples, never a synthetic series.
+    chart_series: dict[str, list[dict[str, float]]] = {}
 
     try:
         consumer = MetricsConsumer.for_asset(
@@ -150,13 +182,17 @@ def collect_registry_metric_history(
                 f'{step}s',
                 retry_count=0,
             )
+            plot: list[dict[str, float]] | None = [] if field in {'project_artifacts', 'project_usage_bytes'} else None
             values[field] = _bounded_matrix(
                 result,
                 project_scoped=field != 'request_rate_per_second',
                 start_at=start,
                 end_at=end,
                 step_seconds=step,
+                chart_points=plot,
             )
+            if plot:
+                chart_series[field] = plot
         except (MetricsSourceError, ValueError) as exc:
             errors[key] = str(exc)[:500]
 
@@ -169,6 +205,7 @@ def collect_registry_metric_history(
             'binding_id': consumer.binding.id,
             'capability_gaps': errors,
             'series': values,
+            'chart_series': chart_series,
         }
     )
     current_metrics: dict[str, Any] = {

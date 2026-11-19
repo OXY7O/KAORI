@@ -75,7 +75,7 @@
                             <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Source Context</p>
                             <h3 class="mt-1 text-base font-semibold text-content-primary">Committed Security Capability Scope</h3>
                             <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">
-                                Capability support and collection state for this Registry source, normalized into KAORI without changing provider authority.
+                                Committed capability evidence; providers remain authoritative.
                             </p>
                         </div>
                     </div>
@@ -148,7 +148,7 @@
                 </div>
             </section>
             {{ operational_callout.render('Provider Evidence Boundary',
-                        'KAORI normalizes committed provider evidence. It does not fabricate unsupported capability state, trigger provider-side security scans, or replace the provider as authority.',
+                        'Providers remain authoritative; KAORI neither invents support nor runs scans.',
                         'shield-check',
                         tone='info',
                         variant='neutral') }}
@@ -272,7 +272,7 @@
                 </div>
             </section>
             {{ operational_callout.render('Evidence Interpretation',
-                        'Signature and SBOM values are provider-observed evidence. KAORI does not claim trust verification here, and opening this modal never performs a live provider request.',
+                        'Signature/SBOM are provider observations, not KAORI trust checks; no live requests.',
                         'shield-check',
                         tone='info',
                         variant='neutral') }}

@@ -206,7 +206,7 @@
         </section>
     </div>
 {%- endmacro %}
-{% macro snapshot_unavailable(panel, title, description, icon='database-zap') -%}
+{% macro snapshot_unavailable(panel, title, description, icon='database-zap', title_accessory='') -%}
     <section data-analytics-overview-panel="{{ panel }}"
              class="{{ snapshot_shell_classes() }}">
         <header class="{{ snapshot_header_classes() }}">
@@ -215,7 +215,10 @@
                     <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                 </span>
                 <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
+                        {{ title_accessory }}
+                    </div>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Committed worker evidence for this domain.</p>
                 </div>
             </div>

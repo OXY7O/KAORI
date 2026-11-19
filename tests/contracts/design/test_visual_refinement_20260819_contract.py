@@ -34,7 +34,9 @@ def test_workload_mapping_modal_uses_workspace_width_and_bar_reading_guide() -> 
     assert 'xl:grid-cols-[repeat(3,minmax(0,1fr))_minmax(18rem,1.25fr)]' in source
     assert 'sm:whitespace-nowrap' in source
     assert 'How To Read The Bars' in source
-    assert 'Green stays below 75%' in source
+    assert "table_label.status_label('Below 75%', 'normal', size='compact')" in source
+    assert "table_label.status_label('75% To 90%', 'warning', size='compact')" in source
+    assert "table_label.status_label('Above 90%', 'critical', size='compact')" in source
     assert "table_label.status_label('Below 75%', 'normal', size='compact')" in source
     assert "table_label.status_label('75% To 90%', 'warning', size='compact')" in source
     assert "table_label.status_label('Above 90%', 'critical', size='compact')" in source

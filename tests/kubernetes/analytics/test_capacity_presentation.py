@@ -53,7 +53,7 @@ def test_capacity_presenter_marks_missing_storage_as_unavailable() -> None:
         'usage_evidence_available': False,
         'evidence_available': False,
         'scheduling_resource': False,
-        'scope_label': 'Operational node-filesystem reference; not Kubernetes allocatable capacity',
+        'scope_label': 'Filesystem: not Kubernetes allocatable.',
         'capacity': None,
         'used': None,
         'available': None,

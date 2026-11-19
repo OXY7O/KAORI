@@ -29,7 +29,7 @@
 {% macro snapshot_card(title, description, status_label, status_tone, updated, dataset, refresh_due='Not Scheduled', worker_attempt='Unavailable', coverage='') -%}
     {{ shared_readiness.snapshot_card(title, description, status_label, status_tone, updated, dataset, refresh_due, worker_attempt, coverage) }}
 {%- endmacro %}
-{% macro controls_readiness(title, description, icon, indicator_id, status, materialization=none, eyebrow='Analysis Controls') -%}
+{% macro controls_readiness(title, description, icon, indicator_id, status, materialization=none, eyebrow='Analysis Controls', title_accessory='') -%}
     {% set snapshot = materialization if materialization else none %}
     {% if snapshot and snapshot.stale|default(false) %}
         {% set snapshot_status = "Stale Snapshot" %}
@@ -49,7 +49,7 @@
         {% set snapshot_tone = 'normal' if status_lower in ['current', 'ready', 'available', 'healthy'] else ('info' if 'progress' in status_lower or 'pending' in status_lower or 'refresh' in status_lower else ('warning' if 'stale' in status_lower or 'partial' in status_lower else 'unknown')) %}
     {% endif %}
     {% set outer_caller = caller %}
-    {% call shared_readiness.frame(title, description, icon, indicator_id, eyebrow=eyebrow) %}
+    {% call shared_readiness.frame(title, description, icon, indicator_id, eyebrow=eyebrow, title_accessory=title_accessory) %}
         {{ outer_caller() }}
         <div class="space-y-3">
             {% call shared_readiness.readiness_grid() %}
@@ -108,7 +108,7 @@
         </div>
     {% endcall %}
 {%- endmacro %}
-{% macro overview(title, description, icon, badge_text='Overview') -%}
+{% macro overview(title, description, icon, badge_text='Overview', title_accessory='') -%}
     <section class="{{ analysis_surface.snapshot_shell_classes() }}"
              data-analytics-overview>
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
@@ -118,7 +118,10 @@
                         <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
                     </span>
                     <div class="min-w-0">
-                        <h2 class="{{ table_ui.block_title_classes() }}">{{ title }}</h2>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="{{ table_ui.block_title_classes() }}">{{ title }}</h2>
+                            {{ title_accessory }}
+                        </div>
                         <p class="mt-1 text-sm leading-6 text-content-muted">{{ description }}</p>
                     </div>
                 </div>
@@ -128,7 +131,7 @@
         <div class="p-5 sm:p-6">{{ caller() }}</div>
     </section>
 {%- endmacro %}
-{% macro tabbed(tabset_id, tabs, aria_label, title, description, icon, initial_tab, allowed_tabs, detached=false) -%}
+{% macro tabbed(tabset_id, tabs, aria_label, title, description, icon, initial_tab, allowed_tabs, detached=false, title_accessory='') -%}
     <section data-analytics-tabset
              data-analytics-tabset-id="{{ tabset_id }}"
              data-default-tab="{{ initial_tab }}"
@@ -142,7 +145,10 @@
                         <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
                     </span>
                     <div class="min-w-0">
-                        <h2 class="{{ table_ui.block_title_classes() }}">{{ title }}</h2>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="{{ table_ui.block_title_classes() }}">{{ title }}</h2>
+                            {{ title_accessory }}
+                        </div>
                         <p class="mt-1 text-sm leading-6 text-content-muted">{{ description }}</p>
                     </div>
                 </div>

@@ -145,6 +145,36 @@ Provider credentials for platform Notification Channels are **not** environment 
 
 Scheduled Reports use reusable Notification Channels configured under Integrations. Provider credentials stay encrypted per channel in the database; report schedules store only selected channel identities.
 
+## Production internal provider DNS and TLS authority
+
+The governed server deploy adapter mounts the **host-approved public CA
+directory** `/etc/kaori/trust` read-only at `/run/kaori/trust` for only
+the `web`, `validation-worker` and `runtime-worker` services. It does
+not mount the DevContainer's ignored `secrets/trust/` checkout directory;
+the host bootstrap creates an empty trust directory without populating
+certificates. Production applications retain the existing split config
+and immutable release identity.
+
+The `deploy/env/app.env.example` template documents optional,
+blank-by-default `KAORI_LDAP_CA_BUNDLE`,
+`INTEGRATION_VAULT_ALLOWED_ORIGINS` and
+`INTEGRATION_VAULT_CA_BUNDLE`. Set these in
+`/etc/kaori/app.env` only after the approved CA and provider endpoint
+are available. The LDAP bind password remains in
+`/etc/kaori/secrets.env`. An environment change requires a governed
+recreation to reach the web process; the read-only volume persists
+across application restarts, releases and rollback.
+
+Corporate DNS/AD PKI own authoritative records and certificates.
+For Kubernetes, CoreDNS forwarding and Pod ConfigMap trust mounts
+are a **reference architecture only**, not an active KAORI production
+adapter. Production static `extra_hosts` requires a separately admitted,
+deployment-managed change rather than reusing the ignored DevContainer
+override. For exact host commands, safe Compose inspection, TLS
+verification, certificate authority vs self-signed leaf conditions,
+UAT evidence and rollback see
+[Production internal DNS and provider CA trust](../operations/production-provider-dns-trust.md).
+
 ## Production validation
 
 Before deploying production configuration, populate the split production authorities under `deploy/env/`, supply release identity through the release process, and run:

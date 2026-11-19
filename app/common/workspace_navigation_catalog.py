@@ -53,6 +53,7 @@ _KUBERNETES_OPERATION_PERMISSIONS = _KUBERNETES_CONFIGMAP_PERMISSIONS + _KUBERNE
 _KUBERNETES_GOVERNANCE_PERMISSIONS = (
     'governance.view',
     'tls_certificates.view',
+    'internal_certificates.view',
 )
 
 _OPERATIONS_CENTER_PERMISSIONS = (
@@ -151,7 +152,7 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 'security',
                 'Security',
                 'shield-check',
-                'artifact_registry.security',
+                'artifact_registry.security_overview',
                 ('artifact_registry.view',),
             ),
             WorkspaceCapabilityDefinition(
@@ -535,6 +536,13 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
             'governance.tls_certificates',
             ('tls_certificates.view',),
         ),
+        CapabilityViewDefinition(
+            'internal_certificates',
+            'Internal Certificates',
+            'shield-alert',
+            'governance.internal_certificates',
+            ('internal_certificates.view',),
+        ),
     ),
     'kubernetes_tenant': (
         CapabilityViewDefinition(
@@ -661,6 +669,13 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
         ),
     ),
     'artifact_registry_security': (
+        CapabilityViewDefinition(
+            'overview',
+            'Overview',
+            'layout-grid',
+            'artifact_registry.security_overview',
+            ('artifact_registry.view',),
+        ),
         CapabilityViewDefinition(
             'vulnerabilities',
             'Vulnerabilities',

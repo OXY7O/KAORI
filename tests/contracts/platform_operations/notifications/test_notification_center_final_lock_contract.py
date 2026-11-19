@@ -51,6 +51,44 @@ def test_full_center_uses_standard_filters_loading_and_pagination() -> None:
     assert "pagination_ui.resource_name('Notifications'" in content
 
 
+def test_notification_page_size_uses_one_change_request_and_preserves_filters() -> None:
+    from jinja2 import Environment
+
+    content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
+    pagination = read('app/static/js/pagination.js')
+    routes = read('app/platform_operations/notifications/routes.py')
+    queries = read('app/platform_operations/notifications/queries.py')
+
+    Environment().parse(content)
+    rows = content.split('id="notification-center-per-page"', 1)[0].rsplit('<form method="get"', 1)[1]
+    rows += content.split('id="notification-center-per-page"', 1)[1].split('</form>', 1)[0]
+    for token in (
+        'hx-trigger="change"',
+        'hx-target="#activity-notification-page"',
+        'hx-select="#activity-notification-page"',
+        'hx-swap="outerHTML"',
+        'hx-push-url="true"',
+        'hx-sync="#activity-notification-page:replace"',
+        'name="view" value="notifications"',
+        'name="page" value="1"',
+        'name="search"',
+        'name="category"',
+        'name="status"',
+        'name="read_state"',
+        'name="per_page"',
+        'Apply Rows',
+    ):
+        assert token in rows
+    assert 'data-kaori-auto-submit' not in rows
+    assert 'control.form.requestSubmit()' in pagination  # Existing shared fallback stays unchanged.
+    assert 'hx-sync="this:drop"' in content
+    assert "per_page=_request_int('per_page', 5)" in routes
+    assert 'ACTIVITY_PER_PAGE_OPTIONS = (5, 10, 25, 50)' in read('app/platform_operations/notifications/constants.py')
+    assert 'per_page=normalized_per_page' in queries
+    assert 'per_page=pager.per_page' in content
+    assert 'option == pager.per_page' in content
+
+
 def test_notification_center_evidence_context_precedes_register() -> None:
     content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
 
@@ -65,6 +103,69 @@ def test_notification_center_evidence_context_precedes_register() -> None:
     assert content.index('Lifecycle Boundary') < content.index('Notification Register')
     assert 'Persistent notifications share the Activity Audit retention policy.' in content
     assert 'Transient toasts remain outside Data Lifecycle.' in content
+
+
+def test_notification_center_uses_canonical_title_guides_and_concise_evidence_copy() -> None:
+    content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
+
+    assert 'components/info_tip.html' in content
+    assert content.count("variant='guide'") == 2
+    for title, guide_id in (
+        ('Personal Operations Inbox', 'notification-center-personal-inbox-guide'),
+        ('Notification Register', 'notification-center-register-guide'),
+    ):
+        heading = content.index(f'>{title}</h')
+        guide = content.index(f"'{guide_id}'", heading)
+        assert guide < content.index('</div>', heading)
+    assert 'Transient toasts remain outside Data Lifecycle.' in content
+    assert 'Activity Audit shows system-wide notification evidence.' in content
+    assert 'Only persisted outcomes appear here. Transient toasts' not in content
+    assert 'Activity Audit remains the system-wide evidence view for authorized administrators.' not in content
+
+
+def test_notification_register_filter_actions_keep_title_and_guide_first() -> None:
+    content = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
+
+    title = content.index('>Notification Register</h3>')
+    guide = content.index("'notification-center-register-guide'", title)
+    clear_action = content.index('registry_ui.clear_filters_action(', guide)
+    clear_options = content[clear_action : content.index(') }}', clear_action)]
+    assert title < guide < clear_action
+    assert 'lead=false' in clear_options
+    assert "push_url='true'" in clear_options
+    assert "target='#activity-notification-page'" in clear_options
+    assert '{% if filter_active %}' in content[guide:clear_action]
+
+
+def test_notification_tabs_use_shared_semantic_empty_states() -> None:
+    from jinja2 import Environment
+
+    page = read('app/templates/platform_operations/notifications/partials/_center_page_content.html')
+    shared = read('app/templates/components/states/_empty_state.html')
+    runtime = read('app/static/js/application_shell.js')
+
+    Environment().parse(page)
+    assert page.count('{% include "components/states/_empty_state.html" %}') == 2
+    assert 'data-kaori-empty-state' in shared
+    assert "empty_state_variant='panel'" in page
+    assert "empty_state_label='Queue Clear'" in page
+    assert "empty_state_tone='normal'" in page
+    assert "empty_state_title='No Active Work'" in page
+    assert 'Queued and running jobs or active page operations will appear here automatically.' in page
+    assert 'data-running-empty class="{% if active_jobs %}hidden{% endif %}"' in page
+    assert "surface.querySelectorAll('[data-running-empty]')" in runtime
+    assert "emptyState.classList.toggle('hidden', totalCount > 0)" in runtime
+
+    assert "empty_state_label='No Results' if filter_active else 'No Data'" in page
+    assert "empty_state_title='No Matching Notifications' if filter_active else 'No Notifications Yet'" in page
+    assert 'Adjust the filters to find matching notifications.' in page
+    assert 'Persistent account notifications will appear here after KAORI commits operational outcomes.' in page
+    assert page.index("empty_state_label='No Results'") < page.index(
+        '<footer class="{{ pagination_ui.footer_classes() }}">'
+    )
+    assert 'pager.total' in page
+    assert "pagination_ui.resource_name('Notifications'" in page
+    assert 'class="px-5 py-12 text-center"' not in page
 
 
 def test_notification_center_uses_quiet_kaori_surfaces() -> None:

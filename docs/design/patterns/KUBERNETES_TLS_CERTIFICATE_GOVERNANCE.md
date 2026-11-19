@@ -4,34 +4,64 @@
 
 TLS Certificate Governance is a read-oriented registry for certificate validity, declared-host coverage, Ingress relationships, collection evidence, and controlled rotation handoff.
 
+## Internal Kubernetes PKI boundary (separate workstream)
+
+The current TLS Certificates resource registry covers **TLS Secrets and Ingress host coverage**, not Kubernetes control-plane CA/leaf certificates or kubelet active client certificates. The distinct `Internal Certificates` capability is being planned under #4441. Its source and support contract is [KUBERNETES_INTERNAL_CERTIFICATES_SOURCE_CONTRACT.md](KUBERNETES_INTERNAL_CERTIFICATES_SOURCE_CONTRACT.md) (#4442); committed evidence #4443 and read-only workspace #4444 must be implemented and validated before Governance Overview may advertise a second Implemented capability. A future Ansible-governed renewal design is tracked separately under #4445; neither a renewal button nor a second placeholder card belongs to this TLS capability.
+
 ## Governance Overview landing contract
 
-Kubernetes Governance Overview is the **domain-first** landing page for Kubernetes governance as a whole. TLS Certificates is the first implemented child capability; it does not define the Hero, Hero context, primary posture, or information architecture of the Governance domain. Future implemented governance capabilities join the same catalog without redesigning Overview. Placeholder capability links are prohibited.
+Kubernetes Governance Overview remains **domain-first**: the Hero represents the entire Kubernetes governance domain, not TLS. The catalog lists only implemented, independently authorized governance capabilities; its operating model covers Provider Authority, Policy & Guardrails, Committed Evidence and Controlled Handoffs. The Hero action is **Open Cluster Integrations**. Provider-side Kubernetes operations remain authoritative, while KAORI owns committed evidence and governance context.
 
-`governance.view` authorizes the landing page. `tls_certificates.view` controls only whether the TLS Certificates child capability can be opened. Governance Overview does **not** load TLS certificate inventory, certificate counts, TLS snapshot posture, or other child-capability detail evidence solely to render the domain landing page.
+### 2026-11-12 Human UAT amendment — exact TLS snapshot reuse
 
-The ready-state Hero represents the generic Kubernetes governance boundary: Kubernetes is authoritative for live resource/enforcement state, KAORI owns normalized governance evidence and orchestration, and the canonical Hero action is **Open Cluster Integrations**. Overview itself remains read-only and issues no live Kubernetes request.
+The operator explicitly replaced the previously attempted fabricated **Governance Control Context** with the **existing TLS Collection Snapshot** panel, mounted *unchanged* from `kubernetes/governance/tls_certificates/partials/_snapshot_context.html`. This is an **authorized read-only child-capability evidence preview**, not a TLS-centric root or a new snapshot family. The earlier rule forbidding *any* TLS snapshot on Overview is superseded only for this precise single preview, with the following controls:
 
-Canonical Overview hierarchy:
+- `governance.view` authorizes the Overview; `tls_certificates.view` must be checked **before** any committed TLS snapshot read and before the TLS snapshot partial renders.
+- The shared cluster setup blocker runs before TLS collection evidence loads. No snapshot (and no misleading zero-valued TLS count) appears on clusterless Overview.
+- The data comes from the same **worker-committed TLS collection projection** used by the child TLS Certificates workspace; the lightweight `get_tls_collection_snapshot()` delegates to the existing `_collection_snapshot()` and never queries live Kubernetes providers or loads registry detail rows.
+- Schema/migration readiness remains authoritative: absent TLS schema is **Upgrade Required**, not a falsely complete snapshot.
+- No snapshot is rendered for an unauthorized viewer. The capability catalog can still identify TLS Certificates as Implemented while its action remains **View Permission Required**.
+- All detailed TLS validity, coverage, registry, rotation actions and per-secret evidence remain owned by the TLS Certificates child workspace; this Overview preview exposes only the same four sanctioned collection-summary fields.
+
+### Approved layout hierarchy
 
 ```text
 Hero — Kubernetes Governance / Overview
-Governance Scope
-└── Governance Capabilities
-    └── TLS Certificates                  # current implemented child capability
-Governance Model
-└── Governance Operating Model
-    ├── Provider Authority
-    ├── Policy & Guardrails
-    ├── Committed Evidence
-    └── Controlled Handoffs
+→ TLS Collection Snapshot — existing shared TLS partial (only if authorized and cluster ready)
+→ Governance Scope — shared external Section Intro
+  └── Governance Capabilities — N Capabilities Violet metadata badge
+      └── Two-column compact workspace-card grid (TLS Certificates first)
+→ Governance Model — shared external Section Intro
+  └── Governance Operating Model — interactive Guide + inset four-tile model
+      ├── Provider Authority
+      ├── Policy & Guardrails
+      ├── Committed Evidence
+      └── Controlled Handoffs
 ```
 
-Detailed TLS posture, validity, coverage, collection evidence, and rotation context remain owned by the TLS Certificates capability page.
+The catalog follows the approved Operations Overview `workspace_link_card.render(..., compact=true)` geometry for authorized capability links, with an explicit non-clickable restricted fallback. The TLS card uses one concise sentence, **Review TLS lifecycle, Ingress coverage, and governed rotation.**, without a second supporting text line; the same single sentence appears in the permission-restricted fallback. Do not force nowrap or truncate on mobile. A single implemented capability occupies **one half-width desktop column**, not a stretched full-row catalog item. Additional implemented capabilities fill the second column and later rows. Shared compact cards may optionally specify semantic status tone, action text, and concise boundary-supporting text; defaults for existing Welcome and Operations cards are unaffected. There is no extra catalog footer and the parent section owns no TLS-specific action. The earlier **auto-fitting minimum-width grid** that stretched one TLS card to full width is retired by this human acceptance direction; the current catalog is a fixed, responsive two-column grid with natural one-column mobile reflow.
 
-The Overview Hero uses the compact KAORI description **Review Kubernetes governance controls, evidence, and ownership.** The Governance Operating Model keeps policy copy compact: **KAORI applies governance policy and authorization guardrails without cloning the provider control plane.**
+The Overview Hero keeps its compact description **Review Kubernetes governance controls, evidence, and ownership.** The Governance Operating Model retains **KAORI applies governance policy and authorization guardrails without cloning the provider control plane.** Its existing Violet Guide explains why Kubernetes retains live authority and KAORI retains normalized committed evidence.
 
-Governance Capabilities is a scalable equal-height catalog. The parent section owns no TLS-specific action. Each implemented capability contributes one self-contained card with identity, status, purpose, boundary, permission state, and its own action. The catalog uses an auto-fitting minimum-width grid so one capability fills the available row, multiple capabilities distribute evenly, and adding another implemented governance capability does not require changing the surrounding Overview composition. Unimplemented capabilities are never rendered as placeholders.
+Governance Capabilities remains a **scalable equal-height catalog** of implemented child capabilities only; no unimplemented placeholder links are allowed. Counts in its metadata badge represent implemented capability definitions, not permissions granted to the current viewer. TLS collection details must not be mixed into that count.
+
+### Internal PKI committed certificate inventory (#4461)
+
+The authorized sibling **Internal Certificates** uses an independent typed,
+metadata-only committed PKI inventory for operator-attested kubeadm evidence.
+It never borrows TLS Secret/Ingress rows as proof of internal control-plane
+PKI. Its certificate table contains actual source-reported expiry, node,
+component, issuer, CA/leaf classification, provenance, and separate freshness
+classification **only after a verified source import**. Source Pending is
+still the overview catalog status while automated collection is unavailable.
+Use the [Internal PKI Evidence Import](KUBERNETES_INTERNAL_CERTIFICATES_EVIDENCE_IMPORT.md)
+runbook before Dev Container UAT. No renewal route or action is implemented.
+
+### Internal Certificates source-readiness milestone (#4453)
+
+A second compact Governance capability card **Internal Certificates** links to a functional, permission-gated source-readiness registry of committed cluster registrations. Its status is **Source Pending**, not an assertion that control-plane expiry has been collected or is healthy. The new authorized route reads `Cluster` and `KubernetesConnection` metadata only and labels each cluster **Not Collected / Not Verified / Unknown** for PKI. The capability catalog count may therefore display **2 Capabilities** (implemented navigation workspaces), while only TLS Certificates currently has committed certificate validity evidence. The source is not inferred from TLS Secrets/Ingress. No renewal action is shown.
+
+This narrow milestone is authorized by the later operator request (#4453) and documented in [KUBERNETES_INTERNAL_CERTIFICATES_SOURCE_CONTRACT.md](KUBERNETES_INTERNAL_CERTIFICATES_SOURCE_CONTRACT.md). The full PKI collector/read model (#4443), evidence-backed expiry inventory (#4444), and governed renewal (#4445) remain separate unfinished workstreams. Do not promote the Internal Certificates card to **Implemented** PKI monitoring or show fictitious certificate counts until #4443 is accepted.
 
 ## Canonical structure
 
@@ -117,6 +147,28 @@ TLS Governance reuses `components/section_intro.html` for the plain hierarchy ab
 
 Cluster-source navigation is labeled **Open Cluster Integrations** and routes to `integrations.kubernetes`, matching Kubernetes Inventory.
 
+### TLS Collection Snapshot, posture badge, and registry search copy
+
+The shared TLS Collection Snapshot (including its authorized Governance Overview
+preview) displays the concise purpose line **TLS certificates and Ingress host
+mappings.** above the authoritative worker-generated source description.
+The shorter line does not change collection scope, result completeness, or
+committed evidence; retain natural text wrapping on mobile rather than forcing
+`whitespace-nowrap` or truncation.
+
+**Certificate Validity** reuses the same title-adjacent Violet
+`table_label.metadata_label` as Kubernetes Inventory Posture cards:
+`N Indicators` derives from the **existing rendered `metrics|length`** (six
+indicator slots currently), not the number of certificates, alerts, or healthy
+outcomes. The existing metric grid, validity classifications and thresholds
+remain authoritative.
+
+The TLS Registry search field keeps the same shared filter input, keyboard and
+HTMX behavior, plus server-side search over Secret name, namespace, subject and
+issuer. Only its placeholder is shortened to **Search certificates...**; the
+visible field label **Search TLS Certificates** remains unchanged.
+
+
 ## Compact registry table
 
 ```text
@@ -184,6 +236,8 @@ Collection Snapshot
 ```
 
 `TLS Inventory Operations` owns Sync TLS, Configure Sync, Bulk Rotation handoff, worker progress, automatic policy state, last successful collection, and next scheduled execution. It must not be nested inside certificate validity metrics.
+
+The title/status row also owns one canonical Violet **Guide** directly following the live sync-status badge (for example, `TLS Inventory Operations · Current · Guide`). The shared `info_tip.render(..., variant='guide')` explains that Sync TLS refreshes committed worker-collected TLS Secret/Ingress mapping evidence, **not** certificate renewal or rotation; Configure Sync changes the existing schedule, and Bulk Rotation is an independent permission-controlled workflow. Collected validity/host mapping metadata does not prove active client trust. Keep this guidance in the existing `_sync_live_state.html` status row so it remains in sync with HTMX status updates, uses accessible shared popover behavior and does not add an independent card or custom JS.
 
 Certificate validity remains a separate evidence block under the shared `Certificate Posture` section intro. `Certificate Inventory` is the outer section context for `TLS Certificate Registry`; the outer and inner titles intentionally express different hierarchy levels.
 

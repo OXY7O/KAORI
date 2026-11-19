@@ -19,7 +19,8 @@ def test_primary_finding_is_compact_and_nonduplicative() -> None:
     assert 'Primary Finding' in source
     assert "(' Finding' if runtime_state.attention_factors|length == 1 else ' Findings')" in source
     assert '{{ runtime_primary_finding }}' in source
-    assert 'components/info_tip.html' not in source
+    assert 'components/info_tip.html' in source
+    assert 'kubernetes-runtime-health-detail-guide' in source
     assert 'kubernetes-runtime-primary-finding-info' not in source
     assert 'Lifecycle and capability detail' not in source
     assert 'data-kaori-runtime-response' in source

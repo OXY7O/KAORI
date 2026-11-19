@@ -6,7 +6,9 @@ No PostgreSQL/database or Docker daemon is contacted.
 from __future__ import annotations
 
 import json
+import os
 import runpy
+import stat
 from pathlib import Path
 
 import pytest
@@ -32,6 +34,7 @@ def _sandbox(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             'ADMIN_ENV': secret_dir / 'postgres-bootstrap.env',
             'MIGRATOR_ENV': secret_dir / 'postgres-migrate.env',
             'BACKUP_ENV': secret_dir / 'application-env-before-three-role.bak',
+            'HOST_OVERRIDES': secret_dir / 'compose.host-overrides.yml',
         }
     )
     (workspace / '.env.example').write_text(
@@ -79,6 +82,40 @@ def test_fresh_volume_generates_repo_ignored_credentials_and_runtime_url(
     assert s['MIGRATOR_ENV'].read_text() == migrator
 
 
+def test_ignored_compose_host_overlay_is_empty_by_default_and_preserves_operator_mapping(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    main, scope = _sandbox(tmp_path, monkeypatch)
+
+    main()
+    overlay = scope['HOST_OVERRIDES']
+    assert overlay.is_file()
+    assert overlay.read_text(encoding='utf-8') == 'services: {}\n'
+
+    # Real IP and any operator-owned mapping must survive later initialization.
+    operator_content = 'services:\n  workspace:\n    extra_hosts:\n      - "adds.kaori.cloud=192.0.2.10"\n'
+    overlay.write_text(operator_content, encoding='utf-8')
+    main()
+    assert overlay.read_text(encoding='utf-8') == operator_content
+
+
+def test_ignored_compose_host_overlay_cannot_be_a_symlink(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    main, scope = _sandbox(tmp_path, monkeypatch)
+    scope['SECRET_DIR'].mkdir(parents=True, exist_ok=True)
+    override = scope['HOST_OVERRIDES']
+    real_file = tmp_path / 'unexpected-host-file'
+    real_file.write_text('do not replace', encoding='utf-8')
+    override.symlink_to(real_file)
+
+    with pytest.raises(SystemExit, match='must not be a symlink'):
+        main()
+    assert real_file.read_text(encoding='utf-8') == 'do not replace'
+
+
 def test_old_local_db_url_with_empty_pg_volume_is_backed_up_before_reconciliation(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -98,6 +135,70 @@ def test_old_local_db_url_with_empty_pg_volume_is_backed_up_before_reconciliatio
     assert 'SECRET_KEY=preserve-me' in updated
     assert 'DATABASE_URL=postgresql://kaori_runtime:' in updated
     assert 'old-owner-secret' not in updated
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX permissions require a POSIX test filesystem')
+def test_existing_local_env_is_restricted_before_secret_bearing_rewrite(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    main, s = _sandbox(tmp_path, monkeypatch)
+    old = (
+        'APP_ENV=development\n'
+        'DATABASE_URL=postgresql://kaori:local-previous-secret@db:5432/kaori\n'
+        'SECRET_KEY=preserve-me\n'
+    )
+    config = s['APP_ENV']
+    config.write_text(old, encoding='utf-8')
+    config.chmod(0o644)
+
+    main()
+
+    assert stat.S_IMODE(config.stat().st_mode) == 0o600
+    assert s['BACKUP_ENV'].read_text(encoding='utf-8') == old
+    assert 'SECRET_KEY=preserve-me' in config.read_text(encoding='utf-8')
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX permissions require a POSIX test filesystem')
+def test_existing_unchanged_local_env_still_restricts_permissions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    main, s = _sandbox(tmp_path, monkeypatch)
+    main()
+    config = s['APP_ENV']
+    expected = config.read_text(encoding='utf-8')
+    config.chmod(0o644)
+
+    main()
+
+    assert stat.S_IMODE(config.stat().st_mode) == 0o600
+    assert config.read_text(encoding='utf-8') == expected
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX permissions require a POSIX test filesystem')
+def test_existing_local_env_fails_closed_when_permission_restriction_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    main, s = _sandbox(tmp_path, monkeypatch)
+    config = s['APP_ENV']
+    old = 'APP_ENV=development\nDATABASE_URL=postgresql://kaori:local-previous-secret@db:5432/kaori\n'
+    config.write_text(old, encoding='utf-8')
+    config.chmod(0o644)
+    original_chmod = Path.chmod
+
+    def deny_config_chmod(path: Path, mode: int) -> None:
+        if path == config:
+            raise PermissionError('host denied chmod')
+        original_chmod(path, mode)
+
+    monkeypatch.setattr(Path, 'chmod', deny_config_chmod)
+    with pytest.raises(SystemExit, match='cannot secure existing local app configuration'):
+        main()
+    assert config.read_text(encoding='utf-8') == old
+    assert not s['ADMIN_ENV'].exists()
+    assert not s['MIGRATOR_ENV'].exists()
 
 
 def test_preexisting_postgresql_data_never_gets_new_login_credentials(
@@ -193,6 +294,7 @@ def test_native_windows_docker_command_checks_actual_db_volume() -> None:
     assert 'db-bootstrap' not in spec['runServices']
     compose = (ROOT / '.devcontainer/compose.devcontainer.yml').read_text()
     assert 'postgres-bootstrap.env' in compose
+    assert spec['dockerComposeFile'][-1] == '../secrets/devcontainer/compose.host-overrides.yml'
     assert 'postgres-migrate.env' in compose
     assert 'external: true' in compose
     assert 'kaori-dev_kaori_postgres_data' in compose

@@ -1,0 +1,115 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/info_tip.html" as info_tip %}
+{% set has_snapshot = analytics.snapshot_count|default(0) > 0 %}
+{% set has_scan = has_snapshot and analytics.aggregate.scanned_artifacts > 0 %}
+{% set has_runtime = has_snapshot and analytics.aggregate.running_artifacts > 0 %}
+{% set risk_metrics = [
+    ('shield-alert', 'Critical Findings', analytics.aggregate.critical_findings if has_scan else 'N/A', 'Committed findings; not unique artifacts', 'critical'),
+    ('boxes', 'Critical + Running', analytics.aggregate.critical_runtime_artifacts if has_scan else 'N/A', 'Runtime artifact identities with critical findings', 'critical'),
+    ('shield-question', 'Unsigned + Running', analytics.aggregate.unsigned_runtime_artifacts if has_runtime else 'N/A', 'Missing committed signature evidence', 'warning'),
+    ('scan-search', 'Unscanned + Running', analytics.aggregate.runtime_scan_gaps if has_runtime else 'N/A', 'No usable normalized scan result', 'warning')
+] %}
+<section class="{{ analysis_surface.snapshot_shell_classes() }}"
+         data-registry-risk-detail
+         aria-labelledby="registry-risk-detail-title">
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ analysis_surface.role_icon_classes('brand', size='compact') }}"
+                  aria-hidden="true"><i data-lucide="shield-alert" class="h-4 w-4"></i></span>
+            <div class="min-w-0">
+                <p class="{{ analysis_surface.role_label_classes('brand') }}">Risk Concentration</p>
+                <div class="mt-1 flex flex-wrap items-center gap-2">
+                    <h3 id="registry-risk-detail-title"
+                        class="text-base font-semibold text-content-primary">Security × Runtime</h3>
+                    {{ info_tip.render('registry-risk-detail-guide',
+                                        'Registry Risk Analytics Guide',
+                                        'These counts come from committed Registry security and runtime evidence, not a live scanner.',
+                                        items=[
+                                        'Critical findings are records, not unique affected artifacts or CVEs.',
+                                        'Runtime correlation identifies exposed artifacts; digest-based matches are stronger than mutable tags.',
+                                        'A missing successful scan is a coverage gap, not evidence that an artifact is clean.',
+                                        'Signature evidence gaps do not prove that an artifact was cryptographically verified or unsigned.',
+                                        'Open Security for vulnerability evidence and Runtime for workload impact.'
+                                        ], placement='right', variant='guide') }}
+                </div>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Distinguish observed vulnerability findings from running artifacts and unverified evidence.</p>
+            </div>
+        </div>
+        {{ table_label.status_label('Scan Evidence' if has_scan else 'Scan Evidence Unavailable', 'info' if has_scan else 'unknown') }}
+    </header>
+    <div class="{{ analysis_surface.metric_grid_classes(4) }}">
+        {% for icon, label, value, detail, tone in risk_metrics %}
+            <article class="{{ analysis_surface.metric_cell_classes() }}">
+                <div class="flex items-center gap-2">
+                    <span class="{{ analysis_surface.metric_icon_classes('compact', role='status', tone=tone if value != 'N/A' and value else 'unknown') }}"
+                          aria-hidden="true"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
+                    <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                </div>
+                <p class="mt-3 text-xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ detail }}</p>
+            </article>
+        {% endfor %}
+    </div>
+    <div class="grid gap-4 border-t border-outline-subtle p-4 lg:grid-cols-5 sm:p-5">
+        <section class="{{ analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-3') }}"
+                 aria-labelledby="registry-risk-intersection-title">
+            <header class="flex items-start gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
+                <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
+                      aria-hidden="true"><i data-lucide="git-merge" class="h-4 w-4"></i></span>
+                <div class="min-w-0">
+                    <h4 id="registry-risk-intersection-title"
+                        class="text-sm font-semibold text-content-primary">Runtime Exposure Readout</h4>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Committed correlations, not a live vulnerability assessment.</p>
+                </div>
+            </header>
+            <dl class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+                <div class="px-4 py-4 sm:px-5">
+                    <dt class="{{ analysis_surface.metric_label_classes() }}">Running Artifacts</dt>
+                    <dd class="mt-2 text-lg font-semibold tabular-nums text-content-primary">
+                        {{ analytics.aggregate.running_artifacts if has_snapshot else 'N/A' }}
+                    </dd>
+                    <dd class="mt-1 text-xs leading-5 text-content-secondary">
+                        Distinct runtime-used identities in scope.
+                    </dd>
+                </div>
+                <div class="px-4 py-4 sm:px-5">
+                    <dt class="{{ analysis_surface.metric_label_classes() }}">Runtime Bindings</dt>
+                    <dd class="mt-2 text-lg font-semibold tabular-nums text-content-primary">
+                        {{ analytics.aggregate.runtime_bindings if has_snapshot else 'N/A' }}
+                    </dd>
+                    <dd class="mt-1 text-xs leading-5 text-content-secondary">
+                        Artifact-to-workload relationships; not CVE count.
+                    </dd>
+                </div>
+            </dl>
+        </section>
+        <aside class="{{ analysis_surface.evidence_shell_classes('min-w-0 lg:col-span-2') }}"
+               aria-labelledby="registry-risk-evidence-title">
+            <header class="flex items-start gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
+                <span class="{{ analysis_surface.role_icon_classes('insight', size='compact') }}"
+                      aria-hidden="true"><i data-lucide="scan-eye" class="h-4 w-4"></i></span>
+                <div class="min-w-0">
+                    <h4 id="registry-risk-evidence-title"
+                        class="text-sm font-semibold text-content-primary">Evidence Confidence</h4>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Interpret the qualified coverage boundary.</p>
+                </div>
+            </header>
+            <div class="space-y-3 px-4 py-4 sm:px-5">
+                {{ table_label.status_label('Observed scans' if has_scan else 'No qualified scan coverage', 'info' if has_scan else 'unknown') }}
+                <p class="text-xs leading-5 text-content-secondary">Scanner findings and missing scans must be read separately. Digest-based matches have stronger provenance than tag-only correlations.</p>
+                <p class="text-xs leading-5 text-content-secondary">Detailed vulnerability and workload evidence stays in the owning Security and Runtime domains.</p>
+            </div>
+        </aside>
+    </div>
+    <footer class="flex flex-col gap-3 border-t border-outline-subtle px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <p class="text-xs leading-5 text-content-secondary">Unknown, not scanned, or missing signature evidence never implies healthy zero.</p>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ url_for('artifact_registry.security') }}"
+               class="{{ table_ui.action_classes() }}">Open Security <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i></a>
+            <a href="{{ url_for('artifact_registry.runtime') }}"
+               class="{{ table_ui.action_classes() }}">Open Runtime <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i></a>
+        </div>
+    </footer>
+</section>

@@ -1,6 +1,14 @@
 schema_version: 1
 kind: integration_provider_matrix
 integration_types:
+- key: configuration_automation
+  domain_key: orchestration
+  providers:
+  - key: ansible
+    label: Ansible
+    adapter_key: ansible_runner
+    lifecycle: available
+    protocol: ansible_runner
 - key: container_orchestrator
   domain_key: orchestration
   providers:

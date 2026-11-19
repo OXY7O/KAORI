@@ -53,40 +53,136 @@ Capsule compatibility follows KAORI's annual compatibility policy and five-year 
 
 Operational management belongs to **Kubernetes → Tenant**. Settings does not receive a second Tenant management surface. When downstream provider discovery/compatibility work owns the evidence, **Settings → General → System Information** and **Compatibility Versions** extend their existing contracts with relevant Tenant/Capsule information.
 
+Tenant Overview keeps the existing **Tenant Collection Snapshot → Tenant Inventory Operations → Governance Scope** hierarchy. The Inventory Operations status row displays a canonical title-adjacent **Guide**, reusing the shared `info_tip.render(..., variant='guide')` popover. It explains that **Sync Tenant** refreshes committed Tenant ownership and namespace-inventory correlation via the existing background worker; it does not provision, reconcile, or mutate Kubernetes resources. **Configure Sync** remains the registered schedule handoff. The five-column Tenant Estate retains all counts and signal tones; compact supporting text reads **Committed tenant records** and **Ready / registered clusters** at desktop widths, with natural wrapping permitted on narrow screens (no ellipsis or forced nowrap).
+
+## Tenant Registry and Discovery responsive precision (#4589)
+
+Tenant Discovery uses the canonical `table_ui.inventory_block_header` count label
+for the current **live provider-object filtered result count**, matching Tenant
+Registry's committed result-count treatment. The independent Live Check count
+keeps the source and scope explicit; the title Guide still describes live,
+read-only provider discovery and governed adoption. Do not conflate discovered
+provider objects with committed KAORI Tenants.
+
+Membership, Group, Access Grant, Credential Lifecycle, and Namespace Access
+registries retain their approved `table_ui` fixed-column primitives and
+per-registry proportions tuned to actual identity, status, date and action
+content. The responsive contract permits **table-local scroll only on smaller
+widths**; normal desktop should keep row actions visible without overflow.
+Long subjects, tenant slugs and credential identities remain readable through
+existing title/detail controls; no semantic values, filters, Rows, pagination,
+permission checks, mutation actions or mobile Namespace Access cards change.
+Shared table primitives stay authoritative for cell padding and vertical
+alignment; no page-local geometry framework is introduced.
+
 ## Full-cycle acceptance target
 
 The completed feature must prove create → provider selection → profile/namespace provisioning → access/credential governance → managed resources/policy → reconciliation → effective-state verification → audit/governance evidence → update/revoke → governed decommission. Native Kubernetes baseline UAT is mandatory; Capsule-backed UAT is required when the approved compatible Capsule test cluster is available.
 
-## Tenant Operations — primary Allocation / Operational reconcile tabs (#960)
+## Tenant Operations — title and registry visual parity (#4670)
 
-Tenant → Operations uses **one shared primary Content Tabs row** rather than a
-nested `Drift & Reconcile` subtab hierarchy. Its five primary tabs are
-**Provisioning**, **Runs & Evidence**, **Allocation Drift**,
-**Operational Reconcile**, and **Activity**.
+The Operations Estate header uses the canonical shared `operational_section_card`
+indicator label with `operations_metrics|length`: **4 Indicators** describes
+four committed posture dimensions, not a live Namespace count. Operational
+Control owns a single shared title Guide about committed evidence, provider
+authority, reconciliation actions and canonical audit handoffs. The
+Provisioning tab's Namespace Provisioning Registry has an independent title
+Guide via the shared table header `title_extra`, without replacing the
+filtered **Results** count or the Provision Namespace CTA.
 
-- `tab=allocation-drift` displays the **Capsule Tenant Quota Drift** and
-  **Capsule Shared Allocation Drift** paginated registries.
-- `tab=operational-reconcile` displays **Namespace & Allocation Drift** and
-  **Access Reconciliation** as primary paginated registries. The additional
-  **Provider Authority** registry remains available in a native
-  `View Provider Authority` disclosure collapsed by default; it is not copied
-  or removed.
-- Prior bookmarked `tab=drift-reconcile` links are accepted as backward
-  compatibility aliases: `drift_view=operations` opens Operational Reconcile,
-  otherwise Allocation Drift. Newly generated navigation, filters, and pagers
-  use **only** the primary tab values, not nested `drift_view` state.
+Its fixed five-column table remains at `min-w-[1100px]` with narrow-viewport
+horizontal scroll. The latest operator review (#4718) sets column widths to
+**25/18/15/16/26** (Namespace, Tenant/Environment, Resource Profile, Provider,
+State); it preserves shared identity/status components, middle alignment,
+source identity tooltips and filter/pagination. Where the actual committed
+reconciliation text explicitly contains a known conclusion, a concise
+source-qualified preview is shown: **Matches committed intent**, **Provider-mirrored
+policy**, or **Verified successor handoff**. Unknown/attention/failure reasons
+are never mapped to success and retain up to two lines of source text.
+The original complete evidence stays in the native `title` and screen-reader
+text; the display preview is `aria-hidden` to avoid duplicate announcements. No status calculation, provider authority, workflow,
+permission, backend or data source changes. Screenshot/browser QA on
+desktop/mobile, light/dark and long failure messages remains pending.
 
-The five original registries retain independent Rows/page/filter query
-parameters, canonical empty-state pagination, source-authoritative committed
-evidence, and explicit human reconciliation actions. The shared
-`content_tabs.render_links` component continues to own URL and HTMX
-navigation without a second tab controller, third-level sidebar item, or
-provider-side mutation.
+## Tenant Operations — Evidence/Drift Guides and Activity handoffs (#4672)
 
-Local human acceptance must exercise all five primary tabs, both drift
-workflows with empty and populated datasets, browser refresh/back/forward,
-per-registry filters/Rows/HTMX, light/dark and mobile views. This is not
-staging UAT or production acceptance evidence.
+**Runs & Evidence Registry** and **Namespace & Allocation Drift** now each use the
+canonical title-adjacent `Guide` through the existing
+`table_ui.inventory_block_header(title_extra=...)` slot. Their separate
+filtered **Results** labels, evidence family / drift filters, HTMX navigation,
+empty-state pagination and provider-authoritative read models are preserved.
+The Guides clarify committed evidence versus explicit authorized provider
+recovery: synchronization is observation-only and never automatic remediation.
+
+**Activity** remains a navigation-only handoff, not a second audit or reporting
+engine. Following further operator Visual QA (#4672), the three heavy
+destination cards have been replaced with **one shared KAORI block containing
+three concise full-width navigation rows** for Activity Audit, Intelligence,
+and Reports. Each row owns its meaningful Violet icon, compact capability
+metadata, clear title/description and right-aligned `Open Workspace` affordance.
+The entire semantic anchor row is keyboard focusable and usable on narrow
+screens; no nested action buttons or repeated header/footer surfaces are
+introduced. Exact canonical routes stay unchanged. No duplicate evidence feed,
+provider mutation, permission bypass, backend query or status logic is
+introduced. Desktop/mobile light/dark Visual QA and Human Acceptance remain
+required on the integrated review UAT SHA.
+
+## Tenant Operations — contextual drift subviews (#4718; supersedes #960 placement)
+
+The five primary `content_tabs.render_links` keys remain **Provisioning,
+Runs & Evidence, Allocation Drift, Operational Reconcile, Activity**. The
+operator's new human design review supersedes #960's earlier rejection of a
+second row *only inside the two multi-registry tabs*. The operator's
+subsequent screenshot correction requires exact **Membership Registry /
+Tenant Group Registry** geometry rather than a stacked introduction card
+and separated underline navigation. The latest human screenshot review
+retains that Membership-style attached registry shell while adding **compact
+operational context before the child tabs**: one unboxed authority heading
+followed by shared `operational_callout.render` neutral cards. Allocation Drift
+uses two cards distinguishing Tenant.spec.resourceQuotas (Namespace quotas)
+from GlobalResourceQuota (shared Tenant allocation); Operational Reconcile
+uses three cards separating Namespace drift, Access Grant reconciliation and
+read-only Provider Authority. The cards explain scope, source of evidence,
+and explicit recovery boundaries without claiming live health, adding a
+separate registry, or repeating filtered Results counts.
+
+Each destination still has **one integrated rounded registry shell**, where
+the approved `workspace_tabs.render_query_tabs` tab strip attaches directly
+to its selected registry. Each focused registry retains its own Guide,
+Results, filters and pagination. The earlier detached count grid, underline
+navigation and large stacked introduction card remain removed. These
+informational context cards introduce no new URL/controller/action. Inner
+navigation stays URL/HTMX-owned, not a duplicated JS tab controller.
+
+- `tab=allocation-drift`: **Tenant Quota** (`ops_view=tenant-quota`) or
+  **Shared Allocation** (`ops_view=shared-allocation`). The introduction
+  distinguishes Capsule Tenant.spec.resourceQuotas vs GlobalResourceQuota
+  authority. The default is Tenant Quota.
+- `tab=operational-reconcile`: **Namespace Drift**
+  (`ops_view=namespace-drift`), **Access Reconciliation**
+  (`ops_view=access-reconciliation`), or **Provider Authority**
+  (`ops_view=provider-authority`). The third is a *read-only Tenant ownership
+  reference*, not a drift finding; it replaces the earlier collapsed
+  `View Provider Authority` disclosure without adding another registry.
+  Default is Namespace Drift.
+- A bounded `_operations_active_view()` whitelist rejects unknown inner
+  selections and preserves older deep links that include a table-specific
+  filter/page but no `ops_view`. The original `tab=drift-reconcile` +
+  `drift_view=operations` legacy primary-tab alias remains accepted. New
+  links never emit obsolete `drift_view`.
+- Each registry's filter, clear-filter, and paginated URLs retain both
+  `tab` and `ops_view`. The shared query tabs inherit `hx-select="#tenant-operations-workspace"`
+  from their integrated registry shell and replace that exact HTMX boundary,
+  with `hx-sync` set to the existing workspace selector. Full navigation,
+  Back/Forward and per-registry Rows 5 are retained.
+  Only the selected registry renders; committed evidence sourcing, separate
+  recovery actions, permission enforcement, and historical provider authority
+  stay unchanged.
+
+Developer Check and browser UAT must cover desktop/mobile light/dark,
+empty/populated child views, all five original registries, filter/search,
+clear, pagination, bookmarked URLs, keyboard navigation and selected-tab
+readability. Passing static checks is not UAT or official staging acceptance.
 
 ## Tenant Overview — integrated authority & lifecycle (#1081 follow-up; latest detail presentation authority)
 
@@ -238,11 +334,24 @@ remain HOLD pending separate authorization.
 
 Human visual reference: the existing **Kubernetes Tenant Overview → Governance
 Scope → Tenant Estate** section. Reuse exactly its approved **shared KAORI
-components**, not manual cards: `section_intro.render`, `operational_section_card.render`
-with `body_classes='p-0'`, and `resource_posture_grid.render(columns=4)`.
+components**, not manual cards: `operational_section_card.render` with
+`body_classes='p-0'`, and `resource_posture_grid.render(columns=4)`. The
+single-Tenant detail view no longer duplicates the plain **Governance Scope**
+heading above its **Tenant Governance · 4 Indicators** card. The enclosing
+section remains explicitly accessible with `aria-label`; its card title and
+description own the visible heading and context. The fleet overview still has
+its own major Governance Scope heading.
 The card owns the header icon, title, description, spacing and border, while
 the posture grid owns vertical separators, compact metric icons, responsive
-grid layout, tone treatment and light/dark compatibility.
+grid layout, tone treatment and light/dark compatibility. The shared
+`operational_section_card.render(header_badge=...)` and
+`table_label.metadata_label` show the source-list indicator count in each
+governance header: **5 Indicators** for Tenant Estate and **4 Indicators**
+for one Tenant's Governance Scope. These count displayed committed posture
+dimensions, **not** live provider resources or certificate validity.
+The Tenant Details card keeps the concise Tenant-specific description;
+the redundant plain section heading and previously redundant subtitle are
+removed without changing four committed metrics or lifecycle authority.
 
 A single Tenant is **not the entire fleet**: use four committed values
 already available in Tenant Details — **Active Namespaces, Environments,
@@ -252,6 +361,22 @@ is titled **Tenant Governance** with a concise Tenant-specific description.
 Do not fabricate fleet-wide or live provider results, or duplicate the earlier
 two separate Resource Coverage/Governance Authority cards. Preserve the
 independent **Authority Boundary** info note and the governed Release wizard.
+
+Multi-Cluster Posture on `kubernetes/tenant/tenants.html` is a separate
+workspace from Tenant Overview. Its five-metric `Tenant Estate` card reuses
+the same `header_badge=table_label.metadata_label(tenant_summary_metrics|length)`
+pattern to display **5 Indicators** without claiming five live resources.
+
+**Adoption Preflight modal presentation (#4607):** the existing governed
+mutation-sensitive modal follows the inventory detail modal's context eyebrow,
+icon/title/helper, accessible close button, fixed footer, left-side outcome
+and right-aligned Cancel/submit actions. The form owns a bounded scrollable
+body; the footer stays visible when long live provider evidence is reviewed.
+The blocked Capsule warning uses a concise provider-qualified sentence;
+`Exact provider reason` discloses `row.adoption_management_blocker` without
+truncating committed/live evidence. A blocked candidate still has the original
+disabled submit, fail-closed authority check and no committed adoption. No
+provider quota policy is changed by these UI-only updates.
 
 This supersedes only the four-metric **presentation** in #1077, not its
 source-of-truth, permission, audit or workflow standards. Browser desktop/
@@ -1199,7 +1324,11 @@ original historical Namespace lineage note preserved separately.
 
 **Release Governance** is now a regular always-visible section, using
 the established icon treatment instead of the numeric badge and eliminating
-the outer `details/summary` wrapper. All four numbered URL-addressable
+the outer `details/summary` wrapper. An approved standalone
+`section_intro.render('Release Workflow', ...)` precedes the existing
+permission-scoped wizard card; the intro remains outside the
+`#tenant-release-governance` HTMX swap target so four-step navigation does
+not duplicate headings, change approval state, or replace unrelated sections. All four numbered URL-addressable
 wizard steps and 11 original Release form authorities remain. Other
 provider-specific governance sections retain their permission-scoped,
 keyboard-accessible expandables. Step navigation preserves normal

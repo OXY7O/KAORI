@@ -72,8 +72,8 @@ def test_runtime_zero_states_and_lifecycle_use_canonical_kaori_state_ownership()
     assert 'empty_state_label = "No Results"' in runtime
     assert 'empty_state_title = "No Runtime Targets Match These Filters"' in runtime
     assert 'components/states/_empty_state.html' in runtime
-    assert 'Runtime Evidence Lifecycle' in runtime
-    assert 'provider-neutral evidence' in runtime
+    assert 'Open Data Lifecycle' in runtime
+    assert 'persisted runtime observations independently from connection and validation readiness.' in runtime
     assert 'platform_operations.data_lifecycle.index' in runtime
     assert "domain='runtime_observation'" in runtime
 

@@ -43,6 +43,353 @@ INTEGRATION_VAULT_ALLOWED_ORIGINS=https://vault.internal.example:8200
 INTEGRATION_VAULT_CA_BUNDLE=/etc/ssl/approved/vault-root-ca.pem  # optional if system trusted
 ```
 
+### Authentication method versus mount path
+
+The KAORI Vault provider currently implements **AppRole authentication
+only**. The Add/Edit form's AppRole Mount dropdown is **not** a choice of
+authentication methods: `Default AppRole Mount (approle)` sends the
+`/v1/auth/approle/login` path, while `Custom AppRole Mount`
+reveals the existing single-segment, server-validated mount path
+(for example `team-approle`). Both use the same RoleID and encrypted
+SecretID and preserve the 10-minute Test Connection proof, Full Validation
+and runtime evidence boundaries. On Edit, existing custom mounts remain
+selected and plaintext SecretID is never hydrated.
+
+A future Kubernetes workload-identity, JWT/OIDC or cloud-IAM
+authentication method requires its own reviewed connection schema,
+credential/token acquisition and renewal contract, least-privilege
+policy, isolation/security gates and staging UAT. Do not select an
+unsupported method or interpret a renamed AppRole mount as an auth-method
+change.
+
+### Vault registration identity flush and transaction recovery
+
+The first Vault connection registration creates an `IntegrationInstance`
+before the `VaultInstance` child. PostgreSQL requires the canonical
+`integration_instances.name` to be **non-null at the initial INSERT**.
+The service populates `name`, provider/adapter keys, environment and
+enabled state before flushing for the canonical ID; only then does it
+write the generated `asset_key` into `metadata_json`.
+
+Any SQLAlchemy failure during that initial flush must be followed by
+`db.session.rollback()` before the route attempts Activity Audit or another
+request-scoped database operation. The existing commit error path also
+rolls back. A `NotNullViolation` followed by `PendingRollbackError` in
+the **Vault Register** route is an application transaction/lifecycle
+defect, **not** evidence that Alembic migrations are pending. Check
+`flask db current` versus `flask db heads` separately and do not
+disable constraints, stamp Alembic, or clear DevContainer PostgreSQL
+volumes as a workaround.
+
+### Full Validation and committed capability evidence
+
+Vault connection Detail uses the canonical KAORI provider-validation
+lifecycle: **Run Full Validation** submits the approved operation to
+the shared `integration-validation` worker; the HTMX workspace shows
+the active JobExecution state and polls an instance-bound task route.
+Once terminal, it refreshes committed readiness, the tab badge and
+the provider posture, and emits only user-authorized feedback.
+Standard non-JavaScript form submission redirects back to Validation.
+
+The API contract has **three required** observations: health,
+AppRole login, and authenticated token `lookup-self`. The fourth
+observation, `GET /v1/sys/mounts`, is **optional** mount discovery.
+When AppRole cannot read optional `sys/mounts`, this is represented
+as limited optional coverage, not missing core API evidence or a
+permission to read Secret payloads.
+
+A historical Vault release can have complete required API evidence
+while compatibility remains `degraded`. Show required core coverage
+accurately (e.g., `3 / 3`) alongside separate compatibility attention.
+Vault remains authoritative for runtime status, policies, tokens,
+Secret contents and PKI; provider Full Validation does not prove
+separately committed KV v2 / public PKI / stored certificate inventory
+or grant scoped Secret access. Runtime Refresh is independent.
+
+### Minimum permission example and capability explorer (#4849)
+
+The Configuration tab adds a read-only, provider-owned example next to the
+canonical Connection Contract. **Minimum Full Validation** requires an
+approved AppRole and a token able to read `auth/token/lookup-self`; the Vault
+health and AppRole-login probes do not require broad token policy grants.
+Separate optional examples illustrate:
+
+- `read` on `sys/mounts` for optional engine discovery (a denial remains
+  Limited, not a core Full Validation block).
+- `list` on the root of a specifically approved KV v2 `metadata` mount
+  and `read`/`list` below that metadata path. Replace the example mount
+  placeholder with the reviewed real mount and narrow prefixes as needed.
+
+Never grant KV `data/*`, Vault policy writes, token administration, or PKI
+issuance through the baseline. A Vault administrator must approve and attach
+the policies; viewing/copying the examples does not perform Vault mutations.
+Policy source of truth is Vault; KAORI retains only authorized connection,
+committed validation and independent inventory evidence. Verify requested
+paths against actual Vault edition, namespace, mount path and AppRole settings.
+
+The Validation tab's four factual API contracts are a server-filtered
+Capability Registry with Search Capability, Requirement, Validation Status,
+five-row default and a native View More evidence dialog. The dedicated
+`GET /instances/<id>/capabilities` read-only fragment uses the same
+`integrations.manage` authorization as Vault detail and only persisted
+instance evidence; no new provider request or Secret records are returned.
+A historical degraded Vault release can still show 3/3 required APIs,
+while a denied optional `sys/mounts` check remains Limited. Empty filter
+results do not indicate missing provider capabilities.
+
+### Inventory & Lifecycle workspace parity (#4884)
+
+The connection-detail fourth tab follows the approved MinIO/Kubernetes
+full-width **Inventory & Lifecycle Decision** hierarchy, followed by
+**KAORI Operational Consumers**, a compact **Committed Evidence Sources**
+registry and an explicit **Evidence Ownership** boundary. Provider
+ownership differs from MinIO: the only available source evidence is
+(1) KV v2 metadata collection, (2) public PKI issuer collection and
+(3) separately opted-in PKI stored certificate collection. These
+streams remain independently qualified and are not asset-scoped
+Metrics Source/Alertmanager bindings.
+
+The tab badge, header and summary reflect the number of streams with
+a committed timestamp, or `Not Collected`. Four decision facts summarize
+independent source freshness, coverage across three streams (not an
+operational readiness score), approved KV/PKI mount counts, and the
+**actual guarded deletion posture**. The evidence-source table uses
+existing Violet table/status primitives, a native View More dialog for
+scope counts and timestamps, and a `jobs.view`-gated link to existing
+JobExecution evidence where authorized. `None` observed records mean
+`Not Collected`; do not claim confirmed zero, trust or collection
+completion from provider registration alone.
+
+### Vault guarded Delete Connection (#4900)
+
+The Inventory & Lifecycle footer follows the MinIO **Delete Connection**
+placement, shared confirmation dialog and critical styling. A guarded,
+`integrations.manage`-protected, CSRF POST removes **only** the KAORI
+Vault connection registration and its encrypted AppRole credential, not
+the upstream Vault service, Secrets, certificates, policies or leases.
+The service takes the existing admission lock, rechecks active jobs and
+blocks deletion while any canonical binding, Secret representation,
+KV v2 collection state, PKI issuer/collection state or stored PKI
+certificate/collection state references the identity. It never
+cascades committed provider evidence. The button is disabled and
+Lifecycle Gate is Blocked when dependencies exist; unreferenced
+connections may be deleted after confirmation. Runtime observations,
+completed JobExecution and Activity Audit remain retained. SQL
+integrity/availability failures are rolled back and surfaced as safe
+operational feedback; successful removals are audited and redirect to
+the Vault registry. **No Vault provider API call** occurs on deletion.
+
+There is still no Vault asset-owner Observability binding registry or
+MinIO-style managed asset to delete. Existing independent collection
+jobs and consumer governance remain unchanged. Evidence Ownership
+uses the concise one-line desktop copy, `KAORI commits scoped metadata;
+Vault owns Secrets and PKI; observability stays separate.`, with natural
+mobile wrapping.
+
+### Runtime Refresh HTMX lifecycle (#4889)
+
+The Runtime & History header uses the same canonical `Refresh Runtime`
+idle and `Refresh Running` active labels as Kubernetes and MinIO.
+The standard HTMX POST replaces only `#vault-runtime-content`, with
+the shared loading bar, disabled submit, provider job status and
+validation poller. It does not reload the full provider detail page.
+After a terminal worker result, the status endpoint refreshes the
+committed Runtime Decision, Runtime Evidence, Recent Runtime
+Observations, and runtime tab badge together. Toast/deck notifications
+use the existing operational-feedback components. Browsers without
+HTMX retain the scoped POST redirect fallback.
+
+`GET /instances/<id>/runtime/status/<task_id>` validates the requested
+task against `secrets_pki`, the selected canonical integration instance
+and the `runtime_refresh` operation; incorrect tasks return 404.
+The shared no-cache poll response stops polling after the task reaches a
+terminal status and broadcasts standard navigation notification changes.
+Conflicting Full Validation jobs are shown as deferred rather than a
+fake runtime spinner. No live Vault query, credential exposure, mutation,
+new API read, scheduler or custom JS is added by the fragment.
+
+### Runtime tab status and concise operator action (#4879)
+
+The Runtime & History tab badge reflects the latest **committed runtime
+health** (Healthy, Degraded, Unhealthy, or Not Observed) using the
+same `runtime_state.health_status_label` as Kubernetes; it no longer
+says `Jobs & Evidence`. It is not a validation-readiness or job-progress
+indicator. The Runtime Decision's Next Operational Action has short
+state-specific instructions for desktop readability, with natural mobile
+wrapping, and distinguishes a runtime health issue from release/API
+validation readiness. No new runtime observation, live provider request,
+credential permission, or status transition is introduced.
+
+### Runtime & History workspace parity (#4872)
+
+Vault's Runtime & History follows the approved Kubernetes-style
+horizontal Runtime Decision, full-width Runtime Evidence and shared
+Recent Runtime Observations registry. Current decision facts, provider
+contract/version/capability context and lightweight diagnostic rows
+are projected from the most recent committed Vault runtime observation.
+A missing observation is Not Observed; validation or registration
+does not imply current health. `provider_job_status` replaces raw
+runtime task identifiers, and the existing POST Refresh Runtime operation
+keeps the same worker/CSRF boundary.
+
+The shared registry uses
+`integrations/partials/_runtime_history.html` and the provider-neutral
+`runtime_history_view` projector. The read-only, authorized
+`GET /instances/<id>/runtime/history` fragment is explicitly
+Vault-connection-scoped; Search/filters are not live Vault requests.
+Observation Type, Runtime Health and Validation Readiness filters,
+5/10/25/50 Rows, the posture strip and native View More modal are
+provided by the same shared partial as Kubernetes, including its
+evidence and diagnostic drill-down. Historic observation records
+remain immutable and independent of current Full Validation and
+KV v2/PKI collection. Older `history_page`/`history_per_page`
+GET parameters retain fallback support while canonical links use
+`page`/`per_page`.
+
+### View More evidence details and safe CLI guidance (#4860)
+
+The existing Vault Capability Registry has a Kubernetes-parity native
+**View More** modal: Capability Decision, Contract Snapshot, three-part
+Validation Evidence, Operational Decision (Impact and Recommended
+Action), Governance Boundary, and Verification Command. The three
+evidence panels explain the selected API contract, effective identity
+boundary and committed result; they are not three independently
+stored Vault check outcomes. Status is derived exclusively from
+the current, qualifying Full Validation data. Degraded release
+compatibility can coexist with three Ready required capabilities;
+optional `sys/mounts` 403/404 is Limited; absence of current
+evidence is Not Observed. No Secret inventory or runtime success
+is inferred from these facts.
+
+Human Visual UAT copy-density rule (#4864): all four Vault capability
+View More dialogs share a one-line desktop summary for Capability Decision,
+Verification Command guidance and Identity Boundary. Their three Validation
+Evidence descriptions are concise, at most two lines at desktop width, and
+wrap naturally on mobile. Committed Observation has its own short,
+status-specific explanation rather than reusing the summary; this avoids
+overlong evidence cards while preserving Ready, optional Limited,
+Required Gap and Not Observed semantics. UI text limits do not reduce
+provider evidence, add Vault permissions or hide a credential.
+
+Operator-side CLI examples for `vault status`, `vault token lookup`
+and optional `vault read sys/mounts` require an independently approved
+Vault CLI context and suppress response output. They cannot
+reproduce the managed AppRole identity or replace KAORI worker
+evidence. **No copyable AppRole login script** is rendered: RoleID,
+SecretID and ephemeral tokens must stay in the governed connection
+and worker. The modal never executes a Vault request or grants
+additional permissions.
+
+### Connection feedback and optional inventory scope
+
+Vault Add/Edit uses the existing KAORI top-right Operational Toast and
+Activity Audit for **Test Connection**, rejected input/proof, failed
+registration/update, and successful Register/Update. Read-only
+Test Connection creates audit-only feedback (no Notification Deck spam);
+successful Register/Update uses the persisted event and redirects to
+Vault detail. The former full-width form success banner is retired.
+Feedback never embeds SecretID, Vault tokens, raw provider error payloads
+or database exception messages. The 10-minute, exact-field/user-bound
+Test Connection proof is still required for Register and Save.
+Full Validation and Runtime Refresh remain separate asynchronous
+admission/committed-evidence workflows with their own Activity Center
+lifecycle; queue success is not proof of completion.
+
+Three independent optional collection controls on the connection form:
+
+- **Approved KV v2 Mounts empty:** no approved KV v2 metadata inventory
+  target; the inventory job skips the connection, and committed
+  inventory readiness indicates `not_configured`. Vault Secret values
+  are never read through this collector.
+- **Approved PKI Mounts empty:** no approved public issuer inventory
+  target, even when core AppRole readiness succeeds. Empty does not
+  mean Vault has no issuers; it means KAORI has no collection scope.
+- **Collect Stored PKI Certificates OFF:** authenticated certificate
+  serial listing and safe public certificate metadata collection are
+  not admitted. This is **separate** from Approved PKI Mounts; turning
+  the checkbox OFF suppresses active coverage but preserves earlier
+  committed historical evidence. Opt-in requires an approved PKI mount
+  and additional read-only LIST/read capability.
+
+All three may remain empty/OFF for initial registration and
+Full Validation. Configuring scope later requires a fresh connection
+test/proof and Full Validation; the source-specific inventory/PKI
+Jobs & Executions remain separate. No source setting alters the native
+Vault Secret engine or issues/revokes certificates.
+
+### Governed production provider trust
+
+Production does **not** use the DevContainer's ignored `secrets/trust/`
+mount. Under the current `deploy/server/compose.server.yml` authority,
+approved Vault CA material is installed separately on the host at
+`/etc/kaori/trust/vault/ca.pem` and mounted read-only into the
+`web`, `validation-worker` and `runtime-worker` processes as
+`/run/kaori/trust/vault/ca.pem`. The approved production Vault HTTPS
+origin and `INTEGRATION_VAULT_CA_BUNDLE` stay in
+`/etc/kaori/app.env`; credential material remains in the encrypted
+integration connection contract. See
+[Production DNS and provider trust runbook](../../../../../../docs/operations/production-provider-dns-trust.md)
+for host/readiness, admission and rollback conditions. Never reuse
+`host.docker.internal` or an unapproved CA in production.
+
+### Persistent Vault CA in DevContainer (Docker Desktop Kubernetes)
+
+The root `secrets/` directory is already ignored by `.gitignore` and
+`.dockerignore` and shared as `/workspace/kaori/secrets/` through the
+existing DevContainer worktree bind mount. Keep the approved **public CA** on
+the **host checkout** so container recreate/rebuild does not remove it.
+No extra Compose volume or CA baked into a Docker image is needed.
+
+For the reviewed local Docker Desktop Vault (namespace `vault`, TLS secret
+`vault-tls` containing `ca.crt`, HTTPS origin
+`https://host.docker.internal:29820`), from WSL at the **actual repository
+checkout root**:
+
+```bash
+mkdir -p secrets/trust/vault
+kubectl --context docker-desktop -n vault get secret vault-tls \
+  -o jsonpath='{.data.ca\.crt}' | base64 -d > secrets/trust/vault/ca.pem
+chmod 0644 secrets/trust/vault/ca.pem
+git check-ignore -v secrets/trust/vault/ca.pem
+openssl x509 -in secrets/trust/vault/ca.pem -noout -subject -issuer -dates
+```
+
+The current lab CA is `CN=kaori-vault-ca` with notAfter
+`2027-01-08 15:30:02 UTC`; schedule renewal and CA distribution before
+expiry. Never extract `tls.key`, include the private key in the repository,
+or reuse this CA for LDAP unless the LDAP certificate shares the issuer.
+
+Set in the **ignored local** `.env` (not in the tracked example defaults):
+
+```dotenv
+INTEGRATION_VAULT_ALLOWED_ORIGINS=https://host.docker.internal:29820
+INTEGRATION_VAULT_CA_BUNDLE=/workspace/kaori/secrets/trust/vault/ca.pem
+```
+
+Both the Flask web process (Test Connection) and `validation-worker` /
+`runtime-worker` must load the same environment and be able to read this
+path and resolve/reach the approved endpoint. In the DevContainer:
+
+```bash
+test -r /workspace/kaori/secrets/trust/vault/ca.pem
+openssl x509 -in /workspace/kaori/secrets/trust/vault/ca.pem -noout -dates
+```
+
+Verify HTTPS from the actual container network with its approved CA bundle
+(e.g., `curl --cacert /workspace/kaori/secrets/trust/vault/ca.pem
+https://host.docker.internal:29820/v1/sys/health` if curl is installed).
+WSL success alone does not prove that web/workers have the same DNS or egress.
+Changes to `.env` require a Flask F5 process restart or a controlled Compose
+service recreate (web and validation/runtime workers) to reload environment;
+the bind-mounted CA itself persists. Never remove PostgreSQL/Redis volumes.
+
+`vault status` from WSL confirms the operator's local Vault server is
+initialized and unsealed but does **not** prove KAORI AppRole identity or
+worker Full Validation. The reviewed Vault `2.0.4` falls in KAORI's
+`>=1.9,<2.1` **extended** qualification band, not the `v2.1.x`
+current-qualified band. Provider readiness evidence remains committed by
+Full Validation, independently of HTTPS reachability.
+
 Do not commit real values or CA private material. The origins list contains exact HTTPS
 origins and is fail-closed when missing. HTTPS verification is always enabled, proxy/netrc
 inheritance and redirects are disabled, and a short request timeout is enforced.
@@ -57,7 +404,9 @@ Vault client tokens live in worker process memory for the probe and are not pers
 in IntegrationInstance, JobExecution, runtime snapshots, or logs.
 
 Test Connection checks Vault health, AppRole login and lookup-self. It does not
-mark the provider ready. Full Validation uses the versioned KAORI compatibility policy snapshot (2026-09-19): v2.1.x is current-qualified; v2.2+ requires a separately approved refreshed profile and is explicitly degraded/unverified rather than silently reported as ready.\n\nFull Validation is queued through the existing
+mark the provider ready. Full Validation uses the versioned KAORI compatibility policy snapshot (2026-09-19): v2.1.x is current-qualified; v2.2+ requires a separately approved refreshed profile and is explicitly degraded/unverified rather than silently reported as ready.
+
+Full Validation is queued through the existing
 integration-validation worker; it checks the token and optional sys/mounts
 metadata capability. A missing sys/mounts permission is an independently
 qualified capability gap, not proof that Vault API is unavailable. Runtime Refresh

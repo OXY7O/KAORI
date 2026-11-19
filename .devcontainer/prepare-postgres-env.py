@@ -28,6 +28,7 @@ SECRET_DIR = ROOT / 'secrets' / 'devcontainer'
 ADMIN_ENV = SECRET_DIR / 'postgres-bootstrap.env'
 MIGRATOR_ENV = SECRET_DIR / 'postgres-migrate.env'
 BACKUP_ENV = SECRET_DIR / 'application-env-before-three-role.bak'
+HOST_OVERRIDES = SECRET_DIR / 'compose.host-overrides.yml'
 RUNTIME_ROLE = 'kaori_runtime'
 PLACEHOLDER = 'postgresql://kaori_runtime:generated-by-devcontainer-initialize-command@db:5432/kaori'
 
@@ -82,6 +83,21 @@ def create_private(path: Path, value: str) -> None:
         pass
 
 
+def secure_existing_app_env() -> None:
+    """Restrict a legacy local .env before reading or persisting credentials.
+
+    On native Windows bind mounts, the host NTFS ACL remains authoritative;
+    an ineffective chmod must fail closed rather than claim secure storage.
+    """
+    if not APP_ENV.exists():
+        return
+    try:
+        APP_ENV.chmod(0o600)
+        if APP_ENV.stat().st_mode & 0o077:
+            abort('cannot secure existing local app configuration; verify host file permissions and ACLs')
+    except OSError:
+        abort('cannot secure existing local app configuration; verify host file permissions and ACLs')
+
 def check_pgdata() -> bool:
     if not PG_DATA.is_dir():
         abort('PostgreSQL Docker data volume is not mounted for safe first-run inspection')
@@ -113,6 +129,7 @@ def main() -> None:
     if not (ROOT / '.env.example').is_file():
         abort('repository workspace is not mounted at /workspace')
     check_regular_file(APP_ENV)
+    secure_existing_app_env()
     # The ignored secrets directory itself must not redirect through a
     # symlink. This is a trusted development workspace, but avoid accidental
     # writes into an unrelated checkout or host path.
@@ -124,6 +141,7 @@ def main() -> None:
     check_regular_file(ADMIN_ENV)
     check_regular_file(MIGRATOR_ENV)
     check_regular_file(BACKUP_ENV)
+    check_regular_file(HOST_OVERRIDES)
 
     data_exists = check_pgdata()
     source = (
@@ -214,6 +232,12 @@ def main() -> None:
         create_private(APP_ENV, source)
     elif APP_ENV.read_text(encoding='utf-8') != source:
         APP_ENV.write_text(source, encoding='utf-8')
+    # VS Code Compose includes this local opt-in overlay after the canonical
+    # Compose files. Never overwrite an operator-owned hostname mapping.
+    # An empty default preserves Docker DNS behavior for every provider.
+    if not HOST_OVERRIDES.exists():
+        SECRET_DIR.mkdir(parents=True, exist_ok=True)
+        create_private(HOST_OVERRIDES, 'services: {}\n')
     print('KAORI DevContainer: private local database ENV ready; runtime remains kaori_runtime')
     print('KAORI DevContainer: virgin schema bootstrap delegated to guarded db-first-run')
 

@@ -114,7 +114,10 @@ def test_tenant_pages_reuse_kaori_shared_presentation_patterns() -> None:
         'operations.html',
     ):
         template = (ROOT / 'app/templates/kubernetes/tenant' / path).read_text(encoding='utf-8')
-        assert 'workspace_tabs.html' not in template
+        if path == 'operations.html':
+            assert 'components/workspace_tabs.html' in template
+        else:
+            assert 'components/workspace_tabs.html' not in template
 
 
 def test_sidebar_authority_documents_tenant_capability_v21() -> None:

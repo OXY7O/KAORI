@@ -90,16 +90,32 @@ def test_execution_tabs_use_titles_without_duplicate_count_badges() -> None:
     assert 'job_stats.active),' not in workspace.split('{% set execution_tabs = [', 1)[1].split('] %}', 1)[0]
 
 
-def test_execution_sections_reuse_canonical_guide_and_registry_icon() -> None:
-    for name, guide in (
-        ('_active_jobs.html', 'jobs-active-work-guide'),
-        ('_registry.html', 'jobs-execution-registry-guide'),
-        ('_queue_activity.html', 'jobs-queue-activity-guide'),
-    ):
+def test_execution_overview_owns_one_shared_guide_for_all_three_tabs() -> None:
+    workspace = _read('_workspace.html')
+    status_oob = _read('partials/_status_oob.html')
+
+    assert '{% import "components/info_tip.html" as info_tip %}' in workspace
+    assert workspace.count("info_tip.render('jobs-execution-overview-guide'") == 1
+    assert workspace.count("variant='guide'") == 1
+    assert "'Execution Overview'" in workspace
+    assert 'queued, running or retrying execution records' in workspace
+    assert 'committed execution ownership, progress and terminal outcomes' in workspace
+    assert 'demand-loaded Celery worker readiness' in workspace
+    assert 'worker readiness does not guarantee domain execution' in workspace
+
+    # The posture is independently swapped by HTMX. Guide must be its sibling,
+    # so auto-refresh cannot destroy the popover trigger.
+    posture_end = workspace.index('</span>', workspace.index('id="execution-overview-posture"'))
+    guide_start = workspace.index("info_tip.render('jobs-execution-overview-guide'")
+    assert posture_end < guide_start < workspace.index('</div>', guide_start)
+    assert 'id="execution-overview-posture" hx-swap-oob="outerHTML"' in status_oob
+
+    for name in ('_active_jobs.html', '_registry.html', '_queue_activity.html'):
         source = _read('partials/' + name)
-        assert '{% import "components/info_tip.html" as info_tip %}' in source
-        assert guide in source
-        assert "variant='guide'" in source
+        assert 'components/info_tip.html' not in source
+        assert 'info_tip.render(' not in source
+        assert "variant='guide'" not in source
+
     registry = _read('partials/_registry.html')
     assert 'data-lucide="list-checks" class="h-5 w-5"' in registry
     assert 'aria-hidden="true"' in registry

@@ -46,6 +46,8 @@ def test_registry_analytics_has_eight_authorized_page_level_views() -> None:
     navigation = (ROOT / 'app/common/workspace_navigation.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    overview_panel = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_panel.html').read_text()
+    overview_tabs = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_workspace.html').read_text()
 
     views = catalog.split("'artifact_registry_analytics': (", 1)[1].split("    'artifact_registry_security': (", 1)[0]
     expected = (
@@ -67,7 +69,7 @@ def test_registry_analytics_has_eight_authorized_page_level_views() -> None:
             assert f"'artifact_registry.analytics_{key}': '{key}'" in navigation
             assert f'def analytics_{key}() -> ResponseReturnValue:' in routes
             assert f"return _render_registry_analytics_page('{key}')" in routes
-            assert f"'artifact_registry.analytics_{key}'" in shell
+            assert f"('{key}'," in overview_tabs
 
     assert "if endpoint.startswith('artifact_registry.analytics'):" in navigation
     assert "return 'artifact_registry_analytics'" in navigation
@@ -76,6 +78,7 @@ def test_registry_analytics_has_eight_authorized_page_level_views() -> None:
     assert 'def analytics() -> ResponseReturnValue:' in routes
     assert "return _render_registry_analytics_page('overview')" in routes
     assert 'framed_workspace_tabs.render_navigation' not in shell
+    assert "url_for('artifact_registry.analytics_' ~ overview_domain" in overview_panel
     assert 'components/framed_workspace_tabs.html' not in shell
     assert "analytics.active_tab == 'overview'" in shell
     assert "section='summary'" in shell
@@ -83,7 +86,17 @@ def test_registry_analytics_has_eight_authorized_page_level_views() -> None:
     assert 'hx-trigger="load"' in shell
     assert 'artifact-registry-analytics-active-section' in shell
     assert 'artifact-registry-analytics-summary' in shell
-    assert "url_for('intelligence.recommendations', domain='registry')" in shell
+    assert "url_for('integrations.registry')" in shell
+    assert "@artifact_registry_bp.get('/analytics/capacity/table')" in routes
+    assert 'def analytics_capacity_table() -> ResponseReturnValue:' in routes
+    assert "return redirect(url_for('artifact_registry.analytics_capacity', **query_args))" in routes
+    assert "'Open Registry Integrations'," in shell
+    assert "action_icon='plug-zap'" in shell
+    assert "'Open Intelligence'," not in shell
+    section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
+    insights = (ROOT / 'app/templates/artifact_registry/partials/_analytics_insights_detail.html').read_text()
+    assert 'artifact_registry/partials/_analytics_insights_detail.html' in section
+    assert "url_for('intelligence.recommendations', domain='registry')" in insights
 
 
 def test_registry_analytics_legacy_links_redirect_and_preserve_alert_filters() -> None:
@@ -114,13 +127,57 @@ def test_registry_analytics_legacy_links_redirect_and_preserve_alert_filters() -
     assert '[5, 10, 25, 50]' in sections
 
 
+def test_registry_analytics_detail_pages_reuse_external_section_intro() -> None:
+    """All seven detail routes share the Overview's plain section-intro archetype."""
+    from jinja2 import Environment
+
+    shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    intro = (ROOT / 'app/templates/components/section_intro.html').read_text()
+    Environment().parse(shell)
+    Environment().parse(intro)
+
+    assert '{% import "components/section_intro.html" as section_intro %}' in shell
+    assert "section_intro.render('Explore Analytics'," in shell
+    assert 'section_intro.render(detail_intro[0],' in shell
+    assert "'artifact-registry-analytics-detail-heading')" in shell
+    assert 'aria-labelledby="artifact-registry-analytics-detail-heading"' in shell
+
+    expected = {
+        'growth': 'Registry Growth Analysis',
+        'capacity': 'Registry Capacity Analysis',
+        'usage': 'Registry Usage Analysis',
+        'risk': 'Registry Risk Analysis',
+        'governance': 'Registry Governance Analysis',
+        'alerts': 'Registry Alerts & Anomalies',
+        'insights': 'Registry Insights & Intelligence',
+    }
+    for domain, heading in expected.items():
+        assert f"'{domain}': ('{heading}'," in shell
+    detail_block = shell.split('{% set detail_section_intros = {', 1)[1]
+    detail_block = detail_block.split('} %}', 1)[0]
+    assert detail_block.count("': (") == len(expected)
+    assert "'overview':" not in detail_block
+    assert "'evidence':" not in detail_block
+
+    # The shared intro stays outside the existing owning workspace shell,
+    # leaving lazy HTMX fragments, nested detail headers, and routes intact.
+    assert shell.index('section_intro.render(detail_intro[0]') < shell.index(
+        'id="artifact-registry-analytics-workspace"'
+    )
+    assert 'id="artifact-registry-analytics-active-section"' in shell
+    assert "hx-get=\"{{ url_for('artifact_registry.analytics_section'" in shell
+    assert 'class="space-y-3"' in shell
+
+
 def test_analytics_overview_uses_shared_intro_and_level_three_navigation() -> None:
     from jinja2 import Environment
 
     summary = (ROOT / 'app/templates/artifact_registry/partials/_analytics_summary.html').read_text()
     workspace = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    tabs = (ROOT / 'app/templates/artifact_registry/partials/_analytics_overview_workspace.html').read_text()
     Environment().parse(summary)
     Environment().parse(workspace)
+    Environment().parse(tabs)
 
     assert '{% import "components/section_intro.html" as section_intro %}' in summary
     assert "section_intro.render('Registry Analytical Posture'," in summary
@@ -143,4 +200,5 @@ def test_analytics_overview_uses_shared_intro_and_level_three_navigation() -> No
     assert "section='summary'" in workspace
     assert "section_intro.render('Explore Analytics'," in workspace
     assert 'hx-trigger="load"' in workspace
-    assert "'artifact_registry.analytics_insights'" in workspace
+    assert 'artifact_registry/partials/_analytics_overview_workspace.html' in workspace
+    assert "('insights', 'Insights', 'sparkles')" in tabs
