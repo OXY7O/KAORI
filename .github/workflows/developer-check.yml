@@ -463,7 +463,9 @@ jobs:
           # Some Kubernetes contract tests assert compiled Violet stylesheet
           # semantics. The CSS is intentionally not tracked (see #4355), so a
           # backend-only route must still build it before focused pytest.
-          if [[ "$CHECK_FRONTEND" == "true" || " $TEST_PATHS " == *" tests/contracts/kubernetes "* ]]; then
+          # Tenant route planning can select individual contract modules, not
+          # only the full Kubernetes contract directory.
+          if [[ "$CHECK_FRONTEND" == "true" || " $TEST_PATHS " == *" tests/contracts/kubernetes "* || " $TEST_PATHS " == *" tests/contracts/kubernetes/"* ]]; then
             run_toolchain 'Frontend Dependencies' bash -lc 'npm ci --no-audit --no-fund'
             run_toolchain 'Frontend Test Assets' bash -lc 'npm run build-css'
           fi
