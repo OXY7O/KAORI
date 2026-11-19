@@ -30,6 +30,8 @@ Routes call subdomain services. Renderers do not read HTTP request state and do 
 
 Long-running generation belongs in Celery. Storage and cleanup must reuse the cross-domain retention/archive foundation rather than implement report-only retention logic.
 
+Generated Reports archive/export return navigation accepts only the existing `safe_next_url`-validated same-origin target with the **exact** `/reports/generated` path (optionally followed by the current filter query). Other paths, deceptive prefixes, and external origins fall back to the server-generated `reports.generated_reports` route. This is a return-navigation contract, not an outbound/provider URL allowlist.
+
 ## KAORI Violet presentation standard
 
 All report workspaces use the KAORI Violet Infrastructure design system: solid violet hero surfaces, tokenized card/background/border/text colors, compact rectangular status and metadata labels, violet focus/action states, and semantic colors only for operational state. This applies to Overview, Generate, Generated Reports and detail, Templates, Schedules, and Storage.
