@@ -143,8 +143,8 @@ def test_generated_detail_preserves_filtered_registry_return_context() -> None:
 
     assert 'def _generated_registry_return_url(value: object) -> str:' in routes
     assert 'candidate = safe_next_url(value)' in routes
-    assert "candidate == '/reports/generated'" in routes
-    assert "candidate.startswith('/reports/generated?')" in routes
+    assert "candidate.partition('?')[0] == '/reports/generated'" in routes
+    assert "candidate.startswith('/reports/generated?')" not in routes
     assert "payload['registry_return_url'] = registry_return_url" in routes
 
     assert "registry_return_url = request.full_path.rstrip('?')" in page
