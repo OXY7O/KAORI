@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
 from flask import Flask
 
+from app.access.authentication.session import safe_next_url
 from app.platform_operations.notifications import routes
 
 
@@ -70,3 +72,23 @@ def test_missing_rows_query_still_defaults_to_five(monkeypatch: pytest.MonkeyPat
 
     assert captured['per_page'] == 5
     assert captured['include_all_jobs'] is False
+
+
+@pytest.mark.parametrize(
+    ('target', 'expected'),
+    [
+        ('/notifications/?view=inbox', '/notifications/?view=inbox'),
+        ('https://external.example.invalid', None),
+        ('//external.example.invalid', None),
+        ('/\\\\external.example.invalid', None),
+        ('/notifications/\\r\\nLocation: https://external.example.invalid', None),
+    ],
+)
+def test_notification_action_returns_only_canonical_relative_targets(target: str, expected: str | None) -> None:
+    assert safe_next_url(target) == expected
+
+
+def test_notification_action_delegates_to_existing_safe_next_url() -> None:
+    source = (Path(__file__).resolve().parents[2] / 'app/platform_operations/notifications/routes.py').read_text()
+    assert "safe_next_url(request.form.get('next') or request.referrer)" in source
+    assert "next_url.startswith('//')" not in source

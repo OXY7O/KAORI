@@ -12,6 +12,7 @@ from flask import (
 from flask.typing import ResponseReturnValue
 from flask_login import current_user, login_required
 
+from app.access.authentication.session import safe_next_url
 from app.platform_operations.notifications.constants import ACTIVITY_CENTER_PAGE_LIMIT
 from app.platform_operations.notifications.service import (
     get_navigation_notification_context,
@@ -153,9 +154,7 @@ def _render_mutation_response() -> ResponseReturnValue:
             return _render_inbox_panel()
         return _render_notifications_panel()
 
-    next_url = (request.form.get('next') or request.referrer or '').strip()
-    if not next_url.startswith('/') or next_url.startswith('//'):
-        next_url = url_for('notifications.center')
+    next_url = safe_next_url(request.form.get('next') or request.referrer) or url_for('notifications.center')
     return redirect(next_url)
 
 

@@ -166,11 +166,28 @@ def _cached_status(
 def _storage_provider_label(backend: str, endpoint_url: str | None) -> str:
     if backend == 'local':
         return 'Local filesystem'
-    endpoint = str(endpoint_url or '').strip().lower()
-    hostname = (urlparse(endpoint).hostname or '').lower() if endpoint else ''
-    if 'minio' in endpoint or hostname.startswith('minio') or ':9000' in endpoint or ':9001' in endpoint:
+    endpoint = str(endpoint_url or '').strip()
+    if not endpoint:
+        return 'Amazon S3'
+    # A provider label describes the configured endpoint authority, not
+    # arbitrary URL path/query/userinfo substrings supplied by a provider.
+    try:
+        parsed = urlparse(endpoint)
+        hostname = (parsed.hostname or '').lower().rstrip('.')
+        port = parsed.port
+    except ValueError:
+        return 'S3-compatible'
+    if parsed.scheme not in {'http', 'https'} or not hostname:
+        return 'S3-compatible'
+    host_label = hostname.partition('.')[0]
+    if host_label == 'minio' or host_label.startswith('minio-') or port in {9000, 9001}:
         return 'MinIO'
-    if not endpoint or 'amazonaws.com' in endpoint:
+    if hostname in {'amazonaws.com', 'amazonaws.com.cn'} or hostname.endswith(
+        (
+            '.amazonaws.com',
+            '.amazonaws.com.cn',
+        )
+    ):
         return 'Amazon S3'
     return 'S3-compatible'
 

@@ -111,7 +111,7 @@ def test_cve_navigation_targets_buildable_vulnerability_registry(monkeypatch: An
     app.add_url_rule(
         '/artifact-registry/security/cve/<string:cve_id>/impact',
         endpoint='artifact_registry.security_cve_impact',
-        view_func=lambda cve_id: cve_id,
+        view_func=lambda cve_id: 'ok',
     )
     assert not any(entry.endpoint == 'artifact_registry.security_cve_impact' for entry in service.NAVIGATION_ENTRIES)
     vulnerability_entry = next(
@@ -145,7 +145,7 @@ def test_unbuildable_legacy_destination_is_logged_and_excluded(monkeypatch: Any,
     app.add_url_rule(
         '/artifact-registry/security/cve/<string:cve_id>/impact',
         endpoint='artifact_registry.security_cve_impact',
-        view_func=lambda cve_id: cve_id,
+        view_func=lambda cve_id: 'ok',
     )
     monkeypatch.setattr(
         service,
