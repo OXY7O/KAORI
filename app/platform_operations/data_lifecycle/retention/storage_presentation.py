@@ -171,8 +171,8 @@ def _storage_provider_label(backend: str, endpoint_url: str | None) -> str:
         return 'Amazon S3'
     # A provider label describes the configured endpoint authority, not
     # arbitrary URL path/query/userinfo substrings supplied by a provider.
-    parsed = urlparse(endpoint)
     try:
+        parsed = urlparse(endpoint)
         hostname = (parsed.hostname or '').lower().rstrip('.')
         port = parsed.port
     except ValueError:
