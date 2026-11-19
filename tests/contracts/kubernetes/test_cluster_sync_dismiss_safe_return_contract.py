@@ -31,7 +31,7 @@ def redirect_app() -> Flask:
         ('https://outside.example.invalid/redirect', '/integrations/kubernetes'),
         ('//outside.example.invalid/redirect', '/integrations/kubernetes'),
         ('/\\outside.example.invalid', '/integrations/kubernetes'),
-        ('/integrations/kubernetes\r\nLocation: https://outside.example.invalid', '/integrations/kubernetes'),
+        ('/integrations/kubernetes\tLocation: https://outside.example.invalid', '/integrations/kubernetes'),
         ('', '/integrations/kubernetes'),
     ],
 )
