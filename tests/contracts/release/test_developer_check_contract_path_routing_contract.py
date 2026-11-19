@@ -97,6 +97,7 @@ def test_kubernetes_focused_contracts_prepare_generated_css_before_pytest() -> N
     )
     assert 'if [[ "$CHECK_FRONTEND" == "true" ]]; then' in workflow
 
+
 @pytest.mark.parametrize(
     ('frontend', 'test_paths', 'should_build'),
     [
