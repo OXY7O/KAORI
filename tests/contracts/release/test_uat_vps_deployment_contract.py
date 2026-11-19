@@ -171,7 +171,6 @@ def test_server_provider_ca_trust_is_scoped_read_only_and_host_managed() -> None
     assert 'rollback' in runbook
 
 
-
 def test_host_ca_trust_preflight_precedes_database_mutation() -> None:
     deploy = _read(DEPLOY)
     bootstrap = _read(SERVER_ROOT / 'bootstrap-host.sh')
