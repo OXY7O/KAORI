@@ -33,9 +33,7 @@ def test_reused_safe_next_url_rejects_cross_origin_referrers(referrer: str, expe
         ('app/kubernetes/cluster/quick_sync.py', 4),
     ],
 )
-def test_kubernetes_sync_actions_guard_all_referrer_redirects(
-    source_path: str, guarded_redirects: int
-) -> None:
+def test_kubernetes_sync_actions_guard_all_referrer_redirects(source_path: str, guarded_redirects: int) -> None:
     source = (ROOT / source_path).read_text(encoding='utf-8')
     assert 'from app.access.authentication.session import safe_next_url' in source
     assert source.count('safe_next_url(request.referrer)') == guarded_redirects
