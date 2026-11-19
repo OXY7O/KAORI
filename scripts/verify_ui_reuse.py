@@ -142,7 +142,7 @@ def _metrics(relative: str, source: str) -> dict[str, int]:
         'inline_styles': (
             0
             if relative in _APPROVED_INLINE_STYLE_COMPONENTS
-            else len(re.findall(r'\\bstyle\\s*=', source, re.IGNORECASE))
+            else len(re.findall(r'\bstyle\s*=', source, re.IGNORECASE))
         ),
         'inline_scripts': sum(
             1
