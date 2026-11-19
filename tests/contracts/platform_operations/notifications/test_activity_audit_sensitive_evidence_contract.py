@@ -100,3 +100,27 @@ def test_sanitizer_bounds_oversized_nested_evidence() -> None:
     assert cleaned is not None
     assert 'synthetic-hidden' not in str(cleaned)
     assert redact_operational_metadata({'values': list(range(1000))})['values'] == list(range(500))
+
+
+def test_redactor_detects_private_key_markers_without_backtracking() -> None:
+    # Build synthetic PEM markers at runtime. Test data should never resemble
+    # a committed private-key block to the repository-wide Gitleaks scanner.
+    begin = '-' * 5 + 'BEGIN'
+    private_suffix = 'PRIVATE' + ' KEY-----'
+    for marker in (
+        f'{begin} {private_suffix}',
+        f'{begin} RSA {private_suffix}',
+        f'{begin} OPENSSH {private_suffix}',
+        f'{begin} ENCRYPTED {private_suffix}',
+        begin + ' A' * 1024 + ' ' + private_suffix,
+    ):
+        assert redact_operational_text(marker + ' synthetic-hidden-private') == '[REDACTED]'
+    assert redact_operational_text('PRIVATE KEY----- no PEM header') == 'PRIVATE KEY----- no PEM header'
+
+def test_redactor_handles_url_userinfo_delimiters_without_regex_ambiguity() -> None:
+    assert (
+        redact_operational_text('endpoint=https://operator:synthetic-hidden:second@storage.example.invalid/data')
+        == 'endpoint=https://***:***@storage.example.invalid/data'
+    )
+    malformed = 'https://' + 'a:' * 2048 + 'missing-userinfo-terminator'
+    assert len(redact_operational_text(malformed, limit=512)) <= 512
