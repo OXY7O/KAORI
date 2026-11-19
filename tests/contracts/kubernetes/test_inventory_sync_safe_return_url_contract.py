@@ -56,9 +56,7 @@ def redirect_app() -> Flask:
 
 
 @pytest.mark.parametrize('cluster_id', (1, 19))
-def test_synthetic_cluster_detail_route_does_not_reflect_route_input(
-    redirect_app: Flask, cluster_id: int
-) -> None:
+def test_synthetic_cluster_detail_is_static(redirect_app: Flask, cluster_id: int) -> None:
     response = redirect_app.test_client().get(f'/integrations/kubernetes/{cluster_id}')
     assert response.status_code == 200
     assert response.get_data(as_text=True) == 'ok'
