@@ -15,6 +15,7 @@ from flask import (
 )
 from flask_login import current_user
 
+from app.access.authentication.session import safe_next_url
 from app.access.rbac.decorators import permission_required
 from app.kubernetes.cluster.onboarding import has_registered_clusters
 from app.kubernetes.cluster.sync_jobs import enqueue_cluster_inventory_sync
@@ -174,7 +175,7 @@ def sync(cluster_id: str):
                 notification_context=get_navigation_notification_context(user_id=current_user.id),
             ), 503
         queue_operational_feedback(feedback)
-        return redirect(request.referrer or url_for('integrations.kubernetes'))
+        return redirect(safe_next_url(request.referrer) or url_for('integrations.kubernetes'))
 
     metadata = {
         'cluster_id': cluster.id,
@@ -200,7 +201,7 @@ def sync(cluster_id: str):
             'components/navigation/_individual_sync_status.html',
             sync=metadata,
         ), 202
-    return redirect(request.referrer or url_for('integrations.kubernetes'))
+    return redirect(safe_next_url(request.referrer) or url_for('integrations.kubernetes'))
 
 
 def _inventory_template(resource: str) -> str:
