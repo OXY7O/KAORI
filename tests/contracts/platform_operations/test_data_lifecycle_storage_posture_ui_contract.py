@@ -9,6 +9,8 @@ from pathlib import Path
 import pytest
 from jinja2 import Environment
 
+from app.platform_operations.data_lifecycle.retention.storage_presentation import _storage_provider_label
+
 ROOT = Path(__file__).resolve().parents[3]
 STORAGE = ROOT / 'app/templates/platform_operations/data_lifecycle/partials/_storage.html'
 PRESENTATION = ROOT / 'app/platform_operations/data_lifecycle/retention/storage_presentation.py'
@@ -160,3 +162,28 @@ def test_storage_has_two_primary_outlined_panels_without_repeated_inner_cards() 
 
     interpretation = source.split('aria-label="Storage interpretation"', 1)[0].splitlines()[-2]
     assert 'border-t border-outline-subtle pt-3' in interpretation
+
+
+@pytest.mark.parametrize(
+    ('backend', 'endpoint', 'expected'),
+    [
+        ('local', 'https://minio.internal:9000', 'Local filesystem'),
+        ('s3', None, 'Amazon S3'),
+        ('s3', 'https://s3.amazonaws.com', 'Amazon S3'),
+        ('s3', 'https://s3.eu-west-1.amazonaws.com/bucket', 'Amazon S3'),
+        ('s3', 'https://minio.internal:443/health', 'MinIO'),
+        ('s3', 'http://archive.internal:9000', 'MinIO'),
+        ('s3', 'https://archive.internal:9001', 'MinIO'),
+        ('s3', 'https://objects.example.net/path/minio:9000', 'S3-compatible'),
+        ('s3', 'https://objects.example.net/?backend=minio', 'S3-compatible'),
+        ('s3', 'https://notamazonaws.com/bucket', 'S3-compatible'),
+        ('s3', 'https://s3.amazonaws.com.evil.example', 'S3-compatible'),
+        ('s3', 'https://not-minio.example.net/storage', 'S3-compatible'),
+        ('s3', 'https://objects.example.net:90000', 'S3-compatible'),
+        ('s3', 'https://[broken', 'S3-compatible'),
+    ],
+)
+def test_archive_storage_provider_uses_parsed_authority_not_untrusted_url_substrings(
+    backend: str, endpoint: str | None, expected: str
+) -> None:
+    assert _storage_provider_label(backend, endpoint) == expected
