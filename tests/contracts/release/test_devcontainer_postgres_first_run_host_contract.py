@@ -6,7 +6,9 @@ No PostgreSQL/database or Docker daemon is contacted.
 from __future__ import annotations
 
 import json
+import os
 import runpy
+import stat
 from pathlib import Path
 
 import pytest
@@ -133,6 +135,70 @@ def test_old_local_db_url_with_empty_pg_volume_is_backed_up_before_reconciliatio
     assert 'SECRET_KEY=preserve-me' in updated
     assert 'DATABASE_URL=postgresql://kaori_runtime:' in updated
     assert 'old-owner-secret' not in updated
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX permissions require a POSIX test filesystem')
+def test_existing_local_env_is_restricted_before_secret_bearing_rewrite(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    main, s = _sandbox(tmp_path, monkeypatch)
+    old = (
+        'APP_ENV=development\n'
+        'DATABASE_URL=postgresql://kaori:local-previous-secret@db:5432/kaori\n'
+        'SECRET_KEY=preserve-me\n'
+    )
+    config = s['APP_ENV']
+    config.write_text(old, encoding='utf-8')
+    config.chmod(0o644)
+
+    main()
+
+    assert stat.S_IMODE(config.stat().st_mode) == 0o600
+    assert s['BACKUP_ENV'].read_text(encoding='utf-8') == old
+    assert 'SECRET_KEY=preserve-me' in config.read_text(encoding='utf-8')
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX permissions require a POSIX test filesystem')
+def test_existing_unchanged_local_env_still_restricts_permissions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    main, s = _sandbox(tmp_path, monkeypatch)
+    main()
+    config = s['APP_ENV']
+    expected = config.read_text(encoding='utf-8')
+    config.chmod(0o644)
+
+    main()
+
+    assert stat.S_IMODE(config.stat().st_mode) == 0o600
+    assert config.read_text(encoding='utf-8') == expected
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX permissions require a POSIX test filesystem')
+def test_existing_local_env_fails_closed_when_permission_restriction_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    main, s = _sandbox(tmp_path, monkeypatch)
+    config = s['APP_ENV']
+    old = 'APP_ENV=development\nDATABASE_URL=postgresql://kaori:local-previous-secret@db:5432/kaori\n'
+    config.write_text(old, encoding='utf-8')
+    config.chmod(0o644)
+    original_chmod = Path.chmod
+
+    def deny_config_chmod(path: Path, mode: int) -> None:
+        if path == config:
+            raise PermissionError('host denied chmod')
+        original_chmod(path, mode)
+
+    monkeypatch.setattr(Path, 'chmod', deny_config_chmod)
+    with pytest.raises(SystemExit, match='cannot secure existing local app configuration'):
+        main()
+    assert config.read_text(encoding='utf-8') == old
+    assert not s['ADMIN_ENV'].exists()
+    assert not s['MIGRATOR_ENV'].exists()
 
 
 def test_preexisting_postgresql_data_never_gets_new_login_credentials(
