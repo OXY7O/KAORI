@@ -17,7 +17,6 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from redis.exceptions import RedisError
 
-from app.access.authentication.session import safe_next_url
 from app.access.rbac.decorators import permission_required
 from app.kubernetes.cluster.forms import ClusterCreateForm, ClusterEditForm
 from app.kubernetes.cluster.individual_sync_state import (
@@ -196,7 +195,7 @@ def dismiss_sync_all_status(task_id: str) -> ResponseReturnValue:
     if is_htmx:
         return ''
 
-    return redirect(safe_next_url(request.referrer) or url_for('integrations.kubernetes'))
+    return redirect(url_for('integrations.kubernetes'))
 
 
 @cluster_bp.route('/sync-all/status/<string:task_id>')
