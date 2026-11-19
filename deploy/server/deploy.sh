@@ -78,6 +78,14 @@ done
 [[ -f "$BASE_COMPOSE" ]] || fail "base Compose file is missing: $BASE_COMPOSE"
 [[ -f "$SERVER_COMPOSE" ]] || fail "server Compose overlay is missing: $SERVER_COMPOSE"
 
+# A host-managed public CA directory is required by server Compose bind
+# mounts with create_host_path: false. Bootstrap owns host preparation;
+# fail before starting containers, backups or Alembic rather than silently
+# creating privileged host paths from a least-privileged deploy process.
+if [[ ! -d /etc/kaori/trust || -L /etc/kaori/trust ]]; then
+  fail 'Host CA trust directory missing: /etc/kaori/trust (run sudo install -d -m 0755 /etc/kaori/trust during host bootstrap)'
+fi
+
 docker info >/dev/null 2>&1 || fail 'Docker daemon is not reachable by the deploy user'
 compose_version="$(docker compose version --short | sed -E 's/^v//; s/[^0-9.].*$//')"
 [[ "$compose_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "unable to parse Docker Compose version: $compose_version"
