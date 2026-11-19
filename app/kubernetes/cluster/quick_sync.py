@@ -17,7 +17,6 @@ from flask_login import current_user
 from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.access.authentication.session import safe_next_url
 from app.models.cluster import Cluster
 from app.platform_operations.jobs.dispatcher import dispatch_registered_job
 from app.platform_operations.jobs.service import JobQuotaExceeded
@@ -143,7 +142,7 @@ def run_global_inventory_sync() -> ResponseReturnValue:
         if is_htmx:
             return _htmx_dispatch_response(response_status=204)
         flash('No Kubernetes clusters are registered yet.', 'warning')
-        return redirect(safe_next_url(request.referrer) or view_url)
+        return redirect(view_url)
 
     try:
         outcome = dispatch_registered_job(
@@ -170,7 +169,7 @@ def run_global_inventory_sync() -> ResponseReturnValue:
             if is_htmx:
                 return _htmx_dispatch_response(response_status=204)
             flash(outcome.message, 'warning')
-            return redirect(safe_next_url(request.referrer) or view_url)
+            return redirect(view_url)
 
         if is_htmx:
             return _htmx_dispatch_response(response_status=202)
@@ -180,7 +179,7 @@ def run_global_inventory_sync() -> ResponseReturnValue:
             else 'The existing Kubernetes inventory synchronization is already serving this request.',
             'success' if outcome.created else 'info',
         )
-        return redirect(safe_next_url(request.referrer) or view_url)
+        return redirect(view_url)
     except (
         CeleryError,
         JobQuotaExceeded,
@@ -208,4 +207,4 @@ def run_global_inventory_sync() -> ResponseReturnValue:
         if is_htmx:
             return _htmx_dispatch_response(response_status=204)
         flash('KAORI could not start the Kubernetes inventory job.', 'danger')
-        return redirect(safe_next_url(request.referrer) or view_url)
+        return redirect(view_url)

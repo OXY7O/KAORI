@@ -1,4 +1,4 @@
-"""Non-HTMX cluster sync-dismiss redirects must not trust the Referer origin."""
+"""Non-HTMX cluster sync-dismiss uses a server-defined Kubernetes overview redirect."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ def redirect_app() -> Flask:
 @pytest.mark.parametrize(
     ('referrer', 'expected_location'),
     [
-        ('/integrations/kubernetes?tab=clusters', '/integrations/kubernetes?tab=clusters'),
+        ('/integrations/kubernetes?tab=clusters', '/integrations/kubernetes'),
         ('https://outside.example.invalid/redirect', '/integrations/kubernetes'),
         ('//outside.example.invalid/redirect', '/integrations/kubernetes'),
         ('/\\outside.example.invalid', '/integrations/kubernetes'),
@@ -35,7 +35,7 @@ def redirect_app() -> Flask:
         ('', '/integrations/kubernetes'),
     ],
 )
-def test_sync_dismiss_return_is_same_origin(
+def test_sync_dismiss_returns_to_server_defined_overview(
     monkeypatch: pytest.MonkeyPatch,
     redirect_app: Flask,
     redis_unavailable: bool,

@@ -1,4 +1,4 @@
-"""Kubernetes inventory POST actions preserve KAORI's safe relative redirect contract."""
+"""Kubernetes inventory POST actions use deterministic server-defined redirect targets."""
 
 from __future__ import annotations
 
@@ -29,17 +29,19 @@ def test_reused_safe_next_url_rejects_cross_origin_referrers(referrer: str, expe
 
 
 @pytest.mark.parametrize(
-    ('source_path', 'guarded_redirects'),
+    ('source_path', 'expected_redirect', 'expected_count'),
     [
-        ('app/kubernetes/inventory/routes.py', 2),
-        ('app/kubernetes/cluster/quick_sync.py', 4),
+        ('app/kubernetes/inventory/routes.py', "return redirect(url_for('integrations.kubernetes'))", 2),
+        ('app/kubernetes/cluster/quick_sync.py', 'return redirect(view_url)', 4),
     ],
 )
-def test_kubernetes_sync_actions_guard_all_referrer_redirects(source_path: str, guarded_redirects: int) -> None:
+def test_kubernetes_sync_actions_use_server_defined_redirects(
+    source_path: str, expected_redirect: str, expected_count: int
+) -> None:
     source = (ROOT / source_path).read_text(encoding='utf-8')
-    assert 'from app.access.authentication.session import safe_next_url' in source
-    assert source.count('safe_next_url(request.referrer)') == guarded_redirects
-    assert 'redirect(request.referrer or ' not in source
+    assert 'safe_next_url(request.referrer)' not in source
+    assert 'request.referrer' not in source
+    assert source.count(expected_redirect) == expected_count
 
 
 @pytest.fixture
@@ -66,13 +68,13 @@ def test_synthetic_cluster_detail_is_static(redirect_app: Flask, cluster_id: int
 @pytest.mark.parametrize(
     ('referrer', 'expected_location'),
     [
-        ('/inventory/?cluster_id=19', '/inventory/?cluster_id=19'),
+        ('/inventory/?cluster_id=19', '/integrations/kubernetes'),
         ('https://external.example.invalid/phishing', '/integrations/kubernetes'),
         ('//external.example.invalid/phishing', '/integrations/kubernetes'),
         ('/\\external.example.invalid', '/integrations/kubernetes'),
     ],
 )
-def test_global_sync_redirect_response_is_same_origin(
+def test_global_sync_returns_to_server_defined_overview(
     monkeypatch: pytest.MonkeyPatch,
     redirect_app: Flask,
     flow: str,
@@ -158,13 +160,13 @@ def test_global_sync_htmx_keeps_original_status_without_redirect(
 @pytest.mark.parametrize(
     ('referrer', 'expected_location'),
     [
-        ('/inventory/?cluster_id=19', '/inventory/?cluster_id=19'),
+        ('/inventory/?cluster_id=19', '/integrations/kubernetes'),
         ('https://external.example.invalid/phishing', '/integrations/kubernetes'),
         ('//external.example.invalid/phishing', '/integrations/kubernetes'),
         ('/\\external.example.invalid', '/integrations/kubernetes'),
     ],
 )
-def test_cluster_sync_redirect_response_is_same_origin(
+def test_cluster_sync_returns_to_server_defined_overview(
     monkeypatch: pytest.MonkeyPatch,
     redirect_app: Flask,
     enqueue_error: bool,
