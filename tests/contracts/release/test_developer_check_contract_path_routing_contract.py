@@ -1,6 +1,10 @@
 import importlib.util
+import os
+import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 PLANNER = ROOT / 'scripts' / 'developer_check_plan.py'
@@ -83,3 +87,66 @@ def test_wide_authority_change_widens_fail_safe() -> None:
     assert plan.contracts is True
     assert 'tests/contracts' in paths
     assert 'tests/migrations' in paths
+
+
+def test_kubernetes_focused_contracts_prepare_generated_css_before_pytest() -> None:
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+    assert '" $TEST_PATHS " == *" tests/contracts/kubernetes "*' in workflow
+    assert workflow.index("run_toolchain 'Frontend Test Assets'") < workflow.index(
+        'docker compose --file .github/ci/compose.yml run'
+    )
+    assert 'if [[ "$CHECK_FRONTEND" == "true" ]]; then' in workflow
+
+
+@pytest.mark.parametrize(
+    ('frontend', 'test_paths', 'should_build'),
+    [
+        ('false', 'tests/contracts/kubernetes', True),
+        (
+            'false',
+            'tests/kubernetes/tenant tests/contracts/kubernetes/test_tenant_access_governance_contract.py',
+            True,
+        ),
+        ('false', 'tests/contracts/kubernetes/test_inventory_pod_styling_guide_contract.py', True),
+        ('false', 'tests/contracts/kubernetes-similar', False),
+        ('false', 'tests/contracts/release', False),
+        ('true', 'tests/contracts/release', True),
+    ],
+)
+def test_kubernetes_asset_preparation_condition_matches_trusted_test_selectors(
+    frontend: str, test_paths: str, should_build: bool
+) -> None:
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+    condition = next(
+        line.strip().removeprefix('if ').removesuffix('; then')
+        for line in workflow.splitlines()
+        if line.strip().startswith('if [[ "$CHECK_FRONTEND" == "true" || ')
+    )
+    check = subprocess.run(
+        ['bash', '-c', condition],
+        env={**os.environ, 'CHECK_FRONTEND': frontend, 'TEST_PATHS': test_paths},
+        check=False,
+        capture_output=True,
+    )
+    assert (check.returncode == 0) is should_build
+
+
+def test_kubernetes_tenant_planner_file_selectors_prepare_generated_css() -> None:
+    planner = load_planner()
+    plan = planner.build_plan(['app/kubernetes/tenant/service.py'])
+    test_paths = ' '.join(plan.normalized_test_paths())
+    assert 'tests/contracts/kubernetes/test_tenant_' in test_paths
+
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+    condition = next(
+        line.strip().removeprefix('if ').removesuffix('; then')
+        for line in workflow.splitlines()
+        if line.strip().startswith('if [[ "$CHECK_FRONTEND" == "true" || ')
+    )
+    result = subprocess.run(
+        ['bash', '-c', condition],
+        env={**os.environ, 'CHECK_FRONTEND': 'false', 'TEST_PATHS': test_paths},
+        check=False,
+        capture_output=True,
+    )
+    assert result.returncode == 0

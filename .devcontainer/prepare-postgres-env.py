@@ -83,6 +83,21 @@ def create_private(path: Path, value: str) -> None:
         pass
 
 
+def secure_existing_app_env() -> None:
+    """Restrict a legacy local .env before reading or persisting credentials.
+
+    On native Windows bind mounts, the host NTFS ACL remains authoritative;
+    an ineffective chmod must fail closed rather than claim secure storage.
+    """
+    if not APP_ENV.exists():
+        return
+    try:
+        APP_ENV.chmod(0o600)
+        if APP_ENV.stat().st_mode & 0o077:
+            abort('cannot secure existing local app configuration; verify host file permissions and ACLs')
+    except OSError:
+        abort('cannot secure existing local app configuration; verify host file permissions and ACLs')
+
 def check_pgdata() -> bool:
     if not PG_DATA.is_dir():
         abort('PostgreSQL Docker data volume is not mounted for safe first-run inspection')
@@ -114,6 +129,7 @@ def main() -> None:
     if not (ROOT / '.env.example').is_file():
         abort('repository workspace is not mounted at /workspace')
     check_regular_file(APP_ENV)
+    secure_existing_app_env()
     # The ignored secrets directory itself must not redirect through a
     # symlink. This is a trusted development workspace, but avoid accidental
     # writes into an unrelated checkout or host path.

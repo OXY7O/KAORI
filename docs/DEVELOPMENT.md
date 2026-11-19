@@ -96,6 +96,25 @@ These repo-local secrets are convenient for **trusted development** but
 visible to anyone/process with access to the bind-mounted source.
 They are never Git-tracked or copied into Docker images; production
 continues using separate controlled secrets and DBA migration authority.
+
+**Existing local `.env` permissions (#4993):** On a POSIX filesystem, the
+DevContainer initializer restricts an existing `.env` to mode `0600` and
+verifies the mode **before reading or rewriting credential-bearing content**.
+If it cannot apply or verify private permissions, initialization stops;
+re-running with an unchanged `.env` also checks its mode. This guard does
+not encrypt the local file or replace the host's access controls.
+
+On a Windows Docker Desktop bind mount, Linux `chmod` or a reported `0600`
+inside the container **does not attest the effective Windows NTFS ACL**.
+OneDrive, WSL/DrvFs, and synced/shared workspaces may have independent host
+access rules. Use only a trusted local checkout, review and restrict the
+actual Windows host ACL and authorized workspace access before storing
+credentials; if that cannot be established, treat confidentiality as
+**NOT VERIFIED** and stop sensitive local setup. Do not assume running
+`chmod`/`chown` in WSL fixes Windows host permissions or use privileged
+Compose, weakened file permissions, or regenerated database credentials
+as a workaround. The [first-run runbook](operations/devcontainer-postgres-first-run.md)
+retains the data-preserving recovery procedure.
 See [Environment Configuration](deployment/ENVIRONMENT_CONFIGURATION.md)
 and [first-run runbook](operations/devcontainer-postgres-first-run.md).
 
