@@ -78,6 +78,9 @@ _CAPABILITY_ACTIVE_EXACT: dict[str, dict[str, str]] = {
         'inventory.configuration': 'configuration',
         'inventory.configuration_details': 'configuration',
     },
+    'kubernetes_governance': {
+        'governance.internal_certificates': 'internal_certificates',
+    },
     'kubernetes_operations': {
         'kubernetes_operations.overview': 'overview',
         'kubernetes_operations.create_configmap': 'configmaps',
@@ -108,7 +111,9 @@ _CAPABILITY_ACTIVE_EXACT: dict[str, dict[str, str]] = {
         'artifact_registry.inventory_artifacts': 'artifacts',
     },
     'artifact_registry_security': {
+        'artifact_registry.security_overview': 'overview',
         'artifact_registry.security': 'vulnerabilities',
+        'artifact_registry.security_cve_impact': 'vulnerabilities',
         'artifact_registry.security_supply_chain': 'supply_chain',
     },
     'artifact_registry_runtime': {
@@ -197,7 +202,13 @@ def build_capability_navigation(
         return None
 
     visible_views = tuple(
-        view for view in _CAPABILITY_VIEWS[capability_key] if _has_any_permission(user, view.permissions)
+        view
+        for view in _CAPABILITY_VIEWS[capability_key]
+        if _has_any_permission(user, view.permissions)
+        and (
+            view.endpoint != 'governance.internal_certificates'
+            or (user.has_permission('governance.view') and user.has_permission('clusters.view'))
+        )
     )
     if len(visible_views) < 2:
         return None
@@ -450,7 +461,7 @@ def build_sidebar_navigation(
         )
         if (
             workspace.key == 'integrations'
-            and resolved_endpoint == 'integrations.choose_integration_provider'
+            and active_workspace == workspace.key
             and active_capability_override in {capability.key for capability in visible_capabilities}
         ):
             active_capability = active_capability_override

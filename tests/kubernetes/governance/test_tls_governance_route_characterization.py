@@ -1,15 +1,30 @@
 from __future__ import annotations
 
+import re
+from html import unescape
 from types import SimpleNamespace
+from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from flask_login import UserMixin
 
 from app import create_app
 from app.bootstrap import presentation as bootstrap_presentation
+from app.common.navigation import build_navigation_breadcrumb
+from app.common.workspace_navigation import build_capability_navigation
 from app.extensions import login as login_extension
 from app.extensions import login_manager
+from app.kubernetes.governance import routes as governance_routes
+from app.kubernetes.governance.internal_certificates import routes as internal_pki_routes
 from app.kubernetes.governance.tls_certificates import routes as tls_routes
+
+
+def _rendered_clear_href(html: str) -> str:
+    """Follow the actual canonical Clear link, including its non-HTMX fallback."""
+    anchor = re.search(r'<a href="([^"]+)"\s+data-kaori-clear-filters([^>]*)>', html)
+    assert anchor is not None
+    assert 'hx-get=' not in anchor.group(2)
+    return unescape(anchor.group(1))
 
 
 class GovernanceRouteUser(UserMixin):
@@ -143,3 +158,608 @@ def test_tls_sync_status_requires_sync_permission_before_cluster_probe(
     monkeypatch.setattr(tls_routes, 'has_registered_clusters', unexpected_cluster_probe)
     response = client.get('/governance/tls-certificates/sync/job-1/status', headers={'HX-Request': 'true'})
     assert response.status_code == 403
+
+
+def _committed_tls_snapshot() -> dict[str, str]:
+    return {
+        'source_label': 'Kubernetes TLS Secrets + Ingresses',
+        'status': 'Complete',
+        'tone': 'normal',
+        'description': 'TLS certificates and Ingress host mappings.',
+        'latest_collected': '12 Nov 2026 10:47 WIB',
+        'latest_supporting': 'Worker-generated snapshot',
+        'scope_label': 'All Clusters',
+        'scope_supporting': 'Fleet scope',
+        'coverage_label': '11 TLS Secrets',
+        'coverage_supporting': 'Collected certificate inventory',
+        'coverage_tone': 'normal',
+        'exceptions_label': 'No Exceptions',
+        'exceptions_supporting': 'No issues detected',
+        'exceptions_tone': 'normal',
+    }
+
+
+def test_governance_only_user_cannot_read_or_see_tls_snapshot(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _client_for_user(app, monkeypatch, GovernanceRouteUser({'governance.view'}))
+
+    def unexpected_tls_probe() -> None:
+        raise AssertionError('TLS snapshot read or cluster probe must not run without child permission')
+
+    monkeypatch.setattr(governance_routes, 'has_registered_clusters', unexpected_tls_probe)
+    monkeypatch.setattr(governance_routes, 'get_tls_collection_snapshot', unexpected_tls_probe)
+
+    response = client.get('/governance/')
+    assert response.status_code == 200
+    content = response.get_data(as_text=True)
+    assert 'View Permission Required' in content
+    assert 'TLS Collection Snapshot' not in content
+
+
+def test_governance_authorized_tls_view_reuses_actual_tls_snapshot_partial(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _client_for_user(
+        app,
+        monkeypatch,
+        GovernanceRouteUser({'governance.view', 'tls_certificates.view'}),
+    )
+    calls: list[str] = []
+
+    monkeypatch.setattr(governance_routes, 'has_registered_clusters', lambda: True)
+
+    def read_snapshot() -> dict[str, str]:
+        calls.append('read')
+        return _committed_tls_snapshot()
+
+    monkeypatch.setattr(governance_routes, 'get_tls_collection_snapshot', read_snapshot)
+    response = client.get('/governance/')
+
+    assert response.status_code == 200
+    assert calls == ['read']
+    content = response.get_data(as_text=True)
+    assert content.count('aria-label="TLS Collection Snapshot"') == 1
+    assert 'Kubernetes TLS Secrets + Ingresses' in content
+    assert '11 TLS Secrets' in content
+    assert 'Governance Control Context' not in content
+    assert 'Open TLS Certificates' in content
+
+
+def test_governance_clusterless_does_not_load_tls_snapshot_even_with_permission(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _client_for_user(
+        app,
+        monkeypatch,
+        GovernanceRouteUser({'governance.view', 'tls_certificates.view'}),
+    )
+    monkeypatch.setattr(bootstrap_presentation, 'build_cluster_onboarding_context', _clusterless_context)
+    monkeypatch.setattr(governance_routes, 'has_registered_clusters', lambda: False)
+
+    def unexpected_tls_query() -> None:
+        raise AssertionError('TLS snapshot must not be queried when cluster setup is blocked')
+
+    monkeypatch.setattr(governance_routes, 'get_tls_collection_snapshot', unexpected_tls_query)
+    response = client.get('/governance/')
+
+    assert response.status_code == 200
+    content = response.get_data(as_text=True)
+    assert 'Connect Your First Kubernetes Cluster' in content
+    assert 'TLS Collection Snapshot' not in content
+
+
+def _internal_pki_source_page() -> dict[str, object]:
+    return {
+        'registered_total': 1,
+        'selected_cluster_id': '',
+        'search': '',
+        'filters': {'environment': '', 'platform': ''},
+        'filter_options': {
+            'environments': ['non-production'],
+            'platforms': ['kubernetes'],
+            'clusters': [
+                {'id': 'cluster-01', 'name': 'Pilot Cluster'},
+                {'id': 'cluster-02', 'name': 'Secondary Cluster'},
+            ],
+        },
+        'records': [
+            {
+                'id': 'cluster-01',
+                'name': 'Pilot Cluster',
+                'environment': 'non-production',
+                'connection_platform': 'kubernetes',
+                'connection_version': 'v1.30',
+                'collection_status': 'Not Collected',
+                'authority_status': 'Not Verified',
+                'expiry_status': 'Unknown',
+            }
+        ],
+        'pagination': {
+            'page': 1,
+            'per_page': 5,
+            'allowed_per_page': (5, 10, 25, 50),
+            'total_items': 1,
+            'total_pages': 1,
+            'start_item': 1,
+            'end_item': 1,
+            'has_prev': False,
+            'has_next': False,
+            'prev_page': 1,
+            'next_page': 1,
+        },
+    }
+
+
+def test_internal_pki_source_read_denied_before_registry_probe(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    user = GovernanceRouteUser({'governance.view', 'clusters.view'})
+    client = _client_for_user(app, monkeypatch, user)
+
+    def fail_if_called() -> None:
+        raise AssertionError('PKI source registry must not be read without child authorization')
+
+    monkeypatch.setattr(internal_pki_routes, 'has_registered_clusters', fail_if_called)
+    monkeypatch.setattr(internal_pki_routes, 'get_internal_certificates_source_page', fail_if_called)
+    response = client.get('/governance/internal-certificates')
+    assert response.status_code == 403
+
+
+def test_internal_pki_source_requires_parent_and_cluster_visibility(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for permissions in ({'internal_certificates.view'}, {'governance.view', 'internal_certificates.view'}):
+        client = _client_for_user(app, monkeypatch, GovernanceRouteUser(permissions))
+        response = client.get('/governance/internal-certificates')
+        assert response.status_code == 403
+
+
+def test_internal_pki_source_workspace_shows_committed_registry_with_unknown_pki(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    user = GovernanceRouteUser({'governance.view', 'clusters.view', 'internal_certificates.view'})
+    client = _client_for_user(app, monkeypatch, user)
+    monkeypatch.setattr(internal_pki_routes, 'has_registered_clusters', lambda: True)
+    calls: list[str] = []
+
+    def read_committed(args) -> dict[str, object]:
+        calls.append('read')
+        page = _internal_pki_source_page()
+        page['search'] = str(args.get('search') or '')
+        page['filters'] = {
+            'environment': str(args.get('environment') or ''),
+            'platform': str(args.get('platform') or ''),
+        }
+        page['selected_cluster_id'] = str(args.get('cluster_id') or '')
+        return page
+
+    monkeypatch.setattr(internal_pki_routes, 'get_internal_certificates_source_page', read_committed)
+    # This route characterization mocks the source, not a migrated database.
+    # The schema blocker must run without querying committed certificate rows.
+    monkeypatch.setattr(
+        internal_pki_routes,
+        'check_internal_pki_schema_readiness',
+        lambda: SimpleNamespace(ready=False),
+    )
+
+    def must_not_read_inventory(_args) -> None:
+        raise AssertionError('The certificate read model must not run when the schema is absent')
+
+    monkeypatch.setattr(internal_pki_routes, 'get_internal_certificate_inventory_page', must_not_read_inventory)
+    response = client.get('/governance/internal-certificates')
+    assert response.status_code == 200
+    assert calls == ['read']
+    content = response.get_data(as_text=True)
+    assert 'Internal PKI Evidence' in content
+    assert 'data-kaori-tab-variant="query-backed-htmx"' in content
+    assert 'hx-target="#internal-pki-evidence-workspace"' in content
+    assert 'hx-select="#internal-pki-evidence-workspace"' in content
+    assert 'Internal PKI Source Registry' in content
+    assert 'Internal Certificate Registry' not in content
+    assert 'aria-selected="true"' in content
+    assert 'Pilot Cluster' in content
+    assert 'Not Collected' in content
+    assert 'Not Verified' in content
+    assert 'Unknown' in content
+    assert 'Provider-Owned Renewal' in content
+    assert 'Internal PKI Collection Snapshot' in content
+    assert 'Internal PKI Collection Operations' in content
+    assert 'Sync Internal PKI' in content
+    assert 'No Worker Runs' in content
+    assert 'Not Assessed' in content
+    assert 'Renewal Deferred' not in content
+    assert 'Request Renewal' not in content
+    assert 'Rotate All' not in content
+    invalid = client.get('/governance/internal-certificates?evidence_tab=unrecognized')
+    assert invalid.status_code == 200
+    assert 'Internal PKI Source Registry' in invalid.get_data(as_text=True)
+    assert 'Internal Certificate Registry' not in invalid.get_data(as_text=True)
+    retained = client.get('/governance/internal-certificates?cert_search=apiserver&cert_page=2&cert_per_page=10')
+    assert retained.status_code == 200
+    retained_html = retained.get_data(as_text=True)
+    assert 'name="evidence_tab" value="sources"' in retained_html
+    assert 'name="cert_search" value="apiserver"' in retained_html
+    assert 'name="cert_page" value="2"' in retained_html
+    assert 'name="cert_per_page" value="10"' in retained_html
+    assert 'name="environment"' in retained_html
+    assert 'name="platform"' in retained_html
+    assert 'All Environments' in retained_html
+    assert 'All Platforms' in retained_html
+    filtered = client.get('/governance/internal-certificates?search=Kub&environment=non-production')
+    assert filtered.status_code == 200
+    filtered_html = filtered.get_data(as_text=True)
+    assert 'Clear Filters' in filtered_html
+    assert 'data-kaori-clear-filters' in filtered_html
+    assert filtered_html.index('data-kaori-clear-filters') < filtered_html.index('id="internal-pki-source-filter"')
+    assert 'View PKI Evidence for Pilot Cluster' in filtered_html
+    view = re.search(r'<a href="([^"]+)"[^>]*aria-label="View PKI Evidence for Pilot Cluster"', filtered_html)
+    assert view is not None
+    view_href = unescape(view.group(1))
+    view_query = parse_qs(urlsplit(view_href).query)
+    assert view_query['evidence_tab'] == ['certificates']
+    assert view_query['cluster_id'] == ['cluster-01']
+    view_result = client.get(view_href)
+    assert view_result.status_code == 200
+    assert 'Inventory Schema Upgrade Required' in view_result.get_data(as_text=True)
+    assert 'Clear Cluster Scope' not in filtered_html
+    assert '<th scope="col"' in filtered_html
+    assert 'Actions</th>' in filtered_html
+    assert 'name="environment"' in filtered_html
+    assert 'Registered Source Coverage' in filtered_html
+    scoped = client.get(
+        '/governance/internal-certificates?search=Kub&environment=non-production'
+        '&cluster_id=cluster-01&cert_search=apiserver&cert_page=2&cert_per_page=10'
+    )
+    assert scoped.status_code == 200
+    scoped_html = scoped.get_data(as_text=True)
+    assert 'Clear Cluster Scope' not in scoped_html
+    source_clear_href = _rendered_clear_href(scoped_html)
+    source_clear_query = parse_qs(urlsplit(source_clear_href).query)
+    assert source_clear_query['evidence_tab'] == ['sources']
+    assert source_clear_query['cert_search'] == ['apiserver']
+    assert source_clear_query['cert_page'] == ['2']
+    assert source_clear_query['cert_per_page'] == ['10']
+    assert 'cluster_id' not in source_clear_query
+    assert 'search' not in source_clear_query
+    assert 'environment' not in source_clear_query
+    assert 'platform' not in source_clear_query
+    assert source_clear_query['clear_filters'] == ['sources']
+    source_clear_response = client.get(source_clear_href)
+    assert source_clear_response.status_code == 303
+    assert 'clear_filters' not in urlsplit(source_clear_response.headers['Location']).query
+    source_cleared = client.get(source_clear_href, follow_redirects=True)
+    assert source_cleared.status_code == 200
+    assert 'Clear Filters' not in source_cleared.get_data(as_text=True)
+    assert 'Clear Cluster Scope' not in source_cleared.get_data(as_text=True)
+
+
+def test_internal_pki_source_clusterless_blocks_registry_query(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _client_for_user(
+        app,
+        monkeypatch,
+        GovernanceRouteUser({'governance.view', 'clusters.view', 'internal_certificates.view'}),
+    )
+    monkeypatch.setattr(bootstrap_presentation, 'build_cluster_onboarding_context', _clusterless_context)
+    monkeypatch.setattr(internal_pki_routes, 'has_registered_clusters', lambda: False)
+
+    def unexpected_query(_args) -> None:
+        raise AssertionError('Registry read must not happen without registered clusters')
+
+    monkeypatch.setattr(internal_pki_routes, 'get_internal_certificates_source_page', unexpected_query)
+    response = client.get('/governance/internal-certificates')
+    assert response.status_code == 200
+    assert 'Connect Your First Kubernetes Cluster' in response.get_data(as_text=True)
+
+
+def test_internal_pki_committed_inventory_renders_after_readiness_without_live_provider(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from datetime import UTC, datetime, timedelta
+
+    user = GovernanceRouteUser({'governance.view', 'clusters.view', 'internal_certificates.view'})
+    client = _client_for_user(app, monkeypatch, user)
+    monkeypatch.setattr(internal_pki_routes, 'has_registered_clusters', lambda: True)
+
+    def read_source(args) -> dict[str, object]:
+        page = _internal_pki_source_page()
+        page['search'] = str(args.get('search') or '')
+        page['selected_cluster_id'] = str(args.get('cluster_id') or '')
+        page['filters'] = {
+            'environment': str(args.get('environment') or ''),
+            'platform': str(args.get('platform') or ''),
+        }
+        return page
+
+    monkeypatch.setattr(internal_pki_routes, 'get_internal_certificates_source_page', read_source)
+    monkeypatch.setattr(
+        internal_pki_routes,
+        'check_internal_pki_schema_readiness',
+        lambda: SimpleNamespace(ready=True),
+    )
+
+    def mark_attested(payload: dict) -> None:
+        payload['records'][0]['collection_status'] = 'Operator Attested'
+        payload['records'][0]['collection_tone'] = 'info'
+
+    monkeypatch.setattr(internal_pki_routes, 'enrich_internal_pki_source_states', mark_attested)
+    observed = datetime.now(UTC)
+    calls: list[str] = []
+
+    def committed_certificate_page(args) -> dict:
+        calls.append('read')
+        return {
+            'total': 1,
+            'committed_total': 1,
+            'filters': {
+                'kind': str(args.get('cert_kind') or ''),
+                'expiry': str(args.get('cert_expiry') or ''),
+                'coverage': str(args.get('cert_coverage') or ''),
+                'freshness': str(args.get('cert_freshness') or ''),
+            },
+            'operational': {
+                'total': 1,
+                'outside_window': 1,
+                'renewal_window': 0,
+                'critical_window': 0,
+                'expired': 0,
+                'not_yet_valid': 0,
+                'stale': 0,
+                'partial_evidence': 1,
+                'status': 'Operator Attested',
+                'tone': 'info',
+                'source_label': 'Operator-attested kubeadm metadata',
+                'latest_collected': '12 Nov 2026 12:36 UTC',
+                'coverage_label': 'Partial Source Evidence',
+                'exceptions_label': '0 Reported Signals',
+            },
+            'records': [
+                {
+                    'component': 'apiserver',
+                    'kind': 'leaf',
+                    'cluster_name': 'Pilot Cluster',
+                    'node_name': 'control-plane-01',
+                    'issuer': 'ca',
+                    'externally_managed': False,
+                    'not_after': observed + timedelta(days=45),
+                    'collected_at': observed,
+                    'source_version': 'v1.31.0',
+                    'source_kind': 'kubeadm_check_expiration',
+                    'coverage': 'partial',
+                    'reference': 'CHG-001',
+                    'status': 'Outside Window',
+                    'tone': 'normal',
+                    'freshness': 'Recently Collected',
+                    'freshness_tone': 'info',
+                }
+            ],
+            'search': str(args.get('cert_search') or ''),
+            'cluster_id': str(args.get('cluster_id') or ''),
+            'pagination': {
+                'page': 1,
+                'per_page': 5,
+                'allowed_per_page': (5, 10, 25, 50),
+                'total_items': 1,
+                'total_pages': 1,
+                'start_item': 1,
+                'end_item': 1,
+                'has_prev': False,
+                'has_next': False,
+                'prev_page': 1,
+                'next_page': 1,
+            },
+        }
+
+    monkeypatch.setattr(internal_pki_routes, 'get_internal_certificate_inventory_page', committed_certificate_page)
+    response = client.get('/governance/internal-certificates?evidence_tab=certificates')
+    assert response.status_code == 200
+    assert calls == ['read']
+    content = response.get_data(as_text=True)
+    assert 'Internal PKI Source Registry' not in content
+    assert 'Internal Certificate Registry' in content
+    assert 'apiserver' in content
+    assert 'control-plane-01' in content
+    assert 'Operator Attested' in content
+    assert 'Installed status unverified' in content
+    assert 'Internal PKI Collection Snapshot' in content
+    assert 'Source-Reported Certificate Posture' in content
+    assert 'Partial Source Evidence' in content
+    assert 'Sync Internal PKI' in content
+    assert 'No Worker Runs' in content
+    assert 'Not Scheduled' in content
+    assert 'name="evidence_tab" value="certificates"' in content
+    assert 'All Types' in content
+    assert 'All Expiry States' in content
+    assert 'All Coverage' in content
+    assert 'All Freshness' in content
+    assert 'id="internal-pki-cluster-filter"' in content
+    assert re.search(r'<option value=""\s+selected>All Clusters</option>', content)
+    assert 'Secondary Cluster' in content
+
+    source_view = client.get('/governance/internal-certificates')
+    assert source_view.status_code == 200
+    view_html = source_view.get_data(as_text=True)
+    view_link = re.search(
+        r'<a href="([^"]+)"[^>]*aria-label="View PKI Evidence for Pilot Cluster"',
+        view_html,
+    )
+    assert view_link is not None
+    view_result = client.get(unescape(view_link.group(1)))
+    assert view_result.status_code == 200
+    view_html = view_result.get_data(as_text=True)
+    assert re.search(r'<option value="cluster-01"\s+selected>Pilot Cluster</option>', view_html)
+    assert 'Cluster: Pilot Cluster' in view_html
+    assert 'Clear Filters' in view_html
+
+    filtered = client.get('/governance/internal-certificates?evidence_tab=certificates&cert_search=ca&cert_kind=ca')
+    assert filtered.status_code == 200
+    filtered_html = filtered.get_data(as_text=True)
+    assert 'Clear Filters' in filtered_html
+    assert filtered_html.index('data-kaori-clear-filters') < filtered_html.index('id="internal-pki-certificate-filter"')
+    assert 'data-lucide="file-badge"' in filtered_html
+    assert 'data-lucide="calendar-clock"' in filtered_html
+    cluster_scope = client.get(
+        '/governance/internal-certificates?evidence_tab=certificates'
+        '&cluster_id=cluster-01&cert_coverage=partial&search=Pilot&per_page=10'
+    )
+    assert cluster_scope.status_code == 200
+    cluster_html = cluster_scope.get_data(as_text=True)
+    assert 'Clear Cluster Scope' not in cluster_html
+    assert 'Selected Cluster' in cluster_html or 'Pilot Cluster' in cluster_html
+    certificate_clear_href = _rendered_clear_href(cluster_html)
+    certificate_clear_query = parse_qs(urlsplit(certificate_clear_href).query)
+    assert certificate_clear_query['evidence_tab'] == ['certificates']
+    assert certificate_clear_query['clear_filters'] == ['certificates']
+    assert certificate_clear_query['search'] == ['Pilot']
+    assert certificate_clear_query['per_page'] == ['5']  # Fixture uses a five-row source page.
+    assert 'cluster_id' not in certificate_clear_query
+    assert 'cert_coverage' not in certificate_clear_query
+    assert 'cert_kind' not in certificate_clear_query
+    assert 'cert_search' not in certificate_clear_query
+    cert_clear_response = client.get(certificate_clear_href)
+    assert cert_clear_response.status_code == 303
+    assert 'clear_filters' not in urlsplit(cert_clear_response.headers['Location']).query
+    cleared = client.get(certificate_clear_href, follow_redirects=True)
+    assert cleared.status_code == 200
+    cleared_html = cleared.get_data(as_text=True)
+    assert 'Internal Certificate Registry' in cleared_html
+    assert re.search(r'<option value=""\s+selected>All Clusters</option>', cleared_html)
+    assert not re.search(r'<option value="cluster-01"\s+selected>', cleared_html)
+    assert 'Clear Filters' not in cleared_html
+    assert 'Clear Cluster Scope' not in cleared_html
+    assert 'All Coverage' in cleared_html
+    assert 'name="cert_coverage"' in cleared_html
+    assert 'data-kaori-clear-filters' not in cleared_html
+
+    # Even if an HTMX request re-injects stale form fields, clear intent wins.
+    stale = client.get(
+        '/governance/internal-certificates?evidence_tab=certificates&clear_filters=certificates'
+        '&cert_coverage=partial&cert_kind=ca&cluster_id=cluster-01&cert_page=3'
+        '&search=Pilot&per_page=10'
+    )
+    assert stale.status_code == 303
+    normalized = parse_qs(urlsplit(stale.headers['Location']).query)
+    assert normalized['evidence_tab'] == ['certificates']
+    assert normalized['search'] == ['Pilot']
+    assert normalized['per_page'] == ['10']
+    for key in ('clear_filters', 'cert_coverage', 'cert_kind', 'cluster_id', 'cert_page'):
+        assert key not in normalized
+    assert 'Request Renewal' not in content
+    assert content.index('data-kaori-capability-navigation') < content.index('Internal Certificates</h1>')
+
+
+def test_internal_pki_schema_not_ready_never_queries_certificate_rows(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _client_for_user(
+        app,
+        monkeypatch,
+        GovernanceRouteUser({'governance.view', 'clusters.view', 'internal_certificates.view'}),
+    )
+    monkeypatch.setattr(internal_pki_routes, 'has_registered_clusters', lambda: True)
+    monkeypatch.setattr(
+        internal_pki_routes,
+        'get_internal_certificates_source_page',
+        lambda _args: _internal_pki_source_page(),
+    )
+    monkeypatch.setattr(
+        internal_pki_routes,
+        'check_internal_pki_schema_readiness',
+        lambda: SimpleNamespace(ready=False),
+    )
+
+    def must_not_query(_args) -> None:
+        raise AssertionError('Missing schema cannot be treated as empty certificate inventory')
+
+    monkeypatch.setattr(internal_pki_routes, 'get_internal_certificate_inventory_page', must_not_query)
+    response = client.get('/governance/internal-certificates')
+    assert response.status_code == 200
+    assert 'Internal PKI Source Registry' in response.get_data(as_text=True)
+    certificate_view = client.get('/governance/internal-certificates?evidence_tab=certificates')
+    assert certificate_view.status_code == 200
+    assert 'Inventory Schema Upgrade Required' in certificate_view.get_data(as_text=True)
+
+
+def test_governance_above_hero_tabs_are_role_aware_and_preserve_cluster_context(app) -> None:
+    authorized = GovernanceRouteUser(
+        {'governance.view', 'clusters.view', 'tls_certificates.view', 'internal_certificates.view'}
+    )
+    with app.test_request_context('/governance/internal-certificates?cluster_id=cluster-01'):
+        navigation = build_capability_navigation(
+            'governance.internal_certificates',
+            authorized,
+            {'cluster_id': 'cluster-01'},
+        )
+        assert navigation is not None
+        assert navigation['active_key'] == 'internal_certificates'
+        assert [tab[1] for tab in navigation['tabs']] == [
+            'Overview',
+            'TLS Certificates',
+            'Internal Certificates',
+        ]
+        assert all('cluster_id=cluster-01' in tab[4] for tab in navigation['tabs'])
+
+        restricted = GovernanceRouteUser({'governance.view', 'tls_certificates.view'})
+        restricted_navigation = build_capability_navigation('governance.overview', restricted)
+        assert restricted_navigation is not None
+        assert [tab[1] for tab in restricted_navigation['tabs']] == ['Overview', 'TLS Certificates']
+
+        only_parent = GovernanceRouteUser({'governance.view'})
+        assert build_capability_navigation('governance.overview', only_parent) is None
+
+
+def test_governance_internal_pki_registered_cluster_links_preserve_inventory_scope(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _client_for_user(
+        app,
+        monkeypatch,
+        GovernanceRouteUser({'governance.view', 'clusters.view', 'internal_certificates.view'}),
+    )
+    monkeypatch.setattr(internal_pki_routes, 'has_registered_clusters', lambda: True)
+    monkeypatch.setattr(
+        internal_pki_routes, 'get_internal_certificates_source_page', lambda _args: _internal_pki_source_page()
+    )
+    monkeypatch.setattr(
+        internal_pki_routes,
+        'check_internal_pki_schema_readiness',
+        lambda: SimpleNamespace(ready=False),
+    )
+    response = client.get('/governance/internal-certificates')
+    assert response.status_code == 200
+    content = response.get_data(as_text=True)
+    assert 'View PKI Evidence' in content
+    assert 'cluster_id=cluster-01' in content
+    assert 'evidence_tab=certificates' in content
+    assert 'Internal Certificate Registry' not in content
+    assert 'Inventory Schema Upgrade Required' not in content
+    certificate_view = client.get('/governance/internal-certificates?evidence_tab=certificates')
+    assert certificate_view.status_code == 200
+    assert 'Inventory Schema Upgrade Required' in certificate_view.get_data(as_text=True)
+
+
+def test_governance_breadcrumb_reflects_active_internal_certificate_view() -> None:
+    """The global navbar must not fall back to TLS for Internal Certificates."""
+    cases = (
+        ('governance.overview', 'Overview'),
+        ('governance.tls_certificates', 'TLS Certificates'),
+        ('governance.internal_certificates', 'Internal Certificates'),
+    )
+    for endpoint, view in cases:
+        crumbs = build_navigation_breadcrumb(endpoint, '/governance/internal-certificates')
+        assert [item['label'] for item in crumbs] == ['Kubernetes', 'Governance', view]
+
+    unknown = build_navigation_breadcrumb('governance.unknown_view')
+    assert unknown[-1]['label'] == 'Overview'

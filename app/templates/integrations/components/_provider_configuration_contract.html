@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "integrations/components/_provider_operational_context.html" as operational_context %}
@@ -12,7 +13,13 @@
     footer_note,
     configure_url,
     operational_metadata=(),
-    setup_reference_template="") -%}
+    setup_reference_template="",
+    contract_description=none,
+    evidence_description=none,
+    guide_description=none,
+    guide_items=none,
+    read_only_label="Read-only Connection",
+    monospace_evidence_labels=()) -%}
     <div class="space-y-4 font-sans"
          data-kaori-provider-configuration-contract>
         <section class="{{ integration_ui.section_shell_classes() }} overflow-hidden">
@@ -21,8 +28,17 @@
                     <div class="flex min-w-0 items-start gap-3">
                         {{ integration_ui.palette_icon("file-key-2", "brand", size="lg", rounded="xl") }}
                         <div class="min-w-0">
-                            <h2 class="text-base font-semibold text-content-primary">Connection Contract</h2>
-                            <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Canonical identity, endpoint trust, access boundaries, and operational ownership for this {{ provider_label }} connection.</p>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="text-base font-semibold text-content-primary">Connection Contract</h2>
+                                {{ info_tip.render(provider_label|lower|replace(" ", "-") ~ "-connection-contract-detail-guide",
+                                provider_label ~ " Connection Contract",
+                                guide_description or "Review registered identity, endpoint trust and authorization boundaries for this provider connection.",
+                                guide_items if guide_items is not none else [
+                                "The external provider remains authoritative for live resources and effective grants.",
+                                "Full Validation and runtime observations are independent evidence stages."
+                                ], placement="right", variant="guide") }}
+                            </div>
+                            <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">{{ contract_description or ("Canonical identity, endpoint trust, access boundaries, and operational ownership for this " ~ provider_label ~ " connection.") }}</p>
                         </div>
                     </div>
                     {{ integration_status(readiness, readiness|replace("_", " ") |title, display="text") }}
@@ -48,7 +64,7 @@
                             <div class="min-w-0">
                                 <h3 id="{{ provider_label|lower|replace(' ', '-') }}-connection-evidence-title"
                                     class="text-sm font-semibold text-content-primary">Connection Evidence</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Effective endpoint, transport trust, credential mode, and provider authority registered in KAORI.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ evidence_description or "Effective endpoint, transport trust, credential mode, and provider authority registered in KAORI." }}</p>
                             </div>
                         </div>
                         {{ table_label.metadata_label(provider_label, provider_icon) }}
@@ -61,7 +77,7 @@
                                     {{ label }}
                                 </dt>
                                 <dd class="mt-2">
-                                    <p class="break-words text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
+                                    <p class="break-words text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere] {{ 'font-mono text-xs break-all' if label in monospace_evidence_labels else '' }}">{{ value }}</p>
                                     <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
                                 </dd>
                             </div>
@@ -78,11 +94,17 @@
                     {{ integration_ui.palette_icon("info", "info", size="sm") }}
                     <p class="pt-0.5 text-xs leading-5 text-content-secondary">{{ footer_note }}</p>
                 </div>
-                <a href="{{ configure_url }}"
-                   class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                    <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
-                    Configure Connection
-                </a>
+                {% if configure_url %}
+                    <a href="{{ configure_url }}"
+                       class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                        <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
+                        Configure Connection
+                    </a>
+                {% else %}
+                    <div class="shrink-0" data-kaori-provider-immutable-connection>
+                        {{ table_label.metadata_label(read_only_label, "lock-keyhole") }}
+                    </div>
+                {% endif %}
             </footer>
         </section>
     </div>

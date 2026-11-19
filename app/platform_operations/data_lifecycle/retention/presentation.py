@@ -404,14 +404,17 @@ def _domain_description(name: str) -> str:
 
 def _domain_coverage_note(name: str) -> str | None:
     return {
-        'operational_activity': 'One retention policy governs the shared notifications table; the user inbox and Activity Audit are different views over the same persisted records.',
+        'operational_activity': 'One policy covers persisted notifications shared by Activity Audit and the user inbox.',
         'job_execution': 'Execution payloads remain domain-owned; lifecycle archives canonical execution metadata and result references.',
         'runtime_observation': 'Provider-neutral across Kubernetes, Object Storage, Metrics Source, Alertmanager, and future runtime integrations.',
         'analytics_snapshot': 'Cleanup applies only after a snapshot is outside both its stale-serve window and the configured hot-retention boundary.',
         'generated_report': generated_report_ui.GENERATED_REPORT_COVERAGE_NOTE,
         'alert_incident': 'Only Closed cases are archive-eligible. KAORI preserves the case index in PostgreSQL for History search after evidence compaction.',
         'tenant_audit_evidence': 'Committed Tenant audit correlation; Kubernetes remains authoritative for raw logs.',
-        'notification_delivery': 'Manual Archive Only; paused by default. Hot records retain deduplication, channel dependencies and lifetime counts; scheduling and cleanup blocked.',
+        'notification_delivery': (
+            'Manual Archive Only; scheduling and cleanup blocked. '
+            'Eligible delivery records require a manual archive request.'
+        ),
         'audit_event': (
             'Manual Archive Only. Separate from Activity Register, Jobs and Tenant Audit Evidence; '
             'retention and access restricted.'
@@ -421,7 +424,7 @@ def _domain_coverage_note(name: str) -> str | None:
 
 def _domain_exclusion_note(name: str) -> str | None:
     return {
-        'operational_activity': 'Transient toasts are not persisted and therefore are not lifecycle-managed.',
+        'operational_activity': 'Transient toasts are not persisted, so they remain outside retention and archive management.',
         'job_execution': 'Domain datasets referenced by a job are not deleted by the Job Executions retention policy.',
         'runtime_observation': 'Full provider configuration and credentials are not part of runtime-observation archives.',
         'analytics_snapshot': 'Pending or still-serveable snapshots are protected from archive cleanup.',
@@ -430,8 +433,8 @@ def _domain_exclusion_note(name: str) -> str | None:
         'tenant_audit_evidence': 'Raw Kubernetes audit logs and provider request/response bodies stay external.',
         'notification_delivery': 'Queued and failed/retry-eligible records, payload content, credential replay envelope and per-record archive search are excluded.',
         'audit_event': (
-            'Raw metadata, IP/user agent, actor reconstruction, bundle downloads, '
-            'scheduling, cleanup and individual historical lookup are not admitted.'
+            'Raw metadata, IP/UA, actor reconstruction, bundle downloads, schedules, cleanup and record lookup '
+            'are excluded.'
         ),
     }.get(name)
 
@@ -458,7 +461,7 @@ def _domain_storage_contract(
 
     if name == 'generated_report':
         source_label = 'PostgreSQL + Reports Artifact Storage'
-        source_detail = 'reports metadata plus retained PDF, XLSX, or CSV artifacts'
+        source_detail = 'Reports metadata + PDF/XLSX/CSV'
         archive_content = 'JSONL.GZ + manifest + report artifacts'
         archive_detail = 'Ready and manually Archived report binaries are copied and checksum-verified.'
     elif name == 'runtime_observation':

@@ -1,76 +1,141 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/info_tip.html" as info_tip %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "integrations/components/_validation_poller.html" as validation_poller %}
+{% import "integrations/components/_provider_job_status.html" as provider_job_status %}
+{% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "integrations/components/_capability_readiness.html" as capability_readiness %}
-{% from "integrations/components/_semantic_status.html" import integration_status %}
-{% set is_ready = instance.enabled and readiness == 'ready' %}
-{% set capabilities = instance.capabilities or [] %}
-{% set capability_metadata = ['Profile · Vault AppRole' if is_ready else 'No Committed Validation'] %}
+{% import "integrations/components/_readiness_explanation.html" as readiness_explanation %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% set readiness = instance.readiness_status or 'validation_required' %}
+{% set summary = instance.validation_summary or {} %}
+{% set validation_job = validation_job if validation_job is defined else none %}
+{% set observed_capabilities = instance.capabilities or [] %}
+{% set has_current_validation = instance.enabled and readiness in ['ready', 'degraded'] and instance.last_validated_at is not none %}
+{% set required_ready = ((1 if 'health' in observed_capabilities else 0) + (1 if 'approle' in observed_capabilities else 0) + (1 if 'token_lookup' in observed_capabilities else 0)) if has_current_validation else 0 %}
+{% set required_total = 3 %}
+{% set required_gaps = required_total - required_ready if has_current_validation else none %}
+{% set optional_ready = 1 if has_current_validation and summary.get('mount_metadata') == 'available' else 0 %}
+{% set capability_percent = (required_ready * 100 / required_total) if has_current_validation else 0 %}
+{% set capability_metadata = ['Profile · ' ~ (instance.capability_profile or 'vault.readiness.v1')] if has_current_validation else ['No Committed Validation'] %}
 {% set capability_metrics = [
-    {'icon': 'list-checks', 'tone': 'normal', 'label': 'Observed Capabilities', 'value': capabilities|length if is_ready else '—', 'description': 'Committed Full Validation APIs; not an Inventory or PKI permission proof.'},
-    {'icon': 'shield-check', 'tone': 'normal' if is_ready else 'info', 'label': 'Vault Version', 'value': instance.detected_version or 'Not Observed', 'description': 'Observed during provider validation, never inferred from registration.'},
-    {'icon': 'database', 'tone': 'info', 'label': 'Optional Mount Metadata', 'value': summary.get('mount_metadata', 'Not Validated')|replace('_', ' ')|title, 'description': 'Optional API evidence; collection scope and freshness stay independent.'}
+    {'icon': 'layers-3', 'tone': 'normal', 'label': 'Required Ready', 'value': required_ready ~ ' / ' ~ required_total if has_current_validation else '—', 'description': 'Required Vault health, AppRole login and token lookup evidence.'},
+    {'icon': 'scan-search', 'tone': 'normal', 'label': 'Optional Observed', 'value': optional_ready if has_current_validation else '—', 'description': 'Optional mount discovery; it never gates core readiness.'},
+    {'icon': 'shield-x', 'tone': 'critical' if required_gaps else 'normal', 'label': 'Required Gaps', 'value': required_gaps if required_gaps is not none else '—', 'description': 'Missing required API evidence in the current validation.'}
 ] %}
-<section class="{{ integration_ui.section_shell_classes() }} overflow-hidden"
-         data-kaori-vault-validation-workspace>
-    {% call connection_validation_header.render('Vault Full Validation',
-        'Verify Vault AppRole identity, server compatibility and required provider APIs.',
+{% if not instance.enabled %}
+    {% set gate_label = "Connection Disabled" %}
+    {% set gate_body = "Enable the connection before running Full Validation." %}
+    {% set gate_tone = "warning" %}
+    {% set next_action = "Review Configuration, then enable and validate the Vault connection." %}
+{% elif readiness == 'ready' and required_ready == required_total %}
+    {% set gate_label = "Vault Provider Eligible" %}
+    {% set gate_body = "Required Vault APIs and compatibility are qualified." %}
+    {% set gate_tone = "normal" %}
+    {% set next_action = "Review independent KV v2 and PKI evidence in Inventory & Lifecycle." %}
+{% elif readiness == 'degraded' and required_ready == required_total %}
+    {% set gate_label = "Core APIs Verified" %}
+    {% set gate_body = "Required Vault APIs work; release compatibility needs review." %}
+    {% set gate_tone = "warning" %}
+    {% set next_action = "Review version qualification and upstream advisories; rerun validation after an approved upgrade." %}
+{% elif readiness in ['blocked', 'failed', 'unavailable', 'incompatible'] %}
+    {% set gate_label = "Provider Validation Blocked" %}
+    {% set gate_body = "Required Vault access or compatibility could not be qualified." %}
+    {% set gate_tone = "critical" %}
+    {% set next_action = "Review endpoint, AppRole policy and compatibility, then rerun Full Validation." %}
+{% else %}
+    {% set gate_label = "Validation Required" %}
+    {% set gate_body = "Run Full Validation to establish committed provider API evidence." %}
+    {% set gate_tone = "warning" %}
+    {% set next_action = "Run Full Validation; optional inventory requires separate admission." %}
+{% endif %}
+{% if readiness == 'degraded' %}
+    {% set decision_title = "Why Readiness Is Degraded" %}
+    {% set decision_message = instance.validation_message or 'Core APIs were observed, but release compatibility needs review.' %}
+    {% set decision_tone = "warning" %}
+{% elif readiness in ['blocked', 'failed', 'unavailable', 'incompatible'] %}
+    {% set decision_title = "Why Readiness Is Blocked" %}
+    {% set decision_message = instance.validation_message or 'Resolve the failed Vault provider contract before retrying.' %}
+    {% set decision_tone = "critical" %}
+{% elif readiness == 'ready' %}
+    {% set decision_title = "Provider Readiness Is Ready" %}
+    {% set decision_message = "Required Vault APIs and release compatibility satisfy the current provider contract." %}
+    {% set decision_tone = "normal" %}
+{% else %}
+    {% set decision_title = "Why Validation Is Required" %}
+    {% set decision_message = "No current required Vault API evidence has been admitted." %}
+    {% set decision_tone = "warning" %}
+{% endif %}
+<section id="vault-core-validation"
+         class="relative {{ integration_ui.section_shell_classes() }}"
+         data-kaori-vault-validation-workspace
+         data-kaori-provider-capability-matrix>
+    {% call connection_validation_header.render(
+        'Vault Full Validation',
+        'Validate Vault identity, release compatibility, provider health and required AppRole APIs.',
         icon='scan-search',
-        title_extra=info_tip.render('vault-full-validation-guide', 'Vault Full Validation',
-        'Full Validation qualifies the Vault connection only; it does not expose Secrets or commit KV v2/PKI inventory.',
+        loading_id='vault-validation-loading',
+        loading_active=validation_job and validation_job.is_active,
+        loading_label='Running Vault Full Validation',
+        title_extra=info_tip.render(
+        'vault-full-validation-guide',
+        'Vault Full Validation',
+        'Full Validation qualifies provider APIs only, not Secret reads or optional inventory.',
         [
-        'Use approved HTTPS origins, trusted CA and least-privilege AppRole.',
-        'Provider readiness does not prove metadata LIST/read or public issuer collection.',
-        'Runtime health is observed separately from validation readiness.'
-        ], placement='right', variant='guide')) %}
-        <form action="{{ url_for('vault.validate', instance_id=instance.id) }}"
-              method="post">
+        'Required checks: Vault health, AppRole login and token lookup.',
+        'Mount metadata discovery is optional and may be denied without blocking required APIs.',
+        'Runtime health, KV v2 and PKI evidence remain separate committed workflows.'
+        ], placement='right', variant='guide'
+        )
+        ) %}
+        <form method="post"
+              action="{{ url_for('vault.validate', instance_id=instance.id) }}"
+              hx-post="{{ url_for('vault.validate', instance_id=instance.id) }}"
+              hx-target="#vault-core-validation"
+              hx-swap="outerHTML"
+              hx-disabled-elt="button"
+              hx-indicator="#vault-validation-loading">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit"
                     class="{{ action_button.classes('primary') }}"
-                    {% if not instance.enabled %}disabled{% endif %}>
-                <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
-                Run Full Validation
+                    {% if not instance.enabled or validation_job and validation_job.is_active %}disabled{% endif %}>
+                <i data-lucide="{{ 'loader-circle' if validation_job and validation_job.is_active else 'scan-line' }}"
+                   class="h-4 w-4{% if validation_job and validation_job.is_active %} animate-spin{% endif %}"
+                   aria-hidden="true"></i>
+                {{ 'Validation Running' if validation_job and validation_job.is_active else 'Run Full Validation' }}
             </button>
         </form>
     {% endcall %}
-    <div class="p-4 sm:p-5">
-        {% if evidence.validation_job %}
-            <p role="status" class="mb-4 text-xs text-content-secondary">Validation task: {{ evidence.validation_job.get('status', 'pending') }} · {{ evidence.validation_job.get('task_id', '') }}</p>
-        {% endif %}
-        <div class="mb-4 text-sm text-content-secondary">
-            {{ instance.validation_message or 'No capability validation has been collected.' }}
-        </div>
-        {{ capability_readiness.render('Vault Provider Readiness',
-                'Required API access is validated independently from committed operational inventory.',
+    {{ validation_poller.render(validation_job and validation_job.is_active,
+        url_for('vault.validation_status', instance_id=instance.id, task_id=validation_job.task_id) if validation_job and validation_job.is_active else '',
+    '#vault-core-validation') }}
+    {{ provider_job_status.render(validation_job, 'Vault validation running in worker', 'Vault') }}
+    <div class="space-y-4 p-4 sm:p-5">
+        {{ capability_readiness.render('Vault Capability Readiness',
+                'Core API readiness is independent of Secret and PKI inventory.',
                 readiness if instance.enabled else 'disabled',
                 readiness|replace('_', ' ') |title if instance.enabled else 'Disabled',
-        'Full Validation Gate',
-        'Passed' if is_ready else 'Not Ready',
-        100 if is_ready else 0,
+        'Required Capability Coverage',
+        required_ready ~ ' / ' ~ required_total if has_current_validation else 'Not Observed',
+        capability_percent,
         capability_metadata,
         capability_metrics,
-        'Provider Ready' if is_ready else 'Validation Required',
-        'The provider is eligible for independent collection workflows.' if is_ready else 'Run Full Validation after correcting access and configuration.',
-        'normal' if is_ready else 'warning',
-        'Vault controls Secret values and policies. KAORI never derives KV v2/PKI qualification from connection readiness.',
-        'Review Inventory & Lifecycle for separately committed KV v2/PKI evidence.') }}
+        gate_label,
+        gate_body,
+        gate_tone,
+        'Full Validation owns Vault API readiness; Runtime Refresh and KV v2/PKI collection are independent.',
+        next_action) }}
+        {{ readiness_explanation.render(decision_title,
+                decision_message,
+                decision_tone,
+                ['Vault · ' ~ (instance.detected_version or 'Not Observed') ,
+        'Validated · ' ~ (instance.last_validated_at|user_datetime if instance.last_validated_at else 'Not Observed')]) }}
+        {% include "integrations/secrets_management/vault/partials/_capability_registry.html" %}
     </div>
-    <section class="border-t border-outline-subtle bg-surface-subtle px-4 py-4 sm:px-5"
-             aria-label="Vault capability observations">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h3 class="text-sm font-semibold text-content-primary">Observed Provider Capabilities</h3>
-                <p class="mt-1 text-xs text-content-secondary">Only capabilities returned by committed Full Validation.</p>
-            </div>
-            {{ integration_status('ready' if is_ready else 'not_observed', 'Committed' if is_ready else 'Not Validated', display='text') }}
-        </div>
-        <div class="mt-3 flex flex-wrap gap-2">
-            {% for cap in capabilities %}
-                <span class="rounded-md border border-outline-default bg-surface-card px-2.5 py-1.5 text-xs font-medium text-content-secondary">{{ cap|replace('_', ' ') |title }}</span>
-            {% else %}
-                <p class="text-xs text-content-muted">Capabilities Not Validated</p>
-            {% endfor %}
-        </div>
-    </section>
 </section>
+{% if request.headers.get('HX-Request') == 'true' %}
+    {{ framed_workspace_tabs.badge_oob('vault', 'validation', readiness|replace('_', ' ') |title) }}
+    {{ provider_detail_posture.state_oob('vault', readiness, observed_capabilities|length if has_current_validation else 0) }}
+{% endif %}
+{% include "components/operation_feedback_oob.html" %}

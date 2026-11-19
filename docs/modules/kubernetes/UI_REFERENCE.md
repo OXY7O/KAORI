@@ -30,6 +30,7 @@ This document contains Kubernetes-specific presentation decisions that must not 
 - ConfigMap, Secret, and TLS Secret workflows use live Kubernetes authority according to their module contract.
 - Live lookup failures present concise UI feedback and record technical evidence in Activity Audit Log.
 - Destructive and security-sensitive actions use their established confirmation, permission, CSRF, audit, and notification flows.
+- Non-HTMX inventory synchronization and completed sync-dismiss actions return to the server-defined Kubernetes overview, not a request-supplied `Referer` path or query; HTMX actions retain their existing fragment and status responses.
 
 Detailed page fields, table columns, and action names belong in the relevant Kubernetes module README rather than this summary.
 

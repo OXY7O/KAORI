@@ -1036,10 +1036,15 @@ def test_governance_scope_reuses_approved_tenant_estate_posture_pattern():
     fleet = read('app/templates/kubernetes/tenant/overview.html')
     card = read('app/templates/components/operational_section_card.html')
     posture = read('app/templates/components/resource_posture_grid.html')
-    assert 'Governance Scope' in detail
+    assert 'aria-label="Tenant governance posture"' in detail
+    assert "section_intro.render('Governance Scope'" not in detail
     assert 'section_intro.render(' in detail
     assert 'operational_section_card.render(' in detail
     assert 'resource_posture_grid.render(tenant_governance_metrics, columns=4)' in detail
+    assert 'header_badge=table_label.metadata_label((tenant_governance_metrics|length)' in detail
+    assert "~ ' Indicators', icon='layout-grid')" in detail
+    assert 'tenant-governance-scope-title' not in detail
+    assert 'Committed Namespace, environment, authority and lifecycle posture for this Tenant.' not in detail
     assert "'Tenant Governance'" in detail
     assert "'layout-grid'" in detail
     assert "id='tenant-governance-scope-card'" in detail
@@ -1062,6 +1067,22 @@ def test_governance_scope_reuses_approved_tenant_estate_posture_pattern():
     assert 'tenant-resource-coverage-title' not in detail
     assert 'tenant-authority-scope-title' not in detail
     assert "'Tenant Estate'," not in detail  # Never label one Tenant as fleet estate.
+
+
+def test_release_workflow_intro_precedes_permanent_htmx_scoped_wizard() -> None:
+    detail = read(DETAIL)
+    Environment().parse(detail)
+
+    intro = "section_intro.render('Release Workflow',"
+    card = '<section id="tenant-release-governance"'
+    assert detail.count(intro) == 1
+    assert detail.count(card) == 1
+    assert detail.index(intro) < detail.index(card)
+    assert 'tenant-release-workflow-heading' in detail
+    assert 'Review committed scope, independent approval, and provider handoff' in detail
+    assert 'hx-target="#tenant-release-governance"' in detail
+    assert 'hx-select="#tenant-release-governance"' in detail
+    assert "tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready'" in detail
 
 
 def test_single_tenant_overview_and_authority_boundary_preserved():

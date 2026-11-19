@@ -11,25 +11,28 @@
     domain_label,
     scope_label,
     empty_title='No Generated Reports',
-    empty_description='Generate the first report to establish reporting activity for this scope.'
+    empty_description='Generate the first report to establish reporting activity for this scope.',
+    evidence=none
     ) -%}
-    {% set source_available = reporting.source_status|default('Unavailable', true)|lower == 'available' %}
+    {% set evidence_only = evidence is not none %}
+    {% set source_available = evidence.available if evidence_only else reporting.source_status|default('Unavailable', true)|lower == 'available' %}
+    {% set display_status = ('Evidence Only' if source_available else 'Not Collected') if evidence_only else reporting.source_status|default('Unavailable', true) %}
     {% call operational_section_card.render(
         'Reporting Summary',
-        'Generated output, templates, schedules, and recent activity.',
+        'Committed inventory, account, and repository evidence.' if evidence_only else 'Generated output, templates, schedules, and recent activity.',
         'file-chart-column',
-        action_href=url_for('reports.overview'),
-        action_label='Open Reports Workspace',
+        action_href=evidence.action_href if evidence_only else url_for('reports.overview'),
+        action_label='View Repositories' if evidence_only else 'Open Reports Workspace',
         header_badge=table_label.status_label(
-        reporting.source_status|default('Unavailable', true),
-        tone='normal' if source_available else 'unknown'
+        display_status,
+        tone=('info' if source_available else 'unknown') if evidence_only else ('normal' if source_available else 'unknown')
         ),
         body_classes='space-y-4 p-5',
         extra_classes='h-full'
         ) %}
         <section class="grid gap-3 sm:grid-cols-3"
                  aria-label="{{ domain_label }} reporting snapshot">
-            {% set reporting_metrics = [
+            {% set reporting_metrics = evidence.metrics if evidence_only else [
                             ('Generated Reports', reporting.generated_reports, 'files'),
                             ('Report Templates', reporting.templates, 'layout-template'),
                             ('Report Schedules', reporting.schedules, 'calendar-clock')
@@ -49,26 +52,28 @@
                 </article>
             {% endfor %}
         </section>
+        {% set recent_items = ([evidence.activity] if evidence.activity else []) if evidence_only else reporting.latest_reports %}
         <section aria-labelledby="reporting-recent-activity-title">
             <div class="mb-2.5 flex flex-wrap items-center justify-between gap-2">
                 <h3 id="reporting-recent-activity-title"
-                    class="text-sm font-semibold text-content-primary">Recent Report Activity</h3>
-                {% if reporting.latest_reports %}
-                    {{ table_label.metadata_label(table_label.count_text(reporting.latest_reports|length, 'Record') ,
+                    class="text-sm font-semibold text-content-primary">{{ 'Recent Evidence Activity' if evidence_only else 'Recent Report Activity' }}</h3>
+                {% if recent_items %}
+                    {{ table_label.metadata_label(table_label.count_text(recent_items|length, 'Record') ,
                     icon='history'
                     ) }}
                 {% endif %}
             </div>
-            {% if reporting.latest_reports %}
+            {% if recent_items %}
                 <div class="divide-y divide-outline-subtle border-y border-outline-subtle">
-                    {% for report in reporting.latest_reports[:4] %}
+                    {% for report in recent_items[:4] %}
                         {% set normalized_status = report.status|default('Unknown', true)|lower %}
-                        {% set status_tone = 'normal' if normalized_status in ['completed', 'ready', 'succeeded'] else ('critical' if normalized_status in ['failed', 'error'] else ('info' if normalized_status in ['queued', 'running', 'pending', 'in progress'] else 'unknown')) %}
+                        {% set status_tone = 'info' if evidence_only else ('normal' if normalized_status in ['completed', 'ready', 'succeeded'] else ('critical' if normalized_status in ['failed', 'error'] else ('info' if normalized_status in ['queued', 'running', 'pending', 'in progress'] else 'unknown'))) %}
                         <article class="flex min-w-0 flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:justify-between">
                             <div class="flex min-w-0 items-center gap-3">
                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                       aria-hidden="true">
-                                    <i data-lucide="file-check-2" class="h-4 w-4"></i>
+                                    <i data-lucide="{{ 'database-zap' if evidence_only else 'file-check-2' }}"
+                                       class="h-4 w-4"></i>
                                 </span>
                                 <div class="min-w-0">
                                     <p class="truncate text-sm font-semibold text-content-primary">{{ report.title }}</p>
@@ -90,13 +95,15 @@
                             <i data-lucide="file-plus-2" class="h-4 w-4"></i>
                         </span>
                         <div class="min-w-0 flex-1">
-                            <p class="text-sm font-semibold text-content-primary">{{ empty_title }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ empty_description }}</p>
-                            <a href="{{ url_for('reports.generate_report') }}"
-                               class="mt-3 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-kaori-primary/20 bg-kaori-soft px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                                <i data-lucide="plus" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                Create Report Request
-                            </a>
+                            <p class="text-sm font-semibold text-content-primary">{{ evidence.empty_title if evidence_only else empty_title }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ evidence.empty_description if evidence_only else empty_description }}</p>
+                            {% if not evidence_only %}
+                                <a href="{{ url_for('reports.generate_report') }}"
+                                   class="mt-3 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-kaori-primary/20 bg-kaori-soft px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                    <i data-lucide="plus" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                    Create Report Request
+                                </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -112,14 +119,14 @@
                 <div class="min-w-0">
                     <p class="text-sm font-semibold text-content-primary">Reporting Tip</p>
                     <p class="mt-1 text-xs leading-5 text-content-muted">
-                        Use templates for repeatable report structure. Add schedules only after a manual report has been reviewed and accepted.
+                        {{ evidence.tip if evidence_only else 'Use templates for repeatable report structure. Add schedules only after a manual report has been reviewed and accepted.' }}
                     </p>
                 </div>
             </div>
         </aside>
     {% endcall %}
 {%- endmacro %}
-{% macro guidance(scope_label, evidence_label, narrow_scope_label, generate_copy=None) -%}
+{% macro guidance(scope_label, evidence_label, narrow_scope_label, generate_copy=None, evidence_only=false, evidence_available=true) -%}
     {% set reporting_steps = [
             ('01', 'scan-search', 'Validate', 'Confirm scope, period, freshness, and source coverage.'),
             ('02', 'layout-template', 'Select', 'Choose the report and narrowest scope for accurate results.'),
@@ -128,6 +135,9 @@
             ('05', 'calendar-clock', 'Schedule', 'Set cadence and delivery after the output is reviewed.'),
             ('06', 'archive', 'Retain', 'Preserve the artifact and supporting audit evidence for traceability.')
         ] %}
+    {% if evidence_only %}
+        {% set reporting_steps = [('01', 'scan-search', 'Validate', 'Confirm the authorized installation and retained evidence freshness.'), ('02', 'layout-template', 'Select', 'Select only the repository observations within this installation grant.'), ('03', 'database-zap', 'Collect', 'Commit the authoritative inventory snapshot through the approved collector.'), ('04', 'git-branch', 'Correlate', 'Verify account identity and repository evidence without inferring PR, CI or DORA results.'), ('05', 'shield-check', 'Review', 'Require a separately admitted report source before generating or scheduling output.'), ('06', 'archive', 'Retain', 'Preserve collected snapshot lineage, reviewer decisions and audit evidence.')] %}
+    {% endif %}
     {% call operational_section_card.render(
         'Reporting Workflow',
         'From validated scope to retained evidence.',
@@ -152,7 +162,7 @@
                         <i data-lucide="database-zap"
                            class="h-4 w-4 shrink-0 text-kaori-primary"
                            aria-hidden="true"></i>
-                        <p class="text-xs font-semibold text-content-primary">Evidence Backed</p>
+                        <p class="text-xs font-semibold text-content-primary">{{ 'Evidence Pending' if evidence_only and not evidence_available else 'Evidence Backed' }}</p>
                     </div>
                     <p class="mt-1.5 text-xs leading-5 text-content-muted">{{ evidence_label }}</p>
                 </div>
@@ -163,7 +173,7 @@
                            aria-hidden="true"></i>
                         <p class="text-xs font-semibold text-content-primary">Review First</p>
                     </div>
-                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Review before reuse.</p>
+                    <p class="mt-1.5 text-xs leading-5 text-content-muted">{{ 'Review before report admission.' if evidence_only else 'Review before reuse.' }}</p>
                 </div>
             </div>
         </section>
@@ -206,7 +216,7 @@
                            class="h-3.5 w-3.5 shrink-0 text-kaori-primary"
                            aria-hidden="true"></i>
                         <p class="text-xs text-content-secondary">
-                            <span class="font-semibold text-content-primary">One-time</span> · Manual
+                            <span class="font-semibold text-content-primary">{{ 'Evidence' if evidence_only else 'One-time' }}</span> · {{ 'Manual Review' if evidence_only else 'Manual' }}
                         </p>
                     </div>
                     <div class="flex min-w-0 items-center gap-2 rounded-lg bg-surface-card px-3 py-2.5">
@@ -214,7 +224,7 @@
                            class="h-3.5 w-3.5 shrink-0 text-kaori-primary"
                            aria-hidden="true"></i>
                         <p class="text-xs text-content-secondary">
-                            <span class="font-semibold text-content-primary">Recurring</span> · Schedule
+                            <span class="font-semibold text-content-primary">Recurring</span> · {{ 'Not Qualified' if evidence_only else 'Schedule' }}
                         </p>
                     </div>
                 </div>

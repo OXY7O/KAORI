@@ -111,3 +111,45 @@ def test_global_search_uses_kaori_semantic_tokens_without_raw_palette_drift() ->
     assert 'border-status-warning-border' in script
     assert 'border-status-critical-border' in script
     assert 'border-status-unknown-border' in script
+
+
+def test_global_search_discovers_current_permissioned_sidebar_capabilities() -> None:
+    routes = read('app/platform_operations/global_search/routes.py')
+    service = read('app/platform_operations/global_search/service.py')
+    catalog = read('app/common/workspace_navigation_catalog.py')
+
+    assert 'from app.common.workspace_navigation import build_sidebar_navigation' in routes
+    assert 'sidebar_sections=build_sidebar_navigation(None, current_user)' in routes
+    assert 'sidebar_sections: tuple[dict[str, Any], ...]' in service
+    assert "children = workspace['children']" in service
+    assert "str(child['href'])" in service
+    assert "str(child['icon'])" in service
+    assert 'QUICK_NAVIGATION_KEYS' in service
+    assert 'MAX_NAVIGATION_RESULTS = 16' in service
+    for key in (
+        "'artifact_registry'",
+        "'source_control'",
+        "'secrets_pki'",
+        "'security_posture'",
+        "'operations_center'",
+        "'integrations'",
+        "'access'",
+    ):
+        assert key in catalog
+        assert key in service
+    assert 'build_sidebar_navigation(None, current_user)' in routes
+    assert 'by_url: dict[str, dict[str, Any]]' in service
+
+
+def test_global_search_keeps_resource_index_scope_truthful() -> None:
+    search = read('app/templates/components/navigation/_global_search.html')
+    service = read('app/platform_operations/global_search/service.py')
+    routes = read('app/platform_operations/global_search/routes.py')
+
+    assert 'Authorized KAORI capabilities and committed Kubernetes/Object Storage snapshots.' in search
+    assert 'Search capabilities, pages, clusters, pods, buckets...' in search
+    assert 'Snapshot-backed search · no live Kubernetes or provider query' in search
+    assert 'can_view_kubernetes_inventory=' in routes
+    assert 'can_view_object_storage_inventory=' in routes
+    assert 'MAX_RESULTS_TOTAL = 24' in service
+    assert 'MIN_RESOURCE_QUERY_LENGTH = 2' in service

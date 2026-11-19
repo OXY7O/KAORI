@@ -65,6 +65,229 @@ KAORI does not store the LDAP user's password.
 
 KAORI validates server certificates for LDAPS and StartTLS. StartTLS is negotiated before the bind credentials are sent.
 
+### Persistent internal LDAP CA for DevContainer
+
+Use KAORI's **existing** ignored root `secrets/` directory and worktree
+bind mount. Do not manually install a CA under an ephemeral container `/etc`
+path; recreation would discard it. The LDAP issuing CA is separate from
+Vault's CA unless the same authority actually signed both server certificates.
+
+On the **host checkout** (WSL or Windows; not inside the container), copy only
+the approved public issuing CA/full trust chain, never its private key:
+
+```bash
+cd /path/to/KAORI
+mkdir -p secrets/trust/ldaps
+install -m 0644 /path/to/approved-ad-issuing-ca.pem secrets/trust/ldaps/ca.pem
+git check-ignore -v secrets/trust/ldaps/ca.pem
+openssl x509 -in secrets/trust/ldaps/ca.pem -noout -subject -issuer -dates
+```
+
+Set the ignored **local** `.env` value used by KAORI web processes (the
+tracked `.env.example` stays blank by default):
+
+```dotenv
+KAORI_LDAP_CA_BUNDLE=/workspace/kaori/secrets/trust/ldaps/ca.pem
+```
+
+The existing DevContainer Compose worktree mount already makes this path
+available to `workspace` and workers. The LDAP adapter passes the optional
+PEM bundle to `ldap3.Tls` for **both** LDAPS and StartTLS with
+`ssl.CERT_REQUIRED`; if the variable is empty, normal system CA trust remains.
+If configured with a missing, relative, or unreadable file, the adapter fails
+closed instead of silently trusting a different CA or disabling verification.
+
+Before entering credentials in the UI, verify the AD server hostname and
+chain **from the environment that can reach it**:
+
+```bash
+openssl s_client -connect adds.kaori.cloud:636 \
+  -servername adds.kaori.cloud \
+  -CAfile secrets/trust/ldaps/ca.pem \
+  -verify_hostname adds.kaori.cloud \
+  -verify_return_error </dev/null
+```
+
+For StartTLS, use `openssl s_client -starttls ldap` with the actual LDAP
+hostname/port, `-CAfile`, `-verify_hostname` and
+`-verify_return_error`. Do not use `-k`, `CERT_NONE`, or LDAP plaintext.
+`KAORI_LDAP_BIND_PASSWORD` remains separately provisioned into the runtime;
+the CA file is **not** an authentication secret.
+
+The Flask F5 debugger reads `.env` on **process start**: restart F5 after
+changing this value. Compose-launched web processes require a controlled
+service recreate to refresh process environment. An edited CA file on the
+host is visible via the bind mount, but validate the new chain before reusing
+an existing connection; refresh the relevant LDAP process if required. Do not
+rebuild the whole DevContainer, delete data volumes, or manually modify
+container trust files merely to add this CA. A valid certificate alone does
+not prove the LDAP bind/password, directory permissions, or user login works.
+
+### Persistent LDAP hostname resolution in Docker Desktop DevContainer
+
+An approved CA bundle is necessary but **not sufficient**: the actual Flask
+container must resolve the certificate's hostname. If
+`getent hosts adds.kaori.cloud` returns nothing and OpenSSL fails with
+`BIO_lookup_ex: Name or service not known`, DNS fails **before** any TCP,
+TLS or service-account bind attempt. Do not diagnose that error as bad
+certificates or credentials. A manual `/etc/hosts` change inside the
+container is ephemeral and is not the KAORI operating procedure.
+
+Prefer a **proper AD DNS record**, with Docker Desktop forwarding queries to
+the approved corporate/lab resolver. When a lab AD hostname is intentionally
+not served by Docker's resolver, KAORI has an opt-in ignored local Compose
+override. The existing DevContainer host initializer creates:
+
+```text
+secrets/devcontainer/compose.host-overrides.yml
+```
+
+with `services: {}` by default (no new mapping). It is the **last** file in
+`.devcontainer/devcontainer.json`'s `dockerComposeFile` list. The default
+does not affect any provider DNS, production deployment, or other workers.
+The operator-owned file is never overwritten on subsequent starts.
+
+1. Discover the verified **AD server IP** from Windows DNS or the previously
+   approved Windows/WSL host mapping; do **not** guess or use Vault's address.
+   On Windows PowerShell: `Resolve-DnsName adds.kaori.cloud`; also inspect
+   `C:\Windows\System32\drivers\etc\hosts` if resolution was
+   previously handled by a local static record. Avoid printing unrelated
+   host mappings or credentials.
+2. From the **host checkout**, create the ignored overlay if it does not
+   yet exist (the next initializer run also creates a harmless empty one).
+   Do this before any DevContainer rebuild so Compose has a file to load.
+   Then edit it with your verified lab IP:
+
+```bash
+mkdir -p secrets/devcontainer
+if [ ! -e secrets/devcontainer/compose.host-overrides.yml ]; then
+  cp .devcontainer/examples/compose.host-overrides.yml.example \
+    secrets/devcontainer/compose.host-overrides.yml
+fi
+git check-ignore -v secrets/devcontainer/compose.host-overrides.yml
+```
+
+   Use the following exact YAML structure, replacing the reserved
+   documentation IP with the real approved address:
+
+```yaml
+services:
+  workspace:
+    extra_hosts:
+      - "adds.kaori.cloud=192.0.2.10"
+```
+
+The tracked safe sample is
+`.devcontainer/examples/compose.host-overrides.yml.example`.
+`workspace` is the only service requiring LDAP hostname resolution for
+**Access → Identity Providers** Test Connection, directory search and user
+login. If a separate approved process later needs the same endpoint, update
+that process's explicit Compose service independently rather than blindly
+applying this mapping to all workers.
+
+3. From the **host terminal** with Docker Compose, inspect the resolved
+   configuration before creating/recreating any service:
+
+```bash
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml \
+  -f secrets/devcontainer/compose.host-overrides.yml config --format json \
+  | jq '.services.workspace.extra_hosts'
+```
+
+This prints **only** the workspace host aliases, not the full Compose
+configuration that can include environment credentials. Requires `jq`.
+Confirm the `workspace.extra_hosts` entry is the intended
+`adds.kaori.cloud` hostname and actual AD address, without changes to DB or
+Redis services. `dockerComposeFile` paths are loaded by VS Code DevContainer
+in the same order. **One controlled container recreate is necessary** for a
+new or changed `extra_hosts` entry; merely restarting Flask F5 is not
+enough. After updating this devcontainer configuration, use VS Code
+**Dev Containers → Rebuild and Reopen in Container** once, or an approved
+Compose-only `workspace` recreate; **do not** run `down --volumes`,
+reset credentials, or mutate the production environment. The ignored
+override survives further restarts/rebuilds at the same checkout.
+
+4. From the newly created workspace container:
+
+```bash
+getent ahostsv4 adds.kaori.cloud
+openssl s_client -connect adds.kaori.cloud:636 \
+  -servername adds.kaori.cloud \
+  -CAfile /workspace/kaori/secrets/trust/ldaps/ca.pem \
+  -verify_hostname adds.kaori.cloud -verify_return_error </dev/null
+```
+
+First confirm the **expected IP**; next confirm TCP 636 and
+`Verify return code: 0 (ok)`. The LDAP test CA currently displayed by the
+operator has `subject=issuer=CN=adds.kaori.cloud`, so examine
+`openssl x509 -text` to verify that the stored PEM is the appropriate
+approved trust anchor before relying on it. A successful certificate
+verification still does not prove that the configured bind DN/password works.
+
+Only then restart the Flask F5 process if the ignored `.env` changed,
+leave **Enable provider authentication** disabled, run **Test Connection**,
+and proceed to service-bind, scoped directory-provisioning and separate login
+UAT. No `ssl.CERT_NONE`, raw LDAP transport, or TLS trust bypass.
+
+### DNS resolution for production KAORI deployments
+
+The ignored `secrets/devcontainer/compose.host-overrides.yml` extension is
+**development-only** and is not a production service-discovery source.
+A successful LDAPS handshake in Docker Desktop does not prove hostname
+resolution from a production application or worker.
+
+**Preferred:** The operator of the external identity directory maintains the
+authoritative AD DNS A/AAAA record for its approved stable FQDN. Infrastructure
+DNS forwarding/resolver configuration makes this record resolvable from the
+networks running KAORI. Confirm network/firewall access to TCP 636, certificate
+hostname match, and the independently managed issuing CA trust bundle.
+The external DNS/AD systems remain authoritative; do not duplicate their
+record inventory or configuration into the KAORI application.
+
+**If KAORI runs on Kubernetes:** Confirm resolution in the actual KAORI web
+and any consumer worker pods. When a private AD zone is not known to cluster
+DNS, an infrastructure-owned CoreDNS **conditional forward/stub domain**
+can direct that approved zone to the organization's authoritative internal
+resolver, using its already-adopted GitOps/cluster change workflow. Do not
+replace the cluster's general DNS resolver or forward all traffic to AD
+without an approved network design. Changes to CoreDNS may affect unrelated
+workloads and require cluster-level validation and rollback evidence.
+For a tightly scoped exception where DNS cannot be provided, Kubernetes
+`spec.hostAliases` on **only the necessary Pod templates** can supply a
+fixed FQDN-to-IP mapping. Declare it in managed Deployment/Helm/GitOps
+configuration and roll out the affected pods; never patch a running pod's
+`/etc/hosts` by hand. Changes to directory IPs then require deployment
+updates and may cause stale mappings.
+
+**If KAORI runs in production Docker Compose:** The production host/container
+resolver should use the approved internal DNS service. As a temporary,
+documented exception for a stable private endpoint, put `extra_hosts` on
+the **relevant production service** in its deployment-managed Compose
+configuration, not in the ignored DevContainer extension. Recreate only
+affected services to apply updates; retain data volumes and verify all
+application instances that use the directory.
+
+For **either** runtime, verify the complete chain from each relevant
+application instance: expected FQDN → approved resolver/IP → TCP reachability
+→ LDAPS certificate path and SAN → service bind → scoped directory search
+→ KAORI provider validation and authentication UAT. Prefer the hostname,
+not a direct IP URI, so TLS hostname verification remains meaningful.
+Record changes, approvals, rollback plan and operational evidence under the
+existing deployment/change procedure. Never disable TLS verification to
+work around DNS or trust failures.
+
+**Governed production implementation:** Use the existing server adapter's
+`/etc/kaori/trust` → `/run/kaori/trust` read-only mount, not the
+DevContainer's local host override. The complete deployment, conditional
+forwarding reference, CA validation, access scoping, rotation and rollback
+procedure is in
+[Production internal DNS and provider CA trust](../operations/production-provider-dns-trust.md).
+The currently observed lab LDAP certificate appears to be a directly
+trusted **self-signed server leaf**, not an issuing CA: its Key Usage
+contains `Digital Signature, Key Encipherment` but not `keyCertSign`,
+and no `Basic Constraints: CA:TRUE` was shown. Do not promote it as an
+enterprise CA without a separate approved PKI exception.
+
 ## Service account requirements
 
 Create a dedicated read-only directory account. It needs only:

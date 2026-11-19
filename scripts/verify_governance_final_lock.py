@@ -58,19 +58,207 @@ def main() -> int:
 
     for token in (
         "@permission_required('governance.view')",
-        "can_view_tls=current_user.has_permission('tls_certificates.view')",
+        "can_view_tls = current_user.has_permission('tls_certificates.view')",
     ):
         require(
             token in governance_source,
             f'Governance Overview route must preserve domain authorization and child-capability visibility: {token}',
             errors,
         )
-    for retired_dependency in ('get_tls_certificate_page', 'has_registered_clusters', 'tls_payload'):
+    for retired_dependency in ('get_tls_certificate_page', 'tls_payload'):
         require(
             retired_dependency not in governance_source,
-            f'Governance Overview route must not load child-capability evidence: {retired_dependency}',
+            f'Governance Overview route must not load full child-capability evidence: {retired_dependency}',
             errors,
         )
+    permission_position = governance_source.find("can_view_tls = current_user.has_permission('tls_certificates.view')")
+    cluster_gate_position = governance_source.find('if can_view_tls and has_registered_clusters() is True:')
+    snapshot_read_position = governance_source.find('tls_snapshot = get_tls_collection_snapshot()')
+    require(
+        0 <= permission_position < cluster_gate_position < snapshot_read_position,
+        'TLS snapshot retrieval must follow child permission and cluster-readiness checks.',
+        errors,
+    )
+
+    # Internal PKI source-readiness is a real read-only cluster registry,
+    # not fabricated control-plane certificate evidence or an executable renewal.
+    internal_routes = read('app/kubernetes/governance/internal_certificates/routes.py')
+    internal_service = read('app/kubernetes/governance/internal_certificates/service.py')
+    internal_page = read('app/templates/kubernetes/governance/internal_certificates/index.html')
+    pki_snapshot = read('app/templates/kubernetes/governance/internal_certificates/partials/_snapshot_context.html')
+    pki_operations = read(
+        'app/templates/kubernetes/governance/internal_certificates/partials/_collection_operations.html'
+    )
+    pki_posture = read('app/templates/kubernetes/governance/internal_certificates/partials/_posture.html')
+    pki_inventory = read(
+        'app/templates/kubernetes/governance/internal_certificates/partials/_certificate_inventory.html'
+    )
+    access_defaults = read('app/definitions/catalogs/access/rbac/access.yaml')
+    governance_overview = read('app/templates/kubernetes/governance/overview/index.html')
+    for guard in (
+        "@permission_required('governance.view')",
+        "@permission_required('clusters.view')",
+        "@permission_required('internal_certificates.view')",
+    ):
+        require(guard in internal_routes, f'Internal PKI source route missing guard: {guard}', errors)
+    require(
+        'if registered_clusters is True else None' in internal_routes,
+        'Internal PKI must block clusterless/unknown source reads before hitting the registry.',
+        errors,
+    )
+    for item in (
+        'db.session.execute(',
+        'KubernetesConnection.detected_platform',
+        'KubernetesConnection.detected_version',
+        "'collection_status': 'Not Collected'",
+        "'authority_status': 'Not Verified'",
+        "'expiry_status': 'Unknown'",
+        '_DEFAULT_PER_PAGE = 5',
+    ):
+        require(item in internal_service, f'Internal PKI source projection is missing: {item}', errors)
+    for forbidden in ('get_integration(', 'get_tls_certificate_page(', 'kubeadm certs renew'):
+        require(
+            forbidden not in internal_service and forbidden not in internal_routes,
+            f'Internal PKI read-only route must not collect or mutate source data: {forbidden}',
+            errors,
+        )
+    for item in (
+        'Internal PKI Source Registry',
+        "registry_ui.filter_form('governance.internal_certificates'",
+        "registry_ui.footer('governance.internal_certificates'",
+        'Provider-Owned Renewal',
+        'partials/_snapshot_context.html',
+        'partials/_collection_operations.html',
+        'partials/_posture.html',
+        'Internal PKI Evidence',
+        'workspace_tabs.render_query_tabs(evidence_tabs',
+        'hx-select="#internal-pki-evidence-workspace"',
+        "active_tab == 'sources'",
+        'registry_ui.clear_filters_action(',
+        "'clear_filters': 'sources'",
+        'hx-boost="false" hx-disable',
+        'header_actions=source_clear_action',
+        "url_for('governance.internal_certificates', **source_clear_query)",
+        'table_ui.cluster_identity(record.name, record.environment)',
+        'aria-label="View PKI Evidence for {{ record.name }}"',
+        'name="environment"',
+        'name="platform"',
+        'table_ui.table_classes',
+    ):
+        require(item in internal_page, f'Internal PKI workspace is missing: {item}', errors)
+    require(
+        "active_tab = request.args.get('evidence_tab', 'sources')" in internal_routes,
+        'Internal PKI evidence tabs must be safe query-backed server navigation.',
+        errors,
+    )
+    # The approved GET reset redirects with urlencoded query *data*, never
+    # untrusted request keys expanded into Flask's reserved url_for kwargs.
+    for marker in (
+        "clear_tab = request.args.get('clear_filters')",
+        "if clear_tab in {'sources', 'certificates'}:",
+        'query = request.args.to_dict(flat=True)',
+        "query.pop('clear_filters', None)",
+        "if clear_tab == 'sources':",
+        "reset_fields = ('cluster_id', 'search', 'environment', 'platform', 'page')",
+        "'cert_search',",
+        "'cert_kind',",
+        "'cert_expiry',",
+        "'cert_coverage',",
+        "'cert_freshness',",
+        "'cert_page',",
+        'for field in reset_fields:',
+        'query.pop(field, None)',
+        "query['evidence_tab'] = clear_tab",
+        "location = url_for('governance.internal_certificates')",
+        'if query:',
+        "location = f'{location}?{urlencode(query)}'",
+        'return redirect(location, code=303)',
+    ):
+        require(
+            marker in internal_routes,
+            f'Internal PKI Clear Filters canonical GET reset is missing: {marker}',
+            errors,
+        )
+    require(
+        "url_for('governance.internal_certificates', **query)" not in internal_routes,
+        'Internal PKI Clear Filters must not pass untrusted query keys as url_for kwargs.',
+        errors,
+    )
+    for item in ('Internal PKI Collection Snapshot', 'components/snapshot_context_bar.html'):
+        require(item in pki_snapshot, f'Internal PKI collection snapshot is missing: {item}', errors)
+    for item in ('Internal PKI Collection Operations', 'PKI Evidence Boundaries', 'Sync Internal PKI', 'disabled'):
+        require(item in pki_operations, f'Internal PKI collection operations is missing: {item}', errors)
+    for item in (
+        'Source-Reported Certificate Posture',
+        'components/resource_posture_grid.html',
+        'Partial source coverage; full-cluster status unverified.',
+    ):
+        require(item in pki_posture, f'Internal PKI posture is missing: {item}', errors)
+    for item in (
+        'registry_ui.clear_filters_action(',
+        "'clear_filters': 'certificates'",
+        'hx-boost="false" hx-disable',
+        'header_actions=certificate_clear_action',
+        'certificate_scope_badge',
+        'id="internal-pki-cluster-filter"',
+        'name="cluster_id"',
+        'All Clusters',
+        'payload.filter_options.clusters',
+        'table_ui.title_cell(certificate.component',
+        'name="cert_kind"',
+        'name="cert_expiry"',
+        'name="cert_coverage"',
+        'name="cert_freshness"',
+        'table_ui.table_classes',
+    ):
+        require(item in pki_inventory, f'Internal PKI certificate filter contract missing: {item}', errors)
+    require(
+        'Clear Cluster Scope' not in internal_page,
+        'Internal PKI must not duplicate the cluster scope reset outside Clear Filters.',
+        errors,
+    )
+    require(
+        'hx-get=' not in internal_page.split('source_clear_action %}', 1)[1].split('{% endset %}', 1)[0],
+        'Internal PKI Clear Filters must use the reliable GET-navigation fallback.',
+        errors,
+    )
+    require(
+        'hx-get=' not in pki_inventory.split('certificate_clear_action %}', 1)[1].split('{% endset %}', 1)[0],
+        'Certificate Clear Filters must use the reliable GET-navigation fallback.',
+        errors,
+    )
+    require(
+        'hx-post' not in pki_operations and '<form' not in pki_operations,
+        'Internal PKI Sync must not expose a mutation route while collection is unavailable.',
+        errors,
+    )
+    require(
+        "section_intro.render('Source Readiness'" not in internal_page,
+        'Internal PKI must not render a standalone Source Readiness intro directly after Hero.',
+        errors,
+    )
+    require(
+        'Renewal Deferred' not in internal_page,
+        'Internal PKI renewal ownership must not be presented as deferred KAORI execution.',
+        errors,
+    )
+    require(
+        'Request Renewal' not in internal_page + pki_operations and 'Rotate All' not in internal_page + pki_operations,
+        'Internal PKI source readiness must remain non-mutating.',
+        errors,
+    )
+    for item in (
+        "'title': 'Internal Certificates'",
+        "'status': 'Source Pending'",
+        "'available': can_view_internal_certificates",
+        'sm:grid-cols-2',
+    ):
+        require(item in governance_overview, f'Governance needs a truthful second capability: {item}', errors)
+    require(
+        'internal_certificates.view: [governance.view, clusters.view]' in access_defaults,
+        'Internal PKI must use the canonical dependent RBAC permission.',
+        errors,
+    )
 
     for name, expected_permission in (
         ('tls_certificates_index', 'tls_certificates.view'),
@@ -158,8 +346,8 @@ def main() -> int:
     for token in (
         'Review Kubernetes governance controls, evidence, and ownership.',
         'Governance Capabilities',
-        'Implemented governance controls are added as independent capability cards without changing the Overview structure.',
-        '[grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr))]',
+        'Open independent governance workspaces with explicit evidence and source-readiness status.',
+        'sm:grid-cols-2',
         "'title': 'TLS Certificates'",
         "'action': 'Open TLS Certificates' if can_view_tls else 'View Permission Required'",
         'Governance Operating Model',
@@ -169,29 +357,61 @@ def main() -> int:
         'Controlled Handoffs',
         'KAORI applies governance policy and authorization guardrails without cloning the provider control plane.',
         'View Permission Required',
-        'New governance capabilities join this catalog only after implementation and authorization',
+        'header_badge=capability_badge',
+        "info_tip.render('governance-operating-model-guide'",
+        "variant='guide'",
+        'header_badge=model_guide',
+        'overflow-hidden rounded-xl border border-outline-subtle',
+        'workspace_card.render(',
+        'compact=true',
+        'kubernetes/governance/tls_certificates/partials/_snapshot_context.html',
+        '{% if can_view_tls and tls_snapshot is not none %}',
     ):
-        require(token in overview, f'Governance Overview domain-first composition is missing: {token}', errors)
+        require(token in overview, f'Governance Overview composition is missing: {token}', errors)
+
+    for token in (
+        'Governance Control Context',
+        '[grid-template-columns:repeat(auto-fit',
+        'components/snapshot_context_bar.html',
+        'get_tls_certificate_page',
+        'tls_payload',
+        'New governance capabilities join this catalog only after implementation',
+    ):
+        require(token not in overview, f'Governance Overview contains retired pattern: {token}', errors)
+
+    context_position = overview.index('partials/_snapshot_context.html')
+    scope_position = overview.index("section_intro.render('Governance Scope'")
+    require(
+        context_position < scope_position,
+        'Authorized TLS snapshot must follow Hero and precede Governance Scope.',
+        errors,
+    )
     require(
         "action_href=url_for('governance.tls_certificates')" not in overview
         and "action_label='Open TLS Certificates'" not in overview,
         'Governance Capabilities parent card must not own a TLS-specific action.',
         errors,
     )
-
-    for retired_tls_overview in (
-        'Committed Governance Posture',
-        'TLS Governance Snapshot',
-        'TLS Governance Posture',
-        'components/snapshot_context_bar.html',
-        '{% if can_view_tls and tls_payload %}',
-        'TLS View Restricted',
+    for token in (
+        "can_view_tls = current_user.has_permission('tls_certificates.view')",
+        'if can_view_tls and has_registered_clusters() is True:',
+        'tls_snapshot = get_tls_collection_snapshot()',
     ):
         require(
-            retired_tls_overview not in overview,
-            f'Governance Overview must not be TLS-posture centric: {retired_tls_overview}',
+            token in governance_source,
+            f'Governance Overview must guard committed TLS evidence before reading it: {token}',
             errors,
         )
+
+    service = read('app/kubernetes/governance/tls_certificates/service.py')
+    for token in (
+        'def get_tls_collection_snapshot() -> dict[str, Any]:',
+        'check_tls_governance_schema_readiness()',
+        'return _collection_snapshot(',
+        "summary={'total': total}",
+    ):
+        require(token in service, f'TLS snapshot reuse must preserve committed read model: {token}', errors)
+
     require(
         'page_hero.context_card(' in hero,
         'TLS Governance Hero must use the canonical status-oriented context card.',
@@ -200,6 +420,22 @@ def main() -> int:
     require(
         'components/cluster/_hero_blocked_context.html' in hero and 'Governance Readiness' in hero,
         'TLS Governance Hero must use the canonical Kubernetes setup-blocked Hero context.',
+        errors,
+    )
+    tls_live_state = read('app/templates/kubernetes/governance/tls_certificates/partials/_sync_live_state.html')
+    for token in (
+        'components/info_tip.html',
+        "info_tip.render('tls-inventory-operations-guide'",
+        "'TLS Inventory Operations Guide'",
+        "variant='guide'",
+        'does not renew or rotate certificates',
+        'Bulk Rotation opens a separate permission-controlled workflow',
+    ):
+        require(token in tls_live_state, f'TLS Inventory Operations Guide is missing: {token}', errors)
+    require(
+        tls_live_state.index('table_label.status_label(payload.sync_state.label')
+        < tls_live_state.index("info_tip.render('tls-inventory-operations-guide'"),
+        'TLS Inventory Operations Guide must follow the existing live status badge.',
         errors,
     )
     page_content = read('app/templates/kubernetes/governance/tls_certificates/partials/_page_content.html')

@@ -71,3 +71,15 @@ def test_base_stage_refreshes_pcre2_before_runtime_package_install() -> None:
     assert pcre2_refresh in base_stage
     assert base_stage.index(repository_refresh) < base_stage.index(pcre2_refresh)
     assert base_stage.index(pcre2_refresh) < base_stage.index(runtime_install)
+
+
+def test_base_stage_rejects_unpatched_libpq5_from_cached_security_layer() -> None:
+    dockerfile = DOCKERFILE.read_text(encoding='utf-8')
+    base_stage = dockerfile.split('FROM base AS development', maxsplit=1)[0]
+
+    assert 'ARG LIBPQ5_MIN_VERSION=15.20-0+deb12u1' in base_stage
+    assert "dpkg-query -W -f='${Version}' libpq5" in base_stage
+    assert 'dpkg --compare-versions' in base_stage
+    assert 'ge "$LIBPQ5_MIN_VERSION"' in base_stage
+    assert base_stage.index('apt-get update') < base_stage.index('libpq5')
+    assert base_stage.index('libpq5') < base_stage.index('dpkg --compare-versions')

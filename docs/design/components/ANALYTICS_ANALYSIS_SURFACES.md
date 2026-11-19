@@ -32,6 +32,36 @@ Use:
 
 The previous Overview-only surface component was removed. Do not introduce a compatibility wrapper or duplicate page-local surface macros.
 
+## Kubernetes Analytics Overview Title Guides (#4736)
+
+Kubernetes Analytics Overview follows the established title-level Violet `info_tip.render(..., variant='guide')` grammar from Object Storage and Artifact Registry Analytics. **Controls & Data Readiness**, **Operational Health Summary**, and the parent **Analytics Overview Workspace** have one Guide beside their titles. Every Overview tab (Usage, Capacity, Workload, Storage, Consumers, Forecast, Alerts, Actions, Guidance) also owns one domain-specific Guide beside its snapshot title, independent of the semantic status badge and drill-down action.
+
+The shared `snapshot_unavailable(..., title_accessory='')` accepts an optional Guide for the seven worker-backed Overview panels when the committed dataset is unavailable. Its default empty accessory preserves existing consumers. Guide contents explain source, interpretation and workflow boundaries; actual stale/unknown/critical statuses and required recovery guidance remain visible in the normal surface. Tooltip IDs must be unique, and mobile titles may wrap naturally. The warning Operational Reading sentence is concise for a normal desktop single line without truncating or hiding risk.
+
+## Overview Section Introduction Hierarchy (#4736 Visual UAT)
+
+Kubernetes Analytics Overview separates Controls & Data Readiness from Operational Health Summary and the nine-tab Analytics Overview Workspace with two **plain section introductions**. They reuse `components/section_intro.html::render` and a `space-y-4` semantic wrapper with `aria-labelledby`, rather than adding another card, a second Hero, an unrelated callout, or a duplicate Guide.
+
+**Operational Health Review** appears in the committed Health Summary lazy partial after the controls form and before its existing six-signal card. **Explore Analytics Domains** appears in the parent Overview template after the Health Summary lazy target and before the original tabbed workspace. Each explains the purpose of the next card without repeating its own heading. HTMX lazy loading, filter scope, tab IDs, evidence authority, and existing Guide/status controls remain unchanged.
+
+## Concise Action and Capacity Guidance (#4763)
+
+The Overview Actions **Operational Triage / Before Execution** descriptions, Capacity **Commitment Profile** healthy rationale, **Measurement Standard** units note, and Capacity Risk **Governance Findings** caption use shorter, meaningful copy to target one desktop line at normal viewport. Jinja templates retain their established semantic labels; healthy rationale originates in the Capacity domain, not a duplicated template override. No CSS `truncate` or `whitespace-nowrap` is introduced to conceal information, and warning/critical/Unknown guidance and explicit ownership/recovery procedures remain intact. Mobile can wrap naturally. Desktop one-line geometry requires Visual QA on the exact UAT candidate.
+
+## Focused Analytics Section Intro Hierarchy and Capacity Copy (#4761)
+
+The existing **Overview** plain-text `section_intro.render(title, description, id)` hierarchy is now shared by all seven focused Kubernetes Analytics pages: Utilization, Capacity, Workload, Storage, Top Consumers, Forecast, and Alerts & Anomalies. Each page presents an independent posture introduction **before the existing summary/overview** and a domain-workspace introduction **before the existing tabbed workspace**, using `space-y-4` and matching `aria-labelledby`. The original Guides, status semantics, evidence cards, action controls, dependencies, source-readiness boundaries, HTMX tab IDs and lazy loading remain unchanged.
+
+The Utilization Trend **What To Do** interpretation is shortened to **“Investigate sustained pressure across the selected window. Use Node Detail to confirm hotspots and assess redistribution before resizing.”**, preserving sustained pressure review, Node Detail validation, redistribution and resizing decisions. Capacity's Node Filesystem scope note becomes **“Filesystem: not Kubernetes allocatable.”** in its domain summary and presentation default, and known legacy committed wording is normalized on presentation read to avoid inconsistent wording between Overview and Allocation & Headroom. The label is display-only: the filesystem stays a non-scheduling resource and is never included in Kubernetes Ready-worker allocatable capacity. Natural responsive text wrapping is retained; desktop two-line/one-line geometry requires Visual QA. **Do not remove** existing interpretation, risk, evidence or recommendation panels merely because Guides exist.
+
+## Kubernetes Focused Analysis Guides and Concise Decisions (#4746)
+
+After the nine-tab Overview title Guide standard (#4736), the seven focused Kubernetes Analytics routes — **Usage, Capacity, Workloads, Storage, Consumers, Forecast, and Alerts & Anomalies** — use the same `components/info_tip.html::render(..., variant='guide', placement='right')` beside their owning headers. This includes Controls & Data Readiness or Source Readiness, high-level summary, the shared Content Tabs workspace, and the selected tab's primary evidence section. Nested resource projections use distinct IDs per resource; asynchronous HTMX fragments own their Guide IDs and keep existing swap scope.
+
+`kubernetes/analytics/components/_analysis_workspace.html` provides optional default-empty `title_accessory` slots on existing `controls_readiness`, `overview`, and `tabbed` macros. The slots reuse `analytics/components/_controls_readiness.html` and shared header geometry; they do not introduce independent Guide controls, wrapper shells, tab controllers or new CSS. Context remains source-qualified and read-only. Statuses, unavailable observations, ownership, provider authority, and actions remain visible in the original surface.
+
+Overview compact text policy uses **shorter meaningful copy, not truncation or forced single-line CSS**: Storage Risk Context evidence-limit advice and Consumers' Recommended Action are concise for one desktop line; healthy Storage What To Watch aims for two desktop lines. Forecast Decision shortens only the exact no-projected-breach wording in the display, preserving other `forecast.risk_note` values and the original evidence/threshold classification. Natural mobile wrapping, desktop readability, and different fonts must still be visually verified.
+
 ## Primary Evidence
 
 Controls, readiness, committed snapshot metadata, charts, ranked records, pressure lanes, findings, and analytical context use neutral `bg-surface-card` or `bg-surface-muted` surfaces. Borders and whitespace separate peer evidence. Role-colored compact icons, labels, badges, charts, and bars provide hierarchy without tinting complete evidence panels.

@@ -1,4 +1,5 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% set registry_id = "operations-evidence-registry" %}
@@ -25,6 +26,17 @@
             ) }}
         {% endif %}
     {% endset %}
+    {% set title_info %}
+        {{ info_tip.render('tenant-operations-evidence-registry-guide',
+                'Runs & Evidence Registry Guide',
+                'Browse committed evidence families without provider mutations.',
+                [
+                'Each evidence family is a separate committed KAORI read model; changing it does not execute provider actions.',
+                'Tenant, search and pagination filters stay scoped to the selected evidence family.',
+                'Canonical Activity Audit and resource-specific capabilities retain complete operational history.'
+                ],
+                placement='right', variant='guide') }}
+    {% endset %}
     {{ table_ui.inventory_block_header('file-check-2',
         'Runs & Evidence Registry',
         'Browse one committed evidence family at a time; routine reads stay bounded as operational history grows.',
@@ -33,7 +45,8 @@
         none,
         none,
         header_actions=header_actions,
-        result_count=operations_evidence_pagination.total_items) }}
+        result_count=operations_evidence_pagination.total_items,
+        title_extra=title_info) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
             'tenant.operations',

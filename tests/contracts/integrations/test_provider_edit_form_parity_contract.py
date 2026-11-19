@@ -56,12 +56,12 @@ def test_edit_form_operator_language_uses_full_validation() -> None:
         "('Run Full Validation', 'Rebuild provider compatibility and adapter and query-contract readiness evidence.')"
         in metrics
     )
-    assert 'Saving changes does not establish readiness until Full Validation succeeds.' in metrics
+    assert 'Saved changes require successful Full Validation.' in metrics
     assert (
         "('Run Full Validation', 'Rebuild Alertmanager API compatibility and provider readiness evidence.')"
         in alertmanager
     )
-    assert 'Saving changes does not establish readiness until Full Validation succeeds.' in alertmanager
+    assert 'Saved changes require successful Full Validation.' in alertmanager
     assert (
         "('Run Full Validation', 'Rebuild MinIO compatibility and provider capability evidence after saving.')" in minio
     )

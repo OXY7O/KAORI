@@ -362,7 +362,7 @@ def _collection_snapshot(
         'source_label': 'Kubernetes TLS Secrets + Ingresses',
         'status': evidence_label,
         'tone': evidence_tone,
-        'description': 'Worker-generated certificate metadata and declared Ingress host relationships.',
+        'description': 'TLS certificates and Ingress host mappings.',
         'latest_collected': sync_state['last_success_label'],
         'latest_supporting': 'Worker-generated snapshot',
         'scope_label': scope_label,
@@ -449,6 +449,29 @@ def _schema_blocked_payload(
         },
         'schema_readiness': readiness.as_dict(),
     }
+
+
+def get_tls_collection_snapshot() -> dict[str, Any]:
+    """Read the TLS worker-committed snapshot without materializing registry rows.
+
+    Callers must authorize tls_certificates.view before invoking this method.
+    Both the TLS workspace and Governance landing reuse _collection_snapshot.
+    """
+    schema_readiness = check_tls_governance_schema_readiness()
+    if not schema_readiness.ready:
+        return _schema_blocked_payload({}, schema_readiness)['snapshot']
+
+    clusters = Cluster.query.order_by(Cluster.name.asc()).all()
+    total = db.session.query(func.count(TLSCertificateInventory.id)).scalar() or 0
+
+    from app.kubernetes.governance.tls_certificates.sync_state import build_tls_sync_state
+
+    return _collection_snapshot(
+        clusters=clusters,
+        selected_cluster_id='',
+        summary={'total': total},
+        sync_state=build_tls_sync_state(cluster_id=None),
+    )
 
 
 def get_tls_certificate_page(args: Any) -> dict[str, Any]:

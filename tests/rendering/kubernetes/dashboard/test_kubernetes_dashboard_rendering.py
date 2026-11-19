@@ -72,7 +72,34 @@ def test_shared_operational_dashboard_framework_is_valid_jinja() -> None:
     environment.parse(source)
 
     assert 'data-kaori-dashboard-framework="operational-v1"' in source
-    assert 'workspace_tabs.render(standard_tabs' in source
+    assert 'workspace_tabs.render(tabs if tabs is not none else standard_tabs' in source
+    assert 'macro navigation(prefix, aria_label, tabs=none)' in source
+
+    # #4711 admits domain labels without changing canonical defaults or panel keys.
+    module = (
+        Environment(loader=FileSystemLoader(ROOT / 'app/templates'), autoescape=True)
+        .get_template('components/operational_dashboard_workspace.html')
+        .module
+    )
+    default_navigation = module.navigation('admission-dashboard', 'Operational Perspectives')
+    assert default_navigation.count('role="tab"') == 4
+    assert 'Capacity &amp; Demand' in default_navigation
+    assert 'id="admission-dashboard-tab-capacity"' in default_navigation
+
+    security_tabs = [
+        ('overview', 'Exposure Analysis', 'shield-check'),
+        ('capacity', 'Assets & Impact', 'boxes'),
+        ('signals', 'Findings & Investigation', 'scan-search'),
+        ('reporting', 'Evidence & Sources', 'file-text'),
+    ]
+    domain_navigation = module.navigation('admission-dashboard', 'Security Perspectives', tabs=security_tabs)
+    assert domain_navigation.count('role="tab"') == 4
+    assert 'Exposure Analysis' in domain_navigation
+    assert 'Assets &amp; Impact' in domain_navigation
+    assert 'Findings &amp; Investigation' in domain_navigation
+    assert 'Evidence &amp; Sources' in domain_navigation
+    assert 'Capacity &amp; Demand' not in domain_navigation
+    assert 'id="admission-dashboard-tab-capacity"' in domain_navigation
     assert "('overview', 'Operations Overview', 'activity')" in source
     assert "('capacity', 'Capacity & Demand', 'gauge')" in source
     assert "('signals', 'Signals & Actions', 'bell-ring')" in source

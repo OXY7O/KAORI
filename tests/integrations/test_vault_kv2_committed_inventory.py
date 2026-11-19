@@ -26,6 +26,7 @@ from app.models.secrets_pki import (
     SecretVersionObservation,
 )
 from app.models.vault import VaultInstance
+from app.secrets_pki.presentation import MAX_FLEET_MOUNTS, build_secrets_pki_operational_summary
 
 
 @pytest.fixture
@@ -194,6 +195,39 @@ def test_failed_provider_scan_keeps_history_but_marks_stale(store):
     assert state.last_error is None
 
 
+def test_failed_first_inventory_collection_is_not_misreported_as_never_collected(store):
+    # An initial provider failure commits no Secret metadata but does retain
+    # sanitized failure evidence for operator diagnosis.
+    mark_kv2_inventory_failed(store, 'secret')
+    row = SecretInventoryCollectionState.query.one()
+    assert row.status == 'failed'
+    assert row.last_committed_at is None
+
+    failed = build_secrets_pki_operational_summary()
+    assert failed['state'] == 'failed'
+    assert failed['label'] == 'Inventory Collection Failed'
+    assert failed['provider_count'] == 1
+    assert failed['approved_mount_count'] == 1
+    assert failed['committed_mount_count'] == 0
+    assert failed['observed_secret_count'] is None
+    assert failed['has_evidence'] is False
+
+    # A successful governed commit can recover without re-registering Vault.
+    commit_kv2_inventory(store, _snapshot(datetime(2026, 10, 22, tzinfo=UTC)))
+    ready = build_secrets_pki_operational_summary()
+    assert ready['state'] == 'committed'
+    assert ready['has_evidence'] is True
+    assert ready['observed_secret_count'] == 1
+
+    # After a prior commit, the same failure must retain the old evidence
+    # but disclose stale status, not claim that collection never occurred.
+    mark_kv2_inventory_failed(store, 'secret')
+    stale = build_secrets_pki_operational_summary()
+    assert stale['state'] == 'stale'
+    assert stale['has_evidence'] is True
+    assert stale['observed_secret_count'] == 1
+
+
 def test_unapproved_mount_failure_does_not_create_collection_state(store):
     mark_kv2_inventory_failed(store, 'unapproved')
     assert SecretInventoryCollectionState.query.count() == 0
@@ -225,6 +259,72 @@ def test_admin_readiness_projection_reads_committed_state_without_provider_calls
     disabled = vault_inventory_readiness(instance)
     assert disabled['state'] == 'not_configured'
     assert disabled['observed_secret_count'] is None
+
+
+def test_operational_overview_requires_approved_mount_and_committed_kv2_snapshot(store):
+    # The connection is already registered, enabled and validated by the fixture.
+    connected = build_secrets_pki_operational_summary()
+    assert connected['provider_count'] == 1
+    assert connected['approved_mount_count'] == 1
+    assert connected['committed_mount_count'] == 0
+    assert connected['state'] == 'not_collected'
+    assert connected['has_evidence'] is False
+    assert connected['observed_secret_count'] is None
+
+    instance = VaultInstance.query.filter_by(integration_instance_id=store).one()
+    instance.kv2_mounts = []
+    db.session.commit()
+    no_mount = build_secrets_pki_operational_summary()
+    assert no_mount['provider_count'] == 1
+    assert no_mount['approved_mount_count'] == 0
+    assert no_mount['state'] == 'blocked'
+    assert no_mount['has_evidence'] is False
+
+    instance.kv2_mounts = ['secret']
+    db.session.commit()
+    commit_kv2_inventory(store, _snapshot(datetime(2026, 10, 22, tzinfo=UTC)))
+    committed = build_secrets_pki_operational_summary()
+    assert committed['provider_count'] == 1
+    assert committed['approved_mount_count'] == 1
+    assert committed['committed_mount_count'] == 1
+    assert committed['state'] == 'committed'
+    assert committed['has_evidence'] is True
+    assert committed['observed_secret_count'] == 1
+
+    identity = db.session.get(IntegrationInstance, store)
+    identity.enabled = False
+    db.session.commit()
+    ineligible = build_secrets_pki_operational_summary()
+    assert ineligible['provider_count'] == 0
+    assert ineligible['state'] == 'blocked'
+    assert ineligible['has_evidence'] is False
+
+
+def test_excess_approved_kv2_mounts_fail_closed_without_breaking_dashboard(store):
+    connection = VaultInstance.query.filter_by(integration_instance_id=store).one()
+    connection.kv2_mounts = [f'approved-{index:03d}' for index in range(MAX_FLEET_MOUNTS + 1)]
+    db.session.commit()
+
+    blocked = build_secrets_pki_operational_summary()
+    assert blocked['state'] == 'blocked'
+    assert blocked['label'] == 'Inventory Scope Exceeds Limit'
+    assert blocked['tone'] == 'warning'
+    assert blocked['provider_count'] == 1
+    assert blocked['approved_mount_count'] is None
+    assert blocked['committed_mount_count'] is None
+    assert blocked['observed_secret_count'] is None
+    assert blocked['last_committed_at'] is None
+    assert blocked['has_evidence'] is False
+    assert blocked['source_limit_exceeded'] is True
+
+    # The configured budget itself remains usable; it is not quietly raised.
+    connection.kv2_mounts = connection.kv2_mounts[:MAX_FLEET_MOUNTS]
+    db.session.commit()
+    within_bound = build_secrets_pki_operational_summary()
+    assert within_bound['approved_mount_count'] == MAX_FLEET_MOUNTS
+    assert within_bound['state'] == 'not_collected'
+    assert within_bound['has_evidence'] is False
+    assert within_bound['source_limit_exceeded'] is False
 
 
 def test_version_counter_regression_does_not_reassign_existing_secret_identity(store):

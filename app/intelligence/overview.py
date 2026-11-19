@@ -361,9 +361,9 @@ def _posture_items(
             'label': 'Critical Attention',
             'value': f'{summary["critical"]} recommendations · {alerts["critical"]} critical alerts',
             'supporting': (
-                f'{critical_total} critical intelligence signal(s) need immediate review.'
+                f'{critical_total} critical signals need operator review.'
                 if critical_total
-                else 'No critical intelligence signal requires immediate review.'
+                else 'No critical signals require immediate review.'
             ),
             'icon': 'circle-dot-dashed',
             'tone': 'critical' if critical_total else 'normal',
@@ -372,11 +372,7 @@ def _posture_items(
         {
             'label': 'Evidence Freshness',
             'value': f'{(evidence or {}).get("recent", 0)} / {(evidence or {}).get("total", 0)} Recent Inventory',
-            'supporting': (
-                '24h committed inventory baseline only; security/metrics/analytics evidence is '
-                'separately qualified. Overview is database-backed; provider collection and refresh '
-                'stay worker-owned.'
-            ),
+            'supporting': ('24h committed Inventory only.'),
             'icon': 'shield-check',
             'tone': 'normal' if evidence and evidence['complete'] else 'warning',
             'href_endpoint': 'alert_intelligence.index',

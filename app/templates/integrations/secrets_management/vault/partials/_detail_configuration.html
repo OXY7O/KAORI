@@ -9,7 +9,7 @@
     ('server', 'brand', 'Vault HTTPS Endpoint', instance.endpoint, 'Approved internal Vault origin; no live read during page rendering.'),
     ('shield-check', 'success', 'TLS Trust', 'Verified HTTPS', 'Trust the approved internal CA and Vault server identity.'),
     ('key-round', 'info', 'AppRole Authentication', 'AppRole · ' ~ instance.auth_mount, 'SecretID is encrypted; access tokens are transient and never displayed.'),
-    ('database', 'brand', 'Approved KV v2 Mounts', ((instance.kv2_mounts or [])|length|string) ~ ' metadata-only mounts', 'Inventory requires separately authorized collection and scoped metadata permissions.')
+    ('database', 'brand', 'Approved KV v2 Mounts', ((instance.kv2_mounts or [])|length|string) ~ ' metadata-only mounts', 'Requires approved scope and read-only metadata access.')
 ] %}
 {% set flow_items = [('Configure', 'Set a reusable connection identity, approved origin, AppRole and mount boundaries.', 'settings-2'), ('Validate', 'Prove Vault version, authentication and required API capabilities via Full Validation.', 'badge-check'), ('Observe', 'Record Vault runtime health independently from API capability readiness.', 'activity'), ('Correlate', 'Use committed KV v2, PKI and independently qualified consumer evidence.', 'waypoints')] %}
 {{ provider_configuration_contract.render('Vault',
@@ -27,3 +27,4 @@ operational_metadata=[
 'Connection · ' ~ ('Enabled' if instance.enabled else 'Disabled'),
 'KV v2 · Metadata Only'
 ]) }}
+{% include "integrations/secrets_management/vault/partials/_minimum_validation_policy.html" %}

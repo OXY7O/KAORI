@@ -95,7 +95,10 @@ def test_dashboard_matches_kubernetes_operational_layout_concept() -> None:
     assert 'No live provider query on page load' in page_hero
     assert 'class="mt-5 space-y-5"' in content
     assert 'data-kaori-dashboard-framework="operational-v1"' in framework
-    assert 'workspace_tabs.render(standard_tabs' in framework
+    assert (
+        'workspace_tabs.render(tabs if tabs is not none else standard_tabs, prefix=prefix, aria_label=aria_label)'
+        in framework
+    )
 
 
 def test_dashboard_sections_are_object_storage_specific_and_committed_evidence_owned() -> None:
@@ -236,18 +239,29 @@ def test_capacity_dashboard_matches_kubernetes_forecast_and_top_consumer_pattern
     assert "'Used'" in capacity and "'Free'" in capacity and "'Total'" in capacity
     assert 'grid gap-3 lg:grid-cols-3' in capacity
     assert 'components/progress_bar.html' in capacity
-    assert 'progress_bar.bar(percent,' in capacity
-    assert 'percentage unavailable' in capacity
+    assert 'components/operational_capacity_metric_card.html' in capacity
+    assert 'capacity_metric_card.render(label,' in capacity
+    shared_capacity = read('app/templates/components/operational_capacity_metric_card.html')
+    assert 'progress_bar.bar(percent,' in shared_capacity
+    assert 'percentage unavailable' in shared_capacity
     assert 'Capacity Utilization</h3>' not in capacity
     for token in (
-        'components/operational_flow_steps.html',
+        'components/operational_capacity_decision.html',
+        'capacity_decision.render(',
+        'review_groups=capacity_review_groups',
         'Data Scope',
-        'Overall Capacity Risk',
-        'What This Means',
-        'Recommended Action',
-        'Recommended Capacity Action Flow',
+        'dashboard.capacity.posture.status',
+        'capacity_action',
     ):
         assert token in capacity
+    assert 'Recommended Capacity Action Flow' not in capacity
+    assert 'components/operational_flow_steps.html' not in capacity
+    assert 'Refresh committed storage analytics before capacity decisions.' in capacity
+    for topic in ('Validate', 'Assess', 'Prioritize', 'Act', 'Verify', 'Record'):
+        assert f"'{topic}'" in capacity
+    decision = read('app/templates/components/operational_capacity_decision.html')
+    for label in ('Overall Capacity Risk', 'What This Means', 'Recommended Action'):
+        assert label in decision
     for token in (
         'components/forecast_projection_chart.html',
         'Projected Storage Utilization Trend',
@@ -269,7 +283,8 @@ def test_capacity_dashboard_matches_kubernetes_forecast_and_top_consumer_pattern
     assert 'consumer_panel' in kubernetes_consumers
     assert 'build_forecast_view(payload, state)' in service
     assert 'No bucket forecast shows 90-day capacity pressure; monitor growth.' in presentation
-    assert 'Keep analytics and forecasts current; review concentration before growth.' in capacity
+    assert 'Maintain analytics; review bucket growth before approving changes.' in capacity
+    assert 'Refresh committed storage analytics before capacity decisions.' in capacity
     expected_consumer_copy = (
         "f'The largest bucket accounts for {format_percent(top_share)} of committed storage usage in this system.'"
     )
@@ -895,3 +910,61 @@ def test_object_storage_dashboard_sql_bucket_summary_preserves_selected_scope(mo
         assert health[0]['usage_source'] == 'Inventory'
         assert health[0]['stored_display'] == '10 B'
     engine.dispose()
+
+
+def test_object_storage_overview_matches_canonical_section_intro_hierarchy() -> None:
+    overview = read('app/templates/storage/object_storage/dashboard/partials/_overview.html')
+    content = read('app/templates/storage/object_storage/dashboard/partials/_content.html')
+    kubernetes_reference = read('app/templates/kubernetes/operations/overview.html')
+
+    assert 'components/section_intro.html' in kubernetes_reference
+    assert 'components/section_intro.html' in overview
+    assert 'components/operational_section_card.html' in overview
+    for intro, inner, section_id in (
+        (
+            'Operational Health',
+            'storage/object_storage/dashboard/partials/_system_health.html',
+            'object-storage-operations-health-heading',
+        ),
+        ('Committed Evidence', 'Inventory Snapshot', 'object-storage-operations-evidence-heading'),
+    ):
+        assert f"section_intro.render('{intro}'" in overview
+        assert f'aria-labelledby="{section_id}"' in overview
+        assert overview.index(f"section_intro.render('{intro}'") < overview.index(inner)
+
+    health = read('app/templates/storage/object_storage/dashboard/partials/_system_health.html')
+    assert 'System Health Summary' in health
+    assert overview.index('_system_health.html') < overview.index('Inventory Snapshot')
+    assert 'Data Freshness' in overview
+    assert 'peer_content_grid.layout_classes()' in overview
+    assert 'storage/object_storage/dashboard/partials/_system_health.html' in overview
+    assert 'dashboard_workspace.standard_tabs' in content
+    assert 'hx-trigger="revealed"' in content
+
+
+def test_object_storage_reporting_and_capacity_labels_keep_compact_readable_hierarchy() -> None:
+    guidance = read('app/templates/storage/object_storage/dashboard/partials/_reporting_guidance.html')
+    shared = read('app/templates/components/reporting_dashboard_workspace.html')
+    capacity = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
+    kubernetes = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
+
+    assert "'Committed snapshots'" in guidance
+    assert "'Committed storage evidence'" not in guidance
+    assert 'reporting_workspace.guidance(' in guidance
+    assert 'reporting_workspace.guidance(' in kubernetes
+    assert 'Evidence Backed' in shared
+    assert '{{ evidence_label }}' in shared
+
+    shared_capacity = read('app/templates/components/operational_capacity_metric_card.html')
+    header = shared_capacity.split('<div class="space-y-1.5">', 1)[1].split('{% if percent is not none %}', 1)[0]
+    assert 'flex min-w-0 items-center gap-2' in header
+    assert 'block text-right text-xs font-semibold tabular-nums text-content-secondary' in header
+    for label in ("'Used Capacity'", "'Free Capacity'", "'Usable Capacity'"):
+        assert label in capacity
+    assert 'grid gap-3 lg:grid-cols-3' in capacity
+    assert 'components/operational_capacity_metric_card.html' in capacity
+    assert 'capacity_metric_card.render(label,' in capacity
+    assert 'progress_bar.bar(percent,' in shared_capacity
+    assert 'percentage unavailable' in shared_capacity
+    assert 'whitespace-nowrap' not in header
+    assert 'truncate' not in header

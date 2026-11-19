@@ -1,4 +1,5 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/table_label.html" as table_label %}
 {% import "components/resource_posture_grid.html" as posture_grid %}
 {% set storage_class_value = inventory.storage_classes if inventory.collection.storage_class_state == 'Collected' else 'Not Reported' %}
 {% set pv_value = inventory.persistent_volumes if inventory.collection.persistent_volume_state == 'Collected' else 'Not Reported' %}
@@ -11,10 +12,14 @@
     ('clock-3', 'Pending Claims', inventory.pending_claims, 'Claims waiting for provisioning or volume binding.', 'unknown' if inventory.collection.persistent_volume_claim_state != 'Collected' else ('warning' if inventory.pending_claims > 0 else 'normal')),
     ('triangle-alert', 'Active Signals', inventory.exception_count, 'Lifecycle exceptions, unreported states, or missing storage evidence.', 'unknown' if inventory.total_storage == 0 and inventory.collection.exception_count else ('critical' if inventory.overall_posture == 'Critical' else ('warning' if inventory.exception_count > 0 else 'normal')))
 ] %}
+{% set posture_badge %}
+    {{ table_label.metadata_label(metrics|length ~ ' Indicators', icon='layout-grid') }}
+{% endset %}
 {% call operational_section_card.render(
     'Storage Lifecycle Posture',
     'Provisioning classes, volume availability, claim binding, and collection evidence for the active Storage Inventory filters.',
     'gauge',
+    header_badge=posture_badge,
     body_classes='p-0'
     ) %}
     {{ posture_grid.render(metrics, columns=3) }}

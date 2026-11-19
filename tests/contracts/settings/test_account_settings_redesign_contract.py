@@ -278,7 +278,8 @@ def test_credential_workspace_uses_natural_top_aligned_columns() -> None:
 def test_credential_context_is_one_clean_security_panel_without_duplicate_status_blocks() -> None:
     context = read('app/templates/settings/account/partials/_credential_information.html')
     assert 'Credential Security' in context
-    assert 'Password policy, session handling, and audit boundary.' in context
+    assert 'Password, sessions, and audit.' in context
+    assert 'Provider ownership, KAORI access, and audit boundary.' in context
     assert 'Credential Posture' in context
     assert 'Credential Owner' in context
     assert 'Password Change Flow' in context

@@ -405,3 +405,35 @@ def test_uat_laptop_permission_overview_descriptions_fit_compact_cards() -> None
     assert 'summary.access_administration_contracts' in source
     assert 'summary.drift_count' in source
     assert 'whitespace-nowrap' not in source
+
+
+def test_permission_detail_section_badges_derive_from_authoritative_contracts() -> None:
+    detail = read('app/templates/access/permissions/partials/_permission_detail.html')
+    assert "badge='Code-Owned' if permission.code_owned else 'Database-Only'" in detail
+    assert "badge='Has Dependencies' if effective_requires else 'No Dependencies'" in detail
+    assert 'badge=permission.delegation_tier.label' in detail
+    assert 'badge_tone=permission.delegation_tier.tone' in detail
+    assert 'badge=permission.state.label' in detail
+    assert "badge='Mapped' if role_rows else 'Unassigned'" in detail
+    assert detail.count('detail_ui.inventory_section(') == 5
+    assert 'whitespace-nowrap' not in detail
+    Environment().parse(detail)
+
+
+def test_permission_registry_overview_uses_one_title_level_guide() -> None:
+    source = read('app/templates/access/permissions/index.html')
+    Environment().parse(source)
+    assert '{% import "components/info_tip.html" as info_tip %}' in source
+    assert source.count("info_tip.render('permission-registry-overview-guide'") == 1
+    assert "variant='guide'" in source
+    assert source.index('>Permission Registry Overview</h2>') < source.index(
+        "info_tip.render('permission-registry-overview-guide'"
+    )
+    for meaning in (
+        'code-owned permission contracts',
+        'Role coverage shows committed mappings',
+        'governed seed-rbac deployment',
+        'Local Database Super Admin',
+    ):
+        assert meaning in source
+    assert 'whitespace-nowrap' not in source

@@ -54,7 +54,7 @@ _MAX_METADATA_ENTRIES = 500
 _MAX_METADATA_TEXT = 4096
 _REDACTED = '[REDACTED]'
 
-_URL_CREDENTIAL = re.compile(r'(?i)(https?://)[^/@\s]+:[^/@\s]+@')
+_URL_CREDENTIAL = re.compile(r'(?i)(https?://)[^:/@\s]+:[^/@\s]+@')
 _AUTHORIZATION_VALUE = re.compile(r'(?i)\b(bearer|basic)\s+[a-z0-9._~+/\-]+=*')
 _SENSITIVE_ASSIGNMENT = re.compile(
     r"""(?i)(["']?(?:password|passwd|passphrase|token|access[-_]?token|refresh[-_]?token|secret"""
@@ -62,7 +62,7 @@ _SENSITIVE_ASSIGNMENT = re.compile(
     r"""|private[-_]?key|kubeconfig)["']?\s*[:=]\s*)"""
     r"""(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\s,'";&}\]]+)"""
 )
-_PRIVATE_KEY_MARKER = re.compile(r'(?i)-----BEGIN\s+(?:[A-Z ]*\s)?PRIVATE KEY-----')
+
 _CONTROL_CHARACTERS = re.compile(r'[\x00-\x08\x0b-\x1f\x7f]')
 
 
@@ -94,7 +94,12 @@ def redact_operational_text(value: object, *, limit: int = _MAX_METADATA_TEXT) -
                 break
             rendered = decoded
     rendered = _CONTROL_CHARACTERS.sub(' ', rendered)
-    if _PRIVATE_KEY_MARKER.search(rendered):
+    # Untrusted operational messages may contain arbitrarily long whitespace
+    # and PEM-like markers; a literal linear scan avoids overlapping regex
+    # quantifiers while conservatively withholding any private-key block.
+    marker_text = rendered.upper()
+    begin_index = marker_text.find('-----BEGIN')
+    if begin_index >= 0 and marker_text.find('PRIVATE KEY-----', begin_index + len('-----BEGIN')) >= 0:
         return _REDACTED
     rendered = _URL_CREDENTIAL.sub(r'\1***:***@', rendered)
     rendered = _AUTHORIZATION_VALUE.sub(r'\1 [REDACTED]', rendered)

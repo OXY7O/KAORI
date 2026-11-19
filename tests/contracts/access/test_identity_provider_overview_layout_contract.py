@@ -54,7 +54,7 @@ def test_provider_directory_strip_reuses_governed_flow_without_duplicate_cards()
     assert 'summary.directory' in template
     assert 'summary.directory_identity_links' in template
     assert 'Provider credentials remain external.' in template
-    assert 'Application authorization remains local.' in template
+    assert 'Directory owns identity; KAORI owns access.' in template
 
 
 def test_provider_hero_and_registry_remain_separate_authority() -> None:

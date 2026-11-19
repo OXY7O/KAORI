@@ -99,6 +99,11 @@ def register_presentation(app: Flask) -> None:
             selected_domain_key=selector_domain['key'] if selector_domain else None,
         )
         integration_owner = integration_endpoint_owner(request.endpoint)
+        # The breadcrumb and active Integration capability share the registry owner.
+        # The provider selector retains its separate Provider Matrix ownership.
+        active_integration_domain_key = integration_owner['domain_key'] if integration_owner else None
+        if selector_domain is not None:
+            active_integration_domain_key = selector_domain['key']
         return {
             'app_version': app.config['APP_VERSION'],
             'current_year': datetime.now().year,
@@ -121,7 +126,7 @@ def register_presentation(app: Flask) -> None:
                 request.endpoint,
                 current_user,
                 request.args,
-                active_capability_override=selector_domain['key'] if selector_domain else None,
+                active_capability_override=active_integration_domain_key,
             ),
             'capability_navigation': build_capability_navigation(request.endpoint, current_user, request.args),
             'integration_navigation': integration_navigation,

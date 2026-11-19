@@ -182,36 +182,30 @@ def _inventory_fleet_readings(overview: dict[str, Any], committed_provider_ids: 
 
     if provider_count == 0:
         coverage_title, coverage_tone = 'No Registry Providers', 'unknown'
-        coverage_description = 'Register a Registry provider to establish committed inventory.'
+        coverage_description = 'Register a provider for committed inventory.'
     elif snapshot_count == provider_count:
         coverage_title, coverage_tone = f'{snapshot_count}/{provider_count} Providers Committed', 'normal'
-        coverage_description = (
-            'Every configured Registry provider has retained a committed inventory snapshot as current KAORI evidence.'
-        )
+        coverage_description = 'All configured providers have committed snapshots.'
     else:
         coverage_title, coverage_tone = f'{snapshot_count}/{provider_count} Providers Committed', 'warning'
-        coverage_description = 'One or more Registry providers still require a committed inventory snapshot.'
+        coverage_description = 'Some providers still lack committed snapshots.'
 
     if exception_count:
         exception_title, exception_tone = f'{exception_count} Snapshot Attention', 'warning'
-        exception_description = 'Review stale, pending, or failed Registry inventory conditions.'
+        exception_description = 'Review stale, pending, or failed snapshots.'
     else:
         exception_title, exception_tone = 'No Snapshot Attention', 'normal'
-        exception_description = 'No stale, pending, or failed committed Registry snapshot condition is active.'
+        exception_description = 'No stale, pending, or failed snapshots.'
 
     if project_count == 0:
         visibility_title, visibility_tone = 'No Visibility Evidence', 'unknown'
-        visibility_description = 'No committed Registry projects are available for visibility assessment.'
+        visibility_description = 'No committed projects to assess visibility.'
     elif visibility_observed < project_count:
         visibility_title, visibility_tone = f'{visibility_observed}/{project_count} Visibility Observed', 'warning'
-        visibility_description = (
-            f'{public_projects} public project(s); remaining project visibility still requires provider evidence.'
-        )
+        visibility_description = f'{public_projects} confirmed public; visibility evidence incomplete.'
     else:
         visibility_title, visibility_tone = f'{visibility_observed}/{project_count} Visibility Observed', 'normal'
-        visibility_description = (
-            f'Project visibility evidence is complete; {public_projects} project(s) are declared public.'
-        )
+        visibility_description = f'All visibility observed; {public_projects} confirmed public.'
 
     return [
         {
@@ -484,26 +478,26 @@ def _inventory_resource_posture_metrics(resource: str, query: Any) -> list[tuple
             func.count(RegistryRepository.pull_count),
         ).one()
         return [
-            ('package-open', 'Repositories', total, 'Committed repositories in the current inventory.', 'brand'),
+            ('package-open', 'Repositories', total, 'Committed Registry repositories.', 'brand'),
             (
                 'database-backup',
                 'Registry Sources',
                 provider_count,
-                'Registry providers contributing committed repository evidence.',
+                'Providers with repository evidence.',
                 'brand',
             ),
             (
                 'fingerprint',
                 'Artifacts',
                 int(artifact_total or 0),
-                'Committed artifact identities referenced by repository inventory.',
+                'Artifacts in committed repositories.',
                 'brand',
             ),
             (
                 'activity',
                 'Pull Counts Observed',
                 int(pull_evidence_count or 0),
-                'Repositories with committed provider pull-count evidence.',
+                'Repositories with pull-count data.',
                 'info' if pull_evidence_count else 'unknown',
             ),
         ]
@@ -512,26 +506,26 @@ def _inventory_resource_posture_metrics(resource: str, query: Any) -> list[tuple
         tagged = query.filter(RegistryArtifact.tags.any()).order_by(None).count()
         untagged = max(total - tagged, 0)
         return [
-            ('fingerprint', 'Artifacts', total, 'Committed digest-oriented Registry artifact identities.', 'brand'),
+            ('fingerprint', 'Artifacts', total, 'Committed Registry artifacts.', 'brand'),
             (
                 'database-backup',
                 'Registry Sources',
                 provider_count,
-                'Registry providers contributing committed artifact evidence.',
+                'Providers with artifact evidence.',
                 'brand',
             ),
             (
                 'tags',
                 'Tagged Artifacts',
                 tagged,
-                'Artifacts with one or more committed mutable tag references.',
+                'Artifacts with committed tags.',
                 'info' if tagged else 'unknown',
             ),
             (
                 'tag',
                 'Untagged Artifacts',
                 untagged,
-                'Committed artifacts without a current tag reference.',
+                'Artifacts without current tags.',
                 'info' if untagged else 'normal',
             ),
         ]
@@ -539,26 +533,26 @@ def _inventory_resource_posture_metrics(resource: str, query: Any) -> list[tuple
     public = query.filter(RegistryProject.public.is_(True)).order_by(None).count()
     missing = query.filter(RegistryProject.public.is_(None)).order_by(None).count()
     return [
-        ('folder-kanban', 'Projects', total, 'Committed Registry project identities.', 'brand'),
+        ('folder-kanban', 'Projects', total, 'Committed Registry projects.', 'brand'),
         (
             'database-backup',
             'Registry Sources',
             provider_count,
-            'Registry providers contributing committed project evidence.',
+            'Providers with project evidence.',
             'brand',
         ),
         (
             'globe-2',
             'Public Projects',
             public,
-            'Projects marked public by provider evidence.',
+            'Provider-confirmed public projects.',
             'info' if public else 'normal',
         ),
         (
             'circle-help',
             'Visibility Not Observed',
             missing,
-            'Projects without committed visibility evidence.',
+            'Projects lacking visibility data.',
             'warning' if missing else 'normal',
         ),
     ]

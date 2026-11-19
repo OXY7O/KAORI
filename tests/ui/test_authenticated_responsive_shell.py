@@ -146,6 +146,45 @@ def test_authenticated_shell_adapts_across_canonical_viewports(
     _capture(page, 'authenticated-responsive-shell', viewport_name)
 
 
+def test_desktop_sidebar_toggle_swaps_panel_icon_and_persists_state(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+    if viewport_name in ADAPTIVE_VIEWPORTS:
+        return
+
+    _login(page, kaori_authenticated_base_url)
+    page.evaluate("localStorage.setItem('kaori.sidebarExpanded', 'true')")
+    page.reload(wait_until='networkidle')
+
+    collapse = page.get_by_role('button', name='Collapse navigation')
+    expect(collapse).to_have_attribute('aria-expanded', 'true')
+    expect(collapse.locator('svg.lucide-panel-right-open')).to_be_visible()
+    expect(collapse.locator('svg.lucide-panel-right-close')).to_be_hidden()
+
+    collapse.click()
+    expand = page.get_by_role('button', name='Expand navigation')
+    expect(expand).to_have_attribute('aria-expanded', 'false')
+    expect(expand.locator('svg.lucide-panel-right-open')).to_be_hidden()
+    expect(expand.locator('svg.lucide-panel-right-close')).to_be_visible()
+    assert page.evaluate("localStorage.getItem('kaori.sidebarExpanded')") == 'false'
+    assert page.evaluate("document.documentElement.classList.contains('sidebar-collapsed')")
+
+    page.reload(wait_until='networkidle')
+    expand = page.get_by_role('button', name='Expand navigation')
+    expect(expand.locator('svg.lucide-panel-right-close')).to_be_visible()
+
+    expand.click()
+    collapse = page.get_by_role('button', name='Collapse navigation')
+    expect(collapse).to_have_attribute('aria-expanded', 'true')
+    expect(collapse.locator('svg.lucide-panel-right-open')).to_be_visible()
+    assert page.evaluate("localStorage.getItem('kaori.sidebarExpanded')") == 'true'
+    assert not page.evaluate("document.documentElement.classList.contains('sidebar-collapsed')")
+
+
 def test_mobile_navigation_closes_after_destination_selection(
     configured_page: Page,
     kaori_viewport: tuple[str, tuple[int, int]],
@@ -368,7 +407,7 @@ def test_secrets_pki_overview_1440_blocked_hero_and_canonical_prerequisite(
 
     blocker = page.locator('#secrets-pki-overview section[data-kaori-blocked-state]')
     expect(blocker).to_be_visible()
-    expect(blocker.get_by_role('heading', name='Committed KV v2 Inventory Required')).to_be_visible()
+    expect(blocker.get_by_role('heading', name='Vault Source Required')).to_be_visible()
     assert page.locator('#secrets-pki-overview [data-kaori-empty-state]').count() == 0
     expect(blocker.get_by_role('link', name='Configure Vault Integrations')).to_be_visible()
 
@@ -407,7 +446,7 @@ def test_secrets_pki_overview_1440_blocked_hero_and_canonical_prerequisite(
 @pytest.mark.parametrize(
     ('workspace', 'blocked_title', 'hidden_metric'),
     [
-        ('inventory', 'Vault Inventory Source Required', 'Enabled Vault Sources'),
+        ('inventory', 'Vault Source Required', 'Enabled Vault Sources'),
         ('lifecycle', 'Vault Lifecycle Source Required', 'Expires Within 7 Days'),
     ],
 )
@@ -452,7 +491,8 @@ def test_secrets_pki_no_vault_source_1440_uses_canonical_blocker(
     expect(hero.locator('.kaori-hero-status-badge')).to_contain_text('Blocked')
     blocker = root.locator('section[data-kaori-blocked-state]')
     expect(blocker.get_by_role('heading', name=blocked_title)).to_be_visible()
-    expect(blocker.get_by_role('link', name='Configure Vault Integrations')).to_be_visible()
+    action_label = 'Configure Vault Integrations' if workspace == 'inventory' else 'Review Vault Configuration'
+    expect(blocker.get_by_role('link', name=action_label)).to_be_visible()
     assert root.get_by_text(hidden_metric, exact=True).count() == 0
     assert root.locator('[data-kaori-empty-state]').count() == 0
 

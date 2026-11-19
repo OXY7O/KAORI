@@ -104,7 +104,7 @@ def _filesystem_reference(evidence: CapacityEvidence) -> dict[str, Any]:
         'available': bytes_to_gib(available.value) if available.available else None,
         'headroom': safe_percent(available.value, capacity.value) if complete else None,
         'scheduling_resource': False,
-        'scope_label': 'Operational node-filesystem reference; not Kubernetes allocatable capacity',
+        'scope_label': 'Filesystem: not Kubernetes allocatable.',
     }
 
 
@@ -264,9 +264,7 @@ def allocation_status(resource: str, evidence: AllocationEvidence) -> dict[str, 
         )
     if missing:
         return _status('Limited Evidence', 'unknown', 'Some commitment or usage signals are unavailable.', missing)
-    return _status(
-        'Healthy', 'normal', 'Requests, limits, current usage, and peak usage remain within the current envelope.'
-    )
+    return _status('Healthy', 'normal', 'Requests, limits, and observed usage fit capacity.')
 
 
 def pod_allocation_status(capacity: ScalarEvidence, current: ScalarEvidence) -> dict[str, Any]:
@@ -283,7 +281,7 @@ def pod_allocation_status(capacity: ScalarEvidence, current: ScalarEvidence) -> 
         )
     if percent >= 75:
         return _status('Watch', 'warning', 'Current pods consume at least 75% of Ready-worker pod slots.')
-    return _status('Healthy', 'normal', 'Current pod placement remains within the Ready-worker pod envelope.')
+    return _status('Healthy', 'normal', 'Pod placement fits Ready-worker capacity.')
 
 
 def _evidence_percent(value: ScalarEvidence, allocatable: ScalarEvidence) -> float | None:

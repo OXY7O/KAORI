@@ -1,0 +1,60 @@
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/operational_evidence_tile.html" as evidence_tile %}
+{% import "components/table_label.html" as table_label %}
+{% call section_card.render(
+    'Repository Inventory Snapshot',
+    'Committed repository counts, lifecycle and exact default-branch revision coverage.',
+    'folder-git-2',
+    action_href=url_for('source_control.repositories', installation_id=selected_installation_id),
+    action_label='View Repositories',
+    body_classes='p-5',
+    extra_classes='h-full'
+    ) %}
+    {% if not repository_coverage or not repository_coverage.collected %}
+        {% set empty_state_icon = "database-zap" %}
+        {% set empty_state_label = "Not Collected" %}
+        {% set empty_state_title = "Repository Inventory Unavailable" %}
+        {% set empty_state_description = "No committed installation grant snapshot exists. Unknown evidence is not a verified zero." %}
+        {% set empty_state_variant = "panel" %}
+        {% include "components/states/_empty_state.html" %}
+    {% else %}
+        <div class="grid gap-3 sm:grid-cols-2">
+            {{ evidence_tile.freshness('Observed Repositories',
+                        repository_coverage.observed_count if repository_coverage.observed_count is not none else 'Unknown',
+                        'Retained' if repository_coverage.observed_count is not none else 'Unavailable',
+                        'info' if repository_coverage.observed_count is not none else 'unknown',
+                        'folder-git-2',
+                        description='Collector count within this installation grant.') }}
+            {{ evidence_tile.freshness('Active Repositories',
+                        repository_coverage.lifecycle[0].count,
+                        'Observed',
+                        'info',
+                        'folder-open',
+                        description='Not archived in retained metadata.') }}
+            {{ evidence_tile.freshness('Archived Repositories',
+                        repository_coverage.lifecycle[1].count,
+                        'Observed',
+                        'info',
+                        'archive',
+                        description='Archived in retained metadata.') }}
+            {{ evidence_tile.freshness('Exact SHA Coverage',
+                        repository_coverage.references[0].count ~ '/' ~ repository_coverage.grant_count,
+                        'Committed',
+                        'info',
+                        'git-commit-horizontal',
+                        description='Default-branch exact revision per current grant row.') }}
+        </div>
+        <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-content-muted">
+            {{ table_label.metadata_label('Current Grants: ' ~ repository_coverage.grant_count, icon='git-branch') }}
+            {{ table_label.metadata_label('Scope: ' ~ repository_coverage.selection_scope|replace('_', ' ') |title, icon='list-filter') }}
+            {{ table_label.metadata_label('Coverage: ' ~ repository_coverage.collection_coverage|replace('_', ' ') |title, icon='scan-search') }}
+            <span>Retained {{ repository_coverage.committed_at|user_datetime if repository_coverage.committed_at else 'date unavailable' }}</span>
+        </div>
+        {% if repository_coverage.grant_count_matches_observation is sameas false %}
+            <p class="mt-3 rounded-lg border border-outline-subtle bg-surface-elevated p-3 text-xs leading-5 text-status-warning-text"
+               role="status">
+                Retained grant rows differ from the collector-reported count. Verify collection consistency before interpreting coverage.
+            </p>
+        {% endif %}
+    {% endif %}
+{% endcall %}

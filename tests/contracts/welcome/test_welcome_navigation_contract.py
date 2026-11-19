@@ -15,12 +15,12 @@ def test_sidebar_toggle_icons_are_supported_by_bundled_lucide() -> None:
     navbar = (ROOT / 'app/templates/components/navigation/navbar.html').read_text(encoding='utf-8')
     lucide_bundle = (ROOT / 'app/static/vendor/lucide/lucide.min.js').read_text(encoding='utf-8')
 
-    assert 'data-lucide="chevrons-left"' in navbar
-    assert 'data-lucide="chevrons-right"' in navbar
-    assert 'ChevronsLeft' in lucide_bundle
-    assert 'ChevronsRight' in lucide_bundle
-    assert 'panel-left-close' not in navbar
-    assert 'panel-left-open' not in navbar
+    assert 'data-lucide="panel-right-open"' in navbar
+    assert 'data-lucide="panel-right-close"' in navbar
+    assert 'PanelRightOpen' in lucide_bundle
+    assert 'PanelRightClose' in lucide_bundle
+    assert 'data-lucide="chevrons-left"' not in navbar
+    assert 'data-lucide="chevrons-right"' not in navbar
 
 
 def test_bundled_lucide_license_is_committed() -> None:
@@ -154,11 +154,21 @@ def test_welcome_tenant_and_access_cards_track_current_capabilities() -> None:
     assert "'title': 'Tenant Management'" in shortcuts
     assert "'label': 'Governed Tenancy'" in shortcuts
     assert "('tenant.view', 'tenant.index')" in shortcuts
+    tenant_copy = 'Manage tenants, resource profiles, namespace provisioning, access control, capacity, and lifecycle.'
+    assert tenant_copy in shortcuts
+    assert 90 <= len(tenant_copy) <= 100
 
     access_block = shortcuts.split("'title': 'Access'", 1)[1].split("'title': 'Settings'", 1)[0]
     assert "('identity_providers.view', 'access.overview.index')" in access_block
     assert 'identity providers' in access_block.lower()
     assert 'directory-projected external identities' in access_block.lower()
+    access_copy = 'Manage users, roles, identity providers, directory-projected external identities, and audit logs.'
+    assert access_copy in shortcuts
+    assert 90 <= len(access_copy) <= 100
+    # Desktop wrapping stays natural and unclipped in the existing Playwright geometry test.
+    browser = (ROOT / 'tests/ui/test_representative_interactions.py').read_text(encoding='utf-8')
+    assert 'description exceeds two desktop lines' in browser
+    assert 'description is clipped' in browser
 
 
 def test_welcome_artifact_registry_card_uses_dedicated_permission() -> None:

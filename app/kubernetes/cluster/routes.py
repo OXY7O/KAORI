@@ -195,7 +195,7 @@ def dismiss_sync_all_status(task_id: str) -> ResponseReturnValue:
     if is_htmx:
         return ''
 
-    return redirect(request.referrer or url_for('integrations.kubernetes'))
+    return redirect(url_for('integrations.kubernetes'))
 
 
 @cluster_bp.route('/sync-all/status/<string:task_id>')

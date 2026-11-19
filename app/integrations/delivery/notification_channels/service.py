@@ -363,7 +363,7 @@ def get_notification_channels_payload(
                 + ('recovery worker enabled' if notification_delivery_recovery_enabled() else 'recovery worker off')
             ),
             'deduplication': 'Per channel and emitted event identity',
-            'ownership': 'Consumers emit governed events; Notification Channels delivers.',
+            'ownership': 'Consumers emit; KAORI delivers.',
         },
     }
 

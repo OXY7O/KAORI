@@ -113,8 +113,8 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'Secrets & PKI',
         'label': 'Secret Inventory & Readiness',
         'description': (
-            'Review approved Vault KV v2 metadata collection coverage, committed inventory freshness, '
-            'and evidence readiness without displaying Secret values or claiming PKI delivery assurance.'
+            'Review approved Vault KV v2 metadata, inventory freshness, and evidence readiness '
+            'without Secret values or PKI delivery claims.'
         ),
         'icon': 'key-round',
         'scope': 'Secrets & PKI',
@@ -211,8 +211,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'Tenant Management',
         'label': 'Governed Tenancy',
         'description': (
-            'Manage tenant definitions, resource profiles, namespace provisioning, access and capacity governance, '
-            'and lifecycle operations across registered Kubernetes clusters.'
+            'Manage tenants, resource profiles, namespace provisioning, access control, capacity, and lifecycle.'
         ),
         'icon': 'building-2',
         'scope': 'Compute',
@@ -256,8 +255,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'Access',
         'label': 'Identity, Access & Audit',
         'description': (
-            'Manage users, roles, permissions, identity providers, directory-projected external identities, '
-            'authentication evidence, and operational audit records according to assigned authority.'
+            'Manage users, roles, identity providers, directory-projected external identities, and audit logs.'
         ),
         'icon': 'users-round',
         'scope': 'Platform',

@@ -200,6 +200,25 @@ navigation alias to Harbor/Registry. `security_posture.view` governs this worksp
 The canonical sidebar renderer, geometry, responsiveness and collapse behavior do
 not change.
 
+## Integration provider active capability
+
+Provider-level Integration pages keep their owning domain active in the
+two-level sidebar, even when the page route is not a domain landing route.
+The source of truth is the **same registered Integration module ownership**
+used by the breadcrumb: `app/integrations/navigation.py::integration_endpoint_owner`,
+resolved once in `app/bootstrap/presentation.py`. For example,
+`integrations.metrics_sources`, `integrations.alertmanager`, and their
+provider-detail routes highlight **Integrations → Observability** rather than
+falling back to **Overview**. Other provider domains follow their canonical
+registry owner without a new route-by-route sidebar mapping.
+
+The dynamic Choose Provider workflow retains its existing Provider Matrix
+domain resolution (#3119). A provider/domain override applies only to the
+active Integrations workspace and an **authorized, visible** capability.
+Normal Integrations Overview and domain landing routes still use standard
+exact/prefix resolution; unrelated workspaces and permission filtering do not
+change. Breadcrumb and sidebar must not disagree about Integration ownership.
+
 ## Permission Contract
 
 A workspace is rendered only when at least one capability is authorized.

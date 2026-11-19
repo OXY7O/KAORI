@@ -98,6 +98,21 @@ def test_structured_metadata_json_is_pretty_printed_without_changing_data() -> N
     assert 'café' in formatted
     assert pretty_structured_json('[{"name":"pod"}]') == '[\n  {\n    "name": "pod"\n  }\n]'
 
+    native_metadata = {
+        'architecture': 'amd64',
+        'config': {'Cmd': ['redis-server'], 'Entrypoint': ['docker-entrypoint.sh']},
+        'ExposedPorts': {'6379/tcp': {}},
+        'WorkingDir': '/data',
+    }
+    original = json.loads(json.dumps(native_metadata))
+    native_pretty = pretty_structured_json(native_metadata)
+    assert native_pretty is not None
+    assert json.loads(native_pretty) == original
+    assert native_metadata == original
+    assert '\n  "config": {\n' in native_pretty
+    assert pretty_structured_json(['linux', {'os': 'linux'}]) is not None
+    assert pretty_structured_json({'invalid': object()}) is None
+
     for plain_value in (None, 12, False, '', 'Plain annotation', '42', 'true', '"text"', '{broken', '[broken'):
         assert pretty_structured_json(plain_value) is None
 

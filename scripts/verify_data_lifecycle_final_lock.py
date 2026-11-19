@@ -150,7 +150,8 @@ def main() -> int:
         'components/loading_bar.html',
         "loading_bar.render('data-lifecycle-policy-loading'",
         'Retention changes eligibility only; no job runs immediately.',
-        'Requires Policy enabled + Scheduled execution.',
+        'Policy + schedule required.',
+        "{{ lifecycle.next_schedule_label or 'No scheduled run.' }}",
         'transient failures retry once, then need manual retry.',
         'Queue {{ lifecycle.queue_name }} · {{ lifecycle.worker.label }}',
         '{% if lifecycle.worker.queue_ready %}and ready for lifecycle jobs{% endif %}',
@@ -184,7 +185,7 @@ def main() -> int:
         "'coverage': _domain_coverage(name)",
         "'coverage': _domain_coverage(domain.name)",
         'Provider-neutral across Kubernetes, Object Storage, Metrics Source, Alertmanager, and future runtime integrations.',
-        'Transient toasts are not persisted and therefore are not lifecycle-managed.',
+        'Transient toasts are not persisted, so they remain outside retention and archive management.',
     ):
         if required not in retention_presentation:
             errors.append(f'Data Lifecycle v1.2 coverage presentation ownership missing: {required}')

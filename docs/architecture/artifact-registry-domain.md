@@ -245,6 +245,28 @@ responses, light/dark mode and mobile widths. Full Admission, CI/CD,
 staging/UAT deployment and main promotion remain **HOLD** until explicit
 authorization.
 
+### Governance Guide and compact evidence copy (Human Visual UAT #4570)
+
+In **Governance Evidence Operations**, the active, HTMX-refreshable status row
+uses the existing `info_tip.render(..., variant='guide')` immediately next to
+the status badge. The Guide explains externally authoritative, read-only
+Registry policy, retention, immutability and replication evidence; `Inputs
+Changed` and when to run Governance Sync; and why missing, stale, partial,
+unavailable or superseded evidence is not a positive compliance result. The
+Guide is informational and never replaces confirmation, JobExecution status,
+source-specific error details or Sync Governance authorization.
+
+The **Governance Data Snapshot** and grouped **Policy Coverage** supporting
+copy should remain succinct at standard desktop widths: changed inventory
+prompts an explicit Governance Sync refresh, latest committed evidence and
+committed provider coverage remain plainly labeled, and exception text stays
+a review cue rather than asserting zero risk. Use short source-backed
+descriptions without forced `whitespace-nowrap` or hidden text on mobile.
+The existing status, tone, committed timestamps, provider/project counts,
+per-capability details and complete Governance records remain authoritative.
+Changing display copy does not alter materialization freshness or replication
+and retention interpretation.
+
 ### Registry UI Consistency Audit — active workspace family (#1087)
 
 **Scope:** Artifact Registry Overview, Inventory, Security, Runtime Usage,
@@ -297,13 +319,18 @@ same nested-card geometry for every domain.
   unrelated Registry pages. The Overview dashboard continues using the
   canonical Operational Dashboard composition.
 - **Navigation follows interaction scope**, not cosmetic uniformity. The
-  two-view Governance and closely related Supply Chain content use
-  `content_tabs.render_links`. Artifact Registry Analytics now follows
+  two-view Governance Evidence now uses PKI-aligned
+  `workspace_tabs.render_query_tabs` for URL/HTMX-owned navigation (Human Visual
+  UAT #4601); the closely related Supply Chain content keeps its approved
+  `content_tabs.render_links` implementation. Artifact Registry Analytics now follows
   Kubernetes Analytics' server-owned **page-level Integrated Workspace Tabs**
   with Overview plus seven analytical domains (#1097), removing its previous
   in-card `framed_workspace_tabs` and retaining individual lazy bounded HTMX
-  analytics projections. These are distinct from subordinate content tabs and
-  preserve capability-level sidebar and keyboard/navigation semantics.
+  analytics projections. On the Registry **Analytics Overview** only, the approved
+  Kubernetes/Object Storage client-owned `content_tabs.render_buttons` pattern
+  now supplies eight subordinate **analytical snapshot tabs** (#4632);
+  these do not replace the eight page-level Integrated Workspace destinations.
+  Preserve capability-level sidebar, keyboard and navigation semantics.
 - Use shared Hero, loading/empty/error, filters, tables, labels and default
   five-row paginated footer in each owning workspace; never replace provider
   semantics with generic optimistic states. Icons and badges convey meaning,
@@ -346,8 +373,14 @@ card shells** provide operator context:
   unchanged. This grouped archetype is purpose-specific, not a global rule
   for Registry Security, Runtime or Analytics.
 - **Governance Evidence** — Policies/Replication remain in one canonical
-  section card with `content_tabs.render_links` (embedded, server/URL-owned
-  mode), matching Security Supply Chain. Tab labels remain **without counts**.
+  evidence workspace with the **same top-integrated query-backed tab strip as
+  Kubernetes Internal PKI Evidence** (`workspace_tabs.render_query_tabs`,
+  Human Visual UAT #4601). Tabs remain server/URL/HTMX-owned and **without
+  counts**; the card shell contains a padded inner shared
+  `table_ui.block_classes()` table workspace. The existing
+  `#artifact-registry-governance-registry` replacement/selection boundary,
+  `tab=policies|replication`, page reset to 1, per-page selection, normal
+  navigation fallback, `hx-push-url` and `hx-sync` remain authoritative.
   Following explicit human clarification, each tab owns the **complete canonical
   KAORI table workspace**, not an isolated bare table: shared
   `table_ui.inventory_block_header` with Policy/Replication title, evidence
@@ -607,12 +640,117 @@ committed-evidence View More modal. Security findings may drill into Runtime Usa
 `artifact_id` so the operator can move directly from vulnerability evidence to the affected runtime
 blast radius without performing a live Registry or Kubernetes request.
 
+In the **Runtime Usage → Runtime Correlation** summary, the existing
+`operational_section_card` shows a `runtime_metrics|length`-derived
+**4 Indicators** badge beside `Runtime Evidence Summary`, consistent with
+the shared Security/Runtime Overview header pattern. The four committed
+metrics and their digest/tag confidence and exposure tones are unchanged.
+Use compact supporting sentences for the two wider descriptions:
+`Committed Registry–Kubernetes bindings.` and
+`Bindings with Critical/High findings.` These still describe committed
+runtime *bindings* (not live health or distinct CVE totals). Keep natural
+wrapping on narrow screens; never force a single line with overflow or
+`whitespace-nowrap` merely to satisfy desktop Visual UAT.
+
+**Runtime Binding detail modal presentation (Human Visual UAT #4552).** Follow
+the existing Kubernetes Inventory compact **Unified Resource Sheet** grammar
+(`components/details/_detail_content.html`, Pod and Workload detail reference
+templates). Use `detail.workspace_header(..., context_items=..., compact=true)`
+and `detail.inventory_title(..., compact=true)` to keep the repository as
+the primary identity, semantic digest/tag match status beside it, and Registry
+project / Kubernetes namespace in the shared contextual metadata row. Preserve
+the committed summary strip and the five existing `detail.inventory_section`
+bands, but keep their left-rail descriptions concise (≤28 characters) for
+Artifact Identity, Registry Provenance, Runtime Target, Correlation Evidence
+and Security Exposure. For the two identity-bearing rail badges, show the
+stable category labels **Registry Artifact** and **Kubernetes Workload**, never
+an unbounded project/repository or cluster/namespace concatenation. Complete
+names remain in the Project, Repository, Cluster, Namespace, Workload, Pod,
+Container and Image Reference facts (and header/summary context). Full digest,
+mutable tag confidence, source/observed timestamps, workload/Pod/container/image
+evidence and Critical/High findings stay visible in the existing fact rows. The section copy must never imply
+provider-side runtime verification or a fresh scanner request. Normal responsive
+wrapping is allowed at narrow widths; no new modal family or local styling.
+
 Correlation prerequisites govern **rematerialization eligibility**, not committed-evidence readability.
 Once Runtime Correlation has committed a snapshot, Runtime Usage continues to expose that committed evidence
 if a later Registry artifact snapshot or current Kubernetes Pod generation becomes unavailable. The workspace
 must keep the committed evidence visible and surface **Refresh Unavailable** only in the Correlation Snapshot
 status/description; it must not render a second blocking banner above readable data. Full-page prerequisite
 blocking is reserved for the pre-materialization state where no committed Runtime Correlation snapshot exists.
+
+### Runtime Overview presentation parity (Human Visual UAT #4529)
+
+The capability-level **Runtime Overview** reuses the same approved KAORI
+information hierarchy as **Security Overview**: **Committed Correlation Snapshot
+→ Runtime Workspaces → Runtime Evidence Posture**. The workspace catalog precedes
+metrics so operators first choose a destination before inspecting summary risk
+signals. Reuse the existing `workspace_link_card.render(..., compact=true)`
+two-column responsive cards for **Runtime Usage** (committed binding count) and
+**Topology** (correlated artifact count), with an explicit **2 Workspaces**
+metadata badge and existing scope-preserving destination URLs.
+
+The Ready snapshot uses one-line copy (`Committed runtime correlation is ready.`), while stale, failed, input-change and refresh-blocked statuses retain their own explicit evidence descriptions. The compact **Correlated Artifacts** and **Security Exposed** metrics use short evidence-qualified explanations so their values and descriptions stay on one line at the reviewed desktop viewport; do not force `whitespace-nowrap` or hide detail at mobile widths.
+
+The **Registry Runtime Evidence** section keeps the four authoritative committed
+metrics (Correlated Artifacts, Digest Matched, Tag Matched, Security Exposed)
+with the shared `resource_posture_grid.render(..., columns=4, compact=true)`
+and source-derived **4 Indicators** badge. Tag matches remain weaker than
+immutable digest matches; critical/high exposure remains a runtime-binding
+count, **not** a distinct CVE count or live workload health check. Do not introduce
+new provider calls or reclassify evidence freshness/readiness. Existing setup
+prerequisite gating, Hero, navigation, empty state, RBAC and snapshot semantics
+remain unchanged. Test mobile/light-dark, keyboard/card links and filtered
+destination URLs as part of Visual UAT before official staging admission.
+
+### Dependency Topology relationship header badge (Human Visual UAT #4564)
+
+The **Artifact-to-Runtime Explorer** follows the approved Kubernetes Inventory
+**Inventory Relationship Map** pattern. Its existing shared
+`visualization_workspace.render(..., header_badge=...)` displays a compact Violet
+`table_label.metadata_label` with **N Relationship(s)** next to the title.
+The count comes from the `edges` array of the **currently loaded, bounded
+committed Registry–Kubernetes topology graph**, including its structural
+`contains`/`owns` edges and evidence-backed `runtime_usage` edges. It is
+**not** `Runtime Bindings`, `displayed_bindings`, total available provider
+relationships or a cluster health signal.
+
+The existing Registry topology client refreshes that label after successful
+initial load, server-side scope filtering and **Reload Snapshot**, matching the
+Kubernetes Topology pattern. Before evidence is loaded or if loading fails,
+display a pending/unavailable state rather than a false numeric zero. A failed
+Cytoscape canvas must not hide a valid count from the committed JSON payload:
+the **Resource List** remains usable. A local graph visibility toggle only
+changes presentation, not the committed bounded graph count. Truncation and
+omitted-binding warnings remain separate from relationship counts. No new
+provider calls, projection, model or mutation authority is introduced.
+
+### Registry Analytics Overview Alert Source Evidence UAT refinement (#4632)
+
+The Overview **Alerts** tab replaces the previous one-line
+`Committed Alert Sources` list with a two-region, responsive committed
+evidence composition. **Source Selection** uses neutral KAORI Analytics
+record surfaces to identify the Registry instance, the committed selected
+alert source, the recorded source-readiness state, and any available
+provider-detail text. Ready primary evidence, successfully selected
+fallback, attempted-but-unavailable fallback, and unavailable source
+evidence have distinct semantic labels.
+
+**Evidence Coverage** reports the count of ready committed source rows and
+fallback-record flags, without presenting a live health check. A concise
+authority guide distinguishes Alertmanager's primary alert lifecycle
+semantics from the narrower active-alert Metrics Source fallback. Records
+remain limited to a three-source Overview preview, while the source
+count and a truncation label preserve awareness of additional committed
+sources. When no committed source rows are present, an explicit unavailable
+state appears; absence is never rendered as zero alerts or clean health.
+
+This change consumes existing `alert_source_rows` from the committed
+Registry Analytics snapshot. It introduces no live provider request, new
+chart based on zero counts, worker normalization, model/schema change,
+mutation, or Registry-local alert authority. The outer Overview footer
+continues to own the alert-source boundary and navigation to the full
+Alerts & Anomalies Analysis workspace.
 
 ## Registry Alert Analytics Contract
 
@@ -673,15 +811,19 @@ and Last 60 Days. The default is **Last 24 Hours** like K8s; an additional
 **Latest Snapshot (Any Age)** choice retains explicit compatibility with
 legacy `snapshot_window=current` bookmarks. The existing HTMX filter and
 loading convention applies to all committed analytical summaries and
-domain sections before aggregation/pagination. K8s time ranges describe
-materialized provider metrics, but Registry currently keeps only the most
-recent materialized snapshot per provider: here Time Range filters its
-`generated_at` timestamp, **not historical provider telemetry**. No
-unsupported historical trend is invented. When snapshots exist outside the selected lookback,
-readiness reports **No Snapshots in Window** rather than incorrectly claiming
-Registry analytics were never collected. Alerts source and record filters
-preserve the selected provider/window through pagination and browser history.
-Neither domain introduces a false Metrics Source readiness claim for Registry.
+domain sections before aggregation/pagination. K8s time ranges describe measured provider metrics. Registry's validated
+`1h, 6h, 12h, 24h, 7d, 30d, 60d` windows now select committed
+`RegistryAnalyticsSnapshot.time_range` datasets collected through bounded
+worker-owned Metrics Source `query_range` (#1108); the legacy `current`
+window remains a separate instant snapshot. A successful Analytics worker
+implementation does **not** prove that a particular provider/source has usable
+history: unsupported range capability, insufficient retention, malformed
+series and missing coverage must report unavailable/partial evidence, never
+synthetic growth or a fabricated trend. No snapshots for a selected window
+is distinct from "Analytics was never collected." Alerts source and record
+filters preserve the selected provider/window through pagination and browser
+history. Registry source eligibility is not live Metrics Source query
+readiness.
 
 The Registry panel **does not contain manual Collect/Configure buttons**.
 As in K8s Analytics, a bounded HTMX GET to
@@ -707,6 +849,45 @@ Queue/preflight errors are displayed as warnings, never as successful refresh.
 Manual execution remains available through existing Platform Operations Jobs
 rather than a second domain-specific collection button.
 
+### Registry Analytics Controls Guide (Human Visual UAT #4614)
+
+The Registry-specific `_analytics_controls_readiness.html` adapter supplies
+a canonical `info_tip.render(..., variant='guide')` into the existing shared
+Analytics readiness `frame(title_accessory=...)` slot. The Guide appears beside
+**Analytics Controls & Data Readiness** on Overview and focused Registry
+Analytics routes; no separate overlay, custom CSS or shared component fork is
+needed. It explains the selected Registry scope and default time range,
+measured-history qualification and the legacy **Current (Instant)** view,
+source eligibility versus **current committed snapshot** coverage, and stale
+last-good evidence. Normal page reads use committed KAORI state; only the
+registered Analytics JobExecution worker collects metrics and historical
+datasets, subject to Metrics Source range capability and retention. Missing
+history is unavailable evidence, never inferred growth or zero-risk health.
+The Guide is read-only; it does not enqueue work, bypass permissions, replace
+the canonical worker or imply every eligible provider has query-ready telemetry.
+Its accessible trigger and responsive popover reuse the shared Info Tip.
+
+### Registry Analytics selected-source UX refinement (#4632)
+
+The Registry Analytics Overview and seven domain pages intentionally show
+**one Registry source at a time**. The shared source selector does **not**
+offer an `All Registries` aggregation option. For an omitted or legacy
+blank `provider_id`, the read-side presentation selects the first active
+**Ready** Registry ordered by the existing source catalog, falling back to
+the first enabled/active Registry when none is Ready. If no active Registry
+exists, the selector reports `No Registries Available` and preserves the
+existing blocked/empty-state behavior. An explicitly unknown, disabled or
+retired source still fails closed with HTTP 404; it never broadens the query.
+
+Initial shell, HTMX sections, analytics source readiness and the Overview
+Growth charts use the same selected-provider ID and Time Range. The worker's
+canonical registered Analytics JobExecution remains **fleet-scoped** (all
+eligible sources), independently of which provider's committed evidence the
+operator is viewing. This change affects presentation scope, not collection
+or external provider authority. The four-indicator Risk Candidates helper
+is concise (`Cross-domain signals may overlap.`) to remain on one line in
+the existing responsive Inventory/Posture grid without custom sizing.
+
 ## Analytics Fast-Shell Contract
 
 Artifact Registry Analytics uses the same bounded delivery principle as the canonical operational dashboard:
@@ -719,19 +900,414 @@ GET /artifact-registry/analytics
 ```
 
 Overview is the canonical `/artifact-registry/analytics` landing route and
-presents the existing lazy materialized analytical summary, followed by seven
-bounded navigation destinations. Page-level Integrated Workspace Tabs use the
-existing `artifact_registry_analytics` capability-view catalog and same layout
-owner as Kubernetes Analytics. Each of Growth, Capacity, Usage, Risk, Governance,
-Alerts & Anomalies and Insights has a dedicated canonical
-`/artifact-registry/analytics/<domain>` route. Each deep route shares the fast
-shell and lazy loads only its active committed analytical section; it does not
-repeat the Overview estate summary. The legacy `?tab=<domain>` bookmark shape
+presents the existing lazy **Registry Analytical Posture** four-indicator
+summary followed by the shared **Analytics Overview Workspace** (#4632).
+That inner workspace adopts the existing Kubernetes/Object Storage
+`content_tabs.render_buttons(..., data_namespace='analytics')` pattern with
+**eight client-owned evidence tabs**: Growth, Capacity, Usage, Risk,
+Governance, Alerts, Insights and **Data & Evidence**. Each panel is fetched
+through the existing permission-owned `analytics_section` endpoint only on
+first activation, using `overview_panel=1` and the selected
+`provider_id`/`snapshot_window` filter. Panel content is a bounded
+committed-state snapshot (≤3 source previews, ≤5 evidence sources), not a
+copy of the detailed domain table. No new JS controller, CSS, Metrics Source
+request or separate materialization job is introduced.
+
+The Overview tabset intentionally sets
+`data-analytics-update-query="false"`: legacy `?tab=<domain>` URLs still
+**redirect to the dedicated level-3 route**, and must not be overwritten by
+local Overview tab selection. The shared Analytics controller stores tab
+selection per path/tabset and restores it following HTMX/full-page refresh.
+`Data & Evidence` is Overview-only; `/analytics/section/evidence` is
+unavailable unless the explicit, read-only Overview panel variant is requested.
+It distinguishes eligible, materialized, current, stale and collection failure
+using existing Registry snapshot and JobExecution readiness. Missing metrics,
+quotas or history remain `N/A`/`No forecast`; zero values are not invented.
+
+Page-level Integrated Workspace Tabs still use the
+`artifact_registry_analytics` capability-view catalog and the same layout
+owner as Kubernetes Analytics. Each of Growth, Capacity, Usage, Risk,
+Governance, Alerts & Anomalies and Insights retains its canonical
+`/artifact-registry/analytics/<domain>` route. Each detail route now uses
+the same **external plain section intro** as the Overview's Registry
+Analytical Posture (#4787). The common `components/section_intro.html`
+macro renders a domain-specific section title and short explanation after
+Analytics Controls & Data Readiness and before the existing detail workspace
+card. It is not another card, nested Hero, tab, or copied surface; the
+inner Growth/Capacity child-tab headers and other focused workspace titles
+remain authoritative. Overview alone keeps its existing Registry Analytical
+Posture and Explore Analytics intros; its extra Data & Evidence tab is not
+a page-level detail route. Each deep route shares the fast shell and lazy
+loads only its active committed analytical section; it does not repeat the
+Overview estate summary. The legacy `?tab=<domain>` bookmark shape
 redirects to the corresponding route and preserves bounded Alerts search,
 severity, state, source and pagination query parameters. Alerts HTMX table
 updates push its canonical page URL. No additional materialization models,
 provider read paths, RBAC definitions, alert collection or central Intelligence
 recommendation lifecycle are introduced.
+
+### Registry Analytics Overview Insights & Data Evidence visual UAT refinement (#4632)
+
+The **Insights** tab now uses the canonical neutral Analytics evidence
+shell with up to three committed derived review-fact cards. Original
+`icon`, `title`, `detail` and `tone` are passed through from the existing
+read-only Intelligence review projection without inventing a severity,
+distinct-asset count or recommendation. The companion interpretation panel
+distinguishes **Analytics-derived review facts** from **central Intelligence**
+authority for Recommendations, Accepted Risk, escalation and automation.
+Missing committed snapshots show an unavailable state instead of fabricating
+"No risk"; a snapshot with no derived facts states only that no facts were
+returned in the preview.
+
+The **Data & Evidence** tab presents at most five Registry snapshot records
+with the provider identity, existing committed status label and snapshot
+currency in a full-width, content-height evidence lane. Two compact peer
+cards beneath it show **Snapshot Freshness** and **Latest Worker Outcome**,
+removing the unused height previously caused by stretching a single source
+record alongside a much taller context panel. An inner evidence-boundary
+callout is removed because the parent Overview footer already owns the
+boundary explanation. The independent cards still show both
+`data_readiness.label/tone/helper` (snapshot validity) and
+`execution_label/execution_tone/execution_helper` (worker outcome) without
+equating a successful last collection with a current snapshot. A previous
+snapshot may be readable while marked stale or inputs changed. Missing source
+records show an explicit unavailable state. Counts, eligibility, snapshot
+currentness, worker execution and selected Registry/Time Range are read from
+existing committed projections, not new live provider calls.
+
+Both tabs reuse shared Analytics evidence/ranked item/icon/interpretation,
+Info Tip Guide, and semantic label components. The existing Overview header,
+four KPI row, ownership footers, Insights deep-route CTA, and Evidence-only
+"Committed evidence only" boundary are unchanged. No new JS, CSS, worker,
+database migration, provider normalization or local recommendation lifecycle
+is introduced.
+
+### Registry Analytics Growth detail child-tab workspace (#4712)
+
+The focused `/analytics/growth` level-3 route now uses a three-child-tab
+workspace nested under the existing Registry/Time Range controls:
+**Overview**, **Source Deltas**, and **History & Evidence**. This is a
+distinct workstream from #4632, which owns the separate eight-tab Analytics
+Overview surface. The navigation reuses `content_tabs.render_buttons` and
+the global Analytics client controller; the local tabset opts out of URL
+`?tab=` rewriting to preserve the existing Registry legacy redirect and
+fail-closed source scope. The owning detail section remains lazily fetched
+once by HTMX; child views read the same committed projection without
+another endpoint, provider query or worker materialization.
+
+**Overview** retains actual Storage Footprint, Artifact Velocity, and
+review-only Stale Candidates. It adds a qualified source comparison spotlight
+and source/window/materialization facts without inventing an overall stable
+trend when endpoint deltas are zero. Its compact three-column metric strip
+uses the canonical Analytics role icons and neutral surfaces, while the
+spotlight and materialization facts share a consistent two-panel hierarchy.
+**Source Deltas** provides at most five
+separate Registry source records with original artifact/storage deltas,
+per-day rates, window length and explicit N/A for missing inputs. **History
+& Evidence** reuses the existing bounded measured-series Chart.js surfaces,
+which distinguish actual measured points from legacy endpoint checkpoints
+or unavailable history, and adds at most five committed snapshot status
+records distinguishing current, stale-but-readable and not materialized.
+The Growth detail Visual UAT refinement removes the redundant top History
+source-count/time-range KPI strip (already provided by the chart header and
+the chart cards), wraps the existing plots and a compact lineage list inside
+one shared evidence surface, and uses a flatter divider-based Source Deltas
+list rather than nested large cards. The existing source-chart partial is
+reused unchanged so measured points and chart behavior remain authoritative.
+It also updates previous string-only tests to assert against the owning
+Growth partial and tolerate canonical djLint multiline rendering, without
+weakening missing-data, source-window or RBAC checks.
+
+External Registry/Metrics Source engines remain authoritative. KAORI reads
+only committed materialized evidence, does not extrapolate missing samples,
+does not create provider-clone live calls, and does not introduce a stale
+artifact cleanup queue, local recommendation engine, new JS/CSS or database
+schema. The shared Growth workspace uses semantic KAORI analysis surfaces,
+accessible tab navigation, responsive rendering and current dark/light
+tokens; implementation requires exact-head Dev Container QA and human UAT.
+
+### Registry Analytics Overview Growth evidence visual UAT refinement (#4632)
+
+The **Growth → Source Growth Trend** workspace uses two peer neutral evidence
+surfaces with a shared icon/title/source-count header, three bounded
+source-derived facts above the Chart.js visualization, a compact chart and
+one interpretation line. The fact strip reports latest observed point,
+retained point count and the first-to-last endpoint direction, using only
+the existing committed `growth_charts` projection. When multiple independent
+Registry sources are selected, fact cells explicitly state **Per source**
+instead of fabricating fleet totals or merging different timestamp scopes.
+
+A matching start and end is not called a stable history: intervening
+measurements can differ. Endpoint-only legacy snapshots keep dashed
+checkpoint styling, an explicit intermediate-history limitation, and
+source-specific accessible start/end observations. Missing evidence retains
+the unchanged unavailable state. At most three Registry source series,
+the existing selected Time Range/provider, HTMX Chart.js lifecycle and
+committed provider authority remain unchanged. The chart uses shorter,
+nonrotated timestamp ticks and only marks measured points when point density
+is low. No provider read, worker materialization or forecast logic is added.
+
+### Registry Analytics Usage detail evidence-first visual treatment (#4792)
+
+The dedicated `/artifact-registry/analytics/usage` route retains its
+independent parent **Registry Usage Analysis** section intro and existing
+lazy HTMX section endpoint. A focused `_analytics_usage_detail.html` partial
+uses canonical `analysis_surface.snapshot_shell_classes`, role icons,
+`metric_grid_classes(4)`, semantic status badges, and a 3:2 project
+evidence/interpretation layout. This avoids a flat three-card strip and
+half-width orphan empty message while keeping the Growth/Capacity design
+hierarchy without inventing a new UI primitive.
+
+The four facts distinguish runtime-used artifact identities, committed
+artifact-to-workload bindings, source-qualified provider pull activity,
+and stale cleanup review candidates. **Pull Activity is N/A when no
+finite/nonnegative project pull counter qualifies**; it is zero only when
+a committed provider actually reported a qualifying zero. Missing
+selected-window snapshots also render unavailable runtime facts, rather
+than converting an absent dataset to zero. The left project evidence
+panel uses the existing maximum-five `usage_chart_rows` projection,
+retaining Registry source identity and observed counter values, while
+its no-data branch reuses the shared dashed/muted `empty_evidence_classes`
+surface. The right Usage Reading summarizes source qualification,
+distinct artifact/binding semantics and mutable-tag confidence.
+A standard action links to the authoritative Runtime domain.
+
+This is a **presentation-only slice** under Usage drilldown workstream
+#4617. It does not implement the workstream's separate artifact-to-workload
+correlation table, search, pagination, generation confidence, or Metrics
+Source qualification beyond existing committed projections. No provider
+requests, new forecast, inference of pull rate, worker mutation, separate
+data engine, authentication/permission change, or custom CSS/JS is added.
+
+### Registry Analytics Overview Usage pull evidence chart (#4632)
+
+The **Usage** tab replaces the former three-line Observed Pull Activity list
+with a bounded horizontal Chart.js bar chart and companion project evidence
+cards, using the canonical neutral Analytics evidence shell and role icons.
+The chart and record cards read `usage_chart_rows`, derived exclusively from
+committed `activity_rows` Metrics Source project pull counters, not from
+synchronous Harbor or Kubernetes provider calls.
+
+Only finite, nonnegative numeric counters with both a project and Registry
+identity qualify; an observed zero is valid, while missing or invalid
+evidence is excluded rather than converted to zero. Up to five project/source
+records are sorted by observed count. The zero-based chart uses provider
+counter units (not percentage). The highest observed source/project is shown
+in a compact summary, while precise counts including zero remain in the
+adjacent evidence cards. Charts do not merge distinct provider namespaces,
+synthesize history or pull velocity, or infer a per-project runtime binding
+from unrelated aggregate Runtime KPI figures.
+
+The same bundled Chart.js script and existing HTMX tab-visible / swap
+destruction/re-render contract apply. The source-level chart has no separate
+live collection path or backend mutation. The owning Overview footer retains
+the distinction among pull counters, runtime bindings and distinct artifacts;
+missing pull metrics never imply zero demand. The original Usage detail route
+and Registry/Time Range scope remain unchanged.
+
+### Registry Analytics Insights copy and non-current snapshot diagnostics (#4756)
+
+The **Insights → Interpretation & Ownership** preview uses compact
+single-desktop-line evidence/decision-authority copy without altering the
+central Intelligence boundary: overlapping review signals are not distinct
+affected assets, and Intelligence owns Recommendations, Accepted Risk,
+escalation and automation. The canonical shared
+`analysis_surface.interpretation_content` retains natural mobile wrapping.
+
+Registry Analytics read-only **Committed Snapshot** status is distinct from
+the latest Analytics JobExecution outcome. Source freshness is governed by
+`_analytics_snapshot_view`: validated ready payload, generation/expiry,
+committed Inventory/Governance/scan/runtime input generation and qualification
+of Metrics Source and governance evidence. Materializer freshness defaults to
+15 minutes, but fresh-by-time snapshots may still be **Inputs Changed** or
+**Partial Evidence**. The selected-window readiness projection only says
+**Stale Snapshot / expired** when the committed selected-window snapshots
+actually expired. Mixed/invalid cases show **Snapshot Attention** or **Partial
+Coverage** and preserve the underlying source's reason rather than inventing
+a provider failure or false-green Current.
+
+The registered manual Analytics job defaults to `snapshot_window=current`
+when none is supplied; the UI may select `24h` or another measured window.
+Committed JobExecution fleet `scope_key=all:<window>` is used to identify
+the last recorded job window in the existing readiness warning when it
+differs from the selected view. That attempt does **not** establish a new
+materialization for the selected window; the request path does not perform a
+live Harbor/Prometheus/Thanos query. This is informational diagnostics, not
+an automatic dispatch, TTL change, worker-status conversion or guaranteed
+root-cause attribution to any live operator attempt.
+
+### Registry Analytics Capacity detail / hero management CTA (#4723)
+
+The shared Artifact Registry Analytics hero now uses **Open Registry Integrations**
+(`url_for('integrations.registry')`, `plug-zap`) as its primary
+domain-management action, matching the approved patterns in the Kubernetes
+and Object Storage Analytics heroes and the existing Registry Overview
+hero. This does not remove the separate **Open Intelligence** action from
+the Insights detail workspace, where central Intelligence remains the sole
+recommendation lifecycle authority.
+
+The focused `/analytics/capacity` detail is a separate read-only workspace
+from the Capacity Overview chart. Following operator visual UAT on 2026-11-14,
+its approved three-child-tab composition matches focused Growth Analytics:
+**Overview**, **Project Quotas**, and **Forecast & Evidence**. The tabs reuse
+`content_tabs.render_buttons`, the shared Analytics tab controller, unique
+ARIA tab/panel identities and opt out of legacy `?tab=` query rewriting.
+No extra provider/worker request occurs when a child tab activates.
+
+**Overview** preserves four qualified capacity metrics with semantic role
+icons, provides a full-width project quota-pressure visualization for the
+five highest-utilization committed projects, and places three compact
+planning-interpretation facts below it. The previous uneven sidebar and
+large blank space are removed.
+
+**Project Quotas** uses the KAORI standard full-width, six-column table
+(Project/Registry, Used, Quota, Utilization, Growth, Forecast), with native
+pagination defaulting to five rows and shared 5/10/25/50 page-size controls.
+The new `capacity_project_rows` projection includes all qualified committed
+project observations, whereas `capacity_chart_rows` remains intentionally
+bounded to five for the existing Overview chart. Both the Overview utilization
+plot and its adjacent Qualified Project Evidence use those same five highest
+utilization records; when more projects qualify, the Overview badge shows
+"Top 5 of N Projects" rather than implying all projects are displayed. Both projections use the
+same finite/nonnegative usage and positive-quota qualifier. The
+RBAC-protected `/analytics/capacity/table` endpoint returns only the
+paginated committed table fragment on HTMX requests and redirects normal
+requests to the authorized Capacity detail page. The current Registry
+source and time window remain scoped; no external provider call is added.
+
+**Forecast & Evidence** uses three compact source-backed indicators,
+project-level proportional utilization meters showing observed quota
+pressure (not forecasts), independent growth and forecast labels, and a
+compact source snapshot lineage with current/stale/unmaterialized states.
+Missing growth cannot be silently replaced with zero and neither observed
+net-zero nor snapshot currency claims provider health.
+
+The detail reuses KAORI Analytics evidence surfaces and canonical table
+primitives to organize four existing committed Capacity Outlook metrics,
+**Qualified Quota Comparison** and **Capacity Reading** in separate tabs.
+Full project rows and the five-row chart preview share the same committed
+qualification rules (finite nonnegative usage, finite positive quota,
+valid Registry/project identities) without a second provider-data authority.
+Provider identity remains with each project.
+Materialized growth display is carried through from the existing decorated
+project forecast rows, not recalculated in Jinja. Each row retains observed
+usage/quota, exact utilization including 0% and over-quota values, and
+independent qualified forecast label. Its native progress meter is capped
+at 100% for visual capacity while the original numeric percentage is always
+shown and over-quota evidence is explicitly labeled. The native meter
+does not infer an exhaustion forecast.
+
+Capacity Reading distinguishes committed headroom from future forecasts,
+an unavailable forecast from zero observed growth, and a zero net rate from
+proof that no intermediate activity occurred. Missing eligible quota data
+produces a dedicated unavailable state; no external provider fetch, worker
+job, per-project runtime claim, new JS/CSS or data mutation is introduced.
+The existing Registry/Time Range controls, HTMX delivery and central
+Intelligence ownership remain unchanged. Full visual UAT and exact-head
+quality checks are required before official staging promotion.
+
+### Registry Analytics Overview Capacity visual UAT refinement (#4632)
+
+The **Capacity** tab retains its committed four-indicator quota/forecast
+posture and adds an evidence-backed **Project Quota Utilization** bar chart
+rather than presenting a loose `Qualified Project Outlook` text list.
+A compact project evidence panel is aligned beside the horizontal bars on
+desktop and stacks below them on mobile, preserving the shared Violet
+design system and light/dark state. The chart uses the same locally bundled
+Chart.js runtime as Registry Growth and Object Storage Analytics, with
+the existing HTMX activation/swap lifecycle.
+
+Each bar is an **observed point-in-time utilization ratio**
+(`usage_bytes / quota_bytes × 100`) from a committed Registry Analytics
+project forecast row, **not a time-series growth curve or exhaustion forecast**.
+Only finite, nonnegative usage and finite, positive quota observations with
+project and Registry identity are eligible. Real zero usage is retained,
+over-quota values above 100% are displayed without truncation, and invalid
+or unavailable evidence is omitted rather than silently rendered as zero.
+At most five qualified projects are plotted, ordered by utilization.
+The visible companion panel preserves the full project name, Registry
+source, actual usage and quota, and independently qualified forecast label.
+For visual UAT the highest qualified project utilization and 100% quota
+reference appear in a compact horizontal context strip rather than a tall
+duplicate KPI block. The Chart.js canvas has a **minimum** responsive height
+tier for 1–2, 3–4, or 5 observed projects. At desktop widths the two existing
+evidence shells participate in the **same stretching grid row**, while the
+left chart shell is a flex column with its canvas area expanding to occupy
+remaining height. This keeps the two panel borders precisely aligned for
+four or five projects; a future fifth row expands the grid naturally and
+Chart.js resizes within its parent. At mobile widths, panels stack naturally
+without a forced-height relationship. The adjacent evidence uses divider-
+separated compact rows rather than nested cards, retaining project/Registry
+identity, exact percentage, usage, quota and independently qualified
+forecast. A fifth qualified record is shown on both sides; only actual
+source-qualified records are plotted, never invented placeholders.
+
+For ratios at or below 1%, 5%, or 25%, the axis still zooms to the
+explicit upper bound; values above quota preserve a zero-based axis
+extending beyond 100%. The displayed axis range prevents a zoomed bar
+from implying high quota pressure. Observed zero utilization remains a
+valid observation, never a fabricated forecast or proof of inactivity.
+Missing all eligible quotas produces a dedicated unavailable state. The
+existing detailed Capacity table and worker/provider ownership are unchanged.
+
+The Capacity and Usage Overview chart empty states reuse the existing Growth
+Analytics evidence-unavailable surface through shared
+`analysis_surface.empty_evidence_classes`: a bounded, dashed semantic border,
+muted background, centered icon and explanation, and a standard status
+announcement. When no qualified project ratios or pull counters are committed,
+the chart/evidence panels are not rendered and their Canvas/Chart.js bootstrap
+targets remain absent. Missing quota evidence is not zero utilization, and
+missing pull-counter evidence is not zero demand. No new state taxonomy, provider
+calls or visual component variants are introduced.
+
+The subsequent Capacity visual UAT refinement reuses existing semantic card
+classes to align chart and evidence-panel headers, shows project identity and
+actual **Used / Quota / Forecast** fields in an accessible definition list,
+and keeps the observed-state status explicit. Only the outer analytical
+workspace footer owns the evidence caveat and **Open Capacity Analysis**
+navigation. The nested chart no longer adds a duplicate disclaimer or
+bottom border; its absence/zero/missing-data semantics are unchanged.
+
+### Registry Analytics Overview Growth visual UAT refinement (#4632)
+
+The **Analytical Evidence Summary** header uses the same shared
+`table_label.metadata_label(<indicator count>, icon='layout-grid')`
+accessory as Registry Inventory Posture; there is no page-local badge style.
+The Overview **Growth** tab replaces its former single-line
+`Source Growth Evidence` row with **two measured Chart.js panels**:
+Artifact Count (identities) and Storage Usage (bytes), following the existing
+Object Storage Analytics trend chart surface and HTMX/Chart.js lifecycle.
+The standard Registry/time-window controls and seven level-3 detail links
+remain authoritative.
+
+The worker-owned Metrics Source `query_range` already validates monotonic
+timestamps, finite values, bounded project series, and measured-window
+coverage. From subsequent collections, the same validated matrices commit
+at most **48 actual downsampled samples per metric and Registry source**
+into `history.chart_series`. Aggregation is allowed only when project series
+have exactly aligned sample timestamps and nonnegative values. It never
+interpolates, zero-fills absent projects, merges different provider timestamps,
+or creates a forecast. Legacy committed snapshots retain
+`history.series` with only start/end and sample-count evidence; they can
+display **two observed checkpoints only** with dashed straight segment and
+explicit *endpoint-only* wording. This does not reconstruct intermediate
+history. Missing, unqualified, Instant, or unsupported measured data display
+a dedicated **Historical Chart Not Available** empty state instead of a
+fabricated flat trend. Chart extraction is limited to **three source
+series per metric**; separate metrics cannot share one Y axis because
+their units differ. The renderer uses the canonical bundled Chart.js
+vendor build, theme semantic CSS tokens, lazy HTMX swap cleanup and keyboard-
+accessible tab switching; no provider calls occur in the browser.
+
+The operator's first DevContainer Developer Check for the eight-tab Overview
+reported 69 passing / 2 failing contracts: the first failure matched the
+literal `requests.` in a newly added read-only comment, and the second
+expected the removed seven-card launcher to retain a literal Alerts URL.
+Both assertions have been reconciled with the current read-only route and
+shared Overview domain-link design, without reinstating the obsolete
+launcher. Original djLint/Ruff formatting differences were addressed in
+the bounded follow-up branch. New exact-HEAD Developer Check and human
+Visual QA are still required before official staging promotion.
 
 ## Registry Analytics reusable presentation ownership (#1122)
 
@@ -742,19 +1318,26 @@ and paired source/snapshot card geometry. It no longer imports
 Normal selectable ranges are projected from
 `app/common/analytics/params.py::get_allowed_time_ranges()`; the
 `snapshot_window=current` legacy URL explicitly renders its own special
-option only while selected. **Range selection still filters the age of
-the latest committed Registry snapshot until #1108 delivers qualified
-Metrics Source history**; sharing UI does not change this authority.
+option only while selected. **Range selection now selects a worker-materialized measured `time_range`
+dataset where Metrics Source history was qualified** (#1108); `current` keeps
+legacy instant semantics. Source capability/retention and valid current snapshot
+readiness remain separate gates, not guaranteed by sharing the UI.
 Provider adapters must supply normalized evidence while future Registry
 instances reuse the same controls without forking markup.
+
+The current source-level seven-domain evidence and UX gap assessment is
+recorded in [Artifact Registry Analytics Evidence and UX Gap Analysis](artifact-registry-analytics-evidence-ux-gap-analysis.md) under #4615. It
+separates existing materialized capabilities from source readiness and UI
+drilldown maturity; substantive domain work remains in bounded issues.
 
 ## Shared Analytics Section Loading (#1106)
 
 Artifact Registry Overview and its seven dedicated analytical routes reuse
 the exact K8s `analytics/components/_section_load_tracker.html` geometry and
 the shared `js/analytics/section_load_tracker.js` runtime. Overview tracks
-its actual lazy committed Summary fragment; a focused route tracks only its
-active evidence fragment. Each fragment owns its loaded/failed state across
+its lazy committed Summary fragment and only the **activated Overview evidence
+tab**; inactive panels do not fetch their projections. A focused level-3
+route tracks only its active evidence fragment. Each fragment owns its loaded/failed state across
 outerHTML swaps. The tracker is shown after Hero and counts **requested
 HTMX sections**, not invisible routes or Celery work items. The shared
 controls header continues to show the independent filter loading bar and
@@ -990,3 +1573,15 @@ the appropriate external-host/source authority; new advisory ingestion,
 prioritization and recommendations must use central Intelligence #900.
 The design and later workstreams remain tracked under #2600, while this
 bounded read-only implementation and DevContainer UAT are governed by #2603.
+
+
+### Registry Analytics detail evidence composition — Risk, Governance, Alerts and Insights
+
+Four level-3 Analytics detail workspaces now reuse the same approved Analytics evidence shell, compact role-identified metric groups, Guide and evidence/interpretation cards as Usage. The outer canonical detail intro, selected Registry/Time Range and lazy HTMX remains owned by the existing page and section route; no new provider query, chart engine, policy mutation or Intelligence lifecycle is introduced.
+
+- **Risk:** qualify critical finding and runtime-intersection counts by observed scans and committed runtime identities; distinguish scan/signature evidence gaps from verified absence of risk. Security and Runtime own detailed investigations.
+- **Governance:** show retention and immutability configured/not-configured independently; unknown, unsupported, unavailable and not-collected states are not explicit Not Configured. Provider Governance owns enforcement and replication evidence.
+- **Alerts:** show committed Alertmanager-primary or Metrics Source fallback provenance with at most five source previews, and preserve the shared filtered/paginated alert table. Unavailable source evidence displays N/A, never a false zero.
+- **Insights:** bound factual review signals and central recommendations separately, suppress placeholder/no-signal sentinels from fact counts, and keep Accepted Risk, escalation, automation and recommendation authority in central Intelligence.
+
+User-visible evidence must be visually tested in light/dark and responsive layouts; source-level inspection alone does not constitute Dev Container UAT or Human Acceptance.

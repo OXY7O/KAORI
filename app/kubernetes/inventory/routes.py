@@ -174,7 +174,7 @@ def sync(cluster_id: str):
                 notification_context=get_navigation_notification_context(user_id=current_user.id),
             ), 503
         queue_operational_feedback(feedback)
-        return redirect(request.referrer or url_for('integrations.kubernetes'))
+        return redirect(url_for('integrations.kubernetes'))
 
     metadata = {
         'cluster_id': cluster.id,
@@ -200,7 +200,7 @@ def sync(cluster_id: str):
             'components/navigation/_individual_sync_status.html',
             sync=metadata,
         ), 202
-    return redirect(request.referrer or url_for('integrations.kubernetes'))
+    return redirect(url_for('integrations.kubernetes'))
 
 
 def _inventory_template(resource: str) -> str:

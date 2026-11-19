@@ -31,6 +31,241 @@ display numeric badges only when they are materially actionable and not
 already represented by canonical table result counts; Notification Channels
 tabs intentionally have no count badges.
 
+**Vault Full Validation parity (Human UAT #4836):** the Vault
+`Validation & Capabilities` tab must use the same shared
+`connection_validation_header` (with loading), `_validation_poller`,
+`_provider_job_status`, `_capability_readiness`, and
+`_readiness_explanation` contracts as Harbor and Metrics Source.
+`Run Full Validation` POSTs via HTMX to the **validation workspace
+child**, replacing only that child and polling the canonical
+`JobExecution` task until terminal; JavaScript-disabled POST retains
+PRG fallback. Polling checks the integration type and canonical instance
+identity, while terminal feedback is user/subscriber scoped and
+no-store; the shared tab badge and provider posture update via OOB.
+Never render a full raw task UUID or one-off status paragraph above
+the decision panel. Pending jobs show shared, concise job status and
+disable duplicate mutation actions; async job success never substitutes
+for committed Vault readiness evidence.
+
+The Vault Capability Registry contains **four** API contracts from
+the existing Vault adapter: `health`, `approle`, and `token_lookup`
+are Required; `mount_metadata` is Optional. Three committed required
+APIs can be observed even when an older Vault release is
+`degraded` for compatibility: display honest 3/3 required coverage
+and a separate compatibility warning, not an empty/not-ready API
+score. The optional `sys/mounts` discovery may be unavailable
+because of AppRole permissions; it must not appear as a giant
+`Permission Unavailable` KPI or block core validation. Reuse the
+shared capability table geometry and semantic statuses for API
+contracts and evidence, with the independent KV v2/PKI Inventory
+and Runtime Freshness responsibilities unchanged. When a current
+validation is blocked or not observed, do not display stale prior
+capability records as newly Ready.
+
+**Vault permission guidance and capability explorer (Human UAT #4849):**
+Vault Configuration retains the shared provider Connection Contract and adds a
+bounded **Minimum Vault Permission & Policy Example** below it, matching the
+Kubernetes explanatory RBAC reference without introducing provider-managed
+policy writes. It shows one AppRole Full Validation baseline requiring only
+`auth/token/lookup-self` read; `sys/health` and AppRole login do not imply
+elevated client token ACL. Optional `sys/mounts` read and approved, named
+KV v2 `metadata` LIST/read examples are independent, never automatically
+granted or combined with KV `data/*` access. A Vault administrator must
+review and assign all policies; KAORI may never expose tokens, SecretID,
+Secret payloads or PKI mutation through this guide.
+
+Vault Validation's Capability Registry reuses the Kubernetes capability
+explorer's shared tables, filter controls, canonical five-row default and
+5/10/25/50 choices, and native View More dialog. A separate, read-only,
+`integrations.manage`-protected fragment filters the same **four** committed
+provider API contracts without invoking Vault during rendering. Search,
+requirement and status filters reset the page, preserve Rows and distinguish
+Ready, optional Limited, Required Gap and Not Observed. The short readiness
+helper should occupy one desktop line where space permits, wrap naturally
+on narrow screens, and never truncate. At four contracts, one pagination
+page is expected by default; do not fabricate more rows to match Kubernetes.
+Provider release compatibility stays distinct from required API coverage.
+
+**Vault Capability View More evidence hierarchy (Human UAT #4860):**
+The Vault `Validation & Capabilities → Capability Registry → View More`
+uses the same native detail dialog and visual hierarchy as Kubernetes:
+Capability Decision with a semantic status, Contract Snapshot, a
+three-column Validation Evidence strip, Operational Decision with two
+side-by-side impact/action columns and a Governance Boundary band,
+followed by Verification Command. Reuse the existing Violet modal,
+icons, status, labels and responsive layout; do not create a new modal.
+Vault-specific evidence is strictly limited to the approved adapter
+contract and latest qualifying persisted Full Validation snapshot:
+the three displayed dimensions (API contract, identity/access, committed
+observation) are **not three separately persisted Vault checks**.
+Required API capability Ready can coexist with Degraded release
+compatibility; optional sys/mounts permission failure stays Limited,
+and missing current validation stays Not Observed. Runtime Health and
+KV v2/PKI inventory remain independent owners.
+
+**Vault Inventory & Lifecycle parity (Human UAT #4884):**
+Vault uses the same full-width MinIO/Kubernetes hierarchy for its
+fourth connection-detail domain: Inventory & Lifecycle header and Guide,
+horizontal **Inventory & Lifecycle Decision**, four decision facts,
+authority/retention boundaries, Next Lifecycle Action, **KAORI Operational
+Consumers**, and a compact full-width **Committed Evidence Sources**
+registry followed by Evidence Ownership. Use existing Violet shared
+table/status/record-action/native modal primitives.
+
+Vault has **three separately committed evidence streams**, not three
+guaranteed ready/active bindings: KV v2 metadata, public PKI issuers,
+and optional stored PKI certificates. The tab badge reflects the count
+of streams that actually have committed timestamps (or `Not Collected`),
+not a static `Committed Evidence` label or provider Full Validation.
+Each stream retains its own approved mount count, committed coverage,
+observed count, collection state, and latest committed timestamp.
+Missing observed data must say `Not Collected`, never a fabricated
+zero. Aggregated evidence stream count is informational, **not**
+a source readiness score or consumer-grant claim. Metadata-only
+View More is available via the existing Integration native dialog,
+and any Jobs handoff retains `jobs.view` authorization.
+
+**Vault guarded Delete Connection (Human UAT #4900):**
+Vault now follows the approved MinIO **Delete Connection** placement,
+critical button, shared confirmation dialog and CSRF-protected POST.
+Unlike MinIO, it is **not an asset owner**: only the KAORI Vault provider
+registration and encrypted AppRole SecretID are removed, never provider
+Vault objects or retained runtime/JobExecution/Activity Audit evidence.
+Use `provider_deletion_guard` under the existing resource admission
+lock, and additionally deny removal if canonical IntegrationBindings,
+KV v2 Secret representations/collection states, public PKI issuers/
+collection states or stored PKI certificates/collection states exist.
+Those committed evidence references are protected by RESTRICT foreign
+keys and must **never** be cascaded or silently deleted. If blocked,
+show the blocking condition count and a disabled Delete Connection
+button; the POST guard must run again and fail safely even if a stale
+client submits. Eligible clean registrations use the shared native
+confirmation and operational Activity Audit/toast; SQL errors roll back
+and are reported without leaking Vault credentials or provider details.
+The Lifecycle Gate can show Ready/Guardrails Passed only after the
+committed dependency guard has actually completed; otherwise it is
+Blocked. Do not invent MinIO's asset-scoped Observability bindings,
+reusable source destruction, or provider-side Secret/PKI revocation.
+KAORI operational consumers remain bounded, independently owned
+read-only evidence. No live Vault request occurs during rendering or
+deletion.
+
+**Vault Evidence Ownership text density (Human UAT #4900):**
+Use a concise provider-aware single desktop line: `KAORI commits scoped
+metadata; Vault owns Secrets and PKI; observability stays separate.`
+Keep natural mobile wrapping and the shared Evidence Ownership band.
+
+**Vault Runtime Refresh in-place worker lifecycle (Human UAT #4889):**
+Vault Runtime & History now follows the already-approved Kubernetes/MinIO
+POST → HTMX workspace replacement → scoped job-status poll → terminal
+replacement pattern. The Refresh Runtime / Refresh Running button labels,
+loading bar, disabled submit, job indicator and poller are **reused from
+shared KAORI components**. The POST preserves CSRF/RBAC and the normal
+non-HTMX redirect fallback, while an HTMX POST replaces only
+`#vault-runtime-content`, never the whole detail page. That region
+contains Runtime Decision, committed Runtime Evidence and canonical Recent
+Runtime Observations together, with a single unique DOM ID and existing
+framed-tab badge OOB update.
+
+Only a snapshot with `secrets_pki` integration type, the selected canonical
+connection ID and `runtime_refresh` operation is authorized for
+`GET /instances/<id>/runtime/status/<task_id>`. Standard no-cache polling
+returns the latest independently committed observation, history, safe
+feedback/toast and tab badge. The poller disappears at terminal status;
+the standard notification refresh trigger applies. A conflicting Full
+Validation task must not be impersonated as Runtime Refresh. A missing
+or inaccessible task fails closed; no new live provider call, custom
+polling JavaScript, rendered token, or bypass of the job lock is permitted.
+
+**Vault Runtime badge and action density (Human UAT #4879):**
+The framed `Runtime & History` badge shows the **committed runtime
+observation health label** supplied by `runtime_observation_state_view`,
+exactly as Kubernetes does, rather than a generic `Jobs & Evidence`
+activity label. Show Healthy, Degraded, Unhealthy, or Not Observed
+according to the latest persisted observation. Never derive that tab badge
+from Full Validation readiness, mere connection status, or a live Vault
+request. Only non-HTMX POST Runtime Refresh redirects to the detail page;
+HTMX refresh updates runtime and tab badge in place after the worker completes.
+
+For the horizontal Runtime Decision, all five state-specific
+`Next Operational Action` strings should be concise and fit naturally
+on one desktop line in the existing two-column card. The Degraded
+instruction is `Review Vault health, remediate, then refresh runtime.`
+Keep runtime vs validation semantics and natural mobile wrapping;
+do not introduce global truncation or duplicate a remediation panel.
+
+**Vault Runtime & History parity (Human UAT #4872):**
+Vault reuses the horizontal `integrations/components/_runtime_decision.html`
+for the current Runtime Decision, with committed score/posture, runtime
+gate, historical validation readiness and observation context; never
+render a raw runtime task UUID. Use the existing provider job-status
+indicator when a refresh worker job is active, without introducing an
+independent queue state or falsely claiming completion.
+
+Immediately below the decision, Vault follows the Kubernetes full-width
+`Runtime Evidence` presentation: one persisted Provider Contract band
+with detected version, observed capability/compatibility profiles and
+observed count; compact diagnostic rows derived only from persisted
+`IntegrationRuntimeObservation`; and an explicit Evidence Boundary.
+Missing observations must show Not Observed, not live provider health
+or stale Full Validation identity. Do not fabricate Kubernetes lifecycle
+bands or per-check evidence for Vault.
+
+The separate local four-column `Committed Runtime History` table is
+retired. Vault must include the existing
+`integrations/partials/_runtime_history.html`, with common
+`runtime_history_view` projection and existing repository pagination.
+The authorized `vault.runtime_history` GET endpoint returns only the
+selected Vault connection's immutable observations to the canonical
+HTMX/normal-GET registry. It supports trigger/health/readiness filters,
+page-size 5/10/25/50, posture strip, six columns, shared View More
+evidence modal, loading/empty states and numeric pagination.
+Runtime observation browsing never causes a live Vault API request;
+Full Validation, provider runtime and Secrets/PKI inventory retain
+independent evidence ownership. The temporary UAT holding branch
+still needs executable QA and Human Acceptance before official admission.
+
+**Vault View More copy-density refinement (Human UAT #4864):**
+Across all four Vault capability View More dialogs, the Capability Decision
+summary, Verification Command helper and Contract Snapshot Identity Boundary
+value should occupy **one desktop line**. The API Contract, Identity & Access
+and Committed Observation descriptions in the three-column Validation Evidence
+strip should occupy **at most two desktop lines** each. Use concise,
+provider-aware English and existing responsive typography utilities; the
+complete approved copy stays available through the element text/tooltip,
+while narrow/mobile layouts wrap naturally instead of overflowing. Distinct
+Ready, Limited, Required Gap and Not Observed messages remain accurate,
+and the short modal summary must not replace the separately governed
+runtime, compatibility, inventory or credential boundaries. Apply changes
+in the existing shared Vault capability-detail partial so each View More
+record inherits the same hierarchy; do not apply a blanket global
+truncate rule to unrelated provider dialogs.
+
+The Verification Command is **operator-side guidance**, never a live
+provider call during page rendering. A Copy Script is available only
+for read-only Vault CLI probes run under an already approved operator
+context with sensitive response output suppressed; their result cannot
+be presented as the managed KAORI AppRole Full Validation. For AppRole
+login, deliberately show the non-executable guidance state instead
+of generating or copying any RoleID, SecretID or token-bearing script.
+No policy grant, credential reveal, PKI mutation or provider adapter
+extension is permitted by modal parity.
+
+**Vault provider detail post-Hero review (Human UAT #4835):** after the
+Vault connection Hero, render the shared **four-tab framed connection
+workspace** directly, matching other provider detail pages. The formerly
+injected `Operational Evidence` four-link panel to capability-wide
+Overview / Inventory / Lifecycle / Certificate Analytics was rejected by
+Human Visual UAT as a nonstandard page-local middle tier. Those
+independent Secrets & PKI capability workspaces retain their canonical
+navigation and authorization; Vault provider configuration access must
+not grant `secrets_pki.view` or `analytics.view`. This Human UAT decision
+supersedes the panel presentation requested by older open navigation
+issue #2775; it does not supersede its security boundary. The shared
+Configuration `Approved KV v2 Mounts` evidence helper remains concise
+(`Requires approved scope and read-only metadata access.`) and wraps
+naturally without forced two-line CSS.
+
 Primary source, runtime, validation, capability, binding, and coverage evidence uses `bg-surface-card`. `bg-surface-hover` is reserved for interpretation, warning context, remediation, attention strips, and destructive-boundary guidance.
 
 ## Shared Components
@@ -50,6 +285,34 @@ Responsibilities:
 - `_semantic_status.html` is the Integrations adapter to global `components/table_label.html`; it must not define an independent palette.
 
 Provider templates supply factual labels, icons, endpoint data, compatibility evidence, and actions. They do not copy shared geometry or semantic colors.
+
+The seven provider landing Overviews reuse the Inventory metadata-label
+grammar: a visible `metrics|length` **Indicators** count beside the title,
+**without any extra icon-only Info Tip or Guide** (2026-11-14 Human Visual UAT).
+Provider authority and evidence boundaries are explained by existing Coverage,
+Registry and detail-level Guides, not an adjacent Overview tooltip. The shared
+Overview macro retains legacy provider-context parameters for call-site
+compatibility; those parameters are not rendered as another title control.
+The six provider registries rendered by `_provider_registry.html::registry_header`
+use a single title-adjacent Guide. Vault's existing `table_ui.inventory_block_header(title_extra=...)`
+owns the seventh registry Guide. Never restore the Guide in the nested
+Integration Workspace header (#4544); the Registry Guide is the correct
+location for explanation of connection listing and evidence boundaries.
+Use short natural desktop descriptions instead of `whitespace-nowrap`
+or truncated content.
+
+All seven Integration provider connection-detail workspaces place the canonical
+title-adjacent Violet `components/info_tip.html::render(..., variant='guide')`
+beside their **four primary tab section titles**: Connection Contract,
+Full Validation, Runtime Health & Diagnostics, and the provider-owned
+Inventory & Lifecycle or Bindings & Consumers. Kubernetes also guides the
+separately governed Capsule Cluster RBAC Bootstrap header. The shared
+`_provider_configuration_contract.html` owns the six-provider Configuration
+Guide (including immutable Ansible source connections); validation/runtime call the existing
+`connection_validation_header.html::render(title_extra=...)`; hand-owned
+headers retain the same adjacent title layout. Do not duplicate the
+provider Overview Guide in the inner Integration Workspace header (#4544),
+change evidence ownership, or hide operational status/actions in a Guide.
 
 ## Domain Landing Workspace Contract
 
@@ -82,6 +345,40 @@ Domain posture and counts are consumer-correct. Native owner attachments are exc
 Performance ownership is bounded: Provider Registry reads only lightweight binding fields needed for counts, the Consumer Bindings tab loads binding validation/detail evidence only when selected, and provider-specific detail URLs are resolved only after pagination for the visible page. Domain landing services must not preload `IntegrationInstance.bindings` or resolve provider-specific records for every off-page target.
 
 Managed asset ownership is declared by Integration taxonomy capability metadata (`asset_types`). Domain landing services remain provider-neutral and must not query `KubernetesConnection`, `MetricsSource`, `AlertmanagerInstance`, `MinioInstance`, or future provider-specific models directly.
+
+
+The Consumer Asset cell has **one shared visual identity** across domain
+Consumer Bindings and the provider-owned Metrics Source / Alertmanager Consumer
+Binding registries: `integrations/components/_workspace.html::consumer_asset_identity`.
+It reuses the approved Violet `palette_icon` with the canonical managed-asset
+title, then displays the stable asset key (domain registry) or consumer profile
+(provider binding registry) as secondary context. An asset type identical to the
+title is omitted **only from the second line** (case/whitespace-insensitive).
+For **domain key-based rows**, custom names follow the same compact two-line
+identity hierarchy as Orchestration: the asset name and the full correlation
+key, without a distinct taxonomy label prepended to the key. The distinct type
+remains available in the title tooltip and screen-reader context. For
+**provider-owned profile-based rows**, a distinct type remains visible alongside
+the profile; this preserves provider-specific consumer context without altering
+binding identity. Type-specific icons follow the existing Integrations icon
+vocabulary for Kubernetes, Object Storage, Vault, and default managed assets.
+For numeric key-based rows, including Registry instances and Secrets & PKI
+Vault instances, the shared cell renders the canonical asset key with the
+compact `Asset ID:` label (for example `Asset ID: 6`). This is a display
+convention, not an identifier conversion: Registry and Vault currently bind
+to the string representation of the canonical `IntegrationInstance.id` integer.
+Kubernetes and Object Storage use the UUID keys of their separate managed
+asset models. The persisted `asset_type` + `asset_key` identity remains
+unchanged; UUID and other nonnumeric domain keys retain their existing
+key-only secondary line, without a duplicated taxonomy type prefix.
+Long keys wrap naturally and remain available in full; do not use a duplicated
+type prefix, truncated UUID, a page-local second icon system, or additional
+provider lookups to decorate a binding. Repeated instances of one consumer
+remain separate binding rows when they represent different bindings. This
+presentation rule applies to all domain landing pages through their existing
+shared workspace template and to the two provider-owned source binding
+registries; it does not change source authority, validation, filters,
+pagination, row navigation or binding identity.
 
 Provider Core Validation and Binding Validation remain separate evidence boundaries on the domain page. Provider Registry readiness reflects provider Core Validation; the Bindings tab shows the selected consumer profile, selector, and binding validation status.
 
@@ -133,9 +430,40 @@ DevContainer PostgreSQL query-count/fleet profiling, filter/page-size UAT
 and actual provider detail modal verification remain admission evidence,
 not substitutes for this committed-state architecture contract.
 
+## Harbor Connection Configuration UAT Contract
+
+Harbor's Connection Contract follows the shared provider configuration evidence
+geometry: compact HTTPS/TLS trust copy in the four-column evidence card, and
+permission examples from the existing modal without a broad-administration
+recommendation. Desktop copy should fit its allocated context naturally
+(approximately two TLS lines and one modal-note line); mobile must wrap safely
+without truncation or `whitespace-nowrap`.
+
+Harbor **Webhook Reconciliation** remains a provider-owned Configuration
+section, not a Registry Governance action or delivery dashboard. Its compact
+Violet hierarchy uses one header with the persisted semantic admission status,
+two adjacent desktop panels (admission/last event and receiver/authentication)
+inside a single compact divided surface, and a separate credential action row.
+The receiver URL is shown in full, accepted authentication header examples use
+compact inline code labels rather than a long helper paragraph, and a short
+warning appears only when the request host is loopback. Mobile stacks naturally. Admission `Ready` means
+credential admission is configured; it does **not** claim a received event,
+successful delivery, executed Inventory refresh, or authoritative inventory
+correctness. Scheduled reconciliation remains the recovery/correctness path.
+
+Keep the existing CSRF-protected Generate/Rotate/Disable routes, `hx-target`
+contract, redacted persisted digest, one-time display and Harbor-side
+authentication headers intact. The generated token uses the shared warning
+surface in a full-width responsive two-column confirmation: explanatory
+text on the left and the one-time token field on the right at desktop widths,
+stacked on mobile. Do not reintroduce a `max-w-3xl` inner card that strands
+blank space. Do not log or preserve a live token in screenshots, issue text,
+tests, or admission artifacts. This is presentation
+only: no new webhook state, provider mutation, or delivery evidence.
+
 ## Provider Front Page Contract
 
-Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor provider landing pages use one canonical front-page hierarchy. Provider-specific technical evidence may differ inside the workspace, but the navigation and visual grammar must not.
+Kubernetes, Metrics Source, Alertmanager, MinIO, Harbor, GitHub, and Vault provider landing pages use one canonical front-page hierarchy. Provider-specific technical evidence may differ inside the workspace, but the navigation and visual grammar must not.
 
 ```text
 Operational Integration Hero
@@ -145,13 +473,11 @@ Operational Integration Hero
 └── Register Connection
 
 <Provider> Integration Overview
+├── N Indicators (shared Inventory-style metadata label; no extra Info Tip)
 ├── Registered Connections
 ├── Validated Connections
 ├── Needs Attention
-├── Coverage Gaps
-├── Integration Contract
-├── Consumer Resolution
-└── Authority Boundary
+└── Coverage Gaps
 
 Provider Workspace
 ├── Integration Coverage
@@ -170,7 +496,7 @@ app/templates/components/integration_workspace_tabs.html
   └── delegates Tab Style 2 geometry to components/framed_workspace_tabs.html
 
 app/templates/integrations/components/_provider_registry.html
-  ├── canonical Connection Registry geometry
+  ├── canonical Connection Registry geometry and title-adjacent Guide
   ├── direct-provider Asset Coverage geometry
   └── observability Scope Coverage geometry
 ```
@@ -182,6 +508,35 @@ Canonical Connection Registry columns for Kubernetes, Metrics Source, Alertmanag
 ```text
 Connection | Endpoint / Scope | Core Readiness | Compatibility | Bindings | Actions
 ```
+
+Alertmanager Connection Registry rows use the same six-column geometry,
+but provider-specific factual evidence: **Connection** shows the complete
+Alertmanager identity and description without truncation; **Endpoint / Scope**
+shows the full URL and Alertmanager API v2 context; **Core Readiness** and
+**Compatibility** show independent provider-backed semantic states on one
+top-aligned baseline. Compatibility retains complete profile and detected
+version with compact secondary spacing. The narrow **Bindings** column uses
+the canonical `table_label.metadata_label(count_text(row.binding_count,
+'Binding'))` (for example, `3 Bindings`) instead of an isolated number and a
+clipped scope list. Bound scope type names are retained in the cell's native
+title and assistive-only text, with detailed associations inspected using
+**Manage**. Preserve the existing colgroup, action route, filter/pagination
+and full-card HTMX replacement; do not add a second summary line that
+truncates governed scope evidence or modify provider source data.
+
+Kubernetes Connection Registry rows follow the header semantics without
+changing shared six-column geometry: **Connection** shows cluster identity with
+environment as secondary context; **Endpoint / Scope** shows the full Kubernetes
+API URL with a secondary `Kubernetes API` descriptor; **Core Readiness** uses
+the canonical semantic status indicator and shows the complete validation
+timestamp without a redundant visible `Validated` prefix (its full meaning
+remains available to assistive technology); **Compatibility** retains profile
+and detected version on aligned lines. The existing `N Sources` metadata
+label and its native association tooltip remain in **Bindings** (#4560), and
+the **Manage** action preserves its owning route. Long endpoints and profile
+IDs use controlled `overflow-wrap:anywhere`, not truncated values or a new
+column-width contract. The existing shared table cells own vertical alignment
+and responsive horizontal overflow; no provider data or evidence is changed.
 
 Canonical direct-provider coverage columns for Kubernetes and MinIO are:
 
@@ -202,7 +557,7 @@ Rules:
 - Hero metadata uses `Registered Connections`, `Ready Connections`, and `Consumer Bindings`;
 - the four overview metrics retain the same order on every provider and the fourth metric is always `Coverage Gaps`;
 - the Integrations landing-page Provider Catalog shows registered count, ready count, real readiness percentage, and provider posture from persisted evidence;
-- `Integration Contract`, `Consumer Resolution`, and `Authority Boundary` retain the same three-column geometry;
+- the shared provider Overview uses `N Indicators` and four visible KPIs, without the retired three-column `Integration Contract`, `Consumer Resolution`, or `Authority Boundary` footer cards or a duplicate Info Tip; provider authority and committed evidence boundaries remain in the established Coverage, Registry, and detail Guides;
 - every provider front page exposes `Integration Coverage` and `Connection Registry` through the shared framed workspace tabs;
 - `integration_workspace_tabs.html` is a semantic adapter only; framed tablist/button/badge/keyboard geometry remains owned by `framed_workspace_tabs.html`;
 - provider-specific evidence belongs inside those two tabs rather than replacing the front-page hierarchy;
@@ -238,6 +593,204 @@ Rules:
 
 The retired sentence `Run Test Connection successfully before KAORI enables Register Connection.` must not be reintroduced as registration-footer UI copy.
 
+**Vault provider Add/Edit parity (Human UAT #3384):** the HashiCorp
+Vault connection form uses the same existing 8/4 responsive KAORI form
+composition as Harbor and GitHub: Connection Identity, Endpoint & Access
+with the canonical `connection_validation_header`, optional KV v2/PKI
+metadata scope, and a shared `operational_toggle` for stored certificates
+and enablement. The right column reuses
+`_provider_registration_context.html` (workflow + related workspace),
+not a stretched bullet-list card containing the form actions.
+
+Vault's Test Connection still uses its **existing synchronous POST**
+`action=test` route and produces an encrypted, requester/field-bound,
+10-minute proof; it must not be silently replaced with an HTMX event
+contract from another provider. Register uses the existing
+`_provider_registration_actions.html` gate in the main form footer;
+edit uses `components/form_action_bar.html`. Both prevent Save while
+unverified, and any input/change clears the in-form proof and verified UI
+state. Server-side `verified_secret` remains authoritative for expiry,
+scope and tamper protection; the client UI is only an affordance.
+Never prefill, echo or persist decrypted SecretID or transient Vault
+access tokens. Preserve AppRole auth, allowed HTTPS origin, verified
+TLS, existing KV/PKI opt-in semantics and Full Validation as a separate
+post-save gate.
+
+
+**Vault AppRole mount selection (UAT #3384):** the Add/Edit form must
+distinguish an **authentication method** from its **mount path**. The
+current Vault adapter supports AppRole only; changing the AppRole
+mount's name does not enable a new auth backend. Reuse the native
+`SelectField` / KAORI input pattern to offer `Default AppRole Mount
+(approle)` and `Custom AppRole Mount`. The default needs no editable
+path; choosing Custom reveals one labeled path field via the shared
+Alpine `x-show` / `x-cloak` pattern, with server-side
+`validate_auth_mount` still enforcing a single approved segment.
+Existing connections with a custom mount reselect Custom on Edit; the
+app must not decrypt SecretID for rendering. Switching back to Default
+must ignore stale hidden custom path input and invalidate connection
+proof; custom paths remain bound to the exact-input signed proof.
+Do not offer Kubernetes, JWT/OIDC, or cloud-IAM authentication as
+working form options until a separate approved adapter supplies their
+credential, runtime, security and test contracts.
+
+**Vault operational feedback (UAT #3384):** Vault's synchronous
+Test Connection, Register, and Edit form actions must reuse the existing
+canonical **Operational Toast + Activity Audit** service. Do not display
+`operational_callout.render` above the Connection Identity section for
+test success/failure: a form-level full-width status card misrepresents
+ephemeral feedback as persistent provider readiness. Use
+`record_operational_activity(..., queue_feedback=True)` with
+`delivery_policy='audit_only'` for connection tests and rejected form
+actions (one audited toast, without creating a new Notification Deck item).
+Successful Register/Update already have the shared persistent event/toast
+and redirect to canonical connection detail; never duplicate that feedback.
+
+Validation failures, expired/mismatched 10-minute proofs, failed Vault
+tests, storage errors, and unsupported form actions must produce safe,
+bounded warning/error feedback without exposing raw provider responses,
+RoleID, SecretID, access tokens or DB exceptions. Keep per-field errors
+visible in the form and clear stale connection proof after a rejected
+submission. Test Connection proves AppRole identity, **not** Full Validation.
+Async Full Validation/Runtime progress belongs to the established
+Jobs/Activity Center contract, not another synchronous success toast.
+
+**Vault rejected form diagnosis (UAT #3384):** a Test Connection POST
+that fails WTForms validation has **not** attempted the Vault API.
+The shared Operational Toast must name only approved, human-readable
+invalid field labels (for example `AppRole SecretID`), never raw submitted
+values or validator/proxy error payloads. CSRF errors instruct the operator
+to reload the form; unknown errors retain generic safe fallback. The
+server keeps inline field validation errors and the Jinja form uses native
+`autofocus` on the first invalid visible field after full-page POST.
+Do not add a large inline notification or a new JavaScript-only error
+component. For new connections, Test Connection always requires a fresh
+SecretID even if a prior signed proof is submitted; only Save may reuse
+the 10-minute user/field-bound proof without reposting a SecretID. Error
+feedback does not assert that TLS or AppRole failed before Vault is called.
+
+**Vault placeholders and section-level Guides (UAT #3384):** field
+labels in Add/Edit stay concise and semantic. Use existing WTForms
+`render_kw.placeholder` defaults for Connection Name, Description,
+HTTPS Endpoint, Vault Namespace, RoleID and SecretID; existing mount
+examples stay as form placeholders. Do not use placeholder text as a
+credential or persisted value. In particular, an Edit SecretID remains
+blank and clearly indicates that blank retains the encrypted credential.
+
+The Approved KV v2 and PKI Mounts labels must **not** display
+`(comma-separated)`; move that input syntax and least-privilege
+requirements to the title-level `info_tip.render(..., variant='guide')`
+inside **Optional Evidence Scope**. The AppRole default/custom mount
+choice and SecretID lifecycle explanations belong in a separate
+**AppRole Authentication** Guide. Remove redundant helper paragraphs
+beneath those inputs while keeping inline validation errors visible,
+the opt-in stored PKI warning in the operational toggle, keyboard/touch
+Guide accessibility, and responsive natural wrapping. Do not add new
+component patterns or hide validation blockers in a Guide.
+
+**Compact Alertmanager registration guidance (UAT #4698):** keep the
+Endpoint & Access subtitle, Registration Flow note, Related Operational
+Workspace summary, and disabled-connection toggle description concise enough
+for a natural single desktop line at the approved split-panel width.
+The shared `connection_validation_header`, `provider_registration_context`
+and `operational_toggle` continue owning layout and semantics; shorten
+provider-owned copy rather than adding `whitespace-nowrap`, truncation,
+smaller text, or custom layout. The flow still explicitly requires Full
+Validation before consumer bindings, while disabled connections remain
+persisted but excluded from scope resolution. Narrow/mobile layouts and
+additional initial-cluster context may wrap naturally.
+
+**Compact Observability edit guidance (UAT #4709):** Prometheus, Thanos Query,
+and Alertmanager **edit** forms share the existing Registration Context UI.
+Their Flow Note reads `Saved changes require successful Full Validation.`,
+and the related workspace summary uses the provider-specific concise
+`Review <provider> readiness and bindings.` wording. The Save Changes step
+still explicitly marks readiness as Validation Required; it is not a
+substitute for Full Validation evidence or downstream Binding Validation.
+The Thanos Query provider catalog description is shortened to
+`PromQL queries with long-term retention.`; the existing Prometheus HTTP
+adapter, PromQL query language, and historical query horizon remain defined
+by the catalog and visible in the provider contract metadata. Use short
+factual copy rather than page-local nowrap, clipping, or micro-typography.
+Long provider identifiers and mobile content may wrap naturally.
+
+### Evidence density and Copy actions (UAT #4716)
+
+On Alertmanager Configuration, the Alerting Authority helper describes
+provider-owned routing/delivery and binding-scoped consumer use in two
+natural desktop lines. The lifecycle Retained Evidence helper is one compact
+line describing runtime/job history and Activity Audit persistence. For
+Alertmanager binding validation, a successful governed selector with no
+matching active alerts uses a short **display-only** summary; the complete
+`row.validation_message` stays persisted and available through the native
+title and assistive text. Do not alter the committed validation result or
+present absent payload-label evidence as observed.
+
+The shared `_binding_validation_result.html` owns display of the exact
+`technical_checks[].query` string. Technical query content uses a
+monospace bounded horizontal code region, visually separated from explanation,
+with one Copy button per query using existing `clipboard.js` delegated
+`data-kaori-copy-*` primitives. Preserve literal query syntax and keyboard
+access; do not add inline JavaScript or page-wide horizontal scrolling.
+
+Metrics Source Effective Consumer Resolution keeps its full-width workspace,
+scope pagination and disclosure contract. Within each expanded consumer,
+the Required Capability Contract is a compact wrap-friendly capability
+strip, followed by a row-based list of source candidates with exact
+identity, role/priority, selected/eligible/skipped status, decision reason,
+and binding-evidence handoff. No tall blank companion card, no independent
+provider authority, no new resolution evaluation, and no filtering of
+ineligible candidates.
+
+**MinIO six-panel Visual UAT refinement (#4722):** the MinIO Connection
+Registry uses the same six-column shared colgroup and top-aligned row hierarchy
+as Kubernetes/Alertmanager; when the connection and managed asset share the
+same display name, the subdued second line states `Object Storage System`
+rather than repeating the title. The Binding cell uses the canonical
+`metadata_label(count_text(row.binding_count, 'Binding'))`; full endpoint,
+compatibility profile, release, readiness, Manage, filters and pagination are
+unchanged. Compact MinIO registration/edit context and Runtime/Inventory
+summaries must preserve the registration-vs-validation boundary, connection
+revalidation, asset-scoped source bindings, and committed inventory timestamp
+and stale-source warning. Target one natural desktop line for registration,
+runtime, access and edit helpers, two for Inventory decision metrics. Mobile
+may wrap; do not add nowrap, text clipping or an independent typography system.
+The Metrics Source Scope Final Lock explicitly verifies the current
+`Bindings & Consumers → View More` evidence handoff, without copying technical
+missing-capability details into source scope. Shared Observability template
+formatting and regression tests follow existing djlint/Ruff gates.
+
+**Harbor Connection Registry / connection-form UAT (#4730):** the Harbor
+Registry follows the same six-column top-aligned KAORI row hierarchy as MinIO
+and Alertmanager. Keep full endpoint, environment, API v2.0, compatibility
+profile, detected version, readiness, Manage route, and independent filter /
+pagination state. Its binding count uses the shared compact `N Bindings`
+metadata label; the title and assistive text preserve the fact that those
+associations are Metrics Source bindings. Registration proves access, not
+provider readiness; changes reset readiness until Full Validation is rerun.
+Both Register and Edit right-hand Flow/Related Workspace surfaces use short
+provider-owned copy and the existing shared context component. MinIO
+Access Contract helper should occupy approximately two desktop lines without
+sacrificing encrypted-secret and governed S3-discovery semantics. Mobile
+wraps naturally; never add nowrap, clipping, smaller typography or another
+registry component to force line counts. Scoped source checks and pre-existing
+formatter/test drift are handled in the corresponding UAT issue.
+
+**Registry domain Consumer Bindings asset ownership (#4734):** `Registry`
+owns the canonical `registry_instance` asset type, matching the existing
+consumer asset catalog and Harbor connection identity metadata. The shared
+domain binding projection includes source-owned Metrics Source/Alert Source
+`IntegrationBinding` records when their `asset_type` is `registry_instance`
+and their `asset_key` points to a Registry connection. The binding count,
+provider filter, row list and existing five-row pagination all derive from
+those same committed records. Do not count the Harbor provider itself as a
+consumer, duplicate a provider's source bindings, infer associations from a
+connection name, or fetch live provider evidence to populate this table.
+An Observability binding targeting Kubernetes or Object Storage remains
+in that asset owner's domain; only bindings targeting `registry_instance`
+belong to the Registry domain. An unbound Registry asset must continue to
+render the existing empty state.
+
 ## Provider Registry Contract
 
 Metrics Source and Alertmanager registries share:
@@ -256,6 +809,36 @@ Provider-specific evidence remains explicit. Metrics Source retains provider/ada
 ## Coverage Contract
 
 Provider coverage uses the shared coverage component and the same pagination ownership as provider registries. Normal links always resolve the complete provider page; HTMX requests replace only the coverage panel.
+
+**Tabular Coverage filtered Results label (UAT #4679):** Kubernetes, MinIO,
+Harbor, GitHub and the shared Metrics Source / Alertmanager Coverage surface
+pass the authoritative `coverage_pagination.total_items` into
+`provider_registry.registry_header(..., result_count=...)` (the shared
+`integration_coverage.render` uses its `pagination.total_items` parameter).
+The existing `table_label.result_count` renders `1 Result`, `0 Results` or
+`N Results` immediately after the title Guide, matching Connection Registry.
+The count is the filtered total **before pagination**, never `rows|length`,
+the selected-tab badge, or the provider registration count. Filters and HTMX
+re-render the same header with the updated total. GitHub already implements
+this pattern and needs no duplicate. Vault's non-tabular Source Qualification
+Boundaries are explanatory, not a query-results registry, and must not gain a
+misleading result count.
+
+**Connection Registry filtered Results parity (UAT #4693):** all seven provider
+Connection Registries display the same canonical `N Result(s)` immediately
+after their title Guide using `pagination.total_items`, not a page row count.
+Kubernetes, MinIO, Harbor and GitHub already pass that value into the shared
+`provider_registry.registry_header`; Metrics Source and Alertmanager also
+pass it explicitly. Vault keeps its approved
+`table_ui.inventory_block_header(..., title_extra=header_guide,
+result_count=pagination.total_items)` without a second shared Guide. For
+Metrics Source and Alertmanager, filters and pagination **replace the owning
+registry card** with HTMX `outerHTML` (existing `app/integrations/routes.py`
+card-target dispatch) rather than replacing only the table content: the
+header result count, filters and visible rows must reflect the same committed
+filtered pagination after every operation. Reuse the existing card IDs and
+loading indicator, preserve the active tab and query parameters; do not add
+OOB counters, page-local count pills or new provider requests.
 
 Coverage status is not provider runtime health. `Covered`, `Uncovered`, missing binding, validation-required binding, and incompatible source remain distinct states.
 
@@ -543,6 +1126,9 @@ The final Integration refinement preserves the last approved KAORI workspace beh
 - `View More` for persisted runtime observations and validation/capability registries uses the shared/native dialog pattern. Inline disclosure remains allowed only for intentionally local supporting evidence that is not a registry record-detail workflow.
 - **Kubernetes Capability Registry `View More`** uses a compact `standard` native dialog with one deliberate reading flow rather than a wall of nested cards: `Capability Decision` → `Contract Snapshot` → `Validation Evidence` → `Operational Decision` → `Verification Command`. The contract snapshot is a four-fact strip; validation evidence is a symmetric three-step row; operational impact and recommended action are peer decisions with a single governance boundary beneath them. The verification command is always visible and carries compact scope/stability/identity metadata instead of a second side panel. Do not nest another disclosure/accordion inside this modal; the modal is already the detail boundary.
 - **Kubernetes capability workspace** renders `Kubernetes Capability Readiness` through the same shared `integrations/components/_capability_readiness.html` surface used by Metrics Source and Alertmanager. Coverage, the three evidence metrics, Operational Gate, Evidence Boundary, and Next Operational Action therefore share the same light/dark tokens, spacing, icon treatment, and divider geometry across all three providers. Kubernetes supplies provider-specific API/RBAC data only; do not reintroduce a page-local readiness/decision surface. The `Capability Registry` remains full-width with separate `Capability`, `Resource`, `API Contract`, `Requirement`, `Status`, and `Details` columns.
+
+- **Capsule Cluster RBAC summary placement and disclosure** — In Kubernetes `Validation & Capabilities`, the governed ClusterRole prerequisite section appears **before** the full validation/capability workspace so an operator selecting 50 Capability Registry rows can access **Check RBAC** and inspect committed role posture without scrolling past the table. Keep the RBAC title, overall status, cluster identity, checked time and authorized Check action always visible. Reuse the native `details/summary` disclosure pattern to display compact role counts and Show/Hide Details; **verified four-role Ready defaults collapsed**, while Not Checked, Missing, Conflict, Failed or incomplete evidence defaults expanded. The three summary metric cards, versioned role evidence, safe remediation and approval-gated Bootstrap remain inside that disclosure. Do not hide failed state behind a collapsed default, change `[data-capsule-rbac-bootstrap]` scoped HTMX targeting, replace the committed provider evidence with live requests, or introduce a duplicate modal/accordion component. The upper Capability Registry retains its independent default-five pagination, filters and native per-record `View More` boundary.
+
 - **Provider readiness metadata** uses a concise `Profile · <key>` identity label. Metrics Source, Alertmanager, MinIO, and future providers must not stack redundant `Compatibility`, `Core Profile`, or `Product` pills beside capability coverage; compatibility/product detail belongs in the validation evidence or provider configuration surface.
 - **Kubernetes Capability Registry table** uses the canonical KAORI table, filter, loading, and pagination primitives. Default page size is 5 with 5/10/25/50 choices; the footer uses `Showing x–y of z Capabilities`, numeric pages, Previous/Next controls, and local filtering resets to page 1. The full-width table uses fixed proportional columns without a forced minimum width or desktop horizontal scroll.
 

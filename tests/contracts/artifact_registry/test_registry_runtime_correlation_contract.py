@@ -43,6 +43,7 @@ def test_runtime_correlation_is_bounded_atomic_and_progress_aware() -> None:
 def test_runtime_usage_is_cross_domain_canonical_workspace() -> None:
     presentation = (ROOT / 'app/artifact_registry/presentation_runtime.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    scope = (ROOT / 'app/artifact_registry/route_scope.py').read_text()
     page = (ROOT / 'app/templates/artifact_registry/runtime.html').read_text()
     workspace = (ROOT / 'app/templates/artifact_registry/partials/_runtime_workspace.html').read_text()
     detail = (ROOT / 'app/templates/artifact_registry/partials/_runtime_binding_detail.html').read_text()
@@ -57,17 +58,18 @@ def test_runtime_usage_is_cross_domain_canonical_workspace() -> None:
     assert "'security_exposed': counts['security_exposed']" in presentation
     assert 'def build_runtime_binding_detail(binding_id: int)' in presentation
 
+    assert '_runtime_topology_filters()' in routes
     assert "source_id=_runtime_scope_id('source_id')" in routes
     assert "artifact_id=_runtime_scope_id('artifact_id')" in routes
-    assert "request.args.get('cluster_id', '', type=str)" in routes
-    assert "request.args.get('namespace', '', type=str)" in routes
-    assert "request.args.get('match_type', '', type=str)" in routes
-    assert "request.args.get('exposure', '', type=str)" in routes
+    assert "request.args.get('cluster_id', '', type=str)" in scope
+    assert "request.args.get('namespace', '', type=str)" in scope
+    assert "request.args.get('match_type', '', type=str)" in scope
+    assert "request.args.get('exposure', '', type=str)" in scope
     # Explicit malformed artifact scope must fail closed instead of widening results.
-    assert 'def _runtime_scope_id(name: str) -> int | None:' in routes
-    assert 'raw = request.args.get(name)' in routes
-    assert 'abort(404)' in routes
-    assert "artifact_id=_runtime_scope_id('artifact_id')" in routes
+    assert 'def _runtime_scope_id(name: str) -> int | None:' in scope
+    assert 'raw = request.args.get(name)' in scope
+    assert 'abort(404)' in scope
+    assert "'artifact_id': _runtime_scope_id('artifact_id')" in scope
     assert "@artifact_registry_bp.get('/runtime/<int:binding_id>/details')" in routes
 
     assert 'artifact_registry/partials/_runtime_workspace.html' in page
@@ -137,6 +139,14 @@ def test_runtime_summary_reuses_shared_section_intro_and_grouped_metrics() -> No
     assert "'Runtime Evidence Summary'" in summary
     assert "body_classes='p-0'" in summary
     assert 'posture_grid.render(runtime_metrics, columns=4)' in summary
+    assert '{% set summary_badge %}' in summary
+    assert "table_label.metadata_label(runtime_metrics|length ~ ' Indicators', icon='layout-grid')" in summary
+    assert 'header_badge=summary_badge' in summary
+    assert "'Committed Registry–Kubernetes bindings.'" in summary
+    assert "'Bindings with Critical/High findings.'" in summary
+    assert 'Committed Registry artifact to Kubernetes runtime bindings.' not in summary
+    assert 'Runtime bindings associated with artifacts reporting Critical or High findings.' not in summary
+    assert 'whitespace-nowrap' not in summary
     for name in ('Runtime Bindings', 'Digest Matched', 'Tag Matched', 'Security Exposed'):
         assert name in summary
     assert "'warning' if runtime.tag_matches else 'info'" in summary
@@ -151,6 +161,7 @@ def test_runtime_generation_freshness_and_active_scope_contract() -> None:
     presentation = (ROOT / 'app/artifact_registry/presentation_runtime.py').read_text()
     prerequisites = (ROOT / 'app/artifact_registry/correlation_sync_jobs.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    scope = (ROOT / 'app/artifact_registry/route_scope.py').read_text()
     assert 'def runtime_input_signature(' in correlation
     assert 'ClusterInventory.collected_at' in shared_evidence
     assert 'RegistryCollectionState.last_committed_at' in shared_evidence
@@ -159,12 +170,15 @@ def test_runtime_generation_freshness_and_active_scope_contract() -> None:
     assert "'input_signature': input_signature" in correlation
     assert 'latest_success.result_summary_json' in presentation
     assert "status, tone = 'Inputs Changed', 'warning'" in presentation
+    assert "description = 'Committed runtime correlation is ready.'" in presentation
+    assert 'Committed cross-domain runtime correlation is available for the active scope.' not in presentation
     assert "description = 'Inputs changed or correlation lacks generation proof; rebuild.'" in presentation
     assert 'or the previous correlation has no input-generation proof.' not in presentation
     assert 'RegistryProject.integration_instance_id.in_(active_source_ids)' in presentation
     assert 'RegistryProject.integration_instance_id.in_(source_ids)' in presentation
     assert 'IntegrationInstance.enabled.is_(True)' in prerequisites
-    assert 'def _runtime_scope_id(name: str)' in routes
+    assert 'def _runtime_scope_id(name: str)' in scope
+    assert '_runtime_topology_filters()' in routes
 
 
 def test_runtime_read_and_materialization_bounded_projection() -> None:
@@ -179,7 +193,74 @@ def test_runtime_read_and_materialization_bounded_projection() -> None:
     assert 'def _runtime_security_index(' in presentation
     assert 'RegistryArtifact.id.in_(bound_artifact_ids)' in presentation
     assert '.yield_per(250)' in presentation
-    assert 'Runtime bindings associated with artifacts reporting Critical or High findings.' in workspace
+    assert "'Bindings with Critical/High findings.'" in workspace
+
+
+def test_runtime_binding_detail_reuses_kubernetes_compact_modal_grammar() -> None:
+    from jinja2 import Environment
+
+    runtime = (ROOT / 'app/templates/artifact_registry/partials/_runtime_binding_detail.html').read_text()
+    pod = (ROOT / 'app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html').read_text()
+    for page in (runtime, pod):
+        Environment().parse(page)
+        assert 'detail.workspace_header(' in page
+        assert 'detail.header_identity_row()' in page
+        assert 'compact=true' in page
+        assert 'detail.inventory_section(' in page
+
+    assert 'detail.resource_sheet()' in runtime
+    assert 'data-kaori-unified-resource-sheet' in pod
+    assert 'context_items=[' in runtime
+    assert "'label': binding.project" in runtime
+    assert "'label': binding.namespace" in runtime
+    assert 'detail.inventory_title(binding.repository, compact=true)' in runtime
+    assert 'table_label.metadata_label(binding.project' not in runtime
+    assert "'Registry Artifact'," in runtime
+    assert "'Kubernetes Workload'," in runtime
+    assert "binding.project ~ '/' ~ binding.repository" not in runtime
+    assert "binding.cluster_name ~ ' · ' ~ binding.namespace" not in runtime
+    assert "detail.inventory_row('Project', binding.project)" in runtime
+    assert "detail.inventory_row('Repository', binding.repository)" in runtime
+    assert "detail.inventory_row('Cluster', binding.cluster_name)" in runtime
+    assert "detail.inventory_row('Namespace', binding.namespace)" in runtime
+    assert 'table_label.status_label(binding.match.label, binding.match.tone)' in runtime
+    assert "'Committed artifact, runtime, and security evidence.'" in runtime
+    assert runtime.count('detail.inventory_section(') == 5
+
+    expected_sections = (
+        'Digest, tags, repository.',
+        'Source and provider.',
+        'Workload and container.',
+        'Match type and confidence.',
+        'Committed scan findings.',
+    )
+    for description in expected_sections:
+        assert f"description='{description}'" in runtime
+        assert len(description) <= 28
+    assert 'description=binding.match.description' not in runtime
+
+    # Every original committed identity, provenance, runtime and security field survives.
+    for evidence in (
+        'binding.digest',
+        'binding.tags',
+        'binding.provider_name',
+        'binding.registry_observed_at',
+        'binding.cluster_name',
+        'binding.namespace',
+        'binding.workload_name',
+        'binding.pod_name',
+        'binding.container_name',
+        'binding.image_reference',
+        'binding.match.confidence',
+        'binding.match.description',
+        'binding.correlated_at',
+        'binding.security.critical',
+        'binding.security.high',
+        'binding.scan_status',
+        'binding.security.label',
+    ):
+        assert evidence in runtime
+    assert 'Committed Artifact Registry and Kubernetes inventory only' in runtime
 
 
 def test_runtime_binding_detail_template_compiles_and_handles_optional_containers() -> None:

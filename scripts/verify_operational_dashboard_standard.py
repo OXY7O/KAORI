@@ -59,6 +59,7 @@ WORKSPACE_TABS = ROOT / 'app' / 'templates' / 'components' / 'workspace_tabs.htm
 DASHBOARD_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_dashboard_workspace.html'
 REPORTING_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'reporting_dashboard_workspace.html'
 METRIC_CARD = ROOT / 'app' / 'templates' / 'components' / 'operational_metric_card.html'
+CAPACITY_DECISION = ROOT / 'app' / 'templates' / 'components' / 'operational_capacity_decision.html'
 SIGNAL_OVERVIEW_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_signal_overview.html'
 EVIDENCE_TILE = ROOT / 'app' / 'templates' / 'components' / 'operational_evidence_tile.html'
 ALERT_SUMMARY_WORKSPACE = ROOT / 'app' / 'templates' / 'components' / 'operational_alert_summary.html'
@@ -427,10 +428,13 @@ def _verify_artifact_registry_dashboard(
             'Data Scope:</span> committed inventory for footprint',
             'bg-kaori-soft p-3 text-xs leading-5 text-content-secondary',
             'grid gap-3 lg:grid-cols-3',
-            'progress_bar.bar(item.progress_percent,',
+            'components/operational_capacity_metric_card.html',
+            'capacity_metric_card.render(item.label,',
+            'item.progress_percent',
             'item.progress_label',
-            'percentage not applicable',
-            'Refresh evidence; verify headroom',
+            "missing_label='Inventory' if item.progress_label == 'Inventory' else 'No Quota'",
+            'components/operational_capacity_decision.html',
+            'capacity_decision.render(',
             'Registry project quota balance chart',
             'overview.capacity.metrics[1].progress_percent',
             'overview.capacity.metrics[2].progress_percent',
@@ -442,6 +446,70 @@ def _verify_artifact_registry_dashboard(
     )
     if "operational_callout.render('Data Scope'" in registry_capacity_snapshot:
         raise AssertionError('Registry Capacity must use the compact Kubernetes Data Scope strip')
+    capacity_metric_card = _read(ROOT / 'app' / 'templates' / 'components' / 'operational_capacity_metric_card.html')
+    _require(
+        capacity_metric_card,
+        (
+            'components/progress_bar.html',
+            'rounded-lg border border-outline-subtle bg-surface-elevated p-4',
+            'min-w-0 break-words text-sm font-semibold text-content-primary',
+            'block text-right text-xs font-semibold tabular-nums',
+            'percent is not none',
+            'progress_bar.bar(percent,',
+            'percentage unavailable',
+            '{{ value }}',
+            '{{ description }}',
+        ),
+        'shared Capacity metric card with known/missing evidence and accessible percentage',
+    )
+    capacity_decision = _read(CAPACITY_DECISION)
+    _require(
+        capacity_decision,
+        (
+            'components/table_label.html',
+            'data-kaori-capacity-decision',
+            'aria-label="Capacity decision from committed evidence"',
+            'Overall Capacity Risk',
+            'What This Means',
+            'Recommended Action',
+            '{{ interpretation }}',
+            '{{ recommended_action }}',
+            "table_label.status_label(risk, tone, size='detail')",
+            'Capacity Review Guide',
+            'Reference only',
+            'data-kaori-capacity-review',
+            'data-kaori-capacity-action',
+            'grid-cols-1 gap-x-5 sm:grid-cols-2',
+            '<li class="flex min-w-0 items-start gap-2 border-b',
+            'mt-1 break-words text-xs leading-5 text-content-secondary',
+        ),
+        'one reusable committed-evidence Capacity Decision',
+    )
+    for owner, capacity_source in (
+        ('Kubernetes', _read(KUBERNETES_CAPACITY)),
+        ('Object Storage', _read(OBJECT_CAPACITY)),
+        ('Artifact Registry', registry_capacity_snapshot),
+    ):
+        _require(
+            capacity_source,
+            (
+                'components/operational_capacity_metric_card.html',
+                'capacity_metric_card.render(',
+                'grid gap-3 lg:grid-cols-3',
+                'components/operational_capacity_decision.html',
+                'capacity_decision.render(',
+                'capacity_review_groups',
+                'review_groups=capacity_review_groups',
+            ),
+            owner + ' shared Capacity Snapshot presentation ownership',
+        )
+        if 'Recommended Capacity Action Flow' in capacity_source or 'capacity_action_rows' in capacity_source:
+            raise AssertionError(f'{owner}: static Capacity Action Flow is not a dashboard decision')
+        if 'components/operational_flow_steps.html' in capacity_source:
+            raise AssertionError(f'{owner}: capacity must use evidence-driven decision, not a generic flow')
+        for topic in ('Validate', 'Assess', 'Prioritize', 'Act', 'Verify', 'Record'):
+            if f"'{topic}'" not in capacity_source:
+                raise AssertionError(f'{owner}: missing operator reference topic {topic}')
     _require(
         presentation,
         (
@@ -568,7 +636,9 @@ def _verify_artifact_registry_dashboard(
         routes,
         (
             "@permission_required('artifact_registry.view')",
-            'from app.artifact_registry.route_scope import _inventory_source_id, _overview_provider_id',
+            'from app.artifact_registry.route_scope import (',
+            '    _inventory_source_id,',
+            '    _overview_provider_id,',
             'provider_id=_overview_provider_id(),',
             "request.args.get('tab', 'overview', type=str)",
             "'overview': 'artifact_registry/partials/_overview_operations.html'",
@@ -1045,7 +1115,9 @@ def verify() -> None:
             "('capacity', 'Capacity & Demand', 'gauge')",
             "('signals', 'Signals & Actions', 'bell-ring')",
             "('reporting', 'Reporting', 'file-text')",
-            'workspace_tabs.render(standard_tabs',
+            '{% import "components/workspace_tabs.html" as workspace_tabs %}',
+            'macro navigation(prefix, aria_label, tabs=none)',
+            'workspace_tabs.render(tabs if tabs is not none else standard_tabs, prefix=prefix, aria_label=aria_label)',
             'moveTab(currentTab, direction, prefix)',
             "url.searchParams.set('tab', tab)",
             "window.history.replaceState({}, '', url)",
@@ -1156,7 +1228,7 @@ def verify() -> None:
             "'Schedule'",
             "'Retain'",
             'Reporting Tip',
-            'reporting.latest_reports[:4]',
+            '{% for report in recent_items[:4] %}',
         ),
         'shared reporting dashboard workspace',
     )
@@ -1305,7 +1377,11 @@ def verify() -> None:
     )
     _require(
         reporting_workspace,
-        ('reporting.latest_reports[:4]',),
+        (
+            '{% set recent_items = ([evidence.activity] if evidence.activity else []) '
+            'if evidence_only else reporting.latest_reports %}',
+            '{% for report in recent_items[:4] %}',
+        ),
         'shared Recent Report Activity preview',
     )
     _require(
@@ -1541,7 +1617,11 @@ def verify() -> None:
     _require(
         metric_card,
         (
-            "macro render(label, value, description, icon, source_label='Operational', scope_label='Active Scope')",
+            "macro render(label, value, description, icon, source_label='Operational', "
+            "scope_label='Active Scope', compact=false, status_label=none, status_tone='info')",
+            '{% if compact %}',
+            'table_label.status_indicator_label(status_label, status_tone)',
+            "table_label.metadata_label(scope_label, icon='scan-search', size='compact')",
             'components/table_label.html',
             'components/table_primitives.html',
             'table_ui.block_classes()',

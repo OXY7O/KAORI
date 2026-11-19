@@ -11,6 +11,14 @@ Issue #113 owns the first managed Tenant mutation slice: administrator-driven na
 - #654 owns Tenant Allocation Budget arithmetic, aggregate commitment, capacity state, and allocation allow/block decisions.
 - The original #113 baseline remains Native Kubernetes. Later bounded authorities #771 and #773 extend the same allocation lifecycle to admitted Capsule GlobalResourceQuota and legacy Tenant.spec.resourceQuotas paths without changing #113 ownership.
 
+## Resource Profile operational UI parity (#4630)
+
+- **Profile Estate** displays a canonical metadata badge derived from its four committed indicator dimensions, not a count of live Kubernetes resources.
+- **Profile Administration** and **Governed Allocation Lifecycle** use the approved shared title-adjacent `info_tip.render(..., variant='guide')` to distinguish versioned contract intent, committed capacity admission, and provider-executed reconciliation.
+- **Manage Resource Profile** retains the existing native modal and independent save/delete forms. Its header and footer follow inventory-modal context, icon, close and summary patterns. **Delete Profile** is moved from the persistent footer to an explicitly scoped destructive action area inside the scrollable body; the existing confirmation, RBAC, dependency guard, CSRF, and immutable Namespace snapshot boundaries remain authoritative.
+- The read-only **How allocation budgets work** guide dialog uses `max-w-3xl` desktop width without changing budget formula semantics or mobile bounds.
+- Blocked Capsule Adoption Preflight displays a concise **Human confirmation** line. Exact provider reasons stay under **Exact provider reason** and technical evidence; wording does not relax any fail-closed adoption check or authorize provider mutation.
+
 ## Resource Profile contract
 
 KAORI exposes five operator-facing Resource Profile classes:
@@ -487,6 +495,23 @@ reads frozen Namespace allocation JSON; Proposed always reads the selected,
 versioned Resource Profile, except for the explicit `adopted_baseline`
 selection that reads the current frozen contract. All six ResourceQuota
 values and PVC min/max remain visible together, including on narrow screens.
+
+**Native allocation/cutover density follow-up (#4650):** The existing
+Governance Gates cards keep their three-step Capacity Admission → Provider
+Reconcile → Read-back & Commit order but use concise desktop helper copy;
+narrow-screen text wraps naturally, not through forced no-wrap or clipping.
+The legacy-only Adopted Native Governance Cutover header keeps one
+title-adjacent Guide and Explicit Takeover authority badge. Its visible
+description distinguishes legacy Adopted / Observed from already Managed-on-Adopt,
+while the Guide retains provider, ownership, capacity and UID/resourceVersion
+preconditions. The two-stage Observed Provider Baseline → Proposed KAORI Managed
+Contract uses equal semantic icon/heading/caption rows; it represents a proposed
+transition, never a completed write. The Control Unavailable block separates
+each Namespace, authority and full untruncated provider reason into readable
+responsive rows. Existing disabled options, action permission gate, CSRF, all
+frozen-vs-proposed metric bindings, provider-authoritative mutation/read-back
+and audit evidence remain unchanged. Visual fit at actual desktop/mobile widths
+and light/dark must be accepted by a human after exact-head executable QA.
 
 **Section heading consistency (#1664):** Allocation Change uses the
 existing KAORI Violet semantic 9x9 icon surface on the page's peer
@@ -1350,7 +1375,8 @@ light/dark UAT is required before acceptance.
 ### Capsule Governance authority-scoped sub-navigation (#3001)
 
 The top-level **Capsule Governance** tab now owns a second, deliberately
-bounded `content_tabs.render_links` navigation with three URL-backed,
+bounded `framed_workspace_tabs.render_navigation` navigation (the same shared
+framed/raised workspace tab treatment as Jobs & Executions) with three URL-backed,
 mutually exclusive subviews:
 
 - `?view=capsule-governance&capsule_tab=overview` (default) — two
@@ -1372,9 +1398,34 @@ capability fail-closed, provider admission and read-back remain unchanged.
 Tenant CR writes redirect back to `tenant-quota`; GRQ cutover redirects
 back to `shared-allocation`, including handled failure outcomes.
 Navigation reuses the shared HTMX `namespace-provisioning-workspace`
-replacement, history push and keyboard-friendly content-links pattern.
-The source is committed KAORI state; no live provider calls are added to
-ordinary navigation.
+replacement and response selection, history push, inherited loading indicator
+and synchronized swaps, normal-link fallback, and keyboard-friendly framed
+navigation. The framed tabs and selected subview are one integrated surface;
+no extra page-local tab implementation is permitted. The source is committed
+KAORI state; no live provider calls are added to ordinary navigation.
+
+**Authority panel visual refinement (#4652):** Following operator review,
+Overview now uses the exact sibling governance card shell and header grammar:
+`rounded-xl` semantic bordered card, `px-5 py-4` header, 9x9 Violet icon
+surface, `text-base` title, one title-adjacent standard `Guide`, and canonical
+`table_label.special_label` for Capsule authority. Its two committed authority
+cards and read-only evidence note share the sibling `p-4 sm:p-5` content inset.
+The concise full-width subtitle remains visible below the title/badges, without
+narrow max-width containers or custom badge classes. Tenant Quota and Shared
+Allocation headers retain their own title Guides and provider authority badges;
+their legacy-only captions are compact enough for desktop while the complete
+provider, Native-not-Capsule and Managed-on-Adopt cutover boundaries remain
+explicit within the existing Guides. The provider-effect disclaimer stays
+visible, with natural wrapping when the viewport narrows. Committed count
+sources and Capsule ownership do not change. Actual applicable
+but blocked GlobalResourceQuota scopes render a warning summary and one
+per-Tenant row with the **complete provider reason**, committed GRQ source
+count, and observed API. Different committed authorities remain a distinct
+neutral list, not a provider health or readiness failure. A Tenant CR authority
+navigates to the URL-owned Tenant Quota workflow through the existing
+HTMX target/select/swap/push flow; it is not a non-rendered in-page anchor.
+`applicable`, `supported`, provider capability, CSRF, read-back and disabled
+submission remain authoritative and unchanged.
 
 This user-visible information architecture change requires desktop/mobile,
 light/dark and keyboard Visual QA plus human UAT, separately from official

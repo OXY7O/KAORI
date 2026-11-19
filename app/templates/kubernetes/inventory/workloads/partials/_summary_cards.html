@@ -1,4 +1,5 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/table_label.html" as table_label %}
 {% import "components/resource_posture_grid.html" as posture_grid %}
 {% set posture_metrics = [
     ('blocks', 'Controller Workloads', inventory.controller_workloads, 'Deployments, StatefulSets, and DaemonSets.', 'unknown' if inventory.total_workloads == 0 else 'brand'),
@@ -8,10 +9,14 @@
     ('circle-pause', 'Suspended', inventory.suspended_workloads, 'Workloads intentionally paused or suspended.', 'unknown' if inventory.total_workloads == 0 else ('info' if inventory.suspended_workloads > 0 else 'normal')),
     ('circle-help', 'Unknown State', inventory.unknown_workloads, 'Workloads without authoritative runtime state in the committed snapshot.', 'unknown' if inventory.total_workloads == 0 else ('warning' if inventory.unknown_workloads > 0 else 'normal'))
 ] %}
+{% set posture_badge %}
+    {{ table_label.metadata_label(posture_metrics|length ~ ' Indicators', icon='layout-grid') }}
+{% endset %}
 {% call operational_section_card.render(
     'Workload Delivery Posture',
     'Controller composition and operational state evidence for the active Workload Inventory filters.',
     'gauge',
+    header_badge=posture_badge,
     body_classes='p-0'
     ) %}
     {{ posture_grid.render(posture_metrics, columns=3) }}

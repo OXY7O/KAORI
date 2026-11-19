@@ -30,7 +30,7 @@ def build_kpis(context: DashboardKpiContext) -> list[DashboardKpi]:
         DashboardKpi(
             label='Workloads',
             value=str(context.workloads_total),
-            description='Deployments, StatefulSets, DaemonSets, Jobs, CronJobs',
+            description='Five Kubernetes workload types.',
             icon='boxes',
         ),
         DashboardKpi(

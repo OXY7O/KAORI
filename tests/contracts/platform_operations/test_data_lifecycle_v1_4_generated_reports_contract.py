@@ -105,8 +105,17 @@ def test_data_lifecycle_ui_explains_generated_report_evidence_and_status_windows
     assert 'failed_retention_days' in workspace
     assert 'archived_retention_days' in workspace
     assert 'max="{{ 2500 if selected.name == \'generated_report\' else 25000 }}"' in workspace
-    assert 'verifying SHA-256 before source-file or row cleanup' in workspace
+    assert 'Ready/Archived PDF/XLSX/CSV are SHA-256-verified before cleanup;' in workspace
+    assert 'pending or regenerating reports remain protected.' in workspace
+    assert 'Ready/Archived PDF, XLSX and CSV files are copied and checksum-verified before cleanup.' in workspace
+    assert 'Requested, Queued, Generating, active regeneration jobs' in workspace
     assert 'generated_report_ui.GENERATED_REPORT_COVERAGE_NOTE' in presentation
+    assert 'generated_report_ui.GENERATED_REPORT_EXCLUSION_NOTE' in presentation
+    assert (
+        'Pending, generating, and artifact-unsafe reports remain excluded from archive and cleanup until eligible.'
+        in generated_presentation
+    )
+    assert "source_detail = 'Reports metadata + PDF/XLSX/CSV'" in presentation
 
 
 def test_generated_registry_does_not_advertise_page_size_options_in_posture_banner() -> None:
@@ -163,11 +172,9 @@ def test_all_seven_lifecycle_copy_refinements_preserve_evidence_and_status_terms
     assert 'Source-owned AuditEvent evidence; manual Archive Only.' in presentation
     assert 'Closed alert cases, operator evidence, delivery, and postmortems.' in presentation
     assert 'Report metadata and retained PDF, XLSX, or CSV evidence.' in generated
-    assert 'Ready, Failed, and Archived reports past their status-specific hot retention.' in generated
-    assert 'Ready/Archived PDF/XLSX/CSV files are copied and checksum-verified before cleanup.' in generated
+    assert 'Ready, Failed and Archived after hot retention.' in generated
+    assert 'PDF/XLSX/CSV checksum-verified before cleanup.' in generated
     assert 'Source files stay intact until archive and supplements pass verification.' in generated
-    assert (
-        'Ready and manually Archived reports copy PDF, XLSX, or CSV files to archive storage, '
-        'verifying SHA-256 before source-file or row cleanup.'
-    ) in workspace
-    assert 'Requested, Queued, Generating, and active regeneration remain protected.' in workspace
+    assert 'Ready/Archived PDF/XLSX/CSV are SHA-256-verified before cleanup;' in workspace
+    assert 'pending or regenerating reports remain protected.' in workspace
+    assert 'Requested, Queued, Generating, active regeneration jobs' in workspace

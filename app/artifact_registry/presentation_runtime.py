@@ -481,7 +481,7 @@ def _runtime_snapshot_state(prerequisites: dict[str, Any]) -> dict[str, Any]:
         description = 'Committed runtime correlation is older than the current freshness window.'
     else:
         status, tone = 'Ready', 'normal'
-        description = 'Committed cross-domain runtime correlation is available for the active scope.'
+        description = 'Committed runtime correlation is ready.'
     return {
         'setup': setup,
         'latest_correlated_at': latest_correlated_at,
