@@ -4,6 +4,8 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from dataclasses import dataclass
+from html.parser import HTMLParser
 from pathlib import Path
 
 from jinja2 import Environment, TemplateSyntaxError, select_autoescape
@@ -13,19 +15,52 @@ _EVENT_HANDLER = re.compile(
     r'\bon(?:click|change|input|submit|load|error|keyup|keydown)\s*=',
     re.IGNORECASE,
 )
-_SCRIPT_TAG = re.compile(r'<script\b(?P<attrs>[^>]*)>', re.IGNORECASE | re.DOTALL)
-_SCRIPT_BLOCK = re.compile(
-    r'<script\b(?P<attrs>[^>]*)>(?P<body>[\s\S]*?)</script>',
-    re.IGNORECASE,
-)
-_PREPAINT_BOOTSTRAP_MARKER = re.compile(
-    r"""\bdata-kaori-prepaint-bootstrap\s*=\s*["'](?P<marker>[^"']+)["']""",
-    re.IGNORECASE,
-)
-_INERT_JSON_SCRIPT_TYPE = re.compile(
-    r"""\btype\s*=\s*(?:"application/json"|'application/json'|application/json)(?=\s|$)""",
-    re.IGNORECASE,
-)
+@dataclass
+class _ScriptTag:
+    start: int
+    attributes: list[tuple[str, str | None]]
+    raw_attributes: str
+    body: str | None = None
+
+
+class _ScriptTagParser(HTMLParser):
+    """Inspect checked-in HTML source without regex-matching tag boundaries."""
+
+    def __init__(self, source: str) -> None:
+        super().__init__(convert_charrefs=True)
+        self._source = source
+        self._line_starts = [0, *(index + 1 for index, char in enumerate(source) if char == '\n')]
+        self._active: tuple[_ScriptTag, int] | None = None
+        self.scripts: list[_ScriptTag] = []
+
+    def _offset(self) -> int:
+        line, column = self.getpos()
+        return self._line_starts[line - 1] + column
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag != 'script':
+            return
+        raw = self.get_starttag_text() or ''
+        start = self._offset()
+        script = _ScriptTag(start=start, attributes=attrs, raw_attributes=raw[len('<script') : -1].strip())
+        self.scripts.append(script)
+        self._active = (script, start + len(raw))
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag != 'script' or self._active is None:
+            return
+        script, body_start = self._active
+        script.body = self._source[body_start : self._offset()]
+        self._active = None
+
+
+def _parse_script_tags(source: str) -> list[_ScriptTag]:
+    parser = _ScriptTagParser(source)
+    parser.feed(source)
+    parser.close()
+    return parser.scripts
+
+
 _APPROVED_INLINE_STYLE_COMPONENTS = {
     'app/templates/components/progress_bar.html',
     'app/templates/reports/pdf/components/analytics_publication.html',
@@ -67,7 +102,7 @@ def _normalize_script_body(source: str) -> str:
     return re.sub(r'\\s+', ' ', source).strip()
 
 
-def _approved_prepaint_script_starts(relative: str, source: str) -> set[int]:
+def _approved_prepaint_script_starts(relative: str, source: str, scripts: list[_ScriptTag]) -> set[int]:
     contract = _APPROVED_PREPAINT_BOOTSTRAPS.get(relative)
     if contract is None:
         return set()
@@ -82,37 +117,42 @@ def _approved_prepaint_script_starts(relative: str, source: str) -> set[int]:
     expected_body = _normalize_script_body(str(contract['body']))
     approved: list[int] = []
 
-    for match in _SCRIPT_BLOCK.finditer(source):
-        attrs = match.group('attrs').strip()
-        marker_match = _PREPAINT_BOOTSTRAP_MARKER.search(attrs)
-        marker = marker_match.group('marker') if marker_match else None
+    for script in scripts:
+        marker = next(
+            (value for name, value in script.attributes if name == 'data-kaori-prepaint-bootstrap'),
+            None,
+        )
         if marker != expected_marker:
             continue
-        if attrs != expected_attrs:
+        if script.raw_attributes != expected_attrs:
             continue
-        if match.start() >= head_end or match.start() >= stylesheet:
+        if script.start >= head_end or script.start >= stylesheet:
             continue
-        if _normalize_script_body(match.group('body')) != expected_body:
+        if script.body is None or _normalize_script_body(script.body) != expected_body:
             continue
-        approved.append(match.start())
+        approved.append(script.start)
 
     return set(approved) if len(approved) == 1 else set()
 
 
 def _metrics(relative: str, source: str) -> dict[str, int]:
-    approved_prepaint_starts = _approved_prepaint_script_starts(relative, source)
+    scripts = _parse_script_tags(source)
+    approved_prepaint_starts = _approved_prepaint_script_starts(relative, source, scripts)
     return {
         'inline_styles': (
             0
             if relative in _APPROVED_INLINE_STYLE_COMPONENTS
-            else len(re.findall(r'\bstyle\s*=', source, re.IGNORECASE))
+            else len(re.findall(r'\\bstyle\\s*=', source, re.IGNORECASE))
         ),
         'inline_scripts': sum(
             1
-            for match in _SCRIPT_TAG.finditer(source)
-            if not re.search(r'\bsrc\s*=', match.group('attrs'), re.IGNORECASE)
-            and not _INERT_JSON_SCRIPT_TYPE.search(match.group('attrs'))
-            and match.start() not in approved_prepaint_starts
+            for script in scripts
+            if not any(name == 'src' for name, _ in script.attributes)
+            and not any(
+                name == 'type' and value is not None and value.lower() == 'application/json'
+                for name, value in script.attributes
+            )
+            and script.start not in approved_prepaint_starts
         ),
         'inline_event_handlers': len(_EVENT_HANDLER.findall(source)),
     }
