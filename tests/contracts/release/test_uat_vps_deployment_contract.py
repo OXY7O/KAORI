@@ -171,6 +171,22 @@ def test_server_provider_ca_trust_is_scoped_read_only_and_host_managed() -> None
     assert 'rollback' in runbook
 
 
+
+def test_host_ca_trust_preflight_precedes_database_mutation() -> None:
+    deploy = _read(DEPLOY)
+    bootstrap = _read(SERVER_ROOT / 'bootstrap-host.sh')
+    overlay = _read(SERVER_COMPOSE)
+    diagnostic = 'Host CA trust directory missing: /etc/kaori/trust'
+
+    assert 'if [[ ! -d /etc/kaori/trust || -L /etc/kaori/trust ]]; then' in deploy
+    assert diagnostic in deploy
+    assert deploy.index(diagnostic) < deploy.index('Starting PostgreSQL and Redis')
+    assert deploy.index(diagnostic) < deploy.index('Creating pre-migration PostgreSQL backup')
+    assert deploy.index(diagnostic) < deploy.index('Running database migrations')
+    assert 'install -d -m 0755 /etc/kaori/trust' in bootstrap
+    assert 'create_host_path: false' in overlay
+
+
 def test_server_overlay_covers_every_canonical_app_worker_environment() -> None:
     base = _read(BASE_COMPOSE)
     overlay = _read(SERVER_COMPOSE)
