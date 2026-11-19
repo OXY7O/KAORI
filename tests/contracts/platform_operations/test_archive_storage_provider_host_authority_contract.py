@@ -27,6 +27,12 @@ from app.platform_operations.data_lifecycle.retention.storage_presentation impor
         ('s3', 'https://amazonaws.com.attacker.invalid', 'S3-compatible'),
         ('s3', 'https://gateway.invalid/?target=amazonaws.com', 'S3-compatible'),
         ('s3', 'https://gateway.invalid:badport', 'S3-compatible'),
+        ('s3', 'https://gateway.invalid:90000', 'S3-compatible'),
+        ('s3', 'https://[broken', 'S3-compatible'),
+        ('s3', 'https://minio@objects.example.net/', 'S3-compatible'),
+        ('s3', 'https://s3.amazonaws.com.attacker.invalid', 'S3-compatible'),
+        ('s3', 'ftp://s3.amazonaws.com', 'S3-compatible'),
+        ('s3', 'https://minio.internal.invalid:443', 'MinIO'),
     ],
 )
 def test_archive_storage_provider_requires_parsed_endpoint_authority(
