@@ -83,3 +83,10 @@ def test_wide_authority_change_widens_fail_safe() -> None:
     assert plan.contracts is True
     assert 'tests/contracts' in paths
     assert 'tests/migrations' in paths
+
+
+def test_kubernetes_focused_contracts_prepare_generated_css_before_pytest() -> None:
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+    assert '" $TEST_PATHS " == *" tests/contracts/kubernetes "*' in workflow
+    assert workflow.index("run_toolchain 'Frontend Test Assets'") < workflow.index('docker compose --file .github/ci/compose.yml run')
+    assert 'if [[ "$CHECK_FRONTEND" == "true" ]]; then' in workflow
