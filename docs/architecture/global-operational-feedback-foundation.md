@@ -25,6 +25,18 @@ Use `queue_transient_feedback()` for validation feedback, read-only failures, or
 
 New authenticated KAORI application routes must not call Flask `flash()` for operational feedback. Remaining legacy usage is migrated domain by domain. Authentication bootstrap and framework-level fallback behavior must be reviewed separately before removal.
 
+## Notification Center mutation navigation
+
+A non-HTMX notification read-state POST returns to the **server-owned**
+`url_for('notifications.center')` route. Only a same-origin, exact Center path
+may contribute filter, search or pagination query values, which are parsed
+and re-encoded as data. An external, protocol-relative, unrelated internal
+route or untrusted referrer falls back to the canonical Center route.
+This preserves normal Center context without allowing a request-selected
+redirect destination. HTMX page/panel POSTs still return fragments and
+their existing notification-change triggers; no notification status or
+audit data is changed by the redirect guard.
+
 ## Reports migration
 
 The first migration covers:
