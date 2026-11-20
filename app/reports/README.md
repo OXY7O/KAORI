@@ -117,6 +117,10 @@ A ReportSchedule occurrence is claimed under a database row lock before artifact
 
 Each ReportScheduleRun captures selected Notification Channel identities on admission. The report worker uses this immutable selection after generation, including when the current schedule was edited or deleted. Shared Notification Channels still enforce send-time eligibility and event idempotency. Delivery outcomes remain separate from artifact generation success.
 
+## Schedule registry return-navigation security
+
+Reports Schedules post-action navigation accepts an optional same-origin return target through the existing shared `safe_next_url` validator, then requires an **exact path match** to the server-owned `reports.schedules` endpoint. The final redirect path is constructed from `url_for`, never from the request-supplied parsed path. Existing registry filters remain query **data** and are re-encoded; transient `edit_schedule_id` is removed before returning to the registry. Invalid or unrelated destinations fall back to the server-owned Schedules route. This keeps filtered schedule workflows intact without making external providers or request referrers navigation authorities.
+
 ## Schedule registry read model
 
 Schedule Registry applies search, status, cadence, published report type, infrastructure asset and channel filters in SQL before the canonical five-row pagination. Aggregate schedule counts use database counts, while dependency filter choices use compact identity-only queries. Run Schedule selection is capped to recent definitions with an explicit currently selected fallback; historical run text search remains available for older definitions.
