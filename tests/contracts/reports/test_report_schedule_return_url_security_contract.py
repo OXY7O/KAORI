@@ -51,9 +51,7 @@ def schedules_app() -> Flask:
         (3, REGISTRY),
     ],
 )
-def test_return_url_uses_only_owned_route(
-    schedules_app: Flask, candidate: object, expected: str
-) -> None:
+def test_return_url_uses_only_owned_route(schedules_app: Flask, candidate: object, expected: str) -> None:
     with schedules_app.test_request_context('/'):
         assert _schedule_return_url(cast(str | None, candidate)) == expected
 
