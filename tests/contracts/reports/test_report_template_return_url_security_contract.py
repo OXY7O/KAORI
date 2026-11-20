@@ -65,9 +65,7 @@ def test_templates_return_is_exact_owned_route(templates_app: Flask, candidate: 
 
 def test_template_edit_and_exit_keep_filtered_registry_state(templates_app: Flask) -> None:
     with templates_app.test_request_context('/'):
-        registry = _template_registry_return_url(
-            '/reports/templates?search=A%26B&status=active&edit_template_id=4'
-        )
+        registry = _template_registry_return_url('/reports/templates?search=A%26B&status=active&edit_template_id=4')
         edit = _template_edit_url(registry, 9)
         assert urlsplit(edit).path == REGISTRY
         assert parse_qs(urlsplit(edit).query) == {
