@@ -304,7 +304,7 @@ def classify_capsule_related_resource(
             problems.append(
                 f'Capsule {kind}/{namespace}/{name} retains KAORI provider controls requiring separately admitted handoff.'
             )
-    elif capsule_claims == {capsule_name} or capsule_ref_matches:
+    elif not origin_conflict and (capsule_claims == {capsule_name} or capsule_ref_matches):
         origin = 'capsule_provider'
     elif isinstance(manager, str) and manager:
         origin = 'foreign_preserved'
