@@ -19,7 +19,10 @@ def center_app() -> Flask:
     ('candidate', 'expected'),
     [
         ('/notifications/', '/notifications/'),
-        ('/notifications/?view=notifications&page=3&status=all', '/notifications/?view=notifications&page=3&status=all'),
+        (
+            '/notifications/?view=notifications&page=3&status=all',
+            '/notifications/?view=notifications&page=3&status=all',
+        ),
         ('/notifications/?search=hello%20world', '/notifications/?search=hello+world'),
         ('/notifications/?category=&category=system', '/notifications/?category=&category=system'),
         ('/notifications/?', '/notifications/'),
