@@ -451,6 +451,7 @@ def test_unrecognized_tenant_owner_version_remains_foreign_and_blocks_handoff(ve
     assert blockers
     assert evidence['mutation_authorized'] == 'false'
 
+
 @pytest.mark.parametrize('untrusted_version', ['capsule.clastix.io/v1alpha1', 'foreign.example/v1beta2'])
 def test_matching_supported_owner_cannot_mask_untrusted_owner(untrusted_version):
     trusted = {'kind': 'Tenant', 'apiVersion': 'capsule.clastix.io/v1beta2', 'name': 'demo', 'uid': 'cr-uid'}
