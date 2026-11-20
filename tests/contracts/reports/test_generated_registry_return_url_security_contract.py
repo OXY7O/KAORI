@@ -30,7 +30,15 @@ def registry_app() -> Flask:
     [
         (REGISTRY, REGISTRY),
         ('/reports/generated?period=7d&status=ready', '/reports/generated?period=7d&status=ready'),
-        ('/reports/generated?', '/reports/generated?'),
+        ('/reports/generated?', REGISTRY),
+        ('/reports/generated?search=hello%20world', '/reports/generated?search=hello+world'),
+        ('/reports/generated?scope=a&scope=b', '/reports/generated?scope=a&scope=b'),
+        ('/reports/generated?status=', '/reports/generated?status='),
+        (
+            '/reports/generated?next=%2F%2Foutside.example.invalid',
+            '/reports/generated?next=%2F%2Foutside.example.invalid',
+        ),
+        ('/reports/generated?status=ready#redirect', REGISTRY),
         (' /reports/generated ', REGISTRY),
         ('/reports/generated-extra?period=7d', REGISTRY),
         ('/reports/generated/other?period=7d', REGISTRY),

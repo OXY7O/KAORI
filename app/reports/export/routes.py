@@ -1,4 +1,5 @@
 import logging
+from urllib.parse import parse_qsl, urlencode, urlsplit
 
 from flask import (
     abort,
@@ -22,10 +23,15 @@ logger = logging.getLogger(__name__)
 
 
 def _generated_registry_return_url(value: object) -> str:
+    registry_path = url_for('reports.generated_reports')
     candidate = safe_next_url(value)
-    if candidate is not None and candidate.partition('?')[0] == '/reports/generated':
-        return candidate
-    return url_for('reports.generated_reports')
+    if candidate is None:
+        return registry_path
+    parsed = urlsplit(candidate)
+    if parsed.path != registry_path or parsed.fragment:
+        return registry_path
+    query = urlencode(parse_qsl(parsed.query, keep_blank_values=True))
+    return f'{registry_path}?{query}' if query else registry_path
 
 
 def _generated_detail_url(report_id: int, registry_return_url: str) -> str:
