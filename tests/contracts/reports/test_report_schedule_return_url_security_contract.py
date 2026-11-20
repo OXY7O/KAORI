@@ -50,7 +50,9 @@ def test_schedule_return_resolves_only_exact_safe_registry_path(
 
 def test_schedule_query_args_removes_edit_state_and_preserves_filters(schedules_app: Flask) -> None:
     with schedules_app.test_request_context('/'):
-        assert _schedule_query_args(
-            f'{REGISTRY}?status=active&search=&edit_schedule_id=42&period=30d'
-        ) == {'status': 'active', 'search': '', 'period': '30d'}
+        assert _schedule_query_args(f'{REGISTRY}?status=active&search=&edit_schedule_id=42&period=30d') == {
+            'status': 'active',
+            'search': '',
+            'period': '30d',
+        }
         assert _schedule_query_args('https://outside.example.invalid/reports/schedules') == {}
