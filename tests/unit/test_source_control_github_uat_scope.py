@@ -193,9 +193,7 @@ def test_github_provider_open_resolves_record_scoped_detail_without_bypassing_ua
 
     with app.test_client() as client:
         for installation_id in (321, 987):
-            response = client.get(
-                f'/integrations/source-control/github/uat/installations/{installation_id}'
-            )
+            response = client.get(f'/integrations/source-control/github/uat/installations/{installation_id}')
             assert response.status_code == 200
             assert response.get_data(as_text=True) == 'GitHub UAT fixture'
 
