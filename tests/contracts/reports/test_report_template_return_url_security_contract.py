@@ -34,7 +34,10 @@ def templates_app() -> Flask:
         ('/reports/templates?edit_template_id=7&tab=custom', '/reports/templates?edit_template_id=7&tab=custom'),
         ('/reports/templates?status=active&status=draft', '/reports/templates?status=active&status=draft'),
         ('/reports/templates?search=%3Cscript%3E', '/reports/templates?search=%3Cscript%3E'),
-        ('/reports/templates?next=https://outside.example.invalid', '/reports/templates?next=https://outside.example.invalid'),
+        (
+            '/reports/templates?next=https://outside.example.invalid',
+            '/reports/templates?next=https://outside.example.invalid',
+        ),
         ('/reports/templates-extra?status=active', REGISTRY),
         ('/reports/templates/extra?status=active', REGISTRY),
         ('/reports/templates/../templates', REGISTRY),
