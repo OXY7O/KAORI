@@ -155,3 +155,8 @@ def test_codeql_protected_staging_diagnostic_evidence_is_not_source_acceptance()
     assert 'not fresh connector/API reads' in content
     assert 'a different PR or protected branch ref' in content
     assert 'could deadlock protected PRs' in content
+    assert 'pull_requests[].number' in content
+    assert 'check association is' in content
+    assert 'authoritative underlying Code Scanning analysis' in content
+    assert 'no independently verified native' in content
+    assert 'event=dynamic' in content
