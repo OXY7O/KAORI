@@ -210,16 +210,29 @@ CI Admission failure is **not** Full Admission PASS.
 
 | Original staging-target implementation | Isolated diagnostic PR and actual CodeQL ref | Native CodeQL run | Outcome / evidence boundary |
 | --- | --- | --- | --- |
-| #5027 Generated Reports — `b8356f9b95232fb65553cc2419df2bb22cf55203` | #5032, `refs/pull/5032/head` | [#44664911309](https://github.com/OXY7O/KAORI/actions/runs/44664911309) | Python/JS-TS/Actions SUCCESS; PR-diff no-new-alerts; negative admission [#44664915077](https://github.com/OXY7O/KAORI/actions/runs/44664915077) failed closed. |
-| #5029 offline UI verifier — `04e9191fe804e3f6e15d7ebd21e5f95a78987a52` | #5033, `refs/pull/5033/head` | [#44664919037](https://github.com/OXY7O/KAORI/actions/runs/44664919037) | Three analyzers SUCCESS; PR-diff no-new-alerts; negative admission [#44664923662](https://github.com/OXY7O/KAORI/actions/runs/44664923662) failed closed. |
-| #5037 Reports Schedules — `9beffc7f2ce4ed77292bccdd6751a82ef5caa2e3` | #5043, `refs/pull/5043/head` | [#44699725530](https://github.com/OXY7O/KAORI/actions/runs/44699725530) | Three analyzers SUCCESS; PR-diff no-new-alerts; negative admission [#44699729307](https://github.com/OXY7O/KAORI/actions/runs/44699729307) failed closed. |
-| #5041 Report Templates — `a83094bf6b8c00e377713e61d21271cd4072387d` | #5044, `refs/pull/5044/head` | [#44699731318](https://github.com/OXY7O/KAORI/actions/runs/44699731318) | Three analyzers SUCCESS; PR-diff no-new-alerts; negative admission [#44699737282](https://github.com/OXY7O/KAORI/actions/runs/44699737282) failed closed. |
+| #5027 Generated Reports — `b8356f9b95232fb65553cc2419df2bb22cf55203` | #5032, `refs/pull/5032/head` | [#44664911309](https://github.com/OXY7O/KAORI/actions/runs/44664911309) | Python/JS-TS/Actions SUCCESS; shared-SHA CodeQL check success; negative admission [#44664915077](https://github.com/OXY7O/KAORI/actions/runs/44664915077) failed closed. |
+| #5029 offline UI verifier — `04e9191fe804e3f6e15d7ebd21e5f95a78987a52` | #5033, `refs/pull/5033/head` | [#44664919037](https://github.com/OXY7O/KAORI/actions/runs/44664919037) | Three analyzers SUCCESS; shared-SHA CodeQL check success; negative admission [#44664923662](https://github.com/OXY7O/KAORI/actions/runs/44664923662) failed closed. |
+| #5037 Reports Schedules — `9beffc7f2ce4ed77292bccdd6751a82ef5caa2e3` | #5043, `refs/pull/5043/head` | [#44699725530](https://github.com/OXY7O/KAORI/actions/runs/44699725530) | Three analyzers SUCCESS; shared-SHA CodeQL check success; negative admission [#44699729307](https://github.com/OXY7O/KAORI/actions/runs/44699729307) failed closed. |
+| #5041 Report Templates — `a83094bf6b8c00e377713e61d21271cd4072387d` | #5044, `refs/pull/5044/head` | [#44699731318](https://github.com/OXY7O/KAORI/actions/runs/44699731318) | Three analyzers SUCCESS; shared-SHA CodeQL check success; negative admission [#44699737282](https://github.com/OXY7O/KAORI/actions/runs/44699737282) failed closed. |
 
-The GitHub `CodeQL` check wording, **"No new alerts in code changed
-by this pull request"**, applies to the *diagnostic PR-diff check*, **not**
-native analyses on the original staging PR ref, the protected staging branch,
-or any of the 54 historical main Open alert instances. Existing original
-PRs' five-lane Full Admission and independent review remain separate.
+The candidate-SHA GitHub `CodeQL` check wording, **"No new alerts in
+code changed by this pull request"**, requires a separate **check-association
+qualification**. Read-only `commits/<sha>/check-runs` results for all four
+shared source commits show that the successful `CodeQL` check's
+`pull_requests[].number` and `output.summary` PR query refer to the
+**original** staging-targeted PRs #5027, #5029, #5037 and #5041, respectively,
+**not** diagnostic PRs #5032, #5033, #5043 and #5044. This check association is
+**not** the authoritative underlying Code Scanning analysis `ref`: the
+GitHub-managed `event=dynamic` workflow run metadata records the diagnostic
+`refs/pull/<diagnostic-id>/head` at the same source SHA. Thus a commit-level
+check on an original PR can coexist with **no independently verified native
+analysis record on that original PR ref**. The no-new-alerts statement must
+not be attributed exclusively to the diagnostic PR diff or construed as
+original staging-ref security acceptance, nor as disposition of any of the
+54 historical main Open alert instances. Exact `tool.name=CodeQL`,
+`ref`, `commit_sha` and `category` from authorized native analysis
+readback remain mandatory. Existing original PRs' five-lane Full Admission
+and independent review remain separate.
 
 ### Read-only security-owner/admin handoff for #4388
 
