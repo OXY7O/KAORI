@@ -181,6 +181,107 @@ deployment or `main` source were mutated in this documentation work.
 The publication and rights assessment #4212 remains **NO-GO**. Staging
 and human acceptance still require their own evidence.
 
+## Protected-staging CodeQL coverage addendum — 2026-11-20 (#5045)
+
+This **dated incremental readback** supplements, rather than supersedes, the
+historical 2026-11-08 source-only checklist and 2026-11-09 default-setup
+activation/first-run findings. The current implementation admission **remains
+security-held under #4388**; scanner execution on one GitHub ref does not
+transfer to a different PR or protected branch ref. Native GitHub Default Setup
+is the single CodeQL authority. See [GitHub's documented default-setup
+events](https://docs.github.com/en/code-security/concepts/code-scanning/setup-types).
+
+### Source and finding inventory provenance
+
+| Evidence | 2026-11-20 observation | Acceptance boundary |
+| --- | --- | --- |
+| Default `main@56df30a0c85bedb784fd7b73dd851edf79e3f02a` | GitHub-managed native Python, JavaScript/TypeScript and Actions analyses succeeded on the exact main SHA; authorized first-page readback returned **16 cumulative analysis records** (CodeQL, Bandit, Semgrep OSS). | Cumulative analysis records are **not** alert counts or a universal security acceptance. |
+| Protected `kaori/staging@a035b92f84c864ffc681c970f79f214cfe606782` | Both branches report `protected=true`, but the operator's first-page readback contained **41 cumulative analysis records**, all from Bandit/Semgrep OSS, **no CodeQL record returned**. | Neither protected status nor passing Full Admission substitutes for GitHub-managed CodeQL on the actual branch ref and merge SHA. |
+| Original staging-target PRs #5027 and #5029 | Operator's first-page `code-scanning/analyses` lookups on each original `refs/pull/<id>/head` and `refs/pull/<id>/merge` returned **zero records**. Other original staging-target PRs including #5037/#5041 lack independently accepted native analysis at their original ref. | Absence is limited to the queried pages/refs and is not a proven provider root cause or an all-history assertion. |
+| Default `main` findings at that SHA | Maintainer-reported **54 Open CodeQL alerts** on 2026-11-20, separately from the historical **69 Open** initial 2026-11-09 scan. | Neither count proves individual alert closure or present severity/reachability; restricted per-alert state/reason and exact source identity remain under #4379. |
+
+### Isolated same-source native checks are diagnostics, not promotion
+
+Maintainer-authorized issue #5031 and child #5042 used **existing identical
+source commits without new source changes** in Draft PRs *targeting main*.
+All four were **CLOSED UNMERGED**; the trusted main-promotion route rejected
+each intentionally invalid source branch **before checkout**. That expected
+CI Admission failure is **not** Full Admission PASS.
+
+| Original staging-target implementation | Isolated diagnostic PR and actual CodeQL ref | Native CodeQL run | Outcome / evidence boundary |
+| --- | --- | --- | --- |
+| #5027 Generated Reports — `b8356f9b95232fb65553cc2419df2bb22cf55203` | #5032, `refs/pull/5032/head` | [#44664911309](https://github.com/OXY7O/KAORI/actions/runs/44664911309) | Python/JS-TS/Actions SUCCESS; shared-SHA CodeQL check success; negative admission [#44664915077](https://github.com/OXY7O/KAORI/actions/runs/44664915077) failed closed. |
+| #5029 offline UI verifier — `04e9191fe804e3f6e15d7ebd21e5f95a78987a52` | #5033, `refs/pull/5033/head` | [#44664919037](https://github.com/OXY7O/KAORI/actions/runs/44664919037) | Three analyzers SUCCESS; shared-SHA CodeQL check success; negative admission [#44664923662](https://github.com/OXY7O/KAORI/actions/runs/44664923662) failed closed. |
+| #5037 Reports Schedules — `9beffc7f2ce4ed77292bccdd6751a82ef5caa2e3` | #5043, `refs/pull/5043/head` | [#44699725530](https://github.com/OXY7O/KAORI/actions/runs/44699725530) | Three analyzers SUCCESS; shared-SHA CodeQL check success; negative admission [#44699729307](https://github.com/OXY7O/KAORI/actions/runs/44699729307) failed closed. |
+| #5041 Report Templates — `a83094bf6b8c00e377713e61d21271cd4072387d` | #5044, `refs/pull/5044/head` | [#44699731318](https://github.com/OXY7O/KAORI/actions/runs/44699731318) | Three analyzers SUCCESS; shared-SHA CodeQL check success; negative admission [#44699737282](https://github.com/OXY7O/KAORI/actions/runs/44699737282) failed closed. |
+
+The candidate-SHA GitHub `CodeQL` check wording, **"No new alerts in
+code changed by this pull request"**, requires a separate **check-association
+qualification**. Read-only `commits/<sha>/check-runs` results for all four
+shared source commits show that the successful `CodeQL` check's
+`pull_requests[].number` and `output.summary` PR query refer to the
+**original** staging-targeted PRs #5027, #5029, #5037 and #5041, respectively,
+**not** diagnostic PRs #5032, #5033, #5043 and #5044. This check association is
+**not** the authoritative underlying Code Scanning analysis `ref`: the
+GitHub-managed `event=dynamic` workflow run metadata records the diagnostic
+`refs/pull/<diagnostic-id>/head` at the same source SHA. Thus a commit-level
+check on an original PR can coexist with **no independently verified native
+analysis record on that original PR ref**. The no-new-alerts statement must
+not be attributed exclusively to the diagnostic PR diff or construed as
+original staging-ref security acceptance, nor as disposition of any of the
+54 historical main Open alert instances. Exact `tool.name=CodeQL`,
+`ref`, `commit_sha` and `category` from authorized native analysis
+readback remain mandatory. Existing original PRs' five-lane Full Admission
+and independent review remain separate.
+
+### Read-only security-owner/admin handoff for #4388
+
+1. In **Settings → Advanced Security**, inspect the existing effective
+   Default Setup/CodeQL configuration, applicable organization security
+   configuration or repository property overrides, and **Security → Code
+   scanning → Tool Status**. Confirm query suite, supported languages,
+   runner/tool health and actual scan coverage before attributing a
+   scheduling cause; do not change settings as a diagnostic.
+2. With an authorized GitHub Security session, request native `GET
+   /repos/OXY7O/KAORI/code-scanning/analyses` using `ref` and
+   `per_page=100`, paging if necessary, for **each** exact expected
+   `refs/heads/kaori/staging` and original `refs/pull/<id>/head` or
+   actual analyzed PR ref. Inspect actual `tool.name == "CodeQL"`,
+   `ref`, `commit_sha`, `category`, `created_at` and analyzer
+   warnings/status. A successful check on another ref or a stale commit
+   is **NOT acceptance**. Use the GitHub-managed workflow result and the
+   REST analysis record together; check-run names alone can be shared by
+   different refs at the same source SHA.
+3. Use restricted `GET /repos/OXY7O/KAORI/code-scanning/alerts`
+   and `GET /repos/OXY7O/KAORI/code-scanning/alerts/<number>/instances`
+   (or the authorized Security UI) to reconcile individual original
+   alert states, source/sink, correct branch, disposition reason, reviewer,
+   and new/reopened findings. Keep private alert IDs, taint traces, paths,
+   payloads and operational secrets **out of public documents**.
+4. Record sanitized per-ref/source/category/time/status receipts and
+   independently approved security/UAT evidence under #4388/#4379.
+   Until original staging scans and per-alert acceptance are proven,
+   preserve **OPEN / BLOCKED** and do not merge protected staging changes
+   simply because diagnostics reported no new alerts.
+
+The repository connector cannot access restricted native
+`code-scanning/analyses` or per-alert instances, so the dated record counts
+above are **maintainer-supplied**, not fresh connector/API reads. The root
+cause of absent native staging coverage is **unconfirmed**; the maintainer
+directed **no GitHub Support escalation at this stage**. Do not introduce
+a duplicate scanner, replace Default Setup, lower the query suite, upload
+competing SARIF, rerun old refs as false proof, waive CodeQL or bulk-dismiss
+alerts. The dependent native CodeQL merge-protection issue #5030 must remain
+**blocked by #4388**; enabling a required `code_scanning` rule before
+actual staging coverage could deadlock protected PRs. Official native
+[merge-protection guidance](https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/manage-your-configuration/set-merge-protection)
+does not replace the prerequisite provider scan.
+
+Source-specific human security review, admitted staging merge, hosted
+UAT/human acceptance and a **separately reviewed** `kaori/staging` to
+`main` promotion are still independent gates. No changes to either
+protected branch, deployment or release follow from these observations.
+
 ## Triage and non-escalation contract
 
 1. Route suspected vulnerabilities privately using `SECURITY.md`; do not create a public reproduction issue.
