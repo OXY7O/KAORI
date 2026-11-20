@@ -423,3 +423,29 @@ def test_kaori_labels_cannot_override_foreign_or_conflicting_capsule_origin(conf
         assert evidence['origin'] == 'ambiguous_kaori'
         assert evidence['mutation_authorized'] == 'false'
         assert problems
+
+
+@pytest.mark.parametrize('version', ['capsule.clastix.io/v1beta2', 'capsule.clastix.io/v1beta1'])
+def test_supported_capsule_owner_reference_versions_are_correlated(version):
+    owner = {'kind': 'Tenant', 'apiVersion': version, 'name': 'demo', 'uid': 'cr-uid'}
+    evidence, blockers = _classify(_resource(owner_refs=[owner]))
+    assert evidence['origin'] == 'capsule_provider'
+    assert blockers == []
+    assert evidence['mutation_authorized'] == 'false'
+
+
+@pytest.mark.parametrize(
+    'version',
+    [
+        'capsule.clastix.io/v1alpha1',
+        'capsule.clastix.io/v1beta2-evil',
+        'capsule.clastix.io/',
+        'other.capsule.clastix.io/v1beta2',
+        'foreign.example/v1beta2',
+    ],
+)
+def test_unrecognized_tenant_owner_version_remains_foreign_and_blocks_handoff(version):
+    owner = {'kind': 'Tenant', 'apiVersion': version, 'name': 'demo', 'uid': 'cr-uid'}
+    evidence, blockers = _classify(_resource(owner_refs=[owner]))
+    assert blockers
+    assert evidence['mutation_authorized'] == 'false'

@@ -13,6 +13,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from app.kubernetes.tenant.allocation_observation import _CAPSULE_TENANT_LABEL_KEYS
+from app.kubernetes.tenant.capsule_provider import _CAPSULE_TENANT_OWNER_API_VERSIONS
 
 _MAX_NS = 30
 _PAGE_SIZE = 101
@@ -270,7 +271,7 @@ def classify_capsule_related_resource(
         ref
         for ref in refs
         if ref.get('kind') == 'Tenant'
-        and str(ref.get('apiVersion') or ref.get('api_version') or '').startswith('capsule.clastix.io/')
+        and (ref.get('apiVersion') or ref.get('api_version')) in _CAPSULE_TENANT_OWNER_API_VERSIONS
     ]
     capsule_ref_matches = bool(capsule_refs) and all(
         ref.get('name') == capsule_name and ref.get('uid') == capsule_uid for ref in capsule_refs
