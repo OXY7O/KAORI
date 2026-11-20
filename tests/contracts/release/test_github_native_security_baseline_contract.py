@@ -124,3 +124,39 @@ def test_codeql_first_run_alert_summary_is_not_security_acceptance() -> None:
     assert '**UNRESOLVED**' in content
     assert '#4379' in content
     assert 'do not mark security/release readiness GO' in content
+
+
+def test_codeql_protected_staging_diagnostic_evidence_is_not_source_acceptance() -> None:
+    content = BASELINE.read_text(encoding='utf-8')
+    assert 'Protected-staging CodeQL coverage addendum — 2026-11-20 (#5045)' in content
+    assert 'Historical admin evidence checklist — 2026-11-08' in content
+    assert 'Current administrator readback — 2026-11-09' in content
+    assert '**69 open alerts**' in content
+    assert '**54 Open CodeQL alerts**' in content
+    assert '41 cumulative analysis records' in content
+    assert 'CLOSED UNMERGED' in content
+    assert '#4388' in content
+    assert '#4379' in content
+    assert '#5030' in content
+    for original, diagnostic, run in (
+        ('#5027', '#5032', '#44664911309'),
+        ('#5029', '#5033', '#44664919037'),
+        ('#5037', '#5043', '#44699725530'),
+        ('#5041', '#5044', '#44699731318'),
+    ):
+        assert original in content
+        assert diagnostic in content
+        assert run in content
+    assert 'code-scanning/analyses' in content
+    assert 'refs/heads/kaori/staging' in content
+    assert 'tool.name == "CodeQL"' in content
+    assert 'source-specific human security review' in content.lower()
+    assert 'no GitHub Support escalation at this stage' in content
+    assert 'not fresh connector/API reads' in content
+    assert 'a different PR or protected branch ref' in content
+    assert 'could deadlock protected PRs' in content
+    assert 'pull_requests[].number' in content
+    assert 'check association is' in content
+    assert 'authoritative underlying Code Scanning analysis' in content
+    assert 'no independently verified native' in content
+    assert 'event=dynamic' in content

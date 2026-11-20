@@ -30,6 +30,8 @@ Routes call subdomain services. Renderers do not read HTTP request state and do 
 
 Long-running generation belongs in Celery. Storage and cleanup must reuse the cross-domain retention/archive foundation rather than implement report-only retention logic.
 
+Generated Reports archive/export return navigation accepts only the existing `safe_next_url`-validated same-origin target with the **exact** `/reports/generated` path (optionally followed by the current filter query). Other paths, deceptive prefixes, and external origins fall back to the server-generated `reports.generated_reports` route. This is a return-navigation contract, not an outbound/provider URL allowlist.
+
 ## KAORI Violet presentation standard
 
 All report workspaces use the KAORI Violet Infrastructure design system: solid violet hero surfaces, tokenized card/background/border/text colors, compact rectangular status and metadata labels, violet focus/action states, and semantic colors only for operational state. This applies to Overview, Generate, Generated Reports and detail, Templates, Schedules, and Storage.
@@ -115,6 +117,10 @@ A ReportSchedule occurrence is claimed under a database row lock before artifact
 
 Each ReportScheduleRun captures selected Notification Channel identities on admission. The report worker uses this immutable selection after generation, including when the current schedule was edited or deleted. Shared Notification Channels still enforce send-time eligibility and event idempotency. Delivery outcomes remain separate from artifact generation success.
 
+## Schedule registry return-navigation security
+
+Reports Schedules post-action navigation accepts an optional same-origin return target through the existing shared `safe_next_url` validator, then requires an **exact path match** to the server-owned `reports.schedules` endpoint. The final redirect path is constructed from `url_for`, never from the request-supplied parsed path. Existing registry filters remain query **data** and are re-encoded; transient `edit_schedule_id` is removed before returning to the registry. Invalid or unrelated destinations fall back to the server-owned Schedules route. This keeps filtered schedule workflows intact without making external providers or request referrers navigation authorities.
+
 ## Schedule registry read model
 
 Schedule Registry applies search, status, cadence, published report type, infrastructure asset and channel filters in SQL before the canonical five-row pagination. Aggregate schedule counts use database counts, while dependency filter choices use compact identity-only queries. Run Schedule selection is capped to recent definitions with an explicit currently selected fallback; historical run text search remains available for older definitions.
@@ -184,6 +190,10 @@ Custom Template POST preserves Analytics section keys, including empty/invalid s
 ### Historical custom Templates without catalog compatibility aliases (#1566)
 
 The registry must remain readable if a persisted custom template references a removed report type, unsupported format, invalid sections or lifecycle status. Such records are presented with Needs Review evidence; Generate and Duplicate are guarded until corrected using current catalog types through the existing Edit workspace. Historical record identity, source snapshot and ownership are never silently rewritten or removed on registry read.
+
+### Report Templates return-navigation trust boundary
+
+Report Templates post-action return paths retain the shared `safe_next_url` same-origin check, then require the exact server-owned `reports.report_templates` route. Redirect destinations are constructed using `url_for`, not the request-supplied path. Registry search/filter and modal edit query state remain query data (with edit intent updated or removed by the existing approved helpers), while unrelated origins, path lookalikes and fragments fall back to the owned registry. Server-side permissions and the form's existing validation response remain authoritative.
 
 ### Report Templates validation recovery (#1565)
 

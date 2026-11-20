@@ -31,7 +31,7 @@ def _current_user_id() -> int:
 
 def _generated_registry_return_url(value: object) -> str:
     candidate = safe_next_url(value)
-    if candidate == '/reports/generated' or (candidate and candidate.startswith('/reports/generated?')):
+    if candidate is not None and candidate.partition('?')[0] == '/reports/generated':
         return candidate
     return url_for('reports.generated_reports')
 
