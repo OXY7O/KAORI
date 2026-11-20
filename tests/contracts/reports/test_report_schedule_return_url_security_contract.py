@@ -58,7 +58,8 @@ def test_return_url_uses_only_owned_route(schedules_app: Flask, candidate: objec
 
 def test_schedule_query_args_remain_filtered_data(schedules_app: Flask) -> None:
     with schedules_app.test_request_context('/'):
-        assert _schedule_query_args(
-            '/reports/schedules?tab=runs&edit_schedule_id=9&status=ready&status=paused'
-        ) == {'tab': 'runs', 'status': 'paused'}
+        assert _schedule_query_args('/reports/schedules?tab=runs&edit_schedule_id=9&status=ready&status=paused') == {
+            'tab': 'runs',
+            'status': 'paused',
+        }
         assert _schedule_query_args('https://outside.example.invalid/redirect?status=ready') == {}
