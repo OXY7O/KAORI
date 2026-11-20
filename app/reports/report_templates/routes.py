@@ -33,9 +33,12 @@ logger = logging.getLogger(__name__)
 def _template_registry_return_url(value: object) -> str:
     registry_url = url_for('reports.report_templates')
     candidate = safe_next_url(value)
-    if candidate is not None and (candidate == registry_url or candidate.startswith(f'{registry_url}?')):
-        return candidate
-    return registry_url
+    if candidate is None:
+        return registry_url
+    parsed = urlsplit(candidate)
+    if parsed.path != registry_url or parsed.fragment:
+        return registry_url
+    return urlunsplit(('', '', registry_url, parsed.query, ''))
 
 
 def _template_edit_url(registry_url: str, template_id: int) -> str:
