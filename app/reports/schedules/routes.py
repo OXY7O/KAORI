@@ -38,9 +38,11 @@ def _current_user_id() -> int:
 def _schedule_return_url(value: str | None) -> str:
     fallback = url_for('reports.schedules')
     candidate = safe_next_url(value)
-    if candidate != fallback and not (candidate and candidate.startswith(f'{fallback}?')):
+    if candidate is None:
         return fallback
-    parsed = urlsplit(candidate or fallback)
+    parsed = urlsplit(candidate)
+    if parsed.path != fallback:
+        return fallback
     query = [(key, item) for key, item in parse_qsl(parsed.query, keep_blank_values=True) if key != 'edit_schedule_id']
     return f'{parsed.path}?{urlencode(query)}' if query else parsed.path
 
