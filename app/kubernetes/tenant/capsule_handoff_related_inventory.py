@@ -237,7 +237,7 @@ def classify_capsule_related_resource(
     capsule_uid: str,
 ) -> tuple[dict[str, str], list[str]]:
     """Correlate observed provenance, while preserving every foreign control."""
-    if kind not in _KINDS or not namespace or not tenant_id or not capsule_name or not capsule_uid:
+    if kind not in _KINDS or not all((namespace, tenant_id, capsule_name, capsule_uid)):
         raise ValueError('Capsule related inventory requires canonical provider scope.')
     name, uid, rv, meta = _scope_identity(resource, namespace=namespace)
     labels = _strings(_get(meta, 'labels'), label='labels')
