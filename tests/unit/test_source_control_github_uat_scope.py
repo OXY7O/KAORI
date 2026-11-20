@@ -180,7 +180,7 @@ def test_github_provider_open_resolves_record_scoped_detail_without_bypassing_ua
     app.add_url_rule(
         '/integrations/source-control/github/uat/installations/<int:installation_id>',
         endpoint='github_source_uat.detail',
-        view_func=lambda installation_id: str(installation_id),
+        view_func=lambda installation_id: 'GitHub UAT fixture',
     )
     app.add_url_rule(
         '/integrations/source-control/github/',
@@ -190,6 +190,14 @@ def test_github_provider_open_resolves_record_scoped_detail_without_bypassing_ua
     monkeypatch.setattr(kernel_contract, 'current_user', _actor(admin=admin))
     with app.test_request_context('/integrations/source-control'):
         assert kernel_contract._detail_url(SimpleNamespace(id=321), '') == expected
+
+    with app.test_client() as client:
+        for installation_id in (321, 987):
+            response = client.get(
+                f'/integrations/source-control/github/uat/installations/{installation_id}'
+            )
+            assert response.status_code == 200
+            assert response.get_data(as_text=True) == 'GitHub UAT fixture'
 
 
 def test_github_manage_detail_uses_existing_provider_tabs_without_exposing_secrets():
