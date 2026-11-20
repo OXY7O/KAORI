@@ -137,3 +137,28 @@ def test_capsule_owner_reference_without_generation_uid_fails_closed():
     )
     with pytest.raises(ValueError, match='UID belongs to another generation'):
         _validate(namespace=_namespace(owners=[missing]))
+
+
+@pytest.mark.parametrize('version', ['capsule.clastix.io/v1beta2', 'capsule.clastix.io/v1beta1'])
+def test_supported_capsule_tenant_owner_reference_versions_preserve_authority(version):
+    owner = SimpleNamespace(kind='Tenant', name='team-a', uid='capsule-uid', api_version=version)
+    evidence = _validate(namespace=_namespace(owners=[owner]))
+    assert evidence['authority'] == 'capsule'
+    assert evidence['provider_mutation_performed'] is False
+
+
+@pytest.mark.parametrize(
+    'version',
+    [
+        'capsule.clastix.io/v1alpha1',
+        'capsule.clastix.io/v1beta2-evil',
+        'capsule.clastix.io/',
+        'other.capsule.clastix.io/v1beta2',
+        'foreign.example/v1beta2',
+        '',
+    ],
+)
+def test_unsupported_tenant_owner_reference_never_proves_attachment(version):
+    owner = SimpleNamespace(kind='Tenant', name='team-a', uid='capsule-uid', api_version=version)
+    with pytest.raises(ValueError, match='unsupported or foreign Tenant ownerReference'):
+        _validate(namespace=_namespace(owners=[owner]), status={'team-a-dev'})

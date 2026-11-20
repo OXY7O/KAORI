@@ -10,6 +10,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from app.kubernetes.tenant.allocation_observation import _CAPSULE_TENANT_LABEL_KEYS
+from app.kubernetes.tenant.capsule_provider import _CAPSULE_TENANT_OWNER_API_VERSIONS
 
 
 def _value(obj: Any, attr: str) -> Any:
@@ -40,6 +41,16 @@ def validate_capsule_existing_tenant_target(
         or str((tenant.provider_evidence_json or {}).get('provider_uid') or '') != capsule_uid
     ):
         raise ValueError('Selected Tenant is not Ready under the matching Capsule provider authority.')
+
+
+def _validate_tenant_owner_reference_versions(references: list[Any]) -> None:
+    """Reject unsupported or foreign Tenant ownership before correlating labels."""
+    if any(
+        _text(owner, 'kind') == 'Tenant'
+        and _text(owner, 'api_version', alt='apiVersion') not in _CAPSULE_TENANT_OWNER_API_VERSIONS
+        for owner in references
+    ):
+        raise ValueError('Namespace has unsupported or foreign Tenant ownerReference API version.')
 
 
 def validate_capsule_namespace_attachment(
@@ -81,11 +92,12 @@ def validate_capsule_namespace_attachment(
     references = _value(meta, 'owner_references') or _value(meta, 'ownerReferences') or []
     if not isinstance(references, list):
         raise ValueError('Capsule Namespace ownerReferences are malformed.')
+    _validate_tenant_owner_reference_versions(references)
     owners = {
         _text(owner, 'name')
         for owner in references
         if _text(owner, 'kind') == 'Tenant'
-        and _text(owner, 'api_version', alt='apiVersion').startswith('capsule.clastix.io/')
+        and _text(owner, 'api_version', alt='apiVersion') in _CAPSULE_TENANT_OWNER_API_VERSIONS
     }
     if len(claims) > 1 or len(owners) > 1:
         raise ValueError('Namespace has ambiguous Capsule Tenant ownership claims.')
@@ -97,7 +109,7 @@ def validate_capsule_namespace_attachment(
         owner
         for owner in references
         if _text(owner, 'kind') == 'Tenant'
-        and _text(owner, 'api_version', alt='apiVersion').startswith('capsule.clastix.io/')
+        and _text(owner, 'api_version', alt='apiVersion') in _CAPSULE_TENANT_OWNER_API_VERSIONS
     ]
     if any(_text(owner, 'uid') != capsule_uid for owner in capsule_owners):
         raise ValueError('Namespace Capsule ownerReference UID belongs to another generation.')

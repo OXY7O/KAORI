@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import parse_qsl, urlencode, urlsplit
+
 from flask import (
     Blueprint,
     jsonify,
@@ -139,6 +141,19 @@ def _render_center_page_content() -> str:
     )
 
 
+def _notification_center_return_url(value: object) -> str:
+    """Return only the server-owned Notification Center route and filter state."""
+    center_path = url_for('notifications.center')
+    candidate = safe_next_url(value)
+    if candidate is None:
+        return center_path
+    parsed = urlsplit(candidate)
+    if parsed.path != center_path or parsed.fragment:
+        return center_path
+    query = urlencode(parse_qsl(parsed.query, keep_blank_values=True))
+    return f'{center_path}?{query}' if query else center_path
+
+
 def _render_mutation_response() -> ResponseReturnValue:
     surface = request.args.get('surface', 'panel').strip().lower()
     if request.headers.get('HX-Request') == 'true':
@@ -154,7 +169,7 @@ def _render_mutation_response() -> ResponseReturnValue:
             return _render_inbox_panel()
         return _render_notifications_panel()
 
-    next_url = safe_next_url(request.form.get('next') or request.referrer) or url_for('notifications.center')
+    next_url = _notification_center_return_url(request.form.get('next') or request.referrer)
     return redirect(next_url)
 
 

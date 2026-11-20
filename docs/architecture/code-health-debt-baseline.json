@@ -107,7 +107,7 @@
     "app/kubernetes/tenant/capsule_handoff_readback_evidence.py::_review_related_scope": 43,
     "app/kubernetes/tenant/capsule_handoff_readback_evidence.py::inspect_capsule_readback_candidate": 79,
     "app/kubernetes/tenant/capsule_handoff_recovery.py::classify_capsule_namespace_handoff": 35,
-    "app/kubernetes/tenant/capsule_handoff_related_inventory.py::classify_capsule_related_resource": 58,
+    "app/kubernetes/tenant/capsule_handoff_related_inventory.py::classify_capsule_related_resource": 55,
     "app/kubernetes/tenant/capsule_handoff_resource_admission.py::assess_capsule_resource_handoff_scope": 72,
     "app/kubernetes/tenant/capsule_handoff_resource_consent.py::inspect_capsule_resource_consent": 74,
     "app/kubernetes/tenant/capsule_handoff_start_writer.py::commit_capsule_start_staged": 36,

@@ -6,6 +6,8 @@ Issue #121 implements Capsule as an optional capability-aware provider over the 
 
 KAORI recognizes the Capsule API group `capsule.clastix.io` and the currently supported Tenant API versions `v1beta2` and `v1beta1`. Discovery records the served Tenant CRD versions and the reported Capsule application version when available.
 
+For Namespace attachment and related-object origin correlation, a Capsule Tenant `ownerReferences.apiVersion` is a provider identity claim only when it exactly matches one of those approved group/version pairs. Unsupported or foreign `Tenant` owner references cannot justify attachment and remain blockers for related-resource handoff. Related-object correlation also refuses to label a mixed valid/foreign owner-reference set as `capsule_provider`; the committed provenance stays foreign/untrusted while blockers prohibit handoff. Separately, the Native takeover protection intentionally treats *any* Capsule group-shaped owner reference as a reason to deny Native authority until independently reviewed; its conservative prefix guard remains unchanged. These checks validate Kubernetes resource authority, **not HTTP URL destinations**.
+
 CRD discovery covers the Tenant controller and explicit advanced resource types such as TenantResource, GlobalTenantResource, GlobalResourceQuota, ResourcePool, and ResourcePoolClaim. CRD presence alone does not prove non-CRD surfaces such as Capsule Proxy or admission health; those require explicit probe evidence.
 
 ## Capability states

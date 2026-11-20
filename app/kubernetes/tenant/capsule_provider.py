@@ -14,6 +14,7 @@ from app.kubernetes.tenant.providers import (
 
 _CAPSULE_GROUP = 'capsule.clastix.io'
 _SUPPORTED_API_VERSIONS = frozenset({'v1beta2', 'v1beta1'})
+_CAPSULE_TENANT_OWNER_API_VERSIONS = frozenset(f'{_CAPSULE_GROUP}/{version}' for version in _SUPPORTED_API_VERSIONS)
 _TENANT_CRD = 'tenants.capsule.clastix.io'
 _TENANT_RESOURCE_CRD = 'tenantresources.capsule.clastix.io'
 _GLOBAL_TENANT_RESOURCE_CRD = 'globaltenantresources.capsule.clastix.io'

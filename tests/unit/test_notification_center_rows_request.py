@@ -88,7 +88,10 @@ def test_notification_action_returns_only_canonical_relative_targets(target: str
     assert safe_next_url(target) == expected
 
 
-def test_notification_action_delegates_to_existing_safe_next_url() -> None:
+def test_notification_action_uses_server_owned_center_and_existing_safe_next_url() -> None:
     source = (Path(__file__).resolve().parents[2] / 'app/platform_operations/notifications/routes.py').read_text()
-    assert "safe_next_url(request.form.get('next') or request.referrer)" in source
+    assert 'candidate = safe_next_url(value)' in source
+    assert "center_path = url_for('notifications.center')" in source
+    assert 'parsed.path != center_path or parsed.fragment' in source
+    assert "next_url = _notification_center_return_url(request.form.get('next') or request.referrer)" in source
     assert "next_url.startswith('//')" not in source

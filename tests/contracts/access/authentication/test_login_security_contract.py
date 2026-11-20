@@ -1,5 +1,9 @@
 from pathlib import Path
 
+import pytest
+
+from app.access.authentication.session import safe_next_url
+
 ROOT = Path(__file__).resolve().parents[4]
 
 
@@ -59,6 +63,31 @@ def test_post_login_redirects_accept_only_internal_absolute_paths() -> None:
     assert "next_url=flow.get('next_url')" in routes
     assert 'provider_login_url' in template
     assert 'next=form.next.data' in template
+    assert "return redirect(safe_next_url(next_url) or url_for('welcome.index'))" in routes
+    assert routes.count("return redirect(safe_next_url(request.args.get('next')) or url_for('welcome.index'))") == 2
+
+
+@pytest.mark.parametrize(
+    ('candidate', 'expected'),
+    [
+        ('/', '/'),
+        ('/reports/generated?status=ready&page=2', '/reports/generated?status=ready&page=2'),
+        ('/auth/login?next=%2Freports', '/auth/login?next=%2Freports'),
+        (' /reports/generated ', '/reports/generated'),
+        ('https://outside.example.invalid/reports', None),
+        ('http://outside.example.invalid/', None),
+        ('//outside.example.invalid/reports', None),
+        ('///outside.example.invalid/reports', None),
+        ('/\\outside.example.invalid/reports', None),
+        ('/reports\r\nLocation: https://outside.example.invalid', None),
+        ('/reports\x00Location: outside', None),
+        ('/reports\x7f', None),
+        (None, None),
+        (1, None),
+    ],
+)
+def test_auth_redirect_same_origin_next_guard(candidate: object, expected: str | None) -> None:
+    assert safe_next_url(candidate) == expected
 
 
 def test_logout_and_revocation_clear_persistent_remember_cookie() -> None:
