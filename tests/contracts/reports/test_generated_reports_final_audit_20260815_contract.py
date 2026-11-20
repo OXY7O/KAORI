@@ -143,7 +143,11 @@ def test_generated_detail_preserves_filtered_registry_return_context() -> None:
 
     assert 'def _generated_registry_return_url(value: object) -> str:' in routes
     assert 'candidate = safe_next_url(value)' in routes
-    assert "candidate.partition('?')[0] == '/reports/generated'" in routes
+    assert "registry_path = url_for('reports.generated_reports')" in routes
+    assert 'parsed.path != registry_path or parsed.fragment' in routes
+    assert 'urlencode(parse_qsl(parsed.query, keep_blank_values=True))' in routes
+    assert "candidate.partition('?')[0]" not in routes
+    assert 'return candidate' not in routes
     assert "candidate.startswith('/reports/generated?')" not in routes
     assert "payload['registry_return_url'] = registry_return_url" in routes
 
