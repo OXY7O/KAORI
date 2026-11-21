@@ -10,6 +10,8 @@ TAILWIND_VERSION = '4.3.4'
 POSTCSS_VERSION = '8.5.33'
 BROTLI_VERSION = '1.2.1'
 DNSPYTHON_VERSION = '2.9.2'
+MAKO_VERSION = '1.4.3'
+WERKZEUG_VERSION = '3.1.9'
 URLLIB3_VERSION = '2.8.0'
 OAUTHLIB_VERSION = '4.0.1'
 
@@ -85,6 +87,8 @@ def test_runtime_security_dependency_floor_is_reproducibly_pinned() -> None:
     for name, version, vulnerable in (
         ('Brotli', BROTLI_VERSION, '1.2.0'),
         ('dnspython', DNSPYTHON_VERSION, '2.8.0'),
+        ('Mako', MAKO_VERSION, '1.3.12'),
+        ('Werkzeug', WERKZEUG_VERSION, '3.1.8'),
     ):
         assert f'{name}=={version}' in base_in
         assert f'{name}=={version}' in base_lock
