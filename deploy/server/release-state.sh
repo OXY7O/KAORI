@@ -25,8 +25,7 @@ kaori_validate_target_config() {
        "$KAORI_STATE_DIR" == "/var/lib/kaori/deploy-state" &&
        "$KAORI_BACKUP_DIR" == "/var/lib/kaori/backups" &&
        "$KAORI_ACTIVE_RELEASE_ENV_FILE" == "/var/lib/kaori/deploy-state/release.env" &&
-       "$KAORI_TRUST_DIR" == "/etc/kaori/trust" &&
-       "$KAORI_DEPLOY_ROOT" == "/opt/kaori" ]] || {
+       "$KAORI_TRUST_DIR" == "/etc/kaori/trust" ]] || {
       printf 'Invalid canonical project/resource/receipt target binding\n' >&2
       return 1
     }
