@@ -1,4 +1,4 @@
-name: kaori-production
+name: ${KAORI_COMPOSE_PROJECT:-kaori-production}
 
 x-kaori-environment: &kaori-environment
   APP_ENV: production
@@ -335,8 +335,8 @@ services:
 
 networks:
   kaori_production:
-    name: kaori-production
+    name: ${KAORI_NETWORK_NAME:-kaori-production}
 
 volumes:
   kaori_production_instance:
-    name: kaori-production-instance
+    name: ${KAORI_INSTANCE_VOLUME:-kaori-production-instance}

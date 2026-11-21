@@ -142,7 +142,7 @@ services:
     # Base Compose's /app/instance named volume is merged by distinct target.
     volumes:
       - type: bind
-        source: /etc/kaori/trust
+        source: ${KAORI_TRUST_DIR:-/etc/kaori/trust}
         target: /run/kaori/trust
         read_only: true
         bind:
@@ -186,7 +186,7 @@ services:
     # Base Compose's /app/instance named volume is merged by distinct target.
     volumes:
       - type: bind
-        source: /etc/kaori/trust
+        source: ${KAORI_TRUST_DIR:-/etc/kaori/trust}
         target: /run/kaori/trust
         read_only: true
         bind:
@@ -203,7 +203,7 @@ services:
     # Base Compose's /app/instance named volume is merged by distinct target.
     volumes:
       - type: bind
-        source: /etc/kaori/trust
+        source: ${KAORI_TRUST_DIR:-/etc/kaori/trust}
         target: /run/kaori/trust
         read_only: true
         bind:
@@ -260,6 +260,6 @@ services:
 
 volumes:
   kaori_vps_postgres_data:
-    name: kaori-vps-postgres-data
+    name: ${KAORI_POSTGRES_VOLUME:-kaori-vps-postgres-data}
   kaori_vps_redis_data:
-    name: kaori-vps-redis-data
+    name: ${KAORI_REDIS_VOLUME:-kaori-vps-redis-data}

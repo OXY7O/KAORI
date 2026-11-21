@@ -23,10 +23,13 @@ set +a
 KAORI_APP_ENV_FILE="${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}"
 KAORI_SECRETS_ENV_FILE="${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}"
 KAORI_RELEASE_ENV_FILE="${KAORI_RELEASE_ENV_FILE:-${KAORI_ACTIVE_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}}"
+KAORI_POSTGRES_ADMIN_ENV_FILE="${KAORI_POSTGRES_ADMIN_ENV_FILE:-/etc/kaori/postgres-admin.env}"
+KAORI_POSTGRES_MIGRATION_ENV_FILE="${KAORI_POSTGRES_MIGRATION_ENV_FILE:-/etc/kaori/postgres-migrate.env}"
 export KAORI_APP_ENV_FILE KAORI_SECRETS_ENV_FILE KAORI_RELEASE_ENV_FILE
 
 # shellcheck source=deploy/server/release-state.sh
 source "$SCRIPT_DIR/release-state.sh"
+kaori_validate_target_config || fail "configured runtime target identity is unsafe"
 load_current_release_identity || fail 'current release identity is unavailable; complete one governed deployment first'
 
 umask 077

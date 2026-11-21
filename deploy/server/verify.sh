@@ -32,6 +32,8 @@ set +a
 KAORI_APP_ENV_FILE="${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}"
 KAORI_SECRETS_ENV_FILE="${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}"
 KAORI_RELEASE_ENV_FILE="${KAORI_RELEASE_ENV_FILE:-${KAORI_ACTIVE_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}}"
+KAORI_POSTGRES_ADMIN_ENV_FILE="${KAORI_POSTGRES_ADMIN_ENV_FILE:-/etc/kaori/postgres-admin.env}"
+KAORI_POSTGRES_MIGRATION_ENV_FILE="${KAORI_POSTGRES_MIGRATION_ENV_FILE:-/etc/kaori/postgres-migrate.env}"
 export KAORI_APP_ENV_FILE KAORI_SECRETS_ENV_FILE KAORI_RELEASE_ENV_FILE
 
 for path in "$KAORI_APP_ENV_FILE" "$KAORI_SECRETS_ENV_FILE" "$KAORI_RELEASE_ENV_FILE"; do
@@ -40,6 +42,7 @@ done
 
 # shellcheck source=deploy/server/release-state.sh
 source "$SCRIPT_DIR/release-state.sh"
+kaori_validate_target_config || fail "configured runtime target identity is unsafe"
 load_current_release_identity || fail 'current release identity is unavailable'
 compose=(docker compose --env-file "$KAORI_DEPLOY_ENV_FILE" -f "$BASE_COMPOSE" -f "$SERVER_COMPOSE")
 "${compose[@]}" config --quiet || fail 'Compose configuration is invalid'
