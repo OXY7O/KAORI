@@ -44,10 +44,16 @@ for command_name in docker curl stat grep sha256sum mktemp sort sed head readlin
 done
 
 [[ -r "$KAORI_DEPLOY_ENV_FILE" ]] || fail "deployment environment is not readable: $KAORI_DEPLOY_ENV_FILE"
+selected_deploy_env="$KAORI_DEPLOY_ENV_FILE"
+selected_deploy_root="${KAORI_DEPLOY_ROOT:-}"
 set -a
 # shellcheck source=/dev/null
 source "$KAORI_DEPLOY_ENV_FILE"
 set +a
+[[ "$KAORI_DEPLOY_ENV_FILE" == "$selected_deploy_env" ]] ||
+  fail 'deployment target configuration cannot redirect its own authority path'
+[[ -z "$selected_deploy_root" || "${KAORI_DEPLOY_ROOT:-}" == "$selected_deploy_root" ]] ||
+  fail 'Environment-selected deploy root conflicts with configured runtime target'
 
 KAORI_APP_ENV_FILE="${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}"
 KAORI_SECRETS_ENV_FILE="${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}"
