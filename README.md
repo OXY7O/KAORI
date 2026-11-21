@@ -118,6 +118,7 @@ A stable release reuses the exact accepted OCI digest; the application image is 
 - [`docs/deployment/RELEASE_GOVERNANCE.md`](docs/deployment/RELEASE_GOVERNANCE.md) — immutable release authority and promotion rules.
 - [`docs/releases/KAORI_2_3_0.md`](docs/releases/KAORI_2_3_0.md) — immutable historical 2.3.0 release record; it does not define the current product line.
 - [`docs/releases/README.md`](docs/releases/README.md) — canonical release lifecycle and artifact boundaries.
+- [`docs/deployment/DOCKER_HUB_OVERVIEW.md`](docs/deployment/DOCKER_HUB_OVERVIEW.md) — public Docker Hub image overview and usage boundaries.
 - [`deploy/server/README.md`](deploy/server/README.md) — governed server deployment adapter.
 
 ## Security & License
