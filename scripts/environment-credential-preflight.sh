@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+set +x
+
+set -Eeuo pipefail
+fail() { echo "BLOCK: $*" >&2; exit 1; }
+
+if [[ "$GITHUB_EVENT_NAME" == push ]]; then
+  [[ "$GITHUB_REF" == refs/heads/kaori/staging ]] || fail 'staging push only'
+else
+  case "$TARGET_ENV" in
+    staging) [[ "$GITHUB_REF" == refs/heads/kaori/staging ]] || fail 'staging branch required' ;;
+    production) [[ "$GITHUB_REF" == refs/heads/main ]] || fail 'protected main branch required' ;;
+    *) fail 'unknown Environment' ;;
+  esac
+fi
+
+for name in REGISTRY_HOST REGISTRY_IMAGE REGISTRY_USER REGISTRY_PASSWORD DEPLOY_HOST DEPLOY_PORT DEPLOY_USER DEPLOY_ROOT DEPLOY_SSH_KEY DEPLOY_SSH_PASSPHRASE DEPLOY_KNOWN_HOSTS; do
+  [[ -n "$(printenv "$name")" ]] || fail "missing required Environment credential/config: $name"
+done
+
+[[ "$REGISTRY_HOST" =~ ^[a-zA-Z0-9.-]+(:[0-9]{1,5})?$ ]] || fail 'invalid registry hostname'
+[[ "$REGISTRY_IMAGE" == "$REGISTRY_HOST/"* ]] || fail 'registry image outside configured registry'
+[[ "$DEPLOY_HOST" =~ ^[a-zA-Z0-9._-]+$ ]] || fail 'invalid SSH host'
+[[ "$DEPLOY_USER" =~ ^[a-zA-Z0-9._-]+$ ]] || fail 'invalid SSH user'
+[[ "$DEPLOY_PORT" =~ ^[0-9]{1,5}$ ]] || fail 'SSH port must be a number'
+(( 10#$DEPLOY_PORT > 0 && 10#$DEPLOY_PORT < 65536 )) || fail 'SSH port out of range'
+if [[ "$DEPLOY_ROOT" != /opt/kaori ]]; then
+  [[ "$DEPLOY_ROOT" =~ ^/opt/kaori/targets/kaori-app-[a-z0-9]+(-[a-z0-9]+)*$ ]] || fail 'invalid App target root'
+  project="$DEPLOY_ROOT"
+  project="${project##*/}"
+  RECEIPT_PATH="/var/lib/kaori/targets/$project/deploy-state/release.env"
+  HOST_ENV_PATH="/etc/kaori/targets/$project/deploy.env"
+fi
+[[ "$RECEIPT_PATH" == /* && "$RECEIPT_PATH" != *'..'* ]] || fail 'unsafe receipt path'
+printf '%s\n' "RECEIPT_PATH=$RECEIPT_PATH" "HOST_ENV_PATH=$HOST_ENV_PATH" >> "$GITHUB_ENV"
+echo 'PASS: approved branch, Environment and target syntax'
+
+set -Eeuo pipefail
+umask 077
+tmp="$(mktemp -d)"
+trap 'rm -rf -- "$tmp"' EXIT
+mkdir -m 700 "$tmp/docker"
+if ! printf '%s' "$REGISTRY_PASSWORD" |
+  docker --config "$tmp/docker" login "$REGISTRY_HOST" \
+    --username "$REGISTRY_USER" --password-stdin >/dev/null 2>&1
+then
+  echo 'BLOCK: configured Environment registry credentials were rejected' >&2
+  exit 1
+fi
+echo 'PASS: Environment registry credential authentication (no image push/pull)'
+rm -rf -- "$tmp"
+trap - EXIT
+
+set -Eeuo pipefail
+umask 077
+fail() { echo "BLOCK: $*" >&2; exit 1; }
+tmp="$(mktemp -d)"
+agent_started=false
+cleanup() {
+  if [[ "$agent_started" == true ]]; then ssh-agent -k >/dev/null 2>&1 || true; fi
+  rm -rf -- "$tmp"
+}
+trap cleanup EXIT INT TERM HUP
+printf '%s\n' "$DEPLOY_SSH_KEY" > "$tmp/id"
+printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$tmp/known_hosts"
+chmod 600 "$tmp/id" "$tmp/known_hosts"
+host_id="$DEPLOY_HOST"
+[[ "$DEPLOY_PORT" == 22 ]] || host_id="[$DEPLOY_HOST]:$DEPLOY_PORT"
+ssh-keygen -F "$host_id" -f "$tmp/known_hosts" >/dev/null ||
+  fail 'pinned SSH host identity missing (no TOFU permitted)'
+cat > "$tmp/askpass" <<'ASKPASS'
+#!/usr/bin/env bash
+printf '%s\n' "$DEPLOY_SSH_PASSPHRASE"
+ASKPASS
+chmod 700 "$tmp/askpass"
+eval "$(ssh-agent -s)" >/dev/null
+agent_started=true
+export SSH_ASKPASS="$tmp/askpass" SSH_ASKPASS_REQUIRE=force DISPLAY=:0
+setsid -w ssh-add "$tmp/id" </dev/null >/dev/null 2>&1 ||
+  fail 'Environment SSH key/passphrase cannot be loaded'
+
+{
+  printf 'root=%q\n' "$DEPLOY_ROOT"
+  printf 'receipt=%q\n' "$RECEIPT_PATH"
+  printf 'deploy_env=%q\n' "$HOST_ENV_PATH"
+  cat <<'REMOTE_READ_ONLY'
+set -Eeuo pipefail
+[[ -d "$root" && ! -L "$root" ]] || {
+  echo 'BLOCK: configured deployment root missing/unsafe' >&2
+  exit 1
+}
+[[ -f "$receipt" && ! -L "$receipt" ]] || {
+  echo 'BLOCK: committed release receipt missing/unsafe' >&2
+  exit 1
+}
+if [[ -n "$deploy_env" ]]; then
+  [[ -f "$deploy_env" && ! -L "$deploy_env" ]] || {
+    echo 'BLOCK: VM-local deployment config missing/unsafe' >&2
+    exit 1
+  }
+fi
+command -v docker >/dev/null 2>&1 || {
+  echo 'BLOCK: target Docker CLI unavailable' >&2
+  exit 1
+}
+docker info >/dev/null 2>&1 || {
+  echo 'BLOCK: target deploy user lacks Docker daemon access' >&2
+  exit 1
+}
+echo 'PASS: pinned SSH, prepared VM target, receipt and Docker access; read-only'
+REMOTE_READ_ONLY
+} | ssh \
+  -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+  -o UserKnownHostsFile="$tmp/known_hosts" -o ConnectTimeout=15 \
+  -o ConnectionAttempts=1 -p "$DEPLOY_PORT" -i "$tmp/id" \
+  "$DEPLOY_USER@$DEPLOY_HOST" 'bash -s'
+
+{
+  echo '### Environment credential preflight — PASS'
+  echo 'Registry login, pinned SSH identity and remote target/receipt/Docker access verified.'
+  echo 'Read-only: no image publication, Docker container change, database command, host file write, DNS, release or deployment.'
+  echo 'This check does NOT replace signed digest verification, real UAT, Human Acceptance or production deployment approval.'
+} >> "$GITHUB_STEP_SUMMARY"
