@@ -215,6 +215,10 @@ Each final recheck asks whether the current tests actually prove behavior rather
 
 A verifier should protect a durable invariant, not whitespace. Formatter/linter/type-checker ownership must not be duplicated by brittle source-string checks.
 
+**Scenario-driven acceptance:** when a page/domain changes behavior, link its acceptance criteria to capability-owned positive and risk-relevant negative scenarios using the reusable specification in `docs/TESTING.md`. Exercise actual browser actions for affected UI workflows, not only source-string/render/screenshot checks; assert persisted and provider-authoritative outcomes for mutations. Reuse #222/#543 Playwright, Violet shared-component contracts and canonical viewport/theme evidence. Record untested runtime-dependent surfaces rather than claiming all-surface coverage from representative deterministic tests. Positive/negative scenario applicability follows risk and capability authority, not a fabricated universal count.
+
+**Evidence boundary:** keep automated execution outcomes, candidate-bound screenshot/JUnit/audit/provider proof, and explicit human UAT acceptance as distinct records. Mandatory NOT RUN, BLOCKED, SKIP, missing evidence and wrong-source/digest evidence cannot substantiate an acceptance PASS. A visual baseline requires intentional human review; visual equivalence alone does not certify usability or compliance. Machine PASS does not confer human sign-off.
+
 ## 17. Performance
 
 Review query cardinality, indexes used by common filters/sorts, N+1 access, unbounded lists, in-memory pagination, repeated serialization, provider calls on web requests, payload size, HTMX swap scope, and synchronous work that belongs in a worker. A page must stay bounded at realistic production data volumes.
