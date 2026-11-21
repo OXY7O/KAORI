@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import subprocess
 import sys
@@ -147,13 +148,13 @@ def test_server_provider_ca_trust_is_scoped_read_only_and_host_managed() -> None
     # integration evidence workers. Unrelated services do not inherit it.
     for service, next_service in next_services.items():
         section = _service_block(server, service, next_service)
-        assert 'source: /etc/kaori/trust' in section, service
+        assert 'source: ${KAORI_TRUST_DIR:-/etc/kaori/trust}' in section, service
         assert 'target: /run/kaori/trust' in section, service
         assert 'read_only: true' in section, service
         assert 'create_host_path: false' in section, service
-        assert section.count('source: /etc/kaori/trust') == 1
+        assert section.count('source: ${KAORI_TRUST_DIR:-/etc/kaori/trust}') == 1
 
-    assert server.count('source: /etc/kaori/trust') == len(next_services)
+    assert server.count('source: ${KAORI_TRUST_DIR:-/etc/kaori/trust}') == len(next_services)
     assert 'kaori_production_instance:/app/instance' in base
     assert 'install -d -m 0755 /etc/kaori/trust' in bootstrap
     assert 'INTEGRATION_VAULT_ALLOWED_ORIGINS=' in app_env
@@ -175,9 +176,9 @@ def test_host_ca_trust_preflight_precedes_database_mutation() -> None:
     deploy = _read(DEPLOY)
     bootstrap = _read(SERVER_ROOT / 'bootstrap-host.sh')
     overlay = _read(SERVER_COMPOSE)
-    diagnostic = 'Host CA trust directory missing: /etc/kaori/trust'
+    diagnostic = 'Host CA trust directory missing or unsafe: $KAORI_TRUST_DIR'
 
-    assert 'if [[ ! -d /etc/kaori/trust || -L /etc/kaori/trust ]]; then' in deploy
+    assert 'if [[ ! -d "$KAORI_TRUST_DIR" || -L "$KAORI_TRUST_DIR" ]]; then' in deploy
     assert diagnostic in deploy
     assert deploy.index(diagnostic) < deploy.index('Starting PostgreSQL and Redis')
     assert deploy.index(diagnostic) < deploy.index('Creating pre-migration PostgreSQL backup')
@@ -484,3 +485,107 @@ def test_expanded_uat_deployment_steps_expose_immutable_evidence_and_host_phases
     assert 'UAT verification · checking effective PostgreSQL access' in verify
     assert 'UAT verification · probing internal web readiness' in verify
     assert "printf '🩺 Internal web:5000 readiness PASS" in verify
+
+
+# Environment-configured runtime target selection: no slot-count mode.
+_TARGET_KEYS = (
+    'KAORI_COMPOSE_PROJECT',
+    'KAORI_NETWORK_NAME',
+    'KAORI_INSTANCE_VOLUME',
+    'KAORI_POSTGRES_VOLUME',
+    'KAORI_REDIS_VOLUME',
+    'KAORI_STATE_DIR',
+    'KAORI_BACKUP_DIR',
+    'KAORI_ACTIVE_RELEASE_ENV_FILE',
+    'KAORI_DEPLOY_ENV_FILE',
+    'KAORI_APP_ENV_FILE',
+    'KAORI_SECRETS_ENV_FILE',
+    'KAORI_POSTGRES_ADMIN_ENV_FILE',
+    'KAORI_POSTGRES_MIGRATION_ENV_FILE',
+    'KAORI_TRUST_DIR',
+    'KAORI_DEPLOY_ROOT',
+    'COMPOSE_PROJECT_NAME',
+)
+
+
+def _runtime_target_contract(overrides: dict[str, str]) -> subprocess.CompletedProcess[str]:
+    env = {key: value for key, value in os.environ.items() if key not in _TARGET_KEYS}
+    env.update(overrides)
+    return subprocess.run(
+        ['bash', '-c', 'source "$1"; kaori_validate_target_config', 'bash', str(RELEASE_STATE)],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_existing_runtime_identity_remains_the_default() -> None:
+    result = _runtime_target_contract({})
+    assert result.returncode == 0, result.stderr
+    compose = _read(BASE_COMPOSE)
+    overlay = _read(SERVER_COMPOSE)
+    assert 'name: ${KAORI_COMPOSE_PROJECT:-kaori-production}' in compose
+    assert 'name: ${KAORI_NETWORK_NAME:-kaori-production}' in compose
+    assert 'name: ${KAORI_INSTANCE_VOLUME:-kaori-production-instance}' in compose
+    assert 'name: ${KAORI_POSTGRES_VOLUME:-kaori-vps-postgres-data}' in overlay
+    assert 'name: ${KAORI_REDIS_VOLUME:-kaori-vps-redis-data}' in overlay
+
+
+def _distinct_target(project: str = 'kaori-app-blue') -> dict[str, str]:
+    config = f'/etc/kaori/targets/{project}'
+    state = f'/var/lib/kaori/targets/{project}'
+    return {
+        'KAORI_COMPOSE_PROJECT': project,
+        'KAORI_NETWORK_NAME': project,
+        'KAORI_INSTANCE_VOLUME': f'{project}-instance',
+        'KAORI_POSTGRES_VOLUME': f'{project}-postgres-data',
+        'KAORI_REDIS_VOLUME': f'{project}-redis-data',
+        'KAORI_STATE_DIR': f'{state}/deploy-state',
+        'KAORI_BACKUP_DIR': f'{state}/backups',
+        'KAORI_ACTIVE_RELEASE_ENV_FILE': f'{state}/deploy-state/release.env',
+        'KAORI_DEPLOY_ENV_FILE': f'{config}/deploy.env',
+        'KAORI_APP_ENV_FILE': f'{config}/app.env',
+        'KAORI_SECRETS_ENV_FILE': f'{config}/secrets.env',
+        'KAORI_POSTGRES_ADMIN_ENV_FILE': f'{config}/postgres-admin.env',
+        'KAORI_POSTGRES_MIGRATION_ENV_FILE': f'{config}/postgres-migrate.env',
+        'KAORI_TRUST_DIR': f'{config}/trust',
+        'KAORI_DEPLOY_ROOT': f'/opt/kaori/targets/{project}',
+    }
+
+
+def test_distinct_runtime_identity_is_configuration_not_host_count() -> None:
+    result = _runtime_target_contract(_distinct_target())
+    assert result.returncode == 0, result.stderr
+
+    # Same host/IP does not merge distinct Compose and state identities.
+    for key, value in (
+        ('KAORI_POSTGRES_VOLUME', 'kaori-vps-postgres-data'),
+        ('KAORI_INSTANCE_VOLUME', 'kaori-production-instance'),
+        ('KAORI_STATE_DIR', '/var/lib/kaori/deploy-state'),
+        ('KAORI_BACKUP_DIR', '/var/lib/kaori/backups'),
+        ('KAORI_DEPLOY_ROOT', '/opt/kaori'),
+    ):
+        bad = {**_distinct_target(), key: value}
+        assert _runtime_target_contract(bad).returncode != 0, key
+
+
+def test_runtime_target_rejects_foreign_projects_and_conflicts() -> None:
+    for project in ('kaori-website', 'kaori-docs', '../kaori-app', 'kaori-app-'):
+        assert _runtime_target_contract(_distinct_target(project)).returncode != 0, project
+    assert _runtime_target_contract({'KAORI_POSTGRES_VOLUME': 'kaori-app-blue-postgres-data'}).returncode != 0
+    assert _runtime_target_contract({'COMPOSE_PROJECT_NAME': 'another-project'}).returncode != 0
+
+
+def test_staging_environment_selects_configured_target_and_owns_edge_boundary() -> None:
+    deploy = _read(WORKFLOW)
+    publish = _read(ROOT / '.github/workflows/reconcile-staging-publication.yml')
+    assert 'environment:\n      name: staging' in deploy
+    assert 'KAORI_HOST_DEPLOY_ENV_FILE' not in deploy
+    assert 'KAORI_RESOLVED_DEPLOY_ENV_FILE' in deploy
+    assert 'deploy_env="/etc/kaori/deploy.env"' in deploy
+    assert 'deploy_env="/etc/kaori/targets/$project/deploy.env"' in deploy
+    assert 'KAORI_DEPLOY_ENV_FILE="$deploy_env" KAORI_DEPLOY_ROOT="$deploy_root"' in deploy
+    assert 'Distinct Application target requires separate operator-approved ingress.' in publish
+    assert 'Refusing canonical public-edge mutation for a distinct Compose runtime.' in publish

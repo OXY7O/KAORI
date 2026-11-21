@@ -39,20 +39,41 @@ status '⏳' 'UAT host deployment · validating immutable release and deployment
 [[ "$release_version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]] || fail 'release version must be vX.Y.Z or vX.Y.Z-rc.N'
 app_version="${release_version#v}"
 
-for command_name in docker curl stat grep sha256sum mktemp sort sed head; do
+for command_name in docker curl stat grep sha256sum mktemp sort sed head readlink; do
   command -v "$command_name" >/dev/null 2>&1 || fail "$command_name is required"
 done
 
 [[ -r "$KAORI_DEPLOY_ENV_FILE" ]] || fail "deployment environment is not readable: $KAORI_DEPLOY_ENV_FILE"
+selected_deploy_env="$KAORI_DEPLOY_ENV_FILE"
+selected_deploy_root="${KAORI_DEPLOY_ROOT:-}"
 set -a
 # shellcheck source=/dev/null
 source "$KAORI_DEPLOY_ENV_FILE"
 set +a
+[[ "$KAORI_DEPLOY_ENV_FILE" == "$selected_deploy_env" ]] ||
+  fail 'deployment target configuration cannot redirect its own authority path'
+[[ -z "$selected_deploy_root" || "${KAORI_DEPLOY_ROOT:-}" == "$selected_deploy_root" ]] ||
+  fail 'Environment-selected deploy root conflicts with configured runtime target'
 
 KAORI_APP_ENV_FILE="${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}"
 KAORI_SECRETS_ENV_FILE="${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}"
-active_release_env="${KAORI_ACTIVE_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}"
-export KAORI_APP_ENV_FILE KAORI_SECRETS_ENV_FILE KAORI_POSTGRES_ADMIN_ENV_FILE KAORI_POSTGRES_MIGRATION_ENV_FILE
+# Reconcile host configuration before any Docker, database or state mutation.
+# The selected Environment chooses the target, never a topology/slot mode.
+# shellcheck source=deploy/server/release-state.sh
+source "$SCRIPT_DIR/release-state.sh"
+kaori_validate_target_config || fail 'configured runtime target identity is unsafe'
+active_release_env="$KAORI_ACTIVE_RELEASE_ENV_FILE"
+candidate_release_env="$KAORI_STATE_DIR/candidate-release.env"
+export KAORI_DEPLOY_ENV_FILE KAORI_APP_ENV_FILE KAORI_SECRETS_ENV_FILE
+export KAORI_POSTGRES_ADMIN_ENV_FILE KAORI_POSTGRES_MIGRATION_ENV_FILE
+
+if [[ "$KAORI_COMPOSE_PROJECT" != "kaori-production" ]]; then
+  for target_dir in "${KAORI_DEPLOY_ENV_FILE%/*}" "${KAORI_STATE_DIR%/*}" "$KAORI_STATE_DIR" "$KAORI_BACKUP_DIR" "$KAORI_TRUST_DIR"; do
+    [[ -d "$target_dir" && ! -L "$target_dir" &&
+       "$(readlink -f -- "$target_dir")" == "$target_dir" ]] ||
+      fail "distinct runtime target must be preprovisioned without symlinks: $target_dir"
+  done
+fi
 
 for path in "$KAORI_APP_ENV_FILE" "$KAORI_SECRETS_ENV_FILE" "$KAORI_DEPLOY_ENV_FILE"; do
   [[ -f "$path" && ! -L "$path" && -r "$path" ]] || fail "runtime environment must be a readable regular non-symlink file: $path"
@@ -82,8 +103,8 @@ done
 # mounts with create_host_path: false. Bootstrap owns host preparation;
 # fail before starting containers, backups or Alembic rather than silently
 # creating privileged host paths from a least-privileged deploy process.
-if [[ ! -d /etc/kaori/trust || -L /etc/kaori/trust ]]; then
-  fail 'Host CA trust directory missing: /etc/kaori/trust (run sudo install -d -m 0755 /etc/kaori/trust during host bootstrap)'
+if [[ ! -d "$KAORI_TRUST_DIR" || -L "$KAORI_TRUST_DIR" ]]; then
+  fail "Host CA trust directory missing or unsafe: $KAORI_TRUST_DIR (prepare via approved host bootstrap)"
 fi
 
 docker info >/dev/null 2>&1 || fail 'Docker daemon is not reachable by the deploy user'
