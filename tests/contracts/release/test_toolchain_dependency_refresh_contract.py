@@ -96,6 +96,28 @@ def test_runtime_security_dependency_floor_is_reproducibly_pinned() -> None:
     assert 'dnspython==2.9.0' not in base_lock
 
 
+def test_identity_provider_runtime_dependencies_have_source_authority() -> None:
+    base_in = read('requirements/base.in')
+    base_lock = read('requirements/base.txt')
+
+    for package, pin in (
+        ('ldap3', 'ldap3==2.9.1'),
+        ('google-auth', 'google-auth==2.40.3'),
+    ):
+        assert [line for line in base_in.splitlines() if line.startswith(f'{package}==')] == [pin]
+        assert [line for line in base_lock.splitlines() if line.startswith(f'{package}==')] == [pin]
+
+    ldap_client = read('app/access/authentication/identity_provider/adapters/ldap/client.py')
+    google_oidc = read('app/access/authentication/identity_provider/providers/google/browser.py')
+    adapter_registry = read('app/access/authentication/identity_provider/registry.py')
+    assert 'from ldap3 import' in ldap_client
+    assert 'from google.auth.transport import' in google_oidc
+    assert 'from google.oauth2 import id_token' in google_oidc
+    assert 'LdapCredentialAdapter' in adapter_registry
+    assert 'GoogleOidcAdapter' in adapter_registry
+
+
+
 def test_frontend_dependency_lock_remains_package_manager_owned() -> None:
     package = json.loads(read('package.json'))
     package_lock = json.loads(read('package-lock.json'))
