@@ -214,7 +214,6 @@ jobs:
       KAORI_HOST_USER: ${{ vars.KAORI_HOST_USER }}
       KAORI_HOST_PORT: ${{ vars.KAORI_HOST_PORT }}
       KAORI_HOST_DEPLOY_ROOT: ${{ vars.KAORI_HOST_DEPLOY_ROOT }}
-      KAORI_HOST_DEPLOY_ENV_FILE: ${{ vars.KAORI_HOST_DEPLOY_ENV_FILE }}
       KAORI_HOST_SSH_PRIVATE_KEY: ${{ secrets.KAORI_HOST_SSH_PRIVATE_KEY }}
       KAORI_HOST_SSH_PASSPHRASE: ${{ secrets.KAORI_HOST_SSH_PASSPHRASE }}
       KAORI_HOST_KNOWN_HOSTS: ${{ secrets.KAORI_HOST_KNOWN_HOSTS }}
@@ -253,12 +252,17 @@ jobs:
             exit 1
           fi
           root="${KAORI_HOST_DEPLOY_ROOT:-/opt/kaori}"
-          deploy_env="${KAORI_HOST_DEPLOY_ENV_FILE:-/etc/kaori/deploy.env}"
-          [[ "$root" =~ ^/[A-Za-z0-9._/-]+$ && "$root" != "/" && "$root" != *"/../"* ]] || exit 1
-          [[ "$deploy_env" =~ ^/etc/kaori/(targets/kaori-app-[a-z0-9-]+/)?deploy\.env$ ]] || {
-            printf 'KAORI_HOST_DEPLOY_ENV_FILE is not a governed Application deployment target.\n' >&2
-            exit 1
-          }
+          [[ "$root" =~ ^/[A-Za-z0-9_-]+(/[A-Za-z0-9._-]+)*$ ]] || exit 1
+          [[ ! "$root" =~ (^|/)\.\.?(/|$) ]] || exit 1
+          # VM-local deploy.env stays authoritative. The existing deploy-root
+          # variable alone identifies any explicitly provisioned App project.
+          deploy_env="/etc/kaori/deploy.env"
+          if [[ "$root" == /opt/kaori/targets/kaori-app-* ]]; then
+            project="${root##*/}"
+            [[ "$project" =~ ^kaori-app-[a-z0-9]+(-[a-z0-9]+)*$ ]] || exit 1
+            deploy_env="/etc/kaori/targets/$project/deploy.env"
+          fi
+          printf 'KAORI_RESOLVED_DEPLOY_ENV_FILE=%s\n' "$deploy_env" >> "$GITHUB_ENV"
           printf '✅ UAT deployment inputs PASS · RC identity, SSH secrets present and target syntax valid\n'
 
       - name: Deploy to Host
@@ -297,7 +301,7 @@ jobs:
 
           port="${KAORI_HOST_PORT:-22}"
           deploy_root="${KAORI_HOST_DEPLOY_ROOT:-/opt/kaori}"
-          deploy_env="${KAORI_HOST_DEPLOY_ENV_FILE:-/etc/kaori/deploy.env}"
+          deploy_env="${KAORI_RESOLVED_DEPLOY_ENV_FILE:?Target configuration preflight required}"
           remote_release="$deploy_root/releases/$REQUESTED_SHA"
           target="$KAORI_HOST_USER@$KAORI_HOST"
           ssh_opts=(-p "$port" -i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$known_hosts_file")
