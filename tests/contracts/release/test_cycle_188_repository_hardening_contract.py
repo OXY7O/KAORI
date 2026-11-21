@@ -83,7 +83,8 @@ def test_release_authority_and_changelog_are_explicit() -> None:
     readme = _read('README.md')
     env_example = _read('.env.example')
 
-    assert version_line == '0.2.0'
+    # First-public source authority is v0.3.0; historical 0.2.0 records stay intact.
+    assert version_line == '0.3.0'
     assert 'product version line' in release_doc
     assert 'vX.Y.Z-rc.N' in release_doc
     assert 'APP_VERSION' in release_doc
