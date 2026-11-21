@@ -20,14 +20,22 @@ def test_phase1_adapters_reuse_named_sender_functions() -> None:
         assert f"'{provider}': NotificationProviderAdapter(" in registry
 
 
-def test_phase1_documentation_distinguishes_review_from_admission() -> None:
+def test_phase1_documentation_distinguishes_source_admission_from_provider_uat() -> None:
     doc = read('app/integrations/README.md')
     for token in (
-        'Phase 1 provider source merged to review',
+        'Phase 1 adapter source is admitted in staging/main',
         'NOTIFICATION_NTFY_ALLOWED_ORIGINS',
         'NOTIFICATION_NTFY_CA_BUNDLE',
         'allowed_mentions: {"parse": []}',
-        'does **not yet honor provider-specific',
+        'source-level provider-specific `Retry-After` scheduling',
+        'NotificationDelivery.next_retry_at',
+        'Provider-specific UAT still pending',
         'NOTIFICATION_DELIVERY_RECOVERY_ENABLED=false',
     ):
         assert token in doc
+    for obsolete in (
+        'Phase 1 provider source merged to review',
+        'Three new Phase 1 adapters are integrated to the review branch only',
+        'does **not yet honor provider-specific',
+    ):
+        assert obsolete not in doc
