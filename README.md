@@ -8,7 +8,7 @@
 
 <p align="center">
   <img alt="CI" src="https://github.com/OXY7O/KAORI/actions/workflows/quality.yml/badge.svg?branch=main" />
-  <img alt="Version" src="https://img.shields.io/badge/Version-0.2.0-7C3AED" />
+  <img alt="Version" src="https://img.shields.io/badge/Version-0.3.0-7C3AED" />
   <img alt="Python" src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white" />
   <img alt="License" src="https://img.shields.io/badge/License-Apache--2.0-7C3AED" />
 </p>

@@ -18,19 +18,19 @@ Pre-release audit work stays under `[Unreleased]` until the release candidate is
 
 ### Product version line versus exact release identity
 
-The repository root `VERSION` file is the machine-readable **product version line** authority. It contains stable SemVer only, for example `0.2.0`, and is synchronized with the root README Version badge, the development `.env.example` `APP_VERSION`, and the application fallback used when no governed release metadata is injected.
+The repository root `VERSION` file is the machine-readable **product version line** authority. It contains stable SemVer only, for example `0.3.0`, and is synchronized with the root README Version badge, the development `.env.example` `APP_VERSION`, and the application fallback used when no governed release metadata is injected.
 
 `VERSION` is **not** the exact deployed release identity. Governed prerelease and stable identities remain release/deployment managed:
 
-- product version line: `VERSION=0.2.0`;
-- governed prerelease tag: `v0.2.0-rc.N`;
-- governed prerelease runtime: `APP_VERSION=0.2.0-rc.N`;
-- governed stable tag: `v0.2.0`;
-- governed stable runtime: `APP_VERSION=0.2.0`.
+- product version line: `VERSION=0.3.0`;
+- governed prerelease tag: `v0.3.0-rc.N`;
+- governed prerelease runtime: `APP_VERSION=0.3.0-rc.N`;
+- governed stable tag: `v0.3.0`;
+- governed stable runtime: `APP_VERSION=0.3.0`.
 
 The release workflow, Git tag, GitHub Release, accepted source SHA, OCI version/revision labels, immutable image digest, signature/provenance, and deployment receipt remain the authority for an exact candidate or stable release. A README badge or development default must never be used to infer which RC is deployed.
 
-When the next product version line is approved, update `VERSION`, the README badge, development `APP_VERSION`, and application fallback together. Historical changelog sections and `docs/releases/KAORI_*.md` records remain immutable.
+The approved first-public stable target is `v0.3.0`; the matching `VERSION` value is a planned product-version line, **not** proof of a published/accepted stable artifact. When the next product version line is approved, update `VERSION`, the README badge, development `APP_VERSION`, and application fallback together. Historical changelog sections and `docs/releases/KAORI_*.md` records remain immutable.
 
 ## Immutable Release Identity
 

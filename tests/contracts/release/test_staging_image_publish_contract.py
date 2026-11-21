@@ -43,7 +43,8 @@ def test_staging_publish_derives_semver_rc_tag_from_git_history() -> None:
 
     assert "git tag --list 'v[0-9]*.[0-9]*.[0-9]*'" in workflow
     assert "grep -E '^v[0-9]+\\.[0-9]+\\.[0-9]+$'" in workflow
-    assert "INITIAL_VERSION='0.1.0'" in workflow
+    assert 'INITIAL_VERSION="$(cat VERSION)"' in workflow
+    assert 'Invalid canonical VERSION for RC bootstrap' in workflow
     assert "grep -Eq '^[[:alnum:]_-]+(\\([^)]*\\))?!:'" in workflow
     assert "grep -Eq '^BREAKING CHANGE:'" in workflow
     assert "grep -Eq '^feat(\\([^)]*\\))?:'" in workflow

@@ -2,7 +2,7 @@
 
 KAORI separates the source-controlled **product version line** from the exact governed release identity.
 
-The root `VERSION` file contains the current stable SemVer line, for example `0.2.0`. README and development defaults synchronize to that value so source presentation cannot silently drift. `VERSION` does not select or identify a deployed release candidate.
+The root `VERSION` file contains the current stable SemVer line, currently `0.3.0` as the approved first-public stable target. README and development defaults synchronize to that value so source presentation cannot silently drift. `VERSION` does not select or identify a deployed release candidate. A `0.3.0` source default does not mean a `v0.3.0` stable release exists; historical `v0.1.0-rc.*` releases remain separately preserved.
 
 Exact prerelease identity is governed by `vX.Y.Z-rc.N`, and exact stable identity is governed by `vX.Y.Z`. The release/deployment workflow supplies the matching `APP_VERSION` plus source SHA, build date, OCI identity, and immutable digest. Development example defaults are never evidence that a specific RC or stable artifact is deployed.
 
