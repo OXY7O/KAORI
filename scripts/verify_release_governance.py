@@ -38,6 +38,12 @@ def verify() -> None:
     if not SEMVER.fullmatch(version_line):
         raise AssertionError(f'VERSION must contain strict Semantic Versioning, got {version_line!r}')
 
+    rc_workflow = read('.github/workflows/publish-staging-image.yml')
+    if 'INITIAL_VERSION="$(cat VERSION)"' not in rc_workflow:
+        raise AssertionError('RC bootstrap must derive the first-public version from VERSION')
+    if "INITIAL_VERSION='0.1.0'" in rc_workflow:
+        raise AssertionError('RC bootstrap must not hardcode the obsolete 0.1.0 train')
+
     changelog = read('CHANGELOG.md')
     governance = read('docs/deployment/RELEASE_GOVERNANCE.md')
     release_lifecycle = read('docs/releases/README.md')
