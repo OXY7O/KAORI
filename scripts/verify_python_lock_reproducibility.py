@@ -103,7 +103,7 @@ def run() -> int:
         workspace = Path(temporary)
         shutil.copytree(checkout, workspace / 'requirements')
         for command, lock_name in zip(COMMANDS, LOCK_FILES):
-            print(f"REPRODUCE: {' '.join(command)} (temporary workspace)", flush=True)
+            print(f'REPRODUCE: {" ".join(command)} (temporary workspace)', flush=True)
             try:
                 result = subprocess.run(
                     command,
@@ -149,7 +149,9 @@ def run() -> int:
         print('BLOCK: checked-in requirement locks changed during reproduction.', file=sys.stderr)
         return 2
     if failure:
-        print('FAIL: preserve Draft; regenerate/reconcile locks through a separate issue-owned review.', file=sys.stderr)
+        print(
+            'FAIL: preserve Draft; regenerate/reconcile locks through a separate issue-owned review.', file=sys.stderr
+        )
         return 1
     print('PASS: both base and dev semantic locks reproduced without modifying source.')
     return 0
