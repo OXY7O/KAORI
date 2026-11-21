@@ -286,6 +286,17 @@ jobs:
             run_toolchain 'Ruff Format' python -m ruff format --check app migrations tests scripts
           fi
 
+          # #5072: rerun canonical pip-tools commands in a temp workspace, never
+          # writing generated files into the checked-out source or staging.
+          # Only run on changes to Python lock authorities or this verifier.
+          changed_lock_authority="$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "$KAORI_SOURCE_SHA" -- \
+            requirements/base.in requirements/base.txt requirements/dev.in requirements/dev.txt \
+            scripts/verify_python_lock_reproducibility.py)"
+          if [[ -n "$changed_lock_authority" ]]; then
+            run_toolchain 'Python base/dev lock reproduction (Python 3.12)' \
+              python scripts/verify_python_lock_reproducibility.py
+          fi
+
           if [[ "$CHECK_PYTHON" == "true" && ( "$CHECK_WIDE" == "true" || "$CHECK_CONTRACTS" == "true" ) ]]; then
             run_toolchain 'Code Health' python scripts/verify_code_health.py
             run_toolchain 'Code Health Baseline Integrity' python scripts/verify_code_health_baseline_integrity.py
