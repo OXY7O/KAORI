@@ -205,7 +205,9 @@ jobs:
     name: Deploy Staging
     needs: admission
     runs-on: [self-hosted, linux, x64, kaori-ci]
-    environment: uat
+    # Stage host mutations only after the staging Environment is admitted.
+    environment:
+      name: staging
     timeout-minutes: 30
     env:
       KAORI_HOST: ${{ vars.KAORI_HOST }}
