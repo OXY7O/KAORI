@@ -395,3 +395,80 @@ def test_cdevents_architecture_locks_security_trust_and_failure_boundaries() -> 
 
     assert 'CDEvents cannot authorize' in source
     assert 'no broker' in source.lower()
+
+
+def test_scenario_driven_uat_maintains_machine_and_human_acceptance_boundaries() -> None:
+    testing = read(ROOT / 'docs/TESTING.md')
+    engineering = read(ROOT / 'docs/standards/KAORI_ENGINEERING_STANDARD_V1.md')
+    workflow = read(WORKFLOW)
+    taxonomy = read(ROOT / 'tests/README.md')
+
+    # This test protects the normative documentation linkage. Executable UI and
+    # non-UI behavior remains owned by the existing pytest/Playwright suites.
+    for field in (
+        'Reusable scenario specification',
+        'Per-run execution record',
+        'Human acceptance record',
+        'UAT-TEN-001',
+        'UAT-TEN-002',
+        'resourceVersion',
+        'Positive',
+        'Negative',
+        'NOT RUN',
+        'BLOCKED',
+        'SKIP',
+        'OCI digest',
+        'simulated',
+    ):
+        assert field.lower() in testing.lower()
+
+    for field in (
+        'Scenario-driven acceptance',
+        'docs/TESTING.md',
+        'actual browser actions',
+        'Mandatory NOT RUN',
+        'Machine PASS does not confer human sign-off',
+    ):
+        assert field.lower() in engineering.lower()
+
+    for field in (
+        'Scenario-based UAT and human acceptance evidence',
+        'docs/TESTING.md',
+        'source SHA/tree',
+        'exact deployed OCI digest',
+        'named **human** acceptance decision',
+        'no CI result, AI assessment',
+    ):
+        assert field.lower() in workflow.lower()
+
+    assert 'not new pytest markers' in taxonomy
+    assert 'keep human acceptance separate from JUnit results' in taxonomy
+
+
+def test_tenant_uat_example_records_fail_closed_without_evidence() -> None:
+    """Illustrative examples cannot masquerade as an executed or accepted UAT."""
+    testing = read(ROOT / 'docs/TESTING.md')
+    examples = testing.split(
+        '### Example execution and human acceptance records — Tenant Adoption', 1
+    )[1].split('## Practical test commands', 1)[0]
+
+    for scenario_id in ('UAT-TEN-001', 'UAT-TEN-002'):
+        execution = examples.split(
+            f'#### `{scenario_id}` — ', 1
+        )[1].split('#### ', 1)[0]
+        # Each scenario has two consecutive records; the first must be the
+        # unexecuted machine record, while the second stays a human decision.
+        assert '| Execution status | **NOT RUN**' in execution
+        assert '| Evidence references | **None**' in execution
+        assert '| Candidate source commit/tree | Not selected / not selected' in execution
+        assert 'node IDs unverified' in execution
+
+        acceptance = examples.split(
+            f'#### `{scenario_id}` — ', 2
+        )[2].split('#### ', 1)[0]
+        assert '| Human decision | **PENDING**' in acceptance
+        assert '| Reviewer/time | No authorized reviewer decision' in acceptance
+        assert 'source SHA/tree **unselected**' in acceptance
+
+    assert 'NOT RUN / PENDING' in examples
+    assert '#1728 enforcement workstream' in examples
