@@ -570,7 +570,7 @@ def test_runtime_target_rejects_foreign_projects_and_conflicts() -> None:
 def test_staging_environment_selects_configured_target_and_owns_edge_boundary() -> None:
     deploy = _read(WORKFLOW)
     publish = _read(ROOT / '.github/workflows/reconcile-staging-publication.yml')
-    assert 'environment:\\n      name: staging' in deploy
+    assert 'environment:\n      name: staging' in deploy
     assert 'KAORI_HOST_DEPLOY_ENV_FILE: ' in deploy
     assert 'KAORI_DEPLOY_ENV_FILE="$deploy_env" KAORI_DEPLOY_ROOT="$deploy_root"' in deploy
     assert 'Distinct Application target requires separate operator-approved ingress.' in publish
