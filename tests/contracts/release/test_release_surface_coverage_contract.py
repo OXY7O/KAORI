@@ -122,8 +122,12 @@ def test_release_verifier_inventory_has_no_orphan_or_one_off_shell_wrappers() ->
         'scripts/quality_gate.sh',
         'scripts/verify_final_release.py',
         'scripts/release_surface_registry.py',
+        # Release-gating verifiers may be owned by the canonical Developer Check CI lane.
+        '.github/workflows/developer-check.yml',
         'package.json',
     )
+    developer_check = read('.github/workflows/developer-check.yml')
+    assert 'python scripts/verify_python_lock_reproducibility.py' in developer_check
     owner_text = '\n'.join(read(path) for path in owner_paths)
     verifier_paths = sorted(path for path in SCRIPTS.glob('verify_*') if path.is_file())
 

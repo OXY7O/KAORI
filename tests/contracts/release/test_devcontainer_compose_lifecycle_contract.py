@@ -140,7 +140,15 @@ def test_development_image_keeps_recursive_dev_requirements_available() -> None:
     dockerfile = read(DOCKERFILE)
     dev_requirements = read(DEV_REQUIREMENTS)
 
-    assert '-r base.txt' in dev_requirements
+    base_requirements = read(ROOT / 'requirements/base.txt')
+
+    # The generated dev lock is now a complete transitive lock. It must
+    # contain every exact runtime pin, not defer to an overlay include.
+    base_pins = {line for line in base_requirements.splitlines() if line.strip() and not line.startswith('#')}
+    dev_pins = {line for line in dev_requirements.splitlines() if line.strip() and not line.startswith('#')}
+    assert '-r base.txt' not in dev_requirements
+    assert base_pins <= dev_pins
+    assert all('==' in pin for pin in dev_pins)
 
     development = dockerfile.split('FROM base AS development', 1)[1].split('\nFROM node:', 1)[0]
     assert 'COPY requirements/base.txt requirements/dev.txt /tmp/requirements/' in development
