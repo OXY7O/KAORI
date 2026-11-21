@@ -37,8 +37,9 @@ models, not separate feature platforms:
 These labels describe **roadmap maturity**, not implemented or commercially
 available offerings. Existing local deployments and `app.kaori.cloud` do not
 establish customer distribution, managed SaaS readiness or general
-availability. The current internal-use `LICENSE` does not authorize external
-distribution, sale or third-party SaaS without prior written approval.
+availability. Apache-2.0 permits use and redistribution of KAORI-authored software source;
+it does **not** establish a managed KAORI SaaS offering, hosted support,
+protected brand rights, customer onboarding or any production service SLA.
 
 **Kubernetes Tenant** is the existing Kubernetes cluster/namespace governance
 domain, **not** a SaaS customer organization. Multiple users in one KAORI

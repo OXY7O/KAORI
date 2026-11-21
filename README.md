@@ -10,7 +10,7 @@
   <img alt="CI" src="https://github.com/OXY7O/KAORI/actions/workflows/quality.yml/badge.svg?branch=main" />
   <img alt="Version" src="https://img.shields.io/badge/Version-0.2.0-7C3AED" />
   <img alt="Python" src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white" />
-  <img alt="License" src="https://img.shields.io/badge/License-internal%20use-64748B" />
+  <img alt="License" src="https://img.shields.io/badge/License-Apache--2.0-7C3AED" />
 </p>
 
 KAORI turns committed infrastructure evidence into Inventory, Analytics, Reports, Intelligence, Governance, integrations, and controlled operator workflows. It complements Kubernetes, Prometheus, Alertmanager, and Object Storage authorities rather than replacing them.
@@ -122,7 +122,7 @@ A stable release reuses the exact accepted OCI digest; the application image is 
 
 ## Security & License
 
-KAORI is currently an **internal-use proprietary project**. It is not distributed under an OSI open-source license and commercial use or redistribution requires explicit authorization. See [`LICENSE`](LICENSE).
+KAORI-authored software source is licensed under the [Apache License 2.0](LICENSE); see [NOTICE](NOTICE) for attribution and scope. **Lethisa (`@lethisa`) is the original author and rights holder; `@donibawono` is the independent reviewer**, not a copyright assignee. Third-party material retains its own license, and KAORI/OXY7O names, logos and brand artwork are excluded from the software trademark grant. Open-source code licensing does not imply that KAORI's hosted service, production credentials or commercial support are available.
 
 Security issues must be reported privately according to [`SECURITY.md`](SECURITY.md). Do not publish credentials, infrastructure addresses, exploitation details, or sensitive operational evidence in public issues.
 
