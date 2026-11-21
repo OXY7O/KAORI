@@ -25,6 +25,16 @@ sudo ./deploy/server/bootstrap-host.sh --ssh-public-key-file ~/.ssh/kaori-deploy
 
 Keep the private key outside the repository and provide it only through the protected GitHub Environment used for UAT deployment. The bootstrap prepares Docker Engine, Docker Compose, the `kaori-deploy` identity, `/opt/kaori`, `/etc/kaori`, and `/var/lib/kaori` without overwriting an existing environment file.
 
+## Environment-selected deployment target identity (App #5093 / #5094)
+
+The protected `kaori/staging` branch routes its admitted signed RC to GitHub Environment `staging`. Protected `main` uses GitHub Environment `production` for independently approved stable publication. **An Environment is not a runtime slot count.** The operator configures the effective host, pinned SSH key/known-hosts, Compose project/service identity, deployment root, state/receipt, database/volume and network ownership, and provider-owned ingress. Multiple Environments can share an effective runtime; a single VM/IP can host more than one isolated runtime.
+
+**Current tested default:** `kaori-production` Compose project, network, bundled PostgreSQL/Redis volumes, host config `/etc/kaori`, state `/var/lib/kaori/deploy-state`, backup `/var/lib/kaori/backups`, release root `/opt/kaori`, existing `app.kaori.cloud` edge. These are the present host configuration and rollback baseline, **not a release policy requiring a single server**. GitHub `KAORI_HOST*` variables can select the remote connection, but **the existing adapter does not yet implement a fully isolated alternative Compose project/state/volume/edge runtime merely by changing the host**. In particular, named volumes and the edge verifier remain bound to current identities.
+
+The bounded workstream #5093 will validate configured project, state, volume/network and receipt identity **before Docker/database mutation**, retaining current defaults and rejecting overlap/unsafe target configuration. Issue #5094, blocked by #5093, will reconcile the signed Human Accepted digest to the **configured** `production` target: if already healthy at that digest with correct receipt, avoid a second deploy; otherwise deploy the same signed digest through the reviewed adapter only after target/rollback/provider-edge gates. No `single-slot`/`multi-slot` toggle, host-IP-count inference, implicit DNS change or new release engine.
+
+The accepted `v0.3.0-rc.1` source, digest and owner Human Acceptance must not be silently reused to claim UAT of a later runtime-target adapter. Until the relevant changes and actual non-public UAT are admitted, current-target behavior remains the only operationally verified path.
+
 ## Production provider trust and internal DNS
 
 The governed server adapter mounts externally approved **public CA bundles**
