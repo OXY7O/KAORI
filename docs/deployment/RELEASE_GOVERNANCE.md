@@ -109,3 +109,19 @@ The static quality gate runs `scripts/verify_release_governance.py`. The verifie
 Release publication adds evidence that is outside the source-only final verifier: immutable registry digest, candidate container scan, candidate runtime and migration validation, release DAST, SBOM/provenance, signature verification, digest-preserving promotion, release manifest, and GitHub Release publication.
 
 Do not loosen a verifier, delete a required test, mark a failing layer as optional, move an existing release tag to another SHA/digest, or rebuild after release-candidate verification to approve a release. Fix the implementation, evidence, metadata, documentation, or release version instead.
+
+## GitHub Environment deployment approval — Application #5081
+Application release mutations follow the existing Website [two-Environment release approval](https://github.com/OXY7O/kaori-website/issues/201) pattern. The source-managed workflow binding is **not** sufficient to enforce human approval: effective protection rules must be verified by an administrator in GitHub Settings for this repository before activating these routes.
+
+| Release job | Workflow | Environment | GitHub job purpose |
+| --- | --- | --- | --- |
+| Publish signed RC | `.github/workflows/publish-staging-image.yml` | `staging` | Accepted SHA and digest-bound RC metadata |
+| Deploy RC to UAT host | `.github/workflows/deploy-staging-host.yml` | `staging` | Signed immutable RC, host mutation and rollback |
+| Reconcile UAT public edge | `.github/workflows/reconcile-staging-publication.yml` | `staging` | Existing host/edge reconciliation after UAT deployment |
+| Publish accepted stable | `.github/workflows/release-image.yml` | `production` | Stable tag/release/image-alias publication after verified main/RC lineage |
+
+**Administrator adoption (GitHub Settings → Environments):** Configure `staging` with deployment branches limited to the accepted staging/RC/UAT workflow refs (`kaori/staging`, `kaori/rc-request`, `kaori/uat-request`) and no unexpected required reviewer, mirroring the Website staging environment. Configure `production` to permit **`main` only**, require independent `donibawono` approval, enable **prevent self-review**, and prohibit administrator bypass. Scope host credentials and registry variables/secrets to the correct Environment and verify migration from the previous `uat` name **without printing credential contents**. The legacy `uat` GitHub Environment must not remain an alternative privileged execution path. These settings cannot be installed or independently read through the connected GitHub tool: treat production release activation as **HOLD** until an administrator confirms them.
+
+**Runbook negative gate:** From a valid previously accepted release request, verify that `Publish Stable` is **waiting for review** and has not reached the self-hosted runner, registry push, GitHub tag or VPS when `production` has no approval. Confirm reject/no-approval and self-review are blocked; then obtain `donibawono` independent **Approve and deploy** for an intentionally authorized run. Inspect job approval actor, protected branch ref, SHA, accepted RC digest, and release/host receipts. No dummy tag, synthetic production mutation or workflow bypass is authorized to prove the gate.
+
+The existing immutable RC digest, source identity, publish preflight, signatures/SBOM/provenance, UAT acceptance, deployment and rollback controls remain authoritative. **Source-only promotions must not trigger a stable release**; stable release remains separately dispatched under the accepted release contract.

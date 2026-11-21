@@ -226,6 +226,9 @@ jobs:
     name: Publish Stable
     needs: preflight
     runs-on: [self-hosted, linux, x64, kaori-ci]
+    # Native GitHub production deployment review precedes all privileged release writes.
+    environment:
+      name: production
     timeout-minutes: 180
     permissions:
       contents: write

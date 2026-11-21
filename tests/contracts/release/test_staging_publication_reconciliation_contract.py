@@ -21,7 +21,7 @@ def test_staging_publication_is_a_separate_post_deploy_operation() -> None:
     assert 'workflow_dispatch:' in source
     assert 'push:' not in source
     assert 'Wait for Exact Staging Deployment' not in source
-    assert 'environment: uat' in source
+    assert 'environment:\n      name: staging' in source
     assert 'workflow_run:' not in source
 
     assert 'publication-reconciliation:' in deployment
