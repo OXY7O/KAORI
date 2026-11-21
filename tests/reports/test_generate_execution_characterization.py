@@ -123,6 +123,47 @@ def test_generate_route_allows_user_with_reports_generate_permission(
     assert response.get_data(as_text=True) == 'reports-generate-authorized'
 
 
+@pytest.mark.parametrize(
+    ('submitted_type', 'expected_raw'),
+    [
+        (None, ''),
+        ('', ''),
+        ('unknown_contract', 'unknown_contract'),
+    ],
+)
+def test_generate_invalid_type_http_post_never_creates_report_or_job(
+    app, monkeypatch: pytest.MonkeyPatch, submitted_type: str | None, expected_raw: str
+) -> None:
+    """Exercise the permissioned POST route and reject every write/queue path."""
+    client = _client_for_user(app, monkeypatch, ReportsGenerateUser({'reports.generate'}))
+    observed_errors: list[str] = []
+    feedback: list[str] = []
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError('Invalid report type must not create a Report or enqueue JobExecution')
+
+    def payload_for_rejected_post(*, form_state, errors):
+        assert form_state['_submitted_report_type'] == expected_raw
+        observed_errors.extend(errors)
+        return {}
+
+    monkeypatch.setattr(generate_service, 'Report', forbidden)
+    monkeypatch.setattr(generate_service, 'get_report_storage_backend_status', forbidden)
+    monkeypatch.setattr(generate_routes, 'enqueue_report_generation', forbidden)
+    monkeypatch.setattr(generate_routes, 'mark_report_queue_failure', forbidden)
+    monkeypatch.setattr(generate_routes, 'get_generate_report_payload', payload_for_rejected_post)
+    monkeypatch.setattr(generate_routes, 'queue_transient_feedback', lambda **kw: feedback.append(kw['status']))
+    monkeypatch.setattr(generate_routes, 'render_template', lambda *_args, **_kwargs: 'invalid-report-type')
+
+    data = {} if submitted_type is None else {'report_type': submitted_type}
+    response = client.post('/reports/generate', data=data)
+
+    assert response.status_code == 200
+    assert response.get_data(as_text=True) == 'invalid-report-type'
+    assert observed_errors == ['Please select a valid published report type.']
+    assert feedback == ['error']
+
+
 def test_create_report_request_commits_record_for_fresh_session_readback(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
