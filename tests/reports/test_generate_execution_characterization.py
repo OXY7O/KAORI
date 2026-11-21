@@ -123,7 +123,6 @@ def test_generate_route_allows_user_with_reports_generate_permission(
     assert response.get_data(as_text=True) == 'reports-generate-authorized'
 
 
-
 @pytest.mark.parametrize(
     ('submitted_type', 'expected_raw'),
     [
