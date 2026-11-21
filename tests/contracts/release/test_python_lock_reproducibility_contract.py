@@ -15,35 +15,35 @@ def test_lock_parser_ignores_pip_tools_annotations_and_base_include() -> None:
 Werkzeug==3.1.9  # via Flask
 Mako==1.4.3
 """
-    plain = "mako==1.4.3\nwerkzeug==3.1.9\n"
+    plain = 'mako==1.4.3\nwerkzeug==3.1.9\n'
 
     assert normalized_requirements(formatted) == normalized_requirements(plain)
 
 
 def test_lock_reproduction_detects_added_and_missing_packages() -> None:
-    committed = "Mako==1.4.3\nWerkzeug==3.1.9\n"
-    generated = "Mako==1.4.3\npackaging==26.2\n"
+    committed = 'Mako==1.4.3\nWerkzeug==3.1.9\n'
+    generated = 'Mako==1.4.3\npackaging==26.2\n'
 
     findings = lock_differences(committed, generated)
 
     assert len(findings) == 2
-    assert any("MISSING from resolver: werkzeug" in finding for finding in findings)
-    assert any("ADDED by resolver: packaging" in finding for finding in findings)
+    assert any('MISSING from resolver: werkzeug' in finding for finding in findings)
+    assert any('ADDED by resolver: packaging' in finding for finding in findings)
 
 
 def test_lock_reproduction_detects_version_and_unpinned_drift() -> None:
-    committed = "playwright==1.62.0\nruff>=0.12,<1\n"
-    generated = "playwright==1.63.0\nruff==0.15.0\n"
+    committed = 'playwright==1.62.0\nruff>=0.12,<1\n'
+    generated = 'playwright==1.63.0\nruff==0.15.0\n'
 
     findings = lock_differences(committed, generated)
 
     assert len(findings) == 2
-    assert all("DRIFT:" in finding for finding in findings)
+    assert all('DRIFT:' in finding for finding in findings)
 
 
 def test_lock_parser_rejects_duplicate_packages_and_unrecognized_options() -> None:
-    with pytest.raises(ValueError, match="duplicate lock package"):
-        normalized_requirements("Werkzeug==3.1.9\nwerkzeug==3.1.9\n")
+    with pytest.raises(ValueError, match='duplicate lock package'):
+        normalized_requirements('Werkzeug==3.1.9\nwerkzeug==3.1.9\n')
 
-    with pytest.raises(ValueError, match="unsupported lock option"):
-        normalized_requirements("-e ../unreviewed-package\n")
+    with pytest.raises(ValueError, match='unsupported lock option'):
+        normalized_requirements('-e ../unreviewed-package\n')
