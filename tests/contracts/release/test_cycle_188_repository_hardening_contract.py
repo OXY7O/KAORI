@@ -50,13 +50,18 @@ def test_repository_front_has_branding_demo_security_and_license() -> None:
     assert (ROOT / 'SECURITY.md').is_file()
 
 
-def test_internal_license_is_not_presented_as_open_source() -> None:
-    license_text = _read('LICENSE').lower()
-    assert 'internal' in license_text
-    assert 'redistribution' in license_text
-    assert 'commercial' in license_text
-    assert 'mit license' not in license_text
-    assert 'apache license' not in license_text
+def test_authorized_apache_license_has_protected_brand_and_asset_boundaries() -> None:
+    license_text = _read('LICENSE')
+    notice = _read('NOTICE')
+    readme = _read('README.md')
+    assert 'Apache License\nVersion 2.0, January 2004' in license_text
+    assert 'TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION' in license_text
+    assert 'END OF TERMS AND CONDITIONS' in license_text
+    assert 'KAORI-authored software source is licensed under the [Apache License 2.0](LICENSE)' in readme
+    assert 'Third-party code and assets retain their respective upstream licenses and notices.' in notice
+    assert 'KAORI and OXY7O names, logos, trademarks and brand artwork are not licensed' in notice
+    assert 'hosted-service access' in notice
+    assert 'KAORI INTERNAL USE LICENSE' not in license_text
 
 
 def test_runtime_artifact_boundary_is_application_only() -> None:

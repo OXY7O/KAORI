@@ -60,6 +60,7 @@ def test_canonical_product_direction_keeps_dual_delivery_as_unreleased_roadmap()
         'separately accepted release evidence',
     ):
         assert boundary in source
-    assert 'external\ndistribution, sale or third-party SaaS' in source
-    assert 'prior written authorization' in license_text
+    assert 'Apache-2.0 permits use and redistribution of KAORI-authored software source' in source
+    assert 'it does **not** establish a managed KAORI SaaS offering' in source
     assert 'commercially\navailable offerings' in source
+    assert 'Apache License\nVersion 2.0, January 2004' in license_text

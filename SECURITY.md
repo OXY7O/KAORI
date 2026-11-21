@@ -1,6 +1,6 @@
 # Security Policy
 
-KAORI is currently maintained as an internal-use platform. Security reports must be handled privately so operators have time to validate impact, protect infrastructure, and prepare a governed fix before disclosure.
+KAORI is currently operated as an internal-use platform, even though KAORI-authored software source is licensed under [Apache-2.0](LICENSE). Security reports must be handled privately so operators have time to validate impact, protect infrastructure, and prepare a governed fix before disclosure.
 
 ## Supported versions
 
@@ -47,4 +47,4 @@ For each private report, maintain a restricted evidence record: intake timestamp
 
 Before enabling or claiming a GitHub-native control, verify the effective repository/organization setting and an applicable test result for Dependency Graph, Dependabot alerts and security updates, secret scanning and push protection, CodeQL/code scanning, dependency review, and private vulnerability reporting. Existing CodeQL, Gitleaks, Trivy, SBOM/attestation and DAST workflows must be inventoried first to avoid duplicate scanning or conflicting required checks. Mark unavailable, unverified and skipped controls explicitly; a green unrelated CI job is not proof that a control is enabled.
 
-Security advisories and public community feedback remain separate intake channels. External contribution launch and license changes remain blocked by the independent rights and publication review [#4212](https://github.com/OXY7O/KAORI/issues/4212).
+Security advisories and public community feedback remain separate intake channels. Software licensing follows the owner-approved, independently reviewed [#4213](https://github.com/OXY7O/KAORI/issues/4213) issue flow; external contribution launch and any suspected security exposure remain separately gated by [#4212](https://github.com/OXY7O/KAORI/issues/4212) and [#4215](https://github.com/OXY7O/KAORI/issues/4215).
