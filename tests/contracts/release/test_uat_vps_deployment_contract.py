@@ -217,7 +217,7 @@ def test_uat_workflow_requires_intentional_rc_and_pinned_ssh_trust() -> None:
     required = (
         'workflow_dispatch:',
         'candidate_tag:',
-        'environment: uat',
+        'environment:\n      name: staging',
         'KAORI_HOST_SSH_PRIVATE_KEY',
         'KAORI_HOST_SSH_PASSPHRASE',
         'KAORI_HOST_KNOWN_HOSTS',

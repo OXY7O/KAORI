@@ -23,7 +23,9 @@ jobs:
   reconcile:
     name: Reconcile Public Publication
     runs-on: [self-hosted, linux, x64, kaori-ci]
-    environment: uat
+    # Reconciliation uses the same staging Environment as the host deploy.
+    environment:
+      name: staging
     timeout-minutes: 30
     env:
       KAORI_HOST: ${{ vars.KAORI_HOST }}
