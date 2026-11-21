@@ -17,6 +17,8 @@ KAORI separates evidence by purpose so a green test count cannot hide a missing 
 
 `tests/conftest.py` is the only path-based marker-assignment hook. Purpose buckets listed above receive their dedicated marker. Other first-level domain directories such as `tests/welcome/`, `tests/kubernetes/`, and `tests/storage/` are functional behavior by default.
 
+Scenario IDs for UI/non-UI UAT are **traceability keys**, not new pytest markers, purpose buckets, or test runners. Specify positive and risk-relevant negative scenarios and map each to existing pytest/Playwright test nodes as described by `docs/TESTING.md`. Executed scenarios may have several unit/functional/security/browser/provider assertions; preserve the owning test taxonomy. Distinguish a runner SKIP from executed PASS and a reviewer-approved N/A, and keep human acceptance separate from JUnit results.
+
 A fixed defect must finish with the smallest durable regression evidence that proves the behavior. Static/string contracts may supplement business or security behavior but must not be the only proof when executable behavior can be tested.
 
 A page may record Unit or Integration as `N/A` only when the product/architecture contract genuinely has no isolated domain calculation or external/component boundary. The reason must be written in the final-recheck record; `N/A` is not a way to skip difficult tests.
