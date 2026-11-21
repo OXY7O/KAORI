@@ -117,7 +117,6 @@ def test_identity_provider_runtime_dependencies_have_source_authority() -> None:
     assert 'GoogleOidcAdapter' in adapter_registry
 
 
-
 def test_frontend_dependency_lock_remains_package_manager_owned() -> None:
     package = json.loads(read('package.json'))
     package_lock = json.loads(read('package-lock.json'))
