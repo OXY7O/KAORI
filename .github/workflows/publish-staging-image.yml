@@ -278,6 +278,8 @@ jobs:
     needs: wait-for-quality
     if: ${{ needs.wait-for-quality.outputs.should_publish == 'true' }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
+    environment:
+      name: staging
     timeout-minutes: 180
     permissions:
       contents: write
