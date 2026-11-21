@@ -1,6 +1,6 @@
 # Public-source exposure and rights audit — evidence boundary (#4212)
 
-**Current status (2026-11-21): first-party licensing has progressed, but the cross-repository exposure and community-launch audit is still NO-GO.** Source-level authorization for original KAORI-owned code is distinct from independent verification of all historical Git data, retained workflow artifacts, third-party rights, and publication safety. The eight audit categories below remain **NOT VERIFIED** and must not be silently promoted to PASS.
+**Decision: NO-GO for audit-wide exposure/rights clearance and external contributor launch (2026-11-21); previously accepted first-party code licenses remain effective.** Source-level authorization for original KAORI-owned code is distinct from independent verification of all historical Git data, retained workflow artifacts, third-party rights, and publication safety. The eight audit categories below remain **NOT VERIFIED** and must not be silently promoted to PASS.
 
 ## Current license and contributor-readiness reconciliation — 2026-11-21
 
