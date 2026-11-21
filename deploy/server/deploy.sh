@@ -39,7 +39,7 @@ status '⏳' 'UAT host deployment · validating immutable release and deployment
 [[ "$release_version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]] || fail 'release version must be vX.Y.Z or vX.Y.Z-rc.N'
 app_version="${release_version#v}"
 
-for command_name in docker curl stat grep sha256sum mktemp sort sed head; do
+for command_name in docker curl stat grep sha256sum mktemp sort sed head readlink; do
   command -v "$command_name" >/dev/null 2>&1 || fail "$command_name is required"
 done
 
