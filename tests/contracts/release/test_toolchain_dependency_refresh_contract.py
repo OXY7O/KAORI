@@ -56,6 +56,23 @@ def test_pyright_is_reproducibly_pinned() -> None:
     assert 'pyright>=1.1.400,<2' not in dev_lock
 
 
+def test_development_browser_qa_source_lock_parity() -> None:
+    dev_in = read('requirements/dev.in')
+    dev_lock = read('requirements/dev.txt')
+    base_in = read('requirements/base.in')
+
+    # Browser QA dependencies are development inputs, not runtime dependencies.
+    # Both previously existed only in the dev lock, not the pip-tools input.
+    for package, version in (
+        ('playwright', '1.62.0'),
+        ('pytest-playwright', '0.9.0'),
+    ):
+        pin = f'{package}=={version}'
+        assert dev_in.count(pin) == 1
+        assert dev_lock.count(pin) == 1
+        assert pin not in base_in
+
+
 def test_development_pdf_security_dependency_is_reproducibly_pinned() -> None:
     dev_in = read('requirements/dev.in')
     dev_lock = read('requirements/dev.txt')
