@@ -214,6 +214,7 @@ jobs:
       KAORI_HOST_USER: ${{ vars.KAORI_HOST_USER }}
       KAORI_HOST_PORT: ${{ vars.KAORI_HOST_PORT }}
       KAORI_HOST_DEPLOY_ROOT: ${{ vars.KAORI_HOST_DEPLOY_ROOT }}
+      KAORI_HOST_DEPLOY_ENV_FILE: ${{ vars.KAORI_HOST_DEPLOY_ENV_FILE }}
       KAORI_HOST_SSH_PRIVATE_KEY: ${{ secrets.KAORI_HOST_SSH_PRIVATE_KEY }}
       KAORI_HOST_SSH_PASSPHRASE: ${{ secrets.KAORI_HOST_SSH_PASSPHRASE }}
       KAORI_HOST_KNOWN_HOSTS: ${{ secrets.KAORI_HOST_KNOWN_HOSTS }}
@@ -252,7 +253,12 @@ jobs:
             exit 1
           fi
           root="${KAORI_HOST_DEPLOY_ROOT:-/opt/kaori}"
-          [[ "$root" =~ ^/[A-Za-z0-9._/-]+$ ]] || exit 1
+          deploy_env="${KAORI_HOST_DEPLOY_ENV_FILE:-/etc/kaori/deploy.env}"
+          [[ "$root" =~ ^/[A-Za-z0-9._/-]+$ && "$root" != "/" && "$root" != *"/../"* ]] || exit 1
+          [[ "$deploy_env" =~ ^/etc/kaori/(targets/kaori-app-[a-z0-9-]+/)?deploy\.env$ ]] || {
+            printf 'KAORI_HOST_DEPLOY_ENV_FILE is not a governed Application deployment target.\n' >&2
+            exit 1
+          }
           printf '✅ UAT deployment inputs PASS · RC identity, SSH secrets present and target syntax valid\n'
 
       - name: Deploy to Host
@@ -291,6 +297,7 @@ jobs:
 
           port="${KAORI_HOST_PORT:-22}"
           deploy_root="${KAORI_HOST_DEPLOY_ROOT:-/opt/kaori}"
+          deploy_env="${KAORI_HOST_DEPLOY_ENV_FILE:-/etc/kaori/deploy.env}"
           remote_release="$deploy_root/releases/$REQUESTED_SHA"
           target="$KAORI_HOST_USER@$KAORI_HOST"
           ssh_opts=(-p "$port" -i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$known_hosts_file")
@@ -329,6 +336,8 @@ jobs:
           {
             printf 'set -Eeuo pipefail\n'
             printf 'deploy_script=%q\n' "$remote_release/deploy/server/deploy.sh"
+            printf 'deploy_env=%q\n' "$deploy_env"
+            printf 'deploy_root=%q\n' "$deploy_root"
             printf 'requested_image=%q\n' "$REQUESTED_IMAGE"
             printf 'requested_sha=%q\n' "$REQUESTED_SHA"
             printf 'requested_version=%q\n' "$REQUESTED_VERSION"
@@ -338,7 +347,8 @@ jobs:
           {
             printf '%s\n' "$registry_user"
             printf '%s\n' "$registry_password"
-          } | bash "$deploy_script" "$requested_image" "$requested_sha" "$requested_version"
+          } | KAORI_DEPLOY_ENV_FILE="$deploy_env" KAORI_DEPLOY_ROOT="$deploy_root" \
+            bash "$deploy_script" "$requested_image" "$requested_sha" "$requested_version"
           REMOTE_DEPLOY
           } | run_remote_script
           printf '✅ UAT host · governed deployment script completed; host-owned verification PASS\n'
