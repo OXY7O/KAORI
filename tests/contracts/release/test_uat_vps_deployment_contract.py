@@ -582,7 +582,10 @@ def test_staging_environment_selects_configured_target_and_owns_edge_boundary() 
     deploy = _read(WORKFLOW)
     publish = _read(ROOT / '.github/workflows/reconcile-staging-publication.yml')
     assert 'environment:\n      name: staging' in deploy
-    assert 'KAORI_HOST_DEPLOY_ENV_FILE: ' in deploy
+    assert 'KAORI_HOST_DEPLOY_ENV_FILE' not in deploy
+    assert 'KAORI_RESOLVED_DEPLOY_ENV_FILE' in deploy
+    assert 'deploy_env="/etc/kaori/deploy.env"' in deploy
+    assert 'deploy_env="/etc/kaori/targets/$project/deploy.env"' in deploy
     assert 'KAORI_DEPLOY_ENV_FILE="$deploy_env" KAORI_DEPLOY_ROOT="$deploy_root"' in deploy
     assert 'Distinct Application target requires separate operator-approved ingress.' in publish
     assert 'Refusing canonical public-edge mutation for a distinct Compose runtime.' in publish
