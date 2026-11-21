@@ -1,6 +1,21 @@
 # Public-source exposure and rights audit — evidence boundary (#4212)
 
-**Decision: NO-GO for relicensing and external contribution launch.** Public repository visibility is already an exposure fact, not publication or ownership approval. This checklist is an evidence collection plan; none of the categories below is attested complete.
+**Current status (2026-11-21): first-party licensing has progressed, but the cross-repository exposure and community-launch audit is still NO-GO.** Source-level authorization for original KAORI-owned code is distinct from independent verification of all historical Git data, retained workflow artifacts, third-party rights, and publication safety. The eight audit categories below remain **NOT VERIFIED** and must not be silently promoted to PASS.
+
+## Current license and contributor-readiness reconciliation — 2026-11-21
+
+| Repository / ref | Verified root license | Scope and status |
+| --- | --- | --- |
+| [Application `main`](https://github.com/OXY7O/KAORI/blob/main/LICENSE) | Apache-2.0 | KAORI-authored software source, with independent [NOTICE](https://github.com/OXY7O/KAORI/blob/main/NOTICE) excluding brand/third-party/internal operations. Accepted under [#4213](https://github.com/OXY7O/KAORI/issues/4213). |
+| [Website `main`](https://github.com/OXY7O/kaori-website/blob/main/LICENSE) | Apache-2.0 | KAORI-authored Website source. [NOTICE](https://github.com/OXY7O/kaori-website/blob/main/NOTICE) protects the original logo/brand/illustrations and identifies third-party attribution separately. Accepted under [Website #136](https://github.com/OXY7O/kaori-website/issues/136). |
+| [Docs `main`](https://github.com/OXY7O/kaori-docs/blob/main/LICENSE) | KAORI Internal Use License | **Older protected default-branch baseline**; do not claim the new Docs license is in main. |
+| [Docs `kaori/staging`](https://github.com/OXY7O/kaori-docs/blob/kaori/staging/LICENSE) | Apache-2.0 | Reviewed source license, plus separate [CC BY 4.0 public-prose grant](https://github.com/OXY7O/kaori-docs/blob/kaori/staging/CONTENT_LICENSE.md) **only** for original approved `content/` text. [NOTICE](https://github.com/OXY7O/kaori-docs/blob/kaori/staging/NOTICE) excludes `docs/` internal records, brand and third-party assets. Docs [#74](https://github.com/OXY7O/kaori-docs/issues/74) still requires accepted publication/UAT; [promotion PR #95](https://github.com/OXY7O/kaori-docs/pull/95) remains a broader-tree **DRAFT HOLD**. |
+
+**Authority reconciliation:** Accepted first-party license scope from [#4211](https://github.com/OXY7O/KAORI/issues/4211), [#4213](https://github.com/OXY7O/KAORI/issues/4213), Website #136 and Docs #74 is **not** a claim that the full [#4212](https://github.com/OXY7O/KAORI/issues/4212) historical exposure/rights inventory is complete. The earlier dated statements that no repository had an Apache root license are **historical observations** and must not be read as current GitHub HEAD. No earlier snapshot is deleted or rewritten by this correction.
+
+**Rights boundary:** The accepted Apache-2.0 software license and CC BY 4.0 prose grant permit reuse and redistribution within their respective terms; there is **no blanket ban on external transfer** of that licensed material. Proprietary internal operations records, secrets, infrastructure access, service/support rights, protected brand/trademarks, and separately licensed third-party assets are outside those public grants. Repository visibility does not authorize publishing sensitive records, and an open-source license does not approve hosted production operations.
+
+**Community / release boundary:** Read-only fork-feedback workflows exist in the repositories, but untrusted PR feedback is not trusted Developer Check, Full Admission, maintainer adoption, human UAT, or permission to release. [Community intake #4217](https://github.com/OXY7O/KAORI/issues/4217) and the cross-repo exposure inventory remain incomplete; external-contributor launch is **HOLD**. The App has not issued a stable `v0.3.0` release at this checkpoint; Docs version mapping remains awaiting release. Do not claim public release-qualified Docs guides from staged source.
 
 ## Coverage register
 
