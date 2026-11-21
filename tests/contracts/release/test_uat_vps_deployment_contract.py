@@ -486,6 +486,7 @@ def test_expanded_uat_deployment_steps_expose_immutable_evidence_and_host_phases
     assert 'UAT verification · probing internal web readiness' in verify
     assert "printf '🩺 Internal web:5000 readiness PASS" in verify
 
+
 # Environment-configured runtime target selection: no slot-count mode.
 _TARGET_KEYS = (
     'KAORI_COMPOSE_PROJECT',
