@@ -29,10 +29,10 @@ def test_public_readme_does_not_advertise_unapproved_community_launch() -> None:
     """Pre-launch intake guidance must not imply live public support channels."""
     readme = (ROOT / 'README.md').read_text(encoding='utf-8')
     assert '[`SECURITY.md`](SECURITY.md)' in readme
-    assert 'internal-use proprietary project' in readme
+    assert 'KAORI-authored software source is licensed under the [Apache License 2.0](LICENSE)' in readme
     assert 'github.com/oxy7o/kaori/discussions' not in readme.lower()
     assert 'discussions are enabled' not in readme.lower()
-    assert 'not distributed under an OSI open-source license' in readme
+    assert 'Open-source code licensing does not imply' in readme
 
 
 def test_readme_links_prelaunch_triage_without_claiming_community_activation() -> None:
