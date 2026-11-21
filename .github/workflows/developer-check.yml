@@ -289,7 +289,7 @@ jobs:
           # #5072: rerun canonical pip-tools commands in a temp workspace, never
           # writing generated files into the checked-out source or staging.
           # Only run on changes to Python lock authorities or this verifier.
-          changed_lock_authority="$(git diff --name-only "\u0024{{ github.event.pull_request.base.sha }}" "$KAORI_SOURCE_SHA" -- \
+          changed_lock_authority="$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "$KAORI_SOURCE_SHA" -- \
             requirements/base.in requirements/base.txt requirements/dev.in requirements/dev.txt \
             scripts/verify_python_lock_reproducibility.py)"
           if [[ -n "$changed_lock_authority" ]]; then
