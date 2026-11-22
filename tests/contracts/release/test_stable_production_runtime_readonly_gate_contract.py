@@ -30,8 +30,14 @@ def test_manual_stable_release_checks_configured_runtime_before_registry_writes(
     for field in ('rc_source_sha', 'rc_image_digest', 'candidate_tag', 'release_version'):
         assert '$' + '{{ needs.preflight.outputs.' + field + ' }}' in publish
     for field in (
-        'REGISTRY_USER', 'REGISTRY_PASSWORD', 'DEPLOY_HOST', 'DEPLOY_PORT',
-        'DEPLOY_USER', 'DEPLOY_ROOT', 'DEPLOY_SSH_KEY', 'DEPLOY_SSH_PASSPHRASE',
+        'REGISTRY_USER',
+        'REGISTRY_PASSWORD',
+        'DEPLOY_HOST',
+        'DEPLOY_PORT',
+        'DEPLOY_USER',
+        'DEPLOY_ROOT',
+        'DEPLOY_SSH_KEY',
+        'DEPLOY_SSH_PASSPHRASE',
         'DEPLOY_KNOWN_HOSTS',
     ):
         assert field + ':' in publish
@@ -54,7 +60,11 @@ def test_gate_rejects_non_release_requests_before_credential_use() -> None:
     )
     result = subprocess.run(
         ['bash', str(ROOT / 'scripts/environment-credential-preflight.sh')],
-        env=env, text=True, capture_output=True, check=False, timeout=10,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=10,
     )
     assert result.returncode != 0
     assert 'stable runtime gate requires explicit protected-main production inventory' in result.stderr
@@ -68,12 +78,19 @@ def test_remote_gate_classifies_and_keeps_docker_read_only() -> None:
     assert '"$receipt_image" != "$registry_image@$expected_rc_image_digest"' in REMOTE
     assert '"$receipt_version" != "$expected_release_version"' in REMOTE
     for item in (
-        'previous-release.env', 'previous-backup', 'migration-result',
-        'verification-result', 'sha256sum --check --status',
+        'previous-release.env',
+        'previous-backup',
+        'migration-result',
+        'verification-result',
+        'sha256sum --check --status',
     ):
         assert item in REMOTE
     syntax = subprocess.run(
-        ['bash', '-n'], input=REMOTE, text=True, capture_output=True, check=False,
+        ['bash', '-n'],
+        input=REMOTE,
+        text=True,
+        capture_output=True,
+        check=False,
     )
     assert syntax.returncode == 0, syntax.stderr
     for line in REMOTE.splitlines():
@@ -82,13 +99,22 @@ def test_remote_gate_classifies_and_keeps_docker_read_only() -> None:
         if '$(docker ' in line or line.lstrip().startswith('docker '):
             assert any('docker ' + verb in line for verb in ('info', 'ps', 'inspect'))
     for banned in (
-        'docker exec', 'docker pull', 'docker restart', 'docker compose up',
-        'docker run', 'pg_restore', 'source "$deploy_env"', 'cat "$deploy_env"',
+        'docker exec',
+        'docker pull',
+        'docker restart',
+        'docker compose up',
+        'docker run',
+        'pg_restore',
+        'source "$deploy_env"',
+        'cat "$deploy_env"',
     ):
         assert banned not in REMOTE
 
 
-@pytest.mark.parametrize('expected_field', ('EXPECTED_RC_SOURCE_SHA', 'EXPECTED_RC_IMAGE_DIGEST', 'EXPECTED_RELEASE_VERSION', 'EXPECTED_RC_TAG'))
+@pytest.mark.parametrize(
+    'expected_field',
+    ('EXPECTED_RC_SOURCE_SHA', 'EXPECTED_RC_IMAGE_DIGEST', 'EXPECTED_RELEASE_VERSION', 'EXPECTED_RC_TAG'),
+)
 def test_production_release_requires_all_immutable_identity_fields(expected_field: str) -> None:
     env = dict(os.environ)
     env.update(
@@ -107,10 +133,15 @@ def test_production_release_requires_all_immutable_identity_fields(expected_fiel
     env.pop(expected_field)
     result = subprocess.run(
         ['bash', str(ROOT / 'scripts/environment-credential-preflight.sh')],
-        env=env, text=True, capture_output=True, check=False, timeout=10,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=10,
     )
     assert result.returncode != 0
     assert 'stable runtime gate requires an exact accepted RC source, tag, digest and version' in result.stderr
+
 
 @pytest.fixture
 def simulated_target(tmp_path: Path) -> tuple[dict[str, str], Path, Path, Path]:
@@ -139,8 +170,7 @@ def simulated_target(tmp_path: Path) -> tuple[dict[str, str], Path, Path, Path]:
         (state / name).write_text('pass\n', encoding='utf-8')
     receipt = state / 'release.env'
     receipt.write_text(
-        f'KAORI_IMAGE={image}\nAPP_VERSION=0.3.0\n'
-        f'APP_BUILD_SHA={source_sha}\nAPP_BUILD_DATE=2026-11-22T00:00:00Z\n',
+        f'KAORI_IMAGE={image}\nAPP_VERSION=0.3.0\nAPP_BUILD_SHA={source_sha}\nAPP_BUILD_DATE=2026-11-22T00:00:00Z\n',
         encoding='utf-8',
     )
     deploy_env = tmp_path / 'deploy.env'
@@ -191,7 +221,7 @@ esac
     env = dict(os.environ)
     env.update(
         {
-            'PATH': f"{fake_bin}:{os.environ.get('PATH', '')}",
+            'PATH': f'{fake_bin}:{os.environ.get("PATH", "")}',
             'root': str(root),
             'receipt': str(receipt),
             'deploy_env': str(deploy_env),
@@ -214,7 +244,11 @@ esac
 def run_observation(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         ['bash', '-c', REMOTE],
-        env=env, text=True, capture_output=True, check=False, timeout=10,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=10,
     )
 
 
