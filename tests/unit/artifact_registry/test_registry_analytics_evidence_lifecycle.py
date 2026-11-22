@@ -71,7 +71,7 @@ def test_all_instant_metric_query_failures_are_unavailable(monkeypatch):
             return {'status': 'success', 'data': {'resultType': 'vector', 'result': 'invalid'}}
 
     monkeypatch.setattr(analytics.MetricsConsumer, 'for_asset', lambda **_kw: Consumer())
-    observed = analytics._metrics_evidence(SimpleNamespace(id=2, name='registry'))
+    observed = analytics._metrics_evidence(SimpleNamespace(id=2, name='registry', integration_type='registry', provider_key='harbor'))
     assert observed['status'] == 'unavailable'
     assert len(observed['capability_gaps']) == 11
 
@@ -93,7 +93,7 @@ def test_some_instant_metrics_succeed_while_others_fail_is_partial(monkeypatch):
             return {'status': 'failure', 'data': None}
 
     monkeypatch.setattr(analytics.MetricsConsumer, 'for_asset', lambda **_kw: Consumer())
-    observed = analytics._metrics_evidence(SimpleNamespace(id=2, name='registry'))
+    observed = analytics._metrics_evidence(SimpleNamespace(id=2, name='registry', integration_type='registry', provider_key='harbor'))
     assert observed['status'] == 'partial'
     assert len(observed['capability_gaps']) == 10
 
