@@ -37,7 +37,7 @@ from app.storage.object_storage.analytics.bucket_table import (
     build_bucket_forecast_table_view,
     build_bucket_table_view,
 )
-from app.storage.object_storage.analytics.inventory_limited import build_inventory_limited_view
+from app.storage.object_storage.analytics.inventory_limited import limited_inventory_analytics_context
 from app.storage.object_storage.analytics.dependencies import (
     analytics_snapshot_blocker,
     inventory_required_blocker,
@@ -719,23 +719,7 @@ def get_object_storage_analytics_context(
     )
     if payload is None:
         if page_key == 'overview':
-            # Inventory is a separate committed authority. A missing operational
-            # metrics snapshot must not hide qualified inventory evidence.
-            context['analytics_limited'] = True
-            context['dependency_blocker'] = None
-            context['inventory_limited'] = build_inventory_limited_view(system)
-            context['metrics_source'] = {
-                **context['metrics_source'],
-                'label': 'Not Collected',
-                'tone': 'unknown',
-                'detail': 'No committed Metrics Source collection evidence for the selected window.',
-            }
-            context['metrics_readiness'] = {
-                **context['metrics_readiness'],
-                'label': 'Not Collected',
-                'tone': 'unknown',
-                'detail': 'The missing Analytics snapshot does not prove source binding is absent.',
-            }
+            return limited_inventory_analytics_context(context, system)
         return context
 
     if page_key == 'alerts':
