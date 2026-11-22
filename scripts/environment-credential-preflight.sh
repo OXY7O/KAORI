@@ -15,6 +15,13 @@ else
   esac
 fi
 
+case "$(printenv TARGET_INVENTORY || printf false)" in
+  true) [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]] ||
+    fail 'runtime inventory requires explicit manual dispatch' ;;
+  false) ;;
+  *) fail 'invalid runtime inventory mode' ;;
+esac
+
 for name in REGISTRY_HOST REGISTRY_IMAGE REGISTRY_USER REGISTRY_PASSWORD DEPLOY_HOST DEPLOY_PORT DEPLOY_USER DEPLOY_ROOT DEPLOY_SSH_KEY DEPLOY_SSH_PASSPHRASE DEPLOY_KNOWN_HOSTS; do
   [[ -n "$(printenv "$name")" ]] || fail "missing required Environment credential/config: $name"
 done
@@ -84,6 +91,8 @@ setsid -w ssh-add "$tmp/id" </dev/null >/dev/null 2>&1 ||
   printf 'root=%q\n' "$DEPLOY_ROOT"
   printf 'receipt=%q\n' "$RECEIPT_PATH"
   printf 'deploy_env=%q\n' "$HOST_ENV_PATH"
+  printf 'inventory_requested=%q\n' "$(printenv TARGET_INVENTORY || printf false)"
+  printf 'registry_image=%q\n' "$REGISTRY_IMAGE"
   cat <<'REMOTE_READ_ONLY'
 set -Eeuo pipefail
 [[ -d "$root" && ! -L "$root" ]] || {
@@ -109,6 +118,108 @@ docker info >/dev/null 2>&1 || {
   exit 1
 }
 echo 'PASS: pinned SSH, prepared VM target, receipt and Docker access; read-only'
+
+# Explicit inventory is observational. Normal push/credential preflight stops above.
+# Never print host credentials, env files, Docker config, inspect JSON or private URLs.
+if [[ "$inventory_requested" == true ]]; then
+  [[ -r "$receipt" && -s "$receipt" ]] ||
+    { echo 'BLOCK: committed release receipt is unreadable' >&2; exit 1; }
+  [[ "$(stat -c %s -- "$receipt")" -le 4096 ]] ||
+    { echo 'BLOCK: release receipt exceeds permitted size' >&2; exit 1; }
+
+  # Read only four release identity keys; do not source arbitrary host files.
+  for key in KAORI_IMAGE APP_VERSION APP_BUILD_SHA APP_BUILD_DATE; do
+    [[ "$(grep -c "^$key=" "$receipt" || true)" == 1 ]] ||
+      { echo 'BLOCK: release receipt identity is missing or duplicated' >&2; exit 1; }
+  done
+  [[ "$(wc -l < "$receipt")" -eq 4 ]] ||
+    { echo 'BLOCK: unexpected release receipt fields' >&2; exit 1; }
+  receipt_image="$(sed -n 's/^KAORI_IMAGE=//p' "$receipt")"
+  receipt_version="$(sed -n 's/^APP_VERSION=//p' "$receipt")"
+  receipt_sha="$(sed -n 's/^APP_BUILD_SHA=//p' "$receipt")"
+  receipt_build="$(sed -n 's/^APP_BUILD_DATE=//p' "$receipt")"
+  [[ "$receipt_image" =~ ^[^[:space:]]+@sha256:[0-9a-f]{64}$ &&
+     "$receipt_image" == "$registry_image@sha256:"* &&
+     "$receipt_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ &&
+     "$receipt_sha" =~ ^[0-9a-f]{40}$ &&
+     "$receipt_build" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[^[:space:]]+$ ]] ||
+    { echo 'BLOCK: malformed or foreign immutable release receipt identity' >&2; exit 1; }
+  [[ -d "$root/releases/$receipt_sha" && ! -L "$root/releases/$receipt_sha" ]] ||
+    { echo 'BLOCK: committed source release directory unavailable' >&2; exit 1; }
+
+  project='kaori-production'
+  network='kaori-production'
+  instance_volume='kaori-production-instance'
+  postgres_volume='kaori-vps-postgres-data'
+  redis_volume='kaori-vps-redis-data'
+  if [[ "$root" != /opt/kaori ]]; then
+    project="$(basename -- "$root")"
+    [[ "$project" =~ ^kaori-app-[a-z0-9]+(-[a-z0-9]+)*$ ]] ||
+      { echo 'BLOCK: unknown configured Application runtime namespace' >&2; exit 1; }
+    network="$project"
+    instance_volume="$project-instance"
+    postgres_volume="$project-postgres-data"
+    redis_volume="$project-redis-data"
+  fi
+
+  # All lookups are scoped by observed Compose project/service labels.
+  # Only docker ps/inspect are permitted: no exec/pull/up/restart/write.
+  checked_cid=''
+  find_running_service() {
+    local service="$1"
+    checked_cid="$(docker ps --filter "label=com.docker.compose.project=$project" \
+      --filter "label=com.docker.compose.service=$service" --format '{{.ID}}')"
+    [[ "$checked_cid" =~ ^[0-9a-f]{12,64}$ ]] ||
+      { echo "BLOCK: expected exactly one running $service in selected project" >&2; return 1; }
+    [[ "$(docker inspect --format '{{.State.Status}}' "$checked_cid")" == running ]] ||
+      { echo "BLOCK: selected $service is not running" >&2; return 1; }
+  }
+
+  web_cid=''
+  app_count=0
+  for service in web worker registry-security-worker maintenance-worker runtime-worker \
+    validation-worker analytics-worker reports-worker forecasting-worker \
+    resolver-execution-worker resolver-maintenance-worker beat
+  do
+    find_running_service "$service" || exit 1
+    [[ "$(docker inspect --format '{{.Config.Image}}' "$checked_cid")" == "$receipt_image" ]] ||
+      { echo "BLOCK: $service container image differs from committed digest" >&2; exit 1; }
+    [[ "$(docker inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$checked_cid")" == "$receipt_sha" ]] ||
+      { echo "BLOCK: $service OCI revision differs from committed source" >&2; exit 1; }
+    health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$checked_cid")"
+    [[ "$health" == healthy || "$health" == missing ]] ||
+      { echo "BLOCK: $service container health is not ready" >&2; exit 1; }
+    [[ "$service" != web ]] || web_cid="$checked_cid"
+    (( app_count += 1 ))
+  done
+  [[ "$app_count" -eq 12 && -n "$web_cid" ]] ||
+    { echo 'BLOCK: Application container inventory incomplete' >&2; exit 1; }
+
+  web_networks="$(docker inspect --format '{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$web_cid")"
+  grep -Fxq -- "$network" <<< "$web_networks" ||
+    { echo 'BLOCK: web container is not attached to configured network' >&2; exit 1; }
+  web_volumes="$(docker inspect --format '{{range .Mounts}}{{if eq .Type "volume"}}{{println .Name}}{{end}}{{end}}' "$web_cid")"
+  grep -Fxq -- "$instance_volume" <<< "$web_volumes" ||
+    { echo 'BLOCK: web instance volume differs from selected project' >&2; exit 1; }
+
+  for service in postgres redis; do
+    find_running_service "$service" || exit 1
+    [[ "$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$checked_cid")" == healthy ]] ||
+      { echo "BLOCK: selected $service is not healthy" >&2; exit 1; }
+    published_ports="$(docker inspect --format '{{json .NetworkSettings.Ports}}' "$checked_cid")"
+    [[ "$published_ports" != *HostPort* ]] ||
+      { echo "BLOCK: selected $service exposes a host port" >&2; exit 1; }
+    expected_volume="$postgres_volume"
+    [[ "$service" != redis ]] || expected_volume="$redis_volume"
+    actual_volumes="$(docker inspect --format '{{range .Mounts}}{{if eq .Type "volume"}}{{println .Name}}{{end}}{{end}}' "$checked_cid")"
+    grep -Fxq -- "$expected_volume" <<< "$actual_volumes" ||
+      { echo "BLOCK: $service volume differs from selected project" >&2; exit 1; }
+  done
+
+  receipt_digest="$(printf '%s' "$receipt_image" | sed 's/^.*@//')"
+  echo "PASS: configured runtime inventory · project=$project source=$receipt_sha version=$receipt_version digest=$receipt_digest; 12 app containers match receipt; network/volumes and private healthy PostgreSQL/Redis checked"
+  echo 'LIMIT: observational snapshot only; no database transactions, rollback drill, browser UAT, supply-chain verification or provider-edge acceptance'
+fi
 REMOTE_READ_ONLY
 } | ssh \
   -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
@@ -121,4 +232,8 @@ REMOTE_READ_ONLY
   echo 'Registry login, pinned SSH identity and remote target/receipt/Docker access verified.'
   echo 'Read-only: no image publication, Docker container change, database command, host file write, DNS, release or deployment.'
   echo 'This check does NOT replace signed digest verification, real UAT, Human Acceptance or production deployment approval.'
+  if [[ "$(printenv TARGET_INVENTORY || printf false)" == true ]]; then
+    echo 'Opt-in runtime inventory compared receipt, application containers and private volumes; see sanitized PASS/BLOCK job lines.'
+    echo 'This is not recovery/rollback testing, DB migration acceptance, public-edge acceptance or an authorized stable release.'
+  fi
 } >> "$GITHUB_STEP_SUMMARY"
