@@ -67,7 +67,7 @@ def test_limited_overview_preserves_worker_and_committed_inventory_boundaries() 
     assert 'if system.inventory_observed_at is None:' in service
     assert "context['inventory_limited'] = build_inventory_limited_view(system)" in inventory_service
     assert "page_key == 'overview' and committed_snapshot is None" in service
-    assert 'ObjectStorageBucket.object_storage_system_id == system.id' in inventory_service
+    assert 'bucket_usage_summary(system_id=str(system.id))' in inventory_service
     assert "context['dependency_blocker'] = None" in inventory_service
     assert 'data-object-storage-inventory-limited-overview' in limited
     assert 'inventory_limited.size_display' in limited
