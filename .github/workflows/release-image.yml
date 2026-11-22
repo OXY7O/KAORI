@@ -15,6 +15,7 @@ on:
 permissions:
   contents: read
   actions: read
+  issues: read
   statuses: write
 
 concurrency:
@@ -173,6 +174,15 @@ jobs:
           printf 'Accepted RC authority: tag=%s source=%s digest=%s\n' \
             "$CANDIDATE_TAG" "$RC_SOURCE_SHA" "$RC_IMAGE_DIGEST"
 
+      - name: Verify Release-bound Human Acceptance
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/verify_release_governance.py \
+            --uat-acceptance "$RELEASE_INPUT_VERSION" "$CANDIDATE_TAG" \
+            "${{ steps.rc.outputs.rc_source_sha }}" "${{ steps.rc.outputs.rc_image_digest }}"
+
       - name: Resolve CI Toolchain
         shell: bash
         run: |
@@ -239,6 +249,7 @@ jobs:
     permissions:
       contents: write
       id-token: write
+      issues: read
     env:
       RELEASE_VERSION: ${{ needs.preflight.outputs.release_version }}
       RELEASE_SHA: ${{ needs.preflight.outputs.release_sha }}
@@ -261,6 +272,16 @@ jobs:
         shell: bash
         run: |
           python scripts/verify_release_governance.py "$RELEASE_VERSION" "$CANDIDATE_TAG"
+
+      - name: Recheck Release-bound Human Acceptance
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/verify_release_governance.py \
+            --uat-acceptance "$RELEASE_VERSION" "$CANDIDATE_TAG" \
+            "$RC_SOURCE_SHA" "$RC_IMAGE_DIGEST"
+
       - name: Resolve CI Toolchain
         shell: bash
         run: |

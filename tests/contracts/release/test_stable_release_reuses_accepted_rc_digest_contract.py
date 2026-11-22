@@ -31,6 +31,13 @@ def test_stable_release_grants_reusable_quality_workflow_required_permissions() 
     assert 'actions: read' in permissions_block
 
 
+def test_human_uat_comment_checks_use_scoped_issue_read_permission() -> None:
+    global_permissions = WORKFLOW.split('permissions:', 1)[1].split('concurrency:', 1)[0]
+    publish_permissions = WORKFLOW.split('  publish:', 1)[1].split('    env:', 1)[0]
+    assert 'issues: read' in global_permissions
+    assert 'issues: read' in publish_permissions
+
+
 def test_stable_release_verifies_registry_rc_and_promotes_same_digest() -> None:
     assert 'target_commitish' in WORKFLOW
     assert 'RC_IMAGE_DIGEST' in WORKFLOW
@@ -100,3 +107,17 @@ def test_reviewed_notes_are_required_and_bound_to_the_exact_rc(tmp_path, monkeyp
     notes_path.write_text(''.join(valid).replace('Runtime targets are discoverable.', 'TODO'), encoding='utf-8')
     with pytest.raises(AssertionError, match='Missing reviewed content'):
         governance.verify_stable_notes('0.3.0', 'v0.3.0-rc.2')
+
+
+def test_stable_release_validates_real_uat_before_privileged_approval_and_rechecks_after() -> None:
+    preflight = WORKFLOW.split('  preflight:', 1)[1].split('  publish:', 1)[0]
+    publish = WORKFLOW.split('  publish:', 1)[1]
+    assert 'Verify Release-bound Human Acceptance' in preflight
+    assert '--uat-acceptance "$RELEASE_INPUT_VERSION" "$CANDIDATE_TAG"' in preflight
+    assert 'steps.rc.outputs.rc_source_sha' in preflight
+    assert 'steps.rc.outputs.rc_image_digest' in preflight
+    assert 'Recheck Release-bound Human Acceptance' in publish
+    assert publish.index('Recheck Release-bound Human Acceptance') < publish.index('Log In to Docker Registry')
+    assert '--uat-acceptance "$RELEASE_VERSION" "$CANDIDATE_TAG"' in publish
+    assert 'GH_TOKEN: ${{ github.token }}' in preflight
+    assert 'GH_TOKEN: ${{ github.token }}' in publish
