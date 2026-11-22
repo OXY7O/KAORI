@@ -93,7 +93,7 @@ def test_worker_queries_real_range_and_preserves_zero_growth_baseline(monkeypatc
 
     monkeypatch.setattr(analytics_history.MetricsConsumer, 'for_asset', lambda **_kwargs: Consumer())
     history, metrics, growth = analytics_history.collect_registry_metric_history(
-        SimpleNamespace(id=7, name='registry-7'),
+        SimpleNamespace(id=7, name='registry-7', integration_type='registry', provider_key='harbor'),
         '1h',
         now=now,
     )
@@ -137,7 +137,7 @@ def test_empty_range_is_not_fabricated_as_zero_activity(monkeypatch):
 
     monkeypatch.setattr(analytics_history.MetricsConsumer, 'for_asset', lambda **_kw: Consumer())
     history, metrics, growth = analytics_history.collect_registry_metric_history(
-        SimpleNamespace(id=3, name='registry-3'),
+        SimpleNamespace(id=3, name='registry-3', integration_type='registry', provider_key='harbor'),
         '60d',
         now=datetime(2026, 10, 12, tzinfo=UTC),
     )
