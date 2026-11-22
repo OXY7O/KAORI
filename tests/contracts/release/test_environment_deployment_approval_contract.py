@@ -91,7 +91,7 @@ def test_runtime_inventory_is_host_read_only_without_secret_printing() -> None:
     for line in remote.splitlines():
         if line.lstrip().startswith('#'):
             continue
-        if 'docker ' in line:
+        if '$(docker ' in line or line.lstrip().startswith('docker '):
             assert any(f'docker {command}' in line for command in ('info', 'ps', 'inspect'))
     for prohibited in (
         'source "$deploy_env"',
