@@ -6,6 +6,8 @@ reinterpret missing stored-size or object-count observations as a healthy zero.
 
 from __future__ import annotations
 
+from typing import Any
+
 from sqlalchemy import func
 
 from app.extensions.db import db
@@ -58,3 +60,25 @@ def build_inventory_limited_view(system: ObjectStorageSystem) -> dict[str, str |
         objects_observed=int(summary[3] or 0),
         objects_total=int(summary[4]) if summary[4] is not None else None,
     )
+
+
+def limited_inventory_analytics_context(
+    context: dict[str, Any], system: ObjectStorageSystem
+) -> dict[str, Any]:
+    """Preserve separately committed Inventory while metric evidence is unavailable."""
+    context['analytics_limited'] = True
+    context['dependency_blocker'] = None
+    context['inventory_limited'] = build_inventory_limited_view(system)
+    context['metrics_source'] = {
+        **context['metrics_source'],
+        'label': 'Not Collected',
+        'tone': 'unknown',
+        'detail': 'No committed Metrics Source collection evidence for the selected window.',
+    }
+    context['metrics_readiness'] = {
+        **context['metrics_readiness'],
+        'label': 'Not Collected',
+        'tone': 'unknown',
+        'detail': 'The missing Analytics snapshot does not prove source binding is absent.',
+    }
+    return context
