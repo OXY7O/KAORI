@@ -153,6 +153,8 @@ def simulated_target(tmp_path: Path) -> tuple[dict[str, str], Path, Path, Path]:
     project = 'kaori-app-test'
     root = tmp_path / project
     (root / 'releases' / source_sha).mkdir(parents=True)
+    previous_sha = 'c' * 40
+    (root / 'releases' / previous_sha).mkdir(parents=True)
     state_root = tmp_path / 'state'
     state = state_root / 'deploy-state'
     state.mkdir(parents=True)
@@ -164,7 +166,14 @@ def simulated_target(tmp_path: Path) -> tuple[dict[str, str], Path, Path, Path]:
         hashlib.sha256(backup.read_bytes()).hexdigest() + '  ' + str(backup) + '\n',
         encoding='utf-8',
     )
-    (state / 'previous-release.env').write_text('historical receipt\n', encoding='utf-8')
+    previous_image = 'docker.io/example/kaori@sha256:' + 'd' * 64
+    (state / 'previous-release.env').write_text(
+        f'KAORI_IMAGE={previous_image}\n'
+        'APP_VERSION=0.2.9\n'
+        f'APP_BUILD_SHA={previous_sha}\n'
+        'APP_BUILD_DATE=2026-11-21T00:00:00Z\n',
+        encoding='utf-8',
+    )
     (state / 'previous-backup').write_text(str(backup) + '\n', encoding='utf-8')
     for name in ('verification-result', 'migration-result'):
         (state / name).write_text('pass\n', encoding='utf-8')
@@ -278,15 +287,25 @@ def test_target_needing_reconciliation_cannot_publish(simulated_target, mismatch
     assert 'READY_NOOP:' not in result.stdout
 
 
-@pytest.mark.parametrize('fault', ('missing-rollback', 'missing-backup', 'wrong-checksum', 'bad-health'))
+@pytest.mark.parametrize(
+    'fault',
+    ('missing-rollback', 'malformed-rollback', 'missing-backup', 'wrong-checksum', 'checksum-wrong-file', 'bad-health'),
+)
 def test_broken_recovery_or_health_blocks_release(simulated_target, fault: str) -> None:
     env, _receipt, state, backup = simulated_target
     if fault == 'missing-rollback':
         (state / 'previous-release.env').unlink()
+    elif fault == 'malformed-rollback':
+        (state / 'previous-release.env').write_text('invalid previous receipt\n', encoding='utf-8')
     elif fault == 'missing-backup':
         (state / 'previous-backup').unlink()
     elif fault == 'wrong-checksum':
         backup.write_bytes(b'tampered')
+    elif fault == 'checksum-wrong-file':
+        (backup.parent / (backup.name + '.sha256')).write_text(
+            '0' * 64 + '  ' + str(state / 'migration-result') + '\n',
+            encoding='utf-8',
+        )
     else:
         env['FAKE_DB_HEALTH'] = 'unhealthy'
     result = run_observation(env)

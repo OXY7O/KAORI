@@ -273,6 +273,24 @@ if [[ "$inventory_requested" == true ]]; then
        -r "$state_dir/previous-release.env" &&
        -s "$state_dir/previous-release.env" ]] ||
       { echo 'BLOCK: previous immutable release receipt unavailable for rollback' >&2; exit 1; }
+    previous_receipt="$state_dir/previous-release.env"
+    [[ "$(wc -l < "$previous_receipt")" -eq 4 ]] ||
+      { echo 'BLOCK: previous release receipt structure invalid' >&2; exit 1; }
+    for key in KAORI_IMAGE APP_VERSION APP_BUILD_SHA APP_BUILD_DATE; do
+      [[ "$(grep -c "^$key=" "$previous_receipt" || true)" == 1 ]] ||
+        { echo 'BLOCK: previous release receipt identity missing or duplicated' >&2; exit 1; }
+    done
+    previous_image="$(sed -n 's/^KAORI_IMAGE=//p' "$previous_receipt")"
+    previous_version="$(sed -n 's/^APP_VERSION=//p' "$previous_receipt")"
+    previous_sha="$(sed -n 's/^APP_BUILD_SHA=//p' "$previous_receipt")"
+    previous_date="$(sed -n 's/^APP_BUILD_DATE=//p' "$previous_receipt")"
+    [[ "$previous_image" =~ ^[^[:space:]]+@sha256:[0-9a-f]{64}$ &&
+       "$previous_image" == "$registry_image@sha256:"* &&
+       "$previous_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ &&
+       "$previous_sha" =~ ^[0-9a-f]{40}$ &&
+       "$previous_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[^[:space:]]+$ &&
+       -d "$root/releases/$previous_sha" && ! -L "$root/releases/$previous_sha" ]] ||
+      { echo 'BLOCK: previous release receipt is not a recoverable immutable artifact' >&2; exit 1; }
     [[ -f "$state_dir/previous-backup" &&
        ! -L "$state_dir/previous-backup" &&
        -r "$state_dir/previous-backup" ]] ||
@@ -287,6 +305,9 @@ if [[ "$inventory_requested" == true ]]; then
        -s "$rollback_backup" && -f "$rollback_backup.sha256" &&
        ! -L "$rollback_backup.sha256" ]] ||
       { echo 'BLOCK: committed rollback backup evidence is unsafe or missing' >&2; exit 1; }
+    [[ "$(wc -l < "$rollback_backup.sha256")" -eq 1 &&
+       "$(cat -- "$rollback_backup.sha256")" == "$(sha256sum -- "$rollback_backup")" ]] ||
+      { echo 'BLOCK: rollback checksum does not identify the selected backup' >&2; exit 1; }
     sha256sum --check --status "$rollback_backup.sha256" ||
       { echo 'BLOCK: rollback backup digest verification failed' >&2; exit 1; }
     echo 'READY_NOOP: accepted immutable digest/source, stable runtime identity and committed rollback evidence verified on configured target'
