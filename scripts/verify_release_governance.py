@@ -12,9 +12,7 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 SEMVER = re.compile(r'^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$')
 RELEASE_KEYS = ('KAORI_IMAGE', 'APP_VERSION', 'APP_BUILD_SHA', 'APP_BUILD_DATE')
-UAT_EVIDENCE_URL = re.compile(
-    r'^https://github\.com/OXY7O/KAORI/issues/([1-9]\d*)#issuecomment-([1-9]\d*)$'
-)
+UAT_EVIDENCE_URL = re.compile(r'^https://github\.com/OXY7O/KAORI/issues/([1-9]\d*)#issuecomment-([1-9]\d*)$')
 PERSISTENT_TEMPLATES = (
     'deploy/env/app.env.example',
     'deploy/env/secrets.env.example',
@@ -68,9 +66,7 @@ def verify_stable_notes(version: str, candidate: str) -> None:
     print('PASS — Reviewed stable release notes')
 
 
-def verify_uat_acceptance(
-    version: str, candidate: str, source_sha: str, digest: str
-) -> None:
+def verify_uat_acceptance(version: str, candidate: str, source_sha: str, digest: str) -> None:
     """Bind reviewed release notes to a real maintainer-approved GitHub UAT comment."""
     verify_stable_notes(version, candidate)
     if not re.fullmatch(r'[0-9a-f]{40}', source_sha):
@@ -120,11 +116,7 @@ def verify_uat_acceptance(
     body = comment.get('body')
     if not isinstance(body, str) or not body.startswith('## Human Acceptance'):
         raise AssertionError('Human UAT comment lacks the explicit acceptance heading')
-    markers = [
-        line.strip()
-        for line in body.splitlines()
-        if line.strip().startswith('KAORI_APP_UAT_ACCEPTED:')
-    ]
+    markers = [line.strip() for line in body.splitlines() if line.strip().startswith('KAORI_APP_UAT_ACCEPTED:')]
     expected = f'KAORI_APP_UAT_ACCEPTED:{source_sha}:{candidate}:{digest}'
     if markers != [expected]:
         raise AssertionError('Human UAT comment does not accept this exact RC SHA/tag/digest')

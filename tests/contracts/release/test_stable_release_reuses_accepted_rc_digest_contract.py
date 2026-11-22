@@ -101,6 +101,7 @@ def test_reviewed_notes_are_required_and_bound_to_the_exact_rc(tmp_path, monkeyp
     with pytest.raises(AssertionError, match='Missing reviewed content'):
         governance.verify_stable_notes('0.3.0', 'v0.3.0-rc.2')
 
+
 def test_stable_release_validates_real_uat_before_privileged_approval_and_rechecks_after() -> None:
     preflight = WORKFLOW.split('  preflight:', 1)[1].split('  publish:', 1)[0]
     publish = WORKFLOW.split('  publish:', 1)[1]
@@ -109,9 +110,7 @@ def test_stable_release_validates_real_uat_before_privileged_approval_and_rechec
     assert 'steps.rc.outputs.rc_source_sha' in preflight
     assert 'steps.rc.outputs.rc_image_digest' in preflight
     assert 'Recheck Release-bound Human Acceptance' in publish
-    assert publish.index('Recheck Release-bound Human Acceptance') < publish.index(
-        'Log In to Docker Registry'
-    )
+    assert publish.index('Recheck Release-bound Human Acceptance') < publish.index('Log In to Docker Registry')
     assert '--uat-acceptance "$RELEASE_VERSION" "$CANDIDATE_TAG"' in publish
     assert 'GH_TOKEN: ${{ github.token }}' in preflight
     assert 'GH_TOKEN: ${{ github.token }}' in publish
