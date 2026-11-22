@@ -326,6 +326,8 @@ if [[ "$inventory_requested" == true ]]; then
       echo 'READY_NOOP: accepted immutable digest/source, stable runtime identity and committed rollback evidence verified on configured target'
     else
       echo 'READY_FOR_STABLE_CONVERGENCE: accepted RC digest/source, exact RC runtime version and rollback evidence verified; stable runtime version is not yet committed'
+      echo 'LIMIT: target still runs an RC; a separate governed reconciliation must commit stable runtime identity before publication'
+      exit 3
     fi
     echo 'LIMIT: provider-edge acceptance and actual recovery drill require separately governed #5117 UAT; read-only observation is not release authorization'
   fi
