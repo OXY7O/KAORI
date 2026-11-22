@@ -148,6 +148,18 @@ gh workflow run environment-credential-preflight.yml -R OXY7O/KAORI --ref kaori/
 gh workflow run environment-credential-preflight.yml -R OXY7O/KAORI --ref main -f target_environment=production
 ```
 
+**Optional read-only runtime inventory (App #5093):** After the protected source is admitted, an operator may manually dispatch the **same** preflight with **inspect_runtime=true**. This is never enabled by the file-change-scoped staging push event; it does not add an Environment Variable, start another delivery engine, or mutate a host. The remote command reads only the allowlisted four-field committed release receipt, checks its immutable registry digest/source SHA/version and release directory, then inspects one running container per 12 Application services for matching image and OCI revision. It also checks the selected Compose project/network, web instance volume and private healthy PostgreSQL/Redis with their isolated named volume mounts. It prints only sanitized project, source SHA, version, digest and PASS/BLOCK status, not host identity, secrets, environment file contents or Docker inspect JSON.
+
+```bash
+# Manual inventory of the already-configured staging target (no image push/pull or deploy).
+gh workflow run environment-credential-preflight.yml -R OXY7O/KAORI --ref kaori/staging -f target_environment=staging -f inspect_runtime=true
+
+# Only after this code is protected-promoted to main and native production reviewer approval:
+gh workflow run environment-credential-preflight.yml -R OXY7O/KAORI --ref main -f target_environment=production -f inspect_runtime=true
+```
+
+Inventory failure is evidence to investigate the **configured** target; never correct it by silently redeploying, changing Environment credentials, rewriting a receipt or reusing another project's volumes. An inventory PASS is a **read-only snapshot**, not proof of database privilege/transaction checks, migration, independent user/browser UAT, backup restore/rollback, ingress/provider-edge readiness, signed RC supply-chain validation, or authorization for stable publication. Continue to use the existing deploy/server/verify.sh and governed host/rollback UAT when separately approved. A distinct target must be provisioned and accepted independently; identical Environment names, SSH host/IP or Compose project names alone do not establish the same effective runtime.
+
 The job fails closed on a wrong branch, absent credentials, mismatched registry/image prefix, unsafe deploy root, missing **pinned known_hosts**, rejected SSH key/passphrase, unreachable or untrusted VM, missing existing release receipt, or unavailable target Docker daemon. Registry login is stored only in a disposable hosted-runner config. Remote checks run as the configured SSH user and perform **existence/read-only inspections only**. Production requires a protected `main` branch and the actual GitHub `production` Environment review; a staging secret cannot be used to assert production readiness. No secret values or host files are printed.
 
 A PASS proves credential transport and target access **at the time of the run**, not an accepted image digest, independent browser UAT, recovery, public-edge authority, or stable release. A failed check is an operational blocker; do not bypass it by switching to repository-level fallback secrets or running the normal deploy workflow as a test. Retain existing repository credentials until Environment-scoped preflight and required release checks are independently accepted.
