@@ -108,7 +108,6 @@ def _selected_system(systems: list[ObjectStorageSystem], system_id: str) -> Obje
     return systems[0]
 
 
-
 def inventory_limited_coverage(
     *,
     bucket_count: int,
