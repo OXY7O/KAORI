@@ -79,26 +79,27 @@ The stable release manifest records the accepted image digest, build date, and v
 - `Security`
 - `Removed`
 
-Before a release, move approved entries from `[Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD`. Historical audit documents are supporting evidence; they are not a substitute for the changelog.
+**Only after** the stable tag, GitHub Release and required production RUN verification succeed, move the actually published changes from `[Unreleased]` into a dated `## [X.Y.Z] - YYYY-MM-DD` entry through a separately reviewed PR. Before that event, keep planned changes under `[Unreleased]` and prepare human-reviewed per-version release notes; a planned RC is not a stable release. Historical audit documents are supporting evidence, not substitutes for the changelog.
 
 ## Release Procedure
 
-1. Complete the ordered pre-release audit and close all release blockers.
-2. Run `python scripts/verify_final_release.py --all --runtime` in the supported KAORI Dev Container/CI environment; this is the canonical final approval entry point and delegates to the underlying quality gates.
-3. Confirm the Alembic migration graph has one head and retain an executable previous-supported-release upgrade-path check for release CI.
-4. Select the Semantic Versioning increment from the approved changelog.
-5. Update the root `VERSION` product version line, README badge, `APP_VERSION` development default, and application fallback together. Do not add release-specific values to the persistent production host environment.
-6. Move `[Unreleased]` changelog entries into the dated release section.
-7. Create or update `docs/releases/KAORI_X_Y_Z.md` with the approved release scope, deferred work, verification command, and Git tag.
-8. Commit and merge the reviewed release metadata change to `main`.
-9. Start the manual release workflow for `X.Y.Z`; lock the exact approved `main` SHA and rerun the full KAORI CI and release preflight.
-10. **Build the release candidate once** from that locked SHA with the complete OCI annotation set, publish it under the governed RC tag, capture the immutable registry digest, then generate and attest SPDX SBOM plus SLSA Provenance v1 evidence against that digest.
-11. Verify the exact candidate by digest with complete OCI metadata checks, SBOM/provenance attestation verification, container vulnerability scanning, fresh-install migration, previous-supported-release upgrade migration, production runtime/worker readiness, full release DAST, and image signing.
-12. Create or verify the annotated Git tag `vX.Y.Z` at the same approved SHA only after candidate verification succeeds.
-13. **Promote the same immutable digest** to the governed `vX.Y.Z` and `vX.Y` registry aliases without rebuilding the image.
-14. Verify every promoted tag resolves to the captured digest, generate `kaori-release-manifest.json`, and publish the GitHub Release from the approved release evidence.
-15. Verify System Information receives `APP_VERSION=X.Y.Z` without the Git-tag `v` prefix plus the exact `APP_BUILD_SHA` and `APP_BUILD_DATE` represented by the released image and release manifest.
-16. Preserve the image digest and release manifest so future deployment and rollback points remain unambiguous.
+1. Complete the pre-release audit, resolve blockers and select the intended Semantic Versioning increment; **source merge is not release authorization**.
+2. Run `python scripts/verify_final_release.py --all --runtime` in the supported KAORI Dev Container/CI; retain mandatory checks and exact evidence.
+3. Verify one Alembic migration head, executable prior-version upgrade tests, and database backup/rollback readiness.
+4. When the next **product version line** is approved, update root `VERSION`, README badge, development `APP_VERSION` and application fallback together. Do not put RC/stable release identities in persistent host settings.
+5. Admit increments to `kaori/staging` via reviewed issue-owned PRs, exact-head Developer Check, Full Admission and applicable Local UAT. This is frequent delivery, not production release.
+6. **Intentionally** publish a signed `vX.Y.Z-rc.N` using existing `publish-staging-image.yml` from exact admitted staging SHA. Build once, record immutable OCI digest, labels, SPDX/SLSA, scan and verify.
+7. Deploy that exact signed digest to the **operator-configured staging UAT target** only after target isolation/impact is approved; verify migration, backups, workers, health, edge and rollback. A shared staging/production target needs separately authorized production-impacting maintenance or a genuinely isolated non-public alternative. RC publication alone does not deploy a host.
+8. Obtain explicit release-bound Human Acceptance for the actual deployed RC SHA, tag and digest, recorded in the existing `KAORI_APP_UAT_ACCEPTED:<source SHA>:<RC tag>:<OCI digest>` issue-comment format. CI or read-only inventory is not acceptance.
+9. Promote accepted `kaori/staging` source to protected `main` using independently reviewed PR and post-promotion Full Admission. **No ordinary push or merge requests a release or deployment.**
+10. Prepare and review `docs/releases/KAORI_X_Y_Z.md` using the canonical template: reader-facing Highlights, Improvements, Fixes, compatibility/security/operational impact and Known Limitations precede technical source/PR/digest evidence. Link exact RC and real Human UAT comment; admit by reviewed source PR.
+11. Keep `CHANGELOG.md` under `[Unreleased]` until stable publication actually occurs. Never add a dated stable section merely because an RC exists or main promotion succeeded.
+12. Only when the maintainer intentionally decides to ship, manually dispatch `release-image.yml` on protected `main`, specifying stable version and accepted RC. Unprivileged preflight verifies reviewed notes, real UAT evidence, source lineage, immutable digest and quality/security before native `production` Environment review.
+13. Following independent `production` approval, verify the configured production target's committed receipt, accepted signed digest, DB/volume/network ownership, backup/rollback, health and provider ingress. Reconcile to the **same digest without rebuild** only if necessary; skip redundant deployment when the target already matches. **Actual runtime reconciliation is HOLD under #5094 pending #5093 operational UAT.** Do not equate publisher success with host deployment.
+14. Only after successful production target reconciliation and verification, publish stable Git tag, registry `vX.Y.Z`/`vX.Y` aliases, release manifest and product-facing GitHub Release, retaining the accepted RC digest and provenance.
+15. Verify System Information `APP_VERSION=X.Y.Z`, `APP_BUILD_SHA` and `APP_BUILD_DATE` agree with committed runtime receipt and immutable release; retain rollback digest and production RUN evidence.
+16. **After actual publication**, create a separately reviewed `CHANGELOG.md` update moving shipped entries from `[Unreleased]` to dated stable history while preserving remaining work and closing release evidence.
+
 
 The release pipeline follows **build once → verify → promote the same immutable digest**. A release workflow retry may reuse an existing candidate only after verifying its OCI version/revision identity. It must never rebuild after candidate verification and then publish the unverified rebuild as the same release.
 

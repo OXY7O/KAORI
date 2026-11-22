@@ -5,19 +5,20 @@ Human UAT evidence: https://github.com/OXY7O/KAORI/issues/ISSUE#issuecomment-COM
 
 ## Highlights
 
-- Summarize the primary user-visible outcome of this accepted release.
+- Summarize one to three verified outcomes users can recognize. Explain who benefits and why the release matters; do not paste commit or PR titles.
 
 ## Improvements
 
-- Describe the meaningful capability or workflow changes.
+- Describe meaningful new capabilities or workflow improvements in ordinary language and their operational impact.
+- Explain relevant security, compatibility, migration or configuration changes; state explicitly when none apply.
 
 ## Fixes
 
-- Describe the important fixes, or explicitly state that there were none.
+- Explain user-relevant bugs or reliability/security issues fixed and the observable result; explicitly state if no fixes are included.
 
 ## Known Limitations
 
-- Record relevant limitations or explicitly state that none are known.
+- Describe known limitations, upgrade/rollback considerations and workarounds, or state that none are known.
 
 ---
 
