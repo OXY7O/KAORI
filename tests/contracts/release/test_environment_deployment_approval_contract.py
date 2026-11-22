@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -106,3 +108,68 @@ def test_runtime_inventory_is_host_read_only_without_secret_printing() -> None:
         'ssh-keyscan',
     ):
         assert prohibited not in remote
+
+
+def test_runtime_inventory_remote_shell_and_negative_cases(tmp_path: Path) -> None:
+    script = (ROOT / 'scripts/environment-credential-preflight.sh').read_text(encoding='utf-8')
+    remote = script.split("cat <<'REMOTE_READ_ONLY'", 1)[1].split('\nREMOTE_READ_ONLY', 1)[0]
+    syntax = subprocess.run(['bash', '-n'], input=remote, text=True, capture_output=True, check=False)
+    assert syntax.returncode == 0, syntax.stderr
+
+    source_sha = 'b' * 40
+    root = tmp_path / 'kaori-app-audit'
+    (root / 'releases' / source_sha).mkdir(parents=True)
+    receipt = tmp_path / 'release.env'
+    receipt.write_text(
+        f"KAORI_IMAGE=docker.io/example/kaori@sha256:{'a' * 64}\n"
+        'APP_VERSION=0.3.0-rc.2\n'
+        f'APP_BUILD_SHA={source_sha}\n'
+        'APP_BUILD_DATE=2026-11-22T00:00:00Z\n',
+        encoding='utf-8',
+    )
+    deploy_env = tmp_path / 'deploy.env'
+    deploy_env.write_text('', encoding='utf-8')
+    fake_bin = tmp_path / 'bin'
+    fake_bin.mkdir()
+    fake_docker = fake_bin / 'docker'
+    fake_docker.write_text(
+        '#!/usr/bin/env bash\ncase "$1" in\n  info|ps) exit 0 ;;\n  *) exit 87 ;;\nesac\n',
+        encoding='utf-8',
+    )
+    fake_docker.chmod(0o700)
+
+    env = dict(os.environ)
+    env.update(
+        {
+            'PATH': f'{fake_bin}:{os.environ.get("PATH", "")}',
+            'root': str(root),
+            'receipt': str(receipt),
+            'deploy_env': str(deploy_env),
+            'inventory_requested': 'true',
+            'registry_image': 'docker.io/example/kaori',
+        }
+    )
+    result = subprocess.run(
+        ['bash', '-c', remote],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=10,
+    )
+    assert result.returncode != 0
+    assert 'BLOCK: expected exactly one running web' in result.stderr
+    assert 'PASS: configured runtime inventory' not in result.stdout
+
+    # Duplicate identity is rejected before a Docker service is inspected.
+    receipt.write_text(receipt.read_text(encoding='utf-8') + 'KAORI_IMAGE=duplicate\n', encoding='utf-8')
+    duplicate = subprocess.run(
+        ['bash', '-c', remote],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=10,
+    )
+    assert duplicate.returncode != 0
+    assert 'BLOCK: release receipt identity is missing or duplicated' in duplicate.stderr
