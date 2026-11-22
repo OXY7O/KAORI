@@ -76,7 +76,9 @@ def test_remote_gate_classifies_and_keeps_docker_read_only() -> None:
     assert 'BLOCK:' in REMOTE
     assert '"$receipt_sha" != "$expected_rc_source_sha"' in REMOTE
     assert '"$receipt_image" != "$registry_image@$expected_rc_image_digest"' in REMOTE
-    assert '"$receipt_version" != "$expected_release_version"' in REMOTE
+    assert '"$receipt_version" != "$expected_runtime_version"' in REMOTE
+    assert 'expected_runtime_version="${expected_runtime_version:-$expected_release_version}"' in REMOTE
+    assert 'READY_FOR_STABLE_CONVERGENCE:' in REMOTE
     for item in (
         'previous-release.env',
         'previous-backup',
@@ -285,6 +287,50 @@ def test_target_needing_reconciliation_cannot_publish(simulated_target, mismatch
     assert result.returncode != 0
     assert 'NEEDS_RECONCILIATION:' in result.stderr
     assert 'READY_NOOP:' not in result.stdout
+
+
+
+def test_exact_accepted_rc_runtime_is_read_only_convergence_eligible(simulated_target) -> None:
+    env, receipt, _state, _backup = simulated_target
+    receipt.write_text(
+        receipt.read_text(encoding='utf-8').replace('APP_VERSION=0.3.0\\n', 'APP_VERSION=0.3.0-rc.3\\n'),
+        encoding='utf-8',
+    )
+    env['expected_runtime_version'] = '0.3.0-rc.3'
+    result = run_observation(env)
+    assert result.returncode == 0, result.stderr
+    assert 'READY_FOR_STABLE_CONVERGENCE:' in result.stdout
+    assert 'READY_NOOP:' not in result.stdout
+    assert 'PASS: configured runtime inventory' in result.stdout
+
+
+def test_unapproved_rc_version_cannot_be_used_as_release_observation() -> None:
+    env = dict(os.environ)
+    env.update(
+        {
+            'RELEASE_GATE': 'true',
+            'TARGET_ENV': 'production',
+            'GITHUB_REF': 'refs/heads/main',
+            'GITHUB_EVENT_NAME': 'workflow_dispatch',
+            'TARGET_INVENTORY': 'true',
+            'EXPECTED_RC_SOURCE_SHA': 'a' * 40,
+            'EXPECTED_RC_IMAGE_DIGEST': 'sha256:' + 'b' * 64,
+            'EXPECTED_RELEASE_VERSION': '0.3.0',
+            'EXPECTED_RC_TAG': 'v0.3.0-rc.3',
+            'EXPECTED_RUNTIME_VERSION': '0.3.0-rc.4',
+        }
+    )
+    result = subprocess.run(
+        ['bash', str(ROOT / 'scripts/environment-credential-preflight.sh')],
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+        timeout=10,
+    )
+    assert result.returncode != 0
+    assert 'release-bound runtime observation must match exact stable or accepted RC version' in result.stderr
+    assert 'Environment registry credential authentication' not in result.stdout
 
 
 @pytest.mark.parametrize(
