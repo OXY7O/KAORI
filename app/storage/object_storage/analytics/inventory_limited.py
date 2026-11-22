@@ -62,9 +62,7 @@ def build_inventory_limited_view(system: ObjectStorageSystem) -> dict[str, str |
     )
 
 
-def limited_inventory_analytics_context(
-    context: dict[str, Any], system: ObjectStorageSystem
-) -> dict[str, Any]:
+def limited_inventory_analytics_context(context: dict[str, Any], system: ObjectStorageSystem) -> dict[str, Any]:
     """Preserve separately committed Inventory while metric evidence is unavailable."""
     context['analytics_limited'] = True
     context['dependency_blocker'] = None
