@@ -121,7 +121,7 @@ def test_runtime_inventory_remote_shell_and_negative_cases(tmp_path: Path) -> No
     (root / 'releases' / source_sha).mkdir(parents=True)
     receipt = tmp_path / 'release.env'
     receipt.write_text(
-        f"KAORI_IMAGE=docker.io/example/kaori@sha256:{'a' * 64}\n"
+        f'KAORI_IMAGE=docker.io/example/kaori@sha256:{"a" * 64}\n'
         'APP_VERSION=0.3.0-rc.2\n'
         f'APP_BUILD_SHA={source_sha}\n'
         'APP_BUILD_DATE=2026-11-22T00:00:00Z\n',
