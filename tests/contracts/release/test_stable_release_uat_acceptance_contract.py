@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from io import BytesIO
-from urllib.error import URLError
 
 import pytest
 
@@ -43,14 +42,29 @@ def evidence(tmp_path, monkeypatch) -> dict[str, object]:
     }
 
 
-def stub_github(monkeypatch, payload: dict[str, object]) -> None:
-    def response(request, timeout):
-        assert timeout == 20
-        assert request.full_url.endswith('/issues/comments/' + COMMENT)
-        assert request.get_header('Authorization') == 'Bearer test-only-token'
-        return BytesIO(json.dumps(payload).encode('utf-8'))
+def stub_github(monkeypatch, payload: dict[str, object], status: int = 200) -> None:
+    class Response(BytesIO):
+        def __init__(self):
+            super().__init__(json.dumps(payload).encode('utf-8'))
+            self.status = status
 
-    monkeypatch.setattr(governance, 'urlopen', response)
+    class Connection:
+        def __init__(self, host: str, timeout: int):
+            assert host == 'api.github.com'
+            assert timeout == 20
+
+        def request(self, method: str, path: str, headers: dict[str, str]) -> None:
+            assert method == 'GET'
+            assert path == '/repos/OXY7O/KAORI/issues/comments/' + COMMENT
+            assert headers['Authorization'] == 'Bearer test-only-token'
+
+        def getresponse(self):
+            return Response()
+
+        def close(self) -> None:
+            pass
+
+    monkeypatch.setattr(governance, 'HTTPSConnection', Connection)
 
 
 def test_exact_human_uat_comment_is_verified(evidence, monkeypatch) -> None:
@@ -109,11 +123,24 @@ def test_missing_token_and_unavailable_api_fail_closed(evidence, monkeypatch) ->
         governance.verify_uat_acceptance(VERSION, RC, SHA, DIGEST)
     monkeypatch.setenv('GH_TOKEN', 'test-only-token')
 
-    def offline(_request, timeout):
-        raise URLError('unavailable')
+    class OfflineConnection:
+        def __init__(self, host: str, timeout: int):
+            pass
 
-    monkeypatch.setattr(governance, 'urlopen', offline)
+        def request(self, method: str, path: str, headers: dict[str, str]) -> None:
+            raise OSError('unavailable')
+
+        def close(self) -> None:
+            pass
+
+    monkeypatch.setattr(governance, 'HTTPSConnection', OfflineConnection)
     with pytest.raises(AssertionError, match='Unable to verify'):
+        governance.verify_uat_acceptance(VERSION, RC, SHA, DIGEST)
+
+
+def test_http_error_status_fails_closed(evidence, monkeypatch) -> None:
+    stub_github(monkeypatch, evidence, status=404)
+    with pytest.raises(AssertionError, match='lookup did not succeed'):
         governance.verify_uat_acceptance(VERSION, RC, SHA, DIGEST)
 
 

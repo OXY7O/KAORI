@@ -5,9 +5,8 @@ import json
 import os
 import re
 import sys
+from http.client import HTTPException, HTTPSConnection
 from pathlib import Path
-from urllib.error import URLError
-from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 SEMVER = re.compile(r'^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$')
@@ -86,21 +85,27 @@ def verify_uat_acceptance(version: str, candidate: str, source_sha: str, digest:
     token = os.environ.get('GH_TOKEN', '')
     if not token:
         raise AssertionError('GitHub authentication is required to verify Human UAT acceptance')
-    comment_api = f'https://api.github.com/repos/OXY7O/KAORI/issues/comments/{comment_id}'
-    request = Request(
-        comment_api,
-        headers={
-            'Authorization': f'Bearer {token}',
-            'Accept': 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28',
-            'User-Agent': 'KAORI-Release-Governance',
-        },
-    )
+    # Fixed HTTPS-only endpoint; no URL schemes or redirects are accepted.
+    connection = HTTPSConnection('api.github.com', timeout=20)
     try:
-        with urlopen(request, timeout=20) as response:
-            comment = json.load(response)
-    except (OSError, URLError, ValueError) as exc:
+        connection.request(
+            'GET',
+            f'/repos/OXY7O/KAORI/issues/comments/{comment_id}',
+            headers={
+                'Authorization': f'Bearer {token}',
+                'Accept': 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28',
+                'User-Agent': 'KAORI-Release-Governance',
+            },
+        )
+        response = connection.getresponse()
+        if response.status != 200:
+            raise AssertionError('Human UAT comment lookup did not succeed')
+        comment = json.load(response)
+    except (OSError, HTTPException, ValueError) as exc:
         raise AssertionError('Unable to verify the linked GitHub Human UAT comment') from exc
+    finally:
+        connection.close()
 
     if not isinstance(comment, dict):
         raise AssertionError('Human UAT API response is not a comment')
