@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +33,32 @@ def reject_active_env_key(source: str, key: str, authority: str) -> None:
     if re.search(rf'(?m)^{re.escape(key)}=', source):
         raise AssertionError(f'{authority} must not actively define deployment-managed {key}')
 
+
+
+def verify_stable_notes(version: str, candidate: str) -> None:
+    if not SEMVER.fullmatch(version):
+        raise AssertionError('Stable release notes require a valid version')
+    if not re.fullmatch('v' + re.escape(version) + r'-rc\.[1-9][0-9]*', candidate):
+        raise AssertionError('Stable release notes require a matching accepted RC')
+    path = 'docs/releases/KAORI_' + version.replace('.', '_') + '.md'
+    notes = read(path)
+    if not notes.startswith('# KAORI v' + version + '\n'):
+        raise AssertionError('Reviewed notes must name the requested stable version')
+    if 'Accepted RC: ' + candidate not in notes:
+        raise AssertionError('Reviewed notes must name the exact accepted RC')
+    if 'Human UAT evidence: https://github.com/OXY7O/KAORI/issues/' not in notes:
+        raise AssertionError('Reviewed notes must link release-bound Human UAT evidence')
+    headings = re.findall(r'(?m)^## ([^\n]+)$', notes)
+    expected = ['Highlights', 'Improvements', 'Fixes', 'Known Limitations']
+    if headings != expected:
+        raise AssertionError('Reviewed notes must contain ordered release sections')
+    for heading in expected:
+        section = notes.split('## ' + heading + '\n', 1)[1].split('\n## ', 1)[0].strip()
+        if len(section) < 12 or re.search(r'(?i)\b(TODO|TBD|PLACEHOLDER)\b', section):
+            raise AssertionError('Missing reviewed content for ' + heading)
+    if '## [Unreleased]' not in read('CHANGELOG.md'):
+        raise AssertionError('Changelog must keep the Unreleased changes until publication')
+    print('PASS — Reviewed stable release notes')
 
 def verify() -> None:
     version_line = read('VERSION').strip()
@@ -179,4 +206,9 @@ def verify() -> None:
 
 
 if __name__ == '__main__':
-    verify()
+    if len(sys.argv) == 3:
+        verify_stable_notes(sys.argv[1], sys.argv[2])
+    elif len(sys.argv) == 1:
+        verify()
+    else:
+        raise SystemExit('Usage: verify_release_governance.py [stable_version accepted_rc]')
