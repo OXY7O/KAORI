@@ -37,6 +37,10 @@ case "${RELEASE_GATE:-false}" in
        "${EXPECTED_RC_TAG:-}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[1-9][0-9]*$ &&
        "${EXPECTED_RC_TAG}" == "v${EXPECTED_RELEASE_VERSION}-rc."* ]] ||
       fail 'stable runtime gate requires an exact accepted RC source, tag, digest and version'
+    [[ -z "${EXPECTED_RUNTIME_VERSION:-}" ||
+       "${EXPECTED_RUNTIME_VERSION}" == "${EXPECTED_RELEASE_VERSION}" ||
+       "${EXPECTED_RUNTIME_VERSION}" == "${EXPECTED_RC_TAG#v}" ]] ||
+      fail 'release-bound runtime observation must match exact stable or accepted RC version'
     ;;
   false) ;;
   *) fail 'unknown stable runtime gate mode' ;;
@@ -118,6 +122,7 @@ setsid -w ssh-add "$tmp/id" </dev/null >/dev/null 2>&1 ||
   printf 'expected_rc_image_digest=%q\n' "${EXPECTED_RC_IMAGE_DIGEST:-}"
   printf 'expected_release_version=%q\n' "${EXPECTED_RELEASE_VERSION:-}"
   printf 'expected_rc_tag=%q\n' "${EXPECTED_RC_TAG:-}"
+  printf 'expected_runtime_version=%q\n' "${EXPECTED_RUNTIME_VERSION:-${EXPECTED_RELEASE_VERSION:-}}"
   cat <<'REMOTE_READ_ONLY'
 set -Eeuo pipefail
 [[ -d "$root" && ! -L "$root" ]] || {
@@ -249,9 +254,15 @@ if [[ "$inventory_requested" == true ]]; then
   # Do not authorize stable tag/registry publication from a credential-only snapshot.
   # This is the read-only stage; actual mutation/convergence belongs to #5117.
   if [[ "$release_gate_requested" == true ]]; then
+    # #5117: an explicitly selected RC-version observation may qualify a future
+    # same-digest stable-version reconciliation, never stable publication.
+    # Default stays the original strict stable-version READY_NOOP gate.
+    [[ "$expected_runtime_version" == "$expected_release_version" ||
+       "$expected_runtime_version" == "${expected_rc_tag#v}" ]] ||
+      { echo 'BLOCK: release-bound runtime observation version is not accepted' >&2; exit 1; }
     if [[ "$receipt_sha" != "$expected_rc_source_sha" ||
           "$receipt_image" != "$registry_image@$expected_rc_image_digest" ||
-          "$receipt_version" != "$expected_release_version" ]]; then
+          "$receipt_version" != "$expected_runtime_version" ]]; then
       echo 'NEEDS_RECONCILIATION: selected target does not yet match accepted RC digest/source and stable runtime version; stable publication held' >&2
       exit 1
     fi
@@ -310,7 +321,11 @@ if [[ "$inventory_requested" == true ]]; then
       { echo 'BLOCK: rollback checksum does not identify the selected backup' >&2; exit 1; }
     sha256sum --check --status "$rollback_backup.sha256" ||
       { echo 'BLOCK: rollback backup digest verification failed' >&2; exit 1; }
-    echo 'READY_NOOP: accepted immutable digest/source, stable runtime identity and committed rollback evidence verified on configured target'
+    if [[ "$expected_runtime_version" == "$expected_release_version" ]]; then
+      echo 'READY_NOOP: accepted immutable digest/source, stable runtime identity and committed rollback evidence verified on configured target'
+    else
+      echo 'READY_FOR_STABLE_CONVERGENCE: accepted RC digest/source, exact RC runtime version and rollback evidence verified; stable runtime version is not yet committed'
+    fi
     echo 'LIMIT: provider-edge acceptance and actual recovery drill require separately governed #5117 UAT; read-only observation is not release authorization'
   fi
 
@@ -333,7 +348,11 @@ REMOTE_READ_ONLY
   if [[ "$(printenv TARGET_INVENTORY || printf false)" == true ]]; then
     echo 'Opt-in runtime inventory compared receipt, application containers and private volumes; see sanitized PASS/BLOCK job lines.'
     if [[ "${RELEASE_GATE:-false}" == true ]]; then
-      echo 'Release-bound read-only gate classified selected target as READY_NOOP; recovery and edge acceptance remain separately governed.'
+      if [[ "${EXPECTED_RUNTIME_VERSION:-${EXPECTED_RELEASE_VERSION:-}}" == "${EXPECTED_RELEASE_VERSION:-}" ]]; then
+        echo 'Release-bound read-only gate classified selected target as READY_NOOP; recovery and edge acceptance remain separately governed.'
+      else
+        echo 'Read-only RC observation is READY_FOR_STABLE_CONVERGENCE only; stable publication remains blocked until runtime convergence and full verification.'
+      fi
     fi
     echo 'This is not recovery/rollback testing, DB migration acceptance, public-edge acceptance or an authorized stable release.'
   fi
