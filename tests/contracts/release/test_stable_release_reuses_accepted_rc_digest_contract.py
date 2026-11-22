@@ -94,6 +94,9 @@ def test_reviewed_notes_are_required_and_bound_to_the_exact_rc(tmp_path, monkeyp
         governance.verify_stable_notes('0.3.0', 'v0.2.0-rc.2')
     with pytest.raises(AssertionError, match='accepted RC'):
         governance.verify_stable_notes('0.3.0', 'v0.3.0-rc.3')
+    notes_path.write_text(''.join(valid).replace('#issuecomment-12345', '#issuecomment-TODO'), encoding='utf-8')
+    with pytest.raises(AssertionError, match='Human UAT evidence'):
+        governance.verify_stable_notes('0.3.0', 'v0.3.0-rc.2')
     notes_path.write_text(''.join(valid).replace('Runtime targets are discoverable.', 'TODO'), encoding='utf-8')
     with pytest.raises(AssertionError, match='Missing reviewed content'):
         governance.verify_stable_notes('0.3.0', 'v0.3.0-rc.2')
