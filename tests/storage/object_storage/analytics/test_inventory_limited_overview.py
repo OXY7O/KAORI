@@ -63,9 +63,9 @@ def test_limited_overview_preserves_worker_and_committed_inventory_boundaries() 
     for text in (overview, limited, posture):
         Environment().parse(text)
 
-    assert "if system.inventory_observed_at is None:" in service
+    assert 'if system.inventory_observed_at is None:' in service
     assert "context['inventory_limited'] = _inventory_limited_view(system)" in service
-    assert "ObjectStorageBucket.object_storage_system_id == system.id" in service
+    assert 'ObjectStorageBucket.object_storage_system_id == system.id' in service
     assert "context['dependency_blocker'] = None" in service
     assert 'data-object-storage-inventory-limited-overview' in limited
     assert 'inventory_limited.size_display' in limited
@@ -73,6 +73,6 @@ def test_limited_overview_preserves_worker_and_committed_inventory_boundaries() 
     assert "metrics_source': {" in service
     assert 'Not Collected' in limited or 'Not Collected' in service
     assert "if page_key == 'overview' and analytics_limited" in posture
-    assert "if analytics_limited" in overview
+    assert 'if analytics_limited' in overview
     assert 'storage/object_storage/analytics/partials/_overview_analysis.html' in overview
     assert 'storage/object_storage/analytics/partials/_overview_workspace.html' in overview
