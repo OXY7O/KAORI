@@ -285,7 +285,6 @@ def should_request_registry_analytics_materialization(
     return True
 
 
-
 def registry_analytics_dependency_steps(
     *,
     registered_count: int,
@@ -371,6 +370,7 @@ def registry_analytics_dependency_steps(
             }
         )
     return steps
+
 
 def build_registry_analytics_readiness(
     *,
