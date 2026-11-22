@@ -2,149 +2,78 @@
   <img src="app/static/images/kaori-logo.svg" alt="KAORI" width="112" />
 </p>
 
-<h1 align="center">KAORI</h1>
+<h1 align="center">KAORI Application</h1>
 <p align="center"><strong>Knowledge, Automation, Operations, Resilience & Intelligence</strong></p>
-<p align="center">Evidence-driven operations for Kubernetes and S3-compatible infrastructure.</p>
+<p align="center">Make infrastructure operations clearer with connected context and trustworthy evidence.</p>
 
 <p align="center">
-  <img alt="CI" src="https://github.com/OXY7O/KAORI/actions/workflows/quality.yml/badge.svg?branch=main" />
+  <a href="https://github.com/OXY7O/KAORI/actions/workflows/quality.yml">
+    <img alt="CI" src="https://github.com/OXY7O/KAORI/actions/workflows/quality.yml/badge.svg?branch=main" />
+  </a>
   <img alt="Version" src="https://img.shields.io/badge/Version-0.3.0-7C3AED" />
-  <img alt="Python" src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white" />
-  <img alt="License" src="https://img.shields.io/badge/License-Apache--2.0-7C3AED" />
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&amp;logoColor=white" />
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache--2.0-7C3AED" /></a>
 </p>
 
-KAORI turns committed infrastructure evidence into Inventory, Analytics, Reports, Intelligence, Governance, integrations, and controlled operator workflows. It complements Kubernetes, Prometheus, Alertmanager, and Object Storage authorities rather than replacing them.
+<p align="center">
+  <a href="https://app.kaori.cloud">Application</a> ·
+  <a href="https://kaori.cloud">Website</a> ·
+  <a href="https://docs.kaori.cloud/">Documentation</a>
+</p>
 
-> **Evidence first.** Operational pages use committed snapshots, live provider access stays explicit, and release promotion is bound to reviewed source plus immutable artifacts.
+## What is KAORI?
+
+KAORI connects infrastructure inventory, relationships, operational evidence, and governed workflows across tools. It helps operators investigate and coordinate work without replacing authoritative systems such as Kubernetes, Prometheus, or object storage.
+
+This repository contains the **authenticated KAORI Application**, not the public KAORI Website.
+
+## What you can do
+
+- **Observe and relate:** Explore infrastructure inventory, health, and cross-domain context.
+- **Analyze and report:** Work from committed operational evidence instead of relying exclusively on live provider requests.
+- **Integrate providers:** Connect supported monitoring, infrastructure, and automation capabilities through KAORI's integration registry.
+- **Govern operations:** Track decisions, approvals, controlled execution, and audit evidence.
 
 ## Architecture
 
-### Platform Capabilities
+**Platform Capabilities:** KAORI connects **Kubernetes**, **Object Storage**, monitoring, **Analytics**, **Reports**, **Intelligence**, and **Governance** through a capability-first platform. The external providers remain authoritative; KAORI correlates committed evidence and operator workflows.
 
-```text
-                         ┌──────────────────────┐
-                         │        KAORI         │
-                         │ Operations Evidence  │
-                         └──────────┬───────────┘
-                                    │
-           ┌────────────┬───────────┼───────────┬────────────┐
-           │            │           │           │            │
-      Kubernetes   Object Storage  Reports  Intelligence  Governance
-           │            │           │           │            │
-           └────────────┴───────────┴───────────┴────────────┘
-                                    │
-                  Integrations · Automation · Audit
-```
-
-The root view intentionally stays product-level. Runtime boundaries, data authority, service topology, workers, provider adapters, and deployment architecture are documented in [`docs/architecture/README.md`](docs/architecture/README.md).
+See the [architecture guide](docs/architecture/README.md) for data ownership, service topology, and provider boundaries.
 
 ## Quick Start
 
-The supported development path is the VS Code Dev Container described in
-[`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md). Open the project
-normally in **VS Code Windows**, ensure Docker Desktop is running Linux
-containers, and select **Dev Containers: Rebuild and Reopen in Container**.
-The first-run initializer executes Python inside a disposable Docker
-container, **not on your Windows host or WSL**.
+The recommended development environment is the **VS Code Dev Container**. Start Docker Desktop (Linux containers), open this repository in VS Code, and choose **Dev Containers: Reopen in Container**. The first-run setup prepares the local development environment.
+
+Press **F5** to start KAORI. If the application displays **Database Setup Required**, set your local `ADMIN_EMAIL` in `.env`, then run this one-time bootstrap command from **Windows PowerShell on the host**:
 
 ```bash
-# Optional before first open: cp .env.example .env
-# The Docker-based initializer creates .env when missing and generates
-# runtime kaori_runtime DATABASE_URL and application development keys.
-# postgres and migrator passwords are generated in ignored local files:
-# secrets/devcontainer/postgres-bootstrap.env
-# secrets/devcontainer/postgres-migrate.env
-# See committed safe examples under .devcontainer/examples/.
-# Reopen in Container starts PostgreSQL, Redis, workspace and workers/Beat.
-# Press F5: an empty database shows Database Setup Required.
-# Run the copied command from Windows PowerShell on the host:
 docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap
-# Refresh /auth/login and use the private .env ADMIN_* application account.
 ```
 
-The shared app `.env` uses **only** `kaori_runtime` for PostgreSQL
-`DATABASE_URL`. It does not contain `POSTGRES_PASSWORD` or a
-`kaori_migrator` login. Configure `ADMIN_EMAIL` before first
-operator bootstrap; no DBA password is required from the application.
-See [exact environment-file ownership](docs/deployment/ENVIRONMENT_CONFIGURATION.md)
-and [DevContainer first-run instructions](docs/operations/devcontainer-postgres-first-run.md).
+Refresh the local sign-in page and use the development admin account configured in your private `.env`. Do not use production credentials.
 
-For a laptop that should run a governed staging/RC image **without a Dev Container**, use [`example/kaori`](example/kaori/README.md). The example consumes an explicit admitted image reference rather than a mutable `staging` tag.
+For setup details and troubleshooting, see [Development](docs/DEVELOPMENT.md) and [PostgreSQL first run](docs/operations/devcontainer-postgres-first-run.md). For an isolated laptop runtime using a pinned release-candidate image, see [Standalone KAORI example](example/kaori/README.md).
 
-```bash
-cd example/kaori
-cp .env.example .env
-# Set KAORI_IMAGE to the exact admitted RC image/tag or digest.
-./run.sh start
-./run.sh status
-```
+## Integration examples
 
-Runtime modes and prerequisites are documented in [`docs/RUNNING.md`](docs/RUNNING.md).
+The [examples directory](example/README.md) contains **disposable, local provider labs** for Prometheus, Alertmanager, MinIO/S3-compatible storage, and Thanos Query. These sample stacks help test connectivity; they are **not** the current integration registry, production topology, or a complete list of supported providers.
 
-## Standalone Integration Examples
-
-[`example/`](example/README.md) provides disposable Docker Compose stacks for provider integration testing:
-
-- Prometheus
-- Alertmanager
-- MinIO / S3-compatible storage
-- Thanos Query
-
-Each provider owns its own Compose/configuration surface. `example/compose.demo.yml` is only a convenience topology for exercising multiple providers together. CI runner infrastructure is intentionally outside this integration-example catalog.
-
-## Quality & Validation
-
-```bash
-python scripts/verify_final_release.py
-python scripts/verify_final_release.py --all
-```
-
-Use `--runtime` when release services are running and live readiness must also be proven. See [`docs/TESTING.md`](docs/TESTING.md) and [`tests/README.md`](tests/README.md).
+For real integration behavior and architecture, follow [KAORI architecture](docs/architecture/README.md).
 
 ## Deployment & Release
 
-[`VERSION`](VERSION) defines the source-controlled **current product version line**. It is synchronized with the README badge and development fallback, but it is not the exact deployed release identity. Governed prereleases use `vX.Y.Z-rc.N`; deployment strips the leading `v` and injects the exact `APP_VERSION`, source SHA, build date, and immutable image digest. A stable release uses `vX.Y.Z` only after the accepted candidate is promoted without rebuilding application bits.
+`VERSION` defines the **current product version line**; it is not proof that a stable release has been published or deployed. Routine commits and merges do **not** deploy production.
 
-KAORI uses a governed immutable promotion path:
+Changes enter the reviewed `kaori/staging` source before an intentional release. An intentional stable release requires reviewed change notes, an accepted signed release candidate, **explicit UAT acceptance**, operator authorization, and protected production approval. Stable publication preserves the accepted immutable OCI digest rather than rebuilding the application.
 
-```text
-Issue → Work Branch → Developer Check → kaori/staging → Full Admission
-      → immutable RC → staging deployment → explicit UAT acceptance → production promotion
-```
-
-A stable release reuses the exact accepted OCI digest; the application image is not rebuilt during stable promotion. Release identity binds source SHA, Git tag, GitHub Release, accepted RC, OCI digest, runtime metadata, signature, and validation evidence.
-
-- [`CHANGELOG.md`](CHANGELOG.md) — product change history and current work.
-- [`docs/deployment/RELEASE_GOVERNANCE.md`](docs/deployment/RELEASE_GOVERNANCE.md) — immutable release authority and promotion rules.
-- [`docs/releases/KAORI_2_3_0.md`](docs/releases/KAORI_2_3_0.md) — immutable historical 2.3.0 release record; it does not define the current product line.
-- [`docs/releases/README.md`](docs/releases/README.md) — canonical release lifecycle and artifact boundaries.
-- [`deploy/server/README.md`](deploy/server/README.md) — governed server deployment adapter.
-
-## Security & License
-
-KAORI-authored software source is licensed under the [Apache License 2.0](LICENSE); see [NOTICE](NOTICE) for attribution and scope. **Lethisa (`@lethisa`) is the original author and rights holder; `@donibawono` is the independent reviewer**, not a copyright assignee. Third-party material retains its own license, and KAORI/OXY7O names, logos and brand artwork are excluded from the software trademark grant. Open-source code licensing does not imply that KAORI's hosted service, production credentials or commercial support are available.
-
-Security issues must be reported privately according to [`SECURITY.md`](SECURITY.md). Do not publish credentials, infrastructure addresses, exploitation details, or sensitive operational evidence in public issues.
+See [Changelog](CHANGELOG.md), [Release lifecycle](docs/releases/README.md), and [Release governance](docs/deployment/RELEASE_GOVERNANCE.md) for versions, release history, and operator procedures.
 
 ## Documentation
 
-| Area | Authority |
-| --- | --- |
-| Architecture | [`docs/architecture/README.md`](docs/architecture/README.md) |
-| Development | [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) |
-| Running KAORI | [`docs/RUNNING.md`](docs/RUNNING.md) |
-| Testing | [`docs/TESTING.md`](docs/TESTING.md) |
-| Deployment | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) |
-| Release governance | [`docs/deployment/RELEASE_GOVERNANCE.md`](docs/deployment/RELEASE_GOVERNANCE.md) |
-| Delivery workflow | [`docs/engineering/KAORI_DELIVERY_WORKFLOW.md`](docs/engineering/KAORI_DELIVERY_WORKFLOW.md) |
-| Standalone examples | [`example/README.md`](example/README.md) |
+See [Development](docs/DEVELOPMENT.md), [Testing](docs/TESTING.md), [Architecture](docs/architecture/README.md), and [Deployment](docs/DEPLOYMENT.md) for detailed operator and contributor guidance.
 
-## Community Feedback (Pre-launch)
+## Feedback, security & license
 
-Public feedback and external contribution intake are **not yet launched**. Maintainers use the [community intake triage contract](docs/engineering/COMMUNITY_INTAKE_TRIAGE.md) to evaluate suggestions and external pull requests before accepting any governed engineering Issue. This guidance does not indicate that GitHub Discussions or public contribution acceptance is enabled. Report security concerns privately via [`SECURITY.md`](SECURITY.md), never in public discussions.
+Public community feedback and contribution acceptance are **not yet launched**. The [community intake triage contract](docs/engineering/COMMUNITY_INTAKE_TRIAGE.md) describes maintainer preparation; it **does not indicate that GitHub Discussions** or public contribution acceptance are active. See [contribution and delivery standards](docs/engineering/KAORI_DELIVERY_WORKFLOW.md). Report sensitive findings privately via [`SECURITY.md`](SECURITY.md), never public issues.
 
-## Repository Governance
-
-Executable work is governed by an Issue, isolated branch, reviewable PR, exact-SHA Developer Check, staging integration, comprehensive Full Admission, and explicit human acceptance before production promotion. `main` and `kaori/staging` are the only long-lived product authorities; temporary work branches are retired after integration.
-
-Real secrets and environment values are never committed to repository examples or release artifacts.
+KAORI-authored software source is licensed under the [Apache License 2.0](LICENSE); see [NOTICE](NOTICE). Product names, trademarks, and brand artwork are excluded from the software license; third-party assets retain their own licenses. Open-source code licensing does not imply access to hosted services, production infrastructure, or support.
