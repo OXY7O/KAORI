@@ -22,6 +22,26 @@ case "$(printenv TARGET_INVENTORY || printf false)" in
   *) fail 'invalid runtime inventory mode' ;;
 esac
 
+# Issue #5116: release-bound target observation is never a generic credential probe.
+# Only the already manual protected-main stable publisher can activate this mode.
+case "${RELEASE_GATE:-false}" in
+  true)
+    [[ "$TARGET_ENV" == production &&
+       "$GITHUB_EVENT_NAME" == workflow_dispatch &&
+       "$GITHUB_REF" == refs/heads/main &&
+       "${TARGET_INVENTORY:-false}" == true ]] ||
+      fail 'stable runtime gate requires explicit protected-main production inventory'
+    [[ "${EXPECTED_RC_SOURCE_SHA:-}" =~ ^[0-9a-f]{40}$ &&
+       "${EXPECTED_RC_IMAGE_DIGEST:-}" =~ ^sha256:[0-9a-f]{64}$ &&
+       "${EXPECTED_RELEASE_VERSION:-}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ &&
+       "${EXPECTED_RC_TAG:-}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[1-9][0-9]*$ &&
+       "${EXPECTED_RC_TAG}" == "v${EXPECTED_RELEASE_VERSION}-rc."* ]] ||
+      fail 'stable runtime gate requires an exact accepted RC source, tag, digest and version'
+    ;;
+  false) ;;
+  *) fail 'unknown stable runtime gate mode' ;;
+esac
+
 for name in REGISTRY_HOST REGISTRY_IMAGE REGISTRY_USER REGISTRY_PASSWORD DEPLOY_HOST DEPLOY_PORT DEPLOY_USER DEPLOY_ROOT DEPLOY_SSH_KEY DEPLOY_SSH_PASSPHRASE DEPLOY_KNOWN_HOSTS; do
   [[ -n "$(printenv "$name")" ]] || fail "missing required Environment credential/config: $name"
 done
@@ -93,6 +113,11 @@ setsid -w ssh-add "$tmp/id" </dev/null >/dev/null 2>&1 ||
   printf 'deploy_env=%q\n' "$HOST_ENV_PATH"
   printf 'inventory_requested=%q\n' "$(printenv TARGET_INVENTORY || printf false)"
   printf 'registry_image=%q\n' "$REGISTRY_IMAGE"
+  printf 'release_gate_requested=%q\n' "${RELEASE_GATE:-false}"
+  printf 'expected_rc_source_sha=%q\n' "${EXPECTED_RC_SOURCE_SHA:-}"
+  printf 'expected_rc_image_digest=%q\n' "${EXPECTED_RC_IMAGE_DIGEST:-}"
+  printf 'expected_release_version=%q\n' "${EXPECTED_RELEASE_VERSION:-}"
+  printf 'expected_rc_tag=%q\n' "${EXPECTED_RC_TAG:-}"
   cat <<'REMOTE_READ_ONLY'
 set -Eeuo pipefail
 [[ -d "$root" && ! -L "$root" ]] || {
@@ -189,6 +214,11 @@ if [[ "$inventory_requested" == true ]]; then
     health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$checked_cid")"
     [[ "$health" == healthy || "$health" == missing ]] ||
       { echo "BLOCK: $service container health is not ready" >&2; exit 1; }
+    if [[ "$release_gate_requested" == true && "$service" == web &&
+          "$health" != healthy ]]; then
+      echo 'BLOCK: release target web health check missing or not healthy' >&2
+      exit 1
+    fi
     [[ "$service" != web ]] || web_cid="$checked_cid"
     (( app_count += 1 ))
   done
@@ -216,6 +246,74 @@ if [[ "$inventory_requested" == true ]]; then
       { echo "BLOCK: $service volume differs from selected project" >&2; exit 1; }
   done
 
+  # Do not authorize stable tag/registry publication from a credential-only snapshot.
+  # This is the read-only stage; actual mutation/convergence belongs to #5117.
+  if [[ "$release_gate_requested" == true ]]; then
+    if [[ "$receipt_sha" != "$expected_rc_source_sha" ||
+          "$receipt_image" != "$registry_image@$expected_rc_image_digest" ||
+          "$receipt_version" != "$expected_release_version" ]]; then
+      echo 'NEEDS_RECONCILIATION: selected target does not yet match accepted RC digest/source and stable runtime version; stable publication held' >&2
+      exit 1
+    fi
+
+    # The server's existing deploy.sh owns these committed results and rollback
+    # pointers. Inspect their existence only; do not evaluate host-owned shell.
+    state_dir="${receipt%/*}"
+    [[ -d "$state_dir" && ! -L "$state_dir" ]] ||
+      { echo 'BLOCK: selected target release state directory unsafe' >&2; exit 1; }
+    for result_key in verification-result migration-result; do
+      result_file="$state_dir/$result_key"
+      [[ -f "$result_file" && ! -L "$result_file" && -r "$result_file" ]] ||
+        { echo 'BLOCK: committed migration/verification evidence missing' >&2; exit 1; }
+      [[ "$(cat -- "$result_file")" == pass ]] ||
+        { echo 'BLOCK: committed migration/verification evidence not PASS' >&2; exit 1; }
+    done
+    [[ -f "$state_dir/previous-release.env" &&
+       ! -L "$state_dir/previous-release.env" &&
+       -r "$state_dir/previous-release.env" &&
+       -s "$state_dir/previous-release.env" ]] ||
+      { echo 'BLOCK: previous immutable release receipt unavailable for rollback' >&2; exit 1; }
+    previous_receipt="$state_dir/previous-release.env"
+    [[ "$(wc -l < "$previous_receipt")" -eq 4 ]] ||
+      { echo 'BLOCK: previous release receipt structure invalid' >&2; exit 1; }
+    for key in KAORI_IMAGE APP_VERSION APP_BUILD_SHA APP_BUILD_DATE; do
+      [[ "$(grep -c "^$key=" "$previous_receipt" || true)" == 1 ]] ||
+        { echo 'BLOCK: previous release receipt identity missing or duplicated' >&2; exit 1; }
+    done
+    previous_image="$(sed -n 's/^KAORI_IMAGE=//p' "$previous_receipt")"
+    previous_version="$(sed -n 's/^APP_VERSION=//p' "$previous_receipt")"
+    previous_sha="$(sed -n 's/^APP_BUILD_SHA=//p' "$previous_receipt")"
+    previous_date="$(sed -n 's/^APP_BUILD_DATE=//p' "$previous_receipt")"
+    [[ "$previous_image" =~ ^[^[:space:]]+@sha256:[0-9a-f]{64}$ &&
+       "$previous_image" == "$registry_image@sha256:"* &&
+       "$previous_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ &&
+       "$previous_sha" =~ ^[0-9a-f]{40}$ &&
+       "$previous_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[^[:space:]]+$ &&
+       -d "$root/releases/$previous_sha" && ! -L "$root/releases/$previous_sha" ]] ||
+      { echo 'BLOCK: previous release receipt is not a recoverable immutable artifact' >&2; exit 1; }
+    [[ -f "$state_dir/previous-backup" &&
+       ! -L "$state_dir/previous-backup" &&
+       -r "$state_dir/previous-backup" ]] ||
+      { echo 'BLOCK: committed previous backup pointer unavailable' >&2; exit 1; }
+    IFS= read -r rollback_backup < "$state_dir/previous-backup" ||
+      { echo 'BLOCK: previous backup pointer unreadable' >&2; exit 1; }
+    backup_root="${state_dir%/*}/backups"
+    [[ -d "$backup_root" && ! -L "$backup_root" &&
+       "$rollback_backup" == "$backup_root/"* &&
+       "$rollback_backup" != *'..'* && "$rollback_backup" != *$'\n'* &&
+       -f "$rollback_backup" && ! -L "$rollback_backup" &&
+       -s "$rollback_backup" && -f "$rollback_backup.sha256" &&
+       ! -L "$rollback_backup.sha256" ]] ||
+      { echo 'BLOCK: committed rollback backup evidence is unsafe or missing' >&2; exit 1; }
+    [[ "$(wc -l < "$rollback_backup.sha256")" -eq 1 &&
+       "$(cat -- "$rollback_backup.sha256")" == "$(sha256sum -- "$rollback_backup")" ]] ||
+      { echo 'BLOCK: rollback checksum does not identify the selected backup' >&2; exit 1; }
+    sha256sum --check --status "$rollback_backup.sha256" ||
+      { echo 'BLOCK: rollback backup digest verification failed' >&2; exit 1; }
+    echo 'READY_NOOP: accepted immutable digest/source, stable runtime identity and committed rollback evidence verified on configured target'
+    echo 'LIMIT: provider-edge acceptance and actual recovery drill require separately governed #5117 UAT; read-only observation is not release authorization'
+  fi
+
   receipt_digest="$(printf '%s' "$receipt_image" | sed 's/^.*@//')"
   echo "PASS: configured runtime inventory · project=$project source=$receipt_sha version=$receipt_version digest=$receipt_digest; 12 app containers match receipt; network/volumes and private healthy PostgreSQL/Redis checked"
   echo 'LIMIT: observational snapshot only; no database transactions, rollback drill, browser UAT, supply-chain verification or provider-edge acceptance'
@@ -234,6 +332,9 @@ REMOTE_READ_ONLY
   echo 'This check does NOT replace signed digest verification, real UAT, Human Acceptance or production deployment approval.'
   if [[ "$(printenv TARGET_INVENTORY || printf false)" == true ]]; then
     echo 'Opt-in runtime inventory compared receipt, application containers and private volumes; see sanitized PASS/BLOCK job lines.'
+    if [[ "${RELEASE_GATE:-false}" == true ]]; then
+      echo 'Release-bound read-only gate classified selected target as READY_NOOP; recovery and edge acceptance remain separately governed.'
+    fi
     echo 'This is not recovery/rollback testing, DB migration acceptance, public-edge acceptance or an authorized stable release.'
   fi
 } >> "$GITHUB_STEP_SUMMARY"
