@@ -84,6 +84,7 @@ def test_unvalidated_registry_does_not_fabricate_source_readiness() -> None:
     assert steps['metrics']['status'] == 'Not Collected'
     assert steps['alerts']['status'] == 'Not Collected'
 
+
 def test_registry_dependency_path_reuses_shared_analytics_markup() -> None:
     shared = (ROOT / 'app/templates/analytics/components/_controls_readiness.html').read_text()
     controls = (ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html').read_text()
