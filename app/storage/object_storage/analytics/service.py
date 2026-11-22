@@ -37,12 +37,12 @@ from app.storage.object_storage.analytics.bucket_table import (
     build_bucket_forecast_table_view,
     build_bucket_table_view,
 )
-from app.storage.object_storage.analytics.inventory_limited import limited_inventory_analytics_context
 from app.storage.object_storage.analytics.dependencies import (
     analytics_snapshot_blocker,
     inventory_required_blocker,
     system_required_blocker,
 )
+from app.storage.object_storage.analytics.inventory_limited import limited_inventory_analytics_context
 from app.storage.object_storage.analytics.materialization import (
     forecast_snapshot_state,
     get_forecast_snapshot,
