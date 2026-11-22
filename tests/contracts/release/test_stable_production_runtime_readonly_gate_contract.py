@@ -297,7 +297,9 @@ def test_exact_accepted_rc_runtime_is_read_only_convergence_eligible(simulated_t
     )
     env['expected_runtime_version'] = '0.3.0-rc.3'
     result = run_observation(env)
-    assert result.returncode == 0, result.stderr
+    # A recognized RC is eligible for later reconciliation, never for
+    # returning success to the existing stable publication gate.
+    assert result.returncode == 3, result.stderr
     assert 'READY_FOR_STABLE_CONVERGENCE:' in result.stdout
     assert 'READY_NOOP:' not in result.stdout
     assert 'PASS: configured runtime inventory' in result.stdout
