@@ -250,7 +250,7 @@ def test_uat_workflow_requires_explicit_manual_rc_and_current_staging_sha() -> N
     assert 'push:' not in trigger_section
     assert 'kaori/uat-request' not in source
     assert 'releases?per_page=100' not in source
-    assert "[[ \"$GITHUB_EVENT_NAME\" == 'workflow_dispatch' ]] || {" in source
+    assert '[[ "$GITHUB_EVENT_NAME" == \'workflow_dispatch\' ]] || {' in source
     assert 'explicit manual Release Deployment request' in source
     assert 'refs/heads/kaori/staging' in source
     assert '"$GITHUB_SHA" == "$current_staging"' in source
