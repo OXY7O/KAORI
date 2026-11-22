@@ -23,9 +23,13 @@ A completed stable release must bind all of the following to one accepted lineag
 
 Stable promotion must reuse the exact digest accepted in Staging Acceptance. It must promote **without rebuilding application bits**.
 
-## Changelog boundary
+## Reviewed release notes and changelog
 
-`CHANGELOG.md` keeps a top-level `[Unreleased]` section during development. Before stable publication, the accepted release scope is copied into a dated `[X.Y.Z] - YYYY-MM-DD` section and a fresh `[Unreleased]` section is retained for subsequent work.
+Production release is **intentional**, not triggered by routine commits or merges. After a release candidate has completed real UAT and received explicit Human Acceptance, the maintainer prepares a reviewed product-facing `docs/releases/KAORI_X_Y_Z.md` from [the release notes template](RELEASE_NOTES_TEMPLATE.md). It must identify the exact accepted RC and Human UAT issue-comment evidence, with clear **Highlights**, **Improvements**, **Fixes**, and **Known Limitations**.
+
+The manual protected `main` stable release request validates the exact version and RC against that reviewed file before requesting privileged publication. The GitHub Release displays these understandable changes **first**, then appends verified OCI/SBOM/provenance/source evidence. Signed stable metadata reuses the accepted candidate digest without rebuilding application bits.
+
+`CHANGELOG.md` retains its `[Unreleased]` changes while stable publication is pending. **After the actual stable tag and GitHub Release exist**, move the accepted changes into a dated `[X.Y.Z] - YYYY-MM-DD` section in a separately reviewed update. Do not announce a prerelease as an already-published stable release.
 
 Historical `docs/releases/KAORI_*.md` files are detailed records only. They do not override the current Git tag/GitHub Release/OCI release authority.
 
