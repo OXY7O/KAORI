@@ -1,6 +1,12 @@
 """Source-independent Registry Analytics dependency readiness contracts (#5123)."""
 
+from pathlib import Path
+
+from jinja2 import Environment
+
 from app.artifact_registry.analytics_job_adapter import registry_analytics_dependency_steps
+
+ROOT = Path(__file__).resolve().parents[3]
 
 
 def _statuses(*, registered: int, eligible: int, evidence: list[dict]) -> dict[str, dict[str, str]]:
@@ -77,3 +83,15 @@ def test_unvalidated_registry_does_not_fabricate_source_readiness() -> None:
     assert steps['domain']['status'] == 'Validation Required'
     assert steps['metrics']['status'] == 'Not Collected'
     assert steps['alerts']['status'] == 'Not Collected'
+
+def test_registry_dependency_path_reuses_shared_analytics_markup() -> None:
+    shared = (ROOT / 'app/templates/analytics/components/_controls_readiness.html').read_text()
+    controls = (ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html').read_text()
+
+    Environment().parse(shared)
+    Environment().parse(controls)
+    assert '{% macro dependency_path(steps)' in shared
+    assert 'data-analytics-dependency-path' in shared
+    assert 'data-analytics-dependency-step="{{ step.key }}"' in shared
+    assert 'shared_readiness.dependency_path(readiness.dependency_steps)' in controls
+    assert 'shared_readiness.readiness_grid()' in controls
