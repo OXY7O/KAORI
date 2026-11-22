@@ -8,11 +8,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import func
-
-from app.extensions.db import db
-from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
+from app.models.object_storage import ObjectStorageSystem
 from app.storage.object_storage.analytics.presentation import format_bytes, format_number
+from app.storage.object_storage.inventory.aggregates import bucket_usage_summary
 
 
 def inventory_limited_coverage(
@@ -41,24 +39,14 @@ def inventory_limited_coverage(
 
 
 def build_inventory_limited_view(system: ObjectStorageSystem) -> dict[str, str | int]:
-    """One system-bound SQL aggregate; no full bucket ORM load on a normal GET."""
-    summary = (
-        db.session.query(
-            func.count(ObjectStorageBucket.id),
-            func.count(ObjectStorageBucket.size_bytes),
-            func.sum(ObjectStorageBucket.size_bytes),
-            func.count(ObjectStorageBucket.object_count),
-            func.sum(ObjectStorageBucket.object_count),
-        )
-        .filter(ObjectStorageBucket.object_storage_system_id == system.id)
-        .one()
-    )
+    """Reuse the canonical, one-query, selected-system committed Inventory aggregate."""
+    summary = bucket_usage_summary(system_id=str(system.id))
     return inventory_limited_coverage(
-        bucket_count=int(summary[0] or 0),
-        size_observed=int(summary[1] or 0),
-        size_total=int(summary[2]) if summary[2] is not None else None,
-        objects_observed=int(summary[3] or 0),
-        objects_total=int(summary[4]) if summary[4] is not None else None,
+        bucket_count=summary['buckets'],
+        size_observed=summary['stored_samples'],
+        size_total=summary['stored_bytes'],
+        objects_observed=summary['object_samples'],
+        objects_total=summary['objects'],
     )
 
 
