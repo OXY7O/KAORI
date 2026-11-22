@@ -58,7 +58,9 @@ def test_stable_release_is_explicit_and_checks_notes_before_privileged_publicati
     assert '      - name: Require Reviewed Stable Change Notes' in WORKFLOW
     assert '      - name: Recheck Reviewed Stable Notes Before Publication' in WORKFLOW
     assert WORKFLOW.index('Require Reviewed Stable Change Notes') < WORKFLOW.index('Resolve RC Evidence')
-    assert WORKFLOW.index('Recheck Reviewed Stable Notes Before Publication') < WORKFLOW.index('Log In to Docker Registry')
+    assert WORKFLOW.index('Recheck Reviewed Stable Notes Before Publication') < WORKFLOW.index(
+        'Log In to Docker Registry'
+    )
     assert 'docs/releases/KAORI_${RELEASE_VERSION//./_}.md' in WORKFLOW
     assert 'CHANGELOG.md' in WORKFLOW
     assert WORKFLOW.index('## Technical Evidence') < WORKFLOW.index('      - name: Publish Stable Release')
