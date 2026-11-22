@@ -289,8 +289,8 @@ jobs:
         shell: bash
         env:
           TARGET_ENV: production
-          TARGET_INVENTORY: 'true'
-          RELEASE_GATE: 'true'
+          TARGET_INVENTORY: "true"
+          RELEASE_GATE: "true"
           EXPECTED_RC_SOURCE_SHA: ${{ needs.preflight.outputs.rc_source_sha }}
           EXPECTED_RC_IMAGE_DIGEST: ${{ needs.preflight.outputs.rc_image_digest }}
           EXPECTED_RC_TAG: ${{ needs.preflight.outputs.candidate_tag }}

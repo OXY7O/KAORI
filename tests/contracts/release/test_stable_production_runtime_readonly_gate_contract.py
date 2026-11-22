@@ -24,8 +24,8 @@ def test_manual_stable_release_checks_configured_runtime_before_registry_writes(
     assert publish.index(gate) < publish.index('Log In to Docker Registry')
     assert publish.index(gate) < publish.index('Sign Stable Digest')
     assert publish.index(gate) < publish.index('Ensure Stable Tag')
-    assert "TARGET_INVENTORY: 'true'" in publish
-    assert "RELEASE_GATE: 'true'" in publish
+    assert 'TARGET_INVENTORY: "true"' in publish
+    assert 'RELEASE_GATE: "true"' in publish
     assert 'TARGET_ENV: production' in publish
     for field in ('rc_source_sha', 'rc_image_digest', 'candidate_tag', 'release_version'):
         assert '$' + '{{ needs.preflight.outputs.' + field + ' }}' in publish
