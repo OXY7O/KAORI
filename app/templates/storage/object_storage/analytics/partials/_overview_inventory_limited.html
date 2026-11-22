@@ -14,16 +14,14 @@
             {{ table_label.status_label('Limited Evidence', 'warning', size='compact') }}
         </div>
         <p class="mt-2 text-xs text-content-muted">
-            Inventory observed {{ inventory_observed_at|user_datetime('Not Collected') }}.
+            Inventory observed {{ inventory_observed_at|user_datetime("Not Collected") }}.
             This is not a live provider health or metric collection check.
         </p>
     </header>
     <div class="grid gap-px bg-outline-subtle sm:grid-cols-3">
         <article class="{{ analysis_surface.metric_cell_classes() }}">
             <p class="{{ analysis_surface.metric_label_classes() }}">Buckets / Containers</p>
-            <p class="mt-2 text-lg font-semibold text-content-primary">
-                {{ inventory_limited.bucket_count_display }}
-            </p>
+            <p class="mt-2 text-lg font-semibold text-content-primary">{{ inventory_limited.bucket_count_display }}</p>
             <p class="mt-1 text-xs leading-5 text-content-muted">Committed inventory entries in the selected system.</p>
         </article>
         <article class="{{ analysis_surface.metric_cell_classes() }}">
@@ -31,9 +29,7 @@
                 <p class="{{ analysis_surface.metric_label_classes() }}">Observed Objects</p>
                 {{ table_label.status_label(inventory_limited.objects_status, 'normal' if inventory_limited.objects_status == 'Observed' else 'warning', size='compact') }}
             </div>
-            <p class="mt-2 text-lg font-semibold text-content-primary">
-                {{ inventory_limited.objects_display }}
-            </p>
+            <p class="mt-2 text-lg font-semibold text-content-primary">{{ inventory_limited.objects_display }}</p>
             <p class="mt-1 text-xs leading-5 text-content-muted">
                 {{ inventory_limited.objects_coverage }} have qualified object counts.
             </p>
@@ -43,9 +39,7 @@
                 <p class="{{ analysis_surface.metric_label_classes() }}">Observed Stored Size</p>
                 {{ table_label.status_label(inventory_limited.size_status, 'normal' if inventory_limited.size_status == 'Observed' else 'warning', size='compact') }}
             </div>
-            <p class="mt-2 text-lg font-semibold text-content-primary">
-                {{ inventory_limited.size_display }}
-            </p>
+            <p class="mt-2 text-lg font-semibold text-content-primary">{{ inventory_limited.size_display }}</p>
             <p class="mt-1 text-xs leading-5 text-content-muted">
                 {{ inventory_limited.size_coverage }} have qualified stored-size observations.
             </p>
@@ -53,7 +47,9 @@
     </div>
     <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
         <div class="flex flex-wrap items-start gap-3">
-            <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+            <i data-lucide="info"
+               class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+               aria-hidden="true"></i>
             <div class="min-w-0 space-y-1">
                 <p class="text-sm font-semibold text-content-primary">Operational Analytics Not Yet Materialized</p>
                 <p class="text-xs leading-5 text-content-secondary">
@@ -62,9 +58,7 @@
                     Configure and validate a Metrics Source for operational datasets; Alert Source remains optional
                     for non-alert analysis. Missing evidence is not zero or Healthy.
                 </p>
-                <p class="text-xs text-content-muted">
-                    Analytics snapshot state: {{ analytics_materialization.label }}.
-                </p>
+                <p class="text-xs text-content-muted">Analytics snapshot state: {{ analytics_materialization.label }}.</p>
             </div>
         </div>
     </div>
