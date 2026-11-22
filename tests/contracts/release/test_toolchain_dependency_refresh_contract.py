@@ -10,6 +10,8 @@ TAILWIND_VERSION = '4.3.4'
 POSTCSS_VERSION = '8.5.33'
 BROTLI_VERSION = '1.2.1'
 DNSPYTHON_VERSION = '2.9.2'
+MAKO_VERSION = '1.4.3'
+WERKZEUG_VERSION = '3.1.9'
 URLLIB3_VERSION = '2.8.0'
 OAUTHLIB_VERSION = '4.0.1'
 
@@ -85,6 +87,8 @@ def test_runtime_security_dependency_floor_is_reproducibly_pinned() -> None:
     for name, version, vulnerable in (
         ('Brotli', BROTLI_VERSION, '1.2.0'),
         ('dnspython', DNSPYTHON_VERSION, '2.8.0'),
+        ('Mako', MAKO_VERSION, '1.3.12'),
+        ('Werkzeug', WERKZEUG_VERSION, '3.1.8'),
     ):
         assert f'{name}=={version}' in base_in
         assert f'{name}=={version}' in base_lock
@@ -94,6 +98,44 @@ def test_runtime_security_dependency_floor_is_reproducibly_pinned() -> None:
     # Also guard the subsequently disclosed WKS parser advisory floor.
     assert 'dnspython==2.9.0' not in base_in
     assert 'dnspython==2.9.0' not in base_lock
+
+
+def test_development_browser_qa_source_lock_parity() -> None:
+    dev_in = read('requirements/dev.in')
+    dev_lock = read('requirements/dev.txt')
+    base_in = read('requirements/base.in')
+
+    # Browser QA dependencies are development inputs, not runtime dependencies.
+    # Both previously existed only in the dev lock, not the pip-tools input.
+    for package, version in (
+        ('playwright', '1.62.0'),
+        ('pytest-playwright', '0.9.0'),
+    ):
+        pin = f'{package}=={version}'
+        assert dev_in.count(pin) == 1
+        assert dev_lock.count(pin) == 1
+        assert pin not in base_in
+
+
+def test_identity_provider_runtime_dependencies_have_source_authority() -> None:
+    base_in = read('requirements/base.in')
+    base_lock = read('requirements/base.txt')
+
+    for package, pin in (
+        ('ldap3', 'ldap3==2.9.1'),
+        ('google-auth', 'google-auth==2.40.3'),
+    ):
+        assert [line for line in base_in.splitlines() if line.startswith(f'{package}==')] == [pin]
+        assert [line for line in base_lock.splitlines() if line.startswith(f'{package}==')] == [pin]
+
+    ldap_client = read('app/access/authentication/identity_provider/adapters/ldap/client.py')
+    google_oidc = read('app/access/authentication/identity_provider/providers/google/browser.py')
+    adapter_registry = read('app/access/authentication/identity_provider/registry.py')
+    assert 'from ldap3 import' in ldap_client
+    assert 'from google.auth.transport import' in google_oidc
+    assert 'from google.oauth2 import id_token' in google_oidc
+    assert 'LdapCredentialAdapter' in adapter_registry
+    assert 'GoogleOidcAdapter' in adapter_registry
 
 
 def test_frontend_dependency_lock_remains_package_manager_owned() -> None:
