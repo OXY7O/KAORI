@@ -4,7 +4,7 @@ from pathlib import Path
 
 from jinja2 import Environment
 
-from app.storage.object_storage.analytics.service import inventory_limited_coverage
+from app.storage.object_storage.analytics.inventory_limited import inventory_limited_coverage
 
 ROOT = Path(__file__).resolve().parents[4]
 
@@ -54,6 +54,7 @@ def test_inventory_limited_complete_aggregates_are_observed_not_metric_estimates
 
 def test_limited_overview_preserves_worker_and_committed_inventory_boundaries() -> None:
     service = (ROOT / 'app/storage/object_storage/analytics/service.py').read_text()
+    inventory_service = (ROOT / 'app/storage/object_storage/analytics/inventory_limited.py').read_text()
     overview = (ROOT / 'app/templates/storage/object_storage/analytics/index.html').read_text()
     limited = (
         ROOT / 'app/templates/storage/object_storage/analytics/partials/_overview_inventory_limited.html'
@@ -64,14 +65,14 @@ def test_limited_overview_preserves_worker_and_committed_inventory_boundaries() 
         Environment().parse(text)
 
     assert 'if system.inventory_observed_at is None:' in service
-    assert "context['inventory_limited'] = _inventory_limited_view(system)" in service
-    assert 'ObjectStorageBucket.object_storage_system_id == system.id' in service
-    assert "context['dependency_blocker'] = None" in service
+    assert "context['inventory_limited'] = build_inventory_limited_view(system)" in inventory_service
+    assert 'ObjectStorageBucket.object_storage_system_id == system.id' in inventory_service
+    assert "context['dependency_blocker'] = None" in inventory_service
     assert 'data-object-storage-inventory-limited-overview' in limited
     assert 'inventory_limited.size_display' in limited
     assert 'inventory_limited.objects_display' in limited
-    assert "metrics_source': {" in service
-    assert 'Not Collected' in limited or 'Not Collected' in service
+    assert "metrics_source'] = {" in inventory_service
+    assert 'Not Collected' in limited or 'Not Collected' in inventory_service
     assert "if page_key == 'overview' and analytics_limited" in posture
     assert 'if analytics_limited' in overview
     assert 'storage/object_storage/analytics/partials/_overview_analysis.html' in overview
