@@ -5,6 +5,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 ## [Unreleased]
 
 ### Changed
+- Require reviewed, release-specific product change notes before intentional stable publication; normal source commits do not request production release.
 - Align the planned first-public `v0.3.0` source version and RC bootstrap with the approved release authority. This source-only change does not publish an RC or stable artifact.
 
 ## [0.2.0] - 2026-09-23

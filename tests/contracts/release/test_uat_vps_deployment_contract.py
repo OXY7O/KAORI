@@ -241,18 +241,25 @@ def test_uat_workflow_requires_intentional_rc_and_pinned_ssh_trust() -> None:
     assert '--password "${' not in source
 
 
-def test_uat_workflow_can_bootstrap_without_existing_on_default_branch() -> None:
+def test_uat_workflow_requires_explicit_manual_rc_and_current_staging_sha() -> None:
     source = _read(WORKFLOW)
+    trigger_section = source.split('on:\n', 1)[1].split('\npermissions:', 1)[0]
 
-    assert 'push:' in source
-    assert '- kaori/uat-request' in source
-    assert 'refs/heads/kaori/uat-request' in source
-    assert 'if [[ "$GITHUB_EVENT_NAME" == \'push\' ]]; then' in source
-    assert 'releases?per_page=100' in source
-    assert 'target_commitish' in source
-    assert 'current_staging' in source
-    assert 'workflow_dispatch:' in source
+    assert 'workflow_dispatch:' in trigger_section
+    assert 'candidate_tag:' in trigger_section
+    assert 'push:' not in trigger_section
+    assert 'kaori/uat-request' not in source
+    assert 'releases?per_page=100' not in source
+    assert '[[ "$GITHUB_EVENT_NAME" == \'workflow_dispatch\' ]] || {' in source
+    assert 'explicit manual Release Deployment request' in source
     assert 'refs/heads/kaori/staging' in source
+    assert '"$GITHUB_SHA" == "$current_staging"' in source
+    assert 'target_commitish' in source
+    assert 'staging-image-' in source
+
+    # The request and accepted immutable RC are validated before any SSH access.
+    assert source.index('explicit manual Release Deployment request') < source.index('ssh-agent')
+    assert source.index('staging-image-') < source.index('ssh-agent')
 
 
 def test_uat_workflow_resolves_evidence_before_opening_ssh() -> None:

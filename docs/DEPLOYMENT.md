@@ -6,7 +6,7 @@ For the other two modes, use [`docs/RUNNING.md`](RUNNING.md): root `.env` + Dev 
 
 ## Governed server release deployment
 
-Follow [`deploy/server/README.md`](../deploy/server/README.md) and the protected GitHub workflow `.github/workflows/deploy-staging-host.yml`. It passes an immutable image digest, exact admitted SHA, and RC release tag to `deploy/server/deploy.sh`. The adapter performs **infrastructure startup → pre-migration backup → environment validation → migration → all canonical workers and Beat → runtime verification → retained release identity**. Public Nginx/Certbot publication is a separate operator boundary.
+Follow [`deploy/server/README.md`](../deploy/server/README.md) and the protected GitHub workflow `.github/workflows/deploy-staging-host.yml`. The host-mutating workflow is **manual-only**: dispatch from the current protected `kaori/staging` ref with the exact signed candidate tag after approved maintenance/target isolation review. A commit, `kaori/uat-request` push, or main merge is not deployment authority. It passes an immutable image digest, exact admitted SHA, and RC release tag to `deploy/server/deploy.sh`. The adapter performs **infrastructure startup → pre-migration backup → environment validation → migration → all canonical workers and Beat → runtime verification → retained release identity**. Public Nginx/Certbot publication is a separate operator boundary.
 
 Before deployment, provision host-owned files using:
 
