@@ -31,6 +31,13 @@ def test_stable_release_grants_reusable_quality_workflow_required_permissions() 
     assert 'actions: read' in permissions_block
 
 
+def test_human_uat_comment_checks_use_scoped_issue_read_permission() -> None:
+    global_permissions = WORKFLOW.split('permissions:', 1)[1].split('concurrency:', 1)[0]
+    publish_permissions = WORKFLOW.split('  publish:', 1)[1].split('    env:', 1)[0]
+    assert 'issues: read' in global_permissions
+    assert 'issues: read' in publish_permissions
+
+
 def test_stable_release_verifies_registry_rc_and_promotes_same_digest() -> None:
     assert 'target_commitish' in WORKFLOW
     assert 'RC_IMAGE_DIGEST' in WORKFLOW

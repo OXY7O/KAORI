@@ -15,6 +15,7 @@ on:
 permissions:
   contents: read
   actions: read
+  issues: read
   statuses: write
 
 concurrency:
@@ -248,6 +249,7 @@ jobs:
     permissions:
       contents: write
       id-token: write
+      issues: read
     env:
       RELEASE_VERSION: ${{ needs.preflight.outputs.release_version }}
       RELEASE_SHA: ${{ needs.preflight.outputs.release_sha }}
