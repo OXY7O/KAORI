@@ -125,6 +125,7 @@ setsid -w ssh-add "$tmp/id" </dev/null >/dev/null 2>&1 ||
   printf 'expected_runtime_version=%q\n' "${EXPECTED_RUNTIME_VERSION:-${EXPECTED_RELEASE_VERSION:-}}"
   cat <<'REMOTE_READ_ONLY'
 set -Eeuo pipefail
+expected_runtime_version="${expected_runtime_version:-$expected_release_version}"
 [[ -d "$root" && ! -L "$root" ]] || {
   echo 'BLOCK: configured deployment root missing/unsafe' >&2
   exit 1
