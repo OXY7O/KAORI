@@ -289,11 +289,10 @@ def test_target_needing_reconciliation_cannot_publish(simulated_target, mismatch
     assert 'READY_NOOP:' not in result.stdout
 
 
-
 def test_exact_accepted_rc_runtime_is_read_only_convergence_eligible(simulated_target) -> None:
     env, receipt, _state, _backup = simulated_target
     receipt.write_text(
-        receipt.read_text(encoding='utf-8').replace('APP_VERSION=0.3.0\\n', 'APP_VERSION=0.3.0-rc.3\\n'),
+        receipt.read_text(encoding='utf-8').replace('APP_VERSION=0.3.0\n', 'APP_VERSION=0.3.0-rc.3\n'),
         encoding='utf-8',
     )
     env['expected_runtime_version'] = '0.3.0-rc.3'
