@@ -79,6 +79,7 @@
             {% endcall %}
         </form>
         <div class="space-y-3">
+            {{ shared_readiness.dependency_path(readiness.dependency_steps) }}
             {% call shared_readiness.readiness_grid() %}
                 {{ shared_readiness.source_card('Registry Source Status',
                                 'Registry providers eligible for committed analytics snapshots.',
