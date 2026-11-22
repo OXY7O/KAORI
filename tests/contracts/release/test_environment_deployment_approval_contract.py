@@ -49,3 +49,60 @@ def test_unprivileged_admission_is_not_bound_to_production_environment() -> None
     assert '    environment:' not in _job('release-image.yml', 'preflight')
     assert '    environment:' not in _job('publish-staging-image.yml', 'wait-for-quality')
     assert '    environment:' not in _job('deploy-staging-host.yml', 'admission')
+
+
+def test_optional_runtime_inventory_is_manual_and_environment_scoped() -> None:
+    workflow = (WORKFLOWS / 'environment-credential-preflight.yml').read_text(encoding='utf-8')
+    script = (ROOT / 'scripts/environment-credential-preflight.sh').read_text(encoding='utf-8')
+
+    assert 'inspect_runtime:' in workflow
+    assert 'default: false' in workflow
+    assert 'type: boolean' in workflow
+    assert "github.event_name == 'workflow_dispatch' && inputs.inspect_runtime || false" in workflow
+    assert 'environment:' in workflow
+    assert "runtime inventory requires explicit manual dispatch" in script
+    assert '[[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]' in script
+    assert '[[ "$GITHUB_REF" == refs/heads/main ]]' in script
+    assert '[[ "$GITHUB_REF" == refs/heads/kaori/staging ]]' in script
+
+
+def test_runtime_inventory_fails_closed_on_receipt_and_container_identity() -> None:
+    script = (ROOT / 'scripts/environment-credential-preflight.sh').read_text(encoding='utf-8')
+    inventory = script.split("if [[ \"$inventory_requested\" == true ]]; then", 1)[1]
+    inventory = inventory.split('\nREMOTE_READ_ONLY', 1)[0]
+
+    for key in ('KAORI_IMAGE', 'APP_VERSION', 'APP_BUILD_SHA', 'APP_BUILD_DATE'):
+        assert key in inventory
+    assert 'malformed or foreign immutable release receipt identity' in inventory
+    assert 'receipt_image" == "$registry_image@sha256:"' in inventory
+    assert 'org.opencontainers.image.revision' in inventory
+    assert 'com.docker.compose.project=$project' in inventory
+    assert 'com.docker.compose.service=$service' in inventory
+    assert 'web instance volume differs from selected project' in inventory
+    assert 'selected $service exposes a host port' in inventory
+    assert 'LIMIT: observational snapshot only' in inventory
+
+
+def test_runtime_inventory_is_host_read_only_without_secret_printing() -> None:
+    script = (ROOT / 'scripts/environment-credential-preflight.sh').read_text(encoding='utf-8')
+    remote = script.split("cat <<'REMOTE_READ_ONLY'", 1)[1].split('\nREMOTE_READ_ONLY', 1)[0]
+
+    # Only informational Docker calls; no exec, pull, startup, migration or restore.
+    for line in remote.splitlines():
+        if line.lstrip().startswith('#'):
+            continue
+        if 'docker ' in line:
+            assert any(f'docker {command}' in line for command in ('info', 'ps', 'inspect'))
+    for prohibited in (
+        'source "$deploy_env"',
+        'cat "$deploy_env"',
+        'docker exec',
+        'docker pull',
+        'docker restart',
+        'docker compose up',
+        'docker run',
+        'pg_restore',
+        'kubectl',
+        'ssh-keyscan',
+    ):
+        assert prohibited not in remote
