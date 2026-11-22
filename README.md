@@ -8,10 +8,11 @@
 
 <p align="center">
   <a href="https://github.com/OXY7O/KAORI/actions/workflows/quality.yml">
-    <img alt="Full Admission on main" src="https://github.com/OXY7O/KAORI/actions/workflows/quality.yml/badge.svg?branch=main" />
+    <img alt="CI" src="https://github.com/OXY7O/KAORI/actions/workflows/quality.yml/badge.svg?branch=main" />
   </a>
-  <img alt="Source version line" src="https://img.shields.io/badge/Version-0.3.0-7C3AED" />
-  <a href="LICENSE"><img alt="Software source license: Apache-2.0" src="https://img.shields.io/badge/License-Apache--2.0-7C3AED" /></a>
+  <img alt="Version" src="https://img.shields.io/badge/Version-0.3.0-7C3AED" />
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&amp;logoColor=white" />
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache--2.0-7C3AED" /></a>
 </p>
 
 <p align="center">
@@ -35,7 +36,7 @@ This repository contains the **authenticated KAORI Application**, not the public
 
 ## Architecture
 
-KAORI connects **Kubernetes**, **Object Storage**, monitoring, **Analytics**, **Reports**, **Intelligence**, and **Governance** through a capability-first platform. The external providers remain authoritative; KAORI correlates committed evidence and operator workflows.
+**Platform Capabilities:** KAORI connects **Kubernetes**, **Object Storage**, monitoring, **Analytics**, **Reports**, **Intelligence**, and **Governance** through a capability-first platform. The external providers remain authoritative; KAORI correlates committed evidence and operator workflows.
 
 See the [architecture guide](docs/architecture/README.md) for data ownership, service topology, and provider boundaries.
 
