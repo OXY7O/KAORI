@@ -72,3 +72,16 @@ Object Storage Analytics can remain locked after runtime smoke testing in the KA
 ## October 2026 UAT presentation decision
 
 The August 2026 decisions above remain authoritative for committed state, provider neutrality, materialization and alert ownership. Object Storage Analytics **navigation** subsequently consolidated to one `Data & Evidence` tab in Overview, with contextual committed evidence status and direct links from five domain workspaces. Capacity reconciliation, Forecast Worker & Method and Alert Source & Lifecycle Details remain accessible in-domain. Design review #3235 and implementation #3260 are documented in `docs/design/patterns/OBJECT_STORAGE_ANALYTICS_EVIDENCE_NAVIGATION.md`. No source ownership change.
+
+## RC.3 follow-up decision — inventory-qualified Limited Overview (#5124)
+
+The August 2026 lock decision above remains the baseline for **operational metric datasets and the five detail workspaces**. The approved five-domain progressive Analytics review (#5122) narrows the hard-block requirement for **Analytics Overview only**: when an Object Storage system has a committed Inventory Sync but no usable operational Analytics snapshot, Overview may display a **Limited Inventory Overview** from bounded committed Inventory SQL aggregates, with accurate observed-field coverage and an explicit not-materialized operational state. This branch-specific implementation is not an admitted staging/release claim.
+
+- Registration alone still does not establish inventory evidence: an unobserved system remains blocked as Inventory Sync Required.
+- A complete observed-empty inventory may report 0 buckets/objects/bytes; partially observed size/object counts must display N/A rather than invent total usage or provider physical capacity.
+- Full operational posture, requests, time-series history, provider alert lifecycle, utilization, headroom, forecast and concentration remain Metrics Source/worker-evidence qualified. The five detail workspaces retain existing dataset-level dependency blockers.
+- The normal GET uses one selected-system aggregate from committed ObjectStorageBucket fields; never a provider API query or eager loading every bucket ORM record.
+- Existing last usable analytics snapshot retains precedence and stale-grace semantics. Retained inventory does not certify provider health, a bound Metrics Source, or the freshness of an unrelated analytics dataset.
+- The canonical shared readiness/Alert Source expansion remains governed by #5122; the three source families are independent, not mandatory universal gates.
+
+Before marking this exception accepted, run current CI, visual parity, HTMX/filter, complete/partial/missing inventory, scoped RBAC, worker absence, stale-expired snapshot, and human staging UAT. No protection or source authority may be weakened for implementation convenience.
