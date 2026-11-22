@@ -60,7 +60,7 @@ def test_optional_runtime_inventory_is_manual_and_environment_scoped() -> None:
     assert 'type: boolean' in workflow
     assert "github.event_name == 'workflow_dispatch' && inputs.inspect_runtime || false" in workflow
     assert 'environment:' in workflow
-    assert "runtime inventory requires explicit manual dispatch" in script
+    assert 'runtime inventory requires explicit manual dispatch' in script
     assert '[[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]' in script
     assert '[[ "$GITHUB_REF" == refs/heads/main ]]' in script
     assert '[[ "$GITHUB_REF" == refs/heads/kaori/staging ]]' in script
@@ -68,7 +68,7 @@ def test_optional_runtime_inventory_is_manual_and_environment_scoped() -> None:
 
 def test_runtime_inventory_fails_closed_on_receipt_and_container_identity() -> None:
     script = (ROOT / 'scripts/environment-credential-preflight.sh').read_text(encoding='utf-8')
-    inventory = script.split("if [[ \"$inventory_requested\" == true ]]; then", 1)[1]
+    inventory = script.split('if [[ "$inventory_requested" == true ]]; then', 1)[1]
     inventory = inventory.split('\nREMOTE_READ_ONLY', 1)[0]
 
     for key in ('KAORI_IMAGE', 'APP_VERSION', 'APP_BUILD_SHA', 'APP_BUILD_DATE'):
