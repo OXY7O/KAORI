@@ -34,7 +34,6 @@ def reject_active_env_key(source: str, key: str, authority: str) -> None:
         raise AssertionError(f'{authority} must not actively define deployment-managed {key}')
 
 
-
 def verify_stable_notes(version: str, candidate: str) -> None:
     if not SEMVER.fullmatch(version):
         raise AssertionError('Stable release notes require a valid version')
@@ -59,6 +58,7 @@ def verify_stable_notes(version: str, candidate: str) -> None:
     if '## [Unreleased]' not in read('CHANGELOG.md'):
         raise AssertionError('Changelog must keep the Unreleased changes until publication')
     print('PASS — Reviewed stable release notes')
+
 
 def verify() -> None:
     version_line = read('VERSION').strip()
