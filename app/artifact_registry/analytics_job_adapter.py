@@ -388,6 +388,7 @@ def _registry_analytics_snapshot_source_evidence(
         )
     return evidence
 
+
 def build_registry_analytics_readiness(
     *,
     provider_id: int | None = None,
