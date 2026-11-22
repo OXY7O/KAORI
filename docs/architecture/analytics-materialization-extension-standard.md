@@ -83,6 +83,28 @@ are deliberately **not** centralized into presentation code. A component
 change still requires visual/a11y regression checks of all three consumers
 before acceptance; no design drift is accepted as a domain exception by default.
 
+## Five-domain progressive availability contract (RC.3 review, #5122)
+
+The canonical Analytics **dependency path** is three separate source families:
+
+1. **Domain Integration** — a scoped provider/asset and committed domain evidence.
+2. **Metrics Source** — optional for the shell and inventory-derived analytics; mandatory only for a dataset that needs qualified operational telemetry or measured history.
+3. **Alert Source** — optional for all non-alert analysis; required only for provider alert lifecycle evidence. An approved Metrics Source alert-state fallback is narrower than Alertmanager lifecycle evidence.
+
+**Analytics Snapshot is a materialized evidence artifact, not a fourth integration.** Source binding/configuration readiness, worker collection outcome, snapshot currency, and a feature's evidence coverage must not be conflated. A missing worker snapshot is **Not Collected**, not automatically **Not Bound**. Ordinary Analytics HTTP GET requests use committed KAORI state and never probe upstream provider APIs to infer readiness.
+
+| Domain | First provider | Qualified source evidence when Metrics/Alert Sources are absent | Adoption |
+|---|---|---|---|
+| Kubernetes | Kubernetes cluster | Cluster/committed domain data; metric-specific datasets explicitly unavailable | Existing progressive Overview, regression parity under #5122 |
+| Object Storage | MinIO | Qualified committed Inventory; no fake throughput, headroom or forecast | Inventory-only limited Overview planned in #5124; current hard blocker remains until admitted |
+| Artifact Registry | Harbor | Committed Inventory/Security/Governance/Runtime; metric and alert gaps independent | Three-source evidence-path presentation in #5123 |
+| Source Control | GitHub | Authorized committed repository, review and delivery evidence; no synthetic DORA history | Follow-up implementation in #5126 under #4027 |
+| Secrets & PKI | Vault | Authorized metadata-only/PKI expiration evidence; no Secret contents or sensitive paths | Existing limited PKI Expiration; broader #2594 and security/UAT #2593 |
+
+Preserve the canonical provider-absent blocker from #894. Once a provider is registered, the Overview may expose **qualified committed data** without pretending every source is ready. Domain-specific analysis retains dataset-level prerequisites, Unknown/Unavailable/Unsupported and historical retention requirements. No change to RBAC or Vault's default-deny resource scope is authorized by this contract.
+
+The existing Object Storage August 2026 hard-block decision is still the runtime baseline until #5124 explicitly reconciles its authority and passes admission/UAT. Provider-neutral query profile qualification, especially Registry's current Harbor-specific query selection, belongs to #5125. All five domain consumers must share presentation primitives, not provider semantics or credentials.
+
 ## Extension checklist for a fourth domain
 
 1. Define domain capability and asset type before provider product or instance. Register provider-qualified source capabilities and integration binding using the existing Integration Registry.
