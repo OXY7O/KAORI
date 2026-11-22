@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">KAORI Application</h1>
-<p align="center"><strong>Knowledge · Automation · Operations · Resilience · Intelligence</strong></p>
+<p align="center"><strong>Knowledge, Automation, Operations, Resilience & Intelligence</strong></p>
 <p align="center">Make infrastructure operations clearer with connected context and trustworthy evidence.</p>
 
 <p align="center">
@@ -33,7 +33,11 @@ This repository contains the **authenticated KAORI Application**, not the public
 - **Integrate providers:** Connect supported monitoring, infrastructure, and automation capabilities through KAORI's integration registry.
 - **Govern operations:** Track decisions, approvals, controlled execution, and audit evidence.
 
-See the [architecture guide](docs/architecture/README.md) for capabilities, data ownership, provider boundaries, and service topology.
+## Architecture
+
+KAORI connects **Kubernetes**, **Object Storage**, monitoring, **Analytics**, **Reports**, **Intelligence**, and **Governance** through a capability-first platform. The external providers remain authoritative; KAORI correlates committed evidence and operator workflows.
+
+See the [architecture guide](docs/architecture/README.md) for data ownership, service topology, and provider boundaries.
 
 ## Quick Start
 
@@ -59,12 +63,16 @@ For real integration behavior and architecture, follow [KAORI architecture](docs
 
 `VERSION` defines the **current product version line**; it is not proof that a stable release has been published or deployed. Routine commits and merges do **not** deploy production.
 
-An intentional stable release requires reviewed release notes, an accepted signed release candidate, explicit operator authorization, and protected production approval. Stable publication preserves the accepted immutable OCI digest rather than rebuilding the application.
+Changes enter the reviewed `kaori/staging` source before an intentional release. An intentional stable release requires reviewed change notes, an accepted signed release candidate, **explicit UAT acceptance**, operator authorization, and protected production approval. Stable publication preserves the accepted immutable OCI digest rather than rebuilding the application.
 
 See [Changelog](CHANGELOG.md), [Release lifecycle](docs/releases/README.md), and [Release governance](docs/deployment/RELEASE_GOVERNANCE.md) for versions, release history, and operator procedures.
 
-## Contributing, security & license
+## Documentation
 
-Changes are reviewed through KAORI's [contribution and delivery standards](docs/engineering/KAORI_DELIVERY_WORKFLOW.md). See [Testing](docs/TESTING.md) for validation instructions. For sensitive findings, use [private security reporting](SECURITY.md), never public issue comments.
+See [Development](docs/DEVELOPMENT.md), [Testing](docs/TESTING.md), [Architecture](docs/architecture/README.md), and [Deployment](docs/DEPLOYMENT.md) for detailed operator and contributor guidance.
 
-KAORI-authored application software source is licensed under [Apache-2.0](LICENSE); see [NOTICE](NOTICE) for attribution and scope. Product names, trademarks, and brand artwork are not covered by the software license; third-party materials retain their own licenses. Source availability does not grant access to hosted services or infrastructure credentials.
+## Feedback, security & license
+
+Public community feedback and contribution acceptance are **not yet launched**. The [community intake triage contract](docs/engineering/COMMUNITY_INTAKE_TRIAGE.md) describes maintainer preparation; it **does not indicate that GitHub Discussions** or public contribution acceptance are active. See [contribution and delivery standards](docs/engineering/KAORI_DELIVERY_WORKFLOW.md). Report sensitive findings privately via [`SECURITY.md`](SECURITY.md), never public issues.
+
+KAORI-authored software source is licensed under the [Apache License 2.0](LICENSE); see [NOTICE](NOTICE). Product names, trademarks, and brand artwork are excluded from the software license; third-party assets retain their own licenses. Open-source code licensing does not imply access to hosted services, production infrastructure, or support.
