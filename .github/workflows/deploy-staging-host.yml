@@ -1,15 +1,12 @@
-name: Staging Deploy
+name: Release Deployment
 
 on:
   workflow_dispatch:
     inputs:
       candidate_tag:
-        description: Accepted KAORI RC tag (for example v0.1.0-rc.11)
+        description: Exact signed, approved KAORI RC tag (vX.Y.Z-rc.N)
         required: true
         type: string
-  push:
-    branches:
-      - kaori/uat-request
 
 permissions:
   contents: read
@@ -54,43 +51,19 @@ jobs:
             exit 1
           }
 
-          if [[ "$GITHUB_EVENT_NAME" == 'push' ]]; then
-            [[ "$GITHUB_REF" == 'refs/heads/kaori/uat-request' ]] || {
-              printf 'Staging deployment requests are allowed only from kaori/uat-request.\n' >&2
-              exit 1
-            }
-            [[ "$GITHUB_SHA" == "$current_staging" ]] || {
-              printf 'Staging request SHA %s is stale; current kaori/staging is %s.\n' \
-                "$GITHUB_SHA" "$current_staging" >&2
-              exit 1
-            }
-
-            releases_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
-              "$api_root/releases?per_page=100")"
-            matching_releases="$(jq -c --arg sha "$current_staging" \
-              '[.[] | select(.prerelease == true and .target_commitish == $sha and (.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+-rc\\.[0-9]+$")))]' \
-              <<<"$releases_json")"
-            matching_count="$(jq 'length' <<<"$matching_releases")"
-            [[ "$matching_count" == '1' ]] || {
-              printf 'Expected exactly one intentional RC for admitted staging %s, found %s.\n' \
-                "$current_staging" "$matching_count" >&2
-              exit 1
-            }
-            CANDIDATE_TAG="$(jq -r '.[0].tag_name' <<<"$matching_releases")"
-          elif [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
-            [[ "$GITHUB_REF" == 'refs/heads/kaori/staging' ]] || {
-              printf 'Manual staging deployment must be dispatched from kaori/staging.\n' >&2
-              exit 1
-            }
-            [[ "$GITHUB_SHA" == "$current_staging" ]] || {
-              printf 'Manual staging dispatch SHA %s is stale; current kaori/staging is %s.\n' \
-                "$GITHUB_SHA" "$current_staging" >&2
-              exit 1
-            }
-          else
-            printf 'Unsupported staging deployment event: %s\n' "$GITHUB_EVENT_NAME" >&2
+          [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]] || {
+            printf 'Staging deployment requires an explicit manual Release Deployment request.\n' >&2
             exit 1
-          fi
+          }
+          [[ "$GITHUB_REF" == 'refs/heads/kaori/staging' ]] || {
+            printf 'Manual staging deployment must be dispatched from kaori/staging.\n' >&2
+            exit 1
+          }
+          [[ "$GITHUB_SHA" == "$current_staging" ]] || {
+            printf 'Manual staging dispatch SHA %s is stale; current kaori/staging is %s.\n' \
+              "$GITHUB_SHA" "$current_staging" >&2
+            exit 1
+          }
 
           printf '✅ UAT release evidence · request matches current staging source\n'
           printf '⏳ UAT release evidence · validating intentional RC tag and GitHub prerelease\n'
