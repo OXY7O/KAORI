@@ -372,6 +372,22 @@ def registry_analytics_dependency_steps(
     return steps
 
 
+def _registry_analytics_snapshot_source_evidence(
+    snapshots: list[RegistryAnalyticsSnapshot],
+    snapshot_views: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    evidence = []
+    for snapshot, view in zip(snapshots, snapshot_views, strict=True):
+        payload = snapshot.payload_json if isinstance(snapshot.payload_json, dict) else {}
+        evidence.append(
+            {
+                'metrics': payload.get('metrics'),
+                'alerts': payload.get('alerts'),
+                'current': bool(view['is_current']),
+            }
+        )
+    return evidence
+
 def build_registry_analytics_readiness(
     *,
     provider_id: int | None = None,
@@ -421,20 +437,10 @@ def build_registry_analytics_readiness(
     from app.artifact_registry.presentation_common import _analytics_snapshot_view
 
     snapshot_views = [_analytics_snapshot_view(item) for item in snapshots]
-    dependency_evidence = []
-    for snapshot, view in zip(snapshots, snapshot_views, strict=True):
-        payload = snapshot.payload_json if isinstance(snapshot.payload_json, dict) else {}
-        dependency_evidence.append(
-            {
-                'metrics': payload.get('metrics'),
-                'alerts': payload.get('alerts'),
-                'current': bool(view['is_current']),
-            }
-        )
     dependency_steps = registry_analytics_dependency_steps(
         registered_count=registered_count,
         eligible_count=len(eligible_ids),
-        evidence=dependency_evidence,
+        evidence=_registry_analytics_snapshot_source_evidence(snapshots, snapshot_views),
     )
     current_count = sum(bool(view['is_current']) for view in snapshot_views)
     label, tone, helper = _analytics_snapshot_posture(
