@@ -718,7 +718,7 @@ def get_object_storage_analytics_context(
         context, system=system, time_range=time_range, committed_snapshot=committed_snapshot
     )
     if payload is None:
-        if page_key == 'overview':
+        if page_key == 'overview' and committed_snapshot is None:
             return limited_inventory_analytics_context(context, system)
         return context
 
