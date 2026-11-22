@@ -45,7 +45,11 @@ def verify_stable_notes(version: str, candidate: str) -> None:
         raise AssertionError('Reviewed notes must name the requested stable version')
     if 'Accepted RC: ' + candidate not in notes:
         raise AssertionError('Reviewed notes must name the exact accepted RC')
-    if 'Human UAT evidence: https://github.com/OXY7O/KAORI/issues/' not in notes:
+    evidence = re.findall(r'(?m)^Human UAT evidence: (.+)$', notes)
+    if len(evidence) != 1 or not re.fullmatch(
+        r'https://github\.com/OXY7O/KAORI/issues/[1-9][0-9]*#issuecomment-[1-9][0-9]*',
+        evidence[0],
+    ):
         raise AssertionError('Reviewed notes must link release-bound Human UAT evidence')
     headings = re.findall(r'(?m)^## ([^\n]+)$', notes)
     expected = ['Highlights', 'Improvements', 'Fixes', 'Known Limitations']
