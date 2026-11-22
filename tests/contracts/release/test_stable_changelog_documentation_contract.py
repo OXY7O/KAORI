@@ -6,9 +6,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_stable_changelog_is_documented_only_after_actual_publication() -> None:
-    governance = (ROOT / 'docs/deployment/RELEASE_GOVERNANCE.md').read_text(
-        encoding='utf-8'
-    )
+    governance = (ROOT / 'docs/deployment/RELEASE_GOVERNANCE.md').read_text(encoding='utf-8')
     lifecycle = (ROOT / 'docs/releases/README.md').read_text(encoding='utf-8')
     changelog = (ROOT / 'CHANGELOG.md').read_text(encoding='utf-8')
     assert '## [Unreleased]' in changelog
@@ -22,9 +20,7 @@ def test_stable_changelog_is_documented_only_after_actual_publication() -> None:
 
 
 def test_stable_notes_are_product_first_not_rc_commit_history() -> None:
-    notes_template = (ROOT / 'docs/releases/RELEASE_NOTES_TEMPLATE.md').read_text(
-        encoding='utf-8'
-    )
+    notes_template = (ROOT / 'docs/releases/RELEASE_NOTES_TEMPLATE.md').read_text(encoding='utf-8')
     lifecycle = (ROOT / 'docs/releases/README.md').read_text(encoding='utf-8')
     headings = [
         '## Highlights',
@@ -33,17 +29,13 @@ def test_stable_notes_are_product_first_not_rc_commit_history() -> None:
         '## Known Limitations',
     ]
     assert all(heading in notes_template for heading in headings)
-    assert [notes_template.index(h) for h in headings] == sorted(
-        notes_template.index(h) for h in headings
-    )
+    assert [notes_template.index(h) for h in headings] == sorted(notes_template.index(h) for h in headings)
     assert 'users can recognize' in notes_template
     assert 'security, compatibility, migration' in notes_template
     assert 'commit or PR titles' in notes_template
     assert 'RC prerelease notes generated from `git log`' in lifecycle
     assert 'must not' in lifecycle
-    workflow = (ROOT / '.github/workflows/release-image.yml').read_text(
-        encoding='utf-8'
-    )
+    workflow = (ROOT / '.github/workflows/release-image.yml').read_text(encoding='utf-8')
     events = workflow.split('on:', 1)[1].split('permissions:', 1)[0]
     assert 'workflow_dispatch:' in events
     assert 'push:' not in events
