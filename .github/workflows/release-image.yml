@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Stable Semantic Version, for example 0.1.0
+        description: Stable Semantic Version, for example 0.3.0
         required: true
         type: string
       candidate_tag:
-        description: Explicitly UAT-accepted RC tag, for example v0.1.0-rc.11
+        description: Explicitly Human-UAT-accepted RC tag, for example v0.3.0-rc.N
         required: true
         type: string
 
