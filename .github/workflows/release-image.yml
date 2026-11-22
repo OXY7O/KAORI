@@ -282,6 +282,35 @@ jobs:
             --uat-acceptance "$RELEASE_VERSION" "$CANDIDATE_TAG" \
             "$RC_SOURCE_SHA" "$RC_IMAGE_DIGEST"
 
+      # Issue #5116: same Environment-scoped pinned SSH/receipt resolver as the
+      # existing credential preflight; host observation is strictly read-only.
+      # A candidate RC version or digest mismatch is not approval to deploy.
+      - name: Verify Selected Production Runtime Against Accepted RC (Read Only)
+        shell: bash
+        env:
+          TARGET_ENV: production
+          TARGET_INVENTORY: 'true'
+          RELEASE_GATE: 'true'
+          EXPECTED_RC_SOURCE_SHA: ${{ needs.preflight.outputs.rc_source_sha }}
+          EXPECTED_RC_IMAGE_DIGEST: ${{ needs.preflight.outputs.rc_image_digest }}
+          EXPECTED_RC_TAG: ${{ needs.preflight.outputs.candidate_tag }}
+          EXPECTED_RELEASE_VERSION: ${{ needs.preflight.outputs.release_version }}
+          REGISTRY_USER: ${{ secrets.KAORI_DOCKER_REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.KAORI_DOCKER_REGISTRY_PASSWORD }}
+          DEPLOY_HOST: ${{ vars.KAORI_HOST }}
+          DEPLOY_PORT: ${{ vars.KAORI_HOST_PORT }}
+          DEPLOY_USER: ${{ vars.KAORI_HOST_USER }}
+          DEPLOY_ROOT: ${{ vars.KAORI_HOST_DEPLOY_ROOT }}
+          DEPLOY_SSH_KEY: ${{ secrets.KAORI_HOST_SSH_PRIVATE_KEY }}
+          DEPLOY_SSH_PASSPHRASE: ${{ secrets.KAORI_HOST_SSH_PASSPHRASE }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.KAORI_HOST_KNOWN_HOSTS }}
+          RECEIPT_PATH: /var/lib/kaori/deploy-state/release.env
+          HOST_ENV_PATH: /etc/kaori/deploy.env
+        run: |
+          set -Eeuo pipefail
+          bash -n scripts/environment-credential-preflight.sh
+          bash scripts/environment-credential-preflight.sh
+
       - name: Resolve CI Toolchain
         shell: bash
         run: |
