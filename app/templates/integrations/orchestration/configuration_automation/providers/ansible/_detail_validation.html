@@ -171,7 +171,7 @@
                             Policy {{ kubespray_execution_compatibility.policy_key }}
                             · Window {{ kubespray_execution_compatibility.policy_window }}
                             · Target Candidate v{{ kubespray_execution_compatibility.target_minor }}
-                            · API Support {{ kubespray_execution_compatibility.api_support_posture|replace('_', ' ')|title }}
+                            · API Support {{ kubespray_execution_compatibility.api_support_posture|replace('_', ' ') |title }}
                         </p>
                     </div>
                     {{ integration_status("blocked", "Execution Blocked", display="text") }}
@@ -191,8 +191,8 @@
                                     <th scope="row" class="px-4 py-3 font-semibold text-content-primary">{{ operation.label }}</th>
                                     <td class="px-4 py-3">
                                         {{ integration_status("pending" if operation.state == "qualified_for_review" else "blocked",
-                                                            "Review Only" if operation.state == "qualified_for_review" else "Blocked",
-                                                            display="text") }}
+                                                                                "Review Only" if operation.state == "qualified_for_review" else "Blocked",
+                                                                                display="text") }}
                                     </td>
                                     <td class="px-4 py-3 text-content-secondary">{{ operation.reason }}</td>
                                 </tr>
