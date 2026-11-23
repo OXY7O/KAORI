@@ -46,7 +46,9 @@ def _connection(*, source_checked=True, digest='sha256:' + 'a' * 64):
 def _preflight(*, state='ready_for_review'):
     gates = [SimpleNamespace(state='ready') for _ in range(8)]
     gates.extend([SimpleNamespace(state='blocked') for _ in range(2)])
-    return SimpleNamespace(state=state, facts_job_public_id='trusted-job' if state == 'ready_for_review' else None, gates=gates)
+    return SimpleNamespace(
+        state=state, facts_job_public_id='trusted-job' if state == 'ready_for_review' else None, gates=gates
+    )
 
 
 def test_review_only_qualification_never_grants_kubernetes_mutation():

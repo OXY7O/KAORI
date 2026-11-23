@@ -62,7 +62,10 @@ def _operations() -> tuple[tuple[str, str, str], ...]:
         raise ValueError('Kubespray profile definition is not the admitted source contract.')
     if require_str(document, 'support_policy', _DEFINITION) != COMPATIBILITY_LIFECYCLE_POLICY.key:
         raise ValueError('Kubespray policy must reference the current KAORI lifecycle authority.')
-    items = [require_mapping(item, f'operations[{index}]') for index, item in enumerate(require_list(document.get('operations'), 'operations'))]
+    items = [
+        require_mapping(item, f'operations[{index}]')
+        for index, item in enumerate(require_list(document.get('operations'), 'operations'))
+    ]
     unique_by(items, 'key', 'operations')
     operations: list[tuple[str, str, str]] = []
     for index, item in enumerate(items):
@@ -130,7 +133,9 @@ def assess_kubespray_execution_compatibility(
             operation=key,
             label=label,
             state='qualified_for_review' if posture == 'review_only' and review_qualified else 'blocked',
-            reason=reason if posture == 'review_only' else 'This operation has no independently admitted Run authority.',
+            reason=reason
+            if posture == 'review_only'
+            else 'This operation has no independently admitted Run authority.',
         )
         for key, label, posture in _operations()
     )
