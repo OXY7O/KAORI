@@ -202,3 +202,24 @@ def test_analytics_overview_uses_shared_intro_and_level_three_navigation() -> No
     assert 'hx-trigger="load"' in workspace
     assert 'artifact_registry/partials/_analytics_overview_workspace.html' in workspace
     assert "('insights', 'Insights', 'sparkles')" in tabs
+
+
+def test_registry_analytics_provider_absence_uses_shared_three_stage_dependency_blocker() -> None:
+    shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    readiness = (ROOT / 'app/artifact_registry/analytics_job_adapter.py').read_text()
+    shared = (ROOT / 'app/templates/components/dependencies/_blocker.html').read_text()
+
+    assert '{% if analytics.setup.is_blocked %}' in shell
+    assert '{% include "components/dependencies/_blocker.html" %}' in shell
+    assert 'artifact_registry/components/_setup_blocker.html' not in shell
+    assert 'analytics.data_readiness.dependency_steps' in shell
+    assert 'Registry Integration → Metrics Source → Alert Source' in shell
+    assert '"permission": "integrations.manage"' in shell
+    assert 'dependency_missing_label' in shell
+    assert 'analytics.setup.is_blocked' in shell
+    for label in ("'label': 'Registry Integration'", "'Metrics Source'", "'Alert Source'"):
+        assert label in readiness
+    assert 'data-kaori-blocked-state' in shared
+    assert 'dependency_permission' in shared
+    assert 'dependency_action_allowed' in shared
+    assert '{% else %}' in shell
