@@ -20,7 +20,7 @@ from app.extensions.db import db
 from app.models.automation import AutomationHostAsset, AutomationInventoryAssignment
 from app.models.integration import IntegrationInstance
 
-_VALID_HOSTNAME = re.compile(r'[a-z0-9](?:[a-z0-9-]{0,94}[a-z0-9])?\\Z')
+_VALID_HOSTNAME = re.compile(r'[a-z0-9](?:[a-z0-9-]{0,94}[a-z0-9])?\Z')
 _ALLOWED_ENVIRONMENTS = frozenset(
     {'development', 'staging', 'testing', 'laboratory', 'sandbox', 'proof_of_concept', 'non_production'}
 )
