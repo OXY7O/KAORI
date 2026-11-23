@@ -22,6 +22,16 @@
         blocked_title='Repository Inventory Unavailable',
         blocked_info='Select one registered installation and complete a successful repository synchronization.'
         ) }}
+        {% if not scope.installations %}
+            {% set provider_prerequisite_icon = 'git-branch' %}
+            {% set provider_prerequisite_title = 'Source Control Installation Required' %}
+            {% set provider_prerequisite_description = 'Register an authorized Source Control installation before using committed repository workspaces.' %}
+            {% set provider_prerequisite_steps = ['Register connection', 'Authorize GitHub App installation', 'Collect repository inventory'] %}
+            {% set provider_prerequisite_action_url = url_for('integrations.source_control') %}
+            {% set provider_prerequisite_action_label = 'Open Source Control Integrations' %}
+            {% set provider_prerequisite_permission = 'integrations.manage' %}
+            {% include "components/provider_prerequisite/_setup_blocker.html" %}
+        {% else %}
         {% call section_card.render('Installation Scope',
             'Choose the exact authorized GitHub App installation. Repository grants from different installations are never combined.',
             'git-branch') %}
@@ -60,7 +70,7 @@
                 </p>
             {% endif %}
         {% endcall %}
-        {% if selected %}
+        {% if selected and inventory.total is not none %}
             <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
                      aria-label="Selected inventory evidence">
                 {{ metric_card.render('Committed Grants',
@@ -81,12 +91,22 @@
                                 'clock-3', source_label='KAORI Evidence') }}
             </section>
             {% include "integrations/source_control/github/_inventory_table.html" %}
+        {% elif selected %}
+            {% set blocked_state_icon = 'database-zap' %}
+            {% set blocked_state_label = 'Collection Required' %}
+            {% set blocked_state_title = 'Repository Inventory Not Collected' %}
+            {% set blocked_state_description = 'No committed repository inventory exists; missing evidence does not prove zero repositories.' %}
+            {% set blocked_state_action_url = url_for('integrations.source_control') %}
+            {% set blocked_state_action_label = 'Open Source Control Integrations' %}
+            {% set blocked_state_permission = 'integrations.manage' %}
+            {% include "components/states/_blocked_state.html" %}
         {% else %}
-            {% set empty_state_icon = "folder-git-2" %}
-            {% set empty_state_label = "Scope Required" %}
-            {% set empty_state_title = "Select a GitHub Installation" %}
-            {% set empty_state_description = "Repository inventory is intentionally installation-scoped. No global repository inventory is exposed before resource authorization is implemented." %}
-            {% include "components/states/_empty_state.html" %}
+            {% set blocked_state_icon = 'folder-git-2' %}
+            {% set blocked_state_label = 'Scope Required' %}
+            {% set blocked_state_title = 'Select a GitHub Installation' %}
+            {% set blocked_state_description = 'Choose one authorized installation above; no cross-installation repository aggregation.' %}
+            {% include "components/states/_blocked_state.html" %}
+        {% endif %}
         {% endif %}
     </div>
 {% endblock dashboard_content %}

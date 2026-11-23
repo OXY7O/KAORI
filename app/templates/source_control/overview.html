@@ -29,6 +29,25 @@
         blocked_title='Source Inventory Not Collected',
         blocked_info='Register and validate a GitHub App installation, then sync authorized repositories to commit evidence.'
         ) }}
+        {% if scope.installation_count == 0 %}
+            {% set provider_prerequisite_icon = 'git-branch' %}
+            {% set provider_prerequisite_title = 'Source Control Installation Required' %}
+            {% set provider_prerequisite_description = 'Register an authorized Source Control installation before using committed repository workspaces.' %}
+            {% set provider_prerequisite_steps = ['Register connection', 'Authorize GitHub App installation', 'Collect repository inventory'] %}
+            {% set provider_prerequisite_action_url = url_for('integrations.source_control') %}
+            {% set provider_prerequisite_action_label = 'Open Source Control Integrations' %}
+            {% set provider_prerequisite_permission = 'integrations.manage' %}
+            {% include "components/provider_prerequisite/_setup_blocker.html" %}
+        {% elif scope.committed_count == 0 %}
+            {% set blocked_state_icon = 'database-zap' %}
+            {% set blocked_state_label = 'Collection Required' %}
+            {% set blocked_state_title = 'Repository Inventory Not Collected' %}
+            {% set blocked_state_description = 'No committed repository inventory exists; missing evidence does not prove zero repositories.' %}
+            {% set blocked_state_action_url = url_for('integrations.source_control') %}
+            {% set blocked_state_action_label = 'Open Source Control Integrations' %}
+            {% set blocked_state_permission = 'integrations.manage' %}
+            {% include "components/states/_blocked_state.html" %}
+        {% else %}
         {% set active_dashboard_tab = dashboard_active_tab|default('overview') %}
         {% set inventory_ready = scope.committed_count > 0 %}
         {% set collection_complete = inventory_ready and scope.uncollected_count == 0 and not scope.has_more %}
@@ -128,5 +147,6 @@
                 {% endfor %}
             </div>
         {% endcall %}
+        {% endif %}
     </div>
 {% endblock dashboard_content %}
