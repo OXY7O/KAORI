@@ -10,6 +10,10 @@ import re
 from dataclasses import asdict, dataclass
 from typing import Any
 
+from app.definitions.kubernetes_compatibility_policy import (
+    kubernetes_api_lifecycle,
+    kubernetes_policy_identity,
+)
 from app.definitions.loader import load_definition_document
 from app.definitions.validation import require_list, require_mapping, require_str, unique_by
 from app.infrastructure_automation.kubernetes.committed_preflight import KubesprayPreflight
@@ -18,7 +22,6 @@ from app.infrastructure_automation.kubernetes.source_policy import (
     PROFILE_KEY,
     committed_source_state,
 )
-from app.integrations.compatibility import COMPATIBILITY_LIFECYCLE_POLICY, kubernetes_lifecycle
 from app.models.integration import IntegrationInstance
 
 _DEFINITION = 'automation/kubespray_execution_compatibility.yaml'
@@ -60,7 +63,8 @@ def _operations() -> tuple[tuple[str, str, str], ...]:
     document = load_definition_document(_DEFINITION, expected_kind='kubespray_execution_compatibility')
     if require_str(document, 'profile_key', _DEFINITION) != PROFILE_KEY:
         raise ValueError('Kubespray profile definition is not the admitted source contract.')
-    if require_str(document, 'support_policy', _DEFINITION) != COMPATIBILITY_LIFECYCLE_POLICY.key:
+    policy_key, _ = kubernetes_policy_identity()
+    if require_str(document, 'support_policy', _DEFINITION) != policy_key:
         raise ValueError('Kubespray policy must reference the current KAORI lifecycle authority.')
     items = [
         require_mapping(item, f'operations[{index}]')
@@ -95,7 +99,7 @@ def assess_kubespray_execution_compatibility(
     """
     version = target_minor if target_minor is not None else KUBESPRAY_KUBERNETES_MINOR
     minor = version if isinstance(version, str) and _TARGET_MINOR.fullmatch(version) else 'unknown'
-    api_state = kubernetes_lifecycle(minor) if minor != 'unknown' else 'unknown'
+    api_state = kubernetes_api_lifecycle(minor) if minor != 'unknown' else 'unknown'
     metadata = connection.metadata_json if type(connection.metadata_json) is dict else {}
     exact_source = (
         connection.integration_type == 'configuration_automation'
@@ -139,10 +143,11 @@ def assess_kubespray_execution_compatibility(
         )
         for key, label, posture in _operations()
     )
+    policy_key, policy_window = kubernetes_policy_identity()
     return KubesprayExecutionCompatibility(
         profile_key=PROFILE_KEY,
-        policy_key=COMPATIBILITY_LIFECYCLE_POLICY.key,
-        policy_window=COMPATIBILITY_LIFECYCLE_POLICY.window_label,
+        policy_key=policy_key,
+        policy_window=policy_window,
         target_minor=minor,
         api_support_posture=api_state,
         operations=operations,
