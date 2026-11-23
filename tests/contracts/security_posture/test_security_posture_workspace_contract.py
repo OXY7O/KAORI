@@ -731,7 +731,7 @@ def test_security_overview_blocks_without_eligible_source_without_inventing_kpis
     assert 'data-kaori-blocked-state' in html
     assert 'Registry Evidence Required' in html
     assert 'No eligible committed Registry evidence' in html
-    assert 'Security Evidence Prerequisites' in html
+    assert 'Connect an authorized Registry and collect scanner evidence' in html
     assert 'data-kaori-dashboard-framework="operational-v1"' not in html
 
 
