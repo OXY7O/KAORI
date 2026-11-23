@@ -198,6 +198,13 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 'source_control.repositories',
                 ('integrations.manage',),
             ),
+            WorkspaceCapabilityDefinition(
+                'analytics',
+                'Analytics',
+                'chart-column',
+                'source_control.analytics',
+                ('integrations.manage',),
+            ),
         ),
     ),
     WorkspaceDefinition(
