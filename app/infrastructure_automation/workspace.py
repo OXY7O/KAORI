@@ -9,13 +9,17 @@ from __future__ import annotations
 
 from typing import Any
 
+from sqlalchemy.orm import joinedload
+
 from sqlalchemy import select
 
-from app.common.pagination import paginate_query
+from app.common.pagination import paginate_query, paginate_sequence
 from app.extensions.db import db
+from app.infrastructure_automation.host_registry import preview_inventory_intent
 from app.infrastructure_automation.kubernetes.committed_preflight import committed_kubespray_preflight
 from app.infrastructure_automation.kubernetes.plan_currentness import committed_kubespray_plan_currentness
 from app.infrastructure_automation.kubernetes.source_policy import committed_source_state
+from app.models.automation import AutomationInventoryAssignment
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.job import JobExecution
@@ -24,6 +28,8 @@ INTEGRATION_TYPE = 'configuration_automation'
 PROVIDER_KEY = 'ansible'
 _HISTORY_LIMIT = 5
 _BINDING_LIMIT = 5
+_ASSET_LIMIT = 256
+_ASSET_PAGE_SIZE = 5
 
 
 def _bounded_query(value: str) -> str:
@@ -63,12 +69,85 @@ def _cluster_bindings(connection: IntegrationInstance) -> list[dict[str, Any]]:
     ]
 
 
+
+def project_host_assets(
+    connection: IntegrationInstance,
+    assignments: list[AutomationInventoryAssignment],
+    *,
+    page: int = 1,
+) -> dict[str, Any]:
+    """Project only qualified committed inventory, never SSH or Run readiness.
+
+    Inventory qualification examines *all* assignments, not only the visible page.
+    Missing, inconsistent, cross-scope, inactive and excessive membership fails
+    closed without disclosing any endpoint in an unqualified scope.
+    """
+    empty_rows, empty_pagination = paginate_sequence([], page=page, per_page=_ASSET_PAGE_SIZE)
+    if not connection.enabled or len(assignments) > _ASSET_LIMIT:
+        return {
+            'state': 'blocked',
+            'reason': 'Connection is disabled or inventory exceeds the approved review limit.',
+            'fingerprint': None,
+            'rows': empty_rows,
+            'pagination': empty_pagination,
+            'execution_authorized': False,
+        }
+    review = preview_inventory_intent(connection, assignments)
+    if review.state != 'requires_trust_admission':
+        return {
+            'state': 'blocked',
+            'reason': review.reason,
+            'fingerprint': None,
+            'rows': empty_rows,
+            'pagination': empty_pagination,
+            'execution_authorized': False,
+        }
+    ordered = sorted(assignments, key=lambda assignment: (assignment.host.name, str(assignment.host.id)))
+    records = [
+        {
+            'name': assignment.host.name,
+            'address': assignment.host.address,
+            'ssh_port': assignment.host.ssh_port,
+            'role': assignment.role,
+            'environment': assignment.host.environment,
+            'lifecycle_status': assignment.host.lifecycle_status,
+        }
+        for assignment in ordered
+    ]
+    rows, pagination = paginate_sequence(records, page=page, per_page=_ASSET_PAGE_SIZE)
+    return {
+        'state': review.state,
+        'reason': review.reason,
+        'fingerprint': review.inventory_fingerprint,
+        'rows': rows,
+        'pagination': pagination,
+        'execution_authorized': False,
+    }
+
+
+def _committed_host_assets(
+    connection: IntegrationInstance,
+    *,
+    page: int = 1,
+) -> dict[str, Any]:
+    """Bound all-member qualification to the chosen Ansible instance."""
+    assignments = (
+        AutomationInventoryAssignment.query.options(joinedload(AutomationInventoryAssignment.host))
+        .filter_by(integration_instance_id=connection.id)
+        .order_by(AutomationInventoryAssignment.id.asc())
+        .limit(_ASSET_LIMIT + 1)
+        .all()
+    )
+    return project_host_assets(connection, assignments, page=page)
+
+
 def build_automation_workspace(
     *,
     query: str = '',
     page: int = 1,
     per_page: int = 5,
     connection_id: int | None = None,
+    asset_page: int = 1,
     can_jobs: bool = False,
     can_inventory: bool = False,
 ) -> dict[str, Any]:
@@ -120,6 +199,7 @@ def build_automation_workspace(
             'jobs': jobs,
             'job_total': scoped_jobs.count() if can_jobs else None,
             'cluster_bindings': _cluster_bindings(selected) if can_inventory else [],
+            'assets': _committed_host_assets(selected, page=asset_page) if can_inventory else None,
             'can_jobs': can_jobs,
             'can_inventory': can_inventory,
             'execution_authorized': False,

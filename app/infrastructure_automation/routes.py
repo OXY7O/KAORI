@@ -23,6 +23,7 @@ def index() -> ResponseReturnValue:
             page=request.args.get('page', 1, type=int) or 1,
             per_page=request.args.get('per_page', 5, type=int) or 5,
             connection_id=request.args.get('connection_id', type=int),
+            asset_page=request.args.get('asset_page', 1, type=int) or 1,
             can_jobs=bool(current_user.has_permission('jobs.view')),
             can_inventory=bool(current_user.has_permission('inventory.view')),
         )

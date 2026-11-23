@@ -157,12 +157,77 @@
             </div>
             <div class="grid gap-4 xl:grid-cols-2">
                 <article class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                    <h4 class="text-sm font-semibold text-content-primary">Host Inventory &amp; Access</h4>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">
-                        KAORI will own authorized Linux host identity, SSH endpoint intent, approved credential references, and inventory snapshots.
-                        Current registered Git source is not trusted host inventory; no raw SSH credentials belong here.
+                    <h4 class="text-sm font-semibold text-content-primary">Assets &amp; Inventories</h4>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                        Committed Linux host roles for this Ansible connection only. These are registration records,
+                        not confirmed SSH access, privileged identity or Kubespray execution readiness.
                     </p>
-                    <p class="mt-2 text-xs text-content-muted">Host inventory enrollment and SSH trust require separate admission.</p>
+                    {% if not details.can_inventory %}
+                        <p class="mt-3 text-xs text-content-secondary">Inventory view permission is required to inspect host identities and endpoints.</p>
+                    {% elif details.assets.state == 'blocked' %}
+                        {{ integration_status("blocked", "Inventory Not Qualified", display="text") }}
+                        <p class="mt-2 text-xs text-content-secondary">{{ details.assets.reason }}</p>
+                    {% else %}
+                        {{ integration_status("pending", "SSH Trust Required", display="text") }}
+                        <p class="mt-2 text-xs text-content-secondary">
+                            {{ details.assets.pagination.total_items }} scoped host assignments ·
+                            Inventory correlation SHA256 {{ details.assets.fingerprint[:12] }}…
+                        </p>
+                        <div class="mt-3 overflow-x-auto">
+                            <table class="{{ table_ui.table_classes('min-w-[420px]') }}">
+                                <thead class="{{ table_ui.head_classes() }}">
+                                    <tr>
+                                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Host</th>
+                                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Role</th>
+                                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Management Endpoint</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="{{ table_ui.body_classes() }}">
+                                    {% for host in details.assets.rows %}
+                                        <tr class="{{ table_ui.row_classes() }}">
+                                            <th scope="row" class="{{ table_ui.cell_classes() }}">{{ host.name }}</th>
+                                            <td class="{{ table_ui.cell_classes() }}">{{ host.role|replace('_', ' ') |title }}</td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <span class="font-mono text-xs">{{ host.address }}:{{ host.ssh_port }}</span>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <nav class="mt-3 flex flex-wrap items-center justify-between gap-2"
+                             aria-label="Host inventory pages">
+                            <span class="text-xs text-content-muted">
+                                {{ details.assets.pagination.start_item }}–{{ details.assets.pagination.end_item }}
+                                of {{ details.assets.pagination.total_items }} hosts · 5 per page
+                            </span>
+                            <div class="flex flex-wrap gap-2">
+                                {% if details.assets.pagination.has_prev %}
+                                    {% set prev_assets = url_for('platform_operations.infrastructure_automation.index', connection_id=selected_connection_id, q=selected_query, page=pagination.page, per_page=pagination.per_page, asset_page=details.assets.pagination.prev_page) %}
+                                    <a href="{{ prev_assets }}"
+                                       hx-get="{{ prev_assets }}"
+                                       hx-target="#infrastructure-automation-results"
+                                       hx-select="#infrastructure-automation-results"
+                                       hx-swap="outerHTML"
+                                       hx-push-url="true"
+                                       hx-indicator="#infrastructure-automation-loading"
+                                       class="{{ action_button.classes('secondary') }}">Previous</a>
+                                {% endif %}
+                                {% if details.assets.pagination.has_next %}
+                                    {% set next_assets = url_for('platform_operations.infrastructure_automation.index', connection_id=selected_connection_id, q=selected_query, page=pagination.page, per_page=pagination.per_page, asset_page=details.assets.pagination.next_page) %}
+                                    <a href="{{ next_assets }}"
+                                       hx-get="{{ next_assets }}"
+                                       hx-target="#infrastructure-automation-results"
+                                       hx-select="#infrastructure-automation-results"
+                                       hx-swap="outerHTML"
+                                       hx-push-url="true"
+                                       hx-indicator="#infrastructure-automation-loading"
+                                       class="{{ action_button.classes('secondary') }}">Next</a>
+                                {% endif %}
+                            </div>
+                        </nav>
+                    {% endif %}
+                    <p class="mt-2 text-xs text-content-muted">Registration, credential admission and remote host-key verification are separate gated capabilities. No executable inventory is generated here.</p>
                 </article>
                 <article class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                     <h4 class="text-sm font-semibold text-content-primary">Kubernetes Cluster Associations</h4>
