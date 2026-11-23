@@ -29,104 +29,124 @@
         blocked_title='Source Inventory Not Collected',
         blocked_info='Register and validate a GitHub App installation, then sync authorized repositories to commit evidence.'
         ) }}
-        {% set active_dashboard_tab = dashboard_active_tab|default('overview') %}
-        {% set inventory_ready = scope.committed_count > 0 %}
-        {% set collection_complete = inventory_ready and scope.uncollected_count == 0 and not scope.has_more %}
-        {% set signal_updated = ('Updated ' ~ (scope.latest_committed_at|user_datetime)) if scope.latest_committed_at else 'Not Collected' %}
-        {% set selected_scope = selected_installation_id is not none %}
-        {% if selected_scope %}
-            {% set scope_status = 'Selected Inventory Retained' if inventory_ready else 'Selected Inventory Not Collected' %}
-            {% set scope_tone = 'info' if inventory_ready else 'unknown' %}
+        {% if scope.installation_count == 0 %}
+            {% set provider_prerequisite_icon = "git-branch" %}
+            {% set provider_prerequisite_title = "Source Control Installation Required" %}
+            {% set provider_prerequisite_description = "Register an authorized Source Control installation before using committed repository workspaces." %}
+            {% set provider_prerequisite_steps = ["Register connection", "Authorize GitHub App installation", "Collect repository inventory"] %}
+            {% set provider_prerequisite_action_url = url_for('integrations.source_control') %}
+            {% set provider_prerequisite_action_label = "Open Source Control Integrations" %}
+            {% set provider_prerequisite_permission = "integrations.manage" %}
+            {% include "components/provider_prerequisite/_setup_blocker.html" %}
+        {% elif scope.committed_count == 0 %}
+            {% set blocked_state_icon = "database-zap" %}
+            {% set blocked_state_label = "Collection Required" %}
+            {% set blocked_state_title = "Repository Inventory Not Collected" %}
+            {% set blocked_state_description = "No committed repository inventory exists; missing evidence does not prove zero repositories." %}
+            {% set blocked_state_action_url = url_for('integrations.source_control') %}
+            {% set blocked_state_action_label = "Open Source Control Integrations" %}
+            {% set blocked_state_permission = "integrations.manage" %}
+            {% include "components/states/_blocked_state.html" %}
         {% else %}
-            {% set scope_status = 'Visible Scope Collected' if collection_complete else ('Partial Collection' if inventory_ready else 'Inventory Not Collected') %}
-            {% set scope_tone = 'normal' if collection_complete else ('warning' if inventory_ready else 'unknown') %}
-        {% endif %}
-        {% set scope_context %}
-            <label for="source-control-installation-filter" class="sr-only">Installation Scope</label>
-            <div class="relative min-w-0 flex-1 lg:w-72 lg:flex-none">
-                <i data-lucide="sliders-horizontal"
-                   class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
-                   aria-hidden="true"></i>
-                <select id="source-control-installation-filter"
-                        name="installation_id"
-                        data-source-control-scope-filter
-                        hx-get="{{ url_for('source_control.overview') }}"
-                        hx-target="#source-control-overview"
-                        hx-select="#source-control-overview"
-                        hx-swap="outerHTML"
-                        hx-push-url="true"
-                        hx-trigger="change"
-                        hx-disabled-elt="this"
-                        hx-include="#source-control-dashboard-active-tab"
-                        hx-sync="closest section:replace"
-                        class="{{ table_ui.filter_select_classes() }} pl-10">
-                    <option value="" {% if not selected_scope %}selected{% endif %}>All Installations</option>
-                    {% for option in authorized_installations %}
-                        <option value="{{ option.installation.id }}"
-                                {% if option.installation.id == selected_installation_id %}selected{% endif %}>
-                            {{ option.connection.name }}
-                        </option>
+            {% set active_dashboard_tab = dashboard_active_tab|default('overview') %}
+            {% set inventory_ready = scope.committed_count > 0 %}
+            {% set collection_complete = inventory_ready and scope.uncollected_count == 0 and not scope.has_more %}
+            {% set signal_updated = ('Updated ' ~ (scope.latest_committed_at|user_datetime)) if scope.latest_committed_at else 'Not Collected' %}
+            {% set selected_scope = selected_installation_id is not none %}
+            {% if selected_scope %}
+                {% set scope_status = 'Selected Inventory Retained' if inventory_ready else 'Selected Inventory Not Collected' %}
+                {% set scope_tone = 'info' if inventory_ready else 'unknown' %}
+            {% else %}
+                {% set scope_status = 'Visible Scope Collected' if collection_complete else ('Partial Collection' if inventory_ready else 'Inventory Not Collected') %}
+                {% set scope_tone = 'normal' if collection_complete else ('warning' if inventory_ready else 'unknown') %}
+            {% endif %}
+            {% set scope_context %}
+                <label for="source-control-installation-filter" class="sr-only">Installation Scope</label>
+                <div class="relative min-w-0 flex-1 lg:w-72 lg:flex-none">
+                    <i data-lucide="sliders-horizontal"
+                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+                       aria-hidden="true"></i>
+                    <select id="source-control-installation-filter"
+                            name="installation_id"
+                            data-source-control-scope-filter
+                            hx-get="{{ url_for('source_control.overview') }}"
+                            hx-target="#source-control-overview"
+                            hx-select="#source-control-overview"
+                            hx-swap="outerHTML"
+                            hx-push-url="true"
+                            hx-trigger="change"
+                            hx-disabled-elt="this"
+                            hx-include="#source-control-dashboard-active-tab"
+                            hx-sync="closest section:replace"
+                            class="{{ table_ui.filter_select_classes() }} pl-10">
+                        <option value="" {% if not selected_scope %}selected{% endif %}>All Installations</option>
+                        {% for option in authorized_installations %}
+                            <option value="{{ option.installation.id }}"
+                                    {% if option.installation.id == selected_installation_id %}selected{% endif %}>
+                                {{ option.connection.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endset %}
+            {% call dashboard_workspace.controller(active_dashboard_tab, 'source-control-dashboard', input_id='source-control-dashboard-active-tab') %}
+                {% call signal_overview.render(
+                    'Committed installation and repository collection posture for the authorized GitHub App scope.',
+                    '4 Indicators',
+                    selected_installation_name or 'All Installations',
+                    'git-branch',
+                    scope_status,
+                    scope_tone,
+                    signal_updated,
+                    scope_context
+                    ) %}
+                    <div aria-label="Source Control inventory signals"
+                         class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        {{ metric_card.render('Selected Installation' if selected_scope else 'Registered Installations',
+                                                scope.installation_count ~ ('+' if scope.has_more else '') ,
+                        'Selected authorized installation.' if selected_scope else 'Authorized GitHub installations.',
+                        'git-branch', source_label='KAORI Integration Registry') }}
+                        {{ metric_card.render('Committed Inventory Scopes',
+                                                scope.committed_count,
+                                                'Inventory retained for this grant.' if selected_scope else 'Committed installation scopes.',
+                                                'database-zap', source_label='SC-03 Collection Evidence') }}
+                        {{ metric_card.render('Uncollected Scopes',
+                                                scope.uncollected_count,
+                                                'Grant awaiting collection.' if selected_scope else 'Uncollected installation scopes.',
+                                                'circle-help', source_label='SC-03 Collection Evidence') }}
+                        {{ metric_card.render('Selected Inventory Commit' if selected_scope else 'Latest Inventory Commit',
+                                                scope.latest_committed_at|user_date if scope.latest_committed_at else 'Unknown',
+                                                'Selected inventory commit date.' if selected_scope else 'Latest retained inventory date.',
+                                                'clock-3', source_label='KAORI Committed State') }}
+                    </div>
+                {% endcall %}
+                <div class="mt-5 space-y-5">
+                    {% set source_control_tabs = [('overview', 'Operations Overview', 'activity'), ('capacity', 'Repository Coverage', 'folder-git-2'), ('signals', 'Signals & Actions', 'bell-ring'), ('reporting', 'Reporting', 'file-text')] %}
+                    {{ dashboard_workspace.navigation('source-control-dashboard', 'Source Control Dashboard Sections', tabs=source_control_tabs) }}
+                    {% for tab_key, tab_label, tab_icon in source_control_tabs %}
+                        {% call dashboard_workspace.panel(tab_key, active_dashboard_tab, 'source-control-dashboard') %}
+                            {% if tab_key == 'overview' and eager_health_pagination %}
+                                {% include "source_control/partials/_dashboard_operations.html" %}
+                            {% elif tab_key == 'capacity' and eager_coverage_pagination %}
+                                {% include "source_control/partials/_dashboard_capacity.html" %}
+                            {% else %}
+                                <div id="source-control-dashboard-section-{{ tab_key }}"
+                                     class="space-y-5"
+                                     hx-get="{{ url_for('source_control.section', section=tab_key, installation_id=selected_installation_id or '', installation_page=installation_pagination.page, installation_per_page=installation_pagination.per_page) }}"
+                                     hx-trigger="revealed"
+                                     hx-target="this"
+                                     hx-swap="outerHTML"
+                                     hx-sync="this:replace"
+                                     data-source-control-lazy-section="{{ tab_key }}">
+                                    {{ section_loading.section(tab_label,
+                                                                        'Preparing committed Source Control dashboard evidence.',
+                                                                        tab_icon) }}
+                                </div>
+                            {% endif %}
+                        {% endcall %}
                     {% endfor %}
-                </select>
-            </div>
-        {% endset %}
-        {% call dashboard_workspace.controller(active_dashboard_tab, 'source-control-dashboard', input_id='source-control-dashboard-active-tab') %}
-            {% call signal_overview.render(
-                'Committed installation and repository collection posture for the authorized GitHub App scope.',
-                '4 Indicators',
-                selected_installation_name or 'All Installations',
-                'git-branch',
-                scope_status,
-                scope_tone,
-                signal_updated,
-                scope_context
-                ) %}
-                <div aria-label="Source Control inventory signals"
-                     class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    {{ metric_card.render('Selected Installation' if selected_scope else 'Registered Installations',
-                                        scope.installation_count ~ ('+' if scope.has_more else '') ,
-                    'Selected authorized installation.' if selected_scope else 'Authorized GitHub installations.',
-                    'git-branch', source_label='KAORI Integration Registry') }}
-                    {{ metric_card.render('Committed Inventory Scopes',
-                                        scope.committed_count,
-                                        'Inventory retained for this grant.' if selected_scope else 'Committed installation scopes.',
-                                        'database-zap', source_label='SC-03 Collection Evidence') }}
-                    {{ metric_card.render('Uncollected Scopes',
-                                        scope.uncollected_count,
-                                        'Grant awaiting collection.' if selected_scope else 'Uncollected installation scopes.',
-                                        'circle-help', source_label='SC-03 Collection Evidence') }}
-                    {{ metric_card.render('Selected Inventory Commit' if selected_scope else 'Latest Inventory Commit',
-                                        scope.latest_committed_at|user_date if scope.latest_committed_at else 'Unknown',
-                                        'Selected inventory commit date.' if selected_scope else 'Latest retained inventory date.',
-                                        'clock-3', source_label='KAORI Committed State') }}
                 </div>
             {% endcall %}
-            <div class="mt-5 space-y-5">
-                {% set source_control_tabs = [('overview', 'Operations Overview', 'activity'), ('capacity', 'Repository Coverage', 'folder-git-2'), ('signals', 'Signals & Actions', 'bell-ring'), ('reporting', 'Reporting', 'file-text')] %}
-                {{ dashboard_workspace.navigation('source-control-dashboard', 'Source Control Dashboard Sections', tabs=source_control_tabs) }}
-                {% for tab_key, tab_label, tab_icon in source_control_tabs %}
-                    {% call dashboard_workspace.panel(tab_key, active_dashboard_tab, 'source-control-dashboard') %}
-                        {% if tab_key == 'overview' and eager_health_pagination %}
-                            {% include "source_control/partials/_dashboard_operations.html" %}
-                        {% elif tab_key == 'capacity' and eager_coverage_pagination %}
-                            {% include "source_control/partials/_dashboard_capacity.html" %}
-                        {% else %}
-                            <div id="source-control-dashboard-section-{{ tab_key }}"
-                                 class="space-y-5"
-                                 hx-get="{{ url_for('source_control.section', section=tab_key, installation_id=selected_installation_id or '', installation_page=installation_pagination.page, installation_per_page=installation_pagination.per_page) }}"
-                                 hx-trigger="revealed"
-                                 hx-target="this"
-                                 hx-swap="outerHTML"
-                                 hx-sync="this:replace"
-                                 data-source-control-lazy-section="{{ tab_key }}">
-                                {{ section_loading.section(tab_label,
-                                                                'Preparing committed Source Control dashboard evidence.',
-                                                                tab_icon) }}
-                            </div>
-                        {% endif %}
-                    {% endcall %}
-                {% endfor %}
-            </div>
-        {% endcall %}
+        {% endif %}
     </div>
 {% endblock dashboard_content %}

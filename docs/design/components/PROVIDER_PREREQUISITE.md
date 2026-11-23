@@ -130,3 +130,11 @@ Registry / Harbor operational consumers must adopt this contract when provider-b
 - registered-but-offline is not misclassified as provider absent;
 - secondary dependencies do not create a third provider-setup grammar;
 - light/dark, responsive, keyboard focus, permissions, and accessibility remain shared-component owned.
+
+## RC.4 review correction: Source Control and Security consumers (#5136)
+
+Provider absence is distinct from missing committed evidence. Source Control Overview, Repositories and Analytics preserve level-3 route navigation and the existing local UAT permission boundary, but suppress the normal workspace when no authorized installation exists. An installation with no committed inventory shows a separate **Collection Required** state; selected installation scope is mandatory for repository-grant facts and must never become an unqualified cross-installation aggregate.
+
+Security Overview and Findings require authorized Registry scanner evidence before presenting CVE exposure or searchable findings; absent Registry authority uses the canonical provider prerequisite blocker. A registered source without scanner evidence uses the existing blocked-state renderer with **Collection Required**. Once scanner observations are committed, zero matching CVEs is a qualified empty search result, not a setup blocker. Missing runtime correlation remains independently unknown and does not invalidate committed scanner evidence.
+
+The Registry Analytics setup path stays on its existing canonical provider wrapper. Secrets & PKI retains the same shared blocked-state renderer with a concise single-sentence provider-absent explanation. No new CSS, provider calls, permissions, navigation framework, or blocking geometry are created.
