@@ -52,7 +52,22 @@
             </div>
         </section>
         {% if analytics.setup.is_blocked %}
-            {% include "artifact_registry/components/_setup_blocker.html" %}
+            {# The shared Analytics dependency path stays visible before the first provider exists. #}
+            {% set dependency_blocker = {
+                'kind': 'registry_required',
+                'stage': 1,
+                'tone': 'warning',
+                'icon': 'package-search',
+                'title': 'Registry Provider Required',
+                'description': 'Register and validate a Registry provider, then collect committed inventory before reviewing Analytics.',
+                'action_endpoint': 'integrations.registry',
+                'action_label': 'Open Registry Integrations',
+                'permission': 'integrations.manage'
+            } %}
+            {% set dependency_steps = analytics.data_readiness.dependency_steps %}
+            {% set dependency_route_summary = 'Registry Integration → Metrics Source → Alert Source' %}
+            {% set dependency_missing_label = 'authorized Registry provider and committed inventory' %}
+            {% include "components/dependencies/_blocker.html" %}
         {% else %}
             {{ section_tracker.render('artifact-registry-analytics-load-tracker',
                         title='Loading Registry Analytics',
