@@ -74,5 +74,5 @@ def test_registry_and_vault_reuse_shared_geometry_and_one_line_copy() -> None:
         for item in secrets.splitlines()
         if 'No eligible Vault source; uncollected KV v2 inventory is not zero Secrets.' in item
     )
-    assert len(line.strip()) < 115
+    assert len(line.split('"')[1]) < 90
     assert 'whitespace-nowrap' not in secrets
