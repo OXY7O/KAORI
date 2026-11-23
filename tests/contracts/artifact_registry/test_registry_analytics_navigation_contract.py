@@ -214,7 +214,7 @@ def test_registry_analytics_provider_absence_uses_shared_three_stage_dependency_
     assert 'artifact_registry/components/_setup_blocker.html' not in shell
     assert 'analytics.data_readiness.dependency_steps' in shell
     assert 'Registry Integration → Metrics Source → Alert Source' in shell
-    assert "'permission': 'integrations.manage'" in shell
+    assert '"permission": "integrations.manage"' in shell
     assert 'dependency_missing_label' in shell
     assert 'analytics.setup.is_blocked' in shell
     for label in ("'label': 'Registry Integration'", "'Metrics Source'", "'Alert Source'"):
