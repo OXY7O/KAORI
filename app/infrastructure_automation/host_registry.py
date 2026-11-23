@@ -24,9 +24,7 @@ _VALID_HOSTNAME = re.compile(r'[a-z0-9](?:[a-z0-9-]{0,94}[a-z0-9])?\\Z')
 _ALLOWED_ENVIRONMENTS = frozenset(
     {'development', 'staging', 'testing', 'laboratory', 'sandbox', 'proof_of_concept', 'non_production'}
 )
-_PRIVATE_NETWORKS = tuple(
-    IPv4Network(cidr) for cidr in ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16')
-)
+_PRIVATE_NETWORKS = tuple(IPv4Network(cidr) for cidr in ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16'))
 _ROLES = frozenset({'control_plane', 'worker'})
 
 
