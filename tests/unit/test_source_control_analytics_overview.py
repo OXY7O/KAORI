@@ -122,7 +122,7 @@ def test_analytics_reuses_shared_controls_and_never_claims_unqualified_evidence(
     assert 'source_control/partials/_dashboard_repository_composition.html' in template
     assert 'source_control/partials/_dashboard_repository_lineage.html' in template
     assert 'source_control/partials/_dashboard_repository_attention.html' in template
-    assert "read_repository_coverage_for_current_session(" in routes_text
+    assert 'read_repository_coverage_for_current_session(' in routes_text
     assert "'source_control.analytics'" in catalog
     assert 'MetricsConsumer' not in template
     assert 'Prometheus' not in template
