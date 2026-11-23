@@ -92,14 +92,7 @@
             </section>
             {% include "integrations/source_control/github/_inventory_table.html" %}
         {% else %}
-            {% set blocked_state_icon = "folder-git-2" %}
-            {% set blocked_state_label = "Scope Required" if not selected else "Collection Required" %}
-            {% set blocked_state_title = "Select a GitHub Installation" if not selected else "Repository Inventory Not Collected" %}
-            {% set blocked_state_description = "Select one authorized installation to inspect its committed repository inventory." if not selected else "Collect committed repository inventory for this installation; unknown is not verified zero." %}
-            {% set blocked_state_action_url = url_for('integrations.source_control') %}
-            {% set blocked_state_action_label = "Open Source Control Integrations" %}
-            {% set blocked_state_permission = "integrations.manage" %}
-            {% include "components/states/_blocked_state.html" %}
+            {% include "source_control/partials/_repository_inventory_blocker.html" %}
         {% endif %}
         {% endif %}
     </div>

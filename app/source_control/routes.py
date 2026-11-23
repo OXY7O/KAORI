@@ -183,5 +183,7 @@ def repositories() -> ResponseReturnValue:
         'inventory_htmx_endpoint': 'source_control.repositories',
     }
     if request.headers.get('HX-Request') == 'true' and selected is not None:
+        if not selected['committed'] or inventory is None or inventory.collected_at is None:
+            return _uncached_render('source_control/partials/_repository_inventory_blocker.html', **context)
         return _uncached_render('integrations/source_control/github/_inventory_table.html', **context)
     return _uncached_render('source_control/repositories.html', **context)

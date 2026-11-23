@@ -269,6 +269,57 @@ def test_product_templates_use_existing_source_control_inventory_contract():
     assert 'exact_default_branch_sha' in reusable
 
 
+@pytest.mark.parametrize(
+    ('committed', 'collected_at', 'expected_template'),
+    [
+        (False, None, 'source_control/partials/_repository_inventory_blocker.html'),
+        (True, None, 'source_control/partials/_repository_inventory_blocker.html'),
+        (True, datetime(2026, 10, 26, tzinfo=UTC), 'integrations/source_control/github/_inventory_table.html'),
+    ],
+)
+def test_repositories_htmx_requires_committed_inventory_before_rendering_table(
+    monkeypatch, committed, collected_at, expected_template
+):
+    """The HTMX refresh cannot bypass the full-page prerequisite gate."""
+    app = Flask(__name__)
+    monkeypatch.setattr(routes, '_require_product_uat_access', lambda: None)
+    authorized = {
+        'installation': SimpleNamespace(id=11),
+        'connection': SimpleNamespace(name='Authorized GitHub installation'),
+        'committed': committed,
+    }
+    monkeypatch.setattr(
+        routes,
+        'build_source_control_overview',
+        lambda: {'installations': (authorized,), 'installation_count': 1, 'has_more': False},
+    )
+    monkeypatch.setattr(
+        routes,
+        'read_installation_inventory_for_current_session',
+        lambda **_kwargs: SimpleNamespace(collected_at=collected_at),
+    )
+    captured = []
+
+    def capture(template, **context):
+        captured.append((template, context))
+        return 'rendered'
+
+    monkeypatch.setattr(routes, '_uncached_render', capture)
+    with app.test_request_context(
+        '/source-control/repositories',
+        query_string={'installation_id': '11'},
+        headers={'HX-Request': 'true'},
+    ):
+        assert routes.repositories.__wrapped__() == 'rendered'
+    assert captured[-1][0] == expected_template
+    assert captured[-1][1]['selected'] is authorized
+
+    root = Path(__file__).resolve().parents[2]
+    blocker = (root / 'app/templates/source_control/partials/_repository_inventory_blocker.html').read_text()
+    assert 'id="source-control-inventory"' in blocker
+    assert 'components/states/_blocked_state.html' in blocker
+
+
 def test_product_no_integration_uses_canonical_blocker_without_operational_workspace() -> None:
     """No qualified committed source must not expose ordinary operational surfaces."""
     root = Path(__file__).resolve().parents[2]
