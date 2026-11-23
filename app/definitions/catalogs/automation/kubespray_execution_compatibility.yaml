@@ -1,0 +1,31 @@
+schema_version: 1
+kind: kubespray_execution_compatibility
+
+# KAORI API visibility is governed by the annual five-year compatibility
+# registry. These operations are a SEPARATE, fail-closed execution authority.
+# Exact source/Kubespray/Ansible/OS pins are owned by source_policy.py and
+# kubespray_preflight.py, never copied into this policy.
+profile_key: kubernetes_lifecycle
+support_policy: kaori-compatibility-policy-v1
+operations:
+  - key: plan_review
+    label: Review-Only Plan
+    posture: review_only
+  - key: provision
+    label: Provision
+    posture: not_admitted
+  - key: verify
+    label: Independent Verification
+    posture: not_admitted
+  - key: scale
+    label: Scale / Node Join
+    posture: not_admitted
+  - key: upgrade
+    label: Kubernetes / Component Upgrade
+    posture: not_admitted
+  - key: node_maintenance
+    label: Node Maintenance
+    posture: not_admitted
+  - key: recovery
+    label: Backup / Recovery
+    posture: not_admitted
