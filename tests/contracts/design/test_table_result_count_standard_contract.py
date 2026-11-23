@@ -132,8 +132,8 @@ def test_additional_table_workspaces_use_filtered_results_badges() -> None:
     assert 'table_label.result_count(payload.pagination.total_items)' in catalog_count
     assert 'id="catalog-rule-count"' in catalog_count
     assert 'hx-swap-oob="outerHTML"' in catalog_count
-    assert "_catalog_title_count.html" in catalog_results
-    assert "_catalog_title_count.html" in catalog_page
+    assert '_catalog_title_count.html' in catalog_results
+    assert '_catalog_title_count.html' in catalog_page
 
     # Recommendations retain filtered counts in their OOB summary,
     # not a duplicate badge inside the paginated HTMX fragment.
