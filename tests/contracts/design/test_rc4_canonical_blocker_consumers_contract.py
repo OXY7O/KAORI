@@ -41,9 +41,9 @@ def test_source_control_preserves_committed_scope_and_three_independent_sources(
     assert 'Not Evaluated' in analytics
     assert 'repository_coverage.grant_count_matches_observation' in analytics
     assert 'read_repository_coverage_for_current_session' in routes
-    assert "_require_product_uat_access()" in routes
-    assert "if raw_installation_id:" in routes
-    assert "abort(404)" in routes
+    assert '_require_product_uat_access()' in routes
+    assert 'if raw_installation_id:' in routes
+    assert 'abort(404)' in routes
     assert 'HarborClient' not in routes
     assert 'GitHubClient' not in routes
 
@@ -53,16 +53,14 @@ def test_security_blocks_unqualified_scans_using_existing_components() -> None:
     findings = read('app/templates/security_posture/findings.html')
     for html in (overview, findings):
         Environment().parse(html)
-        assert "posture.scanned_artifacts > 0" in html
+        assert 'posture.scanned_artifacts > 0' in html
         assert 'components/provider_prerequisite/_setup_blocker.html' in html
         assert 'components/states/_blocked_state.html' in html
         assert 'Registry Scanner Evidence Required' in html
     assert '{% if not security_evidence_ready %}' in overview
     assert '{% if not findings_ready %}' in findings
     assert 'data-security-findings-registry' in findings
-    assert 'can_manage_integrations=current_user.has_permission' in read(
-        'app/security_posture/routes.py'
-    )
+    assert 'can_manage_integrations=current_user.has_permission' in read('app/security_posture/routes.py')
 
 
 def test_registry_and_vault_reuse_shared_geometry_and_one_line_copy() -> None:
@@ -72,8 +70,9 @@ def test_registry_and_vault_reuse_shared_geometry_and_one_line_copy() -> None:
     assert 'components/provider_prerequisite/_setup_blocker.html' in registry
     assert 'components/states/_blocked_state.html' in secrets
     line = next(
-        item for item in secrets.splitlines()
-        if "No eligible Vault source; uncollected KV v2 inventory is not zero Secrets." in item
+        item
+        for item in secrets.splitlines()
+        if 'No eligible Vault source; uncollected KV v2 inventory is not zero Secrets.' in item
     )
     assert len(line.strip()) < 115
     assert 'whitespace-nowrap' not in secrets

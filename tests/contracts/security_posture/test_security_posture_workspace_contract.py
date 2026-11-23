@@ -873,9 +873,7 @@ def test_security_registered_source_without_scanner_evidence_blocks_both_workspa
 def test_security_scanned_artifact_with_zero_cves_remains_qualified_empty() -> None:
     posture = _renderable_posture()
     posture['rows'] = []
-    posture['pagination'] = pagination_payload(
-        build_pagination_window(total_items=0, page=1, per_page=5)
-    )
+    posture['pagination'] = pagination_payload(build_pagination_window(total_items=0, page=1, per_page=5))
     html = _render_workspace_page('findings', posture)
     assert 'data-security-findings-registry' in html
     assert 'data-kaori-blocked-state' not in html
