@@ -28,6 +28,16 @@ This product workspace follows approved domain authority [#559](https://github.c
 - Temporary UAT access is **local database Super Admin plus `integrations.manage`**, enforced independently of GitHub provider readiness for this product workspace. Provider setup/validation/sync remain guarded by their existing integration routes. This is NOT an accepted production resource authorization model. Global/non-admin repository visibility must remain denied until #724 implementation.
 - Scoped UAT installation list has a bounded 50-row limit. The UI signals truncation; it does not advertise these sampled counts as complete organizational totals.
 
+## Provider prerequisite and evidence-gated presentation — #5139
+
+The Source Control sidebar keeps its existing permission-gated **domain discovery** and provider-neutral navigation; its children are not evidence of configured installations or committed state. All product page/HTMX entry points must fail closed to the **same shared** `components/states/_blocked_state.html` prerequisite when their mandatory source evidence is missing. Do not invent page-local setup cards or display ordinary metrics/tables as if qualified.
+
+- **No eligible enabled active GitHub App installation:** Overview, Repositories and Analytics show **GitHub Installation Required** with the integration setup CTA. Active-but-disabled integration instances are excluded from the Source Control scope, even if they contain historical snapshots.
+- **Installation exists, no committed inventory:** Overview and any direct dashboard HTMX sections show **Repository Inventory Not Collected**. Repositories retain only the authorized scope selector and shared blocker. An empty fetch without a committed generation is **unknown**, not observed zero.
+- **Installation exists but no selected authorized scope:** Repositories and Analytics offer the existing selection form and a shared **Select a GitHub Installation** / **Select an Authorized Installation** blocker, not a fleet aggregation.
+- **Selected committed scope:** keep existing bounded SC-03 inventory and Analytics projections; independently report Metrics Source and Alert Source **Not Evaluated**, never block qualified inventory on optional telemetry.
+- Continue validating out-of-scope IDs with 404, preserving local Super Admin + `integrations.manage` and immutable committed evidence with no live provider GET. Normal product sidebar entries remain navigable to clear setup explanations; they do not automatically grant integration access.
+
 ## Deferred Source Control product workstreams
 
 - SC-04: pull-request/review/check/issue linkage evidence.
