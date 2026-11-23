@@ -870,8 +870,10 @@ def test_security_findings_flat_readiness_does_not_fabricate_freshness() -> None
 
 def test_security_findings_renders_no_source_as_unqualified_not_safe() -> None:
     html = _render_workspace_page('findings', _renderable_posture(False))
-    assert 'No CVE records' in html
-    assert 'This does not confirm' in html
+    assert 'data-kaori-blocked-state' in html
+    assert 'Registry Evidence Required' in html
+    assert 'before investigating CVE impact' in html
+    assert 'data-security-findings-registry-workspace' not in html
     assert '/artifact-registry/security/cve/CVE-2022-1586/impact' not in html
 
 
