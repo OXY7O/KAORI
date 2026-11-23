@@ -54,21 +54,21 @@
         </section>
         {% if not security_evidence_ready %}
             {% if not registry_ready %}
-                {% set provider_prerequisite_icon = 'shield-alert' %}
-                {% set provider_prerequisite_title = 'Registry Evidence Required' %}
-                {% set provider_prerequisite_description = 'Connect an authorized Registry and collect scanner evidence before interpreting CVE exposure.' %}
-                {% set provider_prerequisite_steps = ['Register a Registry source', 'Collect inventory', 'Collect scanner evidence'] %}
+                {% set provider_prerequisite_icon = "shield-alert" %}
+                {% set provider_prerequisite_title = "Registry Evidence Required" %}
+                {% set provider_prerequisite_description = "Connect an authorized Registry and collect scanner evidence before interpreting CVE exposure." %}
+                {% set provider_prerequisite_steps = ["Register a Registry source", "Collect inventory", "Collect scanner evidence"] %}
                 {% set provider_prerequisite_action_url = url_for('integrations.registry') %}
-                {% set provider_prerequisite_action_label = 'Open Registry Integrations' %}
+                {% set provider_prerequisite_action_label = "Open Registry Integrations" %}
                 {% set provider_prerequisite_permission_granted = can_manage_integrations %}
                 {% include "components/provider_prerequisite/_setup_blocker.html" %}
             {% else %}
-                {% set blocked_state_icon = 'scan-search' %}
-                {% set blocked_state_label = 'Collection Required' %}
-                {% set blocked_state_title = 'Registry Scanner Evidence Required' %}
-                {% set blocked_state_description = 'Registry scanner evidence has not been committed; missing findings are not proof of no exposure.' %}
+                {% set blocked_state_icon = "scan-search" %}
+                {% set blocked_state_label = "Collection Required" %}
+                {% set blocked_state_title = "Registry Scanner Evidence Required" %}
+                {% set blocked_state_description = "Registry scanner evidence has not been committed; missing findings are not proof of no exposure." %}
                 {% set blocked_state_action_url = url_for('integrations.registry') %}
-                {% set blocked_state_action_label = 'Open Registry Integrations' %}
+                {% set blocked_state_action_label = "Open Registry Integrations" %}
                 {% set blocked_state_permission_granted = can_manage_integrations %}
                 {% include "components/states/_blocked_state.html" %}
             {% endif %}
