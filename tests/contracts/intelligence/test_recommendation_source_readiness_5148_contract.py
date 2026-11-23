@@ -19,8 +19,8 @@ def test_registry_runtime_correlation_unmaterialized_does_not_mark_all_evaluator
     assert "elif runtime_evidence['status'] != 'ready':" in service
     assert "source_gaps.append('Registry Runtime: ' + runtime_evidence['title'])" in service
     assert "'source_gaps': source_gaps" in service
-    assert "source_gaps=source_gaps" in service
-    assert "if recent < total or source_gaps:" in service
+    assert 'source_gaps=source_gaps' in service
+    assert 'if recent < total or source_gaps:' in service
     assert "'status': 'not_materialized'" in runtime
     assert "'status': 'refresh_failed'" in runtime
     assert "'status': 'stale'" in runtime
