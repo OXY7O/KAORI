@@ -9,6 +9,29 @@ from app.platform_operations.jobs.presentation import build_job_execution_status
 from app.platform_operations.kubernetes.presentation import build_kubernetes_administration_summary
 
 
+def _infrastructure_automation_workspace() -> dict[str, Any]:
+    """Read the domain-owned identity count; never claim runtime readiness."""
+    connections = automation_connection_count()
+    return {
+        'key': 'infrastructure-automation',
+        'label': 'Infrastructure Automation',
+        'icon': 'server-cog',
+        'description': 'Read-only Ansible source, preflight, Plan and cluster evidence.',
+        'status_label': 'Review Required' if connections else 'Not Configured',
+        'status_tone': 'unknown',
+        'metrics': (
+            ('blocks', 'Ansible Connections', connections, 'Canonical Connections'),
+            ('lock-keyhole', 'Mutation', 'Blocked', 'Execution Authority'),
+            ('clipboard-list', 'Pilot Profile', 'Kubespray', 'Registered Source Profile'),
+        ),
+        'action_endpoint': 'platform_operations.infrastructure_automation.index',
+        'action_label': 'Open Infrastructure Automation',
+        'boundary_label': 'Git-defined Ansible operations',
+        'boundary_title': 'Committed Automation Evidence',
+        'boundary_description': 'Infrastructure Automation orchestrates, never executes during page loads.',
+    }
+
+
 def _count_value(value: object) -> int:
     if isinstance(value, bool):
         return int(value)
@@ -99,27 +122,7 @@ def build_platform_operations_overview_context(
         )
 
     if can_infrastructure_automation:
-        connections = automation_connection_count()
-        workspaces.append(
-            {
-                'key': 'infrastructure-automation',
-                'label': 'Infrastructure Automation',
-                'icon': 'server-cog',
-                'description': 'Read-only Ansible source, preflight, Plan and cluster evidence.',
-                'status_label': 'Review Required' if connections else 'Not Configured',
-                'status_tone': 'unknown',
-                'metrics': (
-                    ('blocks', 'Ansible Connections', connections, 'Canonical Connections'),
-                    ('lock-keyhole', 'Mutation', 'Blocked', 'Execution Authority'),
-                    ('clipboard-list', 'Pilot Profile', 'Kubespray', 'Registered Source Profile'),
-                ),
-                'action_endpoint': 'platform_operations.infrastructure_automation.index',
-                'action_label': 'Open Infrastructure Automation',
-                'boundary_label': 'Git-defined Ansible operations',
-                'boundary_title': 'Committed Automation Evidence',
-                'boundary_description': 'Infrastructure Automation orchestrates, never executes during page loads.',
-            }
-        )
+        workspaces.append(_infrastructure_automation_workspace())
 
     if can_data_lifecycle:
         lifecycle = build_data_lifecycle_overview_summary()
