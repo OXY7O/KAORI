@@ -10,13 +10,13 @@
         {% set catalog_title_extra %}
             {% include 'intelligence/partials/_catalog_header_metadata.html' %}
             {{ info_tip.render('rule-catalog-guide', 'Rule Catalog Guide',
-                'Definitions are catalog-owned. Only qualified committed-evidence evaluators produce findings.',
-                items=[
-                'Available means an implemented evaluator or approved execution boundary, not a guaranteed active finding.',
-                'Imported Signal retains its external evidence authority and does not become an independent KAORI evaluator.',
-                'Reserved Plan definitions cannot be evaluated or escalated until the owned source and execution contract is implemented.',
-                'Filters and pagination use committed evidence; View Rule expands the selected definition without executing it.'
-                ], variant='guide', placement='left') }}
+                        'Definitions are catalog-owned. Only qualified committed-evidence evaluators produce findings.',
+                        items=[
+                        'Available means an implemented evaluator or approved execution boundary, not a guaranteed active finding.',
+                        'Imported Signal retains its external evidence authority and does not become an independent KAORI evaluator.',
+                        'Reserved Plan definitions cannot be evaluated or escalated until the owned source and execution contract is implemented.',
+                        'Filters and pagination use committed evidence; View Rule expands the selected definition without executing it.'
+                        ], variant='guide', placement='left') }}
         {% endset %}
         {% set catalog_header_actions %}
             {% include 'intelligence/partials/_catalog_header_actions.html' %}
