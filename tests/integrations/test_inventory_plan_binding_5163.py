@@ -135,7 +135,10 @@ def test_expired_plan_and_new_access_version_invalidate_fingerprint():
     assert result.state == 'review_material_only'
     a2 = deepcopy(a)
     a2['fingerprint'] = 'f' * 64
-    assert _evaluate(inventory=i, access=a2, plan=p).fingerprint != result.fingerprint
+    assert _evaluate(inventory=i, access=a2, plan=p).reason_code == 'PLAN_EVIDENCE_MISMATCH'
+    updated_plan = deepcopy(p)
+    updated_plan['host_access_fingerprint'] = a2['fingerprint']
+    assert _evaluate(inventory=i, access=a2, plan=updated_plan).fingerprint != result.fingerprint
     p['expires_at'] = NOW.isoformat()
     assert _evaluate(inventory=i, access=a, plan=p).reason_code == 'PLAN_EVIDENCE_EXPIRED'
 
