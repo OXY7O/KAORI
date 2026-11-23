@@ -59,6 +59,48 @@ def _datetime(value: object) -> datetime | None:
     return parsed if parsed.tzinfo is not None else None
 
 
+def _qualified_inventory(inventory: Mapping[str, Any]) -> bool:
+    return (
+        inventory.get('schema_version') == 1
+        and inventory.get('status') == 'review_only'
+        and inventory.get('execution_authorized') is False
+        and inventory.get('host_count') == 3
+        and inventory.get('control_plane_count') == 1
+        and inventory.get('worker_count') == 2
+        and _digest(inventory.get('fingerprint'))
+    )
+
+
+def _qualified_access(access: Mapping[str, Any]) -> bool:
+    return (
+        access.get('schema_version') == 1
+        and access.get('state') == 'references_recorded'
+        and access.get('execution_authorized') is False
+        and access.get('ssh_trust_verified') is False
+        and access.get('privileged_identity_verified') is False
+        and _digest(access.get('fingerprint'))
+    )
+
+
+def _qualified_plan(
+    plan: Mapping[str, Any],
+    inventory: Mapping[str, Any],
+    source_sha: str,
+    execution_environment_digest: str,
+) -> bool:
+    return (
+        plan.get('schema_version') == 1
+        and plan.get('status') == 'requires_independent_approval'
+        and plan.get('approval_status') == 'not_requested'
+        and plan.get('execution_status') == 'blocked'
+        and plan.get('mutation_authorized') is False
+        and _digest(plan.get('plan_fingerprint'))
+        and plan.get('inventory_fingerprint') == inventory.get('fingerprint')
+        and plan.get('source_sha') == source_sha
+        and plan.get('execution_environment_digest') == execution_environment_digest
+    )
+
+
 def assess_inventory_bound_plan_review(
     *,
     connection_id: int,
@@ -93,36 +135,11 @@ def assess_inventory_bound_plan_review(
     inventory = inventory_evidence
     access = access_evidence
     plan = plan_evidence
-    if (
-        inventory.get('schema_version') != 1
-        or inventory.get('status') != 'review_only'
-        or inventory.get('execution_authorized') is not False
-        or inventory.get('host_count') != 3
-        or inventory.get('control_plane_count') != 1
-        or inventory.get('worker_count') != 2
-        or not _digest(inventory.get('fingerprint'))
-    ):
+    if not _qualified_inventory(inventory):
         return _blocked('INVENTORY_EVIDENCE_UNQUALIFIED')
-    if (
-        access.get('schema_version') != 1
-        or access.get('state') != 'references_recorded'
-        or access.get('execution_authorized') is not False
-        or access.get('ssh_trust_verified') is not False
-        or access.get('privileged_identity_verified') is not False
-        or not _digest(access.get('fingerprint'))
-    ):
+    if not _qualified_access(access):
         return _blocked('HOST_ACCESS_EVIDENCE_UNQUALIFIED')
-    if (
-        plan.get('schema_version') != 1
-        or plan.get('status') != 'requires_independent_approval'
-        or plan.get('approval_status') != 'not_requested'
-        or plan.get('execution_status') != 'blocked'
-        or plan.get('mutation_authorized') is not False
-        or not _digest(plan.get('plan_fingerprint'))
-        or plan.get('inventory_fingerprint') != inventory.get('fingerprint')
-        or plan.get('source_sha') != source_sha
-        or plan.get('execution_environment_digest') != execution_environment_digest
-    ):
+    if not _qualified_plan(plan, inventory, source_sha, execution_environment_digest):
         return _blocked('PLAN_EVIDENCE_MISMATCH')
     expiry = _datetime(plan.get('expires_at'))
     if expiry is None or now >= expiry:
