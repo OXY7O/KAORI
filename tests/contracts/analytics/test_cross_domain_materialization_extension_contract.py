@@ -72,8 +72,8 @@ def test_new_analytics_domain_extension_does_not_require_another_framework() -> 
     assert 'Extension checklist for an additional domain' in guide
     for domain in ('Kubernetes', 'Object Storage', 'Artifact Registry', 'Source Control', 'Secrets & PKI'):
         assert domain in guide
-    for source_family in ('Domain Integration', 'Metrics Source', 'Alert Source'):
-        assert f'**{source_family}**' in guide
+    for stage, source_family in enumerate(('Domain Integration', 'Metrics Source', 'Alert Source'), start=1):
+        assert f'**{stage}. {source_family}**' in guide
     assert 'No analytics domain may create another scheduler' in guide
     # Explicit measured history replaces the obsolete snapshot_window token.
     assert 'separate `time_range` snapshots' in guide
