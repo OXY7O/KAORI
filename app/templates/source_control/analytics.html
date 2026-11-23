@@ -74,23 +74,23 @@
                 {% endif %}
                 {% call analytics_readiness.readiness_grid() %}
                     {{ analytics_readiness.source_card('Domain Integration',
-                                    'Committed installation grants and repository references from KAORI; GitHub remains provider authoritative.',
-                                    domain_status, domain_tone,
-                                    'Authorized Installation', selected_installation_name or 'Not Selected',
-                                    'Last Commit', repository_coverage.committed_at|user_datetime if collected and repository_coverage.committed_at else 'Not Collected',
-                                    icon='git-branch') }}
+                                        'Committed installation grants and repository references from KAORI; GitHub remains provider authoritative.',
+                                        domain_status, domain_tone,
+                                        'Authorized Installation', selected_installation_name or 'Not Selected',
+                                        'Last Commit', repository_coverage.committed_at|user_datetime if collected and repository_coverage.committed_at else 'Not Collected',
+                                        icon='git-branch') }}
                     {{ analytics_readiness.source_card('Metrics Source',
-                                    'Optional, separately qualified telemetry for metrics-dependent analysis. Not required for repository inventory.',
-                                    'Not Evaluated', 'unknown',
-                                    'Qualification', 'No committed Source Control metrics contract',
-                                    'Measured History', 'Not Materialized',
-                                    icon='activity', metric_source_state='unknown') }}
+                                        'Optional, separately qualified telemetry for metrics-dependent analysis. Not required for repository inventory.',
+                                        'Not Evaluated', 'unknown',
+                                        'Qualification', 'No committed Source Control metrics contract',
+                                        'Measured History', 'Not Materialized',
+                                        icon='activity', metric_source_state='unknown') }}
                     {{ analytics_readiness.source_card('Alert Source',
-                                    'Optional, separately qualified alert evidence. Never inferred from inventory or repository metadata.',
-                                    'Not Evaluated', 'unknown',
-                                    'Qualification', 'No committed Source Control alert contract',
-                                    'Alert History', 'Not Materialized',
-                                    icon='bell-ring') }}
+                                        'Optional, separately qualified alert evidence. Never inferred from inventory or repository metadata.',
+                                        'Not Evaluated', 'unknown',
+                                        'Qualification', 'No committed Source Control alert contract',
+                                        'Alert History', 'Not Materialized',
+                                        icon='bell-ring') }}
                 {% endcall %}
             {% endcall %}
             {% if not selected_scope or not collected %}
@@ -111,21 +111,21 @@
                     </header>
                     <div class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4 sm:p-5">
                         {{ metric_card.render('Committed Grant Rows',
-                                            repository_coverage.grant_count,
-                                            'Current grants within the selected installation.',
-                                            'folder-git-2', source_label='SC-03 Committed State') }}
+                                                repository_coverage.grant_count,
+                                                'Current grants within the selected installation.',
+                                                'folder-git-2', source_label='SC-03 Committed State') }}
                         {{ metric_card.render('Provider-Observed Repositories',
-                                            repository_coverage.observed_count if repository_coverage.observed_count is not none else 'Unknown',
-                                            'Observed source count, not a verified global total.',
-                                            'database-zap', source_label='SC-03 Collection Evidence') }}
+                                                repository_coverage.observed_count if repository_coverage.observed_count is not none else 'Unknown',
+                                                'Observed source count, not a verified global total.',
+                                                'database-zap', source_label='SC-03 Collection Evidence') }}
                         {{ metric_card.render('Evidence Requiring Attention',
-                                            repository_coverage.attention_count if repository_coverage.attention_count is not none else 'Unknown',
-                                            'Missing exact SHA or unqualified repository metadata.',
-                                            'shield-alert', source_label='KAORI Committed State') }}
+                                                repository_coverage.attention_count if repository_coverage.attention_count is not none else 'Unknown',
+                                                'Missing exact SHA or unqualified repository metadata.',
+                                                'shield-alert', source_label='KAORI Committed State') }}
                         {{ metric_card.render('Collection Qualification',
-                                            'Complete' if collection_complete else 'Partial / Degraded',
-                                            'Committed collection status and grant-count reconciliation.',
-                                            'shield-check', source_label='SC-03 Collection Evidence') }}
+                                                'Complete' if collection_complete else 'Partial / Degraded',
+                                                'Committed collection status and grant-count reconciliation.',
+                                                'shield-check', source_label='SC-03 Collection Evidence') }}
                     </div>
                 </section>
                 <div class="grid gap-5 xl:grid-cols-2">

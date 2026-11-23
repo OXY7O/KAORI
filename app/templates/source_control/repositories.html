@@ -74,21 +74,21 @@
                 <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
                          aria-label="Selected inventory evidence">
                     {{ metric_card.render('Committed Grants',
-                                    inventory.total if inventory.total is not none else 'Unknown',
-                                    'Installation-granted repositories, not global unique repositories.',
-                                    'folder-git-2', source_label='SC-03 Inventory') }}
+                                        inventory.total if inventory.total is not none else 'Unknown',
+                                        'Installation-granted repositories, not global unique repositories.',
+                                        'folder-git-2', source_label='SC-03 Inventory') }}
                     {{ metric_card.render('Selection Scope',
-                                    inventory.selection_scope|replace('_', ' ') |title,
+                                        inventory.selection_scope|replace('_', ' ') |title,
                     'GitHub-authoritative installation grant mode at collection.',
                     'scan-search', source_label='Collection Evidence') }}
                     {{ metric_card.render('Collection Coverage',
-                                    inventory.coverage|replace('_', ' ') |title,
+                                        inventory.coverage|replace('_', ' ') |title,
                     'Only an exhaustive committed generation proves scope coverage.',
                     'shield-check', source_label='Collection Evidence') }}
                     {{ metric_card.render('Last Committed',
-                                    inventory.collected_at|user_date if inventory.collected_at else 'Unknown',
-                                    'Retained snapshot timestamp; not a live GitHub probe.',
-                                    'clock-3', source_label='KAORI Evidence') }}
+                                        inventory.collected_at|user_date if inventory.collected_at else 'Unknown',
+                                        'Retained snapshot timestamp; not a live GitHub probe.',
+                                        'clock-3', source_label='KAORI Evidence') }}
                 </section>
                 {% include "integrations/source_control/github/_inventory_table.html" %}
             {% else %}
