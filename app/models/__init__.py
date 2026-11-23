@@ -14,6 +14,7 @@ from app.models.analytics import AnalyticsSnapshot
 from app.models.archive import ArchiveArtifact
 from app.models.audit import AuditEvent
 from app.models.authentication_security import AuthenticationMfaFactor, AuthenticationSecurityPolicy
+from app.models.automation import AutomationHostAsset, AutomationInventoryAssignment
 from app.models.capsule_handoff_ledger import CapsuleHandoffLedgerEvent as CapsuleHandoffLedgerEvent
 from app.models.capsule_handoff_proof import CapsuleHandoffAuditBatch as CapsuleHandoffAuditBatch
 from app.models.capsule_handoff_proof import CapsuleHandoffResourceConsentRecord as CapsuleHandoffResourceConsentRecord
@@ -171,6 +172,8 @@ __all__ = [
     'AuthenticationMfaFactor',
     'AuthenticationSecurityPolicy',
     'AuditEvent',
+    'AutomationHostAsset',
+    'AutomationInventoryAssignment',
     'IdentityProvider',
     'HarborInstance',
     'VaultInstance',
