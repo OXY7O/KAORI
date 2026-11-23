@@ -752,7 +752,10 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
                     'description': 'The committed correlation readiness check failed; do not infer remediation.',
                 }
             payload['registry_runtime_evidence'] = runtime_evidence
-            if runtime_evidence['status'] != 'ready':
+            # Source-specific correlation readiness is not an evaluator failure.
+            # A failed SQL read remains fail-closed; absent/stale/refreshing
+            # correlation is reported by the independent Runtime Usage callout.
+            if runtime_evidence['status'] == 'unavailable':
                 issues.append('Registry Runtime: ' + runtime_evidence['title'])
         state = classify_recommendation_readiness(
             total=total,
