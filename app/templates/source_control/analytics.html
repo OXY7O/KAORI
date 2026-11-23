@@ -16,20 +16,20 @@
         {{ page_hero.operational_dashboard('Source Control', 'git-branch', 'Analytics',
                 'Analyze authorized, committed repository evidence without requiring unrelated telemetry.',
                 [
-                ('database-zap', 'Committed Repository Evidence'),
-                ('shield-check', 'Installation-Scoped Access'),
-                ('layers-3', 'Progressive Source Readiness')
-                ],
-                'Selected Installation Evidence',
-                'Manage Source Control Integrations', url_for('integrations.source_control'),
-                data_authority='Committed KAORI State',
-                state='normal' if collected else 'blocked',
-                blocked_title='Inventory Not Collected' if selected_scope else 'Select an Installation',
-                blocked_info='Collect an authorized installation inventory before interpreting its repository evidence.'
-                ) }}
+                ('database-zap', 'Committed Repository Evidence') ,
+        ('shield-check', 'Installation-Scoped Access'),
+        ('layers-3', 'Progressive Source Readiness')
+        ],
+        'Selected Installation Evidence',
+        'Manage Source Control Integrations', url_for('integrations.source_control'),
+        data_authority='Committed KAORI State',
+        state='normal' if collected else 'blocked',
+        blocked_title='Inventory Not Collected' if selected_scope else 'Select an Installation',
+        blocked_info='Collect an authorized installation inventory before interpreting its repository evidence.'
+        ) }}
         {% call analytics_readiness.frame('Controls & Data Readiness',
-                'Each source family is evaluated independently. Missing Metrics Source or Alert Source evidence never hides committed repository inventory.',
-                'sliders-horizontal', 'source-control-analytics-readiness-indicator') %}
+            'Each source family is evaluated independently. Missing Metrics Source or Alert Source evidence never hides committed repository inventory.',
+            'sliders-horizontal', 'source-control-analytics-readiness-indicator') %}
             <form method="get"
                   action="{{ url_for('source_control.analytics') }}"
                   hx-get="{{ url_for('source_control.analytics') }}"
@@ -63,27 +63,24 @@
                 <p class="text-xs text-content-muted">Installation selection is limited to the first 50 authorized UAT installations; this is not a complete organizational view.</p>
             {% endif %}
             {% call analytics_readiness.readiness_grid() %}
-                {{ analytics_readiness.source_card(
-                    'Domain Integration',
-                    'Committed installation grants and repository references from KAORI; GitHub remains provider authoritative.',
-                    domain_status, domain_tone,
-                    'Authorized Installation', selected_installation_name or 'Not Selected',
-                    'Last Commit', repository_coverage.committed_at|user_datetime if collected and repository_coverage.committed_at else 'Not Collected',
-                    icon='git-branch') }}
-                {{ analytics_readiness.source_card(
-                    'Metrics Source',
-                    'Optional, separately qualified telemetry for metrics-dependent analysis. Not required for repository inventory.',
-                    'Not Evaluated', 'unknown',
-                    'Qualification', 'No committed Source Control metrics contract',
-                    'Measured History', 'Not Materialized',
-                    icon='activity', metric_source_state='unknown') }}
-                {{ analytics_readiness.source_card(
-                    'Alert Source',
-                    'Optional, separately qualified alert evidence. Never inferred from inventory or repository metadata.',
-                    'Not Evaluated', 'unknown',
-                    'Qualification', 'No committed Source Control alert contract',
-                    'Alert History', 'Not Materialized',
-                    icon='bell-ring') }}
+                {{ analytics_readiness.source_card('Domain Integration',
+                                'Committed installation grants and repository references from KAORI; GitHub remains provider authoritative.',
+                                domain_status, domain_tone,
+                                'Authorized Installation', selected_installation_name or 'Not Selected',
+                                'Last Commit', repository_coverage.committed_at|user_datetime if collected and repository_coverage.committed_at else 'Not Collected',
+                                icon='git-branch') }}
+                {{ analytics_readiness.source_card('Metrics Source',
+                                'Optional, separately qualified telemetry for metrics-dependent analysis. Not required for repository inventory.',
+                                'Not Evaluated', 'unknown',
+                                'Qualification', 'No committed Source Control metrics contract',
+                                'Measured History', 'Not Materialized',
+                                icon='activity', metric_source_state='unknown') }}
+                {{ analytics_readiness.source_card('Alert Source',
+                                'Optional, separately qualified alert evidence. Never inferred from inventory or repository metadata.',
+                                'Not Evaluated', 'unknown',
+                                'Qualification', 'No committed Source Control alert contract',
+                                'Alert History', 'Not Materialized',
+                                icon='bell-ring') }}
             {% endcall %}
         {% endcall %}
         {% if not selected_scope %}
