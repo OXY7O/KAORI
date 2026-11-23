@@ -27,13 +27,14 @@
         data_authority='Committed KAORI State',
         state='normal' if scope.committed_count else 'blocked',
         blocked_title='Source Inventory Not Collected',
-        blocked_info='Register and validate a GitHub App installation, then sync authorized repositories to commit evidence.'
+        blocked_info='Authorize a GitHub App and sync repository inventory.'
         ) }}
         {% if not scope.committed_count %}
             {% set blocked_state_icon = "git-branch" %}
             {% set blocked_state_label = "Setup Required" if not scope.installation_count else "Collection Required" %}
             {% set blocked_state_title = "GitHub Installation Required" if not scope.installation_count else "Repository Inventory Not Collected" %}
             {% set blocked_state_description = "Register and authorize a GitHub App installation before opening Source Control operations." if not scope.installation_count else "Collect committed repository inventory for an authorized installation before opening Source Control operations." %}
+            {% set blocked_state_steps = ["Open Source Control Integrations", "Authorize GitHub App", "Validate Installation", "Sync Repository Inventory"] if not scope.installation_count else ["Review Authorized Installation", "Sync Repository Inventory"] %}
             {% set blocked_state_action_url = url_for('integrations.source_control') %}
             {% set blocked_state_action_label = "Open Source Control Integrations" %}
             {% set blocked_state_permission = "integrations.manage" %}

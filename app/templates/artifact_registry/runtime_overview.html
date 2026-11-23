@@ -53,7 +53,7 @@
                 url_for('integrations.registry'),
                 action_icon='settings-2',
                 blocked=runtime.setup.is_blocked,
-                blocked_info=runtime.setup.description,
+                blocked_info='Requires committed Registry artifacts and Kubernetes Pod inventory.',
                 blocked_label='Correlation Prerequisites') }}
             </div>
         </section>

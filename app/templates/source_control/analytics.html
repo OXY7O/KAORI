@@ -32,6 +32,12 @@
             {% set blocked_state_label = "Setup Required" %}
             {% set blocked_state_title = "GitHub Installation Required" %}
             {% set blocked_state_description = "Register an authorized GitHub App installation and collect repository evidence before using Analytics." %}
+            {% set blocked_state_steps = [
+                "Open Source Control Integrations",
+                "Authorize GitHub App",
+                "Validate Installation",
+                "Sync Repository Inventory"
+            ] %}
             {% set blocked_state_action_url = url_for('integrations.source_control') %}
             {% set blocked_state_action_label = "Open Source Control Integrations" %}
             {% set blocked_state_permission = "integrations.manage" %}
@@ -98,6 +104,7 @@
                 {% set blocked_state_label = "Scope Required" if not selected_scope else "Collection Required" %}
                 {% set blocked_state_title = "Select an Authorized Installation" if not selected_scope else "Repository Analytics Not Collected" %}
                 {% set blocked_state_description = "Select one authorized installation; overlapping repository grants are never aggregated across installations." if not selected_scope else "Collect committed repository evidence for this installation; missing inventory is not a verified zero." %}
+                {% set blocked_state_steps = ["Select Authorized Installation", "Review Repository Scope"] if not selected_scope else ["Review Authorized Installation", "Sync Repository Inventory"] %}
                 {% set blocked_state_action_url = url_for('integrations.source_control') %}
                 {% set blocked_state_action_label = "Open Source Control Integrations" %}
                 {% set blocked_state_permission = "integrations.manage" %}
