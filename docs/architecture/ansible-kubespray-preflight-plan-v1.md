@@ -52,3 +52,9 @@ Explicit disposable non-production hosts, source PR admission, target authorizat
 - Browser Visual QA: 10 gates, blocked default, light/dark/responsive, keyboard reading order, no remote reads or mutation controls.
 
 Official Developer Check, Full Admission, host UAT and Human Acceptance remain separate; no staging/main promotion without those gates.
+
+## Review evidence versus execution governance presentation (#5153)
+
+The existing ten Kubespray gates have two independent meanings. The first **eight** qualify committed read-only source and trusted host evidence, while the final **two** belong to independent execution-worker/inventory admission and maker/checker approval plus maintenance window. The Ansible Validation & Capabilities workspace displays `Review Evidence N/8` and `Execution Governance 0/2` separately, preserves the original ten-gate status, and identifies the first missing requirement from the exact canonical gate sequence. Gate reasons are source-controlled, not copied from operator form data or generated using live SSH/Kubernetes reads. A `Ready for Review` eight-gate posture still means infrastructure mutation is blocked.
+
+The existing shared `info_tip` Guide clarifies that a current review-only Plan is a canonical JobExecution artifact, not an executable plan, approval token, or assertion of Kubernetes API health. Source-only, stale, failed and newer in-flight host preflight retain the blocked state with a next review prerequisite; even simulated valid worker evidence always retains execution governance blocked. The action guard, default pagination 5, four-tab navigation, all provider trust boundaries and downstream #4801 authority remain unchanged. Check Ruff/djlint/pytest and browser light/dark/mobile semantics on the exact candidate before admission.

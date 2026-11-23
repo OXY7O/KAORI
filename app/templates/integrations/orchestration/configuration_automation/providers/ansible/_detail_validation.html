@@ -1,4 +1,5 @@
 {% import "components/action_button.html" as action_button %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 <section class="{{ integration_ui.section_shell_classes() }}"
@@ -53,26 +54,53 @@
                         class="text-sm font-semibold text-content-primary">Kubespray Preflight &amp; Plan Readiness</h3>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Non-mutating qualification from committed KAORI evidence. No SSH or cluster operation runs when opening this page.</p>
                 </div>
-                <div class="flex shrink-0 items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
+                    {{ info_tip.render('ansible-kubespray-readiness-guide', 'Kubespray Gate Ownership',
+                                        'Review evidence is separate from infrastructure mutation authority.',
+                                        items=[
+                                        'Eight review gates qualify source, target and observed host evidence. They do not authorize a Run.',
+                                        'Two execution governance gates require independent KAORI worker, inventory, approval and change-window authority.',
+                                        'A current review-only Plan is an immutable evidence record, not an approval or a Kubernetes API verification.'
+                                        ], variant='guide', placement='left') }}
                     {{ integration_status("blocked" if kubespray_preflight.state == "blocked" else "pending",
                                         "Blocked" if kubespray_preflight.state == "blocked" else "Ready for Review",
                                         display="text") }}
                     <span class="text-xs text-content-muted">{{ kubespray_preflight.verified_gates }}/{{ kubespray_preflight.required_gates }} Gates</span>
                 </div>
             </header>
-            <div class="grid gap-px bg-outline-subtle md:grid-cols-2">
-                {% for gate in kubespray_preflight.gates %}
-                    <div class="min-w-0 bg-surface-card p-4">
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <h4 class="text-xs font-semibold text-content-primary">{{ gate.title }}</h4>
-                            {{ integration_status(gate.state, gate.state|title, display="text") }}
-                        </div>
-                        <p class="mt-2 text-xs leading-5 text-content-secondary">{{ gate.reason }}</p>
+            {% for group_key, group_title, group_gates, qualified, required in [
+                ('review', 'Review Evidence', kubespray_preflight.gates[:8], kubespray_preflight.review_verified_gates, kubespray_preflight.review_required_gates),
+                ('governance', 'Execution Governance', kubespray_preflight.gates[8:], kubespray_preflight.governance_verified_gates, kubespray_preflight.governance_required_gates)
+                ] %}
+                <section aria-labelledby="ansible-kubespray-{{ group_key }}-heading">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-outline-subtle bg-surface-subtle px-4 py-3">
+                        <h4 id="ansible-kubespray-{{ group_key }}-heading"
+                            class="text-xs font-semibold text-content-primary">{{ group_title }}</h4>
+                        <span class="text-xs font-semibold text-content-secondary">{{ qualified }}/{{ required }} {{ 'Review' if group_key == 'review' else 'Governance' }} Gates</span>
                     </div>
-                {% endfor %}
-            </div>
+                    <div class="grid gap-px bg-outline-subtle md:grid-cols-2">
+                        {% for gate in group_gates %}
+                            <div class="min-w-0 bg-surface-card p-4">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <h5 class="text-xs font-semibold text-content-primary">{{ gate.title }}</h5>
+                                    {{ integration_status(gate.state, gate.state|title, display="text") }}
+                                </div>
+                                <p class="mt-2 text-xs leading-5 text-content-secondary">{{ gate.reason }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endfor %}
             <footer class="border-t border-outline-subtle bg-surface-subtle px-4 py-3">
                 <p class="text-xs leading-5 text-content-secondary">An approved Plan, execution image, trusted host facts, maker/checker decision and current change window are mandatory before dispatch. This is a readiness projection, not executable authorization.</p>
+                {% if kubespray_preflight.next_review_requirement %}
+                    <p class="mt-2 text-xs leading-5 text-content-secondary"><strong class="font-semibold">Next Review Requirement:</strong> {{ kubespray_preflight.next_review_requirement }}</p>
+                {% else %}
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">All eight review evidence gates are qualified. This does not authorize cluster execution.</p>
+                {% endif %}
+                {% if kubespray_preflight.next_governance_requirement %}
+                    <p class="mt-1 text-xs leading-5 text-content-secondary"><strong class="font-semibold">Execution Blocker:</strong> {{ kubespray_preflight.next_governance_requirement }}</p>
+                {% endif %}
                 {% if kubespray_preflight.facts_job_public_id %}
                     <p class="mt-2 text-xs text-content-muted">Latest qualifying JobExecution: <code class="font-mono">{{ kubespray_preflight.facts_job_public_id }}</code></p>
                 {% endif %}

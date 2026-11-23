@@ -51,9 +51,20 @@ class KubesprayPreflight:
     gates: tuple[KubesprayGate, ...]
 
     def presentation(self) -> dict[str, Any]:
+        """Distinguish qualified review evidence from independent Run governance."""
+        review_gates = self.gates[:8]
+        governance_gates = self.gates[8:]
         return {
             **asdict(self),
             'gates': [asdict(gate) for gate in self.gates],
+            'review_verified_gates': sum(gate.state == 'ready' for gate in review_gates),
+            'review_required_gates': len(review_gates),
+            'governance_verified_gates': sum(gate.state == 'ready' for gate in governance_gates),
+            'governance_required_gates': len(governance_gates),
+            'next_review_requirement': next((gate.reason for gate in review_gates if gate.state != 'ready'), None),
+            'next_governance_requirement': next(
+                (gate.reason for gate in governance_gates if gate.state != 'ready'), None
+            ),
         }
 
 
