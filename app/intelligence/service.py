@@ -702,13 +702,14 @@ def classify_recommendation_readiness(
     recent: int,
     issues: list[str],
     has_findings: bool,
+    source_gaps: list[str] | None = None,
 ) -> str:
-    """Missing observations or evaluator failure never imply a healthy empty set."""
+    """Missing source evidence is partial; failed evaluator reads remain unavailable."""
     if issues:
         return 'partial' if has_findings else 'unavailable'
     if total == 0:
         return 'not_collected'
-    if recent < total:
+    if recent < total or source_gaps:
         return 'partial'
     return 'baseline_recent'
 
@@ -741,11 +742,15 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
         total = sum(inventory[key]['total'] for key in scopes)
         recent = sum(inventory[key]['recent'] for key in scopes)
         issues = payload['evaluation_issues']
+        source_gaps: list[str] = []
         if domain in ('', 'registry'):
             try:
                 with Session(db.engine) as evidence_session:
                     runtime_evidence = runtime_correlation_evidence_readiness(evidence_session)
             except SQLAlchemyError:
+                # A failed committed readiness read is a genuine evidence error,
+                # unlike an unmaterialized/stale correlation generation.
+                issues.append('Registry Runtime Readiness')
                 runtime_evidence = {
                     'status': 'unavailable',
                     'title': 'Registry Runtime Evidence Unavailable',
@@ -753,18 +758,20 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
                 }
             payload['registry_runtime_evidence'] = runtime_evidence
             if runtime_evidence['status'] != 'ready':
-                issues.append('Registry Runtime: ' + runtime_evidence['title'])
+                source_gaps.append('Registry Runtime: ' + runtime_evidence['title'])
         state = classify_recommendation_readiness(
             total=total,
             recent=recent,
             issues=issues,
             has_findings=bool(findings),
+            source_gaps=source_gaps,
         )
         payload['evidence_readiness'] = {
             'status': state,
             'total_sources': total,
             'recent_sources': recent,
             'issues': issues,
+            'source_gaps': source_gaps,
             'basis': '24-hour committed Inventory baseline; evaluator and scan coverage remain source-qualified',
         }
         _apply_recommendation_payload(payload, findings)

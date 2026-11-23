@@ -165,3 +165,25 @@ The Alert Handling selector includes Open, Source Unknown, Resolved · Verify, R
 
 Current active recommendations are derived from committed current-state evidence. Historical Tenant Audit and policy/preflight events stay in immutable Audit evidence instead of being presented indefinitely as ongoing active conditions. Enabled/active provider eligibility and source freshness are prerequisites for current Object Storage findings. An active finding with Accepted Risk remains visible as evidence while escalation is suppressed by its governed Rule Exception.
 
+
+
+## Catalog-to-Recommendations coverage audit (RC.6 operator review, 2026-11-23)
+
+Source authority: `app/definitions/catalogs/intelligence/rules.yaml` (61 definitions), `app/intelligence/service.py::_build_recommendation_findings`, `app/intelligence/alert_intelligence/recommendation_source.py`, `app/intelligence/rule_presentation.py`, and the per-domain committed evidence builders. These are **repository capability declarations**, not a live provider inventory or verified runtime execution count.
+
+| Canonical capability | Rule Catalog definitions | Central Recommendations evaluator | Evidence and limitation |
+| --- | ---: | --- | --- |
+| Kubernetes (including Tenant Governance) | 38: 36 Available, 2 Imported Signal | Yes, multiple committed inventory/governance/runtime/TLS evaluators | The two `alertmanager`-sourced enrichment definitions are **Imported Signal**, not automatically active findings; provider alert state remains owned by Alertmanager/Alert Intelligence |
+| Object Storage (MinIO provider coverage) | 12 Available | Yes | Current enabled provider identity, committed fresh inventory/analytics; provider filters do not create parallel `minio.*` rules |
+| Artifact Registry (Harbor provider coverage) | 6 Available | Yes | Committed Registry inventory/security/runtime evidence; **Runtime Correlation** is a separate source qualification before interpreting absent cross-domain exposure |
+| Secrets & PKI (Vault provider coverage) | 1 Available | Yes, authorization-gated | Committed PKI certificate population; requires both `intelligence.view` and `secrets_pki.view`. Visibility of one rule in Catalog does not demonstrate a current matching certificate finding |
+| Server | 2 Reserved Plan | No admitted central evaluator | Catalog only; no verified current operational recommendations |
+| HCI | 2 Reserved Plan | No admitted central evaluator | Catalog only; no verified current operational recommendations |
+| Source Control / GitHub | No canonical central recommendation definitions | No | Integration and committed repository inventory remain authoritative in Source Control. A new security/governance evaluator requires a separate approved, evidence-backed workstream |
+| Orchestration / Ansible | No canonical central recommendation definitions | No | Ansible execution authority remains external; KAORI orchestration/audit does not imply a recommendation evaluator |
+| Alertmanager / imported alerts | 2 Kubernetes `Imported Signal` definitions, no independent alert domain | Not a direct recommendation projection | Alert Intelligence owns alert/case/source lifecycle; committed recommendation findings may be promoted into AlertCases only under approved policies. Do not copy firing provider alerts into canonical findings without a matching committed-evidence rule |
+| Metrics Source | No direct `metrics_source_metrics`-sourced definition in current Catalog | Not an independent domain evaluator | Analytics may consume qualified committed metrics and alerts; metrics registration alone must not produce an Intelligence finding |
+
+**Source-readiness correction:** `runtime_correlation_evidence_readiness` distinguishes `not_materialized`, `inputs_changed`, `refreshing`, `refresh_failed`, `stale`, and `ready`. For the unready states, Recommendations shows the source-qualified **Runtime Correlation Required** operational callout (with an owning Runtime Usage CTA) and records `evidence_readiness.source_gaps` independently of `evaluation_issues`. Missing correlation alone returns an incomplete/partial evidence posture when otherwise recent committed inventory exists; it never claims that an evaluator failed. A real SQL evaluator/read failure still remains `unavailable` with no findings (or `partial` if authorized findings survive). If all required inventory is absent, `not_collected` remains authoritative. This correction changes **UI interpretation**, not the AlertCase reconciler's separate fail-closed missing-correlation check.
+
+**Decision boundary:** This audit does **not** authorize new Server/HCI, Source Control, Ansible, imported-alert, or direct Metrics Source evaluators. Each requires a child issue with a committed source contract, domain-specific rule authority, least-privilege scope, source freshness, testable positive/negative evidence and independent governance review. Never infer integration health or a recommendation count from registered connectors or Catalog `Available` labels alone.
