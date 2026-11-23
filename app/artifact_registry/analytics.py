@@ -20,9 +20,7 @@ from app.integrations.observability.metrics_source.exceptions import MetricsSour
 from app.integrations.observability.metrics_source.query_profiles.alerts_v1 import (
     ACTIVE_ALERTS_EXPRESSION,
 )
-from app.integrations.observability.metrics_source.query_profiles.registry_harbor_v1 import (
-    get_registry_query_expression,
-)
+from app.integrations.registry.metric_queries import qualified_registry_metric_query
 from app.models.integration import IntegrationInstance
 from app.models.registry import (
     RegistryAnalyticsSnapshot,
@@ -86,14 +84,15 @@ def _scalar(payload: dict[str, Any]) -> float | None:
 
 def _metric_payload(
     consumer: MetricsConsumer,
+    identity: IntegrationInstance,
     key: str,
 ) -> tuple[dict[str, Any] | None, str | None]:
     try:
-        result = consumer.query(get_registry_query_expression(key))
+        result = consumer.query(qualified_registry_metric_query(identity, key))
         if not _valid_instant_vector(result):
             return None, 'Invalid or unsupported Metrics Source instant-vector result.'
         return result, None
-    except MetricsSourceError as exc:
+    except (MetricsSourceError, LookupError) as exc:
         return None, str(exc)
 
 
@@ -127,7 +126,7 @@ def _metrics_evidence(identity: IntegrationInstance) -> dict[str, Any]:
         'project_pull_count': 'registry.project.pull_count',
     }
     for field, key in project_queries.items():
-        payload, error = _metric_payload(consumer, key)
+        payload, error = _metric_payload(consumer, identity, key)
         values[field] = _project_vector(payload or {})
         if error:
             gaps[key] = error
@@ -142,7 +141,7 @@ def _metrics_evidence(identity: IntegrationInstance) -> dict[str, Any]:
         'task_queue_size': 'registry.task.queue_size',
     }
     for field, key in scalar_queries.items():
-        payload, error = _metric_payload(consumer, key)
+        payload, error = _metric_payload(consumer, identity, key)
         values[field] = _scalar(payload or {})
         if error:
             gaps[key] = error
