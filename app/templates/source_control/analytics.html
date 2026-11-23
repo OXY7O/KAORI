@@ -37,107 +37,107 @@
             {% set blocked_state_permission = "integrations.manage" %}
             {% include "components/states/_blocked_state.html" %}
         {% else %}
-        {% call analytics_readiness.frame('Controls & Data Readiness',
-            'Each source family is evaluated independently. Missing Metrics Source or Alert Source evidence never hides committed repository inventory.',
-            'sliders-horizontal', 'source-control-analytics-readiness-indicator') %}
-            <form method="get"
-                  action="{{ url_for('source_control.analytics') }}"
-                  hx-get="{{ url_for('source_control.analytics') }}"
-                  hx-target="#source-control-analytics-page"
-                  hx-select="#source-control-analytics-page"
-                  hx-swap="outerHTML"
-                  hx-push-url="true"
-                  hx-sync="this:replace"
-                  class="flex flex-col gap-3 sm:flex-row sm:items-end">
-                <label for="source-control-analytics-installation"
-                       class="block min-w-0 flex-1">
-                    <span class="{{ analytics_readiness.control_label_classes() }}">Installation Scope</span>
-                    <select id="source-control-analytics-installation"
-                            name="installation_id"
-                            class="{{ analytics_readiness.control_select_classes() }}">
-                        <option value="" {% if not selected_scope %}selected{% endif %}>Select an authorized installation</option>
-                        {% for item in authorized_installations %}
-                            <option value="{{ item.installation.id }}"
-                                    {% if selected_installation_id == item.installation.id %}selected{% endif %}>
-                                {{ item.connection.name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <button type="submit"
-                        class="inline-flex min-h-10 items-center justify-center rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kaori-primary">
-                    Apply Scope
-                </button>
-            </form>
-            {% if authorized_scope_has_more %}
-                <p class="text-xs text-content-muted">Installation selection is limited to the first 50 authorized UAT installations; this is not a complete organizational view.</p>
-            {% endif %}
-            {% call analytics_readiness.readiness_grid() %}
-                {{ analytics_readiness.source_card('Domain Integration',
-                                'Committed installation grants and repository references from KAORI; GitHub remains provider authoritative.',
-                                domain_status, domain_tone,
-                                'Authorized Installation', selected_installation_name or 'Not Selected',
-                                'Last Commit', repository_coverage.committed_at|user_datetime if collected and repository_coverage.committed_at else 'Not Collected',
-                                icon='git-branch') }}
-                {{ analytics_readiness.source_card('Metrics Source',
-                                'Optional, separately qualified telemetry for metrics-dependent analysis. Not required for repository inventory.',
-                                'Not Evaluated', 'unknown',
-                                'Qualification', 'No committed Source Control metrics contract',
-                                'Measured History', 'Not Materialized',
-                                icon='activity', metric_source_state='unknown') }}
-                {{ analytics_readiness.source_card('Alert Source',
-                                'Optional, separately qualified alert evidence. Never inferred from inventory or repository metadata.',
-                                'Not Evaluated', 'unknown',
-                                'Qualification', 'No committed Source Control alert contract',
-                                'Alert History', 'Not Materialized',
-                                icon='bell-ring') }}
+            {% call analytics_readiness.frame('Controls & Data Readiness',
+                'Each source family is evaluated independently. Missing Metrics Source or Alert Source evidence never hides committed repository inventory.',
+                'sliders-horizontal', 'source-control-analytics-readiness-indicator') %}
+                <form method="get"
+                      action="{{ url_for('source_control.analytics') }}"
+                      hx-get="{{ url_for('source_control.analytics') }}"
+                      hx-target="#source-control-analytics-page"
+                      hx-select="#source-control-analytics-page"
+                      hx-swap="outerHTML"
+                      hx-push-url="true"
+                      hx-sync="this:replace"
+                      class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                    <label for="source-control-analytics-installation"
+                           class="block min-w-0 flex-1">
+                        <span class="{{ analytics_readiness.control_label_classes() }}">Installation Scope</span>
+                        <select id="source-control-analytics-installation"
+                                name="installation_id"
+                                class="{{ analytics_readiness.control_select_classes() }}">
+                            <option value="" {% if not selected_scope %}selected{% endif %}>Select an authorized installation</option>
+                            {% for item in authorized_installations %}
+                                <option value="{{ item.installation.id }}"
+                                        {% if selected_installation_id == item.installation.id %}selected{% endif %}>
+                                    {{ item.connection.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <button type="submit"
+                            class="inline-flex min-h-10 items-center justify-center rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kaori-primary">
+                        Apply Scope
+                    </button>
+                </form>
+                {% if authorized_scope_has_more %}
+                    <p class="text-xs text-content-muted">Installation selection is limited to the first 50 authorized UAT installations; this is not a complete organizational view.</p>
+                {% endif %}
+                {% call analytics_readiness.readiness_grid() %}
+                    {{ analytics_readiness.source_card('Domain Integration',
+                                    'Committed installation grants and repository references from KAORI; GitHub remains provider authoritative.',
+                                    domain_status, domain_tone,
+                                    'Authorized Installation', selected_installation_name or 'Not Selected',
+                                    'Last Commit', repository_coverage.committed_at|user_datetime if collected and repository_coverage.committed_at else 'Not Collected',
+                                    icon='git-branch') }}
+                    {{ analytics_readiness.source_card('Metrics Source',
+                                    'Optional, separately qualified telemetry for metrics-dependent analysis. Not required for repository inventory.',
+                                    'Not Evaluated', 'unknown',
+                                    'Qualification', 'No committed Source Control metrics contract',
+                                    'Measured History', 'Not Materialized',
+                                    icon='activity', metric_source_state='unknown') }}
+                    {{ analytics_readiness.source_card('Alert Source',
+                                    'Optional, separately qualified alert evidence. Never inferred from inventory or repository metadata.',
+                                    'Not Evaluated', 'unknown',
+                                    'Qualification', 'No committed Source Control alert contract',
+                                    'Alert History', 'Not Materialized',
+                                    icon='bell-ring') }}
+                {% endcall %}
             {% endcall %}
-        {% endcall %}
-        {% if not selected_scope or not collected %}
-            {% set blocked_state_icon = "git-branch" %}
-            {% set blocked_state_label = "Scope Required" if not selected_scope else "Collection Required" %}
-            {% set blocked_state_title = "Select an Authorized Installation" if not selected_scope else "Repository Analytics Not Collected" %}
-            {% set blocked_state_description = "Select one authorized installation; overlapping repository grants are never aggregated across installations." if not selected_scope else "Collect committed repository evidence for this installation; missing inventory is not a verified zero." %}
-            {% set blocked_state_action_url = url_for('integrations.source_control') %}
-            {% set blocked_state_action_label = "Open Source Control Integrations" %}
-            {% set blocked_state_permission = "integrations.manage" %}
-            {% include "components/states/_blocked_state.html" %}
-        {% else %}
-            <section aria-label="Committed Source Control Analytics facts"
-                     class="{{ analytics_surface.snapshot_shell_classes() }}">
-                <header class="{{ analytics_surface.snapshot_header_classes() }}">
-                    <h2 class="text-base font-semibold text-content-primary">Committed Repository Evidence</h2>
-                    <p class="mt-1 text-sm text-content-secondary">Installation-grant coverage and exact default-branch references. These facts are not CI throughput, DORA metrics, or a worker-materialized historical Analytics dataset.</p>
-                </header>
-                <div class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4 sm:p-5">
-                    {{ metric_card.render('Committed Grant Rows',
-                                        repository_coverage.grant_count,
-                                        'Current grants within the selected installation.',
-                                        'folder-git-2', source_label='SC-03 Committed State') }}
-                    {{ metric_card.render('Provider-Observed Repositories',
-                                        repository_coverage.observed_count if repository_coverage.observed_count is not none else 'Unknown',
-                                        'Observed source count, not a verified global total.',
-                                        'database-zap', source_label='SC-03 Collection Evidence') }}
-                    {{ metric_card.render('Evidence Requiring Attention',
-                                        repository_coverage.attention_count if repository_coverage.attention_count is not none else 'Unknown',
-                                        'Missing exact SHA or unqualified repository metadata.',
-                                        'shield-alert', source_label='KAORI Committed State') }}
-                    {{ metric_card.render('Collection Qualification',
-                                        'Complete' if collection_complete else 'Partial / Degraded',
-                                        'Committed collection status and grant-count reconciliation.',
-                                        'shield-check', source_label='SC-03 Collection Evidence') }}
+            {% if not selected_scope or not collected %}
+                {% set blocked_state_icon = "git-branch" %}
+                {% set blocked_state_label = "Scope Required" if not selected_scope else "Collection Required" %}
+                {% set blocked_state_title = "Select an Authorized Installation" if not selected_scope else "Repository Analytics Not Collected" %}
+                {% set blocked_state_description = "Select one authorized installation; overlapping repository grants are never aggregated across installations." if not selected_scope else "Collect committed repository evidence for this installation; missing inventory is not a verified zero." %}
+                {% set blocked_state_action_url = url_for('integrations.source_control') %}
+                {% set blocked_state_action_label = "Open Source Control Integrations" %}
+                {% set blocked_state_permission = "integrations.manage" %}
+                {% include "components/states/_blocked_state.html" %}
+            {% else %}
+                <section aria-label="Committed Source Control Analytics facts"
+                         class="{{ analytics_surface.snapshot_shell_classes() }}">
+                    <header class="{{ analytics_surface.snapshot_header_classes() }}">
+                        <h2 class="text-base font-semibold text-content-primary">Committed Repository Evidence</h2>
+                        <p class="mt-1 text-sm text-content-secondary">Installation-grant coverage and exact default-branch references. These facts are not CI throughput, DORA metrics, or a worker-materialized historical Analytics dataset.</p>
+                    </header>
+                    <div class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4 sm:p-5">
+                        {{ metric_card.render('Committed Grant Rows',
+                                            repository_coverage.grant_count,
+                                            'Current grants within the selected installation.',
+                                            'folder-git-2', source_label='SC-03 Committed State') }}
+                        {{ metric_card.render('Provider-Observed Repositories',
+                                            repository_coverage.observed_count if repository_coverage.observed_count is not none else 'Unknown',
+                                            'Observed source count, not a verified global total.',
+                                            'database-zap', source_label='SC-03 Collection Evidence') }}
+                        {{ metric_card.render('Evidence Requiring Attention',
+                                            repository_coverage.attention_count if repository_coverage.attention_count is not none else 'Unknown',
+                                            'Missing exact SHA or unqualified repository metadata.',
+                                            'shield-alert', source_label='KAORI Committed State') }}
+                        {{ metric_card.render('Collection Qualification',
+                                            'Complete' if collection_complete else 'Partial / Degraded',
+                                            'Committed collection status and grant-count reconciliation.',
+                                            'shield-check', source_label='SC-03 Collection Evidence') }}
+                    </div>
+                </section>
+                <div class="grid gap-5 xl:grid-cols-2">
+                    {% include "source_control/partials/_dashboard_repository_composition.html" %}
+                    {% include "source_control/partials/_dashboard_repository_lineage.html" %}
                 </div>
-            </section>
-            <div class="grid gap-5 xl:grid-cols-2">
-                {% include "source_control/partials/_dashboard_repository_composition.html" %}
-                {% include "source_control/partials/_dashboard_repository_lineage.html" %}
-            </div>
-            {% include "source_control/partials/_dashboard_repository_attention.html" %}
-            <p class="text-xs leading-5 text-content-muted">
-                Repository analytics currently covers retained grant, visibility, lifecycle and exact-reference facts only.
-                PR/review/CI measurements, DORA, deployment attribution, historical series, cross-domain runtime lineage and alerts remain unavailable until their own committed and authorized evidence is admitted.
-            </p>
-        {% endif %}
+                {% include "source_control/partials/_dashboard_repository_attention.html" %}
+                <p class="text-xs leading-5 text-content-muted">
+                    Repository analytics currently covers retained grant, visibility, lifecycle and exact-reference facts only.
+                    PR/review/CI measurements, DORA, deployment attribution, historical series, cross-domain runtime lineage and alerts remain unavailable until their own committed and authorized evidence is admitted.
+                </p>
+            {% endif %}
         {% endif %}
     </div>
 {% endblock dashboard_content %}
