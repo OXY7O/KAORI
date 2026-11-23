@@ -32,7 +32,8 @@ def index() -> ResponseReturnValue:
         abort(404)
     template = (
         'infrastructure_automation/_lifecycle_workspace.html'
-        if is_htmx_request() and htmx_target() in {'infrastructure-automation-results', 'infrastructure-automation-assets'}
+        if is_htmx_request()
+        and htmx_target() in {'infrastructure-automation-results', 'infrastructure-automation-assets'}
         else 'infrastructure_automation/index.html'
     )
     return render_template(template, **context)
