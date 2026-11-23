@@ -11,7 +11,7 @@ import hashlib
 import json
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Mapping
 
 _HEX = re.compile(r'[a-f0-9]{64}\Z')
@@ -82,7 +82,11 @@ def assess_inventory_bound_plan_review(
         return _blocked('EXECUTION_ENVIRONMENT_UNQUALIFIED')
     if not isinstance(now, datetime) or now.tzinfo is None:
         return _blocked('CLOCK_UNQUALIFIED')
-    if not all(isinstance(item, Mapping) for item in (inventory_evidence, access_evidence, plan_evidence)):
+    if (
+        not isinstance(inventory_evidence, Mapping)
+        or not isinstance(access_evidence, Mapping)
+        or not isinstance(plan_evidence, Mapping)
+    ):
         return _blocked('COMMITTED_EVIDENCE_MISSING')
 
     inventory = inventory_evidence
