@@ -47,12 +47,11 @@
                        autocomplete="off">
             </div>
             {% if selected_query %}
-                {{ registry_ui.clear_filters_link(
-                    'platform_operations.infrastructure_automation.index',
-                    'infrastructure-automation-results',
-                    'infrastructure-automation-loading',
-                    pagination.per_page,
-                    action_button.classes('secondary')) }}
+                {{ registry_ui.clear_filters_link('platform_operations.infrastructure_automation.index',
+                                'infrastructure-automation-results',
+                                'infrastructure-automation-loading',
+                                pagination.per_page,
+                                action_button.classes('secondary') ) }}
             {% endif %}
         {% endcall %}
     </div>
@@ -74,7 +73,7 @@
                             <span class="font-semibold text-content-primary">{{ connection.name }}</span>
                             <span class="mt-1 block text-xs text-content-muted">KAORI Connection · {{ connection.id }}</span>
                         </th>
-                        <td class="{{ table_ui.cell_classes() }}">{{ connection.environment|replace('_', ' ')|title if connection.environment else 'Unknown' }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ connection.environment|replace('_', ' ') |title if connection.environment else 'Unknown' }}</td>
                         <td class="{{ table_ui.cell_classes() }}">Kubernetes Lifecycle / Kubespray</td>
                         <td class="{{ table_ui.cell_classes() }}">{{ integration_status("blocked", "Not Admitted", display="text") }}</td>
                         <td class="{{ table_ui.cell_classes(true) }}">
@@ -106,8 +105,7 @@
             </tbody>
         </table>
     </div>
-    {{ registry_ui.footer(
-        'platform_operations.infrastructure_automation.index',
+    {{ registry_ui.footer('platform_operations.infrastructure_automation.index',
         'infrastructure-automation-results',
         'infrastructure-automation-loading',
         pagination,
@@ -209,8 +207,8 @@
                             <tbody class="{{ table_ui.body_classes() }}">
                                 {% for job in details.jobs %}
                                     <tr class="{{ table_ui.row_classes() }}">
-                                        <td class="{{ table_ui.cell_classes() }}">{{ job.operation|replace('_', ' ')|title }}</td>
-                                        <td class="{{ table_ui.cell_classes() }}">{{ job.status|replace('_', ' ')|title }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ job.operation|replace('_', ' ') |title }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ job.status|replace('_', ' ') |title }}</td>
                                         <td class="{{ table_ui.cell_classes() }}">{{ job.created_at|user_datetime }}</td>
                                     </tr>
                                 {% endfor %}
