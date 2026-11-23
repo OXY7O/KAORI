@@ -10,6 +10,19 @@ This product workspace follows approved domain authority [#559](https://github.c
   state when no matching account is observed. Account is **not** an App installation or KAORI Team.
   **No summed repository counts** across overlapping installations.
 - `/source-control/repositories` — explicit installation selection and committed repository grants from SC-03's existing `read_installation_inventory` (search/visibility/archive, 5/10/25/50 pagination, default 5; branch/default-branch SHA only when committed).
+- `/source-control/analytics` — **bounded Analytics Overview** (#5126), selectable only after
+  local-super-admin UAT authentication with `integrations.manage`. Repository grants, reference evidence,
+  attention flags and collection timestamps reuse the existing committed `read_repository_coverage` projection
+  for exactly **one authorized installation**. The global/unselected state shows a selector, **not** a summed
+  cross-installation repository count. The three independent, canonical readiness families are shown as
+  Domain Integration (qualifies committed SC-03 evidence), Metrics Source (not evaluated for Source Control),
+  and Alert Source (not evaluated for Source Control). Missing telemetry/alert qualification never blocks
+  inventory-only facts. Qualified collected zero remains zero; not-collected remains unknown; degraded or
+  mismatched collection shows partial, not complete. This page **does not** create an Analytics worker snapshot,
+  metrics query profile or historical engineering dataset.
+- Source Control Analytics is limited to existing provider-native, installation-scoped evidence until SC-04
+  through SC-09 are separately admitted. No PR/review/CI/DORA, deployment lineage, AlertCases, future-provider
+  equivalence or provider health is inferred. No global reader role is enabled before #724 resource-scope policy.
 - Existing GitHub integration routes remain the sole authority for validation, synchronization and mutation.
 - GET reads committed KAORI database evidence; zero means a completed observed collection returned zero, **unknown does not mean zero**. Retained prior snapshots do not certify provider health or current freshness.
 - Temporary UAT access is **local database Super Admin plus `integrations.manage`**, enforced independently of GitHub provider readiness for this product workspace. Provider setup/validation/sync remain guarded by their existing integration routes. This is NOT an accepted production resource authorization model. Global/non-admin repository visibility must remain denied until #724 implementation.

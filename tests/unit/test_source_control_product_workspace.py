@@ -183,7 +183,7 @@ def test_repository_scope_rejects_other_installation_before_read(monkeypatch):
 
 @pytest.mark.parametrize(
     'endpoint, args',
-    [(routes.overview, ()), (routes.repositories, ()), (routes.section, ('signals',))],
+    [(routes.overview, ()), (routes.repositories, ()), (routes.analytics, ()), (routes.section, ('signals',))],
 )
 def test_product_routes_enforce_uat_guard_before_scoped_data(monkeypatch, endpoint, args):
     app = Flask(__name__)
@@ -209,7 +209,7 @@ def test_product_navigation_reuses_source_control_taxonomy_and_uat_visibility(mo
     assert len(workspaces) == 1
     workspace = workspaces[0]
     assert workspace.section == 'Infrastructure'
-    assert [entry.key for entry in workspace.capabilities] == ['overview', 'repositories']
+    assert [entry.key for entry in workspace.capabilities] == ['overview', 'repositories', 'analytics']
     assert uat_access.local_super_admin is shared_local_super_admin
     user = SimpleNamespace(
         is_authenticated=True,
@@ -220,14 +220,14 @@ def test_product_navigation_reuses_source_control_taxonomy_and_uat_visibility(mo
     )
     assert _visible_capabilities(workspace, user) == ()
     monkeypatch.setattr(user, 'is_super_admin', True)
-    assert len(_visible_capabilities(workspace, user)) == 2
+    assert len(_visible_capabilities(workspace, user)) == 3
     monkeypatch.setattr(user, 'auth_source', 'sso')
     assert _visible_capabilities(workspace, user) == ()
     monkeypatch.setattr(user, 'auth_source', 'database')
     # The product navigation remains available for UAT actors even if the
     # first provider has not yet completed availability/readiness.
     monkeypatch.setattr(uat_access, 'provider_kind', lambda *_: SimpleNamespace(available=False))
-    assert len(_visible_capabilities(workspace, user)) == 2
+    assert len(_visible_capabilities(workspace, user)) == 3
     monkeypatch.setattr(user, 'has_permission', lambda _: False)
     assert _visible_capabilities(workspace, user) == ()
 
