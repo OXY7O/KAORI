@@ -285,6 +285,110 @@ def should_request_registry_analytics_materialization(
     return True
 
 
+def registry_analytics_dependency_steps(
+    *,
+    registered_count: int,
+    eligible_count: int,
+    evidence: list[dict[str, Any]],
+) -> list[dict[str, str]]:
+    """Present three independent committed-evidence boundaries without probing providers.
+
+    A missing worker snapshot says Not Collected, not Not Bound. This summary is
+    limited to the already-selected Registry scope and time window.
+    """
+    if registered_count == 0:
+        provider_status, provider_tone = 'Not Configured', 'unknown'
+    elif eligible_count == registered_count:
+        provider_status, provider_tone = 'Ready', 'normal'
+    elif eligible_count:
+        provider_status, provider_tone = 'Partial', 'warning'
+    else:
+        provider_status, provider_tone = 'Validation Required', 'warning'
+
+    steps = [
+        {
+            'key': 'domain',
+            'label': 'Registry Integration',
+            'icon': 'package',
+            'status': provider_status,
+            'tone': provider_tone,
+            'description': 'Provider/instance eligibility for committed Registry collection.',
+            'detail': f'{eligible_count} / {registered_count} registered sources eligible.',
+        }
+    ]
+    for key, label, icon, description in (
+        (
+            'metrics',
+            'Metrics Source',
+            'activity',
+            'Committed operational telemetry; history requires a qualified range.',
+        ),
+        (
+            'alerts',
+            'Alert Source',
+            'bell-ring',
+            'Committed lifecycle alerts or qualified metrics-backed fallback.',
+        ),
+    ):
+        ready = 0
+        partial = 0
+        current_ready = 0
+        fallback = False
+        for row in evidence:
+            section = row.get(key)
+            if not isinstance(section, dict):
+                continue
+            status = section.get('status')
+            if status == 'ready':
+                ready += 1
+                current_ready += int(bool(row.get('current')))
+                fallback = fallback or (key == 'alerts' and bool(section.get('fallback_used')))
+            elif status == 'partial':
+                partial += 1
+
+        if not evidence:
+            status_label, tone = 'Not Collected', 'unknown'
+        elif eligible_count and current_ready == eligible_count:
+            status_label = 'Fallback Evidence' if fallback else 'Evidence Ready'
+            tone = 'warning' if fallback else 'normal'
+        elif ready or partial:
+            status_label, tone = 'Partial Evidence', 'warning'
+        else:
+            status_label, tone = 'Evidence Unavailable', 'unknown'
+        steps.append(
+            {
+                'key': key,
+                'label': label,
+                'icon': icon,
+                'status': status_label,
+                'tone': tone,
+                'description': description,
+                'detail': (
+                    f'{ready} / {eligible_count} sources with committed evidence. '
+                    'This is snapshot coverage, not a live binding or provider health check.'
+                ),
+            }
+        )
+    return steps
+
+
+def _registry_analytics_snapshot_source_evidence(
+    snapshots: list[RegistryAnalyticsSnapshot],
+    snapshot_views: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    evidence = []
+    for snapshot, view in zip(snapshots, snapshot_views, strict=True):
+        payload = snapshot.payload_json if isinstance(snapshot.payload_json, dict) else {}
+        evidence.append(
+            {
+                'metrics': payload.get('metrics'),
+                'alerts': payload.get('alerts'),
+                'current': bool(view['is_current']),
+            }
+        )
+    return evidence
+
+
 def build_registry_analytics_readiness(
     *,
     provider_id: int | None = None,
@@ -334,6 +438,11 @@ def build_registry_analytics_readiness(
     from app.artifact_registry.presentation_common import _analytics_snapshot_view
 
     snapshot_views = [_analytics_snapshot_view(item) for item in snapshots]
+    dependency_steps = registry_analytics_dependency_steps(
+        registered_count=registered_count,
+        eligible_count=len(eligible_ids),
+        evidence=_registry_analytics_snapshot_source_evidence(snapshots, snapshot_views),
+    )
     current_count = sum(bool(view['is_current']) for view in snapshot_views)
     label, tone, helper = _analytics_snapshot_posture(
         eligible_count=len(eligible_ids),
@@ -377,6 +486,7 @@ def build_registry_analytics_readiness(
         'execution_label': execution_label,
         'execution_tone': execution_tone,
         'execution_helper': execution_helper,
+        'dependency_steps': dependency_steps,
         'eligible_count': len(eligible_ids),
         'registered_count': registered_count,
         'covered_count': len(snapshots),
