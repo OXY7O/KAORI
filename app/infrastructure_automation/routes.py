@@ -24,6 +24,7 @@ def index() -> ResponseReturnValue:
             per_page=request.args.get('per_page', 5, type=int) or 5,
             connection_id=request.args.get('connection_id', type=int),
             asset_page=request.args.get('asset_page', 1, type=int) or 1,
+            asset_per_page=request.args.get('asset_per_page', 5, type=int) or 5,
             can_jobs=bool(current_user.has_permission('jobs.view')),
             can_inventory=bool(current_user.has_permission('inventory.view')),
         )
@@ -31,7 +32,7 @@ def index() -> ResponseReturnValue:
         abort(404)
     template = (
         'infrastructure_automation/_lifecycle_workspace.html'
-        if is_htmx_request() and htmx_target() == 'infrastructure-automation-results'
+        if is_htmx_request() and htmx_target() in {'infrastructure-automation-results', 'infrastructure-automation-assets'}
         else 'infrastructure_automation/index.html'
     )
     return render_template(template, **context)

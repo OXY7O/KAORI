@@ -156,7 +156,8 @@
                 </article>
             </div>
             <div class="grid gap-4 xl:grid-cols-2">
-                <article class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                <article id="infrastructure-automation-assets"
+                         class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                     <h4 class="text-sm font-semibold text-content-primary">Assets &amp; Inventories</h4>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">
                         Committed Linux host roles for this Ansible connection only. These are registration records,
@@ -195,37 +196,18 @@
                                 </tbody>
                             </table>
                         </div>
-                        <nav class="mt-3 flex flex-wrap items-center justify-between gap-2"
-                             aria-label="Host inventory pages">
-                            <span class="text-xs text-content-muted">
-                                {{ details.assets.pagination.start_item }}–{{ details.assets.pagination.end_item }}
-                                of {{ details.assets.pagination.total_items }} hosts · 5 per page
-                            </span>
-                            <div class="flex flex-wrap gap-2">
-                                {% if details.assets.pagination.has_prev %}
-                                    {% set prev_assets = url_for('platform_operations.infrastructure_automation.index', connection_id=selected_connection_id, q=selected_query, page=pagination.page, per_page=pagination.per_page, asset_page=details.assets.pagination.prev_page) %}
-                                    <a href="{{ prev_assets }}"
-                                       hx-get="{{ prev_assets }}"
-                                       hx-target="#infrastructure-automation-results"
-                                       hx-select="#infrastructure-automation-results"
-                                       hx-swap="outerHTML"
-                                       hx-push-url="true"
-                                       hx-indicator="#infrastructure-automation-loading"
-                                       class="{{ action_button.classes('secondary') }}">Previous</a>
-                                {% endif %}
-                                {% if details.assets.pagination.has_next %}
-                                    {% set next_assets = url_for('platform_operations.infrastructure_automation.index', connection_id=selected_connection_id, q=selected_query, page=pagination.page, per_page=pagination.per_page, asset_page=details.assets.pagination.next_page) %}
-                                    <a href="{{ next_assets }}"
-                                       hx-get="{{ next_assets }}"
-                                       hx-target="#infrastructure-automation-results"
-                                       hx-select="#infrastructure-automation-results"
-                                       hx-swap="outerHTML"
-                                       hx-push-url="true"
-                                       hx-indicator="#infrastructure-automation-loading"
-                                       class="{{ action_button.classes('secondary') }}">Next</a>
-                                {% endif %}
-                            </div>
-                        </nav>
+                        {{ registry_ui.footer('platform_operations.infrastructure_automation.index',
+                            'infrastructure-automation-assets',
+                            'infrastructure-automation-loading',
+                            details.assets.pagination,
+                            {'q': selected_query, 'connection_id': selected_connection_id,
+                             'page': pagination.page, 'per_page': pagination.per_page},
+                            details.assets.pagination.allowed_per_page,
+                            resource_label='Hosts',
+                            rows_aria_label='Hosts per page',
+                            control_name='infrastructure-automation-assets',
+                            page_param='asset_page',
+                            per_page_param='asset_per_page') }}
                     {% endif %}
                     <p class="mt-2 text-xs text-content-muted">Registration, credential admission and remote host-key verification are separate gated capabilities. No executable inventory is generated here.</p>
                 </article>

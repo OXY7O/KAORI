@@ -54,6 +54,9 @@ def test_five_row_pages_share_one_all_member_fingerprint():
     assert len(first['rows']) == 5
     assert len(second['rows']) == 2
     assert second['pagination']['start_item'] == 6
+    expanded = project_host_assets(_connection(), assignments, per_page=10)
+    assert expanded['pagination']['per_page'] == 10
+    assert len(expanded['rows']) == 7
     assert first['execution_authorized'] is False
     assert second['execution_authorized'] is False
 
@@ -121,6 +124,7 @@ def test_permission_denial_template_never_discloses_endpoint():
             can_jobs=False,
         )
     assert 'Assets &amp; Inventories' in rendered
+    assert 'Host inventory pages' not in rendered
     assert 'Inventory view permission is required' in rendered
     assert '10.11.12.' not in rendered
     assert 'Run Kubespray' not in rendered

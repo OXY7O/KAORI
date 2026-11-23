@@ -73,6 +73,7 @@ def project_host_assets(
     assignments: list[AutomationInventoryAssignment],
     *,
     page: int = 1,
+    per_page: int = _ASSET_PAGE_SIZE,
 ) -> dict[str, Any]:
     """Project only qualified committed inventory, never SSH or Run readiness.
 
@@ -80,7 +81,7 @@ def project_host_assets(
     Missing, inconsistent, cross-scope, inactive and excessive membership fails
     closed without disclosing any endpoint in an unqualified scope.
     """
-    empty_rows, empty_pagination = paginate_sequence([], page=page, per_page=_ASSET_PAGE_SIZE)
+    empty_rows, empty_pagination = paginate_sequence([], page=page, per_page=per_page)
     if not connection.enabled or len(assignments) > _ASSET_LIMIT:
         return {
             'state': 'blocked',
@@ -112,7 +113,7 @@ def project_host_assets(
         }
         for assignment in ordered
     ]
-    rows, pagination = paginate_sequence(records, page=page, per_page=_ASSET_PAGE_SIZE)
+    rows, pagination = paginate_sequence(records, page=page, per_page=per_page)
     return {
         'state': review.state,
         'reason': review.reason,
@@ -127,6 +128,7 @@ def _committed_host_assets(
     connection: IntegrationInstance,
     *,
     page: int = 1,
+    per_page: int = _ASSET_PAGE_SIZE,
 ) -> dict[str, Any]:
     """Bound all-member qualification to the chosen Ansible instance."""
     assignments = (
@@ -136,7 +138,7 @@ def _committed_host_assets(
         .limit(_ASSET_LIMIT + 1)
         .all()
     )
-    return project_host_assets(connection, assignments, page=page)
+    return project_host_assets(connection, assignments, page=page, per_page=per_page)
 
 
 def build_automation_workspace(
@@ -146,6 +148,7 @@ def build_automation_workspace(
     per_page: int = 5,
     connection_id: int | None = None,
     asset_page: int = 1,
+    asset_per_page: int = _ASSET_PAGE_SIZE,
     can_jobs: bool = False,
     can_inventory: bool = False,
 ) -> dict[str, Any]:
@@ -197,7 +200,9 @@ def build_automation_workspace(
             'jobs': jobs,
             'job_total': scoped_jobs.count() if can_jobs else None,
             'cluster_bindings': _cluster_bindings(selected) if can_inventory else [],
-            'assets': _committed_host_assets(selected, page=asset_page) if can_inventory else None,
+            'assets': _committed_host_assets(selected, page=asset_page, per_page=asset_per_page)
+            if can_inventory
+            else None,
             'can_jobs': can_jobs,
             'can_inventory': can_inventory,
             'execution_authorized': False,

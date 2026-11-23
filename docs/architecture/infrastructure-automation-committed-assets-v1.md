@@ -8,7 +8,7 @@ The existing `Operations Center → Infrastructure Automation → Kubernetes Lif
 
 The read model loads no more than 257 committed membership rows for the selected instance and validates the **entire** bounded set with the existing `preview_inventory_intent` contract before paging. More than 256 members, mixed environments, invalid/retired/duplicate hosts, cross-connection assignments, or disabled/nonproduction-ineligible connections fail closed. Ineligible projections reveal neither endpoint rows nor inventory fingerprint. A SHA256 prefix is displayed for qualified **correlation** only; it is never a signed Plan, secret, admission token or Run approval.
 
-Server pagination stays at **five entries per page** while ordinary connection pagination and HTMX selection continue to work. Jinja HTML escaping, shared table/action buttons/loading/semantic-status primitives, normal GET fallback and explicit empty/blocked/missing-permission states apply; no new menu route or UI component is invented.
+Server pagination defaults to **five entries per page**, and the shared canonical `table_registry.footer` controls optional 10/25/50 rows and `asset_page` navigation in the Assets card independently of connection pagination. Its own `infrastructure-automation-assets` HTMX target avoids custom local Previous/Next markup or shared-registry selector collisions. Jinja HTML escaping, shared table/action buttons/loading/semantic-status primitives, normal GET fallback and explicit empty/blocked/missing-permission states apply; no new menu route or UI component is invented.
 
 ## Explicit limitations
 
