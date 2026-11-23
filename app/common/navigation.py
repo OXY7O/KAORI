@@ -303,7 +303,11 @@ def build_navigation_breadcrumb(
     elif endpoint.startswith('source_control.'):
         items = [
             BreadcrumbItem('Source Control', 'git-branch'),
-            BreadcrumbItem('Repositories' if endpoint == 'source_control.repositories' else ('Analytics' if endpoint == 'source_control.analytics' else 'Overview')),
+            BreadcrumbItem(
+                'Repositories'
+                if endpoint == 'source_control.repositories'
+                else ('Analytics' if endpoint == 'source_control.analytics' else 'Overview')
+            ),
         ]
     elif endpoint.startswith('secrets_pki.'):
         items = [BreadcrumbItem('Secrets & PKI', 'key-round'), BreadcrumbItem(_leaf(endpoint, 'Overview'))]
