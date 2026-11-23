@@ -42,6 +42,7 @@ from app.storage.object_storage.analytics.dependencies import (
     inventory_required_blocker,
     system_required_blocker,
 )
+from app.storage.object_storage.analytics.inventory_limited import limited_inventory_analytics_context
 from app.storage.object_storage.analytics.materialization import (
     forecast_snapshot_state,
     get_forecast_snapshot,
@@ -534,6 +535,8 @@ def _base_context(page_key: str, query_args: Any) -> tuple[dict[str, Any], Objec
             'last_error': None,
         },
         'dependency_blocker': None,
+        'analytics_limited': False,
+        'inventory_limited': None,
         'metrics_source': waiting_metrics_source(),
         'metrics_readiness': waiting_metrics_readiness(),
         'selected_alert_source': selected_alert_source(query_args),
@@ -715,6 +718,8 @@ def get_object_storage_analytics_context(
         context, system=system, time_range=time_range, committed_snapshot=committed_snapshot
     )
     if payload is None:
+        if page_key == 'overview' and committed_snapshot is None:
+            return limited_inventory_analytics_context(context, system)
         return context
 
     if page_key == 'alerts':

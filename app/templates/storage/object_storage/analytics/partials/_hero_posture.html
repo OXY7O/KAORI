@@ -1,5 +1,18 @@
 {% import "components/page_hero.html" as page_hero %}
-{% if page_key == 'overview' %}
+{% if page_key == 'overview' and analytics_limited %}
+    {{ page_hero.context_card_body('Analytics Coverage',
+        'Data Availability',
+        'Limited',
+        'warning',
+        [
+        ('database', 'Inventory', 'Committed', 'System-bound committed asset observations') ,
+    ('activity', 'Metrics', 'Not Collected', 'No usable analytics snapshot for this window')
+    ],
+    'Review Inventory',
+    url_for('object_storage_inventory.overview'),
+    'database'
+    ) }}
+{% elif page_key == 'overview' %}
     {% set posture = metrics.operational_posture|default({}) %}
     {{ page_hero.context_card_body('Operational Posture',
         'Analytics Status',
