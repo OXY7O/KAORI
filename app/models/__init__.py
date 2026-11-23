@@ -18,6 +18,7 @@ from app.models.capsule_handoff_ledger import CapsuleHandoffLedgerEvent as Capsu
 from app.models.capsule_handoff_proof import CapsuleHandoffAuditBatch as CapsuleHandoffAuditBatch
 from app.models.capsule_handoff_proof import CapsuleHandoffResourceConsentRecord as CapsuleHandoffResourceConsentRecord
 from app.models.cluster import Cluster, ClusterStatus
+from app.models.compute_host import ComputeHostAsset
 from app.models.governance import TLSCertificateCollectionState, TLSCertificateInventory, TLSCertificateUpdateEvent
 from app.models.harbor import HarborInstance
 from app.models.identity import ExternalIdentityLink, IdentityProvider
@@ -199,6 +200,7 @@ __all__ = [
     'ExternalIdentityLink',
     'ClusterStatus',
     'Cluster',
+    'ComputeHostAsset',
     'User',
     'Tenant',
     'TenantAdvancedCapabilityIntent',
