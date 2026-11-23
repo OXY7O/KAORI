@@ -56,6 +56,17 @@
                 {% endif %}
             </div>
         </section>
+        {% if not registry_ready or not posture.scanned_artifacts %}
+            {% set blocked_state_icon = "shield-alert" %}
+            {% set blocked_state_label = "Setup Required" if not registry_ready else "Evidence Required" %}
+            {% set blocked_state_title = "Registry Evidence Required" if not registry_ready else "Scanner Evidence Required" %}
+            {% set blocked_state_description = "Connect an authorized Registry and collect scanner evidence before investigating CVE impact." if not registry_ready else "Collect qualified Registry scanner evidence before investigating CVE impact; missing findings do not prove safety." %}
+            {% set blocked_state_action_url = url_for('integrations.registry') if can_manage_integrations else none %}
+            {% set blocked_state_action_label = "Open Registry Integrations" if can_manage_integrations else none %}
+            {% set blocked_state_permission_granted = can_manage_integrations %}
+            {% set blocked_state_show_admin_required = not can_manage_integrations %}
+            {% include "components/states/_blocked_state.html" %}
+        {% else %}
         {% set readiness_guide %}
             {{ info_tip.render('security-findings-evidence-guide', 'Findings Evidence Guide',
                         'Scanner freshness and runtime correlation are separate evidence qualifications.',
@@ -152,7 +163,6 @@
                 Missing, partial or stale evidence is not proof of no exposure. All results use authorized committed sources.
             </p>
         {% endcall %}
-        {% if registry_ready and posture.scanned_artifacts %}
         <div class="space-y-3" data-security-findings-registry-workspace>
             {{ section_intro.render('Investigation Workspace',
                         'Search qualified CVEs and inspect committed artifact and runtime evidence.',
@@ -305,16 +315,6 @@
                                 [5, 10, 25, 50], resource_label='CVEs', control_name='security-posture-findings') }}
             </section>
         </div>
-        {% else %}
-            {% set blocked_state_icon = "shield-alert" %}
-            {% set blocked_state_label = "Setup Required" if not registry_ready else "Evidence Required" %}
-            {% set blocked_state_title = "Registry Evidence Required" if not registry_ready else "Scanner Evidence Required" %}
-            {% set blocked_state_description = "Connect an authorized Registry and collect scanner evidence before investigating CVE impact." if not registry_ready else "Collect qualified Registry scanner evidence before investigating CVE impact; missing findings do not prove safety." %}
-            {% set blocked_state_action_url = url_for('integrations.registry') if can_manage_integrations else none %}
-            {% set blocked_state_action_label = "Open Registry Integrations" if can_manage_integrations else none %}
-            {% set blocked_state_permission_granted = can_manage_integrations %}
-            {% set blocked_state_show_admin_required = not can_manage_integrations %}
-            {% include "components/states/_blocked_state.html" %}
         {% endif %}
     </div>
 {% endblock dashboard_content %}
