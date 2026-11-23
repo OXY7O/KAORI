@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.infrastructure_automation.workspace import automation_connection_count
 from app.platform_operations.data_lifecycle.presentation import build_data_lifecycle_overview_summary
 from app.platform_operations.jobs.configuration import build_job_configuration_attention_summary
 from app.platform_operations.jobs.presentation import build_job_execution_status_context
@@ -40,6 +41,7 @@ def build_platform_operations_overview_context(
     *,
     can_jobs: bool,
     can_data_lifecycle: bool,
+    can_infrastructure_automation: bool = False,
     can_kubernetes_admin: bool,
 ) -> dict[str, Any]:
     """Build a read-only summary across Platform Operations control planes.
@@ -93,6 +95,29 @@ def build_platform_operations_overview_context(
                 'boundary_label': 'Canonical execution evidence',
                 'boundary_title': 'Execution Evidence',
                 'boundary_description': 'Jobs owns queues, retries and execution evidence.',
+            }
+        )
+
+    if can_infrastructure_automation:
+        connections = automation_connection_count()
+        workspaces.append(
+            {
+                'key': 'infrastructure-automation',
+                'label': 'Infrastructure Automation',
+                'icon': 'server-cog',
+                'description': 'Read-only Ansible source, preflight, Plan and cluster evidence.',
+                'status_label': 'Review Required' if connections else 'Not Configured',
+                'status_tone': 'unknown',
+                'metrics': (
+                    ('blocks', 'Ansible Connections', connections, 'Canonical Connections'),
+                    ('lock-keyhole', 'Mutation', 'Blocked', 'Execution Authority'),
+                    ('clipboard-list', 'Pilot Profile', 'Kubespray', 'Registered Source Profile'),
+                ),
+                'action_endpoint': 'platform_operations.infrastructure_automation.index',
+                'action_label': 'Open Infrastructure Automation',
+                'boundary_label': 'Git-defined Ansible operations',
+                'boundary_title': 'Committed Automation Evidence',
+                'boundary_description': 'Infrastructure Automation orchestrates, never executes during page loads.',
             }
         )
 
