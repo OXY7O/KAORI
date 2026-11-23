@@ -28,12 +28,12 @@
                         </div>
                     {% endcall %}
                 </div>
-                {% if not registry_ready %}
+                {% if not registry_ready or not posture.scanned_artifacts %}
                     <aside class="{{ page_hero.aside_classes() }}"
                            aria-label="Security Findings readiness">
                         {% set findings_blocked_metrics = [('database-zap', 'Provider Authority', 'Artifact Registry', 'Registry scanner source'), ('lock-keyhole', 'Evidence Boundary', 'Not Collected', 'No eligible committed Registry evidence')] %}
                         {{ page_hero.blocked_context_body('Assurance Readiness',
-                                                'Registry Evidence Required',
+                                                'Registry Evidence Required' if not registry_ready else 'Scanner Evidence Required',
                                                 findings_blocked_metrics,
                                                 'Authorize Registry evidence before investigating CVE impact.',
                                                 'Blocked',
