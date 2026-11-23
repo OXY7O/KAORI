@@ -68,7 +68,6 @@ def _cluster_bindings(connection: IntegrationInstance) -> list[dict[str, Any]]:
     ]
 
 
-
 def project_host_assets(
     connection: IntegrationInstance,
     assignments: list[AutomationInventoryAssignment],

@@ -77,9 +77,7 @@ def test_unqualified_cross_connection_disabled_and_oversized_memberships_show_no
 
 def test_immutable_inventory_role_changes_fingerprint_and_clamps_page():
     first = project_host_assets(_connection(), [_assignment(1), _assignment(2)], page=100)
-    second = project_host_assets(
-        _connection(), [_assignment(1, role='control_plane'), _assignment(2)], page=100
-    )
+    second = project_host_assets(_connection(), [_assignment(1, role='control_plane'), _assignment(2)], page=100)
     assert first['pagination']['page'] == 1
     assert len(first['rows']) == 2
     assert first['fingerprint'] != second['fingerprint']
