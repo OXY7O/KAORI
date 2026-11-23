@@ -1,10 +1,27 @@
 {% extends "layouts/app.html" %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
+{% import "components/info_tip.html" as info_tip %}
 {% block title %}Rule Catalog{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6">
         {% include 'intelligence/partials/_catalog_hero_posture.html' %}
         <div id="catalog-summary-section">{% include 'intelligence/partials/_catalog_summary.html' %}</div>
+        {% set catalog_title_extra %}
+            {% include 'intelligence/partials/_catalog_title_count.html' %}
+            {{ info_tip.render('rule-catalog-definitions-guide',
+                        'Rule Definitions Guide',
+                        'Rules are canonical definitions. Availability identifies an eligible evaluator, not a current finding.',
+                        items=[
+                        'Recommendations shows findings derived from committed, authorized source evidence. A catalog rule does not create a finding by itself.',
+                        'Imported Signal and Reserved Plan status do not imply a live evaluator or active AlertCase.',
+                        'Search, scope filters, and page size refresh Rule Definitions; Clear Filters restores the full catalog and keeps the browser URL synchronized.',
+                        'View Rule expands catalog-owned evidence, severity, and response contracts without running provider actions.'
+                        ],
+                        variant='guide', placement='left') }}
+        {% endset %}
+        {% set catalog_header_actions %}
+            {% include 'intelligence/partials/_catalog_header_actions.html' %}
+        {% endset %}
         {% call intelligence_ui.section(
             'Rule Definitions',
             'Search ownership, coverage, readiness, severity, and response. View Rule expands below the selected record.',
@@ -12,7 +29,9 @@
             '',
             'info',
             indicator_id='catalog-loading-bar',
-            loading_label='Filtering Rule Catalog'
+            loading_label='Filtering Rule Catalog',
+            title_extra=catalog_title_extra,
+            header_actions=catalog_header_actions
             ) %}
             {% include 'intelligence/partials/_catalog_workspace.html' %}
         {% endcall %}

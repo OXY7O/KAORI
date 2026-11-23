@@ -150,3 +150,12 @@ Rule Catalog summary, Hero counts, and posture describe **matching canonical def
 ### Rule Catalog page-size and escalation controls (#1525)
 
 The shared Intelligence result pagination can replace only the results region. On Rows changes, the response must also update the corresponding hidden per_page input in the separate filter form through a scoped HTMX out-of-band element; Recommendations and Rule Catalog retain the same default of 5 and supported 5/10/25/50 values. URL navigation, filter changes, and reset retain the selected page size. Reserved Plan and Imported Signal definitions are read-only and never display an editable escalation form, even to authorized decision users; the Available-only server-side mutation guard remains authoritative.
+
+
+## Rule Catalog header and result action conformance (operator RC.6 Visual QA, 2026-11-23)
+
+- The standalone **Rule Catalog Summary** follows the common posture-panel header, with a neutral shared **4 Indicators** metadata label next to its title; the semantic scoped-availability posture badge remains on the right.
+- The Rule Definitions owning section header shows one shared filter-scoped **N Results** badge and one accessible **Rule Definitions Guide** beside its title, not a duplicate result strip between filters and records. The Guide describes canonical catalog definitions versus qualified Recommendations findings, imported-signal/reserved boundaries, and non-mutating detail expansion.
+- Active-filter **Clear Filters** uses `components/table_registry.html::clear_filters_action` in the right-aligned section header actions with the canonical header utility geometry, and targets the complete `#catalog-workspace-content` to reset filter controls. HTMX results-only refreshes swap the Hero and Summary plus the rule count and header reset action out of band; pagination remains default 5 and preserves browser URL/scroll.
+- **View Rule** remains an accessible expandable-detail toggle, but uses the shared `components/details/_expandable_row.html::toggle_button(table_action=true)` with the compact neutral `table_primitives.action_classes()` row utility. No custom row button family.
+- The Recommendation Runtime Correlation notice is source-specific and uses the existing semantic operational callout with optional **compact_content** text grouping, keeping title + description adjacent and a single right-side CTA without changing ordinary callout defaults. Never force text truncation or change evidence policy to achieve layout.

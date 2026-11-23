@@ -1,6 +1,3 @@
-{% import "components/table.html" as table_ui %}
-{% import "components/table_label.html" as table_label %}
-{% import "components/table_registry.html" as registry_ui %}
 {% import 'intelligence/components/_pagination.html' as intelligence_pagination %}
 {% if request.headers.get('HX-Request') == 'true' %}
     {% include 'intelligence/partials/_catalog_hero_posture.html' %}
@@ -12,27 +9,9 @@
     <div id="catalog-summary-section" hx-swap-oob="outerHTML">
         {% include 'intelligence/partials/_catalog_summary.html' %}
     </div>
+    {% include 'intelligence/partials/_catalog_title_count.html' %}
+    {% include 'intelligence/partials/_catalog_header_actions.html' %}
 {% endif %}
-<div class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-    <div class="flex flex-wrap items-center gap-2">
-        <span class="text-xs font-semibold text-content-secondary">Rules</span>
-        {{ table_label.result_count(payload.pagination.total_items) }}
-    </div>
-    <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
-        {% if payload.active_filter_count|default(0) > 0 %}
-            {{ registry_ui.clear_filters_action(url_for('intelligence.catalog', per_page=payload.pagination.per_page) ,
-            table_ui.action_classes(),
-            hx_get=url_for('intelligence.catalog', per_page=payload.pagination.per_page),
-            target='#catalog-workspace-content',
-            indicator='#catalog-loading-bar',
-            swap='outerHTML show:none focus-scroll:false',
-            push_url='true',
-            sync='#catalog-workspace-content:replace',
-            lead=false
-            ) }}
-        {% endif %}
-    </div>
-</div>
 {% include 'intelligence/partials/_catalog_records.html' %}
 {% set query_params = payload.filters.copy() %}
 {% set _ = query_params.update({'per_page': payload.pagination.per_page}) %}

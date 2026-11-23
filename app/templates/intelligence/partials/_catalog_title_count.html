@@ -1,0 +1,5 @@
+{% import "components/table_label.html" as table_label %}
+<span id="catalog-rule-count"
+      {% if request.headers.get('HX-Request') == 'true' %}hx-swap-oob="outerHTML"{% endif %}>
+    {{ table_label.result_count(payload.pagination.total_items) }}
+</span>

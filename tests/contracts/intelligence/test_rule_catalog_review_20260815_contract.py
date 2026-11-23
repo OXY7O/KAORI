@@ -22,8 +22,10 @@ def test_rule_catalog_uses_two_row_filter_layout_and_standalone_summary_box():
     assert 'hx-swap-oob="outerHTML"' in results
     assert 'Rule Catalog Summary' in summary
     assert 'layout-dashboard' in summary
-    assert 'clear_filters_action' in results
-    assert "target='#catalog-workspace-content'" in results
+    actions = read('app/templates/intelligence/partials/_catalog_header_actions.html')
+    assert '_catalog_header_actions.html' in results
+    assert 'clear_filters_action' in actions
+    assert "target='#catalog-workspace-content'" in actions
     assert 'Matching Rules' in summary
     assert 'Reserved Plan' in summary
     assert 'Imported Signal' in summary
