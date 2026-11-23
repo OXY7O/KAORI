@@ -117,13 +117,20 @@ def test_additional_table_workspaces_use_filtered_results_badges() -> None:
             'payload.channel_pagination.total_items'
         ),
         'reports/overview/partials/_recent_reports.html': 'payload.recent_reports|length',
-        'intelligence/partials/_catalog_results.html': 'payload.pagination.total_items',
         'storage/object_storage/analytics/partials/_bucket_table.html': 'bucket_table.pagination.total_items',
         'storage/object_storage/analytics/partials/_bucket_forecast_table.html': 'forecast_table.pagination.total_items',
     }
     for path, count in cases.items():
         source = _template(path)
         assert f'table_label.result_count({count})' in source or f'result_count={count}' in source
+
+    # Rule Catalog count now belongs to its title-adjacent OOB header metadata,
+    # not a duplicate strip between filters and the table.
+    catalog_results = _template('intelligence/partials/_catalog_results.html')
+    catalog_metadata = _template('intelligence/partials/_catalog_header_metadata.html')
+    assert 'table_label.result_count(payload.pagination.total_items)' in catalog_metadata
+    assert '_catalog_header_metadata.html' in catalog_results
+    assert 'hx-swap-oob="outerHTML"' in catalog_metadata
 
     # Recommendations retain filtered counts in their OOB summary,
     # not a duplicate badge inside the paginated HTMX fragment.

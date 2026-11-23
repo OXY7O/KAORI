@@ -25,7 +25,7 @@ def test_rule_catalog_uses_two_row_filter_layout_and_standalone_summary_box():
     header_actions = read('app/templates/intelligence/partials/_catalog_header_actions.html')
     assert 'clear_filters_action' in header_actions
     assert '_catalog_header_actions.html' in results
-    assert "target='#catalog-workspace-content'" in results
+    assert "target='#catalog-workspace-content'" in header_actions
     assert 'Matching Rules' in summary
     assert 'Reserved Plan' in summary
     assert 'Imported Signal' in summary
