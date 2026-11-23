@@ -16,13 +16,17 @@ def test_registry_runtime_correlation_unmaterialized_does_not_mark_all_evaluator
     records = source('app/templates/intelligence/partials/_recommendation_records.html')
     assert "if runtime_evidence['status'] == 'unavailable':" in service
     assert "issues.append('Registry Runtime: ' + runtime_evidence['title'])" in service
-    assert "if runtime_evidence['status'] != 'ready':" not in service
+    assert "elif runtime_evidence['status'] != 'ready':" in service
+    assert "source_gaps.append('Registry Runtime: ' + runtime_evidence['title'])" in service
+    assert "'source_gaps': source_gaps" in service
+    assert "source_gaps=source_gaps" in service
+    assert "if recent < total or source_gaps:" in service
     assert "'status': 'not_materialized'" in runtime
     assert "'status': 'refresh_failed'" in runtime
     assert "'status': 'stale'" in runtime
     assert "payload.registry_runtime_evidence.status != 'ready'" in results
     assert "readiness_status == 'unavailable'" in records
-    assert 'One or more committed evidence evaluators failed.' in records
+    assert 'A committed evidence evaluation or readiness read failed.' in records
 
 
 def test_actual_sql_failures_still_fail_closed_and_catalog_has_separate_evaluation_boundaries() -> None:

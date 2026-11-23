@@ -24,6 +24,28 @@ def test_evaluator_errors_never_mean_healthy_empty_results() -> None:
     assert classify_recommendation_readiness(total=2, recent=2, issues=[], has_findings=False) == 'baseline_recent'
 
 
+def test_registry_source_gap_does_not_claim_healthy_zero_or_evaluator_failure() -> None:
+    gaps = ['Registry Runtime: Runtime Correlation Required']
+    assert classify_recommendation_readiness(
+        total=3, recent=3, issues=[], has_findings=False, source_gaps=gaps
+    ) == 'partial'
+    assert classify_recommendation_readiness(
+        total=3, recent=3, issues=[], has_findings=True, source_gaps=gaps
+    ) == 'partial'
+    assert classify_recommendation_readiness(
+        total=0, recent=0, issues=[], has_findings=False, source_gaps=gaps
+    ) == 'not_collected'
+    assert classify_recommendation_readiness(
+        total=3, recent=3, issues=['Registry Runtime Readiness'], has_findings=False, source_gaps=gaps
+    ) == 'unavailable'
+    assert classify_recommendation_readiness(
+        total=3, recent=3, issues=['Registry Runtime Readiness'], has_findings=True, source_gaps=gaps
+    ) == 'partial'
+    assert classify_recommendation_readiness(
+        total=2, recent=2, issues=[], has_findings=False, source_gaps=[]
+    ) == 'baseline_recent'
+
+
 def test_disabled_or_retired_storage_provider_fails_closed() -> None:
     asset = SimpleNamespace(id='storage-1')
 
