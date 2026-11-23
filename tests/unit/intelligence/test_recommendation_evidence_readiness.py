@@ -52,7 +52,6 @@ def test_missing_runtime_correlation_is_a_source_gap_not_an_evaluator_failure() 
     )
 
 
-
 def test_disabled_or_retired_storage_provider_fails_closed() -> None:
     asset = SimpleNamespace(id='storage-1')
 
