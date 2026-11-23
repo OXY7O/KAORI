@@ -8,6 +8,7 @@ from packaging.specifiers import SpecifierSet
 from packaging.version import InvalidVersion, Version
 
 from app.definitions.integration_registry import integration_compatibility_document
+from app.definitions.kubernetes_compatibility_policy import kubernetes_api_lifecycle
 from app.definitions.validation import require_int, require_list, require_mapping, require_str, string_tuple
 
 
@@ -409,22 +410,8 @@ def normalize_runtime_version(value: str) -> str:
 
 
 def kubernetes_lifecycle(version: str | None) -> str:
-    policy = PRODUCT_POLICIES['kubernetes']
-    normalized = normalize_runtime_version(version or '')
-    try:
-        parsed = Version(normalized)
-    except InvalidVersion:
-        return 'unknown'
-    if parsed < Version(policy.qualification_floor):
-        return 'end_of_life'
-    qualification = resolve_qualification('kubernetes', normalized)
-    if qualification is None:
-        return 'unknown'
-    if qualification.support_level == 'current':
-        return 'current'
-    if qualification.support_level == 'extended_supported':
-        return 'extended'
-    return qualification.support_level
+    """Reuse source-defined Kubernetes API lifecycle qualification."""
+    return kubernetes_api_lifecycle(normalize_runtime_version(version or ''))
 
 
 def kubernetes_lifecycle_policy(version: str | None) -> dict[str, str]:

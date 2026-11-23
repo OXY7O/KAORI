@@ -33,6 +33,7 @@ regexTarget = "secret"
 paths = [
   '''^app/definitions/catalogs/integrations/compatibility\.yaml$''',
   '''^tests/integrations/test_general_compatibility_contract\.py$''',
+  '''^tests/integrations/test_kubespray_execution_compatibility_5156\.py$''',
   '''^docs/architecture/compatibility-framework\.md$''',
 ]
 regexes = ['''^kaori-compatibility-policy-v1$''']
