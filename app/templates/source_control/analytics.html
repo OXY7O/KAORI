@@ -27,6 +27,16 @@
         blocked_title='Inventory Not Collected' if selected_scope else 'Select an Installation',
         blocked_info='Collect an authorized installation inventory before interpreting its repository evidence.'
         ) }}
+        {% if not authorized_installations %}
+            {% set blocked_state_icon = "git-branch" %}
+            {% set blocked_state_label = "Setup Required" %}
+            {% set blocked_state_title = "GitHub Installation Required" %}
+            {% set blocked_state_description = "Register an authorized GitHub App installation and collect repository evidence before using Analytics." %}
+            {% set blocked_state_action_url = url_for('integrations.source_control') %}
+            {% set blocked_state_action_label = "Open Source Control Integrations" %}
+            {% set blocked_state_permission = "integrations.manage" %}
+            {% include "components/states/_blocked_state.html" %}
+        {% else %}
         {% call analytics_readiness.frame('Controls & Data Readiness',
             'Each source family is evaluated independently. Missing Metrics Source or Alert Source evidence never hides committed repository inventory.',
             'sliders-horizontal', 'source-control-analytics-readiness-indicator') %}
@@ -83,18 +93,15 @@
                                 icon='bell-ring') }}
             {% endcall %}
         {% endcall %}
-        {% if not selected_scope %}
-            <section class="{{ analytics_surface.empty_evidence_classes('p-5 sm:p-6') }}"
-                     aria-label="Source Control Analytics installation selection">
-                <h2 class="text-base font-semibold text-content-primary">Select an Authorized Installation</h2>
-                <p class="mt-2 text-sm text-content-secondary">Repository evidence is never totaled across overlapping GitHub App installation grants. Choose one installation to inspect its committed coverage.</p>
-            </section>
-        {% elif not collected %}
-            <section class="{{ analytics_surface.empty_evidence_classes('p-5 sm:p-6') }}"
-                     aria-label="Source Control Analytics not collected">
-                <h2 class="text-base font-semibold text-content-primary">Repository Analytics Not Collected</h2>
-                <p class="mt-2 text-sm text-content-secondary">No committed collection generation is available for this authorized installation. Unknown is not verified zero; collect inventory through the Source Control integration before using these views.</p>
-            </section>
+        {% if not selected_scope or not collected %}
+            {% set blocked_state_icon = "git-branch" %}
+            {% set blocked_state_label = "Scope Required" if not selected_scope else "Collection Required" %}
+            {% set blocked_state_title = "Select an Authorized Installation" if not selected_scope else "Repository Analytics Not Collected" %}
+            {% set blocked_state_description = "Select one authorized installation; overlapping repository grants are never aggregated across installations." if not selected_scope else "Collect committed repository evidence for this installation; missing inventory is not a verified zero." %}
+            {% set blocked_state_action_url = url_for('integrations.source_control') %}
+            {% set blocked_state_action_label = "Open Source Control Integrations" %}
+            {% set blocked_state_permission = "integrations.manage" %}
+            {% include "components/states/_blocked_state.html" %}
         {% else %}
             <section aria-label="Committed Source Control Analytics facts"
                      class="{{ analytics_surface.snapshot_shell_classes() }}">
@@ -130,6 +137,7 @@
                 Repository analytics currently covers retained grant, visibility, lifecycle and exact-reference facts only.
                 PR/review/CI measurements, DORA, deployment attribution, historical series, cross-domain runtime lineage and alerts remain unavailable until their own committed and authorized evidence is admitted.
             </p>
+        {% endif %}
         {% endif %}
     </div>
 {% endblock dashboard_content %}
