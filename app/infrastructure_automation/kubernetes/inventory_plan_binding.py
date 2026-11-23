@@ -10,9 +10,10 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Mapping
+from typing import Any
 
 _HEX = re.compile(r'[a-f0-9]{64}\Z')
 _SOURCE = re.compile(r'[a-f0-9]{40}\Z')
