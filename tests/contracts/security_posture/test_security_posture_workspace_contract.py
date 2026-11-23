@@ -897,3 +897,15 @@ def test_scanner_coverage_state_reports_missing_partial_stale_and_current() -> N
         assert state['label'] == expected
         expected_tone = 'normal' if expected == 'Observed' else 'unknown' if expected == 'Not Collected' else 'warning'
         assert state['tone'] == expected_tone
+
+
+def test_security_provider_and_scanner_states_use_ordered_shared_blocker_steps() -> None:
+    for path in ('app/templates/security_posture/overview.html', 'app/templates/security_posture/findings.html'):
+        template = (ROOT / path).read_text()
+        assert 'components/states/_blocked_state.html' in template
+        assert 'blocked_state_steps' in template
+        assert 'Open Registry Integrations' in template
+        assert 'Sync Registry Inventory' in template
+        assert 'Collect Scanner Evidence' in template
+        assert 'if not registry_ready else' in template
+        assert 'blocked_state_permission_granted = can_manage_integrations' in template

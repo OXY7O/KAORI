@@ -61,6 +61,7 @@
             {% set blocked_state_label = "Setup Required" if not registry_ready else "Evidence Required" %}
             {% set blocked_state_title = "Registry Evidence Required" if not registry_ready else "Scanner Evidence Required" %}
             {% set blocked_state_description = "Connect an authorized Registry and collect scanner evidence before investigating CVE impact." if not registry_ready else "Collect qualified Registry scanner evidence before investigating CVE impact; missing findings do not prove safety." %}
+            {% set blocked_state_steps = ["Open Registry Integrations", "Validate Registry Provider", "Sync Registry Inventory", "Collect Scanner Evidence"] if not registry_ready else ["Review Registry Scope", "Collect Scanner Evidence"] %}
             {% set blocked_state_action_url = url_for('integrations.registry') if can_manage_integrations else none %}
             {% set blocked_state_action_label = "Open Registry Integrations" if can_manage_integrations else none %}
             {% set blocked_state_permission_granted = can_manage_integrations %}

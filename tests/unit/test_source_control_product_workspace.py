@@ -1642,3 +1642,21 @@ def test_source_control_all_installations_repository_coverage_uses_canonical_pag
         assert routes.overview.__wrapped__() == 'rendered'
     assert not captured[-1][1]['eager_coverage_pagination']
     assert captured[-1][1]['repository_coverage'] is None
+
+
+def test_source_control_provider_blockers_use_ordered_shared_setup_steps() -> None:
+    root = Path(__file__).resolve().parents[2]
+    template_root = root / 'app/templates/source_control'
+    for name in ('overview.html', 'repositories.html', 'analytics.html'):
+        template = (template_root / name).read_text()
+        assert 'components/states/_blocked_state.html' in template
+        assert 'blocked_state_steps' in template
+        assert 'Open Source Control Integrations' in template
+        assert 'Sync Repository Inventory' in template
+    fragment = (template_root / 'partials/_repository_inventory_blocker.html').read_text()
+    assert 'blocked_state_steps' in fragment
+    assert 'Sync Repository Inventory' in fragment
+    assert 'id="source-control-inventory"' in fragment
+    overview = (template_root / 'overview.html').read_text()
+    assert "blocked_info='Authorize a GitHub App and sync repository inventory.'" in overview
+    assert 'whitespace-nowrap' not in overview.split('blocked_info=', 1)[1].split(') }}', 1)[0]
