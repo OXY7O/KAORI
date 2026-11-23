@@ -51,17 +51,16 @@
                 {% endif %}
             </div>
         </section>
-        {% if not registry_ready %}
-            {% set empty_state_icon = "shield-alert" %}
-            {% set empty_state_label = "Setup Required" %}
-            {% set empty_state_variant = "panel" %}
-            {% set empty_state_title = "Security Evidence Prerequisites" %}
-            {% set empty_state_description = "No eligible Registry evidence. Missing data is not proof of safety." %}
-            {% set empty_state_action_url = url_for('integrations.registry') if can_manage_integrations else none %}
-            {% set empty_state_action_label = 'Open Registry Integrations' if can_manage_integrations else none %}
-            {% set empty_state_permission_granted = can_manage_integrations %}
-            {% set empty_state_show_admin_required = not can_manage_integrations %}
-            {% include "components/states/_empty_state.html" %}
+        {% if not registry_ready or not posture.scanned_artifacts %}
+            {% set blocked_state_icon = "shield-alert" %}
+            {% set blocked_state_label = "Setup Required" if not registry_ready else "Evidence Required" %}
+            {% set blocked_state_title = "Registry Evidence Required" if not registry_ready else "Scanner Evidence Required" %}
+            {% set blocked_state_description = "Connect an authorized Registry and collect scanner evidence; missing findings do not prove safety." if not registry_ready else "Collect qualified Registry scanner evidence before interpreting security posture." %}
+            {% set blocked_state_action_url = url_for('integrations.registry') if can_manage_integrations else none %}
+            {% set blocked_state_action_label = "Open Registry Integrations" if can_manage_integrations else none %}
+            {% set blocked_state_permission_granted = can_manage_integrations %}
+            {% set blocked_state_show_admin_required = not can_manage_integrations %}
+            {% include "components/states/_blocked_state.html" %}
         {% else %}
             {% call dashboard_workspace.controller(active_tab, 'security-posture-overview') %}
                 <div class="space-y-5" data-security-overview-layout>
