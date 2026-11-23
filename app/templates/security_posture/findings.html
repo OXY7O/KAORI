@@ -69,13 +69,13 @@
         {% else %}
             {% set readiness_guide %}
                 {{ info_tip.render('security-findings-evidence-guide', 'Findings Evidence Guide',
-                            'Scanner freshness and runtime correlation are separate evidence qualifications.',
-                            items=[
-                            'Registry scanner CVEs, digests and scan timestamps remain provider-authoritative.',
-                            'Stale or partial scanner evidence is not an all-clear, even if a Security Sync job succeeded.',
-                            'Kubernetes binding totals are usable only when committed correlation is Ready.',
-                            'Mutable reference matches are weaker evidence than immutable digest matches.'
-                            ], variant='guide', placement='left') }}
+                                'Scanner freshness and runtime correlation are separate evidence qualifications.',
+                                items=[
+                                'Registry scanner CVEs, digests and scan timestamps remain provider-authoritative.',
+                                'Stale or partial scanner evidence is not an all-clear, even if a Security Sync job succeeded.',
+                                'Kubernetes binding totals are usable only when committed correlation is Ready.',
+                                'Mutable reference matches are weaker evidence than immutable digest matches.'
+                                ], variant='guide', placement='left') }}
             {% endset %}
             {% call section_card.render('Evidence Qualification',
                 'Read the source status before interpreting CVE results and workload impact.',
@@ -165,8 +165,8 @@
             {% endcall %}
             <div class="space-y-3" data-security-findings-registry-workspace>
                 {{ section_intro.render('Investigation Workspace',
-                            'Search qualified CVEs and inspect committed artifact and runtime evidence.',
-                            'security-findings-registry-intro') }}
+                                'Search qualified CVEs and inspect committed artifact and runtime evidence.',
+                                'security-findings-registry-intro') }}
                 <section id="security-posture-findings-registry"
                          class="{{ table_ui.block_classes() }}"
                          aria-label="Security CVE Finding Registry"
@@ -175,23 +175,23 @@
                         <span class="flex flex-wrap items-center gap-2">
                             {{ table_label.metadata_label(posture.pagination.total_items ~ ' CVEs', icon='shield-alert') }}
                             {{ info_tip.render('security-findings-registry-guide', 'CVE Finding Registry Guide',
-                                                    'Search and investigate source-qualified committed scanner CVEs.',
-                                                    items=[
-                                                    'Search is limited to CVE identifiers and the selected severity.',
-                                                    'Scanner Findings and Affected Digests are different measures.',
-                                                    'Runtime bindings describe containers, not distinct applications; unknown correlation is not zero.',
-                                                    'View Impact opens exact-CVE source evidence in Artifact Registry.'
-                                                    ], variant='guide', placement='left') }}
+                                                        'Search and investigate source-qualified committed scanner CVEs.',
+                                                        items=[
+                                                        'Search is limited to CVE identifiers and the selected severity.',
+                                                        'Scanner Findings and Affected Digests are different measures.',
+                                                        'Runtime bindings describe containers, not distinct applications; unknown correlation is not zero.',
+                                                        'View Impact opens exact-CVE source evidence in Artifact Registry.'
+                                                        ], variant='guide', placement='left') }}
                         </span>
                     {% endset %}
                     {% set findings_reload_url = url_for('security_posture.findings', q=posture.search, severity=posture.severity, page=posture.pagination.page, per_page=posture.pagination.per_page) %}
                     {% set findings_header_actions %}
                         {% if posture.search or posture.severity %}
                             {{ registry.clear_filters_link('security_posture.findings',
-                                                    'security-posture-findings-registry',
-                                                    'security-posture-findings-loading',
-                                                    posture.pagination.per_page,
-                                                    table_ui.action_classes() ) }}
+                                                        'security-posture-findings-registry',
+                                                        'security-posture-findings-loading',
+                                                        posture.pagination.per_page,
+                                                        table_ui.action_classes() ) }}
                         {% endif %}
                         <a href="{{ findings_reload_url }}"
                            hx-get="{{ findings_reload_url }}"
@@ -208,13 +208,13 @@
                         </a>
                     {% endset %}
                     {{ table_ui.inventory_block_header('list-filter',
-                                    'CVE Finding Registry',
-                                    'Search distinct scanner CVEs, inspect affected digests and follow exact-CVE impact evidence.',
-                                    'security-posture-findings-loading',
-                                    'Loading security findings',
-                                    none,
-                                    header_actions=findings_header_actions,
-                                    title_extra=findings_header_extra) }}
+                                        'CVE Finding Registry',
+                                        'Search distinct scanner CVEs, inspect affected digests and follow exact-CVE impact evidence.',
+                                        'security-posture-findings-loading',
+                                        'Loading security findings',
+                                        none,
+                                        header_actions=findings_header_actions,
+                                        title_extra=findings_header_extra) }}
                     {% call registry.filter_form('security_posture.findings',
                         'security-posture-findings-registry', 'security-posture-findings-loading', posture.pagination.per_page,
                         classes=table_ui.inventory_filter_bar_classes(),
@@ -260,9 +260,9 @@
                                             {% endset %}
                                             <div data-security-cve-identity>
                                                 {{ table_ui.title_cell(row.cve_id,
-                                                                                            'Latest usable scanner findings',
-                                                                                            'shield-alert',
-                                                                                            cve_severity_badge) }}
+                                                                                                'Latest usable scanner findings',
+                                                                                                'shield-alert',
+                                                                                                cve_severity_badge) }}
                                             </div>
                                         </td>
                                         <td class="{{ table_ui.cell_classes() }}">
@@ -310,9 +310,9 @@
                         </table>
                     </div>
                     {{ registry.footer('security_posture.findings',
-                                    'security-posture-findings-registry', 'security-posture-findings-loading',
-                                    posture.pagination, {'q': posture.search, 'severity': posture.severity},
-                                    [5, 10, 25, 50], resource_label='CVEs', control_name='security-posture-findings') }}
+                                        'security-posture-findings-registry', 'security-posture-findings-loading',
+                                        posture.pagination, {'q': posture.search, 'severity': posture.severity},
+                                        [5, 10, 25, 50], resource_label='CVEs', control_name='security-posture-findings') }}
                 </section>
             </div>
         {% endif %}
