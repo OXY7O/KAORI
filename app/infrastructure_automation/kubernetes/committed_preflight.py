@@ -61,9 +61,7 @@ class KubesprayPreflight:
             'review_required_gates': len(review_gates),
             'governance_verified_gates': sum(gate.state == 'ready' for gate in governance_gates),
             'governance_required_gates': len(governance_gates),
-            'next_review_requirement': next(
-                (gate.reason for gate in review_gates if gate.state != 'ready'), None
-            ),
+            'next_review_requirement': next((gate.reason for gate in review_gates if gate.state != 'ready'), None),
             'next_governance_requirement': next(
                 (gate.reason for gate in governance_gates if gate.state != 'ready'), None
             ),
