@@ -197,17 +197,17 @@
                             </table>
                         </div>
                         {{ registry_ui.footer('platform_operations.infrastructure_automation.index',
-                            'infrastructure-automation-assets',
-                            'infrastructure-automation-loading',
-                            details.assets.pagination,
-                            {'q': selected_query, 'connection_id': selected_connection_id,
-                             'page': pagination.page, 'per_page': pagination.per_page},
-                            details.assets.pagination.allowed_per_page,
-                            resource_label='Hosts',
-                            rows_aria_label='Hosts per page',
-                            control_name='infrastructure-automation-assets',
-                            page_param='asset_page',
-                            per_page_param='asset_per_page') }}
+                                                'infrastructure-automation-assets',
+                                                'infrastructure-automation-loading',
+                                                details.assets.pagination,
+                                                {'q': selected_query, 'connection_id': selected_connection_id,
+                                                 'page': pagination.page, 'per_page': pagination.per_page},
+                                                details.assets.pagination.allowed_per_page,
+                                                resource_label='Hosts',
+                                                rows_aria_label='Hosts per page',
+                                                control_name='infrastructure-automation-assets',
+                                                page_param='asset_page',
+                                                per_page_param='asset_per_page') }}
                     {% endif %}
                     <p class="mt-2 text-xs text-content-muted">Registration, credential admission and remote host-key verification are separate gated capabilities. No executable inventory is generated here.</p>
                 </article>
