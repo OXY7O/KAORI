@@ -148,10 +148,7 @@ def test_wrong_secret_identity_denied(attribute, value, reason):
 def test_unqualified_secret_representation_denied(attribute, value):
     fields = _evidence()
     setattr(fields['secret_representation'], attribute, value)
-    assert (
-        assess_host_access_references(**fields).reason_code
-        == 'SECRET_PROVIDER_REFERENCE_UNQUALIFIED'
-    )
+    assert assess_host_access_references(**fields).reason_code == 'SECRET_PROVIDER_REFERENCE_UNQUALIFIED'
 
 
 @pytest.mark.parametrize('digest', [None, '', 'host-key', 'sha256:invalid'])
