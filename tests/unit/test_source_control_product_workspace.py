@@ -275,13 +275,15 @@ def test_product_no_integration_uses_canonical_blocker_without_operational_works
     overview = (root / 'app/templates/source_control/overview.html').read_text()
     repositories = (root / 'app/templates/source_control/repositories.html').read_text()
     analytics = (root / 'app/templates/source_control/analytics.html').read_text()
+    section = (root / 'app/templates/source_control/partials/_dashboard_section.html').read_text()
 
     assert '{% if not scope.committed_count %}' in overview
+    assert '{% if not scope.committed_count %}' in section
     assert '{% if not scope.installation_count %}' in repositories
     assert '{% if not authorized_installations %}' in analytics
     assert '{% if not selected_scope or not collected %}' in analytics
     assert '{% if selected and inventory and inventory.collected_at %}' in repositories
-    for source in (overview, repositories, analytics):
+    for source in (overview, repositories, analytics, section):
         assert 'components/states/_blocked_state.html' in source
         assert 'Open Source Control Integrations' in source
         assert 'components/states/_empty_state.html' not in source
