@@ -9,6 +9,7 @@ import pytest
 from app.infrastructure_automation.kubernetes.execution_compatibility import (
     assess_kubespray_execution_compatibility,
 )
+from app.infrastructure_automation.kubernetes.kubespray_preflight import KUBESPRAY_RELEASE
 from app.infrastructure_automation.kubernetes.source_policy import (
     ANSIBLE_CORE_VERSION,
     ANSIBLE_RUNNER_VERSION,
@@ -16,7 +17,6 @@ from app.infrastructure_automation.kubernetes.source_policy import (
     REPOSITORY,
     SOURCE_CANDIDATE_SHA,
 )
-from app.infrastructure_automation.kubernetes.kubespray_preflight import KUBESPRAY_RELEASE
 
 
 def _connection(*, source_checked=True, digest='sha256:' + 'a' * 64):
