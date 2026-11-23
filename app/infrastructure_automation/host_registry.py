@@ -84,13 +84,12 @@ def require_ansible_connection(connection: IntegrationInstance, *, environment: 
 def register_host_asset(values: AutomationHostIntent) -> AutomationHostAsset:
     """Persist identity only; existence of a record never authorizes SSH."""
     intent = validate_host_intent(values)
-    record = AutomationHostAsset(
-        name=intent.name,
-        environment=intent.environment,
-        address=intent.address,
-        ssh_port=intent.ssh_port,
-        lifecycle_status='registered',
-    )
+    record = AutomationHostAsset()
+    record.name = intent.name
+    record.environment = intent.environment
+    record.address = intent.address
+    record.ssh_port = intent.ssh_port
+    record.lifecycle_status = 'registered'
     try:
         db.session.add(record)
         db.session.commit()
@@ -110,12 +109,11 @@ def assign_host_to_ansible(
     require_ansible_connection(connection, environment=host.environment)
     if role not in _ROLES or host.lifecycle_status != 'registered':
         raise AutomationInventoryDenied('Only active, supported host roles may be assigned.')
-    record = AutomationInventoryAssignment(
-        integration_instance_id=connection.id,
-        host_id=host.id,
-        role=role,
-        enabled=True,
-    )
+    record = AutomationInventoryAssignment()
+    record.integration_instance_id = connection.id
+    record.host_id = host.id
+    record.role = role
+    record.enabled = True
     try:
         db.session.add(record)
         db.session.commit()
@@ -134,11 +132,11 @@ def preview_inventory_intent(
     Fingerprints are neither signatures nor approval/credential credentials.
     An absent, duplicate, disabled or cross-scope host fails closed.
     """
-    allowed = connection.environment in _ALLOWED_ENVIRONMENTS
-    if not allowed:
+    environment = connection.environment
+    if not isinstance(environment, str) or environment not in _ALLOWED_ENVIRONMENTS:
         return AutomationInventoryPreview(connection.id, 'blocked', 0, None, 'Non-production scope is required.')
     try:
-        require_ansible_connection(connection, environment=connection.environment)
+        require_ansible_connection(connection, environment=environment)
     except AutomationInventoryDenied:
         return AutomationInventoryPreview(connection.id, 'blocked', 0, None, 'Ansible scope is not qualified.')
     ordered: list[dict[str, object]] = []
