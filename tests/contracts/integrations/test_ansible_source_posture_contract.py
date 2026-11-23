@@ -193,6 +193,13 @@ def test_rendered_validation_status_tracks_committed_evidence(state):
     assert status['source_label'] in rendered
     assert 'Operation Eligibility' in rendered
     assert 'Kubespray Preflight &amp; Plan Readiness' in rendered
+    assert 'Review Evidence' in rendered
+    assert 'Execution Governance' in rendered
+    assert '1/8 Review Gates' in rendered if state == 'source_checked' else '0/8 Review Gates' in rendered
+    assert '0/2 Governance Gates' in rendered
+    assert 'Next Review Requirement:' in rendered
+    assert 'Execution Blocker:' in rendered
+    assert 'data-kaori-info-tip-variant="guide"' in rendered
     assert 'Plan, Approval &amp; Change Window' in rendered
     assert rendered.count('Blocked') >= 9
     assert 'Revalidate Source' in rendered

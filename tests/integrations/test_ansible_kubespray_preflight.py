@@ -139,7 +139,15 @@ def test_source_only_registration_is_not_an_executable_plan() -> None:
     assert report.facts_job_public_id is None
     assert report.gates[0].state == 'ready'
     assert all(gate.state == 'blocked' for gate in report.gates[1:])
-    assert report.presentation()['gates'][1]['key'] == 'target_classification'
+    presentation = report.presentation()
+    assert presentation['gates'][1]['key'] == 'target_classification'
+    assert presentation['review_verified_gates'] == 1
+    assert presentation['review_required_gates'] == 8
+    assert presentation['governance_verified_gates'] == 0
+    assert presentation['governance_required_gates'] == 2
+    assert presentation['next_review_requirement'] == report.gates[1].reason
+    assert presentation['next_governance_requirement'] == report.gates[8].reason
+    assert 'mutation_authorized' not in presentation
 
 
 def test_verified_worker_evidence_is_still_only_ready_for_review() -> None:
@@ -151,6 +159,14 @@ def test_verified_worker_evidence_is_still_only_ready_for_review() -> None:
     assert report.facts_job_public_id == 'canonical-job-42'
     assert 'mutation_authorized' not in report.presentation()
     assert report.source_revision == SOURCE_CANDIDATE_SHA
+    presentation = report.presentation()
+    assert presentation['review_verified_gates'] == 8
+    assert presentation['review_required_gates'] == 8
+    assert presentation['governance_verified_gates'] == 0
+    assert presentation['governance_required_gates'] == 2
+    assert presentation['next_review_requirement'] is None
+    assert presentation['next_governance_requirement'] == report.gates[8].reason
+    assert 'mutation_authorized' not in presentation
 
 
 @pytest.mark.parametrize(
