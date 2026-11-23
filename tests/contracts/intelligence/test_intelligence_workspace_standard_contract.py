@@ -81,8 +81,10 @@ def test_rule_catalog_uses_adjacent_inline_rule_definition_instead_of_modal():
     assert 'filter_results_target = "#catalog-results-content"' in workspace
     assert 'filter_workspace_target = "#catalog-workspace-content"' in workspace
     assert "target='#catalog-results-content'" in results
-    assert 'clear_filters_action' in results
-    assert "target='#catalog-workspace-content'" in results
+    header_actions = read('app/templates/intelligence/partials/_catalog_header_actions.html')
+    assert 'clear_filters_action' in header_actions
+    assert "target='#catalog-workspace-content'" in header_actions
+    assert '_catalog_header_actions.html' in results
     assert "target == 'catalog-results-content'" in routes
 
 
