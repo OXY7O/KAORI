@@ -77,4 +77,6 @@ def new(connection_id: int) -> ResponseReturnValue:
         else:
             error = 'Review the required host fields and submit the form again.'
 
-    return render_template('infrastructure_automation/host_enrollment.html', connection=connection, form=form, error=error)
+    return render_template(
+        'infrastructure_automation/host_enrollment.html', connection=connection, form=form, error=error
+    )
