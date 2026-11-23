@@ -143,4 +143,9 @@ def assess_inventory_bound_plan_review(
     fingerprint = hashlib.sha256(
         json.dumps(material, sort_keys=True, separators=(',', ':')).encode('utf-8')
     ).hexdigest()
-    return InventoryBoundPlanReview('review_material_only', 'INDEPENDENT_ADMISSION_REQUIRED', fingerprint, expiry.isoformat())
+    return InventoryBoundPlanReview(
+        'review_material_only',
+        'INDEPENDENT_ADMISSION_REQUIRED',
+        fingerprint,
+        expiry.isoformat(),
+    )
