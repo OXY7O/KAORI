@@ -27,21 +27,15 @@ def test_evaluator_errors_never_mean_healthy_empty_results() -> None:
 def test_missing_runtime_correlation_is_a_source_gap_not_an_evaluator_failure() -> None:
     source_gaps = ['Registry Runtime: Runtime Correlation Required']
     assert (
-        classify_recommendation_readiness(
-            total=3, recent=3, issues=[], has_findings=False, source_gaps=source_gaps
-        )
+        classify_recommendation_readiness(total=3, recent=3, issues=[], has_findings=False, source_gaps=source_gaps)
         == 'partial'
     )
     assert (
-        classify_recommendation_readiness(
-            total=3, recent=3, issues=[], has_findings=True, source_gaps=source_gaps
-        )
+        classify_recommendation_readiness(total=3, recent=3, issues=[], has_findings=True, source_gaps=source_gaps)
         == 'partial'
     )
     assert (
-        classify_recommendation_readiness(
-            total=0, recent=0, issues=[], has_findings=False, source_gaps=source_gaps
-        )
+        classify_recommendation_readiness(total=0, recent=0, issues=[], has_findings=False, source_gaps=source_gaps)
         == 'not_collected'
     )
     assert (
