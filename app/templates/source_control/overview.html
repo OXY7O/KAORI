@@ -29,6 +29,16 @@
         blocked_title='Source Inventory Not Collected',
         blocked_info='Register and validate a GitHub App installation, then sync authorized repositories to commit evidence.'
         ) }}
+        {% if not scope.committed_count %}
+            {% set blocked_state_icon = "git-branch" %}
+            {% set blocked_state_label = "Setup Required" if not scope.installation_count else "Collection Required" %}
+            {% set blocked_state_title = "GitHub Installation Required" if not scope.installation_count else "Repository Inventory Not Collected" %}
+            {% set blocked_state_description = "Register and authorize a GitHub App installation before opening Source Control operations." if not scope.installation_count else "Collect committed repository inventory for an authorized installation before opening Source Control operations." %}
+            {% set blocked_state_action_url = url_for('integrations.source_control') %}
+            {% set blocked_state_action_label = "Open Source Control Integrations" %}
+            {% set blocked_state_permission = "integrations.manage" %}
+            {% include "components/states/_blocked_state.html" %}
+        {% else %}
         {% set active_dashboard_tab = dashboard_active_tab|default('overview') %}
         {% set inventory_ready = scope.committed_count > 0 %}
         {% set collection_complete = inventory_ready and scope.uncollected_count == 0 and not scope.has_more %}
@@ -128,5 +138,6 @@
                 {% endfor %}
             </div>
         {% endcall %}
+        {% endif %}
     </div>
 {% endblock dashboard_content %}
