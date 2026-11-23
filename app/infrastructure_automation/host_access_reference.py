@@ -123,6 +123,8 @@ def assess_host_access_references(
     ):
         return _blocked('SECRET_IDENTITY_NOT_OBSERVED')
     representation = secret_representation
+    if not isinstance(representation, SecretProviderRepresentation):
+        return _blocked('SECRET_PROVIDER_REFERENCE_UNQUALIFIED')
     if not _qualified_secret_representation(secret_identity, representation):
         return _blocked('SECRET_PROVIDER_REFERENCE_UNQUALIFIED')
     if type(host_key_digest) is not str or _EE_DIGEST.fullmatch(host_key_digest) is None:
