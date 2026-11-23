@@ -256,6 +256,26 @@ def test_product_templates_use_existing_source_control_inventory_contract():
     assert 'exact_default_branch_sha' in reusable
 
 
+def test_product_no_integration_uses_canonical_blocker_without_operational_workspace() -> None:
+    """No qualified committed source must not expose ordinary operational surfaces."""
+    root = Path(__file__).resolve().parents[2]
+    overview = (root / 'app/templates/source_control/overview.html').read_text()
+    repositories = (root / 'app/templates/source_control/repositories.html').read_text()
+    analytics = (root / 'app/templates/source_control/analytics.html').read_text()
+
+    assert '{% if not scope.committed_count %}' in overview
+    assert '{% if not scope.installation_count %}' in repositories
+    assert '{% if not authorized_installations %}' in analytics
+    assert '{% if not selected_scope or not collected %}' in analytics
+    assert '{% if selected and inventory and inventory.collected_at %}' in repositories
+    for source in (overview, repositories, analytics):
+        assert 'components/states/_blocked_state.html' in source
+        assert 'Open Source Control Integrations' in source
+        assert 'components/states/_empty_state.html' not in source
+    assert 'analytics_readiness.source_card(' in analytics
+    assert 'Not Evaluated' in analytics
+
+
 def test_product_overview_dashboard_tabs_use_shared_contract_without_live_provider_calls(monkeypatch):
     """Only reviewed dashboard perspective keys enter the shared controller."""
     app = Flask(__name__)
