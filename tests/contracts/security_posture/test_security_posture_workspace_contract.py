@@ -136,7 +136,7 @@ def test_security_pages_use_approved_dashboard_and_registry_components() -> None
     assert 'components/states/_blocked_state.html' in overview
     assert 'Registry Evidence Required' in overview
     assert 'components/states/_blocked_state.html' in findings
-    assert '{% if registry_ready and posture.scanned_artifacts %}' in findings
+    assert '{% if not registry_ready or not posture.scanned_artifacts %}' in findings
     for tab in ('overview', 'capacity', 'signals', 'reporting'):
         assert f"dashboard_workspace.panel('{tab}'" in overview
 
