@@ -9,7 +9,6 @@ import pytest
 
 from app.infrastructure_automation.kubernetes.inventory_plan_binding import assess_inventory_bound_plan_review
 
-
 NOW = datetime(2026, 11, 23, 12, 0, tzinfo=UTC)
 SHA = 'a' * 40
 EE = 'sha256:' + 'b' * 64
