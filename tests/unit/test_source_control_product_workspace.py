@@ -273,6 +273,7 @@ def test_product_templates_use_existing_source_control_inventory_contract():
     ('committed', 'collected_at', 'expected_template'),
     [
         (False, None, 'source_control/partials/_repository_inventory_blocker.html'),
+        (False, datetime(2026, 10, 26, tzinfo=UTC), 'source_control/partials/_repository_inventory_blocker.html'),
         (True, None, 'source_control/partials/_repository_inventory_blocker.html'),
         (True, datetime(2026, 10, 26, tzinfo=UTC), 'integrations/source_control/github/_inventory_table.html'),
     ],
@@ -333,7 +334,7 @@ def test_product_no_integration_uses_canonical_blocker_without_operational_works
     assert '{% if not scope.installation_count %}' in repositories
     assert '{% if not authorized_installations %}' in analytics
     assert '{% if not selected_scope or not collected %}' in analytics
-    assert '{% if selected and inventory and inventory.collected_at %}' in repositories
+    assert '{% if selected and selected.committed and inventory and inventory.collected_at %}' in repositories
     for source in (overview, repositories, analytics, section):
         assert 'components/states/_blocked_state.html' in source
         assert 'Open Source Control Integrations' in source
