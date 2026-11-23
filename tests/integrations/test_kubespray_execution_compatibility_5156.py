@@ -118,6 +118,7 @@ def test_worker_self_declared_approval_cannot_change_qualification():
     assert all(item.state == 'blocked' for item in result.operations[1:])
     assert not result.execution_authorized
 
+
 def test_rendered_ansible_validation_explains_distinct_compatibility_boundary():
     from flask import render_template
 
