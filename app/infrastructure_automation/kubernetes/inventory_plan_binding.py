@@ -61,7 +61,9 @@ def _datetime(value: object) -> datetime | None:
 
 def _qualified_inventory(inventory: Mapping[str, Any]) -> bool:
     return (
-        inventory.get('schema_version') == 1
+        type(inventory.get('schema_version')) is int
+        and inventory.get('schema_version') == 1
+        and type(inventory.get('control_plane_count')) is int
         and inventory.get('status') == 'review_only'
         and inventory.get('execution_authorized') is False
         and inventory.get('host_count') == 3
@@ -73,7 +75,10 @@ def _qualified_inventory(inventory: Mapping[str, Any]) -> bool:
 
 def _qualified_access(access: Mapping[str, Any]) -> bool:
     return (
-        access.get('schema_version') == 1
+        type(access.get('schema_version')) is int
+        and access.get('schema_version') == 1
+        and access.get('credential_reference_recorded') is True
+        and access.get('host_key_reference_recorded') is True
         and access.get('state') == 'references_recorded'
         and access.get('execution_authorized') is False
         and access.get('ssh_trust_verified') is False
@@ -85,11 +90,17 @@ def _qualified_access(access: Mapping[str, Any]) -> bool:
 def _qualified_plan(
     plan: Mapping[str, Any],
     inventory: Mapping[str, Any],
+    access: Mapping[str, Any],
+    connection_id: int,
     source_sha: str,
     execution_environment_digest: str,
 ) -> bool:
     return (
-        plan.get('schema_version') == 1
+        type(plan.get('schema_version')) is int
+        and plan.get('schema_version') == 1
+        and type(plan.get('connection_id')) is int
+        and plan.get('connection_id') == connection_id
+        and plan.get('host_access_fingerprint') == access.get('fingerprint')
         and plan.get('status') == 'requires_independent_approval'
         and plan.get('approval_status') == 'not_requested'
         and plan.get('execution_status') == 'blocked'
@@ -114,7 +125,10 @@ def assess_inventory_bound_plan_review(
     """Match exact canonical evidence without claiming independent admission.
 
     Caller must fetch/authorize these snapshots from existing committed KAORI
-    records. Browser-provided JSON, secrets or raw host inventory are unsafe.
+    records, including exact JobExecution connection and access fingerprint
+    binding. Current plan_dispatch does not supply this binding; missing fields
+    must block rather than synthesize a review from unrelated evidence.
+    Browser-provided JSON, secrets or raw host inventory are unsafe.
     This helper deliberately does not persist or enqueue a JobExecution.
     """
     if type(connection_id) is not int or connection_id <= 0:
@@ -139,7 +153,7 @@ def assess_inventory_bound_plan_review(
         return _blocked('INVENTORY_EVIDENCE_UNQUALIFIED')
     if not _qualified_access(access):
         return _blocked('HOST_ACCESS_EVIDENCE_UNQUALIFIED')
-    if not _qualified_plan(plan, inventory, source_sha, execution_environment_digest):
+    if not _qualified_plan(plan, inventory, access, connection_id, source_sha, execution_environment_digest):
         return _blocked('PLAN_EVIDENCE_MISMATCH')
     expiry = _datetime(plan.get('expires_at'))
     if expiry is None or now >= expiry:

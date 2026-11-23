@@ -28,6 +28,8 @@ def _evidence():
         'schema_version': 1,
         'state': 'references_recorded',
         'fingerprint': 'd' * 64,
+        'credential_reference_recorded': True,
+        'host_key_reference_recorded': True,
         'ssh_trust_verified': False,
         'privileged_identity_verified': False,
         'execution_authorized': False,
@@ -36,7 +38,9 @@ def _evidence():
         'schema_version': 1,
         'status': 'requires_independent_approval',
         'plan_fingerprint': 'e' * 64,
+        'connection_id': 17,
         'inventory_fingerprint': inventory['fingerprint'],
+        'host_access_fingerprint': access['fingerprint'],
         'source_sha': SHA,
         'execution_environment_digest': EE,
         'expires_at': (NOW + timedelta(minutes=10)).isoformat(),
@@ -100,9 +104,14 @@ def test_unqualified_inputs_block(field, value, reason):
         ('inventory', 'execution_authorized', True, 'INVENTORY_EVIDENCE_UNQUALIFIED'),
         ('inventory', 'host_count', 4, 'INVENTORY_EVIDENCE_UNQUALIFIED'),
         ('access', 'state', 'approved', 'HOST_ACCESS_EVIDENCE_UNQUALIFIED'),
+        ('access', 'credential_reference_recorded', False, 'HOST_ACCESS_EVIDENCE_UNQUALIFIED'),
+        ('access', 'host_key_reference_recorded', False, 'HOST_ACCESS_EVIDENCE_UNQUALIFIED'),
         ('access', 'ssh_trust_verified', True, 'HOST_ACCESS_EVIDENCE_UNQUALIFIED'),
         ('access', 'execution_authorized', True, 'HOST_ACCESS_EVIDENCE_UNQUALIFIED'),
         ('plan', 'inventory_fingerprint', 'f' * 64, 'PLAN_EVIDENCE_MISMATCH'),
+        ('plan', 'host_access_fingerprint', 'f' * 64, 'PLAN_EVIDENCE_MISMATCH'),
+        ('plan', 'connection_id', 18, 'PLAN_EVIDENCE_MISMATCH'),
+        ('plan', 'connection_id', True, 'PLAN_EVIDENCE_MISMATCH'),
         ('plan', 'source_sha', 'f' * 40, 'PLAN_EVIDENCE_MISMATCH'),
         ('plan', 'execution_environment_digest', 'sha256:' + 'f' * 64, 'PLAN_EVIDENCE_MISMATCH'),
         ('plan', 'approval_status', 'approved', 'PLAN_EVIDENCE_MISMATCH'),
@@ -129,3 +138,15 @@ def test_expired_plan_and_new_access_version_invalidate_fingerprint():
     assert _evaluate(inventory=i, access=a2, plan=p).fingerprint != result.fingerprint
     p['expires_at'] = NOW.isoformat()
     assert _evaluate(inventory=i, access=a, plan=p).reason_code == 'PLAN_EVIDENCE_EXPIRED'
+
+
+def test_missing_binding_or_reused_access_fingerprint_is_blocked():
+    inventory, access, plan = _evidence()
+    for missing_key in ('connection_id', 'host_access_fingerprint'):
+        missing = deepcopy(plan)
+        missing.pop(missing_key)
+        assert _evaluate(inventory=inventory, access=access, plan=missing).reason_code == 'PLAN_EVIDENCE_MISMATCH'
+
+    another_access = deepcopy(access)
+    another_access['fingerprint'] = 'f' * 64
+    assert _evaluate(inventory=inventory, access=another_access, plan=plan).reason_code == 'PLAN_EVIDENCE_MISMATCH'
