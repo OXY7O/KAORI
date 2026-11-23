@@ -12,9 +12,7 @@ from typing import Any
 
 from app.integrations.observability.metrics_source.application.consumer import MetricsConsumer
 from app.integrations.observability.metrics_source.exceptions import MetricsSourceError
-from app.integrations.observability.metrics_source.query_profiles.registry_harbor_v1 import (
-    get_registry_query_expression,
-)
+from app.integrations.registry.metric_queries import qualified_registry_metric_query
 from app.models.integration import IntegrationInstance
 
 REGISTRY_HISTORY_WINDOWS: dict[str, timedelta] = {
@@ -176,7 +174,7 @@ def collect_registry_metric_history(
     for field, key in HISTORY_QUERIES.items():
         try:
             result = consumer.query_range(
-                get_registry_query_expression(key),
+                qualified_registry_metric_query(identity, key),
                 start.isoformat(),
                 end.isoformat(),
                 f'{step}s',
@@ -193,7 +191,7 @@ def collect_registry_metric_history(
             )
             if plot:
                 chart_series[field] = plot
-        except (MetricsSourceError, ValueError) as exc:
+        except (MetricsSourceError, LookupError, ValueError) as exc:
             errors[key] = str(exc)[:500]
 
     successful = len(values)
