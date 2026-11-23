@@ -12,12 +12,14 @@ bp = Blueprint('overview', __name__)
 @bp.get('/')
 @any_permission_required(
     'jobs.view',
+    'integrations.manage',
     'platform_operations.view_data_lifecycle',
     'kubernetes_secrets.manage_reveal',
 )
 def index():
     context = build_platform_operations_overview_context(
         can_jobs=current_user.has_permission('jobs.view'),
+        can_infrastructure_automation=current_user.has_permission('integrations.manage'),
         can_data_lifecycle=current_user.has_permission('platform_operations.view_data_lifecycle'),
         can_kubernetes_admin=current_user.has_permission('kubernetes_secrets.manage_reveal'),
     )

@@ -384,6 +384,7 @@ _WORKSPACE_ACTIVE_PREFIXES: dict[str, tuple[tuple[str, str], ...]] = {
     ),
     'operations_center': (
         ('jobs.', 'jobs'),
+        ('platform_operations.infrastructure_automation.', 'infrastructure_automation'),
         ('platform_operations.data_lifecycle.', 'data_lifecycle'),
         ('platform_operations.kubernetes.', 'kubernetes_admin'),
     ),

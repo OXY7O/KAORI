@@ -57,6 +57,7 @@ _KUBERNETES_GOVERNANCE_PERMISSIONS = (
 )
 
 _OPERATIONS_CENTER_PERMISSIONS = (
+    'integrations.manage',
     'jobs.view',
     'platform_operations.view_data_lifecycle',
     'kubernetes_secrets.manage_reveal',
@@ -333,6 +334,13 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 _OPERATIONS_CENTER_PERMISSIONS,
             ),
             WorkspaceCapabilityDefinition('jobs', 'Jobs', 'list-checks', 'jobs.executions', ('jobs.view',)),
+            WorkspaceCapabilityDefinition(
+                'infrastructure_automation',
+                'Infrastructure Automation',
+                'server-cog',
+                'platform_operations.infrastructure_automation.index',
+                ('integrations.manage',),
+            ),
             WorkspaceCapabilityDefinition(
                 'data_lifecycle',
                 'Data Lifecycle',
