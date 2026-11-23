@@ -53,12 +53,8 @@ def _cluster_bindings(connection: IntegrationInstance) -> list[dict[str, Any]]:
             if str(binding.asset_key) in clusters
             else 'Unresolved cluster identity',
             'cluster_id': str(binding.asset_key) if str(binding.asset_key) in clusters else None,
-            'environment': clusters[str(binding.asset_key)].environment
-            if str(binding.asset_key) in clusters
-            else None,
-            'node_count': clusters[str(binding.asset_key)].node_count
-            if str(binding.asset_key) in clusters
-            else None,
+            'environment': clusters[str(binding.asset_key)].environment if str(binding.asset_key) in clusters else None,
+            'node_count': clusters[str(binding.asset_key)].node_count if str(binding.asset_key) in clusters else None,
             'binding_enabled': bool(binding.enabled),
             'validation_status': str(binding.validation_status or 'validation_required'),
             'execution_authorized': False,
@@ -94,11 +90,7 @@ def build_automation_workspace(
         if type(connection_id) is not int or connection_id <= 0:
             raise ValueError('Invalid automation connection identity.')
         selected = db.session.get(IntegrationInstance, connection_id)
-        if (
-            selected is None
-            or selected.integration_type != INTEGRATION_TYPE
-            or selected.provider_key != PROVIDER_KEY
-        ):
+        if selected is None or selected.integration_type != INTEGRATION_TYPE or selected.provider_key != PROVIDER_KEY:
             raise ValueError('Automation connection is outside the permitted provider scope.')
     elif connections:
         selected = connections[0]
@@ -113,9 +105,7 @@ def build_automation_workspace(
             integration_instance_id=selected.id,
         )
         jobs = (
-            scoped_jobs.order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
-            .limit(_HISTORY_LIMIT)
-            .all()
+            scoped_jobs.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).limit(_HISTORY_LIMIT).all()
             if can_jobs
             else []
         )
@@ -145,7 +135,6 @@ def build_automation_workspace(
         'can_inventory': can_inventory,
         'execution_authorized': False,
     }
-
 
 
 def automation_connection_count() -> int:

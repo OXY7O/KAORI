@@ -34,12 +34,7 @@ def test_automation_workspace_is_an_operations_center_capability():
 
     with app.test_request_context(rule.rule):
         sections = build_sidebar_navigation(endpoint, _principal())
-    operations = next(
-        item
-        for section in sections
-        for item in section['items']
-        if item['key'] == 'operations_center'
-    )
+    operations = next(item for section in sections for item in section['items'] if item['key'] == 'operations_center')
     assert operations['active']
     assert any(
         capability['key'] == 'infrastructure_automation' and capability['active']
@@ -79,8 +74,8 @@ def test_domain_read_model_preserves_provider_boundary_and_execution_denial():
     for prohibited in ('ansible_runner.run', 'subprocess.run(', 'requests.get(', '.apply_async('):
         assert prohibited not in workspace
         assert prohibited not in route
-    assert "integration_type=INTEGRATION_TYPE" in workspace
-    assert "integration_instance_id=selected.id" in workspace
+    assert 'integration_type=INTEGRATION_TYPE' in workspace
+    assert 'integration_instance_id=selected.id' in workspace
     assert "asset_type='kubernetes_cluster'" in workspace
     assert "'execution_authorized': False" in workspace
     assert "@permission_required('integrations.manage')" in route
