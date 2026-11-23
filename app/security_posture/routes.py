@@ -44,4 +44,8 @@ def findings() -> ResponseReturnValue:
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
-    return render_template('security_posture/findings.html', posture=posture)
+    return render_template(
+        'security_posture/findings.html',
+        posture=posture,
+        can_manage_integrations=current_user.has_permission('integrations.manage'),
+    )
