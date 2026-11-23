@@ -134,6 +134,19 @@ def test_product_overview_excludes_mismatched_integration_authority(committed_pr
     assert {item['installation'].native_installation_id for item in scope['installations']} == {'100', '200'}
 
 
+def test_product_overview_excludes_disabled_installation_even_with_prior_commit(committed_product_db):
+    installation = committed_product_db.query(SourceInstallation).filter_by(native_installation_id='100').one()
+    connection = committed_product_db.get(IntegrationInstance, installation.integration_instance_id)
+    assert connection is not None
+    connection.enabled = False
+    committed_product_db.flush()
+
+    scope = presentation.build_source_control_overview()
+    assert scope['installation_count'] == 2
+    assert scope['committed_count'] == 1
+    assert {item['installation'].native_installation_id for item in scope['installations']} == {'200', '300'}
+
+
 @pytest.mark.parametrize('value', ['abc', '-1', '0', '2.5', '  ', '０', '2OR1', '9' * 64])
 def test_repository_scope_rejects_malformed_installation_id_without_query(monkeypatch, value):
     app = Flask(__name__)
