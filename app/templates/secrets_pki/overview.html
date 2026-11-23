@@ -32,7 +32,7 @@
             {% set inventory_blocker_title = "Vault Source Required" %}
             {% set inventory_blocker_info = "Register an enabled Vault source." %}
             {% set inventory_blocker_label = "Setup Required" %}
-            {% set inventory_blocker_description = "No eligible active Vault source is registered. A saved connection alone does not qualify committed KV v2 inventory; missing evidence is not zero Secrets." %}
+            {% set inventory_blocker_description = "No eligible Vault source; uncollected KV v2 inventory is not zero Secrets." %}
             {% set inventory_blocker_steps = ["Register and enable a Vault source", "Approve KV v2 metadata mounts", "Run the inventory collection job"] %}
             {% set inventory_blocker_action_url = url_for('vault.index') if can_manage_integrations else none %}
             {% set inventory_blocker_action_label = "Configure Vault Integrations" if can_manage_integrations else none %}

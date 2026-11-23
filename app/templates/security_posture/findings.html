@@ -10,6 +10,7 @@
 {% block dashboard_content %}
     <div id="security-posture-findings-workspace" class="space-y-5">
         {% set registry_ready = posture.authorized_registry and posture.sources > 0 %}
+        {% set findings_ready = registry_ready and posture.scanned_artifacts > 0 %}
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -28,12 +29,12 @@
                         </div>
                     {% endcall %}
                 </div>
-                {% if not registry_ready %}
+                {% if not findings_ready %}
                     <aside class="{{ page_hero.aside_classes() }}"
                            aria-label="Security Findings readiness">
                         {% set findings_blocked_metrics = [('database-zap', 'Provider Authority', 'Artifact Registry', 'Registry scanner source'), ('lock-keyhole', 'Evidence Boundary', 'Not Collected', 'No eligible committed Registry evidence')] %}
                         {{ page_hero.blocked_context_body('Assurance Readiness',
-                                                'Registry Evidence Required',
+                                                'Registry Evidence Required' if not registry_ready else 'Scanner Evidence Required',
                                                 findings_blocked_metrics,
                                                 'Authorize Registry evidence before investigating CVE impact.',
                                                 'Blocked',
@@ -56,6 +57,27 @@
                 {% endif %}
             </div>
         </section>
+        {% if not findings_ready %}
+            {% if not registry_ready %}
+                {% set provider_prerequisite_icon = 'shield-alert' %}
+                {% set provider_prerequisite_title = 'Registry Evidence Required' %}
+                {% set provider_prerequisite_description = 'Connect an authorized Registry and collect scanner evidence before interpreting CVE exposure.' %}
+                {% set provider_prerequisite_steps = ['Register a Registry source', 'Collect inventory', 'Collect scanner evidence'] %}
+                {% set provider_prerequisite_action_url = url_for('integrations.registry') %}
+                {% set provider_prerequisite_action_label = 'Open Registry Integrations' %}
+                {% set provider_prerequisite_permission_granted = can_manage_integrations %}
+                {% include "components/provider_prerequisite/_setup_blocker.html" %}
+            {% else %}
+                {% set blocked_state_icon = 'scan-search' %}
+                {% set blocked_state_label = 'Collection Required' %}
+                {% set blocked_state_title = 'Registry Scanner Evidence Required' %}
+                {% set blocked_state_description = 'Registry scanner evidence has not been committed; missing findings are not proof of no exposure.' %}
+                {% set blocked_state_action_url = url_for('integrations.registry') %}
+                {% set blocked_state_action_label = 'Open Registry Integrations' %}
+                {% set blocked_state_permission_granted = can_manage_integrations %}
+                {% include "components/states/_blocked_state.html" %}
+            {% endif %}
+        {% else %}
         {% set readiness_guide %}
             {{ info_tip.render('security-findings-evidence-guide', 'Findings Evidence Guide',
                         'Scanner freshness and runtime correlation are separate evidence qualifications.',
@@ -304,5 +326,6 @@
                                 [5, 10, 25, 50], resource_label='CVEs', control_name='security-posture-findings') }}
             </section>
         </div>
+        {% endif %}
     </div>
 {% endblock dashboard_content %}
