@@ -133,8 +133,9 @@ def test_security_pages_use_approved_dashboard_and_registry_components() -> None
     assert 'registry.footer(' not in overview
     assert '<table' not in overview
     assert 'components/table_registry.html' not in overview
-    assert 'components/states/_empty_state.html' in overview
-    assert 'Security Evidence Prerequisites' in overview
+    assert 'components/provider_prerequisite/_setup_blocker.html' in overview
+    assert 'components/states/_blocked_state.html' in overview
+    assert 'Registry Evidence Required' in overview
     for tab in ('overview', 'capacity', 'signals', 'reporting'):
         assert f"dashboard_workspace.panel('{tab}'" in overview
 
@@ -707,7 +708,8 @@ def test_security_overview_blocks_without_eligible_source_without_inventing_kpis
     assert 'data-kaori-blocked-state' in html
     assert 'Registry Evidence Required' in html
     assert 'No eligible committed Registry evidence' in html
-    assert 'Security Evidence Prerequisites' in html
+    assert 'data-kaori-empty-state' not in html
+    assert 'Security Evidence Prerequisites' not in html
     assert 'data-kaori-dashboard-framework="operational-v1"' not in html
 
 
@@ -844,11 +846,39 @@ def test_security_findings_flat_readiness_does_not_fabricate_freshness() -> None
     assert '3 / 3' not in blocked
 
 
-def test_security_findings_renders_no_source_as_unqualified_not_safe() -> None:
+def test_security_findings_renders_no_source_as_canonical_blocker() -> None:
     html = _render_workspace_page('findings', _renderable_posture(False))
-    assert 'No CVE records' in html
-    assert 'This does not confirm' in html
+    assert 'data-kaori-blocked-state' in html
+    assert 'Registry Evidence Required' in html
+    assert 'data-security-findings-registry' not in html
+    assert 'name="severity"' not in html
     assert '/artifact-registry/security/cve/CVE-2022-1586/impact' not in html
+
+
+def test_security_registered_source_without_scanner_evidence_blocks_both_workspaces() -> None:
+    posture = _renderable_posture()
+    posture['scanned_artifacts'] = 0
+    posture['rows'] = []
+    for page in ('overview', 'findings'):
+        html = _render_workspace_page(page, posture, can_manage_integrations=True)
+        assert 'data-kaori-blocked-state' in html
+        assert 'Registry Scanner Evidence Required' in html
+        assert 'Collection Required' in html
+        if page == 'findings':
+            assert 'data-security-findings-registry' not in html
+        else:
+            assert 'data-kaori-dashboard-framework="operational-v1"' not in html
+
+
+def test_security_scanned_artifact_with_zero_cves_remains_qualified_empty() -> None:
+    posture = _renderable_posture()
+    posture['rows'] = []
+    posture['pagination'] = pagination_payload(
+        build_pagination_window(total_items=0, page=1, per_page=5)
+    )
+    html = _render_workspace_page('findings', posture)
+    assert 'data-security-findings-registry' in html
+    assert 'data-kaori-blocked-state' not in html
 
 
 def test_scanner_coverage_state_reports_missing_partial_stale_and_current() -> None:
