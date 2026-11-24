@@ -1,0 +1,30 @@
+# OpenBao 2.7.3 candidate, single instance on existing PostgreSQL.
+# Install as target-private openbao.hcl only after TLS and database admission.
+# No embedded database URL, root token, recovery material or dev mode.
+ui = false
+api_addr = "https://openbao:8200"
+
+listener "tcp" {
+  address = "0.0.0.0:8200"
+  tls_disable = false
+  tls_cert_file = "/openbao/config/tls/server.crt"
+  tls_key_file = "/openbao/config/tls/server.key"
+  tls_min_version = "tls12"
+}
+
+storage "postgresql" {
+  # BAO_PG_CONNECTION_URL is scoped only to OpenBao.
+  # Use a dedicated DB and role; require verified PostgreSQL TLS.
+  ha_enabled = false
+  skip_create_table = true
+  max_parallel = 8
+  max_idle_connections = 2
+  max_connect_retries = 5
+}
+
+audit "file" "kaori-operator" {
+  description = "Restricted internal OpenBao audit evidence"
+  options {
+    file_path = "/openbao/audit/audit.jsonl"
+  }
+}
