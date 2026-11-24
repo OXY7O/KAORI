@@ -38,9 +38,7 @@ def upgrade() -> None:
         sa.Column('host_key_digest', sa.String(71), nullable=False),
         sa.Column('source_kind', sa.String(40), nullable=False),
         sa.Column('evidence_ref', sa.String(160), nullable=False),
-        sa.Column(
-            'requested_by_user_id', sa.Integer(), sa.ForeignKey('users.id', ondelete='RESTRICT'), nullable=False
-        ),
+        sa.Column('requested_by_user_id', sa.Integer(), sa.ForeignKey('users.id', ondelete='RESTRICT'), nullable=False),
         sa.Column('verified_by_user_id', sa.Integer(), sa.ForeignKey('users.id', ondelete='RESTRICT'), nullable=True),
         sa.Column('verified_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('effective_until', sa.DateTime(timezone=True), nullable=False),
@@ -77,7 +75,5 @@ def downgrade() -> None:
     count = connection.execute(sa.text('SELECT COUNT(*) FROM automation_host_trust_revisions')).scalar_one()
     if count:
         raise RuntimeError('Independent SSH trust revision evidence must be retained before downgrade.')
-    op.drop_index(
-        'ix_automation_host_trust_revisions_assignment_id', table_name='automation_host_trust_revisions'
-    )
+    op.drop_index('ix_automation_host_trust_revisions_assignment_id', table_name='automation_host_trust_revisions')
     op.drop_table('automation_host_trust_revisions')
