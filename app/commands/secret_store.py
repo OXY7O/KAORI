@@ -23,7 +23,9 @@ def secret_store_status() -> None:
     try:
         health = OpenBaoClient.probe_health(endpoint=endpoint)
     except ValueError as exc:
-        raise click.ClickException('Internal secret store status unavailable; verify approved endpoint and TLS.') from exc
+        raise click.ClickException(
+            'Internal secret store status unavailable; verify approved endpoint and TLS.'
+        ) from exc
 
     status = health['status']
     initialized = health['initialized']

@@ -84,6 +84,7 @@ from app.models.runtime import IntegrationRuntimeObservation
 from app.models.scope_access import AutomationCredentialScopeTarget, ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.secret_reveal import SecretRevealNamespacePolicy, SecretRevealRequest
 from app.models.secrets_pki import (
+    SecretCredentialIssuerRevision,
     SecretIdentity,
     SecretInventoryCollectionState,
     SecretProviderRepresentation,
@@ -311,6 +312,7 @@ __all__ = [
     'SecretInventoryCollectionState',
     'SecretProviderRepresentation',
     'SecretVersionObservation',
+    'SecretCredentialIssuerRevision',
     'SecretRevealNamespacePolicy',
     'SecretRevealRequest',
     'ResolverDeploymentPolicy',
