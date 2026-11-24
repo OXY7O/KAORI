@@ -25,7 +25,7 @@ class ScopedGrantRejected(ValueError):
     """A scoped policy transition is not authorized or fails qualification."""
 
 
-def _administrator(user_id: int) -> User:
+def require_scope_grant_administrator(user_id: int) -> User:
     user = db.session.get(User, user_id)
     if (
         user is None
@@ -39,7 +39,7 @@ def _administrator(user_id: int) -> User:
     return user
 
 
-def _principal(user_id: int, permission_key: str) -> None:
+def require_scope_grant_principal(user_id: int, permission_key: str) -> None:
     user = db.session.get(User, user_id)
     if (
         user is None
@@ -96,7 +96,7 @@ def _persisted_window(value: datetime) -> datetime:
     return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
 
-def _commit_transition(
+def commit_scope_grant_transition(
     *,
     actor_user_id: int,
     policy: ScopeAccessPolicy,
@@ -132,6 +132,18 @@ class ScopeGrantValidity:
     effective_until: datetime
 
 
+def qualify_scope_grant_validity(
+    validity: ScopeGrantValidity, reason_code: str, *, now: datetime
+) -> tuple[datetime, datetime]:
+    """Validate the canonical time window and bounded reason vocabulary."""
+    if not isinstance(validity, ScopeGrantValidity):
+        raise ScopedGrantRejected('Grant validity or reason is invalid.')
+    starts, ends = _window(validity.effective_from, 'Start'), _window(validity.effective_until, 'End')
+    if starts >= ends or ends <= now or reason_code not in _REASON_CODES:
+        raise ScopedGrantRejected('Grant validity or reason is invalid.')
+    return starts, ends
+
+
 def request_scope_grant(
     *,
     actor_user_id: int,
@@ -144,19 +156,15 @@ def request_scope_grant(
     reason_code: str,
 ) -> ScopeAccessPolicy:
     """Create draft only; requesting a policy NEVER activates a permit."""
-    _administrator(actor_user_id)
-    _principal(principal_user_id, _SUPPORTED_PERMISSION)
+    require_scope_grant_administrator(actor_user_id)
+    require_scope_grant_principal(principal_user_id, _SUPPORTED_PERMISSION)
     namespace, exact_mount = _target(
         integration_instance_id=integration_instance_id,
         scope_level=scope_level,
         provider_namespace=provider_namespace,
         mount=mount,
     )
-    if not isinstance(validity, ScopeGrantValidity):
-        raise ScopedGrantRejected('Grant validity or reason is invalid.')
-    starts, ends = _window(validity.effective_from, 'Start'), _window(validity.effective_until, 'End')
-    if starts >= ends or ends <= datetime.now(UTC) or reason_code not in _REASON_CODES:
-        raise ScopedGrantRejected('Grant validity or reason is invalid.')
+    starts, ends = qualify_scope_grant_validity(validity, reason_code, now=datetime.now(UTC))
     policy = ScopeAccessPolicy()
     policy.principal_user_id = principal_user_id
     policy.permission_key = _SUPPORTED_PERMISSION
@@ -177,7 +185,7 @@ def request_scope_grant(
         db.session.add(policy)
         db.session.add(revision)
         db.session.flush()
-        _commit_transition(
+        commit_scope_grant_transition(
             actor_user_id=actor_user_id,
             policy=policy,
             revision_number=1,
@@ -215,7 +223,7 @@ def approve_scope_grant(
     expected_revision: int,
 ) -> ScopeAccessPolicy:
     """Independently approve an exact draft and commit mandatory audit atomically."""
-    _administrator(approver_user_id)
+    require_scope_grant_administrator(approver_user_id)
     try:
         policy, current = _lock_current(policy_id)
         if (
@@ -224,7 +232,7 @@ def approve_scope_grant(
             or current.requested_by_user_id == approver_user_id
         ):
             raise ScopedGrantRejected('Grant approval is stale or is not independent.')
-        _principal(policy.principal_user_id, policy.permission_key)
+        require_scope_grant_principal(policy.principal_user_id, policy.permission_key)
         _target(
             integration_instance_id=policy.integration_instance_id,
             scope_level=policy.scope_level,
@@ -246,7 +254,7 @@ def approve_scope_grant(
         db.session.add(revision)
         policy.current_revision = revision.revision_number
         db.session.flush()
-        _commit_transition(
+        commit_scope_grant_transition(
             actor_user_id=approver_user_id,
             policy=policy,
             revision_number=revision.revision_number,
@@ -266,7 +274,7 @@ def revoke_scope_grant(
     expected_revision: int,
 ) -> ScopeAccessPolicy:
     """Immediately revoke a current active grant, retaining immutable history."""
-    _administrator(actor_user_id)
+    require_scope_grant_administrator(actor_user_id)
     try:
         policy, current = _lock_current(policy_id)
         if expected_revision != policy.current_revision or current.lifecycle_status != 'active':
@@ -284,7 +292,7 @@ def revoke_scope_grant(
         db.session.add(revision)
         policy.current_revision = revision.revision_number
         db.session.flush()
-        _commit_transition(
+        commit_scope_grant_transition(
             actor_user_id=actor_user_id,
             policy=policy,
             revision_number=revision.revision_number,

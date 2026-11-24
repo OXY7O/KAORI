@@ -9,8 +9,15 @@ import pytest
 from cryptography.fernet import Fernet
 from flask import Flask
 
+from app.access import scoped_grants
 from app.extensions.db import db
+from app.infrastructure_automation import credential_grants
 from app.infrastructure_automation import host_access_binding as service
+from app.infrastructure_automation.credential_scope_target import (
+    CREDENTIAL_USE_PERMISSION,
+    READ_ONLY_FACTS_OPERATION,
+    exact_credential_target_current,
+)
 from app.infrastructure_automation.host_enrollment import host_revision
 from app.infrastructure_automation.kubernetes.committed_host_access import committed_pilot_access_fingerprint
 from app.infrastructure_automation.kubernetes.kubespray_preflight import KUBESPRAY_RELEASE
@@ -26,7 +33,7 @@ from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationInstance
 from app.models.notification import Notification
 from app.models.rbac import Permission, Role, RolePermission
-from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
+from app.models.scope_access import AutomationCredentialScopeTarget, ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.secrets_pki import (
     SecretIdentity,
     SecretInventoryCollectionState,
@@ -172,6 +179,7 @@ def binding_store():
         VaultInstance.__table__,
         ScopeAccessPolicy.__table__,
         ScopeAccessPolicyRevision.__table__,
+        AutomationCredentialScopeTarget.__table__,
         AutomationHostAsset.__table__,
         AutomationInventoryAssignment.__table__,
         SecretIdentity.__table__,
@@ -358,3 +366,172 @@ def test_persisted_pilot_access_correlation_invalidates_on_drift(binding_store, 
     else:
         assert changed is None
     assert Notification.query.count() == 3
+
+
+@pytest.mark.parametrize(
+    'drift',
+    [
+        None,
+        'host',
+        'role',
+        'key',
+        'version',
+        'destroyed',
+        'generation',
+        'namespace',
+        'wrong_policy',
+        'wrong_identity',
+        'wrong_operation',
+        'wrong_source',
+        'wrong_profile',
+        'wrong_assignment',
+        'metadata_permission',
+    ],
+)
+def test_exact_credential_target_currentness_is_not_a_grant(binding_store, drift):
+    actor, _, intent = binding_store
+    service.record_host_access_reference(actor_id=actor, intent=intent)
+    binding = AutomationHostAccessBinding.query.one()
+    assignment = AutomationInventoryAssignment.query.one()
+    representation = SecretProviderRepresentation.query.one()
+    # A transient policy/selector is sufficient for this non-authorizing
+    # predicate test; no grant writer or active credential grant is created.
+    policy = ScopeAccessPolicy(
+        id=str(uuid4()),
+        principal_user_id=actor,
+        permission_key=CREDENTIAL_USE_PERMISSION,
+        integration_instance_id=representation.integration_instance_id,
+        scope_level='automation_credential',
+        provider_namespace=representation.provider_namespace,
+        mount=representation.mount,
+        current_revision=1,
+    )
+    target = AutomationCredentialScopeTarget(
+        policy_id=policy.id,
+        ansible_connection_id=intent.connection_id,
+        assignment_id=assignment.id,
+        host_id=assignment.host_id,
+        host_revision=binding.host_revision,
+        reference_fingerprint=binding.reference_fingerprint,
+        secret_identity_id=representation.secret_identity_id,
+        secret_representation_id=representation.id,
+        secret_version=binding.secret_version,
+        source_revision=SOURCE_CANDIDATE_SHA,
+        profile_key=PROFILE_KEY,
+        operation_key=READ_ONLY_FACTS_OPERATION,
+    )
+    now = datetime.now(UTC)
+    assert exact_credential_target_current(policy, target, now=now)
+    if drift == 'host':
+        assignment.host.address = '10.0.0.99'
+    elif drift == 'role':
+        assignment.role = 'worker'
+    elif drift == 'key':
+        binding.host_key_digest = 'sha256:' + 'f' * 64
+    elif drift == 'version':
+        representation.current_version += 1
+    elif drift == 'destroyed':
+        SecretVersionObservation.query.one().destroyed = True
+    elif drift == 'generation':
+        SecretInventoryCollectionState.query.one().observed_count = 2
+    elif drift == 'namespace':
+        VaultInstance.query.one().namespace = 'other'
+    elif drift == 'wrong_policy':
+        target.policy_id = str(uuid4())
+    elif drift == 'wrong_identity':
+        target.secret_identity_id = str(uuid4())
+    elif drift == 'wrong_operation':
+        target.operation_key = 'arbitrary'
+    elif drift == 'wrong_source':
+        target.source_revision = '0' * 40
+    elif drift == 'wrong_profile':
+        target.profile_key = 'other'
+    elif drift == 'wrong_assignment':
+        target.assignment_id += 100
+    elif drift == 'metadata_permission':
+        policy.permission_key = 'secrets_pki.view'
+    db.session.commit()
+    assert exact_credential_target_current(policy, target, now=datetime.now(UTC)) is (drift is None)
+    assert ScopeAccessPolicy.query.count() == 1
+    assert Notification.query.count() == 1
+
+
+def _credential_request(binding_store):
+    actor, checker, intent = binding_store
+    service.record_host_access_reference(actor_id=actor, intent=intent)
+    role = db.session.get(User, actor).role_record
+    for key in (CREDENTIAL_USE_PERMISSION, 'jobs.execute', 'roles.manage', 'users.manage'):
+        permission = Permission(key=key, module=key.split('.')[0], action=key.split('.')[1])
+        db.session.add(permission)
+        db.session.flush()
+        db.session.add(RolePermission(role_id=role.id, permission_id=permission.id))
+    db.session.commit()
+    binding = AutomationHostAccessBinding.query.one()
+    request = credential_grants.CredentialGrantIntent(
+        connection_id=intent.connection_id,
+        host_id=intent.host_id,
+        expected_host_revision=binding.host_revision,
+        expected_reference_fingerprint=binding.reference_fingerprint,
+    )
+    now = datetime.now(UTC)
+    validity = scoped_grants.ScopeGrantValidity(now, now + timedelta(minutes=10))
+    return actor, checker, request, validity
+
+
+def test_credential_request_commits_only_draft_and_exact_selector(binding_store):
+    actor, checker, request, validity = _credential_request(binding_store)
+    policy = credential_grants.request_automation_credential_grant(
+        actor_user_id=checker,
+        principal_user_id=actor,
+        intent=request,
+        validity=validity,
+        reason_code='operational_access',
+    )
+    target = db.session.get(AutomationCredentialScopeTarget, policy.id)
+    assert target is not None
+    assert target.host_id == request.host_id
+    assert target.reference_fingerprint == request.expected_reference_fingerprint
+    assert policy.permission_key == CREDENTIAL_USE_PERMISSION
+    assert policy.current_revision == 1
+    assert policy.revisions[0].lifecycle_status == 'draft'
+    assert policy.revisions[0].approved_by_user_id is None
+    audit = Notification.query.filter_by(event_type='access_scope_grant_requested').one()
+    assert audit.actor_key == f'user:{checker}'
+    assert request.host_id not in str(audit.metadata_json)
+    assert 'fixture/private/path' not in str(audit.metadata_json)
+    # The existing metadata approval service must NOT activate this scope.
+    with pytest.raises(scoped_grants.ScopedGrantRejected):
+        scoped_grants.approve_scope_grant(policy_id=policy.id, approver_user_id=actor, expected_revision=1)
+    assert policy.current_revision == 1
+    assert policy.revisions[0].lifecycle_status == 'draft'
+
+
+@pytest.mark.parametrize('failure', ['stale', 'permission', 'audit'])
+def test_credential_request_denial_is_atomic(binding_store, monkeypatch, failure):
+    actor, checker, request, validity = _credential_request(binding_store)
+    if failure == 'stale':
+        request = replace(request, expected_reference_fingerprint='0' * 64)
+    elif failure == 'permission':
+        permission = Permission.query.filter_by(key=CREDENTIAL_USE_PERMISSION).one()
+        RolePermission.query.filter_by(permission_id=permission.id).delete()
+        db.session.commit()
+    else:
+        original = scoped_grants.stage_operational_activity
+
+        def fail_after_stage(**kwargs):
+            original(**kwargs)
+            db.session.flush()
+            raise scoped_grants.ScopedGrantRejected('injected audit failure')
+
+        monkeypatch.setattr(scoped_grants, 'stage_operational_activity', fail_after_stage)
+    with pytest.raises(scoped_grants.ScopedGrantRejected):
+        credential_grants.request_automation_credential_grant(
+            actor_user_id=checker,
+            principal_user_id=actor,
+            intent=request,
+            validity=validity,
+            reason_code='operational_access',
+        )
+    assert AutomationCredentialScopeTarget.query.count() == 0
+    assert ScopeAccessPolicy.query.count() == 1
+    assert Notification.query.count() == 1
