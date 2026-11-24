@@ -97,8 +97,8 @@
                         <td colspan="5" class="px-5 py-12 text-center">
                             <p class="text-sm font-semibold text-content-primary">No Ansible Connections</p>
                             <p class="mt-1 text-xs text-content-secondary">Register a source-validated Ansible connection in Integrations before reviewing its lifecycle evidence.</p>
-                            <a href="{{ url_for('integrations.ansible') }}"
-                               class="{{ action_button.classes('secondary') }} mt-4">Open Ansible Integrations</a>
+                            <a href="{{ url_for('integrations.ansible_new_connection') }}"
+                               class="{{ action_button.classes('secondary') }} mt-4">Register Ansible Connection</a>
                         </td>
                     </tr>
                 {% endfor %}
@@ -158,7 +158,16 @@
             <div class="grid gap-4 xl:grid-cols-2">
                 <article id="infrastructure-automation-assets"
                          class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                    <h4 class="text-sm font-semibold text-content-primary">Assets &amp; Inventories</h4>
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <h4 class="text-sm font-semibold text-content-primary">Assets &amp; Inventories</h4>
+                        {% if details.can_inventory %}
+                            <a href="{{ url_for('platform_operations.infrastructure_automation_hosts.new', connection_id=details.connection.id) }}"
+                               class="{{ action_button.classes('secondary') }}">
+                                <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                                Register Host &amp; Role
+                            </a>
+                        {% endif %}
+                    </div>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">
                         Committed Linux host roles for this Ansible connection only. These are registration records,
                         not confirmed SSH access, privileged identity or Kubespray execution readiness.
@@ -181,6 +190,7 @@
                                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Host</th>
                                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Role</th>
                                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Management Endpoint</th>
+                                        <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Manage</th>
                                     </tr>
                                 </thead>
                                 <tbody class="{{ table_ui.body_classes() }}">
@@ -190,6 +200,10 @@
                                             <td class="{{ table_ui.cell_classes() }}">{{ host.role|replace('_', ' ') |title }}</td>
                                             <td class="{{ table_ui.cell_classes() }}">
                                                 <span class="font-mono text-xs">{{ host.address }}:{{ host.ssh_port }}</span>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes(true) }}">
+                                                <a href="{{ url_for('platform_operations.infrastructure_automation_hosts.edit', connection_id=details.connection.id, host_id=host.id) }}"
+                                                   class="{{ action_button.classes('soft') }}">Edit</a>
                                             </td>
                                         </tr>
                                     {% endfor %}

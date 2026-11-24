@@ -82,10 +82,10 @@ def project_host_assets(
     closed without disclosing any endpoint in an unqualified scope.
     """
     empty_rows, empty_pagination = paginate_sequence([], page=page, per_page=per_page)
-    if not connection.enabled or len(assignments) > _ASSET_LIMIT:
+    if len(assignments) > _ASSET_LIMIT:
         return {
             'state': 'blocked',
-            'reason': 'Connection is disabled or inventory exceeds the approved review limit.',
+            'reason': 'Inventory exceeds the approved review limit.',
             'fingerprint': None,
             'rows': empty_rows,
             'pagination': empty_pagination,
@@ -104,6 +104,7 @@ def project_host_assets(
     ordered = sorted(assignments, key=lambda assignment: (assignment.host.name, str(assignment.host.id)))
     records = [
         {
+            'id': assignment.host.id,
             'name': assignment.host.name,
             'address': assignment.host.address,
             'ssh_port': assignment.host.ssh_port,
@@ -133,7 +134,7 @@ def _committed_host_assets(
     """Bound all-member qualification to the chosen Ansible instance."""
     assignments = (
         AutomationInventoryAssignment.query.options(joinedload(AutomationInventoryAssignment.host))
-        .filter_by(integration_instance_id=connection.id)
+        .filter_by(integration_instance_id=connection.id, enabled=True)
         .order_by(AutomationInventoryAssignment.id.asc())
         .limit(_ASSET_LIMIT + 1)
         .all()
