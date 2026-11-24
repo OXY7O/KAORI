@@ -61,11 +61,10 @@ def test_five_row_pages_share_one_all_member_fingerprint():
     assert second['execution_authorized'] is False
 
 
-def test_unqualified_cross_connection_disabled_and_oversized_memberships_show_no_host_endpoints():
+def test_unqualified_cross_connection_and_oversized_memberships_show_no_host_endpoints():
     valid = [_assignment(1), _assignment(2)]
     cases = [
         (_connection(), [_assignment(1), _assignment(2, connection_id=18)]),
-        (_connection(enabled=False), valid),
         (_connection(environment='production'), valid),
         (_connection(), [_assignment(1, environment='other')]),
         (_connection(), [_assignment(i) for i in range(1, 258)]),
@@ -76,6 +75,14 @@ def test_unqualified_cross_connection_disabled_and_oversized_memberships_show_no
         assert view['rows'] == []
         assert view['fingerprint'] is None
         assert view['execution_authorized'] is False
+
+
+def test_source_only_connection_can_review_host_intent_without_execution_authority():
+    view = project_host_assets(_connection(enabled=False), [_assignment(1), _assignment(2)])
+    assert view['state'] == 'requires_trust_admission'
+    assert view['pagination']['total_items'] == 2
+    assert len(view['rows']) == 2
+    assert view['execution_authorized'] is False
 
 
 def test_immutable_inventory_role_changes_fingerprint_and_clamps_page():

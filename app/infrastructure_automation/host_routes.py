@@ -8,6 +8,7 @@ from flask_login import current_user
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
+from app.extensions.db import db
 from app.infrastructure_automation.host_enrollment import enroll_host_for_connection
 from app.infrastructure_automation.host_forms import AutomationHostEnrollmentForm
 from app.infrastructure_automation.host_registry import (
@@ -15,7 +16,7 @@ from app.infrastructure_automation.host_registry import (
     AutomationInventoryDenied,
     require_ansible_connection,
 )
-from app.integrations.orchestration.configuration_automation.providers.ansible.service import get_connection
+from app.models.integration import IntegrationInstance
 from app.platform_operations.notifications.service import record_operational_activity
 
 bp = Blueprint('infrastructure_automation_hosts', __name__)
@@ -26,8 +27,13 @@ bp = Blueprint('infrastructure_automation_hosts', __name__)
 @permission_required('inventory.view')
 def new(connection_id: int) -> ResponseReturnValue:
     """Enroll a scoped non-production Linux host without admitting execution."""
-    connection = get_connection(connection_id)
-    if connection is None or not isinstance(connection.environment, str):
+    connection = db.session.get(IntegrationInstance, connection_id)
+    if (
+        connection is None
+        or connection.integration_type != 'configuration_automation'
+        or connection.provider_key != 'ansible'
+        or not isinstance(connection.environment, str)
+    ):
         abort(404)
     environment = connection.environment
     try:

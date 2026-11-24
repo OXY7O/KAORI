@@ -11,7 +11,7 @@
                     {% call page_hero.intro('server-cog', 'Infrastructure Automation', 'server') %}
                         <h1 class="{{ page_hero.title_classes() }}">Register Linux Host</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">
-                            Create an existing non-production host identity and role for {{ connection.name }}.
+                            Create an existing non-production Linux host identity and inventory role.
                             This form does not request SSH credentials or execute Ansible.
                         </p>
                     {% endcall %}
@@ -25,7 +25,7 @@
                     <h2 id="automation-host-form-title"
                         class="text-base font-semibold text-content-primary">Host Identity &amp; Inventory Role</h2>
                     <p class="mt-1 text-xs text-content-secondary">
-                        Environment {{ connection.environment|replace('_', ' ') |title }} · Registration intent only · SSH and privilege admission pending
+                        Connection {{ connection.name }} · Environment {{ connection.environment|replace('_', ' ') |title }} · Registration intent only
                     </p>
                 </div>
                 <a class="{{ action_button.classes('secondary') }}"
