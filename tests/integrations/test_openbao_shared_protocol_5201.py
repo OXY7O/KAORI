@@ -5,7 +5,6 @@ import requests
 from flask import Flask
 
 from app.commands.openbao import openbao_status
-
 from app.integrations.secrets_management.secrets_pki.providers.kv2_http import KV2HTTPClient, SecretProviderError
 from app.integrations.secrets_management.secrets_pki.providers.kv2_metadata import collect_kv2_metadata
 from app.integrations.secrets_management.secrets_pki.providers.openbao.client import OpenBaoClient
@@ -30,9 +29,7 @@ class _Response:
 @pytest.fixture
 def provider_env(monkeypatch):
     monkeypatch.setenv('INTEGRATION_VAULT_ALLOWED_ORIGINS', 'https://vault.example.invalid:8200')
-    monkeypatch.setenv(
-        'INTEGRATION_OPENBAO_ALLOWED_ORIGINS', 'https://openbao:8200,https://bao.example.invalid:8200'
-    )
+    monkeypatch.setenv('INTEGRATION_OPENBAO_ALLOWED_ORIGINS', 'https://openbao:8200,https://bao.example.invalid:8200')
     monkeypatch.setenv('INTEGRATION_VAULT_CA_BUNDLE', '/trust/vault.pem')
     monkeypatch.setenv('INTEGRATION_OPENBAO_CA_BUNDLE', '/trust/openbao.pem')
 
