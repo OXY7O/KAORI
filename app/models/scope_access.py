@@ -29,7 +29,7 @@ class ScopeAccessPolicy(db.Model):
         CheckConstraint(
             "(scope_level = 'instance' AND provider_namespace IS NULL AND mount IS NULL)"
             " OR ((scope_level = 'vault_mount' OR scope_level = 'automation_credential')"
-            " AND provider_namespace IS NOT NULL"
+            ' AND provider_namespace IS NOT NULL'
             " AND mount IS NOT NULL AND mount <> '' AND mount NOT LIKE '%*%')",
             name='ck_access_scope_policy_exact_target',
         ),
@@ -201,9 +201,7 @@ class AutomationCredentialScopeTarget(db.Model):
     assignment_id: Mapped[int] = mapped_column(
         ForeignKey('automation_inventory_assignments.id', ondelete='RESTRICT'), nullable=False
     )
-    host_id: Mapped[str] = mapped_column(
-        ForeignKey('automation_host_assets.id', ondelete='RESTRICT'), nullable=False
-    )
+    host_id: Mapped[str] = mapped_column(ForeignKey('automation_host_assets.id', ondelete='RESTRICT'), nullable=False)
     host_revision: Mapped[str] = mapped_column(String(64), nullable=False)
     reference_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
     secret_identity_id: Mapped[str] = mapped_column(

@@ -29,7 +29,7 @@ def upgrade() -> None:
             'ck_access_scope_policy_exact_target',
             "(scope_level = 'instance' AND provider_namespace IS NULL AND mount IS NULL)"
             " OR ((scope_level = 'vault_mount' OR scope_level = 'automation_credential')"
-            " AND provider_namespace IS NOT NULL"
+            ' AND provider_namespace IS NOT NULL'
             " AND mount IS NOT NULL AND mount <> '' AND mount NOT LIKE '%*%')",
         )
         batch.create_check_constraint(

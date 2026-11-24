@@ -64,7 +64,12 @@ def test_credential_selector_is_bound_to_canonical_policy_and_resource_identity(
     }
     assert all(not column.nullable for column in table.columns)
     assert {
-        'secret_version', 'host_revision', 'reference_fingerprint', 'source_revision', 'profile_key', 'operation_key'
+        'secret_version',
+        'host_revision',
+        'reference_fingerprint',
+        'source_revision',
+        'profile_key',
+        'operation_key',
     } <= set(table.columns.keys())
     assert not hasattr(AutomationCredentialScopeTarget, 'secret_value')
 
