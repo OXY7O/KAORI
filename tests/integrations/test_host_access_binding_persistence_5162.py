@@ -11,9 +11,8 @@ from flask import Flask
 
 from app.access import scoped_grants
 from app.extensions.db import db
-from app.infrastructure_automation import credential_grants
+from app.infrastructure_automation import credential_grants, ssh_trust_lifecycle
 from app.infrastructure_automation import host_access_binding as service
-from app.infrastructure_automation import ssh_trust_lifecycle
 from app.infrastructure_automation.credential_scope_target import (
     CREDENTIAL_USE_PERMISSION,
     READ_ONLY_FACTS_OPERATION,
