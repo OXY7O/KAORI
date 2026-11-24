@@ -11,6 +11,11 @@ from flask import Flask
 
 from app.extensions.db import db
 from app.infrastructure_automation import host_access_binding as service
+from app.infrastructure_automation.credential_scope_target import (
+    CREDENTIAL_USE_PERMISSION,
+    READ_ONLY_FACTS_OPERATION,
+    exact_credential_target_current,
+)
 from app.infrastructure_automation.host_enrollment import host_revision
 from app.infrastructure_automation.kubernetes.committed_host_access import committed_pilot_access_fingerprint
 from app.infrastructure_automation.kubernetes.kubespray_preflight import KUBESPRAY_RELEASE
@@ -26,7 +31,7 @@ from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationInstance
 from app.models.notification import Notification
 from app.models.rbac import Permission, Role, RolePermission
-from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
+from app.models.scope_access import AutomationCredentialScopeTarget, ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.secrets_pki import (
     SecretIdentity,
     SecretInventoryCollectionState,
@@ -358,3 +363,91 @@ def test_persisted_pilot_access_correlation_invalidates_on_drift(binding_store, 
     else:
         assert changed is None
     assert Notification.query.count() == 3
+
+
+@pytest.mark.parametrize(
+    'drift',
+    [
+        None,
+        'host',
+        'role',
+        'key',
+        'version',
+        'destroyed',
+        'generation',
+        'namespace',
+        'wrong_policy',
+        'wrong_identity',
+        'wrong_operation',
+        'wrong_source',
+        'wrong_profile',
+        'wrong_assignment',
+        'metadata_permission',
+    ],
+)
+def test_exact_credential_target_currentness_is_not_a_grant(binding_store, drift):
+    actor, _, intent = binding_store
+    service.record_host_access_reference(actor_id=actor, intent=intent)
+    binding = AutomationHostAccessBinding.query.one()
+    assignment = AutomationInventoryAssignment.query.one()
+    representation = SecretProviderRepresentation.query.one()
+    # A transient policy/selector is sufficient for this non-authorizing
+    # predicate test; no grant writer or active credential grant is created.
+    policy = ScopeAccessPolicy(
+        id=str(uuid4()),
+        principal_user_id=actor,
+        permission_key=CREDENTIAL_USE_PERMISSION,
+        integration_instance_id=representation.integration_instance_id,
+        scope_level='automation_credential',
+        provider_namespace=representation.provider_namespace,
+        mount=representation.mount,
+        current_revision=1,
+    )
+    target = AutomationCredentialScopeTarget(
+        policy_id=policy.id,
+        ansible_connection_id=intent.connection_id,
+        assignment_id=assignment.id,
+        host_id=assignment.host_id,
+        host_revision=binding.host_revision,
+        reference_fingerprint=binding.reference_fingerprint,
+        secret_identity_id=representation.secret_identity_id,
+        secret_representation_id=representation.id,
+        secret_version=binding.secret_version,
+        source_revision=SOURCE_CANDIDATE_SHA,
+        profile_key=PROFILE_KEY,
+        operation_key=READ_ONLY_FACTS_OPERATION,
+    )
+    now = datetime.now(UTC)
+    assert exact_credential_target_current(policy, target, now=now)
+    if drift == 'host':
+        assignment.host.address = '10.0.0.99'
+    elif drift == 'role':
+        assignment.role = 'worker'
+    elif drift == 'key':
+        binding.host_key_digest = 'sha256:' + 'f' * 64
+    elif drift == 'version':
+        representation.current_version += 1
+    elif drift == 'destroyed':
+        SecretVersionObservation.query.one().destroyed = True
+    elif drift == 'generation':
+        SecretInventoryCollectionState.query.one().observed_count = 2
+    elif drift == 'namespace':
+        VaultInstance.query.one().namespace = 'other'
+    elif drift == 'wrong_policy':
+        target.policy_id = str(uuid4())
+    elif drift == 'wrong_identity':
+        target.secret_identity_id = str(uuid4())
+    elif drift == 'wrong_operation':
+        target.operation_key = 'arbitrary'
+    elif drift == 'wrong_source':
+        target.source_revision = '0' * 40
+    elif drift == 'wrong_profile':
+        target.profile_key = 'other'
+    elif drift == 'wrong_assignment':
+        target.assignment_id += 100
+    elif drift == 'metadata_permission':
+        policy.permission_key = 'secrets_pki.view'
+    db.session.commit()
+    assert exact_credential_target_current(policy, target, now=datetime.now(UTC)) is (drift is None)
+    assert ScopeAccessPolicy.query.count() == 1
+    assert Notification.query.count() == 1
