@@ -64,7 +64,7 @@ class KV2HTTPClient:
         self, path: str, *, method: str = 'GET', token: str | None = None, payload: dict[str, str] | None = None
     ) -> tuple[int, dict[str, Any]]:
         if not path.startswith('/v1/') or '//' in path or '?' in path:
-            raise SecretProviderError('Unsupported Vault API request.')
+            raise SecretProviderError(f'Unsupported {self.provider_label} API request.')
         headers = {'Accept': 'application/json'}
         if self.namespace:
             headers['X-Vault-Namespace'] = self.namespace
@@ -97,7 +97,7 @@ class KV2HTTPClient:
         except ValueError:
             data = {}
         if not isinstance(data, dict):
-            raise SecretProviderError('Unexpected Vault API response type.')
+            raise SecretProviderError(f'Unexpected {self.provider_label} API response type.')
         return response.status_code, data
 
     def health(self) -> dict[str, Any]:
@@ -129,7 +129,9 @@ class KV2HTTPClient:
         auth = data.get('auth')
         token = auth.get('client_token') if isinstance(auth, dict) else None
         if status not in {200, 204} or not isinstance(token, str) or not token:
-            raise SecretProviderError(f'{self.provider_label} AppRole authentication failed; verify RoleID, SecretID, mount and policy.')
+            raise SecretProviderError(
+                f'{self.provider_label} AppRole authentication failed; verify RoleID, SecretID, mount and policy.'
+            )
         return token
 
     def test_connection(self) -> dict[str, Any]:
