@@ -14,7 +14,6 @@ from typing import Any
 from sqlalchemy.orm import joinedload
 
 from app.infrastructure_automation.host_registry import preview_inventory_intent
-
 from app.infrastructure_automation.kubernetes.kubespray_preflight import (
     KUBESPRAY_COMMIT,
     KUBESPRAY_KUBERNETES_MINOR,
