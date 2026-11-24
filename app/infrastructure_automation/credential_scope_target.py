@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy.orm import joinedload, load_only
+from sqlalchemy.orm import load_only
 
 from app.extensions.db import db
 from app.infrastructure_automation.host_access_reference import assess_bound_host_access_references
@@ -19,6 +19,7 @@ from app.models.automation import AutomationHostAccessBinding
 from app.models.integration import IntegrationInstance
 from app.models.scope_access import AutomationCredentialScopeTarget, ScopeAccessPolicy
 from app.models.secrets_pki import (
+    SecretIdentity,
     SecretInventoryCollectionState,
     SecretProviderRepresentation,
     SecretVersionObservation,
@@ -66,39 +67,15 @@ def exact_credential_target_current(
         or binding.reference_fingerprint != target.reference_fingerprint
     ):
         return False
-    representation = db.session.get(
-        SecretProviderRepresentation,
-        target.secret_representation_id,
-        populate_existing=True,
-        options=[
-            load_only(
-                SecretProviderRepresentation.id,
-                SecretProviderRepresentation.secret_identity_id,
-                SecretProviderRepresentation.integration_instance_id,
-                SecretProviderRepresentation.provider_key,
-                SecretProviderRepresentation.provider_namespace,
-                SecretProviderRepresentation.mount,
-                SecretProviderRepresentation.path_sha256,
-                SecretProviderRepresentation.representation_role,
-                SecretProviderRepresentation.observation_status,
-                SecretProviderRepresentation.current_version,
-                SecretProviderRepresentation.last_observed_at,
-            ),
-            joinedload(SecretProviderRepresentation.secret_identity),
-        ],
-    )
-    if (
-        representation is None
-        or representation.secret_identity_id != target.secret_identity_id
-        or representation.integration_instance_id != policy.integration_instance_id
-        or representation.provider_namespace != policy.provider_namespace
-        or representation.mount != policy.mount
-    ):
-        return False
     provider = db.session.get(
         IntegrationInstance, policy.integration_instance_id, populate_existing=True, with_for_update=True
     )
-    vault = VaultInstance.query.filter_by(integration_instance_id=policy.integration_instance_id).first()
+    vault = (
+        VaultInstance.query.filter_by(integration_instance_id=policy.integration_instance_id)
+        .populate_existing()
+        .with_for_update()
+        .one_or_none()
+    )
     if (
         provider is None
         or vault is None
@@ -116,6 +93,37 @@ def exact_credential_target_current(
         .with_for_update()
         .one_or_none()
     )
+    if collection is None:
+        return False
+    representation = db.session.get(
+        SecretProviderRepresentation,
+        target.secret_representation_id,
+        populate_existing=True,
+        with_for_update=True,
+        options=[
+            load_only(
+                SecretProviderRepresentation.id,
+                SecretProviderRepresentation.secret_identity_id,
+                SecretProviderRepresentation.integration_instance_id,
+                SecretProviderRepresentation.provider_key,
+                SecretProviderRepresentation.provider_namespace,
+                SecretProviderRepresentation.mount,
+                SecretProviderRepresentation.path_sha256,
+                SecretProviderRepresentation.representation_role,
+                SecretProviderRepresentation.observation_status,
+                SecretProviderRepresentation.current_version,
+                SecretProviderRepresentation.last_observed_at,
+            ),
+        ],
+    )
+    if (
+        representation is None
+        or representation.secret_identity_id != target.secret_identity_id
+        or representation.integration_instance_id != policy.integration_instance_id
+        or representation.provider_namespace != policy.provider_namespace
+        or representation.mount != policy.mount
+    ):
+        return False
     version = (
         SecretVersionObservation.query.filter_by(
             representation_id=target.secret_representation_id, version=target.secret_version
@@ -124,7 +132,8 @@ def exact_credential_target_current(
         .with_for_update()
         .one_or_none()
     )
-    if collection is None or version is None:
+    identity = db.session.get(SecretIdentity, target.secret_identity_id, populate_existing=True, with_for_update=True)
+    if version is None or identity is None:
         return False
     # Reuse the existing candidate classifier rather than creating a second
     # interpretation of host revision, source, EE and metadata freshness.
