@@ -15,8 +15,9 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
 
+from app.infrastructure_automation.host_enrollment import host_revision
 from app.infrastructure_automation.kubernetes.source_policy import committed_source_state
-from app.models.automation import AutomationInventoryAssignment
+from app.models.automation import AutomationHostAccessBinding, AutomationInventoryAssignment
 from app.models.integration import IntegrationInstance
 from app.models.secrets_pki import (
     SecretIdentity,
@@ -261,3 +262,46 @@ def assess_scoped_host_access_references(
         secret_representation=representation,
         host_key_digest=host_key_digest,
     )
+
+
+def assess_bound_host_access_references(
+    *,
+    binding: AutomationHostAccessBinding | None,
+    connection: IntegrationInstance,
+    assignment: AutomationInventoryAssignment,
+    provider: IntegrationInstance,
+    representation: SecretProviderRepresentation,
+    collection: SecretInventoryCollectionState,
+    version: SecretVersionObservation,
+    now: datetime,
+) -> HostAccessReferenceReview:
+    """Requalify a persisted candidate; never infer credential use or SSH trust.
+
+    Only an independently authorized committed reader may supply these records.
+    The future governed writer must record actor and audit evidence atomically.
+    """
+    if binding is None:
+        return _blocked('HOST_ACCESS_BINDING_REQUIRED')
+    if (
+        type(assignment.id) is not int
+        or assignment.id <= 0
+        or binding.assignment_id != assignment.id
+        or binding.secret_representation_id != representation.id
+        or binding.secret_version != representation.current_version
+    ):
+        return _blocked('HOST_ACCESS_BINDING_MISMATCH')
+    review = assess_scoped_host_access_references(
+        connection=connection,
+        assignment=assignment,
+        provider=provider,
+        representation=representation,
+        collection=collection,
+        version=version,
+        host_key_digest=binding.host_key_digest,
+        now=now,
+    )
+    if review.state != 'references_recorded':
+        return review
+    if binding.host_revision != host_revision(assignment) or binding.reference_fingerprint != review.fingerprint:
+        return _blocked('HOST_ACCESS_BINDING_STALE')
+    return review

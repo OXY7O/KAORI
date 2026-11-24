@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions.db import db
@@ -67,3 +67,28 @@ class AutomationInventoryAssignment(db.Model):
     )
 
     host: Mapped[AutomationHostAsset] = relationship('AutomationHostAsset', back_populates='assignments')
+
+
+class AutomationHostAccessBinding(db.Model):
+    """Reference-only selection for one inventory membership, never a trust grant."""
+
+    __tablename__ = 'automation_host_access_bindings'
+    __table_args__ = (
+        CheckConstraint('secret_version > 0', name='ck_auto_host_access_version'),
+        CheckConstraint('length(host_revision) = 64', name='ck_auto_host_access_revision'),
+        CheckConstraint('length(reference_fingerprint) = 64', name='ck_auto_host_access_fingerprint'),
+        CheckConstraint('length(host_key_digest) = 71', name='ck_auto_host_access_key_digest'),
+    )
+
+    assignment_id: Mapped[int] = mapped_column(
+        ForeignKey('automation_inventory_assignments.id', ondelete='RESTRICT'), primary_key=True
+    )
+    secret_representation_id: Mapped[int] = mapped_column(
+        ForeignKey('secrets_pki_secret_representations.id', ondelete='RESTRICT'), nullable=False, index=True
+    )
+    secret_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    host_revision: Mapped[str] = mapped_column(String(64), nullable=False)
+    reference_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    host_key_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    recorded_by_user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='RESTRICT'), nullable=False)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)

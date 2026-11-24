@@ -8,9 +8,11 @@ from uuid import uuid4
 import pytest
 
 from app.infrastructure_automation.host_access_reference import (
+    assess_bound_host_access_references,
     assess_host_access_references,
     assess_scoped_host_access_references,
 )
+from app.infrastructure_automation.host_enrollment import host_revision
 from app.infrastructure_automation.kubernetes.kubespray_preflight import KUBESPRAY_RELEASE
 from app.infrastructure_automation.kubernetes.source_policy import (
     ANSIBLE_CORE_VERSION,
@@ -19,7 +21,7 @@ from app.infrastructure_automation.kubernetes.source_policy import (
     REPOSITORY,
     SOURCE_CANDIDATE_SHA,
 )
-from app.models.automation import AutomationHostAsset, AutomationInventoryAssignment
+from app.models.automation import AutomationHostAccessBinding, AutomationHostAsset, AutomationInventoryAssignment
 from app.models.integration import IntegrationInstance
 from app.models.secrets_pki import (
     SecretIdentity,
@@ -268,3 +270,84 @@ def test_scoped_reference_rejects_scope_or_version_drift(record, field, value, r
     assert result.reason_code == reason
     assert result.fingerprint is None
     assert result.execution_authorized is False
+
+
+def _bound_evidence():
+    evidence = _scoped_evidence()
+    assignment = evidence['assignment']
+    assignment.id = 23
+    assignment.updated_at = _NOW
+    assignment.host.updated_at = _NOW
+    review = assess_scoped_host_access_references(**evidence)
+    evidence['binding'] = AutomationHostAccessBinding(
+        assignment_id=assignment.id,
+        secret_representation_id=17,
+        secret_version=2,
+        host_revision=host_revision(assignment),
+        reference_fingerprint=review.fingerprint,
+        host_key_digest=evidence.pop('host_key_digest'),
+        recorded_by_user_id=11,
+        recorded_at=_NOW,
+    )
+    return evidence
+
+
+def test_bound_reference_is_current_but_never_trusted_or_authorized():
+    result = assess_bound_host_access_references(**_bound_evidence())
+    assert result.state == 'references_recorded'
+    assert result.execution_authorized is False
+    assert result.ssh_trust_verified is False
+    assert result.privileged_identity_verified is False
+
+
+def test_missing_binding_does_not_infer_access_from_inventory():
+    evidence = _bound_evidence()
+    evidence['binding'] = None
+    assert assess_bound_host_access_references(**evidence).reason_code == 'HOST_ACCESS_BINDING_REQUIRED'
+
+
+@pytest.mark.parametrize(
+    ('record', 'field', 'value', 'reason'),
+    [
+        ('binding', 'assignment_id', 24, 'HOST_ACCESS_BINDING_MISMATCH'),
+        ('binding', 'secret_representation_id', 18, 'HOST_ACCESS_BINDING_MISMATCH'),
+        ('representation', 'current_version', 3, 'HOST_ACCESS_BINDING_MISMATCH'),
+        ('binding', 'reference_fingerprint', '0' * 64, 'HOST_ACCESS_BINDING_STALE'),
+        ('binding', 'host_key_digest', 'sha256:' + 'f' * 64, 'HOST_ACCESS_BINDING_STALE'),
+        ('assignment', 'role', 'worker', 'HOST_ACCESS_BINDING_STALE'),
+        ('assignment', 'updated_at', _NOW + timedelta(seconds=1), 'HOST_ACCESS_BINDING_STALE'),
+    ],
+)
+def test_bound_reference_rejects_identity_or_generation_drift(record, field, value, reason):
+    evidence = _bound_evidence()
+    setattr(evidence[record], field, value)
+    result = assess_bound_host_access_references(**evidence)
+    assert result.reason_code == reason
+    assert result.fingerprint is None
+    assert result.execution_authorized is False
+
+
+def test_bound_reference_rejects_endpoint_drift():
+    evidence = _bound_evidence()
+    evidence['assignment'].host.address = '10.0.0.2'
+    assert assess_bound_host_access_references(**evidence).reason_code == 'HOST_ACCESS_BINDING_STALE'
+
+
+def test_binding_schema_contains_only_reference_metadata():
+    table = AutomationHostAccessBinding.__table__
+    assert set(table.columns.keys()) == {
+        'assignment_id',
+        'secret_representation_id',
+        'secret_version',
+        'host_revision',
+        'reference_fingerprint',
+        'host_key_digest',
+        'recorded_by_user_id',
+        'recorded_at',
+    }
+    assert list(table.primary_key.columns.keys()) == ['assignment_id']
+    assert {key.target_fullname for key in table.foreign_keys} == {
+        'automation_inventory_assignments.id',
+        'secrets_pki_secret_representations.id',
+        'users.id',
+    }

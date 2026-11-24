@@ -42,3 +42,23 @@ The default Dockerfile final target remains `production`; this opt-in `automatio
 The existing reference review now has a stricter internal `assess_scoped_host_access_references` boundary for future authorized callers. It requires an active exact host membership, a matching active ready same-environment Vault source, matching ready collection generation within the existing 24-hour metadata freshness bound, and the exact current observed available KV v2 version. The guard requires undestroyed current version metadata with no deletion timestamp (including future deletion intent). It does not import the Secrets & PKI application domain or duplicate its lifecycle classifier; deleted, destroyed, scheduled-deletion, wrong-source, stale and mismatched records fail closed. The underlying reference-shape helper alone is not sufficient for operational selection.
 
 Inputs must be resolved from authorized committed records under canonical #724 scope policy and audited access. This pure comparison does not execute that policy, establish complete collection coverage, qualify SSH key type or authorize material use. It does not persist a binding or expose a selector. The actual governed selector, credential-use policy, trusted host-key evidence producer and worker attestation remain gated under #5162/#4799/#5066. No raw material, SSH probe, queue dispatch or Run authorization is introduced.
+
+
+### Persisted candidate identity (#5162)
+
+`AutomationHostAccessBinding` owns one reference-only candidate per existing
+inventory assignment. It stores the canonical Secret representation foreign
+key, pinned version number, host revision, reference fingerprint, public-key
+digest candidate and actor/time provenance. The version is a pin, not a
+foreign key to transient version-observation rows: provider metadata refresh
+or retention must not be prevented by a reference. Readback must requalify
+the exact currently observed version and source using the existing guard.
+An absent row, changed host revision, credential version, source/EE or
+fingerprint cannot yield a current reference. A candidate key digest is not
+a verified key or a known_hosts artifact.
+
+The migration adds storage only; there is no backfill, automatic selection,
+public writer or selector. A subsequent governed transaction must enforce
+canonical Access policy, exact mount/host scope, independent credential-use
+authority and mandatory audit before recording a reference. The internal
+readback contract cannot authorize material retrieval, SSH or a Run.
