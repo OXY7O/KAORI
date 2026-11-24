@@ -29,3 +29,13 @@ and external registration, readiness and governed credential UI. #5204
 converges exact typed credential evidence and worker admission. Sensitive
 provider administration remains independent. No deployment or secret
 material use is introduced by #5201's initial increment.
+
+## Initial operator CLI (#5202)
+
+`flask openbao-status` in canonical `app/commands/` uses deployment-owned
+`KAORI_INTERNAL_OPENBAO_ENDPOINT` and the same OpenBao origin/CA policy.
+It requires no AppRole credential and prints only sanitized initialization,
+seal and health status; it is not admission or a bootstrap writer. It is
+available once this PR is admitted. Native CLI remains independent of Flask
+for actual init/unseal/recovery. Post-unseal governed bootstrap and verify
+commands remain separately gated under #5202.

@@ -2,6 +2,9 @@
 
 import pytest
 import requests
+from flask import Flask
+
+from app.commands.openbao import openbao_status
 
 from app.integrations.secrets_management.secrets_pki.providers.kv2_http import KV2HTTPClient, SecretProviderError
 from app.integrations.secrets_management.secrets_pki.providers.kv2_metadata import collect_kv2_metadata
@@ -117,3 +120,42 @@ def test_openbao_missing_own_allowlist_fails_closed(provider_env, monkeypatch):
     monkeypatch.delenv('INTEGRATION_OPENBAO_ALLOWED_ORIGINS')
     with pytest.raises(ValueError, match='INTEGRATION_OPENBAO_ALLOWED_ORIGINS'):
         _client(OpenBaoClient, 'https://openbao:8200')
+
+
+@pytest.mark.parametrize(
+    ('code', 'initialized', 'sealed', 'state'),
+    [(501, False, True, 'uninitialized'), (503, True, True, 'sealed'), (200, True, False, 'active')],
+)
+def test_openbao_operator_status_needs_no_approle(provider_env, monkeypatch, code, initialized, sealed, state):
+    monkeypatch.setenv('KAORI_INTERNAL_OPENBAO_ENDPOINT', 'https://openbao:8200')
+
+    def request(session, method, url, **kwargs):
+        assert method == 'GET'
+        assert url == 'https://openbao:8200/v1/sys/health'
+        assert kwargs['headers'] == {'Accept': 'application/json'}
+        assert kwargs['verify'] == '/trust/openbao.pem'
+        return _Response(code, {'initialized': initialized, 'sealed': sealed, 'unexpected': 'never-print'})
+
+    monkeypatch.setattr(requests.Session, 'request', request)
+    app = Flask(__name__)
+    app.cli.add_command(openbao_status)
+    result = app.test_cli_runner().invoke(args=['openbao-status'])
+    assert result.exit_code == 0
+    assert f'status={state}' in result.output
+    assert 'never-print' not in result.output
+    assert 'not admitted' in result.output
+
+
+def test_openbao_status_denies_external_vault_endpoint(provider_env, monkeypatch):
+    monkeypatch.setenv('KAORI_INTERNAL_OPENBAO_ENDPOINT', 'https://vault.example.invalid:8200')
+
+    def no_request(*args, **kwargs):
+        pytest.fail('unapproved request')
+
+    monkeypatch.setattr(requests.Session, 'request', no_request)
+    app = Flask(__name__)
+    app.cli.add_command(openbao_status)
+    result = app.test_cli_runner().invoke(args=['openbao-status'])
+    assert result.exit_code != 0
+    assert 'status unavailable' in result.output
+    assert 'vault.example.invalid' not in result.output

@@ -28,37 +28,30 @@ _HEALTH_STATUS = {
 }
 
 
-class KV2HTTPClient:
-    """Shared bounded HTTPS/AppRole observations; no material operation."""
-
-    provider_label = 'Secrets provider'
-    allowed_origins_env = ''
-    ca_bundle_env = ''
+class KV2HTTPTransport:
+    """Shared HTTPS transport and unauthenticated status, independent of AppRole."""
 
     def __init__(
         self,
         *,
         endpoint: str,
-        role_id: str,
-        secret_id: str,
+        provider_label: str,
+        allowed_origins_env: str,
+        ca_bundle_env: str,
         namespace: str | None = None,
-        auth_mount: str = 'approle',
         timeout: int = 5,
     ) -> None:
-        if not self.allowed_origins_env or not self.ca_bundle_env:
+        if not allowed_origins_env or not ca_bundle_env:
             raise SecretProviderError('A concrete provider transport policy is required.')
+        self.provider_label = provider_label
+        self.ca_bundle_env = ca_bundle_env
         self.endpoint = validate_secret_endpoint(
-            endpoint, allowed_origins_env=self.allowed_origins_env, provider_label=self.provider_label
+            endpoint, allowed_origins_env=allowed_origins_env, provider_label=provider_label
         )
-        self.role_id = str(role_id)
-        self.secret_id = str(secret_id)
         self.namespace = (namespace or '').strip('/')
         if any(ord(c) < 32 or ord(c) == 127 for c in self.namespace):
             raise SecretProviderError(f'{self.provider_label} namespace contains invalid control characters.')
-        self.auth_mount = validate_auth_mount(auth_mount)
         self.timeout = max(1, min(int(timeout), 30))
-        if not self.role_id or not self.secret_id:
-            raise SecretProviderError(f'{self.provider_label} AppRole RoleID and SecretID are required.')
 
     def _request(
         self, path: str, *, method: str = 'GET', token: str | None = None, payload: dict[str, str] | None = None
@@ -119,6 +112,49 @@ class KV2HTTPClient:
             'version': str(data.get('version') or '')[:64],
             'http_status': code,
         }
+
+
+class KV2HTTPClient(KV2HTTPTransport):
+    """Shared bounded AppRole observations; no material operation."""
+
+    provider_label = 'Secrets provider'
+    allowed_origins_env = ''
+    ca_bundle_env = ''
+
+    def __init__(
+        self,
+        *,
+        endpoint: str,
+        role_id: str,
+        secret_id: str,
+        namespace: str | None = None,
+        auth_mount: str = 'approle',
+        timeout: int = 5,
+    ) -> None:
+        super().__init__(
+            endpoint=endpoint,
+            provider_label=self.provider_label,
+            allowed_origins_env=self.allowed_origins_env,
+            ca_bundle_env=self.ca_bundle_env,
+            namespace=namespace,
+            timeout=timeout,
+        )
+        self.role_id = str(role_id)
+        self.secret_id = str(secret_id)
+        self.auth_mount = validate_auth_mount(auth_mount)
+        if not self.role_id or not self.secret_id:
+            raise SecretProviderError(f'{self.provider_label} AppRole RoleID and SecretID are required.')
+
+    @classmethod
+    def probe_health(cls, *, endpoint: str, timeout: int = 5) -> dict[str, Any]:
+        """Read unauthenticated status through the concrete provider's TLS policy."""
+        return KV2HTTPTransport(
+            endpoint=endpoint,
+            provider_label=cls.provider_label,
+            allowed_origins_env=cls.allowed_origins_env,
+            ca_bundle_env=cls.ca_bundle_env,
+            timeout=timeout,
+        ).health()
 
     def login(self) -> str:
         status, data = self._request(

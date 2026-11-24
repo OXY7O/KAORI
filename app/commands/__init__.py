@@ -3,6 +3,7 @@ from flask import Flask
 from app.commands.admin import bootstrap_admin, reset_admin_password
 from app.commands.integrations import refresh_integration_runtime_command
 from app.commands.internal_pki import import_internal_pki, prepare_internal_pki
+from app.commands.openbao import openbao_status
 from app.commands.rbac import seed_rbac
 from app.commands.reports import run_report_schedules
 from app.commands.retention import archive_retention
@@ -18,4 +19,5 @@ def register_commands(app: Flask) -> None:
     app.cli.add_command(refresh_integration_runtime_command)
     app.cli.add_command(import_internal_pki)
     app.cli.add_command(prepare_internal_pki)
+    app.cli.add_command(openbao_status)
     app.cli.add_command(automation_localhost_probe)
