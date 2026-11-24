@@ -337,3 +337,29 @@ def test_sensitive_registry_uses_only_authoritative_evaluator_and_transaction():
     assert 'stage_operational_activity(' in source
     assert 'db.session.commit()' in source
     assert 'db.session.rollback()' in source
+
+
+@pytest.mark.parametrize(
+    'permission_key', ['secrets_pki.sync', 'jobs.execute', 'secrets_pki.use_automation_credential']
+)
+def test_metadata_grant_cannot_authorize_automation_credential_use(scope_store, permission_key):
+    ids = scope_store
+    policy = _request(ids)
+    scoped_grants.approve_scope_grant(
+        policy_id=policy.id,
+        approver_user_id=ids['approver'],
+        expected_revision=1,
+    )
+    exact_scope = {
+        'actor_user_id': ids['viewer'],
+        'instance_id': ids['source'],
+        'provider_namespace': '',
+        'mount': 'kv',
+        'lock_for_read': True,
+    }
+    metadata = scope_policy.evaluate_exact_vault_scope(**exact_scope)
+    assert metadata.allowed and metadata.policy_ref == policy.id
+    denied = scope_policy.evaluate_exact_vault_scope(**exact_scope, permission_key=permission_key)
+    assert denied.status == 'deny'
+    assert denied.reason == 'invalid_scope'
+    assert denied.policy_ref is None and denied.revision is None
