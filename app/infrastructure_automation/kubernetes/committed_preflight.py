@@ -382,16 +382,32 @@ def committed_kubespray_preflight(connection: IntegrationInstance) -> KubesprayP
         .all()
     )
     if not matches_committed_host_inventory(connection, assignments, facts):
-        return build_kubespray_preflight(connection)
+        return _blocked_current_evidence(posture, 'host_identity', 'Committed host inventory changed.')
     registry = facts.get('host_registry_fingerprint')
     access = committed_pilot_access_fingerprint(connection, assignments, now=datetime.now(UTC))
     if access is None or facts.get('host_access_fingerprint') != access:
-        return build_kubespray_preflight(connection)
+        return _blocked_current_evidence(
+            posture, 'host_identity', 'Committed host access references changed or are missing.'
+        )
     metadata = connection.metadata_json if isinstance(connection.metadata_json, dict) else {}
     if (
         not connection.enabled
         or facts.get('execution_environment_digest') != metadata.get('execution_environment_digest')
         or not isinstance(registry, str)
     ):
-        return build_kubespray_preflight(connection)
+        return _blocked_current_evidence(posture, 'source_and_ee_admission', 'Source or execution environment changed.')
     return replace(posture, host_registry_fingerprint=registry, host_access_fingerprint=access)
+
+
+def _blocked_current_evidence(posture: KubesprayPreflight, key: str, reason: str) -> KubesprayPreflight:
+    """Keep the first actual blocker visible without exposing host or Secret metadata."""
+    gates = tuple(replace(gate, state='blocked', reason=reason) if gate.key == key else gate for gate in posture.gates)
+    return replace(
+        posture,
+        state='blocked',
+        verified_gates=sum(gate.state == 'ready' for gate in gates),
+        facts_job_public_id=None,
+        gates=gates,
+        host_registry_fingerprint=None,
+        host_access_fingerprint=None,
+    )

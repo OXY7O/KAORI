@@ -13,6 +13,7 @@ from app.infrastructure_automation.kubernetes.committed_preflight import committ
 from app.infrastructure_automation.kubernetes.plan_review import (
     PLAN_OPERATION,
     PLAN_RESULT_TYPE,
+    KubesprayPlanReview,
     build_kubespray_plan_review,
 )
 from app.infrastructure_automation.source import (
@@ -139,19 +140,9 @@ def materialize_kubespray_plan_review(
             or host_job.integration_instance_id != connection_id
         ):
             raise ValueError('Unqualified source connection')
-        latest = committed_kubespray_preflight(connection)
-        if latest.state != 'ready_for_review' or latest.facts_job_public_id != host_job.public_id:
-            raise ValueError('Preflight was superseded or is not qualified')
-        plan = build_kubespray_plan_review(connection, host_job)
-        if (
-            plan.status != 'requires_independent_approval'
-            or not plan.plan_fingerprint
-            or plan.host_registry_fingerprint != latest.host_registry_fingerprint
-            or plan.host_access_fingerprint != latest.host_access_fingerprint
-            or request_job is None
-            or request_job.parameter_fingerprint != payload_fingerprint(plan.dispatch_parameters())
-        ):
-            raise ValueError('Review-only Plan differs from the committed dispatch request')
+        if request_job is None:
+            raise ValueError('Canonical Plan request is missing')
+        plan = _qualify_dispatched_plan(connection, host_job, request_job)
 
         context.checkpoint(message='Checking latest evidence and Plan fingerprint', stage='verification')
         db.session.refresh(connection)
@@ -159,16 +150,8 @@ def materialize_kubespray_plan_review(
         db.session.refresh(request_job)
         if not _matches_plan_job(request_job, connection_id, str(self.request.id)):
             raise ValueError('Plan request changed before evidence commit')
-        latest = committed_kubespray_preflight(connection)
-        rechecked = build_kubespray_plan_review(connection, host_job)
-        if (
-            latest.state != 'ready_for_review'
-            or latest.facts_job_public_id != host_job.public_id
-            or rechecked.host_registry_fingerprint != latest.host_registry_fingerprint
-            or rechecked.host_access_fingerprint != latest.host_access_fingerprint
-            or rechecked.plan_fingerprint != plan.plan_fingerprint
-            or request_job.parameter_fingerprint != payload_fingerprint(rechecked.dispatch_parameters())
-        ):
+        rechecked = _qualify_dispatched_plan(connection, host_job, request_job)
+        if rechecked.plan_fingerprint != plan.plan_fingerprint:
             raise ValueError('Plan preflight changed before evidence commit')
         fingerprint = rechecked.plan_fingerprint
         if fingerprint is None:
@@ -202,3 +185,22 @@ def _matches_plan_job(job: JobExecution | None, connection_id: int, task_id: str
         and job.scope_type == 'ansible_source_connection'
         and job.scope_key == str(connection_id)
     )
+
+
+def _qualify_dispatched_plan(
+    connection: IntegrationInstance, host_job: JobExecution, request_job: JobExecution
+) -> KubesprayPlanReview:
+    """Use exactly the same qualification before and after the worker checkpoint."""
+    latest = committed_kubespray_preflight(connection)
+    if latest.state != 'ready_for_review' or latest.facts_job_public_id != host_job.public_id:
+        raise ValueError('Preflight was superseded or is not qualified')
+    plan = build_kubespray_plan_review(connection, host_job)
+    if (
+        plan.status != 'requires_independent_approval'
+        or not plan.plan_fingerprint
+        or plan.host_registry_fingerprint != latest.host_registry_fingerprint
+        or plan.host_access_fingerprint != latest.host_access_fingerprint
+        or request_job.parameter_fingerprint != payload_fingerprint(plan.dispatch_parameters())
+    ):
+        raise ValueError('Review-only Plan differs from the committed dispatch request')
+    return plan
