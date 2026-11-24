@@ -92,3 +92,53 @@ class AutomationHostAccessBinding(db.Model):
     host_key_digest: Mapped[str] = mapped_column(String(71), nullable=False)
     recorded_by_user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='RESTRICT'), nullable=False)
     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+
+
+class AutomationHostTrustRevision(db.Model):
+    """Append-only intended evidence; no trust writer or evaluator is enabled."""
+
+    __tablename__ = 'automation_host_trust_revisions'
+    __table_args__ = (
+        UniqueConstraint('assignment_id', 'revision_number', name='uq_auto_host_trust_revision'),
+        CheckConstraint('revision_number > 0', name='ck_auto_host_trust_revision'),
+        CheckConstraint("lifecycle_status IN ('draft', 'active', 'revoked')", name='ck_auto_host_trust_state'),
+        CheckConstraint("algorithm = 'ssh-ed25519'", name='ck_auto_host_trust_algorithm'),
+        CheckConstraint('ssh_port BETWEEN 1 AND 65535', name='ck_auto_host_trust_port'),
+        CheckConstraint('length(host_revision) = 64', name='ck_auto_host_trust_host_revision'),
+        CheckConstraint('length(reference_fingerprint) = 64', name='ck_auto_host_trust_reference'),
+        CheckConstraint('length(host_key_digest) = 71', name='ck_auto_host_trust_key_digest'),
+        CheckConstraint(
+            "lifecycle_status = 'revoked' OR effective_until > recorded_at", name='ck_auto_host_trust_window'
+        ),
+        CheckConstraint("source_kind = 'independent_console'", name='ck_auto_host_trust_source'),
+        CheckConstraint("evidence_ref <> ''", name='ck_auto_host_trust_evidence'),
+        CheckConstraint(
+            "lifecycle_status <> 'active' OR"
+            ' (verified_by_user_id IS NOT NULL AND verified_at IS NOT NULL'
+            ' AND verified_by_user_id <> requested_by_user_id'
+            ' AND verified_at <= recorded_at AND verified_at < effective_until)',
+            name='ck_auto_host_trust_independent',
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    assignment_id: Mapped[int] = mapped_column(
+        ForeignKey('automation_inventory_assignments.id', ondelete='RESTRICT'), nullable=False, index=True
+    )
+    revision_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    lifecycle_status: Mapped[str] = mapped_column(String(20), nullable=False, default='draft')
+    host_revision: Mapped[str] = mapped_column(String(64), nullable=False)
+    reference_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    address: Mapped[str] = mapped_column(String(45), nullable=False)
+    ssh_port: Mapped[int] = mapped_column(Integer, nullable=False)
+    algorithm: Mapped[str] = mapped_column(String(20), nullable=False)
+    public_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    host_key_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    source_kind: Mapped[str] = mapped_column(String(40), nullable=False)
+    evidence_ref: Mapped[str] = mapped_column(String(160), nullable=False)
+    requested_by_user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='RESTRICT'), nullable=False)
+    verified_by_user_id: Mapped[int | None] = mapped_column(ForeignKey('users.id', ondelete='RESTRICT'), nullable=True)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    effective_until: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+    recorded_by_user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='RESTRICT'), nullable=False)
