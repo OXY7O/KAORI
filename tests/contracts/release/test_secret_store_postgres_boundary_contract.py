@@ -78,9 +78,9 @@ def test_secret_store_schema_real_postgresql_boundary() -> None:
                 for role in ROLES:
                     login = sql.SQL('NOLOGIN' if role.endswith('_owner') else 'LOGIN')
                     cursor.execute(
-                        sql.SQL('CREATE ROLE {} {} NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS').format(
-                            sql.Identifier(role), login
-                        )
+                        sql.SQL(
+                            'CREATE ROLE {} {} NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS'
+                        ).format(sql.Identifier(role), login)
                     )
                     created_roles.append(role)
                 cursor.execute('CREATE DATABASE kaori OWNER kaori_migrator')
