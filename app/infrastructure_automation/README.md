@@ -63,3 +63,37 @@ public writer or selector. A subsequent governed transaction must enforce
 canonical Access policy, exact mount/host scope, independent credential-use
 authority and mandatory audit before recording a reference. The internal
 readback contract cannot authorize material retrieval, SSH or a Run.
+
+## Independent SSH host-key trust — qualification proposal (#5183/#5185)
+
+The accepted security direction in #5183 separates a recorded key digest from
+independent trust. The initial proposed out-of-band source is the authorized
+VM/hypervisor or physical console of the exact enrolled disposable Linux host,
+with verification by a distinct authorized human. The console provenance must
+be independently reviewable; a key first observed over the network, a
+successful SSH session, or an operator-entered digest alone is not evidence.
+This source and reviewer scope require explicit qualification before a writer
+is introduced.
+
+The future trust record must correlate the canonical assignment and host
+revision (including exact IP address and SSH port), reference fingerprint,
+key algorithm and canonical public-key digest, source provenance reference,
+requester/verifier, verification time, expiry and revision/revocation state.
+A first pilot should qualify a single supported host-key algorithm and exact
+public-key encoding before accepting evidence; no generic arbitrary algorithm
+or opaque digest substitution. Do not store private material or raw console
+output in KAORI audit or JobExecution. A digest alone cannot construct a
+known_hosts entry; the independently verified public key must be available
+through the qualified trust source at the later worker boundary. Never disable
+strict host-key checking, trust on first use or fall back to another key.
+
+The existing metadata-only candidate remains non-authorizing even with a
+current grant. Port, role and key-digest drift now have explicit persisted
+reference/Plan correlation regression coverage. Independent trust must remain
+separate from candidate evidence and must be requalified after endpoint,
+assignment, key, credential version, source or policy changes. Revocation and
+expiry must invalidate affected preflight/Plan evidence. No trust record
+writer, live SSH, key acquisition, worker authorization or credential use is
+enabled by this increment. The next storage and lifecycle implementation
+requires independent review of the concrete source, verification and expiry
+contract.
