@@ -98,7 +98,10 @@ def _require_editable(
     connection: IntegrationInstance, assignment: AutomationInventoryAssignment, expected_revision: str
 ) -> AutomationHostAsset:
     """Fail closed for cross-connection, retired, shared, or stale assets."""
-    require_ansible_connection(connection, environment=connection.environment)
+    environment = connection.environment
+    if not isinstance(environment, str):
+        raise AutomationInventoryDenied('A valid non-production connection environment is required.')
+    require_ansible_connection(connection, environment=environment)
     host = assignment.host
     if (
         assignment.integration_instance_id != connection.id

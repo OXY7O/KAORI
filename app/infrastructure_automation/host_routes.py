@@ -118,10 +118,11 @@ def _scoped_assignment(connection_id: int, host_id: str, *, lock: bool = False):
 def edit(connection_id: int, host_id) -> ResponseReturnValue:
     """Edit exact committed identity with CSRF and a stale-form guard."""
     connection = db.session.get(IntegrationInstance, connection_id)
-    if connection is None:
+    if connection is None or not isinstance(connection.environment, str):
         abort(404)
+    environment = connection.environment
     try:
-        require_ansible_connection(connection, environment=connection.environment)
+        require_ansible_connection(connection, environment=environment)
     except AutomationInventoryDenied:
         abort(404)
     assignment = _scoped_assignment(connection_id, str(host_id), lock=request.method == 'POST')
@@ -151,7 +152,7 @@ def edit(connection_id: int, host_id) -> ResponseReturnValue:
                     assignment,
                     AutomationHostIntent(
                         name=str(form.name.data or '').strip(),
-                        environment=connection.environment,
+                        environment=environment,
                         address=str(form.address.data or '').strip(),
                         ssh_port=form.ssh_port.data if isinstance(form.ssh_port.data, int) else 0,
                     ),
@@ -196,10 +197,11 @@ def edit(connection_id: int, host_id) -> ResponseReturnValue:
 def retire(connection_id: int, host_id) -> ResponseReturnValue:
     """Only an explicitly confirmed, CSRF-protected POST retires an exclusive asset."""
     connection = db.session.get(IntegrationInstance, connection_id)
-    if connection is None:
+    if connection is None or not isinstance(connection.environment, str):
         abort(404)
+    environment = connection.environment
     try:
-        require_ansible_connection(connection, environment=connection.environment)
+        require_ansible_connection(connection, environment=environment)
     except AutomationInventoryDenied:
         abort(404)
     assignment = _scoped_assignment(connection_id, str(host_id), lock=True)
