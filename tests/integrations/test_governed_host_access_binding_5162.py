@@ -149,7 +149,6 @@ def test_scope_evaluator_requires_exact_policy_revision(monkeypatch):
         service._require_scope(11, policy.id, now)
 
 
-
 def test_unexpected_programming_failure_still_rolls_back(transaction, monkeypatch):
     intent, events, _ = transaction
 
