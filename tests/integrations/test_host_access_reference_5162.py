@@ -223,9 +223,7 @@ def _scoped_evidence():
             last_observed_at=_NOW,
             last_committed_at=_NOW,
         ),
-        'version': SecretVersionObservation(
-            representation_id=17, version=2, last_observed_at=_NOW, destroyed=False
-        ),
+        'version': SecretVersionObservation(representation_id=17, version=2, last_observed_at=_NOW, destroyed=False),
         'host_key_digest': fields['host_key_digest'],
         'now': _NOW,
     }
