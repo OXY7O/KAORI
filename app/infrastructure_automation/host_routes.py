@@ -8,9 +8,10 @@ from flask_login import current_user
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
-from app.extensions.db import db
 from app.infrastructure_automation.host_enrollment import (
     enroll_host_for_connection,
+    get_enrollment_connection,
+    get_scoped_host_assignment,
     host_revision,
     retire_host_for_connection,
     update_host_for_connection,
@@ -25,8 +26,6 @@ from app.infrastructure_automation.host_registry import (
     AutomationInventoryDenied,
     require_ansible_connection,
 )
-from app.models.automation import AutomationInventoryAssignment
-from app.models.integration import IntegrationInstance
 from app.platform_operations.notifications.service import record_operational_activity
 
 bp = Blueprint('infrastructure_automation_hosts', __name__)
@@ -37,7 +36,7 @@ bp = Blueprint('infrastructure_automation_hosts', __name__)
 @permission_required('inventory.view')
 def new(connection_id: int) -> ResponseReturnValue:
     """Enroll a scoped non-production Linux host without admitting execution."""
-    connection = db.session.get(IntegrationInstance, connection_id)
+    connection = get_enrollment_connection(connection_id)
     if (
         connection is None
         or connection.integration_type != 'configuration_automation'
@@ -101,12 +100,7 @@ def new(connection_id: int) -> ResponseReturnValue:
 
 def _scoped_assignment(connection_id: int, host_id: str, *, lock: bool = False):
     """Never resolve a host except through its selected Ansible connection."""
-    query = AutomationInventoryAssignment.query.filter_by(
-        integration_instance_id=connection_id, host_id=host_id, enabled=True
-    )
-    if lock:
-        query = query.with_for_update()
-    assignment = query.first()
+    assignment = get_scoped_host_assignment(connection_id, host_id, lock=lock)
     if assignment is None:
         abort(404)
     return assignment
@@ -117,7 +111,7 @@ def _scoped_assignment(connection_id: int, host_id: str, *, lock: bool = False):
 @permission_required('inventory.view')
 def edit(connection_id: int, host_id) -> ResponseReturnValue:
     """Edit exact committed identity with CSRF and a stale-form guard."""
-    connection = db.session.get(IntegrationInstance, connection_id)
+    connection = get_enrollment_connection(connection_id)
     if connection is None or not isinstance(connection.environment, str):
         abort(404)
     environment = connection.environment
@@ -126,8 +120,6 @@ def edit(connection_id: int, host_id) -> ResponseReturnValue:
     except AutomationInventoryDenied:
         abort(404)
     assignment = _scoped_assignment(connection_id, str(host_id), lock=request.method == 'POST')
-    if request.method == 'POST':
-        db.session.refresh(assignment.host, with_for_update=True)
     host = assignment.host
     revision = host_revision(assignment)
     form = (
@@ -196,7 +188,7 @@ def edit(connection_id: int, host_id) -> ResponseReturnValue:
 @permission_required('inventory.view')
 def retire(connection_id: int, host_id) -> ResponseReturnValue:
     """Only an explicitly confirmed, CSRF-protected POST retires an exclusive asset."""
-    connection = db.session.get(IntegrationInstance, connection_id)
+    connection = get_enrollment_connection(connection_id)
     if connection is None or not isinstance(connection.environment, str):
         abort(404)
     environment = connection.environment
@@ -205,7 +197,6 @@ def retire(connection_id: int, host_id) -> ResponseReturnValue:
     except AutomationInventoryDenied:
         abort(404)
     assignment = _scoped_assignment(connection_id, str(host_id), lock=True)
-    db.session.refresh(assignment.host, with_for_update=True)
     form = AutomationHostRetirementForm()
     if not form.validate_on_submit():
         abort(400)

@@ -25,6 +25,26 @@ _HOST_LIMIT = 256
 _INVENTORY_ROLES = frozenset({'control_plane', 'worker'})
 
 
+def get_enrollment_connection(connection_id: int) -> IntegrationInstance | None:
+    """Resolve the selected connection through the application boundary."""
+    return db.session.get(IntegrationInstance, connection_id)
+
+
+def get_scoped_host_assignment(
+    connection_id: int, host_id: str, *, lock: bool = False
+) -> AutomationInventoryAssignment | None:
+    """Resolve an active membership and lock its host for mutation when requested."""
+    query = AutomationInventoryAssignment.query.filter_by(
+        integration_instance_id=connection_id, host_id=host_id, enabled=True
+    )
+    if lock:
+        query = query.with_for_update()
+    assignment = query.first()
+    if assignment is not None and lock:
+        db.session.refresh(assignment.host, with_for_update=True)
+    return assignment
+
+
 def enroll_host_for_connection(
     connection: IntegrationInstance,
     values: AutomationHostIntent,
