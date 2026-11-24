@@ -399,3 +399,9 @@ boundary independent of UI; even Super Admin cannot download these bundles.
 Verified compaction remains a separate workstream (#2892). Archive History is artifact-level,
 not a verified lookup for the selected administrative event or a missing
 JobExecution. Do not infer immutable actor identity from AuditEvent FK.
+
+## Exact automation credential scope storage (#5184)
+
+The approved #5183 direction extends the canonical `ScopeAccessPolicy` with a distinct `automation_credential` level reserved for `secrets_pki.use_automation_credential`. The existing instance and Vault mount metadata scopes remain separate and cannot carry that permission. The new one-to-one `AutomationCredentialScopeTarget` is selector storage attached to the canonical policy, not an independent grant or approval engine. The principal, Vault instance, namespace, mount and policy revision remain canonical; the selector pins the Ansible connection, host asset/assignment and host revision, existing candidate reference fingerprint, Secret identity/representation/version, immutable source revision, profile and operation. No secret material or arbitrary path is stored.
+
+This migration is storage-only, with no seed or backfill. Existing metadata grant writers/evaluators do not admit this new scope. Shape constraints and foreign keys alone do not prove cross-record currentness, credential type, independent trust, or actual authorization. The subsequent governed writer must atomically resolve the exact selector, enforce immutable identity and mandatory audit, reuse independent revision approval/revocation, and fail closed on missing/mismatched selector, role/host/provider/version/source drift and stale/ambiguous authority. No public writer, material-use evaluator or worker path is enabled here. Downgrade refuses to erase exact scope evidence once present. Test migration and concurrency on PostgreSQL before human acceptance.
