@@ -57,9 +57,7 @@ def exact_credential_target_current(
     if connection is None or assignment is None or assignment.id != target.assignment_id:
         return False
     db.session.refresh(assignment, with_for_update=True)
-    binding = db.session.get(
-        AutomationHostAccessBinding, assignment.id, populate_existing=True, with_for_update=True
-    )
+    binding = db.session.get(AutomationHostAccessBinding, assignment.id, populate_existing=True, with_for_update=True)
     if (
         binding is None
         or binding.secret_representation_id != target.secret_representation_id
