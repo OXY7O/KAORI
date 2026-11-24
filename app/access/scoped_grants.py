@@ -260,41 +260,38 @@ def request_automation_credential_grant(
         )
         if representation is None:
             raise ScopedGrantRejected('Grant target is unavailable.')
-        policy = ScopeAccessPolicy(
-            id=str(uuid4()),
-            principal_user_id=principal_user_id,
-            permission_key=CREDENTIAL_USE_PERMISSION,
-            integration_instance_id=representation.integration_instance_id,
-            scope_level='automation_credential',
-            provider_namespace=representation.provider_namespace,
-            mount=representation.mount,
-            current_revision=1,
-        )
-        target = AutomationCredentialScopeTarget(
-            policy_id=policy.id,
-            ansible_connection_id=intent.connection_id,
-            assignment_id=assignment.id,
-            host_id=assignment.host_id,
-            host_revision=binding.host_revision,
-            reference_fingerprint=binding.reference_fingerprint,
-            secret_identity_id=representation.secret_identity_id,
-            secret_representation_id=representation.id,
-            secret_version=binding.secret_version,
-            source_revision=SOURCE_CANDIDATE_SHA,
-            profile_key=PROFILE_KEY,
-            operation_key=READ_ONLY_FACTS_OPERATION,
-        )
+        policy = ScopeAccessPolicy()
+        policy.id = str(uuid4())
+        policy.principal_user_id = principal_user_id
+        policy.permission_key = CREDENTIAL_USE_PERMISSION
+        policy.integration_instance_id = representation.integration_instance_id
+        policy.scope_level = 'automation_credential'
+        policy.provider_namespace = representation.provider_namespace
+        policy.mount = representation.mount
+        policy.current_revision = 1
+        target = AutomationCredentialScopeTarget()
+        target.policy_id = policy.id
+        target.ansible_connection_id = intent.connection_id
+        target.assignment_id = assignment.id
+        target.host_id = assignment.host_id
+        target.host_revision = binding.host_revision
+        target.reference_fingerprint = binding.reference_fingerprint
+        target.secret_identity_id = representation.secret_identity_id
+        target.secret_representation_id = representation.id
+        target.secret_version = binding.secret_version
+        target.source_revision = SOURCE_CANDIDATE_SHA
+        target.profile_key = PROFILE_KEY
+        target.operation_key = READ_ONLY_FACTS_OPERATION
         if not exact_credential_target_current(policy, target, now=now):
             raise ScopedGrantRejected('Grant target is unavailable.')
-        revision = ScopeAccessPolicyRevision(
-            policy=policy,
-            revision_number=1,
-            lifecycle_status='draft',
-            effective_from=starts,
-            effective_until=ends,
-            requested_by_user_id=actor_user_id,
-            change_reason=reason_code,
-        )
+        revision = ScopeAccessPolicyRevision()
+        revision.policy = policy
+        revision.revision_number = 1
+        revision.lifecycle_status = 'draft'
+        revision.effective_from = starts
+        revision.effective_until = ends
+        revision.requested_by_user_id = actor_user_id
+        revision.change_reason = reason_code
         db.session.add_all((policy, revision))
         db.session.flush()
         db.session.add(target)
