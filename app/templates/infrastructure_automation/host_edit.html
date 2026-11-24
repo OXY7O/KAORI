@@ -44,7 +44,7 @@
                         </div>
                     {% endfor %}
                 </div>
-                <p class="text-xs text-content-muted">Updates change the committed inventory fingerprint and invalidate earlier Plan review. No SSH trust or Run permission is granted.</p>
+                <p class="text-xs text-content-muted">Updates change the inventory fingerprint. Re-review any Plan; automatic Plan invalidation awaits #5163. SSH and Run remain blocked.</p>
                 <button type="submit" class="{{ action_button.classes('primary') }}">Save Host Changes</button>
             </form>
         </section>

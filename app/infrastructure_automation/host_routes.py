@@ -221,7 +221,7 @@ def retire(connection_id: int, host_id) -> ResponseReturnValue:
         event_type='automation_host_retired',
         status='success',
         title='Host inventory identity retired',
-        message='The host membership is disabled. Previously reviewed inventory Plans are no longer current.',
+        message='The host membership is disabled. Review previous Plans; fingerprint-bound invalidation is gated under #5163.',
         action_url=url_for('platform_operations.infrastructure_automation.index', connection_id=connection_id),
         metadata={'connection_id': connection_id, 'host_id': host.id, 'feedback_delivery': 'toast'},
     )
