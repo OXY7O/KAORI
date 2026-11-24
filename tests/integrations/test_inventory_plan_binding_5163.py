@@ -230,3 +230,18 @@ def test_observed_host_mismatch_blocks_even_with_matching_digest(field):
     connection, assignments, facts = _registry_evidence()
     facts['hosts'][0][field] = 'unqualified'
     assert not matches_committed_host_inventory(connection, assignments, facts)
+
+
+def test_latest_wrong_queue_preflight_cannot_reuse_older_good_result():
+    from app.infrastructure_automation.kubernetes.committed_preflight import _committed_host_evidence
+
+    connection = SimpleNamespace(id=17)
+    wrong = SimpleNamespace(
+        integration_instance_id=17,
+        operation='automation_kubespray_host_preflight',
+        integration_type='configuration_automation',
+        job_type='infrastructure_automation',
+        queue_name='default',
+    )
+    older = SimpleNamespace(integration_instance_id=17)
+    assert _committed_host_evidence(connection, [wrong, older], now=NOW) == ({}, None)

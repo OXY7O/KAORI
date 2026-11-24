@@ -8,6 +8,7 @@ import pytest
 from flask import Flask
 
 from app.infrastructure_automation import tasks
+from app.platform_operations.jobs.fingerprint import payload_fingerprint
 
 
 class _Context:
@@ -33,7 +34,7 @@ class _Context:
         self.events.append(('canceled', kwargs))
 
 
-def _setup(monkeypatch: pytest.MonkeyPatch, *, state: str = 'ready_for_review') -> None:
+def _setup(monkeypatch: pytest.MonkeyPatch, *, state: str = 'ready_for_review', drift: bool = False) -> None:
     connection = SimpleNamespace(
         id=31,
         integration_type='configuration_automation',
@@ -42,13 +43,25 @@ def _setup(monkeypatch: pytest.MonkeyPatch, *, state: str = 'ready_for_review') 
         lifecycle_status='active',
     )
     source_job = SimpleNamespace(id=55, public_id='preflight-55', integration_instance_id=31)
+    parameters = {'plan_fingerprint': 'f' * 64}
+    request_job = SimpleNamespace(
+        celery_task_id=str(tasks.materialize_kubespray_plan_review.request.id),
+        integration_instance_id=31,
+        integration_type='configuration_automation',
+        job_type='infrastructure_automation',
+        operation=tasks.PLAN_OPERATION,
+        queue_name='automation',
+        scope_type='ansible_source_connection',
+        scope_key='31',
+        parameter_fingerprint='0' * 64 if drift else payload_fingerprint(parameters),
+    )
 
     class _Session:
         def get(self, model, identifier):
             if model is tasks.IntegrationInstance:
                 return connection if identifier == 31 else None
             if model is tasks.JobExecution:
-                return source_job if identifier == 55 else None
+                return {55: source_job, 71: request_job}.get(identifier)
             return None
 
     _Context.instances.clear()
@@ -57,7 +70,12 @@ def _setup(monkeypatch: pytest.MonkeyPatch, *, state: str = 'ready_for_review') 
     monkeypatch.setattr(
         tasks,
         'committed_kubespray_preflight',
-        lambda conn: SimpleNamespace(state=state, facts_job_public_id=source_job.public_id),
+        lambda conn: SimpleNamespace(
+            state=state,
+            facts_job_public_id=source_job.public_id,
+            host_registry_fingerprint='a' * 64,
+            host_access_fingerprint='b' * 64,
+        ),
     )
     monkeypatch.setattr(
         tasks,
@@ -65,6 +83,9 @@ def _setup(monkeypatch: pytest.MonkeyPatch, *, state: str = 'ready_for_review') 
         lambda conn, job: SimpleNamespace(
             status='requires_independent_approval',
             plan_fingerprint='f' * 64,
+            host_registry_fingerprint='a' * 64,
+            host_access_fingerprint='b' * 64,
+            dispatch_parameters=lambda: parameters,
             committed_summary=lambda: {
                 'plan_fingerprint': 'f' * 64,
                 'approval_status': 'not_requested',
@@ -112,3 +133,9 @@ def test_worker_rejects_missing_canonical_source_job(monkeypatch) -> None:
     outcome = _run_plan(host_preflight_job_id=56)
     assert outcome == {'status': 'blocked'}
     assert _Context.instances[-1].events[-1][0] == 'fail'
+
+
+def test_worker_rejects_plan_that_differs_from_queued_fingerprint(monkeypatch):
+    _setup(monkeypatch, drift=True)
+    assert _run_plan() == {'status': 'blocked'}
+    assert [name for name, _ in _Context.instances[-1].events] == ['start', 'fail']
