@@ -4,7 +4,7 @@ import pytest
 import requests
 from flask import Flask
 
-from app.commands.openbao import openbao_status
+from app.commands.secret_store import secret_store_status
 from app.integrations.secrets_management.secrets_pki.providers.kv2_http import KV2HTTPClient, SecretProviderError
 from app.integrations.secrets_management.secrets_pki.providers.kv2_metadata import collect_kv2_metadata
 from app.integrations.secrets_management.secrets_pki.providers.openbao.client import OpenBaoClient
@@ -28,6 +28,7 @@ class _Response:
 
 @pytest.fixture
 def provider_env(monkeypatch):
+    monkeypatch.setenv('KAORI_INTERNAL_SECRET_STORE_PROVIDER', 'openbao')
     monkeypatch.setenv('INTEGRATION_VAULT_ALLOWED_ORIGINS', 'https://vault.example.invalid:8200')
     monkeypatch.setenv('INTEGRATION_OPENBAO_ALLOWED_ORIGINS', 'https://openbao:8200,https://bao.example.invalid:8200')
     monkeypatch.setenv('INTEGRATION_VAULT_CA_BUNDLE', '/trust/vault.pem')
@@ -124,7 +125,7 @@ def test_openbao_missing_own_allowlist_fails_closed(provider_env, monkeypatch):
     [(501, False, True, 'uninitialized'), (503, True, True, 'sealed'), (200, True, False, 'active')],
 )
 def test_openbao_operator_status_needs_no_approle(provider_env, monkeypatch, code, initialized, sealed, state):
-    monkeypatch.setenv('KAORI_INTERNAL_OPENBAO_ENDPOINT', 'https://openbao:8200')
+    monkeypatch.setenv('KAORI_INTERNAL_SECRET_STORE_ENDPOINT', 'https://openbao:8200')
 
     def request(session, method, url, **kwargs):
         assert method == 'GET'
@@ -135,24 +136,40 @@ def test_openbao_operator_status_needs_no_approle(provider_env, monkeypatch, cod
 
     monkeypatch.setattr(requests.Session, 'request', request)
     app = Flask(__name__)
-    app.cli.add_command(openbao_status)
-    result = app.test_cli_runner().invoke(args=['openbao-status'])
+    app.cli.add_command(secret_store_status)
+    result = app.test_cli_runner().invoke(args=['secret-store-status'])
     assert result.exit_code == 0
     assert f'status={state}' in result.output
     assert 'never-print' not in result.output
     assert 'not admitted' in result.output
 
 
-def test_openbao_status_denies_external_vault_endpoint(provider_env, monkeypatch):
-    monkeypatch.setenv('KAORI_INTERNAL_OPENBAO_ENDPOINT', 'https://vault.example.invalid:8200')
+def test_secret_store_status_denies_external_vault_endpoint(provider_env, monkeypatch):
+    monkeypatch.setenv('KAORI_INTERNAL_SECRET_STORE_ENDPOINT', 'https://vault.example.invalid:8200')
 
     def no_request(*args, **kwargs):
         pytest.fail('unapproved request')
 
     monkeypatch.setattr(requests.Session, 'request', no_request)
     app = Flask(__name__)
-    app.cli.add_command(openbao_status)
-    result = app.test_cli_runner().invoke(args=['openbao-status'])
+    app.cli.add_command(secret_store_status)
+    result = app.test_cli_runner().invoke(args=['secret-store-status'])
     assert result.exit_code != 0
     assert 'status unavailable' in result.output
     assert 'vault.example.invalid' not in result.output
+
+
+@pytest.mark.parametrize('provider', ['', 'vault', 'unknown'])
+def test_secret_store_status_requires_admitted_provider(provider_env, monkeypatch, provider):
+    monkeypatch.setenv('KAORI_INTERNAL_SECRET_STORE_PROVIDER', provider)
+    monkeypatch.setenv('KAORI_INTERNAL_SECRET_STORE_ENDPOINT', 'https://openbao:8200')
+
+    def no_request(*args, **kwargs):
+        pytest.fail('unsupported provider must not cause a network request')
+
+    monkeypatch.setattr(requests.Session, 'request', no_request)
+    app = Flask(__name__)
+    app.cli.add_command(secret_store_status)
+    result = app.test_cli_runner().invoke(args=['secret-store-status'])
+    assert result.exit_code != 0
+    assert 'provider is missing or unsupported' in result.output

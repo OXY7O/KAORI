@@ -174,7 +174,9 @@ class KV2HTTPClient(KV2HTTPTransport):
         started = perf_counter()
         health = self.health()
         if health['status'] in {'sealed', 'uninitialized', 'removed', 'ha_unhealthy', 'dr_secondary'}:
-            raise SecretProviderError(f'{self.provider_label} is not in a state that supports an AppRole connection test.')
+            raise SecretProviderError(
+                f'{self.provider_label} is not in a state that supports an AppRole connection test.'
+            )
         token = self.login()
         status, data = self._request('/v1/auth/token/lookup-self', token=token)
         if status != 200 or not isinstance(data.get('data'), dict):

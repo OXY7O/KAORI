@@ -32,8 +32,11 @@ material use is introduced by #5201's initial increment.
 
 ## Initial operator CLI (#5202)
 
-`flask openbao-status` in canonical `app/commands/` uses deployment-owned
-`KAORI_INTERNAL_OPENBAO_ENDPOINT` and the same OpenBao origin/CA policy.
+`flask secret-store-status` in canonical `app/commands/` uses deployment-owned
+`KAORI_INTERNAL_SECRET_STORE_PROVIDER=openbao`,
+`KAORI_INTERNAL_SECRET_STORE_ENDPOINT` and the same OpenBao origin/CA policy.
+The command is capability-named; unsupported providers are denied rather
+than silently falling back. Provider-specific adapters retain their names.
 It requires no AppRole credential and prints only sanitized initialization,
 seal and health status; it is not admission or a bootstrap writer. It is
 available once this PR is admitted. Native CLI remains independent of Flask
