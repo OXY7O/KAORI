@@ -11,6 +11,7 @@ from flask import Flask
 
 from app.access import scoped_grants
 from app.extensions.db import db
+from app.infrastructure_automation import credential_grants
 from app.infrastructure_automation import host_access_binding as service
 from app.infrastructure_automation.credential_scope_target import (
     CREDENTIAL_USE_PERMISSION,
@@ -466,7 +467,7 @@ def _credential_request(binding_store):
         db.session.add(RolePermission(role_id=role.id, permission_id=permission.id))
     db.session.commit()
     binding = AutomationHostAccessBinding.query.one()
-    request = scoped_grants.CredentialGrantIntent(
+    request = credential_grants.CredentialGrantIntent(
         connection_id=intent.connection_id,
         host_id=intent.host_id,
         expected_host_revision=binding.host_revision,
@@ -479,7 +480,7 @@ def _credential_request(binding_store):
 
 def test_credential_request_commits_only_draft_and_exact_selector(binding_store):
     actor, checker, request, validity = _credential_request(binding_store)
-    policy = scoped_grants.request_automation_credential_grant(
+    policy = credential_grants.request_automation_credential_grant(
         actor_user_id=checker,
         principal_user_id=actor,
         intent=request,
@@ -524,7 +525,7 @@ def test_credential_request_denial_is_atomic(binding_store, monkeypatch, failure
 
         monkeypatch.setattr(scoped_grants, 'stage_operational_activity', fail_after_stage)
     with pytest.raises(scoped_grants.ScopedGrantRejected):
-        scoped_grants.request_automation_credential_grant(
+        credential_grants.request_automation_credential_grant(
             actor_user_id=checker,
             principal_user_id=actor,
             intent=request,
