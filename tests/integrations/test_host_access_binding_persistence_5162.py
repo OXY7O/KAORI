@@ -11,7 +11,7 @@ from flask import Flask
 
 from app.access import scoped_grants
 from app.extensions.db import db
-from app.infrastructure_automation import credential_grants
+from app.infrastructure_automation import credential_grants, ssh_trust_lifecycle
 from app.infrastructure_automation import host_access_binding as service
 from app.infrastructure_automation.credential_scope_target import (
     CREDENTIAL_USE_PERMISSION,
@@ -28,7 +28,12 @@ from app.infrastructure_automation.kubernetes.source_policy import (
     REPOSITORY,
     SOURCE_CANDIDATE_SHA,
 )
-from app.models.automation import AutomationHostAccessBinding, AutomationHostAsset, AutomationInventoryAssignment
+from app.models.automation import (
+    AutomationHostAccessBinding,
+    AutomationHostAsset,
+    AutomationHostTrustRevision,
+    AutomationInventoryAssignment,
+)
 from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationInstance
 from app.models.notification import Notification
@@ -187,6 +192,7 @@ def binding_store():
         SecretVersionObservation.__table__,
         SecretInventoryCollectionState.__table__,
         AutomationHostAccessBinding.__table__,
+        AutomationHostTrustRevision.__table__,
         Notification.__table__,
     ]
     with app.app_context():
@@ -534,4 +540,101 @@ def test_credential_request_denial_is_atomic(binding_store, monkeypatch, failure
         )
     assert AutomationCredentialScopeTarget.query.count() == 0
     assert ScopeAccessPolicy.query.count() == 1
+    assert Notification.query.count() == 1
+
+
+def _seed_revocable_trust(binding_store):
+    actor, checker, intent = binding_store
+    service.record_host_access_reference(actor_id=actor, intent=intent)
+    role = db.session.get(User, actor).role_record
+    for key in ('roles.manage', 'users.manage'):
+        permission = Permission(key=key, module=key.split('.')[0], action=key.split('.')[1])
+        db.session.add(permission)
+        db.session.flush()
+        db.session.add(RolePermission(role_id=role.id, permission_id=permission.id))
+    binding = AutomationHostAccessBinding.query.one()
+    assignment = AutomationInventoryAssignment.query.one()
+    now = datetime.now(UTC)
+    # Synthetic historical row, not an independently verified live host.
+    record = AutomationHostTrustRevision(
+        assignment_id=assignment.id,
+        revision_number=1,
+        lifecycle_status='active',
+        host_revision=binding.host_revision,
+        reference_fingerprint=binding.reference_fingerprint,
+        address=assignment.host.address,
+        ssh_port=assignment.host.ssh_port,
+        algorithm='ssh-ed25519',
+        public_key='fixture-public-key-not-operational',
+        host_key_digest=binding.host_key_digest,
+        source_kind='independent_console',
+        evidence_ref='sha256:' + 'c' * 64,
+        requested_by_user_id=actor,
+        verified_by_user_id=checker,
+        verified_at=now - timedelta(hours=3),
+        effective_until=now - timedelta(hours=1),
+        recorded_at=now - timedelta(hours=2),
+        recorded_by_user_id=checker,
+    )
+    db.session.add(record)
+    assignment.enabled = False
+    db.session.commit()
+    return actor, checker, assignment.id, intent.connection_id
+
+
+def test_revoke_expired_disabled_trust_preserves_history_and_audit(binding_store):
+    actor, checker, assignment_id, connection_id = _seed_revocable_trust(binding_store)
+    result = ssh_trust_lifecycle.revoke_host_trust(
+        actor_id=checker, connection_id=connection_id, assignment_id=assignment_id, expected_revision=1
+    )
+    db.session.remove()
+    rows = AutomationHostTrustRevision.query.order_by(AutomationHostTrustRevision.revision_number).all()
+    assert result == 2
+    assert [row.lifecycle_status for row in rows] == ['active', 'revoked']
+    assert rows[0].recorded_by_user_id == checker
+    assert rows[1].requested_by_user_id == actor
+    assert rows[1].evidence_ref == rows[0].evidence_ref
+    assert rows[1].public_key == rows[0].public_key
+    assert ssh_trust_lifecycle.latest_host_trust_revision(assignment_id).lifecycle_status == 'revoked'
+    audit = Notification.query.filter_by(event_type='automation_host_trust_revoked').one()
+    assert audit.actor_key == f'user:{checker}'
+    for value in (rows[0].address, rows[0].public_key, rows[0].evidence_ref, rows[0].host_key_digest):
+        assert value not in str(audit.metadata_json)
+    with pytest.raises(ssh_trust_lifecycle.SSHTrustTransitionDenied):
+        ssh_trust_lifecycle.revoke_host_trust(
+            actor_id=checker, connection_id=connection_id, assignment_id=assignment_id, expected_revision=2
+        )
+    assert AutomationHostTrustRevision.query.count() == 2
+    assert Notification.query.count() == 2
+
+
+@pytest.mark.parametrize('failure', ['foreign_connection', 'stale', 'unauthorized', 'audit'])
+def test_revoke_host_trust_denial_leaves_history_unchanged(binding_store, monkeypatch, failure):
+    _, checker, assignment_id, connection_id = _seed_revocable_trust(binding_store)
+    expected_revision = 1
+    if failure == 'foreign_connection':
+        connection_id = IntegrationInstance.query.filter_by(provider_key='vault').one().id
+    elif failure == 'stale':
+        expected_revision = 2
+    elif failure == 'unauthorized':
+        permission = Permission.query.filter_by(key='roles.manage').one()
+        RolePermission.query.filter_by(permission_id=permission.id).delete()
+        db.session.commit()
+    else:
+        original = ssh_trust_lifecycle.stage_operational_activity
+
+        def fail_after_stage(**kwargs):
+            original(**kwargs)
+            db.session.flush()
+            raise RuntimeError('fixture audit failure')
+
+        monkeypatch.setattr(ssh_trust_lifecycle, 'stage_operational_activity', fail_after_stage)
+    with pytest.raises((ssh_trust_lifecycle.SSHTrustTransitionDenied, scoped_grants.ScopedGrantRejected, RuntimeError)):
+        ssh_trust_lifecycle.revoke_host_trust(
+            actor_id=checker,
+            connection_id=connection_id,
+            assignment_id=assignment_id,
+            expected_revision=expected_revision,
+        )
+    assert AutomationHostTrustRevision.query.one().lifecycle_status == 'active'
     assert Notification.query.count() == 1
