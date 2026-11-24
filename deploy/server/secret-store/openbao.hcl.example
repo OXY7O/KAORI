@@ -2,7 +2,7 @@
 # Install as target-private openbao.hcl only after TLS and database admission.
 # No embedded database URL, root token, recovery material or dev mode.
 ui = false
-api_addr = "https://openbao:8200"
+api_addr = "https://secret-store:8200"
 
 listener "tcp" {
   address = "0.0.0.0:8200"

@@ -1,4 +1,4 @@
-# Bundled OpenBao — candidate PostgreSQL profile (#5202)
+# KAORI Internal Secret Store — OpenBao PostgreSQL profile (#5202)
 
 ## Authority and state
 
@@ -14,7 +14,7 @@ or operational readiness are committed by this increment.
 ## Profile
 
 Reuse the existing PostgreSQL service, with dedicated proposed database
-`kaori_openbao` and restricted `kaori_openbao` role, never the KAORI app
+`kaori_secret_store` and restricted `kaori_secret_store` role, never the KAORI app
 database, migrator, runtime or PostgreSQL admin identity. Per-runtime DB
 ownership, role isolation, TLS and ACL admission must precede service startup.
 OpenBao stores its own encrypted records; the app must not read its tables.
@@ -25,7 +25,7 @@ runtime-only DML, `skip_create_table=true` and verified TLS. The existing
 PostgreSQL server adapter does not yet provision this database, TLS or ACL;
 do not disable SSL or reuse app credentials to make the example start.
 
-`compose.openbao.yml` is an explicit candidate overlay on the existing
+`compose.secret-store.yml` is an explicit candidate overlay on the existing
 server compose project, not a separate release engine. It requires exact
 target-owned image/config/env/audit settings, no host port, no privileged
 container or general app env, internal TLS listener and persistent audit
@@ -54,9 +54,9 @@ failure dependency. No new storage engine/container is required.
    component roles/policies and initial AppRole identities. Verify root
    token retirement and operator recovery. Keep native `bao` CLI accessible
    when Flask or PostgreSQL application schema is unavailable.
-5. Reuse canonical `app/commands/` for proposed `flask openbao-status`,
-   `flask bootstrap-openbao` (post-unseal, bounded/idempotent configuration
-   and built-in provider registration) and `flask verify-openbao`. Normal
+5. Reuse canonical `app/commands/` for proposed `flask secret-store-status`,
+   `flask bootstrap-secret-store` (post-unseal, bounded/idempotent configuration
+   and built-in provider registration) and `flask verify-secret-store`. Normal
    management and credential UI remain in KAORI; actual init/unseal,
    privileged recovery and key custody stay at the provider boundary.
    The initial status command is submitted in #5205; bootstrap/verify
@@ -75,3 +75,5 @@ owns the future migration. Current app.env, secrets.env,
 deploy.env and service-scoped role files remain authoritative. The OpenBao
 storage DSN, seal/unseal and service bootstrap roots cannot only reside in
 the service that needs them to start. No current ENV value is migrated.
+
+The capability name, deployment service, host-owned file paths and database/role are provider-neutral. `openbao.hcl.example`, `BAO_PG_CONNECTION_URL`, the image and native CLI are explicitly OpenBao-specific implementation details. The deployment-selected `KAORI_INTERNAL_SECRET_STORE_PROVIDER=openbao` and `KAORI_INTERNAL_SECRET_STORE_ENDPOINT=https://secret-store:8200` must be bound to the qualified runtime and its actual provider identity; configure the provider-specific approved origin and CA policy, including a certificate for `secret-store`. Missing or unsupported provider selection fails closed. A future backend replacement requires separate migration, compatibility and recovery admission; never reuse encrypted storage merely because the logical name is unchanged.

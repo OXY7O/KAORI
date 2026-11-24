@@ -3,7 +3,7 @@
 Status: design proposal under accepted #5200/#5202; no ENV migration or
 configuration-source change in this delivery. Existing split environment
 files, runtime target identity and deployment/recovery contracts remain
-authoritative. See [server profile](../../deploy/server/openbao/README.md).
+authoritative. See [server profile](../../deploy/server/secret-store/README.md).
 
 ## Ownership and dependency order
 
@@ -82,3 +82,5 @@ by this model. #5206 remains open until complete inventory, reviewed
 scope/consumer contracts, synthetic simulation and recovery evidence are
 accepted. Real migration requires separate bounded implementation
 authority and Human UAT.
+
+The internal capability is **KAORI Internal Secret Store** (`secret-store`); the selected provider is OpenBao. Preserve stable capability-level deployment and CLI names, but keep provider-specific transport, identity, native configuration and storage format explicit. A change of provider is a governed migration, not an in-place rename or implicit fallback.
