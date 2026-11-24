@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 
 import pytest
 
+from app.infrastructure_automation.host_registry import preview_inventory_intent
+from app.infrastructure_automation.kubernetes.committed_preflight import matches_committed_host_inventory
 from app.infrastructure_automation.kubernetes.inventory_plan_binding import assess_inventory_bound_plan_review
 
 NOW = datetime(2026, 11, 23, 12, 0, tzinfo=UTC)
@@ -153,3 +156,77 @@ def test_missing_binding_or_reused_access_fingerprint_is_blocked():
     another_access = deepcopy(access)
     another_access['fingerprint'] = 'f' * 64
     assert _evaluate(inventory=inventory, access=another_access, plan=plan).reason_code == 'PLAN_EVIDENCE_MISMATCH'
+
+
+def _registry_evidence():
+    connection = SimpleNamespace(
+        id=17,
+        integration_type='configuration_automation',
+        provider_key='ansible',
+        environment='laboratory',
+        lifecycle_status='active',
+    )
+    assignments = [
+        SimpleNamespace(
+            integration_instance_id=17,
+            enabled=True,
+            role='control_plane' if index == 1 else 'worker',
+            host=SimpleNamespace(
+                id=f'asset-{index}',
+                name=f'node-{index}',
+                address=f'10.0.0.{index}',
+                ssh_port=22,
+                environment='laboratory',
+                lifecycle_status='registered',
+            ),
+        )
+        for index in range(1, 4)
+    ]
+    facts = {
+        'host_registry_fingerprint': preview_inventory_intent(connection, assignments).inventory_fingerprint,
+        'hosts': [
+            {
+                'asset_id': assignment.host.id,
+                'role': assignment.role,
+                'address': assignment.host.address,
+                'ssh_port': assignment.host.ssh_port,
+            }
+            for assignment in assignments
+        ],
+    }
+    return connection, assignments, facts
+
+
+def test_committed_registry_requires_exact_attested_pilot_membership():
+    connection, assignments, facts = _registry_evidence()
+    assert matches_committed_host_inventory(connection, assignments, facts)
+    assert matches_committed_host_inventory(connection, list(reversed(assignments)), facts)
+    facts.pop('host_registry_fingerprint')
+    assert not matches_committed_host_inventory(connection, assignments, facts)
+
+
+@pytest.mark.parametrize(
+    ('field', 'value'),
+    [('name', 'renamed'), ('address', '10.0.0.99'), ('ssh_port', 2222), ('lifecycle_status', 'retired')],
+)
+def test_registry_identity_drift_blocks_previous_worker_evidence(field, value):
+    connection, assignments, facts = _registry_evidence()
+    setattr(assignments[0].host, field, value)
+    assert not matches_committed_host_inventory(connection, assignments, facts)
+
+
+def test_registry_scope_role_and_membership_drift_fail_closed():
+    connection, assignments, facts = _registry_evidence()
+    assert not matches_committed_host_inventory(connection, assignments[:2], facts)
+    assignments[0].role = 'worker'
+    assert not matches_committed_host_inventory(connection, assignments, facts)
+    assignments[0].role = 'control_plane'
+    assignments[0].integration_instance_id = 18
+    assert not matches_committed_host_inventory(connection, assignments, facts)
+
+
+@pytest.mark.parametrize('field', ['asset_id', 'role', 'address', 'ssh_port'])
+def test_observed_host_mismatch_blocks_even_with_matching_digest(field):
+    connection, assignments, facts = _registry_evidence()
+    facts['hosts'][0][field] = 'unqualified'
+    assert not matches_committed_host_inventory(connection, assignments, facts)
