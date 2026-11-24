@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from flask_wtf import FlaskForm
-from wtforms import IntegerField, SelectField, StringField
+from wtforms import HiddenField, IntegerField, SelectField, StringField
 from wtforms.validators import DataRequired, InputRequired, Length, NumberRange
 
 
@@ -28,3 +28,12 @@ class AutomationHostEnrollmentForm(FlaskForm):
         choices=[('control_plane', 'Control Plane'), ('worker', 'Worker')],
         validators=[DataRequired()],
     )
+
+
+class AutomationHostEditForm(AutomationHostEnrollmentForm):
+    expected_revision = HiddenField(validators=[DataRequired()])
+
+
+class AutomationHostRetirementForm(FlaskForm):
+    expected_revision = HiddenField(validators=[DataRequired()])
+    confirm_name = StringField('Confirm Host Name', validators=[DataRequired()])

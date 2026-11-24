@@ -190,6 +190,7 @@
                                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Host</th>
                                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Role</th>
                                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Management Endpoint</th>
+                                        <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Manage</th>
                                     </tr>
                                 </thead>
                                 <tbody class="{{ table_ui.body_classes() }}">
@@ -199,6 +200,10 @@
                                             <td class="{{ table_ui.cell_classes() }}">{{ host.role|replace('_', ' ') |title }}</td>
                                             <td class="{{ table_ui.cell_classes() }}">
                                                 <span class="font-mono text-xs">{{ host.address }}:{{ host.ssh_port }}</span>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes(true) }}">
+                                                <a href="{{ url_for('platform_operations.infrastructure_automation_hosts.edit', connection_id=details.connection.id, host_id=host.id) }}"
+                                                   class="{{ action_button.classes('soft') }}">Edit</a>
                                             </td>
                                         </tr>
                                     {% endfor %}

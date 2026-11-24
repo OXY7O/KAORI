@@ -8,7 +8,12 @@ from types import SimpleNamespace
 import pytest
 
 from app import create_app
-from app.infrastructure_automation.host_enrollment import enroll_host_for_connection
+from app.infrastructure_automation.host_enrollment import (
+    enroll_host_for_connection,
+    host_revision,
+    retire_host_for_connection,
+    update_host_for_connection,
+)
 from app.infrastructure_automation.host_registry import AutomationHostIntent, AutomationInventoryDenied
 from app.infrastructure_automation.workspace import project_host_assets
 
@@ -86,3 +91,59 @@ def test_host_registration_is_a_separate_guarded_post_not_workspace_get():
     assert "@permission_required('inventory.view')" in source
     for denied in ('ansible_runner.run', 'subprocess.run(', 'requests.post(', 'kubectl '):
         assert denied not in source
+
+
+def test_revision_changes_when_host_name_role_or_endpoint_changes():
+    assignment = _assignment()
+    assignment.id = 23
+    assignment.updated_at = None
+    assignment.host.updated_at = None
+    original = host_revision(assignment)
+    assignment.host.name = 'control-02'
+    renamed = host_revision(assignment)
+    assignment.role = 'worker'
+    reassigned = host_revision(assignment)
+    assignment.host.address = '10.11.12.14'
+    assert len(original) == 64
+    assert len({original, renamed, reassigned, host_revision(assignment)}) == 4
+
+
+def test_edit_and_retirement_fail_closed_before_any_db_write_on_cross_connection():
+    assignment = _assignment()
+    assignment.updated_at = None
+    assignment.host.updated_at = None
+    for mutation in ('edit', 'retire'):
+        with pytest.raises(AutomationInventoryDenied):
+            if mutation == 'edit':
+                update_host_for_connection(
+                    _connection(id=18),
+                    assignment,
+                    AutomationHostIntent(name='control-01', environment='laboratory', address='10.11.12.13'),
+                    role='worker',
+                    expected_revision=host_revision(assignment),
+                )
+            else:
+                retire_host_for_connection(
+                    _connection(id=18),
+                    assignment,
+                    expected_revision=host_revision(assignment),
+                    confirmation='control-01',
+                )
+
+
+def test_edit_and_retire_http_routes_are_permission_guarded_and_retire_is_post_only():
+    app = create_app('testing')
+    endpoints = {rule.endpoint: rule for rule in app.url_map.iter_rules()}
+    edit = endpoints['platform_operations.infrastructure_automation_hosts.edit']
+    retire = endpoints['platform_operations.infrastructure_automation_hosts.retire']
+    assert 'GET' in edit.methods and 'POST' in edit.methods
+    assert 'GET' not in retire.methods and 'POST' in retire.methods
+    source = (ROOT / 'app/infrastructure_automation/host_routes.py').read_text()
+    assert source.count("@permission_required('integrations.manage')") == 3
+    assert source.count("@permission_required('inventory.view')") == 3
+    edit_template = (ROOT / 'app/templates/infrastructure_automation/host_edit.html').read_text()
+    assert 'form.csrf_token' in edit_template
+    assert 'retirement_form.csrf_token' in edit_template
+    assert 'retirement_form.confirm_name' in edit_template
+    assert 'form.expected_revision' in edit_template
+    assert 'password' not in edit_template and 'private_key' not in edit_template

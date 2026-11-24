@@ -163,6 +163,7 @@ def preview_inventory_intent(
         ordered.append(
             {
                 'host_id': host.id,
+                'name': intent.name,
                 'role': assignment.role,
                 'address': intent.address,
                 'ssh_port': intent.ssh_port,
