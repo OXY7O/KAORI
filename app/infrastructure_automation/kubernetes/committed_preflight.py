@@ -11,6 +11,10 @@ from datetime import UTC, datetime, timedelta
 from ipaddress import IPv4Network, ip_network
 from typing import Any
 
+from sqlalchemy.orm import joinedload
+
+from app.infrastructure_automation.host_registry import preview_inventory_intent
+
 from app.infrastructure_automation.kubernetes.kubespray_preflight import (
     KUBESPRAY_COMMIT,
     KUBESPRAY_KUBERNETES_MINOR,
@@ -18,6 +22,7 @@ from app.infrastructure_automation.kubernetes.kubespray_preflight import (
     SUPPORTED_OPERATING_SYSTEMS,
 )
 from app.infrastructure_automation.kubernetes.source_policy import committed_source_state
+from app.models.automation import AutomationInventoryAssignment
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
 
@@ -313,6 +318,38 @@ def build_kubespray_preflight(
     )
 
 
+def matches_committed_host_inventory(
+    connection: IntegrationInstance,
+    assignments: list[AutomationInventoryAssignment],
+    facts: dict[str, Any],
+) -> bool:
+    """Compare the worker's attested registry digest and exact pilot identities."""
+    preview = preview_inventory_intent(connection, assignments)
+    if (
+        preview.state != 'requires_trust_admission'
+        or preview.host_count != 3
+        or not preview.inventory_fingerprint
+        or facts.get('host_registry_fingerprint') != preview.inventory_fingerprint
+    ):
+        return False
+    hosts = facts.get('hosts')
+    if not isinstance(hosts, list) or len(hosts) != 3:
+        return False
+    expected = {
+        (assignment.host.id, assignment.role, assignment.host.address, assignment.host.ssh_port)
+        for assignment in assignments
+    }
+    observed = set()
+    for host in hosts:
+        if not isinstance(host, dict):
+            return False
+        asset_id, role, address, port = (host.get(key) for key in ('asset_id', 'role', 'address', 'ssh_port'))
+        if not all(isinstance(value, str) for value in (asset_id, role, address)) or type(port) is not int:
+            return False
+        observed.add((asset_id, role, address, port))
+    return len(expected) == 3 and observed == expected
+
+
 def committed_kubespray_preflight(connection: IntegrationInstance) -> KubesprayPreflight:
     """Project the latest five bounded, immutable preflight records from KAORI state."""
     jobs = (
@@ -326,4 +363,22 @@ def committed_kubespray_preflight(connection: IntegrationInstance) -> KubesprayP
         .limit(5)
         .all()
     )
-    return build_kubespray_preflight(connection, jobs=jobs)
+    posture = build_kubespray_preflight(connection, jobs=jobs)
+    if posture.state != 'ready_for_review':
+        return posture
+    # The newest attempt is authoritative. Never reuse an older attestation
+    # after membership drift, a failed attempt or a missing registry binding.
+    latest = jobs[0] if jobs else None
+    facts = latest.result_summary_json if latest is not None else None
+    if latest is None or latest.public_id != posture.facts_job_public_id or not isinstance(facts, dict):
+        return build_kubespray_preflight(connection)
+    assignments = (
+        AutomationInventoryAssignment.query.options(joinedload(AutomationInventoryAssignment.host))
+        .filter_by(integration_instance_id=connection.id, enabled=True)
+        .order_by(AutomationInventoryAssignment.id.asc())
+        .limit(4)
+        .all()
+    )
+    if not matches_committed_host_inventory(connection, assignments, facts):
+        return build_kubespray_preflight(connection)
+    return posture
