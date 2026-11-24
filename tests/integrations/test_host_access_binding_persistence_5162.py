@@ -259,7 +259,9 @@ def test_committed_binding_and_audit_with_real_exact_scope(binding_store):
     assert AutomationHostAccessBinding.query.count() == Notification.query.count() == 1
 
 
-@pytest.mark.parametrize('failure', ['foreign_actor', 'wrong_secret', 'version_drift', 'revoked', 'incomplete', 'host_drift'])
+@pytest.mark.parametrize(
+    'failure', ['foreign_actor', 'wrong_secret', 'version_drift', 'revoked', 'incomplete', 'host_drift']
+)
 def test_database_denials_leave_no_binding_or_audit(binding_store, failure):
     actor, checker, intent = binding_store
     if failure == 'foreign_actor':
