@@ -157,7 +157,10 @@ def source_validation_posture(connection: IntegrationInstance) -> dict[str, Any]
     }
     description = {
         'checked': 'Exact reviewed Git source and version metadata match committed evidence. Execution is still disabled.',
-        'blocked': 'Source validation failed or its evidence no longer matches the approved revision and version policy.',
+        'blocked': (
+            'Source validation failed or its evidence no longer matches the approved revision and version policy. '
+            'Superseded immutable connections require a separately validated replacement connection.'
+        ),
         'not_checked': 'There is no qualifying committed Git verification evidence for this connection.',
     }
     capabilities = (

@@ -10,9 +10,10 @@ from __future__ import annotations
 from app.infrastructure_automation.kubernetes.kubespray_preflight import KUBESPRAY_RELEASE
 
 REPOSITORY = 'OXY7O/kaori-operations'
-SOURCE_CANDIDATE_SHA = '831ab7c114b1c1ba777c08ab79c91415ad8d465d'
+# Independently reviewed non-executable profile, merged upstream in PR #6.
+SOURCE_CANDIDATE_SHA = '63db48309cbb6d261c27cf54f60bfe885a21f770'
 PROFILE_KEY = 'kubernetes_lifecycle'
-ANSIBLE_CORE_VERSION = '2.19.3'
+ANSIBLE_CORE_VERSION = '2.19.15'
 ANSIBLE_RUNNER_VERSION = '2.4.3'
 
 
