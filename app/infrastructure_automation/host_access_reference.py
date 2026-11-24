@@ -12,11 +12,19 @@ import hashlib
 import json
 import re
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from typing import Any
 
 from app.infrastructure_automation.kubernetes.source_policy import committed_source_state
+from app.models.automation import AutomationInventoryAssignment
 from app.models.integration import IntegrationInstance
-from app.models.secrets_pki import SecretIdentity, SecretProviderRepresentation
+from app.models.secrets_pki import (
+    SecretIdentity,
+    SecretInventoryCollectionState,
+    SecretProviderRepresentation,
+    SecretVersionObservation,
+)
+from app.secrets_pki.lifecycle import classify_kv2_version
 
 _HOST_ID = re.compile(r'[A-Za-z0-9][A-Za-z0-9._:-]{0,95}\Z')
 _HEX_DIGEST = re.compile(r'[a-f0-9]{64}\Z')
@@ -153,4 +161,106 @@ def assess_host_access_references(
         fingerprint,
         True,
         True,
+    )
+
+
+def _current_membership(connection: IntegrationInstance, assignment: AutomationInventoryAssignment) -> bool:
+    host = assignment.host
+    return (
+        assignment.integration_instance_id == connection.id
+        and assignment.enabled is True
+        and host is not None
+        and assignment.host_id == host.id
+        and host.lifecycle_status == 'registered'
+        and host.environment == connection.environment
+        and assignment.role in {'control_plane', 'worker'}
+    )
+
+
+def _matching_vault_source(
+    connection: IntegrationInstance, provider: IntegrationInstance, representation: SecretProviderRepresentation
+) -> bool:
+    return (
+        provider.id == representation.integration_instance_id
+        and provider.integration_type == 'secrets_pki'
+        and provider.provider_key == 'vault'
+        and provider.enabled is True
+        and provider.lifecycle_status == 'active'
+        and provider.readiness_status == 'ready'
+        and provider.environment == connection.environment
+    )
+
+
+def _fresh_observation(value: datetime | None, now: datetime) -> bool:
+    return (
+        isinstance(value, datetime)
+        and value.utcoffset() is not None
+        and now.utcoffset() is not None
+        and timedelta(0) <= now - value <= timedelta(hours=24)
+    )
+
+
+def _current_collection(
+    representation: SecretProviderRepresentation, collection: SecretInventoryCollectionState, now: datetime
+) -> bool:
+    return (
+        collection.integration_instance_id == representation.integration_instance_id
+        and collection.provider_namespace == representation.provider_namespace
+        and collection.mount == representation.mount
+        and collection.status == 'ready'
+        and type(collection.observed_count) is int
+        and 0 < collection.observed_count <= 200
+        and _fresh_observation(collection.last_observed_at, now)
+        and _fresh_observation(collection.last_committed_at, now)
+        and collection.last_observed_at == representation.last_observed_at
+    )
+
+
+def _current_secret_version(
+    representation: SecretProviderRepresentation, version: SecretVersionObservation, now: datetime
+) -> bool:
+    return (
+        version.representation_id == representation.id
+        and version.version == representation.current_version
+        and version.last_observed_at == representation.last_observed_at
+        and _fresh_observation(version.last_observed_at, now)
+        and version.destroyed is False
+        and classify_kv2_version(
+            destroyed=version.destroyed, deletion_time=version.provider_deletion_time, observed_at=now
+        )
+        == 'available'
+    )
+
+
+def assess_scoped_host_access_references(
+    *,
+    connection: IntegrationInstance,
+    assignment: AutomationInventoryAssignment,
+    provider: IntegrationInstance,
+    representation: SecretProviderRepresentation,
+    collection: SecretInventoryCollectionState,
+    version: SecretVersionObservation,
+    host_key_digest: str | None,
+    now: datetime,
+) -> HostAccessReferenceReview:
+    """Qualify reference metadata only, after caller-enforced exact resource policy.
+
+    Inputs must come from authorized canonical committed reads. This does not
+    replace the audited #724 policy evaluator, prove secret type or authorize
+    material access, and must not be exposed as a browser-supplied decision.
+    """
+    if not _current_membership(connection, assignment):
+        return _blocked('HOST_MEMBERSHIP_UNQUALIFIED')
+    if not _matching_vault_source(connection, provider, representation):
+        return _blocked('SECRET_SOURCE_SCOPE_UNQUALIFIED')
+    if not _current_collection(representation, collection, now):
+        return _blocked('SECRET_COLLECTION_UNQUALIFIED')
+    if not _current_secret_version(representation, version, now):
+        return _blocked('SECRET_VERSION_UNQUALIFIED')
+    return assess_host_access_references(
+        connection=connection,
+        host_asset_id=assignment.host_id,
+        secret_identity=representation.secret_identity,
+        secret_representation=representation,
+        host_key_digest=host_key_digest,
     )

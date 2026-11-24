@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
 
-from app.infrastructure_automation.host_access_reference import assess_host_access_references
+from app.infrastructure_automation.host_access_reference import (
+    assess_host_access_references,
+    assess_scoped_host_access_references,
+)
 from app.infrastructure_automation.kubernetes.kubespray_preflight import KUBESPRAY_RELEASE
 from app.infrastructure_automation.kubernetes.source_policy import (
     ANSIBLE_CORE_VERSION,
@@ -15,8 +19,14 @@ from app.infrastructure_automation.kubernetes.source_policy import (
     REPOSITORY,
     SOURCE_CANDIDATE_SHA,
 )
+from app.models.automation import AutomationHostAsset, AutomationInventoryAssignment
 from app.models.integration import IntegrationInstance
-from app.models.secrets_pki import SecretIdentity, SecretProviderRepresentation
+from app.models.secrets_pki import (
+    SecretIdentity,
+    SecretInventoryCollectionState,
+    SecretProviderRepresentation,
+    SecretVersionObservation,
+)
 
 
 def _evidence():
@@ -169,3 +179,93 @@ def test_reference_drift_changes_hash_without_disclosing_material():
     first = assess_host_access_references(**fields).fingerprint
     fields['connection'].metadata_json['execution_environment_digest'] = 'sha256:' + 'c' * 64
     assert assess_host_access_references(**fields).fingerprint != first
+
+
+_NOW = datetime(2026, 11, 24, 3, 0, tzinfo=UTC)
+
+
+def _scoped_evidence():
+    fields = _evidence()
+    representation = fields['secret_representation']
+    representation.secret_identity = fields['secret_identity']
+    representation.provider_namespace = ''
+    representation.mount = 'example'
+    representation.last_observed_at = _NOW
+    host = AutomationHostAsset(
+        id=str(uuid4()),
+        name='node-1',
+        environment='laboratory',
+        address='10.0.0.1',
+        ssh_port=22,
+        lifecycle_status='registered',
+    )
+    return {
+        'connection': fields['connection'],
+        'assignment': AutomationInventoryAssignment(
+            integration_instance_id=7, host_id=host.id, host=host, enabled=True, role='control_plane'
+        ),
+        'provider': IntegrationInstance(
+            id=31,
+            integration_type='secrets_pki',
+            provider_key='vault',
+            environment='laboratory',
+            enabled=True,
+            lifecycle_status='active',
+            readiness_status='ready',
+        ),
+        'representation': representation,
+        'collection': SecretInventoryCollectionState(
+            integration_instance_id=31,
+            provider_namespace='',
+            mount='example',
+            status='ready',
+            observed_count=1,
+            last_observed_at=_NOW,
+            last_committed_at=_NOW,
+        ),
+        'version': SecretVersionObservation(
+            representation_id=17, version=2, last_observed_at=_NOW, destroyed=False
+        ),
+        'host_key_digest': fields['host_key_digest'],
+        'now': _NOW,
+    }
+
+
+def test_scoped_reference_uses_current_member_and_available_version_metadata_only():
+    result = assess_scoped_host_access_references(**_scoped_evidence())
+    assert result.state == 'references_recorded'
+    assert result.execution_authorized is False
+    assert result.ssh_trust_verified is False
+    assert result.privileged_identity_verified is False
+
+
+@pytest.mark.parametrize(
+    ('record', 'field', 'value', 'reason'),
+    [
+        ('assignment', 'integration_instance_id', 8, 'HOST_MEMBERSHIP_UNQUALIFIED'),
+        ('assignment', 'enabled', False, 'HOST_MEMBERSHIP_UNQUALIFIED'),
+        ('assignment', 'host_id', 'other-host', 'HOST_MEMBERSHIP_UNQUALIFIED'),
+        ('assignment', 'role', 'unsupported', 'HOST_MEMBERSHIP_UNQUALIFIED'),
+        ('provider', 'id', 32, 'SECRET_SOURCE_SCOPE_UNQUALIFIED'),
+        ('provider', 'environment', 'production', 'SECRET_SOURCE_SCOPE_UNQUALIFIED'),
+        ('provider', 'enabled', False, 'SECRET_SOURCE_SCOPE_UNQUALIFIED'),
+        ('provider', 'readiness_status', 'unknown', 'SECRET_SOURCE_SCOPE_UNQUALIFIED'),
+        ('collection', 'mount', 'other', 'SECRET_COLLECTION_UNQUALIFIED'),
+        ('collection', 'status', 'failed', 'SECRET_COLLECTION_UNQUALIFIED'),
+        ('collection', 'last_committed_at', _NOW - timedelta(hours=25), 'SECRET_COLLECTION_UNQUALIFIED'),
+        ('collection', 'last_observed_at', _NOW + timedelta(seconds=1), 'SECRET_COLLECTION_UNQUALIFIED'),
+        ('version', 'representation_id', 18, 'SECRET_VERSION_UNQUALIFIED'),
+        ('version', 'version', 1, 'SECRET_VERSION_UNQUALIFIED'),
+        ('version', 'destroyed', True, 'SECRET_VERSION_UNQUALIFIED'),
+        ('version', 'provider_deletion_time', _NOW.isoformat(), 'SECRET_VERSION_UNQUALIFIED'),
+        ('version', 'provider_deletion_time', (_NOW + timedelta(hours=1)).isoformat(), 'SECRET_VERSION_UNQUALIFIED'),
+        ('version', 'last_observed_at', _NOW - timedelta(seconds=1), 'SECRET_VERSION_UNQUALIFIED'),
+    ],
+)
+def test_scoped_reference_rejects_scope_or_version_drift(record, field, value, reason):
+    evidence = _scoped_evidence()
+    setattr(evidence[record], field, value)
+    result = assess_scoped_host_access_references(**evidence)
+    assert result.reason_code == reason
+    assert result.fingerprint is None
+    assert result.execution_authorized is False
