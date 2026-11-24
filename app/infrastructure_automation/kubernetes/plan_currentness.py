@@ -22,6 +22,7 @@ from app.infrastructure_automation.kubernetes.plan_review import (
 )
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
+from app.platform_operations.jobs.fingerprint import payload_fingerprint
 
 
 @dataclass(frozen=True, slots=True)
@@ -121,6 +122,9 @@ def evaluate_kubespray_plan_currentness(
     if (
         rebuilt.status != 'requires_independent_approval'
         or not rebuilt.plan_fingerprint
+        or rebuilt.host_registry_fingerprint != latest_host_preflight.host_registry_fingerprint
+        or rebuilt.host_access_fingerprint != latest_host_preflight.host_access_fingerprint
+        or latest_plan_job.parameter_fingerprint != payload_fingerprint(rebuilt.dispatch_parameters())
         or summary != rebuilt.committed_summary()
     ):
         return blocked

@@ -6,7 +6,7 @@ or an approval token. Source-check evidence is not runtime admission.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime, timedelta
 from ipaddress import IPv4Network, ip_network
 from typing import Any
@@ -14,6 +14,7 @@ from typing import Any
 from sqlalchemy.orm import joinedload
 
 from app.infrastructure_automation.host_registry import preview_inventory_intent
+from app.infrastructure_automation.kubernetes.committed_host_access import committed_pilot_access_fingerprint
 from app.infrastructure_automation.kubernetes.kubespray_preflight import (
     KUBESPRAY_COMMIT,
     KUBESPRAY_KUBERNETES_MINOR,
@@ -53,6 +54,8 @@ class KubesprayPreflight:
     facts_job_public_id: str | None
     source_revision: str
     gates: tuple[KubesprayGate, ...]
+    host_registry_fingerprint: str | None = None
+    host_access_fingerprint: str | None = None
 
     def presentation(self) -> dict[str, Any]:
         """Distinguish qualified review evidence from independent Run governance."""
@@ -84,14 +87,14 @@ def _committed_host_evidence(
     host discovery must implement this specific attested result contract.
     """
     for job in jobs:
+        if job.integration_instance_id != connection.id or job.operation != _HOST_PREFLIGHT_OPERATION:
+            continue
         if (
-            job.integration_instance_id != connection.id
-            or job.integration_type != 'configuration_automation'
+            job.integration_type != 'configuration_automation'
             or job.job_type != 'infrastructure_automation'
             or job.queue_name != 'automation'
-            or job.operation != _HOST_PREFLIGHT_OPERATION
         ):
-            continue
+            return {}, None
         # The latest attempt owns readiness. Never fall back to an older good
         # observation after a failed, queued, expired or mismatched attempt.
         if job.result_type != _HOST_PREFLIGHT_RESULT_TYPE or job.status != 'succeeded':
@@ -354,8 +357,6 @@ def committed_kubespray_preflight(connection: IntegrationInstance) -> KubesprayP
     jobs = (
         JobExecution.query.filter_by(
             integration_instance_id=connection.id,
-            integration_type='configuration_automation',
-            job_type='infrastructure_automation',
             operation=_HOST_PREFLIGHT_OPERATION,
         )
         .order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
@@ -380,4 +381,15 @@ def committed_kubespray_preflight(connection: IntegrationInstance) -> KubesprayP
     )
     if not matches_committed_host_inventory(connection, assignments, facts):
         return build_kubespray_preflight(connection)
-    return posture
+    registry = facts.get('host_registry_fingerprint')
+    access = committed_pilot_access_fingerprint(connection, assignments, now=datetime.now(UTC))
+    if access is None or facts.get('host_access_fingerprint') != access:
+        return build_kubespray_preflight(connection)
+    metadata = connection.metadata_json if isinstance(connection.metadata_json, dict) else {}
+    if (
+        not connection.enabled
+        or facts.get('execution_environment_digest') != metadata.get('execution_environment_digest')
+        or not isinstance(registry, str)
+    ):
+        return build_kubespray_preflight(connection)
+    return replace(posture, host_registry_fingerprint=registry, host_access_fingerprint=access)
