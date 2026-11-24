@@ -41,7 +41,10 @@ def enroll_host_for_connection(
 
     # Never register a 257th member, even though the paginated read model
     # would show only the first five. An execution-bound snapshot is separate.
-    if AutomationInventoryAssignment.query.filter_by(integration_instance_id=connection.id, enabled=True).count() >= _HOST_LIMIT:
+    if (
+        AutomationInventoryAssignment.query.filter_by(integration_instance_id=connection.id, enabled=True).count()
+        >= _HOST_LIMIT
+    ):
         raise AutomationInventoryDenied('The connection has reached the approved host inventory limit.')
     if AutomationHostAsset.query.filter_by(environment=intent.environment, name=intent.name).first():
         raise AutomationInventoryDenied('The host name is already registered in this environment.')

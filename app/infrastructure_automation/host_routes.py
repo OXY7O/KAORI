@@ -170,10 +170,14 @@ def edit(connection_id: int, host_id) -> ResponseReturnValue:
                     status='success',
                     title='Host identity updated',
                     message='The committed host inventory changed; review any previous Plan again.',
-                    action_url=url_for('platform_operations.infrastructure_automation.index', connection_id=connection_id),
+                    action_url=url_for(
+                        'platform_operations.infrastructure_automation.index', connection_id=connection_id
+                    ),
                     metadata={'connection_id': connection_id, 'host_id': host.id, 'feedback_delivery': 'toast'},
                 )
-                return redirect(url_for('platform_operations.infrastructure_automation.index', connection_id=connection_id))
+                return redirect(
+                    url_for('platform_operations.infrastructure_automation.index', connection_id=connection_id)
+                )
         else:
             error = 'Review the required fields and submit the form again.'
     return render_template(
