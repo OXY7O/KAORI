@@ -254,6 +254,8 @@ def test_committed_binding_and_audit_with_real_exact_scope(binding_store):
     assert 'fixture/private/path' not in str(audit.metadata_json)
     assert intent.secret_identity_id not in str(audit.metadata_json)
     assert intent.host_key_digest not in str(audit.metadata_json)
+    assert result.ssh_trust_verified is False
+    assert result.privileged_identity_verified is False
     assert result.execution_authorized is False
     with pytest.raises(service.HostAccessBindingDenied):
         service.record_host_access_reference(actor_id=actor, intent=intent)
@@ -320,7 +322,9 @@ def _record_pilot(binding_store):
     return connection, assignments
 
 
-@pytest.mark.parametrize('drift', ['host', 'version', 'destroyed', 'missing_binding', 'generation', 'disabled_source'])
+@pytest.mark.parametrize(
+    'drift', ['host', 'port', 'role', 'key', 'version', 'destroyed', 'missing_binding', 'generation', 'disabled_source']
+)
 def test_persisted_pilot_access_correlation_invalidates_on_drift(binding_store, drift):
     connection, assignments = _record_pilot(binding_store)
     now = datetime.now(UTC)
@@ -329,6 +333,14 @@ def test_persisted_pilot_access_correlation_invalidates_on_drift(binding_store, 
     assert original == committed_pilot_access_fingerprint(connection, list(reversed(assignments)), now=now)
     if drift == 'host':
         assignments[0].host.address = '10.0.0.99'
+    elif drift == 'port':
+        assignments[0].host.ssh_port = 2222
+    elif drift == 'role':
+        assignments[0].role = 'worker' if assignments[0].role == 'control_plane' else 'control_plane'
+    elif drift == 'key':
+        AutomationHostAccessBinding.query.filter_by(assignment_id=assignments[0].id).one().host_key_digest = (
+            'sha256:' + 'f' * 64
+        )
     elif drift == 'version':
         SecretProviderRepresentation.query.one().current_version = 3
     elif drift == 'destroyed':
