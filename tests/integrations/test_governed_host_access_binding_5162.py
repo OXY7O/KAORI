@@ -147,3 +147,29 @@ def test_scope_evaluator_requires_exact_policy_revision(monkeypatch):
     monkeypatch.setattr(service, 'evaluate_exact_vault_scope', evaluate)
     with pytest.raises(service.HostAccessBindingDenied):
         service._require_scope(11, policy.id, now)
+
+
+
+def test_unexpected_programming_failure_still_rolls_back(transaction, monkeypatch):
+    intent, events, _ = transaction
+
+    def fail(**kwargs):
+        raise AssertionError('unexpected invariant failure')
+
+    monkeypatch.setattr(service, 'stage_operational_activity', fail)
+    with pytest.raises(AssertionError):
+        service.record_host_access_reference(actor_id=11, intent=intent)
+    assert [event[0] for event in events] == ['add', 'rollback']
+
+
+def test_commit_failure_rolls_back_staged_reference_and_audit(transaction, monkeypatch):
+    intent, events, _ = transaction
+
+    def fail():
+        raise service.SQLAlchemyError('private database detail')
+
+    monkeypatch.setattr(service.db.session, 'commit', fail)
+    with pytest.raises(service.HostAccessBindingDenied) as caught:
+        service.record_host_access_reference(actor_id=11, intent=intent)
+    assert [event[0] for event in events] == ['add', 'audit', 'rollback']
+    assert 'private database detail' not in str(caught.value)

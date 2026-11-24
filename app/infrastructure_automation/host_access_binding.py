@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import UUID
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import load_only
 
 from app.access.scope_policy import evaluate_exact_vault_scope
@@ -205,6 +206,7 @@ def record_host_access_reference(*, actor_id: int, intent: HostAccessBindingInte
     Create-only metadata selection; no replacement, grant, secret-use policy
     or trusted host-key verification. No HTTP caller is enabled in this slice.
     """
+    committed = False
     try:
         if not _valid_intent(intent, actor_id):
             raise _deny()
@@ -267,7 +269,10 @@ def record_host_access_reference(*, actor_id: int, intent: HostAccessBindingInte
             },
         )
         db.session.commit()
+        committed = True
         return review
-    except Exception:
-        db.session.rollback()
+    except (SQLAlchemyError, ValueError, TypeError, AttributeError, RuntimeError):
         raise _deny() from None
+    finally:
+        if not committed:
+            db.session.rollback()
