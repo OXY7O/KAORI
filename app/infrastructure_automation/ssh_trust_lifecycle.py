@@ -80,9 +80,7 @@ def _revoked_revision(current: AutomationHostTrustRevision, actor_id: int) -> Au
     return record
 
 
-def revoke_host_trust(
-    *, actor_id: int, connection_id: int, assignment_id: int, expected_revision: int
-) -> int:
+def revoke_host_trust(*, actor_id: int, connection_id: int, assignment_id: int, expected_revision: int) -> int:
     """Append a terminal revocation and mandatory audit atomically.
 
     No provider or SSH operation is performed. Expired evidence and disabled
