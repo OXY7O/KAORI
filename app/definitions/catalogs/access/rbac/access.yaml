@@ -301,7 +301,7 @@ permissions:
   module: secrets_pki
   action: use_automation_credential
   description: Qualify a separately governed read-only automation credential-use request; no material access is enabled by this permission alone.
-  matrix_description: Require exact approved credential scope, provider-owned typed version and independent operation admission for internal read-only automation. Never reveal or export material; execution remains blocked until the separate runtime gates are admitted.
+  matrix_description: Qualify internal read-only automation credential use under exact approved scope and typed version, without material reveal or execution authorization.
 - key: integrations.manage
   module: integrations
   action: manage_integrations
