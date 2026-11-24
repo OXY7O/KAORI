@@ -54,7 +54,9 @@ class HostAccessBindingDenied(ValueError):
 
 
 def _deny() -> HostAccessBindingDenied:
-    return HostAccessBindingDenied('Host access reference could not be recorded. Review the approved scope and inventory.')
+    return HostAccessBindingDenied(
+        'Host access reference could not be recorded. Review the approved scope and inventory.'
+    )
 
 
 def _canonical_uuid(value: str) -> bool:
@@ -197,9 +199,7 @@ def _selected_version(representation: SecretProviderRepresentation, expected_ver
     return version
 
 
-def record_host_access_reference(
-    *, actor_id: int, intent: HostAccessBindingIntent
-) -> HostAccessReferenceReview:
+def record_host_access_reference(*, actor_id: int, intent: HostAccessBindingIntent) -> HostAccessReferenceReview:
     """Own the transaction: verify canonical scope, stage audit, commit or deny.
 
     Create-only metadata selection; no replacement, grant, secret-use policy

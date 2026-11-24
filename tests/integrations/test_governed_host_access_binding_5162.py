@@ -142,9 +142,7 @@ def test_scope_evaluator_requires_exact_policy_revision(monkeypatch):
 
     def evaluate(**kwargs):
         assert kwargs['lock_for_read'] is True
-        return SimpleNamespace(
-            allowed=True, policy_ref=policy.id, revision=1, expires_at=now + timedelta(minutes=5)
-        )
+        return SimpleNamespace(allowed=True, policy_ref=policy.id, revision=1, expires_at=now + timedelta(minutes=5))
 
     monkeypatch.setattr(service, 'evaluate_exact_vault_scope', evaluate)
     with pytest.raises(service.HostAccessBindingDenied):
