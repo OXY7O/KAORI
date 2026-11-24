@@ -297,6 +297,11 @@ permissions:
   action: sync
   description: Run approved metadata-only Secrets & PKI inventory reconciliation.
   matrix_description: Start governed metadata-only Vault inventory jobs for approved provider scopes via canonical JobExecution; does not configure Vault or reveal Secret material.
+- key: secrets_pki.use_automation_credential
+  module: secrets_pki
+  action: use_automation_credential
+  description: Qualify a separately governed read-only automation credential-use request; no material access is enabled by this permission alone.
+  matrix_description: Require exact approved credential scope, provider-owned typed version and independent operation admission for internal read-only automation. Never reveal or export material; execution remains blocked until the separate runtime gates are admitted.
 - key: integrations.manage
   module: integrations
   action: manage_integrations
@@ -388,6 +393,7 @@ permission_dependencies:
   storage.sync: [object_storage_inventory.view, jobs.execute]
   artifact_registry.sync: [artifact_registry.view, jobs.execute]
   secrets_pki.sync: [secrets_pki.view, jobs.execute]
+  secrets_pki.use_automation_credential: [secrets_pki.view, inventory.view, jobs.execute]
   kubernetes_configmaps.create: [kubernetes_configmaps.view]
   kubernetes_configmaps.update: [kubernetes_configmaps.view]
   kubernetes_configmaps.delete: [kubernetes_configmaps.view]
