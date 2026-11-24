@@ -44,7 +44,7 @@ def _safe_text(value: str, limit: int, *, allow_empty: bool = False) -> bool:
 
 def _valid_selector(selector: CredentialVersionSelector) -> bool:
     if (
-        not isinstance(selector, CredentialVersionSelector)
+        type(selector) is not CredentialVersionSelector
         or type(selector.integration_instance_id) is not int
         or selector.integration_instance_id <= 0
         or type(selector.version) is not int
@@ -115,7 +115,9 @@ def verify_credential_version_statement(
     ):
         return False
     statement = credential_version_statement(selector, issued_at=issued_at, expires_at=expires_at)
-    if statement is None or not issued_at <= now < expires_at:
+    if statement is None:
+        return False
+    if not issued_at.astimezone(UTC) <= now.astimezone(UTC) < expires_at.astimezone(UTC):
         return False
     try:
         verification_key.verify(signature, statement)
