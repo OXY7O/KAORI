@@ -31,6 +31,59 @@ READ_ONLY_FACTS_OPERATION = 'ansible/playbooks/linux_host_facts.yml'
 CREDENTIAL_USE_PERMISSION = 'secrets_pki.use_automation_credential'
 
 
+def _current_representation(
+    policy: ScopeAccessPolicy,
+    target: AutomationCredentialScopeTarget,
+    collection: SecretInventoryCollectionState | None,
+) -> SecretProviderRepresentation | None:
+    """Lock a complete bounded generation and select one exact identity."""
+    if (
+        collection is None
+        or collection.status != 'ready'
+        or type(collection.observed_count) is not int
+        or not 1 <= collection.observed_count <= 200
+    ):
+        return None
+    rows = (
+        SecretProviderRepresentation.query.options(
+            load_only(
+                SecretProviderRepresentation.id,
+                SecretProviderRepresentation.secret_identity_id,
+                SecretProviderRepresentation.integration_instance_id,
+                SecretProviderRepresentation.provider_key,
+                SecretProviderRepresentation.provider_namespace,
+                SecretProviderRepresentation.mount,
+                SecretProviderRepresentation.path_sha256,
+                SecretProviderRepresentation.representation_role,
+                SecretProviderRepresentation.observation_status,
+                SecretProviderRepresentation.current_version,
+                SecretProviderRepresentation.last_observed_at,
+            )
+        )
+        .filter_by(
+            integration_instance_id=policy.integration_instance_id,
+            provider_namespace=policy.provider_namespace,
+            mount=policy.mount,
+            provider_key='vault',
+            representation_role='material_authority',
+            observation_status='observed',
+        )
+        .order_by(SecretProviderRepresentation.id.asc())
+        .limit(201)
+        .populate_existing()
+        .with_for_update()
+        .all()
+    )
+    if len(rows) != collection.observed_count or any(
+        row.last_observed_at != collection.last_observed_at for row in rows
+    ):
+        return None
+    selected = [row for row in rows if row.secret_identity_id == target.secret_identity_id]
+    if len(selected) != 1 or selected[0].id != target.secret_representation_id:
+        return None
+    return selected[0]
+
+
 def exact_credential_target_current(
     policy: ScopeAccessPolicy, target: AutomationCredentialScopeTarget, *, now: datetime
 ) -> bool:
@@ -92,51 +145,9 @@ def exact_credential_target_current(
         .with_for_update()
         .one_or_none()
     )
-    if (
-        collection is None
-        or collection.status != 'ready'
-        or type(collection.observed_count) is not int
-        or not 1 <= collection.observed_count <= 200
-    ):
+    representation = _current_representation(policy, target, collection)
+    if representation is None or collection is None:
         return False
-    rows = (
-        SecretProviderRepresentation.query.options(
-            load_only(
-                SecretProviderRepresentation.id,
-                SecretProviderRepresentation.secret_identity_id,
-                SecretProviderRepresentation.integration_instance_id,
-                SecretProviderRepresentation.provider_key,
-                SecretProviderRepresentation.provider_namespace,
-                SecretProviderRepresentation.mount,
-                SecretProviderRepresentation.path_sha256,
-                SecretProviderRepresentation.representation_role,
-                SecretProviderRepresentation.observation_status,
-                SecretProviderRepresentation.current_version,
-                SecretProviderRepresentation.last_observed_at,
-            )
-        )
-        .filter_by(
-            integration_instance_id=policy.integration_instance_id,
-            provider_namespace=policy.provider_namespace,
-            mount=policy.mount,
-            provider_key='vault',
-            representation_role='material_authority',
-            observation_status='observed',
-        )
-        .order_by(SecretProviderRepresentation.id.asc())
-        .limit(201)
-        .populate_existing()
-        .with_for_update()
-        .all()
-    )
-    if len(rows) != collection.observed_count or any(
-        row.last_observed_at != collection.last_observed_at for row in rows
-    ):
-        return False
-    selected = [row for row in rows if row.secret_identity_id == target.secret_identity_id]
-    if len(selected) != 1 or selected[0].id != target.secret_representation_id:
-        return False
-    representation = selected[0]
     version = (
         SecretVersionObservation.query.filter_by(
             representation_id=target.secret_representation_id, version=target.secret_version

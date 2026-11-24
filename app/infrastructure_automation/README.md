@@ -97,3 +97,9 @@ writer, live SSH, key acquisition, worker authorization or credential use is
 enabled by this increment. The next storage and lifecycle implementation
 requires independent review of the concrete source, verification and expiry
 contract.
+
+### Canonical public host-key encoding (#5185)
+
+The first supported algorithm is OpenSSH `ssh-ed25519`. The canonical value is exactly the two ASCII fields `ssh-ed25519 BASE64` (no comment, newline, certificate, options or other algorithm). The encoded public key must parse and round-trip through the existing cryptography library; the stored candidate digest must match SHA-256 of the decoded SSH wire blob, encoded as `sha256:` plus 64 lowercase hexadecimal characters. This is not a digest of the text file, a private key, or a verified console attestation. No conversion from an unqualified opaque candidate is automatic: obtain the independently reviewed console public key and compare the exact digest.
+
+The offline helper `qualify_ed25519_host_key` returns a canonical public key or denies. A match does not prove who collected it, host identity, expiry, authorization or reachability. The later governed trust lifecycle must bind this public key to the current committed host/endpoint and candidate, independent verifier and provenance; only the qualified worker may generate its ephemeral strict known_hosts file. No network acquisition, SSH, credential retrieval or execution is introduced by this increment.

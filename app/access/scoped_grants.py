@@ -223,6 +223,7 @@ def request_automation_credential_grant(
     The caller supplies authenticated identities and an opaque host selection,
     not a provider path, material, operation, scope or approval flag.
     """
+    committed = False
     try:
         _administrator(actor_user_id)
         for permission in (CREDENTIAL_USE_PERMISSION, 'secrets_pki.view', 'inventory.view', 'jobs.execute'):
@@ -305,9 +306,10 @@ def request_automation_credential_grant(
             event_type='access_scope_grant_requested',
             label='Scoped Grant Requested',
         )
-    except Exception:
-        db.session.rollback()
-        raise
+        committed = True
+    finally:
+        if not committed:
+            db.session.rollback()
     return policy
 
 
