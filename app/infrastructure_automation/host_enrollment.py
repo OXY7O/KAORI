@@ -45,19 +45,17 @@ def enroll_host_for_connection(
     if AutomationHostAsset.query.filter_by(environment=intent.environment, address=intent.address).first():
         raise AutomationInventoryDenied('The host address is already registered in this environment.')
 
-    host = AutomationHostAsset(
-        name=intent.name,
-        environment=intent.environment,
-        address=intent.address,
-        ssh_port=intent.ssh_port,
-        lifecycle_status='registered',
-    )
-    membership = AutomationInventoryAssignment(
-        integration_instance_id=connection.id,
-        host=host,
-        role=role,
-        enabled=True,
-    )
+    host = AutomationHostAsset()
+    host.name = intent.name
+    host.environment = intent.environment
+    host.address = intent.address
+    host.ssh_port = intent.ssh_port
+    host.lifecycle_status = 'registered'
+    membership = AutomationInventoryAssignment()
+    membership.integration_instance_id = connection.id
+    membership.host = host
+    membership.role = role
+    membership.enabled = True
     try:
         db.session.add_all((host, membership))
         db.session.commit()

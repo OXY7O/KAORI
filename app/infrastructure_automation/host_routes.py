@@ -27,10 +27,11 @@ bp = Blueprint('infrastructure_automation_hosts', __name__)
 def new(connection_id: int) -> ResponseReturnValue:
     """Enroll a scoped non-production Linux host without admitting execution."""
     connection = get_connection(connection_id)
-    if connection is None:
+    if connection is None or not isinstance(connection.environment, str):
         abort(404)
+    environment = connection.environment
     try:
-        require_ansible_connection(connection, environment=connection.environment)
+        require_ansible_connection(connection, environment=environment)
     except AutomationInventoryDenied:
         abort(404)
 
@@ -43,9 +44,9 @@ def new(connection_id: int) -> ResponseReturnValue:
                     connection,
                     AutomationHostIntent(
                         name=str(form.name.data or '').strip(),
-                        environment=connection.environment,
+                        environment=environment,
                         address=str(form.address.data or '').strip(),
-                        ssh_port=int(form.ssh_port.data),
+                        ssh_port=form.ssh_port.data if isinstance(form.ssh_port.data, int) else 0,
                     ),
                     role=str(form.role.data or ''),
                 )
