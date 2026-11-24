@@ -92,7 +92,5 @@ def test_window_cannot_be_changed_or_replayed(signed_claim):
 
 def test_unbounded_or_naive_window_not_signable():
     assert credential_version_statement(_SELECTOR, issued_at=_ISSUED, expires_at=_ISSUED) is None
-    assert (
-        credential_version_statement(_SELECTOR, issued_at=_ISSUED, expires_at=_ISSUED + timedelta(days=2)) is None
-    )
+    assert credential_version_statement(_SELECTOR, issued_at=_ISSUED, expires_at=_ISSUED + timedelta(days=2)) is None
     assert credential_version_statement(_SELECTOR, issued_at=_ISSUED.replace(tzinfo=None), expires_at=_EXPIRES) is None
