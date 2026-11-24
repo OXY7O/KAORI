@@ -12,6 +12,7 @@ from flask import Flask
 from app.extensions.db import db
 from app.infrastructure_automation import host_access_binding as service
 from app.infrastructure_automation.host_enrollment import host_revision
+from app.infrastructure_automation.kubernetes.committed_host_access import committed_pilot_access_fingerprint
 from app.infrastructure_automation.kubernetes.kubespray_preflight import KUBESPRAY_RELEASE
 from app.infrastructure_automation.kubernetes.source_policy import (
     ANSIBLE_CORE_VERSION,
@@ -297,3 +298,51 @@ def test_real_transaction_rolls_back_after_audit_was_staged(binding_store, monke
         service.record_host_access_reference(actor_id=actor, intent=intent)
     db.session.remove()
     _assert_no_writes()
+
+
+def _record_pilot(binding_store):
+    actor, _, intent = binding_store
+    service.record_host_access_reference(actor_id=actor, intent=intent)
+    for index in (2, 3):
+        host = AutomationHostAsset(name=f'node-{index}', environment='laboratory', address=f'10.0.0.{index}')
+        assignment = AutomationInventoryAssignment(
+            integration_instance_id=intent.connection_id, host=host, role='worker', enabled=True
+        )
+        db.session.add(assignment)
+        db.session.commit()
+        service.record_host_access_reference(
+            actor_id=actor,
+            intent=replace(intent, host_id=host.id, expected_host_revision=host_revision(assignment)),
+        )
+    db.session.remove()
+    connection = db.session.get(IntegrationInstance, intent.connection_id)
+    assignments = AutomationInventoryAssignment.query.filter_by(integration_instance_id=intent.connection_id).all()
+    return connection, assignments
+
+
+@pytest.mark.parametrize('drift', ['host', 'version', 'destroyed', 'missing_binding', 'generation', 'disabled_source'])
+def test_persisted_pilot_access_correlation_invalidates_on_drift(binding_store, drift):
+    connection, assignments = _record_pilot(binding_store)
+    now = datetime.now(UTC)
+    original = committed_pilot_access_fingerprint(connection, assignments, now=now)
+    assert original and len(original) == 64
+    assert original == committed_pilot_access_fingerprint(connection, list(reversed(assignments)), now=now)
+    if drift == 'host':
+        assignments[0].host.address = '10.0.0.99'
+    elif drift == 'version':
+        SecretProviderRepresentation.query.one().current_version = 3
+    elif drift == 'destroyed':
+        SecretVersionObservation.query.one().destroyed = True
+    elif drift == 'missing_binding':
+        db.session.delete(AutomationHostAccessBinding.query.first())
+    elif drift == 'generation':
+        SecretInventoryCollectionState.query.one().last_committed_at = now + timedelta(seconds=1)
+    elif drift == 'disabled_source':
+        IntegrationInstance.query.filter_by(provider_key='vault').one().enabled = False
+    db.session.commit()
+    changed = committed_pilot_access_fingerprint(connection, assignments, now=now + timedelta(seconds=2))
+    if drift == 'generation':
+        assert changed and changed != original
+    else:
+        assert changed is None
+    assert Notification.query.count() == 3

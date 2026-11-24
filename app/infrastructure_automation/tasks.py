@@ -154,6 +154,11 @@ def materialize_kubespray_plan_review(
             raise ValueError('Review-only Plan differs from the committed dispatch request')
 
         context.checkpoint(message='Checking latest evidence and Plan fingerprint', stage='verification')
+        db.session.refresh(connection)
+        db.session.refresh(host_job)
+        db.session.refresh(request_job)
+        if not _matches_plan_job(request_job, connection_id, str(self.request.id)):
+            raise ValueError('Plan request changed before evidence commit')
         latest = committed_kubespray_preflight(connection)
         rechecked = build_kubespray_plan_review(connection, host_job)
         if (

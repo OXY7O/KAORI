@@ -57,6 +57,9 @@ def _setup(monkeypatch: pytest.MonkeyPatch, *, state: str = 'ready_for_review', 
     )
 
     class _Session:
+        def refresh(self, instance):
+            pass
+
         def get(self, model, identifier):
             if model is tasks.IntegrationInstance:
                 return connection if identifier == 31 else None

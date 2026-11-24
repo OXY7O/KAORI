@@ -148,6 +148,7 @@ def committed_kubespray_plan_currentness(
             integration_instance_id=connection.id,
             operation=PLAN_OPERATION,
         )
+        .populate_existing()
         .order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
         .first()
     )
@@ -156,7 +157,9 @@ def committed_kubespray_plan_currentness(
         JobExecution.query.filter_by(
             integration_instance_id=connection.id,
             public_id=current_preflight.facts_job_public_id,
-        ).first()
+        )
+        .populate_existing()
+        .first()
         if current_preflight.facts_job_public_id
         else None
     )

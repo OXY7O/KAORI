@@ -359,6 +359,7 @@ def committed_kubespray_preflight(connection: IntegrationInstance) -> KubesprayP
             integration_instance_id=connection.id,
             operation=_HOST_PREFLIGHT_OPERATION,
         )
+        .populate_existing()
         .order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
         .limit(5)
         .all()
@@ -375,6 +376,7 @@ def committed_kubespray_preflight(connection: IntegrationInstance) -> KubesprayP
     assignments = (
         AutomationInventoryAssignment.query.options(joinedload(AutomationInventoryAssignment.host))
         .filter_by(integration_instance_id=connection.id, enabled=True)
+        .populate_existing()
         .order_by(AutomationInventoryAssignment.id.asc())
         .limit(4)
         .all()

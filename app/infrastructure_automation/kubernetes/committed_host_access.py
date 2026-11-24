@@ -6,7 +6,7 @@ import hashlib
 import json
 from datetime import UTC, datetime
 
-from sqlalchemy.orm import load_only
+from sqlalchemy.orm import joinedload, load_only
 
 from app.extensions.db import db
 from app.infrastructure_automation.host_access_reference import assess_bound_host_access_references
@@ -22,12 +22,13 @@ from app.models.secrets_pki import (
 def _member_reference(
     connection: IntegrationInstance, assignment: AutomationInventoryAssignment, now: datetime
 ) -> tuple[str, str, str, str] | None:
-    binding = db.session.get(AutomationHostAccessBinding, assignment.id)
+    binding = db.session.get(AutomationHostAccessBinding, assignment.id, populate_existing=True)
     if binding is None:
         return None
     representation = db.session.get(
         SecretProviderRepresentation,
         binding.secret_representation_id,
+        populate_existing=True,
         options=[
             load_only(
                 SecretProviderRepresentation.id,
@@ -41,20 +42,27 @@ def _member_reference(
                 SecretProviderRepresentation.observation_status,
                 SecretProviderRepresentation.current_version,
                 SecretProviderRepresentation.last_observed_at,
-            )
+            ),
+            joinedload(SecretProviderRepresentation.secret_identity),
         ],
     )
     if representation is None:
         return None
-    provider = db.session.get(IntegrationInstance, representation.integration_instance_id)
-    collection = SecretInventoryCollectionState.query.filter_by(
-        integration_instance_id=representation.integration_instance_id,
-        provider_namespace=representation.provider_namespace,
-        mount=representation.mount,
-    ).one_or_none()
-    version = SecretVersionObservation.query.filter_by(
-        representation_id=representation.id, version=binding.secret_version
-    ).one_or_none()
+    provider = db.session.get(IntegrationInstance, representation.integration_instance_id, populate_existing=True)
+    collection = (
+        SecretInventoryCollectionState.query.filter_by(
+            integration_instance_id=representation.integration_instance_id,
+            provider_namespace=representation.provider_namespace,
+            mount=representation.mount,
+        )
+        .populate_existing()
+        .one_or_none()
+    )
+    version = (
+        SecretVersionObservation.query.filter_by(representation_id=representation.id, version=binding.secret_version)
+        .populate_existing()
+        .one_or_none()
+    )
     if provider is None or collection is None or version is None:
         return None
     review = assess_bound_host_access_references(
@@ -70,13 +78,13 @@ def _member_reference(
     generation = collection.last_committed_at
     if review.state != 'references_recorded' or review.fingerprint is None or generation is None:
         return None
-    if generation.tzinfo is None:
-        return None
+    # Match the committed metadata UTC convention for SQLite round trips.
+    generation = generation.replace(tzinfo=UTC) if generation.tzinfo is None else generation.astimezone(UTC)
     return (
         assignment.host_id,
         binding.host_revision,
         review.fingerprint,
-        generation.astimezone(UTC).isoformat(),
+        generation.isoformat(),
     )
 
 
