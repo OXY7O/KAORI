@@ -12,7 +12,7 @@ import hashlib
 import json
 import re
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.infrastructure_automation.host_enrollment import host_revision
@@ -192,12 +192,11 @@ def _matching_vault_source(
 
 
 def _fresh_observation(value: datetime | None, now: datetime) -> bool:
-    return (
-        isinstance(value, datetime)
-        and value.utcoffset() is not None
-        and now.utcoffset() is not None
-        and timedelta(0) <= now - value <= timedelta(hours=24)
-    )
+    if not isinstance(value, datetime) or now.utcoffset() is None:
+        return False
+    # Persisted SQLite timestamps may round-trip as naive UTC; PostgreSQL retains offsets.
+    observed = value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+    return timedelta(0) <= now - observed <= timedelta(hours=24)
 
 
 def _current_collection(

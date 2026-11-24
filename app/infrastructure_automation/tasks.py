@@ -118,7 +118,9 @@ def materialize_kubespray_plan_review(
     context = JobExecutionContext(task_id=str(self.request.id), job_execution_id=job_execution_id)
     try:
         if (
-            type(connection_id) is not int or type(host_preflight_job_id) is not int or type(job_execution_id) is not int
+            type(connection_id) is not int
+            or type(host_preflight_job_id) is not int
+            or type(job_execution_id) is not int
         ):
             return {'status': 'blocked'}
         request_job = db.session.get(JobExecution, job_execution_id)
