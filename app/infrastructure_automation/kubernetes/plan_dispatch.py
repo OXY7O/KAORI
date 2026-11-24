@@ -46,7 +46,12 @@ def dispatch_kubespray_plan_review(
     if job is None or job.integration_instance_id != connection.id:
         raise KubesprayPlanNotQualified('Exact canonical preflight record is missing.')
     plan = build_kubespray_plan_review(connection, job)
-    if plan.status != 'requires_independent_approval' or not plan.plan_fingerprint:
+    if (
+        plan.status != 'requires_independent_approval'
+        or not plan.plan_fingerprint
+        or plan.host_registry_fingerprint != preflight.host_registry_fingerprint
+        or plan.host_access_fingerprint != preflight.host_access_fingerprint
+    ):
         raise KubesprayPlanNotQualified('Static target or source evidence is not qualified.')
 
     return enqueue_canonical_job(
@@ -62,11 +67,7 @@ def dispatch_kubespray_plan_review(
         scope_key=str(connection.id),
         integration_type='configuration_automation',
         integration_instance_id=connection.id,
-        parameters={
-            'plan_fingerprint': plan.plan_fingerprint,
-            'host_preflight_job_public_id': job.public_id,
-            'source_sha': plan.source_sha,
-        },
+        parameters=plan.dispatch_parameters(),
         max_attempts=1,
         dispatch_options=JobDispatchOptions(
             require_registered_worker=True,
