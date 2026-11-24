@@ -338,7 +338,10 @@ def test_sensitive_registry_uses_only_authoritative_evaluator_and_transaction():
     assert 'db.session.commit()' in source
     assert 'db.session.rollback()' in source
 
-@pytest.mark.parametrize('permission_key', ['secrets_pki.sync', 'jobs.execute', 'secrets_pki.use_automation_credential'])
+
+@pytest.mark.parametrize(
+    'permission_key', ['secrets_pki.sync', 'jobs.execute', 'secrets_pki.use_automation_credential']
+)
 def test_metadata_grant_cannot_authorize_automation_credential_use(scope_store, permission_key):
     ids = scope_store
     policy = _request(ids)
