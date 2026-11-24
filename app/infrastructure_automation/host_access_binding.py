@@ -240,18 +240,16 @@ def record_host_access_reference(*, actor_id: int, intent: HostAccessBindingInte
         )
         if review.state != 'references_recorded' or review.fingerprint is None:
             raise _deny()
-        db.session.add(
-            AutomationHostAccessBinding(
-                assignment_id=assignment.id,
-                secret_representation_id=representation.id,
-                secret_version=version.version,
-                host_revision=intent.expected_host_revision,
-                reference_fingerprint=review.fingerprint,
-                host_key_digest=intent.host_key_digest,
-                recorded_by_user_id=actor_id,
-                recorded_at=instant,
-            )
-        )
+        binding = AutomationHostAccessBinding()
+        binding.assignment_id = assignment.id
+        binding.secret_representation_id = representation.id
+        binding.secret_version = version.version
+        binding.host_revision = intent.expected_host_revision
+        binding.reference_fingerprint = review.fingerprint
+        binding.host_key_digest = intent.host_key_digest
+        binding.recorded_by_user_id = actor_id
+        binding.recorded_at = instant
+        db.session.add(binding)
         stage_operational_activity(
             user_id=actor_id,
             event_type='automation_host_access_reference_recorded',
