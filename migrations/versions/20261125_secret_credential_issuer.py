@@ -1,6 +1,6 @@
 """Add inactive exact-scope credential issuer revision history (#5184).
 
-Revision ID: 20261125_vault_cred_issuer
+Revision ID: 20261125_spki_cred_issuer
 Revises: 20261124_auto_host_trust
 
 No issuer, seed, trust anchor or active credential authority is created.
@@ -11,7 +11,7 @@ from __future__ import annotations
 import sqlalchemy as sa
 from alembic import op
 
-revision = '20261125_vault_cred_issuer'
+revision = '20261125_spki_cred_issuer'
 down_revision = '20261124_auto_host_trust'
 branch_labels = None
 depends_on = None
@@ -19,7 +19,7 @@ depends_on = None
 
 def upgrade() -> None:
     op.create_table(
-        'secrets_pki_vault_credential_issuer_revisions',
+        'secrets_pki_credential_issuer_revisions',
         sa.Column('id', sa.Integer(), primary_key=True),
         sa.Column(
             'integration_instance_id',
@@ -27,6 +27,7 @@ def upgrade() -> None:
             sa.ForeignKey('integration_instances.id', ondelete='RESTRICT'),
             nullable=False,
         ),
+        sa.Column('provider_key', sa.String(80), nullable=False),
         sa.Column('provider_namespace', sa.String(255), nullable=False),
         sa.Column('mount', sa.String(160), nullable=False),
         sa.Column('revision_number', sa.Integer(), nullable=False),
@@ -48,8 +49,10 @@ def upgrade() -> None:
             'provider_namespace',
             'mount',
             'revision_number',
-            name='uq_spki_vault_cred_issuer_revision',
+            name='uq_spki_cred_issuer_revision',
         ),
+        sa.CheckConstraint("provider_key IN ('vault', 'openbao')", name='ck_spki_cred_issuer_provider'),
+        sa.CheckConstraint("provider_namespace NOT LIKE '%*%'", name='ck_spki_cred_issuer_namespace'),
         sa.CheckConstraint('revision_number > 0', name='ck_spki_cred_issuer_revision'),
         sa.CheckConstraint("mount <> '' AND mount NOT LIKE '%*%'", name='ck_spki_cred_issuer_mount'),
         sa.CheckConstraint("lifecycle_status IN ('draft', 'active', 'revoked')", name='ck_spki_cred_issuer_state'),
@@ -72,9 +75,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     connection = op.get_bind()
-    count = connection.execute(
-        sa.text('SELECT COUNT(*) FROM secrets_pki_vault_credential_issuer_revisions')
-    ).scalar_one()
+    count = connection.execute(sa.text('SELECT COUNT(*) FROM secrets_pki_credential_issuer_revisions')).scalar_one()
     if count:
         raise RuntimeError('Credential issuer revision evidence must be retained before downgrade.')
-    op.drop_table('secrets_pki_vault_credential_issuer_revisions')
+    op.drop_table('secrets_pki_credential_issuer_revisions')

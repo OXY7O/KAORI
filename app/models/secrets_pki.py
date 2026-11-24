@@ -145,18 +145,20 @@ class SecretInventoryCollectionState(db.Model):
     last_error: Mapped[str | None] = mapped_column(String(250), nullable=True)
 
 
-class VaultCredentialIssuerRevision(db.Model):
+class SecretCredentialIssuerRevision(db.Model):
     """Proposed exact-scope public issuer history; storage is not authority."""
 
-    __tablename__ = 'secrets_pki_vault_credential_issuer_revisions'
+    __tablename__ = 'secrets_pki_credential_issuer_revisions'
     __table_args__ = (
         UniqueConstraint(
             'integration_instance_id',
             'provider_namespace',
             'mount',
             'revision_number',
-            name='uq_spki_vault_cred_issuer_revision',
+            name='uq_spki_cred_issuer_revision',
         ),
+        CheckConstraint("provider_key IN ('vault', 'openbao')", name='ck_spki_cred_issuer_provider'),
+        CheckConstraint("provider_namespace NOT LIKE '%*%'", name='ck_spki_cred_issuer_namespace'),
         CheckConstraint('revision_number > 0', name='ck_spki_cred_issuer_revision'),
         CheckConstraint("mount <> '' AND mount NOT LIKE '%*%'", name='ck_spki_cred_issuer_mount'),
         CheckConstraint("lifecycle_status IN ('draft', 'active', 'revoked')", name='ck_spki_cred_issuer_state'),
@@ -180,6 +182,7 @@ class VaultCredentialIssuerRevision(db.Model):
     integration_instance_id: Mapped[int] = mapped_column(
         ForeignKey('integration_instances.id', ondelete='RESTRICT'), nullable=False
     )
+    provider_key: Mapped[str] = mapped_column(String(80), nullable=False)
     provider_namespace: Mapped[str] = mapped_column(String(255), nullable=False)
     mount: Mapped[str] = mapped_column(String(160), nullable=False)
     revision_number: Mapped[int] = mapped_column(Integer, nullable=False)

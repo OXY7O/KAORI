@@ -7,7 +7,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError
 
-from app.models.secrets_pki import VaultCredentialIssuerRevision
+from app.models.secrets_pki import SecretCredentialIssuerRevision
 
 _PUBLIC_KEY = bytes.fromhex('d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a')
 
@@ -15,6 +15,7 @@ _PUBLIC_KEY = bytes.fromhex('d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af0
 def _record(now):
     return {
         'integration_instance_id': 1,
+        'provider_key': 'vault',
         'provider_namespace': '',
         'mount': 'kv',
         'revision_number': 2,
@@ -38,6 +39,8 @@ def _record(now):
     ('field', 'value'),
     [
         ('revision_number', 0),
+        ('provider_key', 'unsupported'),
+        ('provider_namespace', '*'),
         ('mount', ''),
         ('mount', 'kv/*'),
         ('lifecycle_status', 'unknown'),
@@ -54,7 +57,7 @@ def _record(now):
 )
 def test_issuer_revision_shape_constraints(field, value):
     engine = create_engine('sqlite://')
-    table = VaultCredentialIssuerRevision.__table__
+    table = SecretCredentialIssuerRevision.__table__
     values = _record(datetime.now(UTC))
     values[field] = value
     try:
@@ -67,11 +70,12 @@ def test_issuer_revision_shape_constraints(field, value):
         engine.dispose()
 
 
-def test_append_only_intended_history_unique_scope_revision():
+@pytest.mark.parametrize('provider_key', ['vault', 'openbao'])
+def test_append_only_intended_history_unique_scope_revision(provider_key):
     engine = create_engine('sqlite://')
-    table = VaultCredentialIssuerRevision.__table__
+    table = SecretCredentialIssuerRevision.__table__
     now = datetime.now(UTC)
-    values = _record(now)
+    values = {**_record(now), 'provider_key': provider_key}
     try:
         with engine.begin() as connection:
             table.create(connection)
@@ -100,7 +104,7 @@ def test_append_only_intended_history_unique_scope_revision():
 
 def test_invalid_issuer_window_denied():
     engine = create_engine('sqlite://')
-    table = VaultCredentialIssuerRevision.__table__
+    table = SecretCredentialIssuerRevision.__table__
     now = datetime.now(UTC)
     values = {**_record(now), 'effective_until': now}
     try:
