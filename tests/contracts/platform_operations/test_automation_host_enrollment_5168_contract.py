@@ -43,7 +43,7 @@ def _assignment():
         environment='laboratory',
         lifecycle_status='registered',
     )
-    return SimpleNamespace(integration_instance_id=17, host=host, role='control_plane', enabled=True)
+    return SimpleNamespace(id=23, integration_instance_id=17, host=host, role='control_plane', enabled=True)
 
 
 def test_source_only_connection_may_review_committed_host_without_execution():
