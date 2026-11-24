@@ -56,6 +56,7 @@ def exact_credential_target_current(
     assignment = get_scoped_host_assignment(target.ansible_connection_id, target.host_id, lock=True)
     if connection is None or assignment is None or assignment.id != target.assignment_id:
         return False
+    db.session.refresh(assignment, with_for_update=True)
     binding = db.session.get(
         AutomationHostAccessBinding, assignment.id, populate_existing=True, with_for_update=True
     )
@@ -93,14 +94,15 @@ def exact_credential_target_current(
         .with_for_update()
         .one_or_none()
     )
-    if collection is None:
+    if (
+        collection is None
+        or collection.status != 'ready'
+        or type(collection.observed_count) is not int
+        or not 1 <= collection.observed_count <= 200
+    ):
         return False
-    representation = db.session.get(
-        SecretProviderRepresentation,
-        target.secret_representation_id,
-        populate_existing=True,
-        with_for_update=True,
-        options=[
+    rows = (
+        SecretProviderRepresentation.query.options(
             load_only(
                 SecretProviderRepresentation.id,
                 SecretProviderRepresentation.secret_identity_id,
@@ -113,17 +115,30 @@ def exact_credential_target_current(
                 SecretProviderRepresentation.observation_status,
                 SecretProviderRepresentation.current_version,
                 SecretProviderRepresentation.last_observed_at,
-            ),
-        ],
+            )
+        )
+        .filter_by(
+            integration_instance_id=policy.integration_instance_id,
+            provider_namespace=policy.provider_namespace,
+            mount=policy.mount,
+            provider_key='vault',
+            representation_role='material_authority',
+            observation_status='observed',
+        )
+        .order_by(SecretProviderRepresentation.id.asc())
+        .limit(201)
+        .populate_existing()
+        .with_for_update()
+        .all()
     )
-    if (
-        representation is None
-        or representation.secret_identity_id != target.secret_identity_id
-        or representation.integration_instance_id != policy.integration_instance_id
-        or representation.provider_namespace != policy.provider_namespace
-        or representation.mount != policy.mount
+    if len(rows) != collection.observed_count or any(
+        row.last_observed_at != collection.last_observed_at for row in rows
     ):
         return False
+    selected = [row for row in rows if row.secret_identity_id == target.secret_identity_id]
+    if len(selected) != 1 or selected[0].id != target.secret_representation_id:
+        return False
+    representation = selected[0]
     version = (
         SecretVersionObservation.query.filter_by(
             representation_id=target.secret_representation_id, version=target.secret_version
