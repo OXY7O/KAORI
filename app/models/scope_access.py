@@ -23,14 +23,20 @@ class ScopeAccessPolicy(db.Model):
     __tablename__ = 'access_scope_policies'
     __table_args__ = (
         CheckConstraint(
-            "scope_level IN ('instance', 'vault_mount')",
+            "scope_level IN ('instance', 'vault_mount', 'automation_credential')",
             name='ck_access_scope_policy_level',
         ),
         CheckConstraint(
             "(scope_level = 'instance' AND provider_namespace IS NULL AND mount IS NULL)"
-            " OR (scope_level = 'vault_mount' AND provider_namespace IS NOT NULL"
+            " OR ((scope_level = 'vault_mount' OR scope_level = 'automation_credential')"
+            ' AND provider_namespace IS NOT NULL'
             " AND mount IS NOT NULL AND mount <> '' AND mount NOT LIKE '%*%')",
             name='ck_access_scope_policy_exact_target',
+        ),
+        CheckConstraint(
+            "(scope_level = 'automation_credential' AND permission_key = 'secrets_pki.use_automation_credential')"
+            " OR (scope_level <> 'automation_credential' AND permission_key <> 'secrets_pki.use_automation_credential')",
+            name='ck_access_scope_policy_credential_permission',
         ),
         CheckConstraint(
             'current_revision > 0',
@@ -169,3 +175,42 @@ class ScopeAccessPolicyRevision(db.Model):
         'ScopeAccessPolicy',
         back_populates='revisions',
     )
+
+
+class AutomationCredentialScopeTarget(db.Model):
+    """Exact immutable selector owned by one canonical policy; never a permit."""
+
+    __tablename__ = 'access_automation_credential_targets'
+    __table_args__ = (
+        CheckConstraint('secret_version > 0', name='ck_access_auto_credential_version'),
+        CheckConstraint('length(host_revision) = 64', name='ck_access_auto_credential_host_revision'),
+        CheckConstraint('length(reference_fingerprint) = 64', name='ck_access_auto_credential_reference'),
+        CheckConstraint('length(source_revision) = 40', name='ck_access_auto_credential_source'),
+        CheckConstraint(
+            "profile_key <> '' AND profile_key NOT LIKE '%*%' AND operation_key <> '' AND operation_key NOT LIKE '%*%'",
+            name='ck_access_auto_credential_operation',
+        ),
+    )
+
+    policy_id: Mapped[str] = mapped_column(
+        ForeignKey('access_scope_policies.id', ondelete='RESTRICT'), primary_key=True
+    )
+    ansible_connection_id: Mapped[int] = mapped_column(
+        ForeignKey('integration_instances.id', ondelete='RESTRICT'), nullable=False
+    )
+    assignment_id: Mapped[int] = mapped_column(
+        ForeignKey('automation_inventory_assignments.id', ondelete='RESTRICT'), nullable=False
+    )
+    host_id: Mapped[str] = mapped_column(ForeignKey('automation_host_assets.id', ondelete='RESTRICT'), nullable=False)
+    host_revision: Mapped[str] = mapped_column(String(64), nullable=False)
+    reference_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    secret_identity_id: Mapped[str] = mapped_column(
+        ForeignKey('secrets_pki_secret_identities.id', ondelete='RESTRICT'), nullable=False
+    )
+    secret_representation_id: Mapped[int] = mapped_column(
+        ForeignKey('secrets_pki_secret_representations.id', ondelete='RESTRICT'), nullable=False
+    )
+    secret_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_revision: Mapped[str] = mapped_column(String(40), nullable=False)
+    profile_key: Mapped[str] = mapped_column(String(80), nullable=False)
+    operation_key: Mapped[str] = mapped_column(String(120), nullable=False)
