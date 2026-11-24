@@ -15,7 +15,8 @@ from typing import Any
 from flask import current_app
 
 SOURCE_REPOSITORY = 'OXY7O/kaori-operations'
-SOURCE_SHA = 'a182ddd04b353497021b3a089d3289128e999f78'
+# Accepted pilot-branch merge from kaori-operations #8; not a remote source grant.
+SOURCE_SHA = 'aa5ae076e0cd5e6a2cc4d236608cb470012a7ab2'
 PLAYBOOK = 'ansible/playbooks/linux_host_facts.yml'
 PLAYBOOK_BLOB = 'ad8ffb5d72f6ed512c30ce5cfca29b4ffb0b4e9e'
 INVENTORY = 'ansible/inventory/examples/localhost.ini'

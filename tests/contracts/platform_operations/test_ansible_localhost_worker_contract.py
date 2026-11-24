@@ -71,7 +71,20 @@ def test_runner_ok_without_facts_is_not_verified() -> None:
 
 
 def test_source_revision_is_immutable_sha() -> None:
-    assert len(SOURCE_SHA) == 40
+    assert SOURCE_SHA == 'aa5ae076e0cd5e6a2cc4d236608cb470012a7ab2'
+    workflow = (ROOT / '.github/workflows/ansible-worker-preflight.yml').read_text(encoding='utf-8')
+    assert f'ref: {SOURCE_SHA}' in workflow
+    assert f'--source-sha {SOURCE_SHA}' in workflow
+    assert 'a182ddd04b353497021b3a089d3289128e999f78' not in workflow
+    requirements = (ROOT / 'requirements/automation-worker.txt').read_text(encoding='utf-8')
+    assert 'ansible-core==2.19.15' in requirements.splitlines()
+    assert 'ansible-runner==2.4.3' in requirements.splitlines()
+
+
+def test_previous_vulnerable_pilot_source_is_no_longer_allowed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv('KAORI_AUTOMATION_LOCALHOST_PILOT_ENABLED', 'true')
+    with _app('development').app_context(), pytest.raises(AutomationPilotDenied, match='approved pilot SHA'):
+        verify_localhost_source('/does/not/exist', 'a182ddd04b353497021b3a089d3289128e999f78')
 
 
 @pytest.mark.parametrize(
