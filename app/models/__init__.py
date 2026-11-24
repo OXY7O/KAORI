@@ -76,7 +76,7 @@ from app.models.resolver import (
     ResolverProductionReadinessRecord,
 )
 from app.models.runtime import IntegrationRuntimeObservation
-from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
+from app.models.scope_access import AutomationCredentialScopeTarget, ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.secret_reveal import SecretRevealNamespacePolicy, SecretRevealRequest
 from app.models.secrets_pki import (
     SecretIdentity,
@@ -172,6 +172,7 @@ __all__ = [
     'AuthenticationMfaFactor',
     'AuthenticationSecurityPolicy',
     'AuditEvent',
+    'AutomationCredentialScopeTarget',
     'AutomationHostAccessBinding',
     'AutomationHostAsset',
     'AutomationInventoryAssignment',
