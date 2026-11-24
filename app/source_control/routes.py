@@ -73,7 +73,7 @@ def _dashboard_context(*, active_tab: str, include_coverage: bool = False) -> di
         read_repository_coverage_for_current_session(
             authorized_installation_id=selected_installation['installation'].id
         )
-        if include_coverage and selected_installation is not None and active_tab == 'capacity'
+        if include_coverage and selected_installation is not None and active_tab in {'capacity', 'analytics'}
         else None
     )
     return {
@@ -107,6 +107,15 @@ def overview() -> ResponseReturnValue:
     # footer; its paged fragment must be present in the overview HX response.
     context['eager_coverage_pagination'] = active_tab == 'capacity' and not context['selected_scope'] and page_requested
     return _uncached_render('source_control/overview.html', **context)
+
+
+@source_control_bp.get('/analytics')
+@permission_required('integrations.manage')
+def analytics() -> ResponseReturnValue:
+    """Source Control Analytics: authorized, committed installation evidence only."""
+    _require_product_uat_access()
+    context = _dashboard_context(active_tab='analytics', include_coverage=True)
+    return _uncached_render('source_control/analytics.html', **context)
 
 
 @source_control_bp.get('/section/<string:section>')
@@ -174,5 +183,7 @@ def repositories() -> ResponseReturnValue:
         'inventory_htmx_endpoint': 'source_control.repositories',
     }
     if request.headers.get('HX-Request') == 'true' and selected is not None:
+        if not selected['committed'] or inventory is None or inventory.collected_at is None:
+            return _uncached_render('source_control/partials/_repository_inventory_blocker.html', **context)
         return _uncached_render('integrations/source_control/github/_inventory_table.html', **context)
     return _uncached_render('source_control/repositories.html', **context)

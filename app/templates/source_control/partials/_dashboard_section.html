@@ -1,16 +1,30 @@
 {# Lazy section endpoint: section_key is server-whitelisted before rendering. #}
-{% if section_key == 'overview' %}
-    {% include "source_control/partials/_dashboard_operations.html" %}
-{% else %}
+{% if not scope.committed_count %}
     <div id="source-control-dashboard-section-{{ section_key }}"
-         class="space-y-5"
          data-source-control-loaded-section="{{ section_key }}">
-        {% if section_key == 'capacity' %}
-            {% include "source_control/partials/_dashboard_capacity.html" %}
-        {% elif section_key == 'signals' %}
-            {% include "source_control/partials/_dashboard_signals.html" %}
-        {% elif section_key == 'reporting' %}
-            {% include "source_control/partials/_dashboard_reporting.html" %}
-        {% endif %}
+        {% set blocked_state_icon = "git-branch" %}
+        {% set blocked_state_label = "Setup Required" if not scope.installation_count else "Collection Required" %}
+        {% set blocked_state_title = "GitHub Installation Required" if not scope.installation_count else "Repository Inventory Not Collected" %}
+        {% set blocked_state_description = "Register an authorized GitHub App installation and collect repository inventory before opening this workspace." if not scope.installation_count else "Collect committed installation inventory before opening Source Control operations." %}
+        {% set blocked_state_action_url = url_for('integrations.source_control') %}
+        {% set blocked_state_action_label = "Open Source Control Integrations" %}
+        {% set blocked_state_permission = "integrations.manage" %}
+        {% include "components/states/_blocked_state.html" %}
     </div>
+{% else %}
+    {% if section_key == 'overview' %}
+        {% include "source_control/partials/_dashboard_operations.html" %}
+    {% else %}
+        <div id="source-control-dashboard-section-{{ section_key }}"
+             class="space-y-5"
+             data-source-control-loaded-section="{{ section_key }}">
+            {% if section_key == 'capacity' %}
+                {% include "source_control/partials/_dashboard_capacity.html" %}
+            {% elif section_key == 'signals' %}
+                {% include "source_control/partials/_dashboard_signals.html" %}
+            {% elif section_key == 'reporting' %}
+                {% include "source_control/partials/_dashboard_reporting.html" %}
+            {% endif %}
+        </div>
+    {% endif %}
 {% endif %}

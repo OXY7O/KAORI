@@ -31,6 +31,13 @@ def test_stable_release_grants_reusable_quality_workflow_required_permissions() 
     assert 'actions: read' in permissions_block
 
 
+def test_human_uat_comment_checks_use_scoped_issue_read_permission() -> None:
+    global_permissions = WORKFLOW.split('permissions:', 1)[1].split('concurrency:', 1)[0]
+    publish_permissions = WORKFLOW.split('  publish:', 1)[1].split('    env:', 1)[0]
+    assert 'issues: read' in global_permissions
+    assert 'issues: read' in publish_permissions
+
+
 def test_stable_release_verifies_registry_rc_and_promotes_same_digest() -> None:
     assert 'target_commitish' in WORKFLOW
     assert 'RC_IMAGE_DIGEST' in WORKFLOW
@@ -49,3 +56,68 @@ def test_stable_release_builds_release_evidence_from_accepted_rc_not_legacy_docs
     assert 'Build Stable Release Notes' in WORKFLOW
     assert 'Generate Release Manifest' in WORKFLOW
     assert '.github/ci/release-lib.sh github-release' not in WORKFLOW
+
+
+def test_stable_release_is_explicit_and_checks_notes_before_privileged_publication() -> None:
+    events = WORKFLOW.split('on:', 1)[1].split('permissions:', 1)[0]
+    assert 'workflow_dispatch:' in events
+    assert 'push:' not in events
+    assert '      - name: Require Reviewed Stable Change Notes' in WORKFLOW
+    assert '      - name: Recheck Reviewed Stable Notes Before Publication' in WORKFLOW
+    assert WORKFLOW.index('Require Reviewed Stable Change Notes') < WORKFLOW.index('Resolve RC Evidence')
+    assert WORKFLOW.index('Recheck Reviewed Stable Notes Before Publication') < WORKFLOW.index(
+        'Log In to Docker Registry'
+    )
+    assert 'docs/releases/KAORI_${RELEASE_VERSION//./_}.md' in WORKFLOW
+    assert 'CHANGELOG.md' in WORKFLOW
+    assert WORKFLOW.index('## Technical Evidence') < WORKFLOW.index('      - name: Publish Stable Release')
+
+
+def test_reviewed_notes_are_required_and_bound_to_the_exact_rc(tmp_path, monkeypatch) -> None:
+    import pytest
+
+    import scripts.verify_release_governance as governance
+
+    monkeypatch.setattr(governance, 'ROOT', tmp_path)
+    notes_dir = tmp_path / 'docs' / 'releases'
+    notes_dir.mkdir(parents=True)
+    (tmp_path / 'CHANGELOG.md').write_text('## [Unreleased]\n- Added release improvements.\n', encoding='utf-8')
+    notes_path = notes_dir / 'KAORI_0_3_0.md'
+    with pytest.raises(AssertionError, match='Missing release-governance file'):
+        governance.verify_stable_notes('0.3.0', 'v0.3.0-rc.2')
+
+    valid = (
+        '# KAORI v0.3.0\n\n'
+        'Accepted RC: v0.3.0-rc.2\n'
+        'Human UAT evidence: https://github.com/OXY7O/KAORI/issues/5093#issuecomment-12345\n\n'
+        '## Highlights\n- Cross-domain context is visible.\n\n'
+        '## Improvements\n- Runtime targets are discoverable.\n\n'
+        '## Fixes\n- Release validation is guarded.\n\n'
+        '## Known Limitations\n- Operational UAT is separately governed.\n'
+    )
+    notes_path.write_text(''.join(valid), encoding='utf-8')
+    governance.verify_stable_notes('0.3.0', 'v0.3.0-rc.2')
+    with pytest.raises(AssertionError, match='matching accepted RC'):
+        governance.verify_stable_notes('0.3.0', 'v0.2.0-rc.2')
+    with pytest.raises(AssertionError, match='accepted RC'):
+        governance.verify_stable_notes('0.3.0', 'v0.3.0-rc.3')
+    notes_path.write_text(''.join(valid).replace('#issuecomment-12345', '#issuecomment-TODO'), encoding='utf-8')
+    with pytest.raises(AssertionError, match='Human UAT evidence'):
+        governance.verify_stable_notes('0.3.0', 'v0.3.0-rc.2')
+    notes_path.write_text(''.join(valid).replace('Runtime targets are discoverable.', 'TODO'), encoding='utf-8')
+    with pytest.raises(AssertionError, match='Missing reviewed content'):
+        governance.verify_stable_notes('0.3.0', 'v0.3.0-rc.2')
+
+
+def test_stable_release_validates_real_uat_before_privileged_approval_and_rechecks_after() -> None:
+    preflight = WORKFLOW.split('  preflight:', 1)[1].split('  publish:', 1)[0]
+    publish = WORKFLOW.split('  publish:', 1)[1]
+    assert 'Verify Release-bound Human Acceptance' in preflight
+    assert '--uat-acceptance "$RELEASE_INPUT_VERSION" "$CANDIDATE_TAG"' in preflight
+    assert 'steps.rc.outputs.rc_source_sha' in preflight
+    assert 'steps.rc.outputs.rc_image_digest' in preflight
+    assert 'Recheck Release-bound Human Acceptance' in publish
+    assert publish.index('Recheck Release-bound Human Acceptance') < publish.index('Log In to Docker Registry')
+    assert '--uat-acceptance "$RELEASE_VERSION" "$CANDIDATE_TAG"' in publish
+    assert 'GH_TOKEN: ${{ github.token }}' in preflight
+    assert 'GH_TOKEN: ${{ github.token }}' in publish

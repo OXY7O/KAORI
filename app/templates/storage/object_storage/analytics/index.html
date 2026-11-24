@@ -32,16 +32,20 @@
                 </div>
             {% endif %}
             {% if page_key == 'overview' %}
-                <div class="space-y-1" data-object-storage-operational-posture-heading>
-                    <h2 class="text-base font-semibold text-content-primary">Operational Posture</h2>
-                    <p class="text-sm leading-6 text-content-secondary">Review capacity, request reliability, growth, and concentration from committed evidence.</p>
-                </div>
-                {% include "storage/object_storage/analytics/partials/_overview_analysis.html" %}
-                <div class="space-y-1" data-object-storage-analysis-workspaces-heading>
-                    <h2 class="text-base font-semibold text-content-primary">Analysis Workspaces</h2>
-                    <p class="text-sm leading-6 text-content-secondary">Explore capacity trends, request performance, consumers, forecasts, and source evidence.</p>
-                </div>
-                {% include "storage/object_storage/analytics/partials/_overview_workspace.html" %}
+                {% if analytics_limited %}
+                    {% include "storage/object_storage/analytics/partials/_overview_inventory_limited.html" %}
+                {% else %}
+                    <div class="space-y-1" data-object-storage-operational-posture-heading>
+                        <h2 class="text-base font-semibold text-content-primary">Operational Posture</h2>
+                        <p class="text-sm leading-6 text-content-secondary">Review capacity, request reliability, growth, and concentration from committed evidence.</p>
+                    </div>
+                    {% include "storage/object_storage/analytics/partials/_overview_analysis.html" %}
+                    <div class="space-y-1" data-object-storage-analysis-workspaces-heading>
+                        <h2 class="text-base font-semibold text-content-primary">Analysis Workspaces</h2>
+                        <p class="text-sm leading-6 text-content-secondary">Explore capacity trends, request performance, consumers, forecasts, and source evidence.</p>
+                    </div>
+                    {% include "storage/object_storage/analytics/partials/_overview_workspace.html" %}
+                {% endif %}
             {% elif page_key == 'capacity' %}
                 {% include "storage/object_storage/analytics/partials/_capacity_workspace.html" %}
             {% elif page_key == 'performance' %}
@@ -61,7 +65,7 @@
     {% if not dependency_blocker %}
         <script src="{{ url_for('static', filename='js/analytics/section_load_tracker.js') }}"></script>
     {% endif %}
-    {% if not dependency_blocker and page_key in ['overview', 'capacity', 'performance', 'forecast'] %}
+    {% if not dependency_blocker and not analytics_limited and page_key in ['overview', 'capacity', 'performance', 'forecast'] %}
         <script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.min.js') }}"></script>
         <script src="{{ url_for('static', filename='js/storage/object_storage/analytics.js') }}"></script>
     {% endif %}

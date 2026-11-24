@@ -87,6 +87,18 @@ Insights
 
 Only the active workspace is projected after first paint. Alerts uses committed materialization, default pagination 5, and server-backed filters for severity, state, source, and search.
 
+## Three independent dependency stages (#5123)
+
+Artifact Registry Analytics presents **Registry Integration → Metrics Source → Alert Source** through the canonical shared Analytics Controls & Data Readiness module. This is a read-only evidence-path summary, not a new eligibility gate.
+
+- **Registry Integration** reflects registered and eligible Registry source counts from canonical provider readiness.
+- **Metrics Source** reflects the selected-window committed snapshot's metric status. When no Analytics snapshot has been collected, present **Not Collected** rather than guessing that the consumer binding is absent.
+- **Alert Source** reflects committed alert evidence, including an explicitly labeled metrics-backed fallback. A fallback does not prove Alertmanager lifecycle readiness.
+- Snapshot freshness remains independent. Stale or partially covered metrics/alerts cannot display a current-ready status.
+- The pre-existing provider-absent setup blocker remains authoritative. Registered providers can retain bounded inventory/security/runtime/governance analytics even if a metric or alert source is missing.
+
+This first step adds **no request-time MetricsConsumer or Alertmanager lookup**, provider mutation, worker behavior change, new binding authority, or API exposure. It uses already-loaded committed Registry Analytics snapshots to build the source summary and preserves the existing two-card source/snapshot presentation.
+
 ## Ownership
 
 - Alertmanager owns alert state, routing, and suppression semantics.

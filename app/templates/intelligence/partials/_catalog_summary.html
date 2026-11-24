@@ -1,6 +1,9 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% import "components/table_label.html" as table_label %}
 <div id="catalog-summary-shell">
+    {% set summary_title_extra %}
+        {{ table_label.metadata_label('4 Indicators', 'layout-dashboard') }}
+    {% endset %}
     {% set summary_footer = payload.scope_label ~ ' · ' ~ payload.result_context.active_filters ~ ' active filters · Canonical definitions remain catalog-owned.' %}
     {% call intelligence_ui.posture_panel(
         'Rule Catalog Summary',
@@ -12,7 +15,8 @@
         actions=[
         ('sparkles', 'Recommendations', url_for('intelligence.recommendations')),
         ('workflow', 'Automation Control', url_for('automation_control.index'))
-        ]
+        ],
+        title_extra=summary_title_extra
         ) %}
         <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
             {{ intelligence_ui.posture_metric('list-checks', 'Matching Rules', payload.result_context.matching_items, 'Definitions matching the current catalog scope.') }}

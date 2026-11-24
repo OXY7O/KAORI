@@ -11,6 +11,19 @@ This document defines reusable structures. It does not define domain-specific fi
 5. Expandable details when row-level context cannot fit without harming scanability.
 6. Shared loading, empty, unavailable, and permission states.
 
+### Existing reusable prerequisite and committed-evidence blockers
+
+When a capability workspace lacks a configured, authorized provider or its required committed source evidence, retain the domain Hero and render **one** canonical section blocker with `app/templates/components/states/_blocked_state.html`. The existing provider prerequisite adapter `app/templates/components/provider_prerequisite/_setup_blocker.html` delegates to that same shared component. Do not substitute a page-local onboarding card, a centered oversized empty state, an empty data table, or a neutral "0" KPI that might imply a healthy source.
+
+- **Setup Required:** no eligible/authorized and enabled provider or installation exists; offer an authorized link to the owning Integration workspace. A registered but disabled source does not qualify.
+- **Scope Required / Collection Required:** the operator must select an authorized instance or collect the required committed inventory; distinguish these conditions and preserve permission-aware actions.
+- **Evidence Required:** provider/configuration may exist, but mandatory scanner or other domain-specific committed evidence is not qualified. Do not expose an interactive findings table or operational analytics as if usable.
+- **Optional source planes:** absent Metrics Source or Alert Source does **not** block independently qualified committed inventory; report each source family separately as unknown/not evaluated/partial rather than inventing success or observed zero.
+- **Presentation:** one short title, concise sentence, domain-appropriate **ordered setup steps** for setup/collection/evidence blockers and one permission-aware CTA, shared Violet geometry, natural wrapping on mobile, accessible status, and no new page-specific CSS. Source Control and Security reuse `blocked_state_steps` in the same section renderer as Registry Overview; the absence of steps must be intentional rather than accidental geometry drift. Shorten Hero-right informational copy to a single normal desktop line when practical, but never force `whitespace-nowrap`, truncation or font-size overrides to fit. Provider-specific nouns and instructions may vary; the component contract does not.
+- **Entry points:** protect full-page views and HTMX/lazy fragments consistently; a direct fragment URL must not bypass source/evidence qualification. Preserve valid selected-source navigation, empty observed collections and existing pagination only after the relevant source is qualified.
+
+Representative consumers are Registry Analytics, Source Control Overview/Repositories/Analytics, Security Posture Overview/Findings, and Secrets & PKI Overview. This consolidates the existing state component and provider qualification contract; it does not authorize live provider calls or turn optional metrics into a dependency of inventory.
+
 ## Expandable detail pattern
 
 - Standard cards use 12 px radius.

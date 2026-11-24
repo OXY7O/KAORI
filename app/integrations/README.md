@@ -405,14 +405,16 @@ or global delivery worker change is required.
 
 ## Notification Channels — approved hybrid provider roadmap (#1456)
 
-**Status: Phase 1 provider source merged to review; runtime UAT/admission pending.**
+**Current status (2026-11-21): Phase 1 adapter source has been admitted to protected `kaori/staging` and `main`; provider-specific live delivery and recovery UAT remain independent.**
 KAORI's delivery capability is **hybrid**: internal/self-hosted operational push
 and popular team collaboration endpoints use one existing
 `Integrations → Delivery → Notification Channels` governance surface.
 The three **pre-Phase-1** adapters are Telegram (including Telegram
 Forum Topic ID), Email/SMTP, and Microsoft Teams Workflows. Phase 1 adapter
-code for **ntfy, Slack, and Discord** is now merged on
-`kaori/review/staging-uat`, but has not completed runtime UAT or staging admission. GitHub Actions'
+code for **ntfy, Slack, and Discord** was merged via the review workbench and
+subsequently promoted through the approved staging/main source flow. Source
+admission does not establish a successful live Test Delivery, destination
+ownership, or production recovery readiness. GitHub Actions'
 trusted-branch Telegram notifier retains its separate GitHub ownership (#64);
 a second application-based CI notifier must not duplicate those messages.
 
@@ -508,17 +510,21 @@ DevContainer safe destination UAT, permission and secret-redaction checks,
 desktop/mobile/light-dark accessibility evidence and human acceptance. For
 self-hosted ntfy include trusted internal CA and blocked unsafe endpoint cases;
 for Slack/Discord include redirect/revocation/429/secret-leak cases.
-**Three new Phase 1 adapters are integrated to the review branch only; this does not authorize deployment or live provider use**. Under the
-current review session, CI/CD, Developer Check, Full Admission, DAST,
-`kaori/staging`, `main`, deployment and release are **HOLD** pending explicit
-authorization. A review-only documentation merge is not staging UAT acceptance.
+**Phase 1 adapter source is admitted in staging/main, but this does not authorize
+live provider use or enable notification recovery.** The 2026-10-12 review-only
+CI/CD and promotion HOLD was a historical checkpoint, not the current source
+lifecycle. Successful source admission and general application UAT do **not**
+make provider-specific transport, credential, negative-path, PostgreSQL/Celery
+recovery, or external destination evidence automatic. Record those separately
+under #1475 and #2872; do not equate provider acknowledgement with receipt.
 
 
 ### Phase 1 provider setup and UAT notes (#1473)
 
-**Status:** review-only adapter source integrated via ntfy PR #1468, Slack PR
-#1471 and Discord PR #1472. Existing three providers are unchanged.
-Provider availability on the review UI is **not** proof of live connectivity,
+**Status (2026-11-21):** adapter source from ntfy PR #1468, Slack PR #1471
+and Discord PR #1472 was integrated and subsequently promoted into staging/main;
+#1474 aligned the named sender registry. The original three providers remain
+registered. Provider availability in the UI is **not** proof of live connectivity,
 permissioned destination ownership, UAT acceptance or release readiness.
 
 **ntfy, self-hosted:** Set `NOTIFICATION_NTFY_ALLOWED_ORIGINS` on the KAORI
@@ -549,21 +555,25 @@ role and mass mentions. No Discord bot, chat history, guild discovery or
 subscriber-read status is replicated.
 
 **Reliability boundary:** Slack and Discord classify HTTP 429 with sanitized
-provider failures. The existing opt-in journal recovery currently uses the
-KAORI bounded retry delay; it does **not yet honor provider-specific
-`Retry-After` scheduling deadlines**. Do not claim rate-limit-compliant
-retry, exactly-once remote delivery, or production readiness. Governed
-follow-up work must address provider-specific deadlines and concurrent
-claims before enabling `NOTIFICATION_DELIVERY_RECOVERY_ENABLED=true`.
-Keep `NOTIFICATION_DELIVERY_RECOVERY_ENABLED=false` during DevContainer
-review.
+provider failures. Source implemented under #1475 / PR #2866 now parses and
+bounds provider `Retry-After` seconds/HTTP-date, persists indexed
+`NotificationDelivery.next_retry_at`, and gates due-time PostgreSQL
+`SKIP LOCKED` recovery while preserving the global minimum delay. This is
+**source-level provider-specific `Retry-After` scheduling**, not evidence that
+live providers, database migration upgrade/downgrade, worker failure injection,
+or concurrent claims passed runtime UAT. Do not claim exactly-once delivery,
+provider-tested rate-limit safety, or production recovery readiness. Keep
+`NOTIFICATION_DELIVERY_RECOVERY_ENABLED=false` until the separately governed
+#1475 / #2872 technical and human acceptance evidence authorizes activation.
 
-**UAT still pending:** run existing regression suites, provider mocked
-transport tests (2xx, 4xx, 429, redirects, timeouts, TLS, invalid secret),
-explicit ntfy internal network/CA tests, Flask permission/CSRF checks,
-responsive/light-dark/keyboard Visual QA, and permitted sandbox Test Delivery
-on authorized destinations. Do not advance staging/main promotion or claim
-human acceptance without evidence.
+**Provider-specific UAT still pending:** preserve existing regression evidence
+and independently record provider mocked transport tests (2xx, 4xx, 429,
+redirects, timeouts, TLS, invalid secret), ntfy internal network/CA tests,
+Flask permission/CSRF checks, applicable responsive/light-dark/keyboard Visual QA,
+PostgreSQL/Celery due-time/replay negative cases, and permitted sandbox Test
+Delivery on authorized destinations. Previously approved staging/main source
+promotion and human source acceptance do not substitute for these executed
+provider-specific tests or authorize operational recovery.
 
 ### REVIEW(5) — Configured Channels registry (#2318)
 

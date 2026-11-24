@@ -23,12 +23,15 @@ jobs:
   reconcile:
     name: Reconcile Public Publication
     runs-on: [self-hosted, linux, x64, kaori-ci]
-    environment: uat
+    # Reconciliation uses the same staging Environment as the host deploy.
+    environment:
+      name: staging
     timeout-minutes: 30
     env:
       KAORI_HOST: ${{ vars.KAORI_HOST }}
       KAORI_HOST_USER: ${{ vars.KAORI_HOST_USER }}
       KAORI_HOST_PORT: ${{ vars.KAORI_HOST_PORT }}
+      KAORI_HOST_DEPLOY_ENV_FILE: ${{ vars.KAORI_HOST_DEPLOY_ENV_FILE }}
       KAORI_HOST_SSH_PRIVATE_KEY: ${{ secrets.KAORI_HOST_SSH_PRIVATE_KEY }}
       KAORI_HOST_SSH_PASSPHRASE: ${{ secrets.KAORI_HOST_SSH_PASSPHRASE }}
       KAORI_HOST_KNOWN_HOSTS: ${{ secrets.KAORI_HOST_KNOWN_HOSTS }}
@@ -49,6 +52,13 @@ jobs:
             printf 'KAORI_HOST_PORT is invalid.\n' >&2
             exit 1
           fi
+          # The canonical public edge can be reconciled only for the exact
+          # approved canonical runtime. A distinct configured target needs its
+          # own provider-owned ingress review; never publish it implicitly.
+          [[ "${KAORI_HOST_DEPLOY_ENV_FILE:-/etc/kaori/deploy.env}" == "/etc/kaori/deploy.env" ]] || {
+            printf 'Distinct Application target requires separate operator-approved ingress.\n' >&2
+            exit 1
+          }
           printf '✅ Public-edge admission · required input and target syntax PASS\n'
 
       - name: Reconcile Publication
@@ -92,6 +102,16 @@ jobs:
           ssh "${ssh_opts[@]}" "$target" 'bash -s' <<'REMOTE'
           set -Eeuo pipefail
 
+          [[ -f /etc/kaori/deploy.env && ! -L /etc/kaori/deploy.env ]] || {
+            printf 'Canonical Application deployment identity file is unavailable.\n' >&2
+            exit 1
+          }
+          # shellcheck source=/dev/null
+          source /etc/kaori/deploy.env
+          [[ "${KAORI_COMPOSE_PROJECT:-kaori-production}" == "kaori-production" ]] || {
+            printf 'Refusing canonical public-edge mutation for a distinct Compose runtime.\n' >&2
+            exit 1
+          }
           printf '⏳ Public-edge · checking external shared-edge authority\n'
           edge_runtime=/opt/shared-edge/runtime
           edge_publish=/opt/shared-edge/runtime/publish-container.sh

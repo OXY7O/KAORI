@@ -81,6 +81,8 @@ Object Storage Analytics
 Object Storage → Metrics Source → Alert Source
 ```
 
+Artifact Registry Analytics follows the same shared three-stage path **Registry Integration → Metrics Source → Alert Source** even with no eligible Registry provider. The page consumes the existing `registry_analytics_dependency_steps` source-readiness presentation; it does not invent a separate registry-only blocker geometry. The first stage alone is the current provider/setup blocker; Metrics Source and Alert Source remain **optional independently qualified evidence**, not hard prerequisites for reading committed Registry inventory, security, runtime, or governance evidence once the Registry is eligible. On no-provider Analytics routes, the shared dependency-path blocker owns the integration CTA and the normal analytics workspace is hidden. Ordinary Registry Overview/Inventory/Security pages continue to use the shared provider setup blocker.
+
 For Object Storage, **Alert Source** means the committed alert-evidence boundary. Alertmanager is preferred when an eligible binding exists, while the existing qualified metrics-backed alert fallback remains valid. Worker materialization is a downstream evidence stage and must not replace Metrics Source / Alert Source in the setup grammar.
 
 ## Metadata

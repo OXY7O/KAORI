@@ -13,6 +13,9 @@ on:
       - requirements/automation-worker.txt
       - .github/workflows/ansible-worker-preflight.yml
       - Dockerfile
+      - app/infrastructure_automation/source.py
+      - app/infrastructure_automation/tasks.py
+      - app/infrastructure_automation/cli.py
       - tests/contracts/platform_operations/test_ansible_localhost_worker_contract.py
 
 permissions:
@@ -105,7 +108,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: OXY7O/kaori-operations
-          ref: a182ddd04b353497021b3a089d3289128e999f78
+          ref: aa5ae076e0cd5e6a2cc4d236608cb470012a7ab2
           path: kaori-operations
           persist-credentials: false
       - name: Set up Python
@@ -146,6 +149,14 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check -r requirements/dev.txt
           python -m pip install --disable-pip-version-check -r requirements/automation-worker.txt
+      - name: Verify exact installed pilot versions
+        run: |
+          python - <<'PY'
+          from importlib.metadata import version
+          assert version('ansible-core') == '2.19.15'
+          assert version('ansible-runner') == '2.4.3'
+          print('Installed localhost worker package parity PASS')
+          PY
       - name: Prepare ephemeral JobExecution schema
         run: |
           python - <<'PY'
@@ -191,7 +202,7 @@ jobs:
         run: |
           flask --app run:app automation-localhost-probe \
             --source-path "$GITHUB_WORKSPACE/kaori-operations" \
-            --source-sha a182ddd04b353497021b3a089d3289128e999f78
+            --source-sha aa5ae076e0cd5e6a2cc4d236608cb470012a7ab2
       - name: Verify durable job and actual Ansible readback
         run: |
           python - <<'PY'
@@ -213,7 +224,7 @@ jobs:
                   if job and job.is_terminal:
                       assert job.status == 'succeeded', f'Unexpected canonical status: {job.status}'
                       evidence = job.result_summary_json or {}
-                      assert evidence.get('source_sha') == 'a182ddd04b353497021b3a089d3289128e999f78'
+                      assert evidence.get('source_sha') == 'aa5ae076e0cd5e6a2cc4d236608cb470012a7ab2'
                       assert evidence.get('operation_id') == 'linux.host_facts.v1'
                       assert evidence.get('changed') is False
                       assert evidence.get('environment_attestation') == 'NOT VERIFIED'
@@ -235,7 +246,7 @@ jobs:
           if KAORI_AUTOMATION_LOCALHOST_PILOT_ENABLED=false \
             flask --app run:app automation-localhost-probe \
             --source-path "$GITHUB_WORKSPACE/kaori-operations" \
-            --source-sha a182ddd04b353497021b3a089d3289128e999f78 \
+            --source-sha aa5ae076e0cd5e6a2cc4d236608cb470012a7ab2 \
             >/tmp/disabled-probe.out 2>&1; then
             echo 'Blocked: disabled pilot unexpectedly enqueued a job' >&2
             exit 1
@@ -287,9 +298,12 @@ jobs:
         run: |
           docker run --rm --entrypoint python kaori-automation-worker:preflight -c "
           import os
+          from importlib.metadata import version
           import ansible_runner
           import ansible
           from app import create_app
           assert os.geteuid() != 0, 'Automation worker must not run as root'
+          assert version('ansible-core') == '2.19.15'
+          assert version('ansible-runner') == '2.4.3'
           print('Pinned image dependencies and non-root identity PASS')
           "

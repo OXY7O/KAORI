@@ -4,17 +4,18 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Stable Semantic Version, for example 0.1.0
+        description: Stable Semantic Version, for example 0.3.0
         required: true
         type: string
       candidate_tag:
-        description: Explicitly UAT-accepted RC tag, for example v0.1.0-rc.11
+        description: Explicitly Human-UAT-accepted RC tag, for example v0.3.0-rc.N
         required: true
         type: string
 
 permissions:
   contents: read
   actions: read
+  issues: read
   statuses: write
 
 concurrency:
@@ -78,6 +79,10 @@ jobs:
             exit 1
           }
 
+      - name: Require Reviewed Stable Change Notes
+        shell: bash
+        run: |
+          python scripts/verify_release_governance.py "$RELEASE_INPUT_VERSION" "$CANDIDATE_TAG"
       - name: Resolve RC Evidence
         id: rc
         shell: bash
@@ -98,6 +103,8 @@ jobs:
           }
 
           ALLOWED_POST_UAT_PATHS=(
+            'CHANGELOG.md'
+            "docs/releases/KAORI_${RELEASE_INPUT_VERSION//./_}.md"
             '.github/workflows/release-image.yml'
             '.github/workflows/deploy-staging-host.yml'
             '.github/ci/release-lib.sh'
@@ -167,6 +174,15 @@ jobs:
           printf 'Accepted RC authority: tag=%s source=%s digest=%s\n' \
             "$CANDIDATE_TAG" "$RC_SOURCE_SHA" "$RC_IMAGE_DIGEST"
 
+      - name: Verify Release-bound Human Acceptance
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/verify_release_governance.py \
+            --uat-acceptance "$RELEASE_INPUT_VERSION" "$CANDIDATE_TAG" \
+            "${{ steps.rc.outputs.rc_source_sha }}" "${{ steps.rc.outputs.rc_image_digest }}"
+
       - name: Resolve CI Toolchain
         shell: bash
         run: |
@@ -226,10 +242,14 @@ jobs:
     name: Publish Stable
     needs: preflight
     runs-on: [self-hosted, linux, x64, kaori-ci]
+    # Native GitHub production deployment review precedes all privileged release writes.
+    environment:
+      name: production
     timeout-minutes: 180
     permissions:
       contents: write
       id-token: write
+      issues: read
     env:
       RELEASE_VERSION: ${{ needs.preflight.outputs.release_version }}
       RELEASE_SHA: ${{ needs.preflight.outputs.release_sha }}
@@ -247,6 +267,49 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
+
+      - name: Recheck Reviewed Stable Notes Before Publication
+        shell: bash
+        run: |
+          python scripts/verify_release_governance.py "$RELEASE_VERSION" "$CANDIDATE_TAG"
+
+      - name: Recheck Release-bound Human Acceptance
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/verify_release_governance.py \
+            --uat-acceptance "$RELEASE_VERSION" "$CANDIDATE_TAG" \
+            "$RC_SOURCE_SHA" "$RC_IMAGE_DIGEST"
+
+      # Issue #5116: same Environment-scoped pinned SSH/receipt resolver as the
+      # existing credential preflight; host observation is strictly read-only.
+      # A candidate RC version or digest mismatch is not approval to deploy.
+      - name: Verify Selected Production Runtime Against Accepted RC (Read Only)
+        shell: bash
+        env:
+          TARGET_ENV: production
+          TARGET_INVENTORY: "true"
+          RELEASE_GATE: "true"
+          EXPECTED_RC_SOURCE_SHA: ${{ needs.preflight.outputs.rc_source_sha }}
+          EXPECTED_RC_IMAGE_DIGEST: ${{ needs.preflight.outputs.rc_image_digest }}
+          EXPECTED_RC_TAG: ${{ needs.preflight.outputs.candidate_tag }}
+          EXPECTED_RELEASE_VERSION: ${{ needs.preflight.outputs.release_version }}
+          REGISTRY_USER: ${{ secrets.KAORI_DOCKER_REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.KAORI_DOCKER_REGISTRY_PASSWORD }}
+          DEPLOY_HOST: ${{ vars.KAORI_HOST }}
+          DEPLOY_PORT: ${{ vars.KAORI_HOST_PORT }}
+          DEPLOY_USER: ${{ vars.KAORI_HOST_USER }}
+          DEPLOY_ROOT: ${{ vars.KAORI_HOST_DEPLOY_ROOT }}
+          DEPLOY_SSH_KEY: ${{ secrets.KAORI_HOST_SSH_PRIVATE_KEY }}
+          DEPLOY_SSH_PASSPHRASE: ${{ secrets.KAORI_HOST_SSH_PASSPHRASE }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.KAORI_HOST_KNOWN_HOSTS }}
+          RECEIPT_PATH: /var/lib/kaori/deploy-state/release.env
+          HOST_ENV_PATH: /etc/kaori/deploy.env
+        run: |
+          set -Eeuo pipefail
+          bash -n scripts/environment-credential-preflight.sh
+          bash scripts/environment-credential-preflight.sh
 
       - name: Resolve CI Toolchain
         shell: bash
@@ -514,32 +577,32 @@ jobs:
       - name: Build Stable Release Notes
         shell: bash
         run: |
-          cat > tmp/ci-artifacts/release/stable-release-notes.md <<EOF
-          ## KAORI v${RELEASE_VERSION}
+          notes="docs/releases/KAORI_${RELEASE_VERSION//./_}.md"
+          cp "$notes" tmp/ci-artifacts/release/stable-release-notes.md
+          cat >> tmp/ci-artifacts/release/stable-release-notes.md <<EOF
 
-          This stable release promotes the explicitly UAT-accepted release candidate **without rebuilding application bits**.
+          ## Technical Evidence
 
-          ### Accepted lineage
-          - Stable Git source: \`${RELEASE_SHA}\`
-          - Accepted application source: \`${RC_SOURCE_SHA}\`
-          - Accepted RC: \`${CANDIDATE_TAG}\`
-          - Immutable image: \`${REGISTRY_IMAGE}@${RC_IMAGE_DIGEST}\`
-          - Stable registry tag: \`${REGISTRY_IMAGE}:v${RELEASE_VERSION}\`
+          Accepted signed release candidate was verified and promoted without rebuilding application bits.
 
-          ### Validation
-          - Main Full Admission: **PASS**
-          - Accepted RC registry identity: **PASS**
-          - HIGH/CRITICAL image scan: **PASS**
-          - Runtime, migration, Reports worker, and baseline DAST: **PASS**
-          - Accepted RC SPDX SBOM attestation: **PASS**
-          - Accepted RC SLSA provenance v1 attestation: **PASS**
-          - Stable digest signature verification: **PASS**
-          - Stable tag digest identity: **PASS**
+          - Stable Git source: ${RELEASE_SHA}
+          - Accepted application source: ${RC_SOURCE_SHA}
+          - Accepted RC: ${CANDIDATE_TAG}
+          - Immutable digest: ${RC_IMAGE_DIGEST}
+          - Immutable image: ${REGISTRY_IMAGE}@${RC_IMAGE_DIGEST}
+          - Stable registry tag: ${REGISTRY_IMAGE}:v${RELEASE_VERSION}
 
-          ### Promotion invariant
-          The stable tags resolve to the exact immutable digest accepted during UAT. No application image rebuild occurred during stable promotion.
+          ### Verification
+          - Main Full Admission: PASS
+          - Accepted RC registry identity: PASS
+          - HIGH/CRITICAL image scan: PASS
+          - Runtime, Reports worker, migration, and baseline DAST: PASS
+          - Signed SPDX SBOM and SLSA provenance: PASS
+          - Stable digest signature: PASS
+          - Stable tag digest identity: PASS
+
+          Stable tags reuse the exact immutable digest accepted during UAT.
           EOF
-
       - name: Publish Stable Release
         shell: bash
         env:

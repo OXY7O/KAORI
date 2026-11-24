@@ -101,6 +101,7 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'jobs.executions': 'Jobs',
     'jobs.configuration': 'Job Configuration',
     'platform_operations.overview.index': 'Overview',
+    'platform_operations.infrastructure_automation.index': 'Infrastructure Automation',
     'platform_operations.data_lifecycle.index': 'Data Lifecycle',
     'platform_operations.kubernetes.index': 'Kubernetes Admin',
     'platform_operations.kubernetes.secret_reveal.index': 'Secret Reveal',
@@ -246,6 +247,11 @@ def _reports_and_operations_items(endpoint: str) -> list[BreadcrumbItem] | None:
             BreadcrumbItem('Operations Center', 'workflow'),
             BreadcrumbItem('Data Lifecycle'),
         ]
+    if endpoint.startswith('platform_operations.infrastructure_automation.'):
+        return [
+            BreadcrumbItem('Operations Center', 'workflow'),
+            BreadcrumbItem('Infrastructure Automation'),
+        ]
     return None
 
 
@@ -303,7 +309,11 @@ def build_navigation_breadcrumb(
     elif endpoint.startswith('source_control.'):
         items = [
             BreadcrumbItem('Source Control', 'git-branch'),
-            BreadcrumbItem('Repositories' if endpoint == 'source_control.repositories' else 'Overview'),
+            BreadcrumbItem(
+                'Repositories'
+                if endpoint == 'source_control.repositories'
+                else ('Analytics' if endpoint == 'source_control.analytics' else 'Overview')
+            ),
         ]
     elif endpoint.startswith('secrets_pki.'):
         items = [BreadcrumbItem('Secrets & PKI', 'key-round'), BreadcrumbItem(_leaf(endpoint, 'Overview'))]

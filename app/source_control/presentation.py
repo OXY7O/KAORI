@@ -50,6 +50,7 @@ def build_source_control_overview() -> dict:
             IntegrationInstance.integration_type == 'source_control',
             IntegrationInstance.provider_key == 'github',
             IntegrationInstance.lifecycle_status == 'active',
+            IntegrationInstance.enabled.is_(True),
         )
         .order_by(SourceInstallation.id)
         .limit(_MAX_UAT_INSTALLATIONS + 1)

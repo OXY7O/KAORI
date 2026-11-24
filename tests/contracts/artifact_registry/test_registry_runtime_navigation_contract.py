@@ -194,3 +194,14 @@ def test_runtime_overview_reuses_security_catalog_and_compact_posture() -> None:
     assert 'Bindings associated with Critical or High artifact findings.' not in runtime
     assert 'Runtime Explorer' not in runtime
     assert 'Explore Runtime' not in runtime
+
+
+def test_registry_runtime_hero_prerequisite_copy_is_compact_without_truncation() -> None:
+    for path in (
+        'app/templates/artifact_registry/runtime_overview.html',
+        'app/templates/artifact_registry/partials/_runtime_workspace.html',
+    ):
+        template = (ROOT / path).read_text()
+        assert "blocked_info='Requires committed Registry artifacts and Kubernetes Pod inventory.'" in template
+        assert 'blocked_state_description = runtime.setup.description' in template
+        assert 'blocked_state_steps = runtime.setup.steps' in template

@@ -7,6 +7,9 @@ from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import permission_required
 from app.common.http import htmx_target, is_htmx_request
+from app.infrastructure_automation.kubernetes.execution_compatibility import (
+    assess_kubespray_execution_compatibility,
+)
 from app.infrastructure_automation.kubernetes.plan_currentness import (
     committed_kubespray_plan_currentness,
 )
@@ -364,6 +367,9 @@ def ansible_connection_detail(instance_id: int) -> ResponseReturnValue:
         source=connection.metadata_json or {},
         source_posture=source_validation_posture(connection),
         kubespray_preflight=preflight.presentation(),
+        kubespray_execution_compatibility=assess_kubespray_execution_compatibility(
+            connection, preflight
+        ).presentation(),
         kubespray_plan_currentness=committed_kubespray_plan_currentness(connection, preflight=preflight).presentation(),
         can_generate_review_plan=bool(
             connection.enabled and getattr(current_user, 'has_permission', lambda _: False)('jobs.execute')

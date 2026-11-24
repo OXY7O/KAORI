@@ -10,10 +10,33 @@ This product workspace follows approved domain authority [#559](https://github.c
   state when no matching account is observed. Account is **not** an App installation or KAORI Team.
   **No summed repository counts** across overlapping installations.
 - `/source-control/repositories` — explicit installation selection and committed repository grants from SC-03's existing `read_installation_inventory` (search/visibility/archive, 5/10/25/50 pagination, default 5; branch/default-branch SHA only when committed).
+- `/source-control/analytics` — **bounded Analytics Overview** (#5126), selectable only after
+  local-super-admin UAT authentication with `integrations.manage`. Repository grants, reference evidence,
+  attention flags and collection timestamps reuse the existing committed `read_repository_coverage` projection
+  for exactly **one authorized installation**. The global/unselected state shows a selector, **not** a summed
+  cross-installation repository count. The three independent, canonical readiness families are shown as
+  Domain Integration (qualifies committed SC-03 evidence), Metrics Source (not evaluated for Source Control),
+  and Alert Source (not evaluated for Source Control). Missing telemetry/alert qualification never blocks
+  inventory-only facts. Qualified collected zero remains zero; not-collected remains unknown; degraded or
+  mismatched collection shows partial, not complete. This page **does not** create an Analytics worker snapshot,
+  metrics query profile or historical engineering dataset.
+- Source Control Analytics is limited to existing provider-native, installation-scoped evidence until SC-04
+  through SC-09 are separately admitted. No PR/review/CI/DORA, deployment lineage, AlertCases, future-provider
+  equivalence or provider health is inferred. No global reader role is enabled before #724 resource-scope policy.
 - Existing GitHub integration routes remain the sole authority for validation, synchronization and mutation.
 - GET reads committed KAORI database evidence; zero means a completed observed collection returned zero, **unknown does not mean zero**. Retained prior snapshots do not certify provider health or current freshness.
 - Temporary UAT access is **local database Super Admin plus `integrations.manage`**, enforced independently of GitHub provider readiness for this product workspace. Provider setup/validation/sync remain guarded by their existing integration routes. This is NOT an accepted production resource authorization model. Global/non-admin repository visibility must remain denied until #724 implementation.
 - Scoped UAT installation list has a bounded 50-row limit. The UI signals truncation; it does not advertise these sampled counts as complete organizational totals.
+
+## Provider prerequisite and evidence-gated presentation — #5139
+
+The Source Control sidebar keeps its existing permission-gated **domain discovery** and provider-neutral navigation; its children are not evidence of configured installations or committed state. All product page/HTMX entry points must fail closed to the **same shared** `components/states/_blocked_state.html` prerequisite when their mandatory source evidence is missing. Do not invent page-local setup cards or display ordinary metrics/tables as if qualified.
+
+- **No eligible enabled active GitHub App installation:** Overview, Repositories and Analytics show **GitHub Installation Required** with the integration setup CTA. Active-but-disabled integration instances are excluded from the Source Control scope, even if they contain historical snapshots.
+- **Installation exists, no committed inventory:** Overview and any direct dashboard HTMX sections show **Repository Inventory Not Collected**. Repositories retain only the authorized scope selector and shared blocker. An empty fetch without a committed generation is **unknown**, not observed zero.
+- **Installation exists but no selected authorized scope:** Repositories and Analytics offer the existing selection form and a shared **Select a GitHub Installation** / **Select an Authorized Installation** blocker, not a fleet aggregation.
+- **Selected committed scope:** keep existing bounded SC-03 inventory and Analytics projections; independently report Metrics Source and Alert Source **Not Evaluated**, never block qualified inventory on optional telemetry.
+- Continue validating out-of-scope IDs with 404, preserving local Super Admin + `integrations.manage` and immutable committed evidence with no live provider GET. Normal product sidebar entries remain navigable to clear setup explanations; they do not automatically grant integration access.
 
 ## Deferred Source Control product workstreams
 

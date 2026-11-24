@@ -83,7 +83,73 @@ are deliberately **not** centralized into presentation code. A component
 change still requires visual/a11y regression checks of all three consumers
 before acceptance; no design drift is accepted as a domain exception by default.
 
-## Extension checklist for a fourth domain
+## Canonical five-domain progressive dependency contract (#5122)
+
+This is the **cross-domain evidence interpretation contract**, not a claim that all
+five Analytics workspaces are already implemented. Kubernetes, Object Storage,
+Artifact Registry, Source Control, and Secrets & PKI must apply the same source
+families while retaining domain-specific permissions, registered jobs, datasets,
+and external-provider authority. Source Control and Secrets & PKI follow their
+own scoped implementation workstreams (#5126 and #2594); do not turn this
+standard into an implied feature-completion declaration.
+
+### Independent source families, not a global readiness gate
+
+| Source family | Qualifying evidence | Unknown / limited evidence | Consumer behavior |
+| --- | --- | --- | --- |
+| **1. Domain Integration** | Authorized asset or instance, eligible provider implementation, and committed domain Inventory/generation for data that needs Inventory | Not configured, inaccessible scope, unsupported provider capability, or not-yet-collected Inventory are distinct states | No provider: show canonical domain setup blocker. Authorized, qualified committed Inventory: show its factual subset even if Metrics/Alert sources are absent |
+| **2. Metrics Source** | Qualified domain/source/instance binding, capability, measured window, and committed worker metrics provenance | Binding eligibility unknown without a verified source record; no worker snapshot is **Not Collected**, not necessarily **Not Bound**. Missing retention or series is Unavailable | Gate only metrics-dependent sections, never committed Inventory, security, governance, or provider-native evidence |
+| **3. Alert Source** | Qualified alert integration and committed, scoped alert provenance; explicitly identify Alertmanager-primary versus supported bounded fallback | Missing, unqualified, partial, or stale alert evidence must not become a clean/zero-alert assertion | Gate alert-dependent sections; a Metrics Source fallback is narrower than a qualified Alert Source and must be labeled as such |
+
+An Analytics **Snapshot is a materialization/output artifact**, never a fourth
+external dependency. Its data eligibility, selected time range, materialization
+status, freshness, completeness, permission scope and last failed attempt
+are evaluated **separately** from all three source families. One source being
+ready cannot make another source ready. An expired snapshot cannot claim
+current coverage, and a source outage does not erase a separately qualified
+last-known committed observation. Time-range labels are not measured
+historical coverage until the worker committed qualified range evidence.
+
+Present the three source states through existing shared
+`analytics/components/_controls_readiness.html` Controls & Data Readiness;
+keep the independent **Latest Analytics Data Snapshot** card and the existing
+requested-HTMX section tracker. Do not add page-specific components, provider
+calls on normal GET, or a new dependency registry. Any source state presented
+without direct binding evidence must explicitly identify that it is derived
+from committed selected-window worker evidence.
+
+### Five-domain behavior and RC validation matrix
+
+| Domain | Earlier or current constraint | Progressive target / implementation authority | Mandatory RC UAT cases |
+| --- | --- | --- | --- |
+| **Kubernetes** | Existing provider and Metrics Source controls already permit committed Inventory and domain Analytics interpretation independently | Preserve existing Kubernetes-specific readiness, scoped clusters/workloads, source freshness, and shared Controls; do not regress qualified operational data | No cluster; Inventory-only; Metrics absent; Alert absent; fresh/stale snapshot; inaccessible cluster; lazy HTMX |
+| **Object Storage** | Prior Overview hard block after Inventory Sync when analytics metrics snapshot was absent; August Final Recheck is historical authority | #5124: retain Inventory Sync Required before committed Inventory; allow bounded **Limited Overview** from authorized committed Inventory without Metrics/Alert. Keep physical capacity, performance, forecast, and operational utilization unqualified | No Inventory; fully observed Inventory; partial size/count fields; missing/stale metrics; unauthorized system; seven time windows, desktop/mobile |
+| **Artifact Registry** | A single provider prerequisite blocker could conceal independent source dependencies; generic Metrics queries assumed Harbor | #5123: three independent readiness stages without hiding Registry Inventory/Security/Runtime/Governance; #5125: provider-qualified metrics profile (Harbor first; other providers unknown/unsupported until qualified) | No provider; no snapshot; Harbor metrics-only; alert fallback; stale/partial; non-Harbor unsupported profile; cross-provider scoping |
+| **Source Control** | Committed installation/repository/PR/review/CI evidence is not equivalent to Prometheus telemetry, and dedicated Analytics is not yet generally admitted | #5126 under #4027: preserve installation-scoped provider-native committed evidence without Metrics/Alert prerequisites; later Analytics sections require bounded, real datasets, not synthetic DORA metrics | No installation; selected-repository grant; missing Metrics/Alert; revoked grant; unauthorized repository; no fabricated delivery trends |
+| **Secrets & PKI** | Provider-native metadata and limited Certificate Expiration evidence exist; full historical Analytics (#2594) is not complete | #2594 under #714: qualify Vault/other provider versions and Metrics Source query semantics per dataset; never expose secret values, paths, tokens, credentials or private keys in Analytics | Unauthorized instance; missing/partial telemetry; certificate expiry metadata only; stale evidence; response/log/export redaction and negative permissions |
+
+**Acceptance matrix across every domain:** test absent provider, authorized
+Inventory-only, partial source coverage, no materialization, current/stale/
+expired snapshot, unsupported provider profile, RBAC denial, and independent
+Metrics/Alert outages. Validate count denominators and missing data as
+unknown rather than healthy zero. Include light/dark, desktop/mobile,
+keyboard/accessibility, shared Hero/cards/table pagination (default five),
+HTMX loading/error/empty states, and absence of synchronous provider calls.
+
+### Admission and RC boundary
+
+The above matrix is a **contract and test plan**, not a waiver of existing
+domain-specific admission. Code delivery remains separated into #5123,
+#5124, #5125, #5126 and #2594, with cross-domain authority #5122,
+shared foundation #1105/#1122 and independent CI prerequisite #5131.
+RC publication #5133 may include only changes merged to `kaori/staging`
+after exact-head Developer Check and Full Admission; unfinished Source
+Control or Secrets & PKI scope must remain clearly disclosed as a known
+limitation. Signed RC publication, isolated staging deploy, live Visual QA,
+security/RBAC negatives and actual human acceptance are separate evidence
+gates; neither a contract document nor CI green implies successful UAT.
+
+## Extension checklist for an additional domain
 
 1. Define domain capability and asset type before provider product or instance. Register provider-qualified source capabilities and integration binding using the existing Integration Registry.
 2. Decide evidence authority: inventory/API, Metrics Source, Alert Source, correlated committed domains, or a qualified combination. Do not assume every integration uses Prometheus.

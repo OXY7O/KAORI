@@ -308,7 +308,10 @@ def _workspace_key(endpoint: str) -> str | None:
 
 
 _WORKSPACE_ACTIVE_EXACT: dict[str, dict[str, str]] = {
-    'source_control': {'source_control.repositories': 'repositories'},
+    'source_control': {
+        'source_control.repositories': 'repositories',
+        'source_control.analytics': 'analytics',
+    },
     'secrets_pki': {
         'secrets_pki.overview': 'overview',
         'secrets_pki.inventory': 'inventory',
@@ -381,6 +384,7 @@ _WORKSPACE_ACTIVE_PREFIXES: dict[str, tuple[tuple[str, str], ...]] = {
     ),
     'operations_center': (
         ('jobs.', 'jobs'),
+        ('platform_operations.infrastructure_automation.', 'infrastructure_automation'),
         ('platform_operations.data_lifecycle.', 'data_lifecycle'),
         ('platform_operations.kubernetes.', 'kubernetes_admin'),
     ),

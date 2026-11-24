@@ -68,7 +68,12 @@ def test_new_analytics_domain_extension_does_not_require_another_framework() -> 
     k8s = read('app/templates/kubernetes/analytics/overview/index.html')
     registry = read('app/templates/artifact_registry/analytics.html')
 
-    assert 'Extension checklist for a fourth domain' in guide
+    assert 'Canonical five-domain progressive dependency contract (#5122)' in guide
+    assert 'Extension checklist for an additional domain' in guide
+    for domain in ('Kubernetes', 'Object Storage', 'Artifact Registry', 'Source Control', 'Secrets & PKI'):
+        assert domain in guide
+    for stage, source_family in enumerate(('Domain Integration', 'Metrics Source', 'Alert Source'), start=1):
+        assert f'**{stage}. {source_family}**' in guide
     assert 'No analytics domain may create another scheduler' in guide
     # Explicit measured history replaces the obsolete snapshot_window token.
     assert 'separate `time_range` snapshots' in guide

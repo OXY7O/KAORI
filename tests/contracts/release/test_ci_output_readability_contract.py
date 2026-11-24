@@ -289,7 +289,7 @@ def test_staging_deploy_action_uses_operator_facing_staging_host_vocabulary() ->
     assert 'name: Staging Deploy' in workflow
     assert 'name: Release Evidence' in workflow
     assert 'name: Deploy Staging' in workflow
-    assert 'description: Accepted KAORI RC tag' in workflow
+    assert 'description: Exact signed, approved KAORI RC tag (vX.Y.Z-rc.N)' in workflow
     assert "printf 'Staging authority resolved:" in workflow
     assert 'KAORI UAT VPS Deploy' not in workflow
     assert 'Deploy Immutable Candidate to UAT VPS' not in workflow

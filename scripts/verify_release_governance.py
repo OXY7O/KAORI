@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
+import os
 import re
+import sys
+from http.client import HTTPException, HTTPSConnection
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SEMVER = re.compile(r'^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$')
 RELEASE_KEYS = ('KAORI_IMAGE', 'APP_VERSION', 'APP_BUILD_SHA', 'APP_BUILD_DATE')
+UAT_EVIDENCE_URL = re.compile(r'^https://github\.com/OXY7O/KAORI/issues/([1-9]\d*)#issuecomment-([1-9]\d*)$')
 PERSISTENT_TEMPLATES = (
     'deploy/env/app.env.example',
     'deploy/env/secrets.env.example',
@@ -33,10 +38,106 @@ def reject_active_env_key(source: str, key: str, authority: str) -> None:
         raise AssertionError(f'{authority} must not actively define deployment-managed {key}')
 
 
+def verify_stable_notes(version: str, candidate: str) -> None:
+    if not SEMVER.fullmatch(version):
+        raise AssertionError('Stable release notes require a valid version')
+    if not re.fullmatch('v' + re.escape(version) + r'-rc\.[1-9][0-9]*', candidate):
+        raise AssertionError('Stable release notes require a matching accepted RC')
+    path = 'docs/releases/KAORI_' + version.replace('.', '_') + '.md'
+    notes = read(path)
+    if not notes.startswith('# KAORI v' + version + '\n'):
+        raise AssertionError('Reviewed notes must name the requested stable version')
+    if 'Accepted RC: ' + candidate not in notes:
+        raise AssertionError('Reviewed notes must name the exact accepted RC')
+    evidence = re.findall(r'(?m)^Human UAT evidence: (.+)$', notes)
+    if len(evidence) != 1 or not UAT_EVIDENCE_URL.fullmatch(evidence[0]):
+        raise AssertionError('Reviewed notes must link release-bound Human UAT evidence')
+    headings = re.findall(r'(?m)^## ([^\n]+)$', notes)
+    expected = ['Highlights', 'Improvements', 'Fixes', 'Known Limitations']
+    if headings != expected:
+        raise AssertionError('Reviewed notes must contain ordered release sections')
+    for heading in expected:
+        section = notes.split('## ' + heading + '\n', 1)[1].split('\n## ', 1)[0].strip()
+        if len(section) < 12 or re.search(r'(?i)\b(TODO|TBD|PLACEHOLDER)\b', section):
+            raise AssertionError('Missing reviewed content for ' + heading)
+    if '## [Unreleased]' not in read('CHANGELOG.md'):
+        raise AssertionError('Changelog must keep the Unreleased changes until publication')
+    print('PASS — Reviewed stable release notes')
+
+
+def verify_uat_acceptance(version: str, candidate: str, source_sha: str, digest: str) -> None:
+    """Bind reviewed release notes to a real maintainer-approved GitHub UAT comment."""
+    verify_stable_notes(version, candidate)
+    if not re.fullmatch(r'[0-9a-f]{40}', source_sha):
+        raise AssertionError('Invalid accepted RC source SHA')
+    if not re.fullmatch(r'sha256:[0-9a-f]{64}', digest):
+        raise AssertionError('Invalid accepted RC digest')
+
+    notes = read('docs/releases/KAORI_' + version.replace('.', '_') + '.md')
+    evidence_urls = re.findall(r'(?m)^Human UAT evidence: (.+)$', notes)
+    if len(evidence_urls) != 1:
+        raise AssertionError('Expected one release-bound Human UAT evidence URL')
+    match = UAT_EVIDENCE_URL.fullmatch(evidence_urls[0])
+    if match is None:
+        raise AssertionError('Human UAT evidence must be a KAORI issue comment URL')
+    issue_number, comment_id = match.groups()
+
+    token = os.environ.get('GH_TOKEN', '')
+    if not token:
+        raise AssertionError('GitHub authentication is required to verify Human UAT acceptance')
+    # Fixed HTTPS-only endpoint; no URL schemes or redirects are accepted.
+    connection = HTTPSConnection('api.github.com', timeout=20)
+    try:
+        connection.request(
+            'GET',
+            f'/repos/OXY7O/KAORI/issues/comments/{comment_id}',
+            headers={
+                'Authorization': f'Bearer {token}',
+                'Accept': 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28',
+                'User-Agent': 'KAORI-Release-Governance',
+            },
+        )
+        response = connection.getresponse()
+        if response.status != 200:
+            raise AssertionError('Human UAT comment lookup did not succeed')
+        comment = json.load(response)
+    except (OSError, HTTPException, ValueError) as exc:
+        raise AssertionError('Unable to verify the linked GitHub Human UAT comment') from exc
+    finally:
+        connection.close()
+
+    if not isinstance(comment, dict):
+        raise AssertionError('Human UAT API response is not a comment')
+    if comment.get('html_url') != evidence_urls[0] or comment.get('issue_url') != (
+        f'https://api.github.com/repos/OXY7O/KAORI/issues/{issue_number}'
+    ):
+        raise AssertionError('Human UAT comment does not belong to the linked KAORI issue')
+    user = comment.get('user')
+    if not isinstance(user, dict) or user.get('type') != 'User' or not user.get('login'):
+        raise AssertionError('Human UAT comment must be authored by a human GitHub user')
+    if comment.get('author_association') not in ('OWNER', 'MEMBER'):
+        raise AssertionError('Human UAT comment must be authored by a repository owner/member')
+    body = comment.get('body')
+    if not isinstance(body, str) or not body.startswith('## Human Acceptance'):
+        raise AssertionError('Human UAT comment lacks the explicit acceptance heading')
+    markers = [line.strip() for line in body.splitlines() if line.strip().startswith('KAORI_APP_UAT_ACCEPTED:')]
+    expected = f'KAORI_APP_UAT_ACCEPTED:{source_sha}:{candidate}:{digest}'
+    if markers != [expected]:
+        raise AssertionError('Human UAT comment does not accept this exact RC SHA/tag/digest')
+    print(f'PASS — Verified release-bound Human UAT acceptance · issue #{issue_number}')
+
+
 def verify() -> None:
     version_line = read('VERSION').strip()
     if not SEMVER.fullmatch(version_line):
         raise AssertionError(f'VERSION must contain strict Semantic Versioning, got {version_line!r}')
+
+    rc_workflow = read('.github/workflows/publish-staging-image.yml')
+    if 'INITIAL_VERSION="$(cat VERSION)"' not in rc_workflow:
+        raise AssertionError('RC bootstrap must derive the first-public version from VERSION')
+    if "INITIAL_VERSION='0.1.0'" in rc_workflow:
+        raise AssertionError('RC bootstrap must not hardcode the obsolete 0.1.0 train')
 
     changelog = read('CHANGELOG.md')
     governance = read('docs/deployment/RELEASE_GOVERNANCE.md')
@@ -173,4 +274,14 @@ def verify() -> None:
 
 
 if __name__ == '__main__':
-    verify()
+    if len(sys.argv) == 6 and sys.argv[1] == '--uat-acceptance':
+        verify_uat_acceptance(*sys.argv[2:])
+    elif len(sys.argv) == 3:
+        verify_stable_notes(sys.argv[1], sys.argv[2])
+    elif len(sys.argv) == 1:
+        verify()
+    else:
+        raise SystemExit(
+            'Usage: verify_release_governance.py '
+            '[stable_version accepted_rc | --uat-acceptance version rc source_sha digest]'
+        )

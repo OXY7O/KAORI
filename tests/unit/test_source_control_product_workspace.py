@@ -134,6 +134,19 @@ def test_product_overview_excludes_mismatched_integration_authority(committed_pr
     assert {item['installation'].native_installation_id for item in scope['installations']} == {'100', '200'}
 
 
+def test_product_overview_excludes_disabled_installation_even_with_prior_commit(committed_product_db):
+    installation = committed_product_db.query(SourceInstallation).filter_by(native_installation_id='100').one()
+    connection = committed_product_db.get(IntegrationInstance, installation.integration_instance_id)
+    assert connection is not None
+    connection.enabled = False
+    committed_product_db.flush()
+
+    scope = presentation.build_source_control_overview()
+    assert scope['installation_count'] == 2
+    assert scope['committed_count'] == 1
+    assert {item['installation'].native_installation_id for item in scope['installations']} == {'200', '300'}
+
+
 @pytest.mark.parametrize('value', ['abc', '-1', '0', '2.5', '  ', '０', '2OR1', '9' * 64])
 def test_repository_scope_rejects_malformed_installation_id_without_query(monkeypatch, value):
     app = Flask(__name__)
@@ -183,7 +196,7 @@ def test_repository_scope_rejects_other_installation_before_read(monkeypatch):
 
 @pytest.mark.parametrize(
     'endpoint, args',
-    [(routes.overview, ()), (routes.repositories, ()), (routes.section, ('signals',))],
+    [(routes.overview, ()), (routes.repositories, ()), (routes.analytics, ()), (routes.section, ('signals',))],
 )
 def test_product_routes_enforce_uat_guard_before_scoped_data(monkeypatch, endpoint, args):
     app = Flask(__name__)
@@ -209,7 +222,7 @@ def test_product_navigation_reuses_source_control_taxonomy_and_uat_visibility(mo
     assert len(workspaces) == 1
     workspace = workspaces[0]
     assert workspace.section == 'Infrastructure'
-    assert [entry.key for entry in workspace.capabilities] == ['overview', 'repositories']
+    assert [entry.key for entry in workspace.capabilities] == ['overview', 'repositories', 'analytics']
     assert uat_access.local_super_admin is shared_local_super_admin
     user = SimpleNamespace(
         is_authenticated=True,
@@ -220,14 +233,14 @@ def test_product_navigation_reuses_source_control_taxonomy_and_uat_visibility(mo
     )
     assert _visible_capabilities(workspace, user) == ()
     monkeypatch.setattr(user, 'is_super_admin', True)
-    assert len(_visible_capabilities(workspace, user)) == 2
+    assert len(_visible_capabilities(workspace, user)) == 3
     monkeypatch.setattr(user, 'auth_source', 'sso')
     assert _visible_capabilities(workspace, user) == ()
     monkeypatch.setattr(user, 'auth_source', 'database')
     # The product navigation remains available for UAT actors even if the
     # first provider has not yet completed availability/readiness.
     monkeypatch.setattr(uat_access, 'provider_kind', lambda *_: SimpleNamespace(available=False))
-    assert len(_visible_capabilities(workspace, user)) == 2
+    assert len(_visible_capabilities(workspace, user)) == 3
     monkeypatch.setattr(user, 'has_permission', lambda _: False)
     assert _visible_capabilities(workspace, user) == ()
 
@@ -254,6 +267,80 @@ def test_product_templates_use_existing_source_control_inventory_contract():
     assert 'inventory.total == 0' in reusable
     assert '[5, 10, 25, 50]' in reusable
     assert 'exact_default_branch_sha' in reusable
+
+
+@pytest.mark.parametrize(
+    ('committed', 'collected_at', 'expected_template'),
+    [
+        (False, None, 'source_control/partials/_repository_inventory_blocker.html'),
+        (False, datetime(2026, 10, 26, tzinfo=UTC), 'source_control/partials/_repository_inventory_blocker.html'),
+        (True, None, 'source_control/partials/_repository_inventory_blocker.html'),
+        (True, datetime(2026, 10, 26, tzinfo=UTC), 'integrations/source_control/github/_inventory_table.html'),
+    ],
+)
+def test_repositories_htmx_requires_committed_inventory_before_rendering_table(
+    monkeypatch, committed, collected_at, expected_template
+):
+    """The HTMX refresh cannot bypass the full-page prerequisite gate."""
+    app = Flask(__name__)
+    monkeypatch.setattr(routes, '_require_product_uat_access', lambda: None)
+    authorized = {
+        'installation': SimpleNamespace(id=11),
+        'connection': SimpleNamespace(name='Authorized GitHub installation'),
+        'committed': committed,
+    }
+    monkeypatch.setattr(
+        routes,
+        'build_source_control_overview',
+        lambda: {'installations': (authorized,), 'installation_count': 1, 'has_more': False},
+    )
+    monkeypatch.setattr(
+        routes,
+        'read_installation_inventory_for_current_session',
+        lambda **_kwargs: SimpleNamespace(collected_at=collected_at),
+    )
+    captured = []
+
+    def capture(template, **context):
+        captured.append((template, context))
+        return 'rendered'
+
+    monkeypatch.setattr(routes, '_uncached_render', capture)
+    with app.test_request_context(
+        '/source-control/repositories',
+        query_string={'installation_id': '11'},
+        headers={'HX-Request': 'true'},
+    ):
+        assert routes.repositories.__wrapped__() == 'rendered'
+    assert captured[-1][0] == expected_template
+    assert captured[-1][1]['selected'] is authorized
+
+    root = Path(__file__).resolve().parents[2]
+    blocker = (root / 'app/templates/source_control/partials/_repository_inventory_blocker.html').read_text()
+    assert 'id="source-control-inventory"' in blocker
+    assert 'components/states/_blocked_state.html' in blocker
+
+
+def test_product_no_integration_uses_canonical_blocker_without_operational_workspace() -> None:
+    """No qualified committed source must not expose ordinary operational surfaces."""
+    root = Path(__file__).resolve().parents[2]
+    overview = (root / 'app/templates/source_control/overview.html').read_text()
+    repositories = (root / 'app/templates/source_control/repositories.html').read_text()
+    analytics = (root / 'app/templates/source_control/analytics.html').read_text()
+    section = (root / 'app/templates/source_control/partials/_dashboard_section.html').read_text()
+
+    assert '{% if not scope.committed_count %}' in overview
+    assert '{% if not scope.committed_count %}' in section
+    assert '{% if not scope.installation_count %}' in repositories
+    assert '{% if not authorized_installations %}' in analytics
+    assert '{% if not selected_scope or not collected %}' in analytics
+    assert '{% if selected and selected.committed and inventory and inventory.collected_at %}' in repositories
+    for source in (overview, repositories, analytics, section):
+        assert 'components/states/_blocked_state.html' in source
+        assert 'Open Source Control Integrations' in source
+        assert 'components/states/_empty_state.html' not in source
+    assert 'analytics_readiness.source_card(' in analytics
+    assert 'Not Evaluated' in analytics
 
 
 def test_product_overview_dashboard_tabs_use_shared_contract_without_live_provider_calls(monkeypatch):
@@ -1555,3 +1642,21 @@ def test_source_control_all_installations_repository_coverage_uses_canonical_pag
         assert routes.overview.__wrapped__() == 'rendered'
     assert not captured[-1][1]['eager_coverage_pagination']
     assert captured[-1][1]['repository_coverage'] is None
+
+
+def test_source_control_provider_blockers_use_ordered_shared_setup_steps() -> None:
+    root = Path(__file__).resolve().parents[2]
+    template_root = root / 'app/templates/source_control'
+    for name in ('overview.html', 'repositories.html', 'analytics.html'):
+        template = (template_root / name).read_text()
+        assert 'components/states/_blocked_state.html' in template
+        assert 'blocked_state_steps' in template
+        assert 'Open Source Control Integrations' in template
+        assert 'Sync Repository Inventory' in template
+    fragment = (template_root / 'partials/_repository_inventory_blocker.html').read_text()
+    assert 'blocked_state_steps' in fragment
+    assert 'Sync Repository Inventory' in fragment
+    assert 'id="source-control-inventory"' in fragment
+    overview = (template_root / 'overview.html').read_text()
+    assert "blocked_info='Authorize a GitHub App and sync repository inventory.'" in overview
+    assert 'whitespace-nowrap' not in overview.split('blocked_info=', 1)[1].split(') }}', 1)[0]

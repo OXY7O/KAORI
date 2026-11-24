@@ -133,8 +133,10 @@ def test_security_pages_use_approved_dashboard_and_registry_components() -> None
     assert 'registry.footer(' not in overview
     assert '<table' not in overview
     assert 'components/table_registry.html' not in overview
-    assert 'components/states/_empty_state.html' in overview
-    assert 'Security Evidence Prerequisites' in overview
+    assert 'components/states/_blocked_state.html' in overview
+    assert 'Registry Evidence Required' in overview
+    assert 'components/states/_blocked_state.html' in findings
+    assert '{% if not registry_ready or not posture.scanned_artifacts %}' in findings
     for tab in ('overview', 'capacity', 'signals', 'reporting'):
         assert f"dashboard_workspace.panel('{tab}'" in overview
 
@@ -274,6 +276,28 @@ def test_security_overview_reuses_governance_hero_and_dashboard_tabs() -> None:
     assert 'Review Registry Security' not in html
     assert '/security/findings' in html
     assert 'data-kaori-hero-context-extension' not in html
+
+
+def test_missing_registry_or_scanner_evidence_blocks_security_investigation() -> None:
+    no_provider = _renderable_posture(authorized=False)
+    overview = _render_workspace_page('overview', no_provider, can_manage_integrations=True)
+    findings = _render_workspace_page('findings', no_provider, can_manage_integrations=True)
+    for page in (overview, findings):
+        assert 'data-kaori-blocked-state' in page
+        assert 'Registry Evidence Required' in page
+        assert 'Open Registry Integrations' in page
+    assert 'data-security-findings-registry' not in findings
+    assert 'data-security-overview-layout' not in overview
+
+    no_scan = _renderable_posture()
+    no_scan['scanned_artifacts'] = 0
+    no_scan['rows'] = []
+    for name in ('overview', 'findings'):
+        page = _render_workspace_page(name, no_scan)
+        assert 'Scanner Evidence Required' in page
+        assert 'data-kaori-blocked-state' in page
+        if name == 'findings':
+            assert 'data-security-findings-registry' not in page
 
 
 def test_security_assurance_hero_omits_oversized_registry_cta_but_preserves_context() -> None:
@@ -707,7 +731,7 @@ def test_security_overview_blocks_without_eligible_source_without_inventing_kpis
     assert 'data-kaori-blocked-state' in html
     assert 'Registry Evidence Required' in html
     assert 'No eligible committed Registry evidence' in html
-    assert 'Security Evidence Prerequisites' in html
+    assert 'Connect an authorized Registry and collect scanner evidence' in html
     assert 'data-kaori-dashboard-framework="operational-v1"' not in html
 
 
@@ -846,8 +870,10 @@ def test_security_findings_flat_readiness_does_not_fabricate_freshness() -> None
 
 def test_security_findings_renders_no_source_as_unqualified_not_safe() -> None:
     html = _render_workspace_page('findings', _renderable_posture(False))
-    assert 'No CVE records' in html
-    assert 'This does not confirm' in html
+    assert 'data-kaori-blocked-state' in html
+    assert 'Registry Evidence Required' in html
+    assert 'before investigating CVE impact' in html
+    assert 'data-security-findings-registry-workspace' not in html
     assert '/artifact-registry/security/cve/CVE-2022-1586/impact' not in html
 
 
@@ -871,3 +897,15 @@ def test_scanner_coverage_state_reports_missing_partial_stale_and_current() -> N
         assert state['label'] == expected
         expected_tone = 'normal' if expected == 'Observed' else 'unknown' if expected == 'Not Collected' else 'warning'
         assert state['tone'] == expected_tone
+
+
+def test_security_provider_and_scanner_states_use_ordered_shared_blocker_steps() -> None:
+    for path in ('app/templates/security_posture/overview.html', 'app/templates/security_posture/findings.html'):
+        template = (ROOT / path).read_text()
+        assert 'components/states/_blocked_state.html' in template
+        assert 'blocked_state_steps' in template
+        assert 'Open Registry Integrations' in template
+        assert 'Sync Registry Inventory' in template
+        assert 'Collect Scanner Evidence' in template
+        assert 'if not registry_ready else' in template
+        assert 'blocked_state_permission_granted = can_manage_integrations' in template
