@@ -107,7 +107,9 @@ class AutomationHostTrustRevision(db.Model):
         CheckConstraint('length(host_revision) = 64', name='ck_auto_host_trust_host_revision'),
         CheckConstraint('length(reference_fingerprint) = 64', name='ck_auto_host_trust_reference'),
         CheckConstraint('length(host_key_digest) = 71', name='ck_auto_host_trust_key_digest'),
-        CheckConstraint('effective_until > recorded_at', name='ck_auto_host_trust_window'),
+        CheckConstraint(
+            "lifecycle_status = 'revoked' OR effective_until > recorded_at", name='ck_auto_host_trust_window'
+        ),
         CheckConstraint("source_kind = 'independent_console'", name='ck_auto_host_trust_source'),
         CheckConstraint("evidence_ref <> ''", name='ck_auto_host_trust_evidence'),
         CheckConstraint(

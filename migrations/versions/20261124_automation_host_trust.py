@@ -54,7 +54,9 @@ def upgrade() -> None:
         sa.CheckConstraint('length(host_revision) = 64', name='ck_auto_host_trust_host_revision'),
         sa.CheckConstraint('length(reference_fingerprint) = 64', name='ck_auto_host_trust_reference'),
         sa.CheckConstraint('length(host_key_digest) = 71', name='ck_auto_host_trust_key_digest'),
-        sa.CheckConstraint('effective_until > recorded_at', name='ck_auto_host_trust_window'),
+        sa.CheckConstraint(
+            "lifecycle_status = 'revoked' OR effective_until > recorded_at", name='ck_auto_host_trust_window'
+        ),
         sa.CheckConstraint("source_kind = 'independent_console'", name='ck_auto_host_trust_source'),
         sa.CheckConstraint("evidence_ref <> ''", name='ck_auto_host_trust_evidence'),
         sa.CheckConstraint(
