@@ -256,6 +256,7 @@ def test_scoped_reference_uses_current_member_and_available_version_metadata_onl
         ('version', 'version', 1, 'SECRET_VERSION_UNQUALIFIED'),
         ('version', 'destroyed', True, 'SECRET_VERSION_UNQUALIFIED'),
         ('version', 'provider_deletion_time', _NOW.isoformat(), 'SECRET_VERSION_UNQUALIFIED'),
+        ('version', 'provider_deletion_time', 'invalid-timestamp', 'SECRET_VERSION_UNQUALIFIED'),
         ('version', 'provider_deletion_time', (_NOW + timedelta(hours=1)).isoformat(), 'SECRET_VERSION_UNQUALIFIED'),
         ('version', 'last_observed_at', _NOW - timedelta(seconds=1), 'SECRET_VERSION_UNQUALIFIED'),
     ],

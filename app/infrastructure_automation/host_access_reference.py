@@ -24,7 +24,6 @@ from app.models.secrets_pki import (
     SecretProviderRepresentation,
     SecretVersionObservation,
 )
-from app.secrets_pki.lifecycle import classify_kv2_version
 
 _HOST_ID = re.compile(r'[A-Za-z0-9][A-Za-z0-9._:-]{0,95}\Z')
 _HEX_DIGEST = re.compile(r'[a-f0-9]{64}\Z')
@@ -225,10 +224,8 @@ def _current_secret_version(
         and version.last_observed_at == representation.last_observed_at
         and _fresh_observation(version.last_observed_at, now)
         and version.destroyed is False
-        and classify_kv2_version(
-            destroyed=version.destroyed, deletion_time=version.provider_deletion_time, observed_at=now
-        )
-        == 'available'
+        # Require absence of any deletion intent; no cross-domain classifier import.
+        and version.provider_deletion_time in (None, '')
     )
 
 
