@@ -135,7 +135,7 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
     for field_name, placeholder in (
         ('name', 'Kubespray Development'),
         ('repository', 'OXY7O/kaori-operations'),
-        ('revision', '831ab7c114b1c1ba777c08ab79c91415ad8d465d'),
+        ('revision', '63db48309cbb6d261c27cf54f60bfe885a21f770'),
     ):
         rendered_input = re.search(rf'<input\b[^>]*\bid="{field_name}"[^>]*>', form)
         assert rendered_input is not None, field_name
