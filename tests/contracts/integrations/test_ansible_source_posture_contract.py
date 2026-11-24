@@ -208,3 +208,16 @@ def test_rendered_validation_status_tracks_committed_evidence(state):
     if state != 'source_checked':
         assert 'Verified files: 0' in rendered
         assert 'Source Checked' not in rendered
+
+
+def test_superseded_source_and_toolchain_evidence_are_blocked_together():
+    connection = _connection(source_sha='831ab7c114b1c1ba777c08ab79c91415ad8d465d', ansible_core_version='2.19.3')
+    connection.metadata_json['source_validation']['revision'] = connection.metadata_json['source_sha']
+    posture = source_validation_posture(connection)
+    assert posture['source_state'] == 'blocked'
+    assert posture['checked_files'] == 0
+    assert 'replacement connection' in posture['source_description']
+    assert not posture['runtime_authorized']
+    assert not posture['mutation_authorized']
+    assert committed_preflight.build_kubespray_preflight(connection).gates[0].state == 'blocked'
+    assert connection.metadata_json['source_sha'] == '831ab7c114b1c1ba777c08ab79c91415ad8d465d'
