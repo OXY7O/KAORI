@@ -48,3 +48,12 @@ def test_metadata_permission_cannot_configure_provider_by_itself():
     assert 'integrations.manage' not in DEFAULT_PERMISSION_DEPENDENCIES.get('secrets_pki.view', set())
     assert 'integrations.manage' not in DEFAULT_PERMISSION_DEPENDENCIES['secrets_pki.sync']
     assert 'integrations.manage' not in DEFAULT_ROLE_PERMISSIONS['operator']
+
+
+def test_automation_credential_use_is_explicit_and_has_no_default_grant():
+    key = 'secrets_pki.use_automation_credential'
+    permissions = {name: (module, action) for name, module, action, _description in DEFAULT_PERMISSIONS}
+    assert permissions[key] == ('secrets_pki', 'use_automation_credential')
+    assert DEFAULT_PERMISSION_DEPENDENCIES[key] == {'secrets_pki.view', 'inventory.view', 'jobs.execute'}
+    assert all(key not in grants for grants in DEFAULT_ROLE_PERMISSIONS.values())
+    assert all(key not in dependencies for dependencies in DEFAULT_PERMISSION_DEPENDENCIES.values())
