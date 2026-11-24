@@ -363,3 +363,33 @@ def test_metadata_grant_cannot_authorize_automation_credential_use(scope_store, 
     assert denied.status == 'deny'
     assert denied.reason == 'invalid_scope'
     assert denied.policy_ref is None and denied.revision is None
+
+
+def test_explicit_credential_use_role_still_cannot_use_metadata_scope(scope_store):
+    ids = scope_store
+    policy = _request(ids)
+    scoped_grants.approve_scope_grant(
+        policy_id=policy.id,
+        approver_user_id=ids['approver'],
+        expected_revision=1,
+    )
+    actor = db.session.get(User, ids['viewer'])
+    permission = Permission(
+        key='secrets_pki.use_automation_credential', module='secrets_pki', action='use_automation_credential'
+    )
+    db.session.add(permission)
+    db.session.flush()
+    db.session.add(RolePermission(role_id=actor.role_id, permission_id=permission.id))
+    db.session.commit()
+    assert permission.key in actor.role_record.permission_keys()
+    result = scope_policy.evaluate_exact_vault_scope(
+        actor_user_id=ids['viewer'],
+        instance_id=ids['source'],
+        provider_namespace='',
+        mount='kv',
+        permission_key=permission.key,
+        lock_for_read=True,
+    )
+    assert not result.allowed
+    assert result.reason == 'invalid_scope'
+    assert result.policy_ref is None
