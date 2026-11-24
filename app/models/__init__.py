@@ -88,6 +88,7 @@ from app.models.secrets_pki import (
     SecretInventoryCollectionState,
     SecretProviderRepresentation,
     SecretVersionObservation,
+    VaultCredentialIssuerRevision,
 )
 from app.models.secrets_pki_pki import PKIIssuerCollectionState, PKIIssuerIdentity, PKIPublicCertificateObservation
 from app.models.secrets_pki_stored_certificates import (
@@ -311,6 +312,7 @@ __all__ = [
     'SecretInventoryCollectionState',
     'SecretProviderRepresentation',
     'SecretVersionObservation',
+    'VaultCredentialIssuerRevision',
     'SecretRevealNamespacePolicy',
     'SecretRevealRequest',
     'ResolverDeploymentPolicy',
