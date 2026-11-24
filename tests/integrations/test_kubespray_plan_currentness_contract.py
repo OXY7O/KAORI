@@ -13,6 +13,7 @@ from app.infrastructure_automation.kubernetes.plan_review import (
     PLAN_RESULT_TYPE,
     KubesprayPlanReview,
 )
+from app.platform_operations.jobs.fingerprint import payload_fingerprint
 
 _NOW = datetime(2026, 11, 16, 10, 0, tzinfo=UTC)
 
@@ -20,12 +21,19 @@ _NOW = datetime(2026, 11, 16, 10, 0, tzinfo=UTC)
 def _fixture():
     connection = SimpleNamespace(id=7)
     host = SimpleNamespace(id=9, public_id='host-preflight-9', integration_instance_id=7)
-    preflight = SimpleNamespace(state='ready_for_review', facts_job_public_id=host.public_id)
+    preflight = SimpleNamespace(
+        state='ready_for_review',
+        facts_job_public_id=host.public_id,
+        host_registry_fingerprint='1' * 64,
+        host_access_fingerprint='2' * 64,
+    )
     approved_for_review_only = KubesprayPlanReview(
         status='requires_independent_approval',
         reason_code='REVIEW_ONLY',
         plan_fingerprint='a' * 64,
         inventory_fingerprint='b' * 64,
+        host_registry_fingerprint='1' * 64,
+        host_access_fingerprint='2' * 64,
         host_preflight_job_public_id=host.public_id,
         expires_at=(_NOW + timedelta(minutes=2)).isoformat(),
         source_sha='c' * 40,
@@ -42,6 +50,7 @@ def _fixture():
         status='succeeded',
         completed_at=_NOW - timedelta(seconds=3),
         result_summary_json=approved_for_review_only.committed_summary(),
+        parameter_fingerprint=payload_fingerprint(approved_for_review_only.dispatch_parameters()),
     )
     return connection, host, preflight, approved_for_review_only, plan_job
 
@@ -168,3 +177,16 @@ def test_current_preflight_and_source_fingerprint_must_match(monkeypatch: pytest
     assert _check(monkeypatch, plan_job=latest, preflight=changed_preflight).state == 'blocked'
     replaced = SimpleNamespace(public_id='new-host-10', integration_instance_id=7)
     assert _check(monkeypatch, plan_job=latest, host=replaced).state == 'blocked'
+
+
+@pytest.mark.parametrize('field', ['host_registry_fingerprint', 'host_access_fingerprint'])
+def test_currentness_rejects_changed_committed_binding(monkeypatch, field):
+    _, _, preflight, _, _ = _fixture()
+    setattr(preflight, field, 'f' * 64)
+    assert _check(monkeypatch, preflight=preflight).state == 'blocked'
+
+
+def test_currentness_rejects_dispatch_parameter_drift(monkeypatch):
+    *_, latest = _fixture()
+    latest.parameter_fingerprint = '0' * 64
+    assert _check(monkeypatch, plan_job=latest).state == 'blocked'
