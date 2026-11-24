@@ -59,7 +59,8 @@ failure dependency. No new storage engine/container is required.
    and built-in provider registration) and `flask verify-openbao`. Normal
    management and credential UI remain in KAORI; actual init/unseal,
    privileged recovery and key custody stay at the provider boundary.
-   These Flask commands are proposed, not implemented by this overlay.
+   The initial status command is submitted in #5205; bootstrap/verify
+   remain proposed. None is admitted by this overlay.
 6. Verify existing-state restart (never reinitialize), sealed/unavailable
    denial, token expiry/revocation, audit and independent recovery before
    integrating into deploy.sh. Backup the dedicated OpenBao database and
@@ -69,7 +70,8 @@ failure dependency. No new storage engine/container is required.
 
 ## Configuration migration
 
-#5206 owns the future migration model. Current app.env, secrets.env,
+[#5206 configuration bootstrap model](../../../docs/architecture/internal-secret-configuration-bootstrap.md)
+owns the future migration. Current app.env, secrets.env,
 deploy.env and service-scoped role files remain authoritative. The OpenBao
 storage DSN, seal/unseal and service bootstrap roots cannot only reside in
 the service that needs them to start. No current ENV value is migrated.
