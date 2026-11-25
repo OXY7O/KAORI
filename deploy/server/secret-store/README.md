@@ -80,7 +80,7 @@ The capability name, deployment service, host-owned file paths and database/role
 
 ## Dedicated PostgreSQL schema candidate
 
-`provision-storage-schema.sql` implements the upstream 2.7 non-HA table and index under a proposed restricted owner `kaori_secret_store_owner` (NOLOGIN) and DML-only runtime `kaori_secret_store` (LOGIN). Provision the dedicated database and two roles under authorized DBA custody first. Use the existing bundled KAORI database bootstrap before this step; its app database ACL must deny the Secret Store runtime. Do not alter application ACLs to force this script through. Run this transaction only against an independently confirmed empty dedicated database with no competing sessions. It refuses existing user objects, unexpected database/role ownership, elevated/membership-bearing runtime and cross-application access. It does not create a database, set passwords, drop tables, reset state or read encrypted values. PostgreSQL integration testing and existing-state verification are pending; this script is not yet admitted to deploy.sh. The deployment target/DB creation/TLS and recovery authority remain separate gates.
+`provision-storage-schema.sql` implements the upstream 2.7 non-HA table and index under a proposed restricted owner `kaori_secret_store_owner` (NOLOGIN) and DML-only runtime `kaori_secret_store` (LOGIN). Provision the dedicated database and two roles under authorized DBA custody first. Use the existing bundled KAORI database bootstrap before this step; its app database ACL must deny the Secret Store runtime. Do not alter application ACLs to force this script through. Run this transaction only against an independently confirmed empty dedicated database with no competing sessions. It refuses existing user objects, unexpected database/role ownership, elevated/membership-bearing runtime and cross-application access. It does not create a database, set passwords, drop tables, reset state or read encrypted values. Fresh schema PostgreSQL regression passed in disposable CI under merged #5207; existing-state verification is a separate read-only procedure below. Neither result authorizes live provisioning, and the scripts are not yet admitted to deploy.sh. The deployment target/DB creation/TLS and recovery authority remain separate gates.
 
 
 ## Existing-state storage verification
@@ -93,4 +93,6 @@ or invokes the fresh provisioning script. It checks the exact table columns,
 primary key, parent-path index, ownership, restricted runtime privileges and
 application isolation. Failure is a blocker, not permission to reprovision.
 A PASS is storage evidence only; TLS, provider identity, unseal, actual
-provider operations and recovery still require independent admission.
+provider operations and recovery still require independent admission. Fresh
+CI validation is required for the current reviewed source; do not reuse
+prior candidate evidence after a branch synchronization.
