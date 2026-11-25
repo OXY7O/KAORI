@@ -51,25 +51,20 @@ def test_bootstrap_plan_read_only(runner, monkeypatch, failure):
             )
         assert kwargs['headers']['X-Vault-Token'] == fixture
         if path == 'auth/token/lookup-self':
-            return _Response(
-                200,
-                {'data': {'policies': ['root' if failure == 'root' else 'inspect'], 'ttl': 0 if failure == 'ttl' else 60}},
-            )
+            policy = 'root' if failure == 'root' else 'inspect'
+            ttl = 0 if failure == 'ttl' else 60
+            return _Response(200, {'data': {'policies': [policy], 'ttl': ttl}})
         if path == 'sys/audit':
-            return _Response(
-                200,
-                {
-                    'data': {} if failure == 'audit' else {
-                        'kaori-operator/': {
-                            'type': 'file',
-                            'options': {
-                                'file_path': '/openbao/audit/audit.jsonl',
-                                'log_raw': 'true' if failure == 'raw' else 'false',
-                            },
-                        },
+            audit = {
+                'kaori-operator/': {
+                    'type': 'file',
+                    'options': {
+                        'file_path': '/openbao/audit/audit.jsonl',
+                        'log_raw': 'true' if failure == 'raw' else 'false',
                     },
                 },
-            )
+            }
+            return _Response(200, {'data': {} if failure == 'audit' else audit})
         if path == 'sys/mounts':
             return _Response(
                 403 if failure == 'denied' else 200,

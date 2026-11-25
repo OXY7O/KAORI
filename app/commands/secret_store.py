@@ -82,11 +82,13 @@ def bootstrap_secret_store(plan: bool) -> None:
     try:
         summary = OpenBaoClient.inspect_internal_bootstrap(endpoint=endpoint, token=token)
     except ValueError as exc:
-        raise click.ClickException('Bootstrap inspection denied or unavailable; verify scoped authority and audit.') from exc
+        raise click.ClickException(
+            'Bootstrap inspection denied or unavailable; verify scoped authority and audit.'
+        ) from exc
     finally:
         del token
     click.echo(
-        f'Bootstrap inspection: expected audit configuration=observed, '
+        'Bootstrap inspection: expected audit configuration=observed, '
         f'KV v2 mounts={summary[0]}, AppRole mounts={summary[1]}.'
     )
     click.echo('PLAN ONLY: no provider writes; mount, policy, identity and runtime admission remain pending.')

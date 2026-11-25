@@ -5,6 +5,7 @@ are separate governed boundaries. Never infer provider identity from a
 compatible API response or route through another provider's trust policy.
 """
 
+import os
 from typing import Any
 
 from app.integrations.secrets_management.secrets_pki.providers.kv2_http import (
@@ -32,6 +33,8 @@ class OpenBaoClient(KV2HTTPClient):
     @classmethod
     def inspect_internal_bootstrap(cls, *, endpoint: str, token: str) -> tuple[int, int]:
         """Inspect bounded configuration metadata with transient non-root operator authority."""
+        if endpoint != 'https://secret-store:8200' or not os.getenv(cls.ca_bundle_env, '').strip():
+            raise SecretProviderError('Internal bootstrap inspection requires the private origin and explicit CA.')
         if not token or not token.isascii() or any(c.isspace() or ord(c) < 33 or ord(c) == 127 for c in token):
             raise SecretProviderError('A valid transient inspection token is required.')
         transport = KV2HTTPTransport(
@@ -60,9 +63,9 @@ class OpenBaoClient(KV2HTTPClient):
         def read_metadata(path: str) -> dict[str, Any]:
             code, body = transport._request(path, token=token)
             entries = body.get('data')
-            if code != 200 or not isinstance(entries, dict) or not all(
-                isinstance(entry, dict) for entry in entries.values()
-            ):
+            if code != 200 or not isinstance(entries, dict):
+                raise SecretProviderError('Required bootstrap metadata could not be verified.')
+            if not all(isinstance(entry, dict) for entry in entries.values()):
                 raise SecretProviderError('Required bootstrap metadata could not be verified.')
             return entries
 
