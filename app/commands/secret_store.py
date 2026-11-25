@@ -41,13 +41,7 @@ def secret_store_status() -> None:
 @with_appcontext
 def verify_secret_store() -> None:
     """Read-only pre-bootstrap gate; not credential, storage or recovery admission."""
-    if os.getenv('KAORI_INTERNAL_SECRET_STORE_PROVIDER', '').strip() != 'openbao':
-        raise click.ClickException('Internal secret store provider is missing or unsupported.')
-    endpoint = os.getenv('KAORI_INTERNAL_SECRET_STORE_ENDPOINT', '').strip()
-    if endpoint != 'https://secret-store:8200':
-        raise click.ClickException('Internal secret store verification requires the approved private service origin.')
-    if not os.getenv('INTEGRATION_OPENBAO_CA_BUNDLE', '').strip():
-        raise click.ClickException('Internal secret store verification requires explicit provider CA trust.')
+    endpoint = _internal_endpoint()
     try:
         OpenBaoClient.verify_internal_active_health(endpoint=endpoint)
     except ValueError as exc:
@@ -58,3 +52,41 @@ def verify_secret_store() -> None:
     click.echo(
         'Health only; storage, image identity, policy, audit, credential and recovery admission remain required.'
     )
+
+
+def _internal_endpoint() -> str:
+    if os.getenv('KAORI_INTERNAL_SECRET_STORE_PROVIDER', '').strip() != 'openbao':
+        raise click.ClickException('Internal secret store provider is missing or unsupported.')
+    endpoint = os.getenv('KAORI_INTERNAL_SECRET_STORE_ENDPOINT', '').strip()
+    if endpoint != 'https://secret-store:8200':
+        raise click.ClickException('Internal secret store verification requires the approved private service origin.')
+    if not os.getenv('INTEGRATION_OPENBAO_CA_BUNDLE', '').strip():
+        raise click.ClickException('Internal secret store verification requires explicit provider CA trust.')
+    return endpoint
+
+
+@click.command('bootstrap-secret-store', short_help='Inspect the internal Secret Store before governed bootstrap.')
+@click.option('--plan', is_flag=True, help='Read-only inspection; no provider or database writes.')
+@with_appcontext
+def bootstrap_secret_store(plan: bool) -> None:
+    """First bootstrap increment: actual metadata inspection, never policy activation."""
+    if not plan:
+        raise click.ClickException('Only --plan is admitted; bootstrap apply is not available.')
+    endpoint = _internal_endpoint()
+    try:
+        OpenBaoClient.verify_internal_active_health(endpoint=endpoint)
+    except ValueError as exc:
+        raise click.ClickException('Bootstrap inspection requires verified active internal health.') from exc
+
+    token = click.prompt('Short-lived non-root inspection token', hide_input=True)
+    try:
+        summary = OpenBaoClient.inspect_internal_bootstrap(endpoint=endpoint, token=token)
+    except ValueError as exc:
+        raise click.ClickException('Bootstrap inspection denied or unavailable; verify scoped authority and audit.') from exc
+    finally:
+        del token
+    click.echo(
+        f'Bootstrap inspection: expected audit configuration=observed, '
+        f'KV v2 mounts={summary[0]}, AppRole mounts={summary[1]}.'
+    )
+    click.echo('PLAN ONLY: no provider writes; mount, policy, identity and runtime admission remain pending.')
