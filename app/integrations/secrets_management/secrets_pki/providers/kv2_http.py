@@ -123,7 +123,7 @@ class KV2HTTPTransport:
             or data.get('initialized') is not True
             or data.get('sealed') is not False
             or data.get('standby') is not False
-            or data.get('performance_standby') is not False
+            or ('performance_standby' in data and data['performance_standby'] is not False)
             or data.get('version') != expected_version
         ):
             raise SecretProviderError('Provider active health or approved version could not be verified.')

@@ -23,7 +23,6 @@ ACTIVE = {
     'initialized': True,
     'sealed': False,
     'standby': False,
-    'performance_standby': False,
     'version': '2.7.3',
 }
 
@@ -49,6 +48,8 @@ def runner(monkeypatch):
         (200, {'sealed': 'false'}, False),
         (200, {'initialized': 1}, False),
         (200, {'standby': True}, False),
+        (200, {'performance_standby': False}, True),
+        (200, {'performance_standby': True}, False),
         (200, {'performance_standby': None}, False),
         (200, {'version': '2.7.2'}, False),
         (200, {'version': None}, False),

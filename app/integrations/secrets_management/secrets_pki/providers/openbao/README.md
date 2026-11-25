@@ -48,9 +48,12 @@ commands remain separately gated under #5202.
 `flask verify-secret-store` requires the approved private service origin
 `https://secret-store:8200`, explicit OpenBao CA configuration and the
 existing OpenBao-only allowlist. A successful response must be HTTP 200,
-contain exact boolean active/initialized/unsealed/non-standby flags, and
-report the selected version 2.7.3. Missing, malformed or contradictory
-fields fail closed, without affecting existing Vault observation behavior.
+contain exact boolean initialized/unsealed/non-standby flags, and report
+the selected version 2.7.3. The exact [OpenBao v2.7.3 server health response](https://github.com/openbao/openbao/blob/v2.7.3/internal/http/sys_health.go)
+does not contain `performance_standby` (unlike the compatibility API client
+struct). Its absence is valid; if supplied, only boolean false is accepted.
+Missing required, malformed or contradictory fields fail closed, without
+affecting existing Vault observation behavior.
 No authentication token, secret material, provider mutation or registry
 write is involved. This is a health gate only, not proof of provider identity,
 OCI provenance, storage TLS, policy, audit, AppRole or recovery readiness.
