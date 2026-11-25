@@ -123,3 +123,7 @@ Refer to [DBA and bundled migration contract](../../docs/operations/postgres-dba
 for role/access matrix, required SQL package and proof of execution, security
 gates and external-provider ownership. Implement this only via #1439/#1440,
 with regression and production-like UAT before enabling on the server.
+
+## Internal Secret Store candidate (not yet deployment-admitted)
+
+See [Internal Secret Store PostgreSQL profile](secret-store/README.md) under #5202/#5200. This candidate does not modify the canonical deploy.sh path, does not start an OpenBao service automatically, and does not migrate current ENV configuration. PostgreSQL database/role/TLS, immutable image, initialization and recovery admission must pass before integration into the canonical bundle.
