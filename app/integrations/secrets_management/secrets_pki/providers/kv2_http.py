@@ -113,7 +113,6 @@ class KV2HTTPTransport:
             'http_status': code,
         }
 
-
     def verify_active_version(self, *, expected_version: str) -> None:
         """Strict pre-bootstrap observation; never coerce absent or malformed health flags."""
         if self.namespace:

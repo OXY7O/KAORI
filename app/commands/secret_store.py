@@ -37,7 +37,6 @@ def secret_store_status() -> None:
     click.echo('Health observation only; credential and bootstrap readiness are not admitted.')
 
 
-
 @click.command('verify-secret-store', short_help='Verify the selected internal secret store active health and version.')
 @with_appcontext
 def verify_secret_store() -> None:
@@ -56,4 +55,6 @@ def verify_secret_store() -> None:
             'Internal secret store verification failed; require approved TLS, active unsealed state and version 2.7.3.'
         ) from exc
     click.echo('Secret store health verification PASS: provider=openbao, version=2.7.3, status=active.')
-    click.echo('Health only; storage, image identity, policy, audit, credential and recovery admission remain required.')
+    click.echo(
+        'Health only; storage, image identity, policy, audit, credential and recovery admission remain required.'
+    )
