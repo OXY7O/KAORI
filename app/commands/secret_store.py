@@ -35,3 +35,25 @@ def secret_store_status() -> None:
         f'initialized={str(initialized).lower()}, sealed={str(sealed).lower()}'
     )
     click.echo('Health observation only; credential and bootstrap readiness are not admitted.')
+
+
+
+@click.command('verify-secret-store', short_help='Verify the selected internal secret store active health and version.')
+@with_appcontext
+def verify_secret_store() -> None:
+    """Read-only pre-bootstrap gate; not credential, storage or recovery admission."""
+    if os.getenv('KAORI_INTERNAL_SECRET_STORE_PROVIDER', '').strip() != 'openbao':
+        raise click.ClickException('Internal secret store provider is missing or unsupported.')
+    endpoint = os.getenv('KAORI_INTERNAL_SECRET_STORE_ENDPOINT', '').strip()
+    if endpoint != 'https://secret-store:8200':
+        raise click.ClickException('Internal secret store verification requires the approved private service origin.')
+    if not os.getenv('INTEGRATION_OPENBAO_CA_BUNDLE', '').strip():
+        raise click.ClickException('Internal secret store verification requires explicit provider CA trust.')
+    try:
+        OpenBaoClient.verify_internal_active_health(endpoint=endpoint)
+    except ValueError as exc:
+        raise click.ClickException(
+            'Internal secret store verification failed; require approved TLS, active unsealed state and version 2.7.3.'
+        ) from exc
+    click.echo('Secret store health verification PASS: provider=openbao, version=2.7.3, status=active.')
+    click.echo('Health only; storage, image identity, policy, audit, credential and recovery admission remain required.')

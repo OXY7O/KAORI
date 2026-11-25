@@ -42,3 +42,17 @@ seal and health status; it is not admission or a bootstrap writer. It is
 available once this PR is admitted. Native CLI remains independent of Flask
 for actual init/unseal/recovery. Post-unseal governed bootstrap and verify
 commands remain separately gated under #5202.
+
+## Strict pre-bootstrap health verification (#5202)
+
+`flask verify-secret-store` requires the approved private service origin
+`https://secret-store:8200`, explicit OpenBao CA configuration and the
+existing OpenBao-only allowlist. A successful response must be HTTP 200,
+contain exact boolean active/initialized/unsealed/non-standby flags, and
+report the selected version 2.7.3. Missing, malformed or contradictory
+fields fail closed, without affecting existing Vault observation behavior.
+No authentication token, secret material, provider mutation or registry
+write is involved. This is a health gate only, not proof of provider identity,
+OCI provenance, storage TLS, policy, audit, AppRole or recovery readiness.
+The actual bootstrap writer remains pending review of exact policy and mount
+contracts; no automatic initialization, unseal or root credential access.

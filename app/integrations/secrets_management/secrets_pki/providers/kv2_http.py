@@ -114,6 +114,22 @@ class KV2HTTPTransport:
         }
 
 
+    def verify_active_version(self, *, expected_version: str) -> None:
+        """Strict pre-bootstrap observation; never coerce absent or malformed health flags."""
+        if self.namespace:
+            raise SecretProviderError('Internal health verification requires the root namespace.')
+        code, data = self._request('/v1/sys/health')
+        if (
+            code != 200
+            or data.get('initialized') is not True
+            or data.get('sealed') is not False
+            or data.get('standby') is not False
+            or data.get('performance_standby') is not False
+            or data.get('version') != expected_version
+        ):
+            raise SecretProviderError('Provider active health or approved version could not be verified.')
+
+
 class KV2HTTPClient(KV2HTTPTransport):
     """Shared bounded AppRole observations; no material operation."""
 
