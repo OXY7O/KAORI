@@ -13,12 +13,13 @@ from psycopg2 import sql
 
 ROOT = Path(__file__).resolve().parents[3]
 SCHEMA = ROOT / 'deploy/server/secret-store/provision-storage-schema.sql'
+VERIFY = ROOT / 'deploy/server/secret-store/verify-storage-schema.sql'
 CI_DSN = 'postgresql://postgres:postgres@postgres:5432/kaori_test'
 DATABASES = ('kaori', 'kaori_secret_store')
 ROLES = ('kaori_runtime', 'kaori_migrator', 'kaori_secret_store_owner', 'kaori_secret_store')
 
 
-def _run_schema(database: str) -> subprocess.CompletedProcess[str]:
+def _run_schema(database: str, script: Path = SCHEMA) -> subprocess.CompletedProcess[str]:
     env = {
         'PATH': os.environ['PATH'],
         'PGHOST': 'postgres',
@@ -29,7 +30,7 @@ def _run_schema(database: str) -> subprocess.CompletedProcess[str]:
         'PGCONNECT_TIMEOUT': '5',
     }
     return subprocess.run(
-        ['psql', '--no-psqlrc', '--file', str(SCHEMA)],
+        ['psql', '--no-psqlrc', '--file', str(script)],
         env=env,
         capture_output=True,
         text=True,
@@ -38,8 +39,8 @@ def _run_schema(database: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def _assert_refused(database: str, reason: str) -> None:
-    result = _run_schema(database)
+def _assert_refused(database: str, reason: str, script: Path = SCHEMA) -> None:
+    result = _run_schema(database, script)
     assert result.returncode != 0
     assert reason in result.stderr
 
@@ -53,6 +54,15 @@ def test_secret_store_schema_declares_transaction_and_no_destructive_provisionin
     assert 'DROP TABLE' not in source
     assert 'TRUNCATE TABLE' not in source
     assert 'GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.openbao_kv_store' in source
+
+
+def test_secret_store_existing_state_verifier_is_read_only() -> None:
+    source = VERIFY.read_text(encoding='utf-8')
+    assert 'BEGIN READ ONLY;' in source
+    assert 'COMMIT;' in source
+    assert 'FROM public.openbao_kv_store' not in source
+    assert 'ALTER TABLE' not in source
+    assert 'DROP TABLE' not in source
 
 
 def test_secret_store_schema_real_postgresql_boundary() -> None:
@@ -87,15 +97,19 @@ def test_secret_store_schema_real_postgresql_boundary() -> None:
                 created_databases.append('kaori')
                 cursor.execute('CREATE DATABASE kaori_secret_store OWNER kaori_secret_store_owner')
                 created_databases.append('kaori_secret_store')
+                _assert_refused('kaori_test', 'outside its primary dedicated database', VERIFY)
                 _assert_refused('kaori_test', 'outside its primary dedicated database')
                 _assert_refused('kaori_secret_store', 'can connect to application database')
                 cursor.execute('REVOKE ALL ON DATABASE kaori FROM PUBLIC')
                 cursor.execute('GRANT CONNECT ON DATABASE kaori TO kaori_runtime')
                 with closing(psycopg2.connect(CI_DSN, dbname='kaori_secret_store', connect_timeout=5)):
                     _assert_refused('kaori_secret_store', 'Other sessions remain')
+                _assert_refused('kaori_secret_store', 'Unexpected database or schema ownership', VERIFY)
                 result = _run_schema('kaori_secret_store')
                 assert result.returncode == 0, result.stderr
                 _assert_refused('kaori_secret_store', 'Existing schema objects detected')
+                verified = _run_schema('kaori_secret_store', VERIFY)
+                assert verified.returncode == 0, verified.stderr
 
                 with closing(psycopg2.connect(CI_DSN, dbname='kaori_secret_store', connect_timeout=5)) as storage:
                     storage.autocommit = True
@@ -115,6 +129,16 @@ def test_secret_store_schema_real_postgresql_boundary() -> None:
                             db.execute('CREATE TABLE public.denied (id int)')
                         with pytest.raises(psycopg2.errors.InsufficientPrivilege):
                             db.execute('TRUNCATE TABLE public.openbao_kv_store')
+                        db.execute('RESET ROLE')
+                        verified = _run_schema('kaori_secret_store', VERIFY)
+                        assert verified.returncode == 0, verified.stderr
+                        db.execute('GRANT TRUNCATE ON public.openbao_kv_store TO kaori_secret_store')
+                        _assert_refused('kaori_secret_store', 'Storage effective ACL contract mismatch', VERIFY)
+                        db.execute('REVOKE TRUNCATE ON public.openbao_kv_store FROM kaori_secret_store')
+                        db.execute('SET ROLE kaori_secret_store')
+                        db.execute('SELECT value FROM public.openbao_kv_store WHERE key = %s', ('one',))
+                        row = db.fetchone()
+                        assert row is not None and bytes(row[0]) == b'changed'
                         db.execute('DELETE FROM public.openbao_kv_store WHERE key = %s', ('one',))
                         assert db.rowcount == 1
                         db.execute('RESET ROLE')
