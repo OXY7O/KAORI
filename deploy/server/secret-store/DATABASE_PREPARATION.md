@@ -27,7 +27,7 @@ database ACL verification. It does not set a password or start OpenBao.
 
 The DBA must separately confirm SCRAM authentication, verified PostgreSQL
 TLS and the required pg_hba.conf restrictions, then set a unique runtime
-password interactively using native psql `\\password kaori_secret_store`
+password interactively using native psql `\password kaori_secret_store`
 with SCRAM password encryption and explicitly enable LOGIN for that role.
 Keep the password only in the service-scoped DSN with verify-full and
 the approved CA; never use the app, migrator, or DBA credential. The owner
