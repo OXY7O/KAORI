@@ -44,43 +44,10 @@ class OpenBaoClient(KV2HTTPClient):
             ca_bundle_env=cls.ca_bundle_env,
         )
         transport.verify_active_version(expected_version='2.7.3')
-        status, response = transport._request('/v1/auth/token/lookup-self', token=token)
-        data = response.get('data')
-        if status != 200 or not isinstance(data, dict):
-            raise SecretProviderError('Inspection token authority could not be verified.')
-        policies = data.get('policies')
-        ttl = data.get('ttl')
-        if (
-            not isinstance(policies, list)
-            or not policies
-            or not all(isinstance(policy, str) for policy in policies)
-            or 'root' in policies
-            or type(ttl) is not int
-            or ttl <= 0
-        ):
-            raise SecretProviderError('Inspection requires a non-root expiring token.')
-
-        def read_metadata(path: str) -> dict[str, Any]:
-            code, body = transport._request(path, token=token)
-            entries = body.get('data')
-            if code != 200 or not isinstance(entries, dict):
-                raise SecretProviderError('Required bootstrap metadata could not be verified.')
-            if not all(isinstance(entry, dict) for entry in entries.values()):
-                raise SecretProviderError('Required bootstrap metadata could not be verified.')
-            return entries
-
-        audit = read_metadata('/v1/sys/audit').get('kaori-operator/')
-        if not isinstance(audit, dict) or audit.get('type') != 'file':
-            raise SecretProviderError('Expected internal file audit configuration is not available.')
-        options = audit.get('options')
-        if (
-            not isinstance(options, dict)
-            or options.get('file_path') != '/openbao/audit/audit.jsonl'
-            or options.get('log_raw', 'false') != 'false'
-        ):
-            raise SecretProviderError('Unexpected internal audit configuration.')
-        mounts = read_metadata('/v1/sys/mounts')
-        auth = read_metadata('/v1/sys/auth')
+        _verify_inspection_authority(transport, token)
+        _verify_internal_audit(_read_metadata(transport, token, '/v1/sys/audit'))
+        mounts = _read_metadata(transport, token, '/v1/sys/mounts')
+        auth = _read_metadata(transport, token, '/v1/sys/auth')
         kv2_count = sum(
             1
             for entry in mounts.values()
@@ -90,3 +57,44 @@ class OpenBaoClient(KV2HTTPClient):
         )
         approle_count = sum(1 for entry in auth.values() if entry.get('type') == 'approle')
         return kv2_count, approle_count
+
+
+def _verify_inspection_authority(transport: KV2HTTPTransport, token: str) -> None:
+    status, response = transport._request('/v1/auth/token/lookup-self', token=token)
+    data = response.get('data')
+    if status != 200 or not isinstance(data, dict):
+        raise SecretProviderError('Inspection token authority could not be verified.')
+    policies = data.get('policies')
+    ttl = data.get('ttl')
+    if (
+        not isinstance(policies, list)
+        or not policies
+        or not all(isinstance(policy, str) for policy in policies)
+        or 'root' in policies
+        or type(ttl) is not int
+        or ttl <= 0
+    ):
+        raise SecretProviderError('Inspection requires a non-root expiring token.')
+
+
+def _read_metadata(transport: KV2HTTPTransport, token: str, path: str) -> dict[str, Any]:
+    code, body = transport._request(path, token=token)
+    entries = body.get('data')
+    if code != 200 or not isinstance(entries, dict):
+        raise SecretProviderError('Required bootstrap metadata could not be verified.')
+    if not all(isinstance(entry, dict) for entry in entries.values()):
+        raise SecretProviderError('Required bootstrap metadata could not be verified.')
+    return entries
+
+
+def _verify_internal_audit(entries: dict[str, Any]) -> None:
+    audit = entries.get('kaori-operator/')
+    if not isinstance(audit, dict) or audit.get('type') != 'file':
+        raise SecretProviderError('Expected internal file audit configuration is not available.')
+    options = audit.get('options')
+    if (
+        not isinstance(options, dict)
+        or options.get('file_path') != '/openbao/audit/audit.jsonl'
+        or options.get('log_raw', 'false') != 'false'
+    ):
+        raise SecretProviderError('Unexpected internal audit configuration.')
