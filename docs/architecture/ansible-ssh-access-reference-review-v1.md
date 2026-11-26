@@ -176,3 +176,40 @@ expired, missing, substituted or unavailable records without fallback.
 The actual deployment identity and independent custody ceremony require
 reviewed authority and disposable environment evidence before any active
 issuer writer or worker use.
+
+
+### Inactive single-use issuer challenge persistence (#5235)
+
+The provider-neutral `SecretCredentialIssuerChallenge` model and additive
+empty migration store only bounded challenge metadata: exact integration
+instance/provider/namespace/mount, prospective revision, deployment reference,
+public-key digest, globally unique challenge digest, source-owner foreign key,
+issuance and exclusive expiry. No raw nonce, private key, signature, bearer
+credential, or provider response is retained. The prospective revision is
+intentionally not a foreign key to an active issuer: enrollment precedes
+activation. The existing source and user foreign keys are restrictive.
+
+The initial storage states are pending, consumed and revoked. Expiry is
+derived from the time window rather than persisted as a mutable status.
+Pending has no resolution metadata; consumed requires an independent
+recording actor, a possession-evidence digest and resolution within the
+issuance window. Revocation can retain expired records, requires a recording
+actor and time, and cannot claim possession evidence. Database checks
+enforce basic shape and digest lengths, not canonical digest syntax,
+actor authorization, verified evidence, clock freshness or state transitions.
+The migration refuses to discard nonempty challenge history on downgrade.
+
+This increment has no issuance, consumption, revocation service or runtime
+reader. Storage uniqueness prevents duplicate digest insertion, not a
+second update to an existing record. A later governed writer must generate
+unpredictable challenges, derive canonical inputs from authenticated
+source-owner intent, independently resolve current binding and authority,
+lock the pending record, verify possession, and atomically transition once
+with sanitized Activity Audit. Never reset a terminal row, accept a
+caller-provided verified flag, or delete history to allow replay. Use actual
+PostgreSQL concurrency/rollback qualification before enabling the service.
+The previous proposed 24-hour offline shape ceiling remains non-operational;
+the issuance service must enforce a separately reviewed lifetime. Actual
+custody and deployment evidence, Access, issuer writer and worker admission
+remain mandatory. No seed, backfill, live migration or operational trust
+is introduced.
