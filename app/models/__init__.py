@@ -14,6 +14,12 @@ from app.models.analytics import AnalyticsSnapshot
 from app.models.archive import ArchiveArtifact
 from app.models.audit import AuditEvent
 from app.models.authentication_security import AuthenticationMfaFactor, AuthenticationSecurityPolicy
+from app.models.automation import (
+    AutomationHostAccessBinding,
+    AutomationHostAsset,
+    AutomationHostTrustRevision,
+    AutomationInventoryAssignment,
+)
 from app.models.capsule_handoff_ledger import CapsuleHandoffLedgerEvent as CapsuleHandoffLedgerEvent
 from app.models.capsule_handoff_proof import CapsuleHandoffAuditBatch as CapsuleHandoffAuditBatch
 from app.models.capsule_handoff_proof import CapsuleHandoffResourceConsentRecord as CapsuleHandoffResourceConsentRecord
@@ -75,9 +81,10 @@ from app.models.resolver import (
     ResolverProductionReadinessRecord,
 )
 from app.models.runtime import IntegrationRuntimeObservation
-from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
+from app.models.scope_access import AutomationCredentialScopeTarget, ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.secret_reveal import SecretRevealNamespacePolicy, SecretRevealRequest
 from app.models.secrets_pki import (
+    SecretCredentialIssuerRevision,
     SecretIdentity,
     SecretInventoryCollectionState,
     SecretProviderRepresentation,
@@ -171,6 +178,11 @@ __all__ = [
     'AuthenticationMfaFactor',
     'AuthenticationSecurityPolicy',
     'AuditEvent',
+    'AutomationCredentialScopeTarget',
+    'AutomationHostAccessBinding',
+    'AutomationHostAsset',
+    'AutomationHostTrustRevision',
+    'AutomationInventoryAssignment',
     'IdentityProvider',
     'HarborInstance',
     'VaultInstance',
@@ -300,6 +312,7 @@ __all__ = [
     'SecretInventoryCollectionState',
     'SecretProviderRepresentation',
     'SecretVersionObservation',
+    'SecretCredentialIssuerRevision',
     'SecretRevealNamespacePolicy',
     'SecretRevealRequest',
     'ResolverDeploymentPolicy',

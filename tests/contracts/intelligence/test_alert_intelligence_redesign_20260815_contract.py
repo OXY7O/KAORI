@@ -21,12 +21,15 @@ def test_alert_intelligence_is_alert_operations_workspace() -> None:
     assert "'resolved'" in service
     assert "if tab == 'history':" in service
     for label in ('Overview', 'Active Alerts', 'Routing & Channels', 'Templates', 'Silences', 'Resolved'):
-        assert label in workspace
+        assert label in page
     for label in ('Active Alerts', 'Acknowledged', 'Silenced', 'Resolved Today'):
         assert label in summary
-    assert 'components/content_tabs.html' in workspace
-    assert "data_namespace='alert-operations'" in workspace
-    assert "hx_sync='#alert-intelligence-page-content:replace'" in workspace
+    assert 'components/workspace_tabs.html' in page
+    assert 'workspace_tabs.render_navigation(' in page
+    assert page.index('workspace_tabs.render_navigation(') < page.index('page_hero.shell_classes()')
+    assert "hx_target='#alert-intelligence-page-content'" in page
+    assert 'hx-sync="#alert-intelligence-page-content:replace"' in page
+    assert 'content_tabs.render_links' not in workspace
 
 
 def test_active_alert_filters_are_tab_local_auto_refresh_and_keep_clear_filters() -> None:

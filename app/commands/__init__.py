@@ -6,6 +6,7 @@ from app.commands.internal_pki import import_internal_pki, prepare_internal_pki
 from app.commands.rbac import seed_rbac
 from app.commands.reports import run_report_schedules
 from app.commands.retention import archive_retention
+from app.commands.secret_store import bootstrap_secret_store, secret_store_status, verify_secret_store
 from app.infrastructure_automation.cli import automation_localhost_probe
 
 
@@ -18,4 +19,7 @@ def register_commands(app: Flask) -> None:
     app.cli.add_command(refresh_integration_runtime_command)
     app.cli.add_command(import_internal_pki)
     app.cli.add_command(prepare_internal_pki)
+    app.cli.add_command(secret_store_status)
+    app.cli.add_command(verify_secret_store)
+    app.cli.add_command(bootstrap_secret_store)
     app.cli.add_command(automation_localhost_probe)

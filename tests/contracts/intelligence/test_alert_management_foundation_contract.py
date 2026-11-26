@@ -71,13 +71,14 @@ def test_severity_escalation_is_a_first_class_event_and_pages_immediately() -> N
 
 def test_resolved_workspace_is_source_state_based_not_close_only() -> None:
     service = read('app/intelligence/alert_intelligence/service.py')
-    workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
+    page = read('app/templates/intelligence/partials/_alert_intelligence_page.html')
     resolved = read('app/templates/intelligence/partials/_alert_ops_history.html')
     resolved_modal = read('app/templates/intelligence/partials/_alert_ops_resolved_case_modal.html')
     assert 'if is_active_alert_case(row)' in service
     assert "AlertCase.source_state.in_(('firing', 'unknown'))" in service
     assert "row.source_state == 'resolved' or row.workflow_state == 'closed'" in service
-    assert "('resolved', 'Resolved'" in workspace
+    assert "('resolved', 'Resolved'" in page
+    assert "tab='resolved', **tab_query" in page
     assert 'Verification Pending' in resolved_modal
     assert 'Verify & Close' in resolved_modal
     assert 'data-resource-detail-toggle' in resolved

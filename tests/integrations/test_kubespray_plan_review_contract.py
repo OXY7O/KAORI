@@ -86,6 +86,8 @@ def _job() -> SimpleNamespace:
             'repository': REPOSITORY,
             'source_sha': SOURCE_CANDIDATE_SHA,
             'execution_environment_digest': 'sha256:' + 'a' * 64,
+            'host_registry_fingerprint': 'b' * 64,
+            'host_access_fingerprint': 'c' * 64,
             'upstream_kubespray_commit': KUBESPRAY_COMMIT,
             'upstream_kubespray_release': 'v2.32.0',
             'kubernetes_minor': '1.36',
@@ -126,6 +128,8 @@ def test_plan_result_is_deterministic_review_only_and_excludes_raw_inventory() -
     assert first.host_preflight_job_public_id == job.public_id
     summary = first.committed_summary()
     assert summary['schema_version'] == 1
+    assert summary['host_registry_fingerprint'] == 'b' * 64
+    assert summary['host_access_fingerprint'] == 'c' * 64
     assert summary['execution_environment_digest'] == 'sha256:' + 'a' * 64
     assert summary['approval_status'] == 'not_requested'
     assert summary['execution_status'] == 'blocked'
@@ -198,3 +202,16 @@ def test_worker_self_approval_fields_are_never_included_in_review_result() -> No
     assert result.status == 'requires_independent_approval'
     assert result.committed_summary()['approval_status'] == 'not_requested'
     assert 'do-not-echo-this' not in repr(result.committed_summary())
+
+
+@pytest.mark.parametrize('field', ['host_registry_fingerprint', 'host_access_fingerprint'])
+def test_plan_requires_current_attested_binding_fingerprints(field):
+    connection, job = _connection(), _job()
+    first = build_kubespray_plan_review(connection, job, now=_NOW)
+    job.result_summary_json[field] = 'f' * 64
+    updated = build_kubespray_plan_review(connection, job, now=_NOW)
+    assert updated.plan_fingerprint != first.plan_fingerprint
+    job.result_summary_json.pop(field)
+    assert build_kubespray_plan_review(connection, job, now=_NOW).status == 'blocked'
+    job.result_summary_json[field] = 'not-a-digest'
+    assert build_kubespray_plan_review(connection, job, now=_NOW).status == 'blocked'

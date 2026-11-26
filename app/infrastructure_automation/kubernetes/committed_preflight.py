@@ -6,11 +6,15 @@ or an approval token. Source-check evidence is not runtime admission.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime, timedelta
 from ipaddress import IPv4Network, ip_network
 from typing import Any
 
+from sqlalchemy.orm import joinedload
+
+from app.infrastructure_automation.host_registry import preview_inventory_intent
+from app.infrastructure_automation.kubernetes.committed_host_access import committed_pilot_access_fingerprint
 from app.infrastructure_automation.kubernetes.kubespray_preflight import (
     KUBESPRAY_COMMIT,
     KUBESPRAY_KUBERNETES_MINOR,
@@ -18,6 +22,7 @@ from app.infrastructure_automation.kubernetes.kubespray_preflight import (
     SUPPORTED_OPERATING_SYSTEMS,
 )
 from app.infrastructure_automation.kubernetes.source_policy import committed_source_state
+from app.models.automation import AutomationInventoryAssignment
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
 
@@ -49,11 +54,24 @@ class KubesprayPreflight:
     facts_job_public_id: str | None
     source_revision: str
     gates: tuple[KubesprayGate, ...]
+    host_registry_fingerprint: str | None = None
+    host_access_fingerprint: str | None = None
 
     def presentation(self) -> dict[str, Any]:
+        """Distinguish qualified review evidence from independent Run governance."""
+        review_gates = self.gates[:8]
+        governance_gates = self.gates[8:]
         return {
             **asdict(self),
             'gates': [asdict(gate) for gate in self.gates],
+            'review_verified_gates': sum(gate.state == 'ready' for gate in review_gates),
+            'review_required_gates': len(review_gates),
+            'governance_verified_gates': sum(gate.state == 'ready' for gate in governance_gates),
+            'governance_required_gates': len(governance_gates),
+            'next_review_requirement': next((gate.reason for gate in review_gates if gate.state != 'ready'), None),
+            'next_governance_requirement': next(
+                (gate.reason for gate in governance_gates if gate.state != 'ready'), None
+            ),
         }
 
 
@@ -69,14 +87,14 @@ def _committed_host_evidence(
     host discovery must implement this specific attested result contract.
     """
     for job in jobs:
+        if job.integration_instance_id != connection.id or job.operation != _HOST_PREFLIGHT_OPERATION:
+            continue
         if (
-            job.integration_instance_id != connection.id
-            or job.integration_type != 'configuration_automation'
+            job.integration_type != 'configuration_automation'
             or job.job_type != 'infrastructure_automation'
             or job.queue_name != 'automation'
-            or job.operation != _HOST_PREFLIGHT_OPERATION
         ):
-            continue
+            return {}, None
         # The latest attempt owns readiness. Never fall back to an older good
         # observation after a failed, queued, expired or mismatched attempt.
         if job.result_type != _HOST_PREFLIGHT_RESULT_TYPE or job.status != 'succeeded':
@@ -302,17 +320,94 @@ def build_kubespray_preflight(
     )
 
 
+def matches_committed_host_inventory(
+    connection: IntegrationInstance,
+    assignments: list[AutomationInventoryAssignment],
+    facts: dict[str, Any],
+) -> bool:
+    """Compare the worker's attested registry digest and exact pilot identities."""
+    preview = preview_inventory_intent(connection, assignments)
+    if (
+        preview.state != 'requires_trust_admission'
+        or preview.host_count != 3
+        or not preview.inventory_fingerprint
+        or facts.get('host_registry_fingerprint') != preview.inventory_fingerprint
+    ):
+        return False
+    hosts = facts.get('hosts')
+    if not isinstance(hosts, list) or len(hosts) != 3:
+        return False
+    expected = {
+        (assignment.host.id, assignment.role, assignment.host.address, assignment.host.ssh_port)
+        for assignment in assignments
+    }
+    observed = set()
+    for host in hosts:
+        if not isinstance(host, dict):
+            return False
+        asset_id, role, address, port = (host.get(key) for key in ('asset_id', 'role', 'address', 'ssh_port'))
+        if not all(isinstance(value, str) for value in (asset_id, role, address)) or type(port) is not int:
+            return False
+        observed.add((asset_id, role, address, port))
+    return len(expected) == 3 and observed == expected
+
+
 def committed_kubespray_preflight(connection: IntegrationInstance) -> KubesprayPreflight:
     """Project the latest five bounded, immutable preflight records from KAORI state."""
     jobs = (
         JobExecution.query.filter_by(
             integration_instance_id=connection.id,
-            integration_type='configuration_automation',
-            job_type='infrastructure_automation',
             operation=_HOST_PREFLIGHT_OPERATION,
         )
+        .populate_existing()
         .order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
         .limit(5)
         .all()
     )
-    return build_kubespray_preflight(connection, jobs=jobs)
+    posture = build_kubespray_preflight(connection, jobs=jobs)
+    if posture.state != 'ready_for_review':
+        return posture
+    # The newest attempt is authoritative. Never reuse an older attestation
+    # after membership drift, a failed attempt or a missing registry binding.
+    latest = jobs[0] if jobs else None
+    facts = latest.result_summary_json if latest is not None else None
+    if latest is None or latest.public_id != posture.facts_job_public_id or not isinstance(facts, dict):
+        return build_kubespray_preflight(connection)
+    assignments = (
+        AutomationInventoryAssignment.query.options(joinedload(AutomationInventoryAssignment.host))
+        .filter_by(integration_instance_id=connection.id, enabled=True)
+        .populate_existing()
+        .order_by(AutomationInventoryAssignment.id.asc())
+        .limit(4)
+        .all()
+    )
+    if not matches_committed_host_inventory(connection, assignments, facts):
+        return _blocked_current_evidence(posture, 'host_identity', 'Committed host inventory changed.')
+    registry = facts.get('host_registry_fingerprint')
+    access = committed_pilot_access_fingerprint(connection, assignments, now=datetime.now(UTC))
+    if access is None or facts.get('host_access_fingerprint') != access:
+        return _blocked_current_evidence(
+            posture, 'host_identity', 'Committed host access references changed or are missing.'
+        )
+    metadata = connection.metadata_json if isinstance(connection.metadata_json, dict) else {}
+    if (
+        not connection.enabled
+        or facts.get('execution_environment_digest') != metadata.get('execution_environment_digest')
+        or not isinstance(registry, str)
+    ):
+        return _blocked_current_evidence(posture, 'source_and_ee_admission', 'Source or execution environment changed.')
+    return replace(posture, host_registry_fingerprint=registry, host_access_fingerprint=access)
+
+
+def _blocked_current_evidence(posture: KubesprayPreflight, key: str, reason: str) -> KubesprayPreflight:
+    """Keep the first actual blocker visible without exposing host or Secret metadata."""
+    gates = tuple(replace(gate, state='blocked', reason=reason) if gate.key == key else gate for gate in posture.gates)
+    return replace(
+        posture,
+        state='blocked',
+        verified_gates=sum(gate.state == 'ready' for gate in gates),
+        facts_job_public_id=None,
+        gates=gates,
+        host_registry_fingerprint=None,
+        host_access_fingerprint=None,
+    )

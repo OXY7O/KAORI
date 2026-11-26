@@ -29,6 +29,8 @@ def _stub_qualified(monkeypatch: pytest.MonkeyPatch, *, outcome: str = 'qualifie
     preflight = SimpleNamespace(
         state='ready_for_review' if outcome != 'blocked' else 'blocked',
         facts_job_public_id='job-55',
+        host_registry_fingerprint='b' * 64,
+        host_access_fingerprint='c' * 64,
     )
     host_job = SimpleNamespace(id=55, public_id='job-55', integration_instance_id=31)
 
@@ -44,6 +46,15 @@ def _stub_qualified(monkeypatch: pytest.MonkeyPatch, *, outcome: str = 'qualifie
         status='requires_independent_approval' if outcome != 'invalid_plan' else 'blocked',
         plan_fingerprint='a' * 64 if outcome != 'invalid_plan' else None,
         source_sha='1' * 40,
+        host_registry_fingerprint='b' * 64,
+        host_access_fingerprint='d' * 64 if outcome == 'access_drift' else 'c' * 64,
+        dispatch_parameters=lambda: {
+            'plan_fingerprint': 'a' * 64,
+            'host_preflight_job_public_id': 'job-55',
+            'source_sha': '1' * 40,
+            'host_registry_fingerprint': 'b' * 64,
+            'host_access_fingerprint': 'c' * 64,
+        },
     )
     monkeypatch.setattr(plan_dispatch, 'committed_kubespray_preflight', lambda connection: preflight)
     monkeypatch.setattr(plan_dispatch, 'JobExecution', SimpleNamespace(query=FakeQuery()))
@@ -74,6 +85,8 @@ def test_review_only_dispatch_uses_existing_job_worker_and_secret_safe_ids(monke
         'plan_fingerprint': 'a' * 64,
         'host_preflight_job_public_id': 'job-55',
         'source_sha': '1' * 40,
+        'host_registry_fingerprint': 'b' * 64,
+        'host_access_fingerprint': 'c' * 64,
     }
     assert params['resource_group'] == 'kubespray:plan-review:31'
     assert params['requested_by_user_id'] == 42
@@ -103,7 +116,7 @@ def test_unqualified_connection_never_creates_plan_job(monkeypatch, bad_change) 
     assert calls == []
 
 
-@pytest.mark.parametrize('outcome', ['blocked', 'missing_job', 'invalid_plan'])
+@pytest.mark.parametrize('outcome', ['blocked', 'missing_job', 'invalid_plan', 'access_drift'])
 def test_missing_host_evidence_or_invalid_plan_fails_before_enqueue(monkeypatch, outcome) -> None:
     calls = _stub_qualified(monkeypatch, outcome=outcome)
     with pytest.raises(plan_dispatch.KubesprayPlanNotQualified):

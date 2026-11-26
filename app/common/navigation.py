@@ -101,6 +101,7 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'jobs.executions': 'Jobs',
     'jobs.configuration': 'Job Configuration',
     'platform_operations.overview.index': 'Overview',
+    'platform_operations.infrastructure_automation.index': 'Infrastructure Automation',
     'platform_operations.data_lifecycle.index': 'Data Lifecycle',
     'platform_operations.kubernetes.index': 'Kubernetes Admin',
     'platform_operations.kubernetes.secret_reveal.index': 'Secret Reveal',
@@ -245,6 +246,11 @@ def _reports_and_operations_items(endpoint: str) -> list[BreadcrumbItem] | None:
         return [
             BreadcrumbItem('Operations Center', 'workflow'),
             BreadcrumbItem('Data Lifecycle'),
+        ]
+    if endpoint.startswith('platform_operations.infrastructure_automation.'):
+        return [
+            BreadcrumbItem('Operations Center', 'workflow'),
+            BreadcrumbItem('Infrastructure Automation'),
         ]
     return None
 

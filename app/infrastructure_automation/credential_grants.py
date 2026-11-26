@@ -1,0 +1,140 @@
+"""Governed automation credential draft orchestration (#5184).
+
+Infrastructure Automation qualifies its exact committed target; Access owns
+the canonical grant lifecycle primitives and mandatory Activity Audit.
+No activation, provider credential retrieval or dispatch is enabled.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from uuid import uuid4
+
+from sqlalchemy.orm import load_only
+
+from app.access.scoped_grants import (
+    ScopedGrantRejected,
+    ScopeGrantValidity,
+    commit_scope_grant_transition,
+    qualify_scope_grant_validity,
+    require_scope_grant_administrator,
+    require_scope_grant_principal,
+)
+from app.extensions.db import db
+from app.infrastructure_automation.credential_scope_target import (
+    CREDENTIAL_USE_PERMISSION,
+    READ_ONLY_FACTS_OPERATION,
+    exact_credential_target_current,
+)
+from app.infrastructure_automation.host_enrollment import get_scoped_host_assignment
+from app.infrastructure_automation.kubernetes.source_policy import PROFILE_KEY, SOURCE_CANDIDATE_SHA
+from app.models.automation import AutomationHostAccessBinding
+from app.models.scope_access import AutomationCredentialScopeTarget, ScopeAccessPolicy, ScopeAccessPolicyRevision
+from app.models.secrets_pki import SecretProviderRepresentation
+
+
+@dataclass(frozen=True, slots=True, repr=False)
+class CredentialGrantIntent:
+    connection_id: int
+    host_id: str
+    expected_host_revision: str
+    expected_reference_fingerprint: str
+
+
+def request_automation_credential_grant(
+    *,
+    actor_user_id: int,
+    principal_user_id: int,
+    intent: CredentialGrantIntent,
+    validity: ScopeGrantValidity,
+    reason_code: str,
+) -> ScopeAccessPolicy:
+    """Record an exact draft and mandatory audit, never an active credential grant.
+
+    The caller supplies authenticated identities and an opaque host selection,
+    not a provider path, material, operation, scope or approval flag.
+    """
+    committed = False
+    try:
+        require_scope_grant_administrator(actor_user_id)
+        for permission in (CREDENTIAL_USE_PERMISSION, 'secrets_pki.view', 'inventory.view', 'jobs.execute'):
+            require_scope_grant_principal(principal_user_id, permission)
+        if not isinstance(intent, CredentialGrantIntent):
+            raise ScopedGrantRejected('Grant intent is invalid.')
+        now = datetime.now(UTC)
+        starts, ends = qualify_scope_grant_validity(validity, reason_code, now=now)
+        assignment = get_scoped_host_assignment(intent.connection_id, intent.host_id)
+        if assignment is None:
+            raise ScopedGrantRejected('Grant target is unavailable.')
+        binding = db.session.get(AutomationHostAccessBinding, assignment.id, populate_existing=True)
+        if (
+            binding is None
+            or binding.host_revision != intent.expected_host_revision
+            or binding.reference_fingerprint != intent.expected_reference_fingerprint
+        ):
+            raise ScopedGrantRejected('Grant target is unavailable.')
+        representation = db.session.get(
+            SecretProviderRepresentation,
+            binding.secret_representation_id,
+            populate_existing=True,
+            options=[
+                load_only(
+                    SecretProviderRepresentation.id,
+                    SecretProviderRepresentation.integration_instance_id,
+                    SecretProviderRepresentation.provider_namespace,
+                    SecretProviderRepresentation.mount,
+                    SecretProviderRepresentation.secret_identity_id,
+                )
+            ],
+        )
+        if representation is None:
+            raise ScopedGrantRejected('Grant target is unavailable.')
+        policy = ScopeAccessPolicy()
+        policy.id = str(uuid4())
+        policy.principal_user_id = principal_user_id
+        policy.permission_key = CREDENTIAL_USE_PERMISSION
+        policy.integration_instance_id = representation.integration_instance_id
+        policy.scope_level = 'automation_credential'
+        policy.provider_namespace = representation.provider_namespace
+        policy.mount = representation.mount
+        policy.current_revision = 1
+        target = AutomationCredentialScopeTarget()
+        target.policy_id = policy.id
+        target.ansible_connection_id = intent.connection_id
+        target.assignment_id = assignment.id
+        target.host_id = assignment.host_id
+        target.host_revision = binding.host_revision
+        target.reference_fingerprint = binding.reference_fingerprint
+        target.secret_identity_id = representation.secret_identity_id
+        target.secret_representation_id = representation.id
+        target.secret_version = binding.secret_version
+        target.source_revision = SOURCE_CANDIDATE_SHA
+        target.profile_key = PROFILE_KEY
+        target.operation_key = READ_ONLY_FACTS_OPERATION
+        if not exact_credential_target_current(policy, target, now=now):
+            raise ScopedGrantRejected('Grant target is unavailable.')
+        revision = ScopeAccessPolicyRevision()
+        revision.policy = policy
+        revision.revision_number = 1
+        revision.lifecycle_status = 'draft'
+        revision.effective_from = starts
+        revision.effective_until = ends
+        revision.requested_by_user_id = actor_user_id
+        revision.change_reason = reason_code
+        db.session.add_all((policy, revision))
+        db.session.flush()
+        db.session.add(target)
+        db.session.flush()
+        commit_scope_grant_transition(
+            actor_user_id=actor_user_id,
+            policy=policy,
+            revision_number=1,
+            event_type='access_scope_grant_requested',
+            label='Scoped Grant Requested',
+        )
+        committed = True
+    finally:
+        if not committed:
+            db.session.rollback()
+    return policy

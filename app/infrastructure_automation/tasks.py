@@ -11,7 +11,9 @@ from celery import shared_task
 from app.extensions.db import db
 from app.infrastructure_automation.kubernetes.committed_preflight import committed_kubespray_preflight
 from app.infrastructure_automation.kubernetes.plan_review import (
+    PLAN_OPERATION,
     PLAN_RESULT_TYPE,
+    KubesprayPlanReview,
     build_kubespray_plan_review,
 )
 from app.infrastructure_automation.source import (
@@ -30,6 +32,7 @@ from app.platform_operations.jobs.execution import (
     JobExecutionContext,
     JobExecutionUnavailable,
 )
+from app.platform_operations.jobs.fingerprint import payload_fingerprint
 
 AUTOMATION_QUEUE = 'automation'
 
@@ -115,9 +118,16 @@ def materialize_kubespray_plan_review(
     """
     context = JobExecutionContext(task_id=str(self.request.id), job_execution_id=job_execution_id)
     try:
+        if (
+            type(connection_id) is not int
+            or type(host_preflight_job_id) is not int
+            or type(job_execution_id) is not int
+        ):
+            return {'status': 'blocked'}
+        request_job = db.session.get(JobExecution, job_execution_id)
+        if not _matches_plan_job(request_job, connection_id, str(self.request.id)):
+            return {'status': 'blocked'}
         context.start(message='Qualifying reviewed Kubespray Plan evidence', stage='preflight')
-        if type(connection_id) is not int or type(host_preflight_job_id) is not int:
-            raise ValueError('Invalid plan target')
         connection = db.session.get(IntegrationInstance, connection_id)
         host_job = db.session.get(JobExecution, host_preflight_job_id)
         if connection is None or host_job is None:
@@ -130,21 +140,18 @@ def materialize_kubespray_plan_review(
             or host_job.integration_instance_id != connection_id
         ):
             raise ValueError('Unqualified source connection')
-        latest = committed_kubespray_preflight(connection)
-        if latest.state != 'ready_for_review' or latest.facts_job_public_id != host_job.public_id:
-            raise ValueError('Preflight was superseded or is not qualified')
-        plan = build_kubespray_plan_review(connection, host_job)
-        if plan.status != 'requires_independent_approval' or not plan.plan_fingerprint:
-            raise ValueError('Review-only Plan has no qualified target evidence')
+        if request_job is None:
+            raise ValueError('Canonical Plan request is missing')
+        plan = _qualify_dispatched_plan(connection, host_job, request_job)
 
         context.checkpoint(message='Checking latest evidence and Plan fingerprint', stage='verification')
-        latest = committed_kubespray_preflight(connection)
-        rechecked = build_kubespray_plan_review(connection, host_job)
-        if (
-            latest.state != 'ready_for_review'
-            or latest.facts_job_public_id != host_job.public_id
-            or rechecked.plan_fingerprint != plan.plan_fingerprint
-        ):
+        db.session.refresh(connection)
+        db.session.refresh(host_job)
+        db.session.refresh(request_job)
+        if not _matches_plan_job(request_job, connection_id, str(self.request.id)):
+            raise ValueError('Plan request changed before evidence commit')
+        rechecked = _qualify_dispatched_plan(connection, host_job, request_job)
+        if rechecked.plan_fingerprint != plan.plan_fingerprint:
             raise ValueError('Plan preflight changed before evidence commit')
         fingerprint = rechecked.plan_fingerprint
         if fingerprint is None:
@@ -164,3 +171,36 @@ def materialize_kubespray_plan_review(
             error_code='kubespray_plan_review_unqualified',
         )
         return {'status': 'blocked'}
+
+
+def _matches_plan_job(job: JobExecution | None, connection_id: int, task_id: str) -> bool:
+    return (
+        job is not None
+        and job.celery_task_id == task_id
+        and job.integration_instance_id == connection_id
+        and job.integration_type == 'configuration_automation'
+        and job.job_type == 'infrastructure_automation'
+        and job.operation == PLAN_OPERATION
+        and job.queue_name == AUTOMATION_QUEUE
+        and job.scope_type == 'ansible_source_connection'
+        and job.scope_key == str(connection_id)
+    )
+
+
+def _qualify_dispatched_plan(
+    connection: IntegrationInstance, host_job: JobExecution, request_job: JobExecution
+) -> KubesprayPlanReview:
+    """Use exactly the same qualification before and after the worker checkpoint."""
+    latest = committed_kubespray_preflight(connection)
+    if latest.state != 'ready_for_review' or latest.facts_job_public_id != host_job.public_id:
+        raise ValueError('Preflight was superseded or is not qualified')
+    plan = build_kubespray_plan_review(connection, host_job)
+    if (
+        plan.status != 'requires_independent_approval'
+        or not plan.plan_fingerprint
+        or plan.host_registry_fingerprint != latest.host_registry_fingerprint
+        or plan.host_access_fingerprint != latest.host_access_fingerprint
+        or request_job.parameter_fingerprint != payload_fingerprint(plan.dispatch_parameters())
+    ):
+        raise ValueError('Review-only Plan differs from the committed dispatch request')
+    return plan

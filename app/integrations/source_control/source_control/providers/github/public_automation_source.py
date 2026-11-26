@@ -43,7 +43,7 @@ _REQUIRED_BLOBS = {
     'automation/operations.json': '4be91c6b9b0537ffe965ebff86eb76bfd576e333',
     'ansible/playbooks/linux_host_facts.yml': 'ad8ffb5d72f6ed512c30ce5cfca29b4ffb0b4e9e',
     'ansible/inventory/examples/localhost.ini': '13b316e457c29affe8cec3ba1cbfaada30ac0680',
-    'execution-environments/requirements.txt': '78ac0ec89316f0c02799afbdedddab88e0ef27b6',
+    'execution-environments/requirements.txt': '1765812c981fc4bca9acd782a4f6584c7ce0e8bb',
     'kubernetes/self-managed/profiles/kubespray-v2.32.0-pilot.json': 'b8f50d37f61392b11ff22cc7bfd3586796dc4c92',
 }
 _SHA = re.compile(r'[0-9a-f]{40}\Z')

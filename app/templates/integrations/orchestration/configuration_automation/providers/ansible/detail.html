@@ -40,6 +40,13 @@
                                 url_for("integrations.ansible") , posture_key="ansible") }}
             </div>
         </section>
+        <div class="flex flex-wrap items-center gap-3">
+            <a href="{{ url_for('platform_operations.infrastructure_automation.index', connection_id=connection.id) }}"
+               class="{{ action_button.classes('secondary') }}">
+                <i data-lucide="server-cog" class="h-4 w-4" aria-hidden="true"></i>
+                Open Infrastructure Automation
+            </a>
+        </div>
         <section id="ansible-detail-tabs"
                  class="{{ integration_ui.section_shell_classes() }}">
             {{ tabs.render([

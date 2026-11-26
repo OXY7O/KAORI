@@ -41,6 +41,8 @@ class KubesprayPlanReview:
     expires_at: str | None = None
     source_sha: str | None = None
     execution_environment_digest: str | None = None
+    host_registry_fingerprint: str | None = None
+    host_access_fingerprint: str | None = None
     mutation_authorized: bool = False
 
     def committed_summary(self) -> dict[str, Any]:
@@ -51,6 +53,8 @@ class KubesprayPlanReview:
             'reason_code': self.reason_code,
             'plan_fingerprint': self.plan_fingerprint,
             'inventory_fingerprint': self.inventory_fingerprint,
+            'host_registry_fingerprint': self.host_registry_fingerprint,
+            'host_access_fingerprint': self.host_access_fingerprint,
             'host_preflight_job_public_id': self.host_preflight_job_public_id,
             'expires_at': self.expires_at,
             'source_sha': self.source_sha,
@@ -59,6 +63,16 @@ class KubesprayPlanReview:
             'mutation_authorized': False,
             'approval_status': 'not_requested',
             'execution_status': 'blocked',
+        }
+
+    def dispatch_parameters(self) -> dict[str, Any]:
+        """Canonical immutable dispatch parameters; no raw inventory or material."""
+        return {
+            'plan_fingerprint': self.plan_fingerprint,
+            'host_preflight_job_public_id': self.host_preflight_job_public_id,
+            'source_sha': self.source_sha,
+            'host_registry_fingerprint': self.host_registry_fingerprint,
+            'host_access_fingerprint': self.host_access_fingerprint,
         }
 
 
@@ -96,38 +110,15 @@ def build_kubespray_plan_review(
         return KubesprayPlanReview('blocked', 'HOST_PREFLIGHT_UNQUALIFIED')
     if facts.get('execution_environment_digest') != ee_digest:
         return KubesprayPlanReview('blocked', 'EE_DIGEST_MISMATCH')
-    nodes = facts.get('hosts')
-    if not isinstance(nodes, list) or len(nodes) != 3:
+    registry = facts.get('host_registry_fingerprint')
+    access = facts.get('host_access_fingerprint')
+    if not isinstance(registry, str) or re.fullmatch(r'[a-f0-9]{64}', registry) is None:
+        return KubesprayPlanReview('blocked', 'HOST_REGISTRY_FINGERPRINT_REQUIRED')
+    if not isinstance(access, str) or re.fullmatch(r'[a-f0-9]{64}', access) is None:
+        return KubesprayPlanReview('blocked', 'HOST_ACCESS_FINGERPRINT_REQUIRED')
+    allowed_nodes = _project_review_nodes(facts.get('hosts'))
+    if allowed_nodes is None:
         return KubesprayPlanReview('blocked', 'INVENTORY_UNQUALIFIED')
-
-    # Source data is a committed worker observation; the target asset registry
-    # and SSH identity still require independent admission before any Run.
-    allowed_nodes = []
-    required = (
-        'asset_id',
-        'role',
-        'os_distribution',
-        'os_release',
-        'cpu_count',
-        'memory_mib',
-        'disk_gib',
-        'address',
-    )
-    for node in nodes:
-        if not isinstance(node, dict) or any(field not in node for field in required):
-            return KubesprayPlanReview('blocked', 'INVENTORY_UNQUALIFIED')
-        allowed_nodes.append(
-            {
-                'asset_id': node['asset_id'],
-                'role': node['role'],
-                'os_distribution': node['os_distribution'],
-                'os_version': node['os_release'],
-                'cpu_count': node['cpu_count'],
-                'memory_mib': node['memory_mib'],
-                'disk_gib': node['disk_gib'],
-                'address': node['address'],
-            }
-        )
 
     environment = str(connection.environment or '').lower()
     if environment not in {
@@ -174,6 +165,8 @@ def build_kubespray_plan_review(
         'upstream_commit': KUBESPRAY_COMMIT,
         'kubernetes_minor': KUBESPRAY_KUBERNETES_MINOR,
         'inventory_fingerprint': static.inventory_fingerprint,
+        'host_registry_fingerprint': registry,
+        'host_access_fingerprint': access,
         'host_preflight_job_public_id': host_preflight_job.public_id,
         'host_observed_at': observed_at.astimezone(UTC).isoformat(),
         'expires_at': expiry.astimezone(UTC).isoformat(),
@@ -186,8 +179,46 @@ def build_kubespray_plan_review(
         reason_code='REVIEW_ONLY',
         plan_fingerprint=fingerprint,
         inventory_fingerprint=static.inventory_fingerprint,
+        host_registry_fingerprint=registry,
+        host_access_fingerprint=access,
         host_preflight_job_public_id=host_preflight_job.public_id,
         expires_at=fields['expires_at'],
         source_sha=source_sha,
         execution_environment_digest=ee_digest,
     )
+
+
+def _project_review_nodes(nodes: object) -> list[dict[str, Any]] | None:
+    """Allowlist static target fields; never copy access references into Plan material."""
+    if not isinstance(nodes, list) or len(nodes) != 3:
+        return None
+
+    # Source data is a committed worker observation; the target asset registry
+    # and SSH identity still require independent admission before any Run.
+    allowed_nodes = []
+    required = (
+        'asset_id',
+        'role',
+        'os_distribution',
+        'os_release',
+        'cpu_count',
+        'memory_mib',
+        'disk_gib',
+        'address',
+    )
+    for node in nodes:
+        if not isinstance(node, dict) or any(field not in node for field in required):
+            return None
+        allowed_nodes.append(
+            {
+                'asset_id': node['asset_id'],
+                'role': node['role'],
+                'os_distribution': node['os_distribution'],
+                'os_version': node['os_release'],
+                'cpu_count': node['cpu_count'],
+                'memory_mib': node['memory_mib'],
+                'disk_gib': node['disk_gib'],
+                'address': node['address'],
+            }
+        )
+    return allowed_nodes
