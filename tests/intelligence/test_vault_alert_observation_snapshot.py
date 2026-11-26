@@ -4,11 +4,14 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from flask import Flask
+from sqlalchemy import event
+from sqlalchemy.dialects import postgresql
 
 from app.extensions.db import db
 from app.intelligence.alert_signals.vault_source import (
     SIGNAL_KEY,
     commit_vault_alert_observations,
+    fail_vault_alert_observations,
     read_vault_alert_observations,
 )
 from app.models.alert_signal import AlertSignalSnapshot
@@ -402,3 +405,53 @@ def test_untrusted_validation_sample_shape_is_not_a_valid_source(accepted_source
     }
     db.session.commit()
     assert _commit(binding.id, [_alert(vault.id)])['state'] == 'blocked'
+
+
+def test_source_writers_use_admission_lock_order(accepted_source):
+    vault, _source, binding = accepted_source
+    statements = []
+
+    def record_statement(state):
+        if state.is_select:
+            sql = str(state.statement.compile(dialect=postgresql.dialect()))
+            if 'FOR UPDATE' in sql:
+                statements.append(sql)
+
+    session = db.session()
+    event.listen(session, 'do_orm_execute', record_statement)
+    try:
+        assert _commit(binding.id, [_alert(vault.id)])['state'] == 'qualified'
+        assert len(statements) == 2
+        assert 'FROM integration_bindings' in statements[0]
+        assert 'FROM alert_signal_snapshots' in statements[1]
+        statements.clear()
+        assert fail_vault_alert_observations(binding_id=binding.id, observed_at=AT + timedelta(minutes=1))
+        assert len(statements) == 2
+        assert 'FROM integration_bindings' in statements[0]
+        assert 'FROM alert_signal_snapshots' in statements[1]
+    finally:
+        event.remove(session, 'do_orm_execute', record_statement)
+
+
+def test_older_failure_cannot_invalidate_newer_generation(accepted_source):
+    vault, _source, binding = accepted_source
+    _commit(binding.id, [_alert(vault.id)])
+    assert not fail_vault_alert_observations(binding_id=binding.id, observed_at=AT - timedelta(seconds=1))
+    assert read_vault_alert_observations(binding_id=binding.id, now=AT)['state'] == 'fresh'
+
+
+def test_newer_failure_fences_replayed_success(accepted_source):
+    vault, _source, binding = accepted_source
+    _commit(binding.id, [_alert(vault.id)])
+    failed_at = AT + timedelta(minutes=1)
+    assert fail_vault_alert_observations(binding_id=binding.id, observed_at=failed_at)
+    result = commit_vault_alert_observations(
+        binding_id=binding.id,
+        alerts=[_alert(vault.id)],
+        hmac_key=KEY,
+        observed_at=AT,
+        now=failed_at,
+    )
+    assert result['state'] == 'replayed'
+    assert read_vault_alert_observations(binding_id=binding.id, now=failed_at)['state'] == 'unavailable'
+    assert AlertSignalSnapshot.query.one().payload_json is None

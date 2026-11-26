@@ -405,3 +405,7 @@ provider recovery evidence. The writer is still default-disabled and
 disconnected from runtime callers; routing/notifications remain suppressed.
 These source remediations **do not constitute DevContainer UAT PASS**.
 See the HV-12 #2821 scenario matrix in `VAULT_INTEGRATED_UAT.md`.
+
+## HV-12 serialized committed observation generation (#5241)
+
+Both internal observation writers (qualified response and transport failure) acquire the existing exact source binding lock before the snapshot generation lock, matching the case admission transaction. The writer refreshes committed binding/source identities and snapshot state before checking the generation fence; the binding lock also serializes same-binding initial inserts. Blocked and replayed writes release locks via rollback. Existing observation TTL, timestamp, failure and redaction contracts remain unchanged. This does not add a provider recovery signal or authorize runtime activation. Focused tests compile the locking statements with the PostgreSQL dialect and exercise stale/failure ordering; real concurrent PostgreSQL/provider UAT is still required. Different-binding replacement and end-to-end recovery qualification remain under #5229.

@@ -71,10 +71,12 @@ def _has_exact_vault_matcher(binding: IntegrationBinding) -> bool:
     )
 
 
-def _validated_binding(binding_id: int, *, now: datetime) -> tuple[IntegrationBinding, IntegrationInstance] | None:
+def _validated_binding(
+    binding_id: int, *, now: datetime, lock: bool = False
+) -> tuple[IntegrationBinding, IntegrationInstance] | None:
     if type(binding_id) is not int or binding_id < 1:
         return None
-    binding = db.session.get(IntegrationBinding, binding_id)
+    binding = db.session.get(IntegrationBinding, binding_id, populate_existing=lock, with_for_update=lock)
     if (
         binding is None
         or not binding.enabled
@@ -86,8 +88,8 @@ def _validated_binding(binding_id: int, *, now: datetime) -> tuple[IntegrationBi
     vault_id = _identity(binding.asset_key)
     if vault_id is None:
         return None
-    vault = db.session.get(IntegrationInstance, vault_id)
-    source = db.session.get(IntegrationInstance, binding.integration_instance_id)
+    vault = db.session.get(IntegrationInstance, vault_id, populate_existing=lock)
+    source = db.session.get(IntegrationInstance, binding.integration_instance_id, populate_existing=lock)
     if (
         vault is None
         or vault.integration_type != 'secrets_pki'
@@ -204,6 +206,16 @@ def _normalize(
     return {'status': 'qualified', 'entries': entries}
 
 
+def _locked_observation_snapshot(asset_key: str) -> AlertSignalSnapshot | None:
+    """Acquire the generation lock after the canonical binding lock."""
+    return (
+        AlertSignalSnapshot.query.filter_by(domain='secrets_pki', asset_key=asset_key, signal_key=SIGNAL_KEY)
+        .populate_existing()
+        .with_for_update()
+        .first()
+    )
+
+
 def commit_vault_alert_observations(
     *,
     binding_id: int,
@@ -223,18 +235,18 @@ def commit_vault_alert_observations(
         raise ValueError('A recent timezone-aware observation is required.')
     if not isinstance(hmac_key, bytes) or len(hmac_key) < 32:
         raise ValueError('A dedicated non-persisted 32-byte correlation key is required.')
-    eligible = _validated_binding(binding_id, now=instant)
+    # Use the admission command's binding-first lock order, including the
+    # initial write when no snapshot row exists yet.
+    eligible = _validated_binding(binding_id, now=instant, lock=True)
     if eligible is None:
+        db.session.rollback()
         return {'state': 'blocked', 'observed_rows': None}
     binding, source = eligible
-    snapshot = AlertSignalSnapshot.query.filter_by(
-        domain='secrets_pki',
-        asset_key=binding.asset_key,
-        signal_key=SIGNAL_KEY,
-    ).first()
+    snapshot = _locked_observation_snapshot(binding.asset_key)
     if snapshot is not None and snapshot.generated_at is not None:
         previous = _persisted_utc(snapshot.generated_at)
         if previous is not None and observed <= previous:
+            db.session.rollback()
             return {'state': 'replayed', 'observed_rows': None}
     try:
         normalized = _normalize(
@@ -298,15 +310,12 @@ def fail_vault_alert_observations(
     instant = _utc(observed_at or datetime.now(UTC))
     if instant is None:
         return False
-    eligible = _validated_binding(binding_id, now=instant)
+    eligible = _validated_binding(binding_id, now=instant, lock=True)
     if eligible is None:
+        db.session.rollback()
         return False
     binding, _source = eligible
-    snapshot = AlertSignalSnapshot.query.filter_by(
-        domain='secrets_pki',
-        asset_key=binding.asset_key,
-        signal_key=SIGNAL_KEY,
-    ).first()
+    snapshot = _locked_observation_snapshot(binding.asset_key)
     if snapshot is None:
         snapshot = AlertSignalSnapshot()
         snapshot.domain = 'secrets_pki'
@@ -315,6 +324,7 @@ def fail_vault_alert_observations(
         db.session.add(snapshot)
     previous = _persisted_utc(snapshot.generated_at)
     if previous is not None and instant < previous:
+        db.session.rollback()
         return False
     snapshot.status = 'failed'
     snapshot.payload_json = None
