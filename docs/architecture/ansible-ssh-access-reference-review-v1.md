@@ -58,7 +58,7 @@ The offline Vault adapter helper `verify_credential_version_statement` reconstru
 
 The Secrets & PKI model `SecretCredentialIssuerRevision` retains one intended append-only revision history per exact integration instance, namespace and mount, with an explicit admitted provider key (`vault` or `openbao`). Each revision records Ed25519 raw public-key hex and SHA-256 key digest, independently qualified external deployment reference and custody evidence reference (both SHA-256 hex), effective validity window, requester, independent approver and recording actor. Active shape requires distinct requester/approver, matching approver/recording actor and a valid approval time. A revoked revision can retain expired history. No wildcard mount, backfill, seed or active issuer is created; downgrade refuses to discard recorded history.
 
-Storage shape alone is not a trust anchor. The existing Vault health projection does not commit an authoritative deployment identity; the new OpenBao integration must independently qualify its own identity. The unmerged registry schema is provider-neutral under #5200/#5204, not a second OpenBao-specific store. A provider key must match the canonical integration instance; the unique scope revision deliberately cannot fork on a changed provider key. A future governed source-owner workflow must independently establish deployment identity (not merely endpoint or local instance ID), prove key custody and actual provider-side credential schema validation, qualify canonical key/digests, enforce one exact-scope issuer and prohibit key reuse across deployment/scope histories. It must lock the canonical provider and latest revision, append audited transitions, re-evaluate the actual latest revision without fallback, require proof issuance within the approved issuer window and bind the signed statement to the admitted provider, deployment and issuer revision before any credential-use activation. The current proof schema must be extended accordingly before operational use. No trust writer, verifier registry reader, signed material access or runtime authorization is enabled by this storage increment. PostgreSQL concurrency, real provider evidence and independent review remain mandatory.
+Storage shape alone is not a trust anchor. The existing Vault health projection does not commit an authoritative deployment identity; the new OpenBao integration must independently qualify its own identity. The merged registry schema (#5199) is provider-neutral under #5200/#5204, not a second OpenBao-specific store. A provider key must match the canonical integration instance; the unique scope revision deliberately cannot fork on a changed provider key. A future governed source-owner workflow must independently establish deployment identity (not merely endpoint or local instance ID), prove key custody and actual provider-side credential schema validation, qualify canonical key/digests, enforce one exact-scope issuer and prohibit key reuse across deployment/scope histories. It must lock the canonical provider and latest revision, append audited transitions, re-evaluate the actual latest revision without fallback, require proof issuance within the approved issuer window and bind the signed statement to the admitted provider, deployment and issuer revision before any credential-use activation. The provider-qualified proof schema (#5216) and read-only candidate resolver (#5217) are merged; they must be bound to independently qualified authority before operational use. No trust writer, operational verifier, signed material access or runtime authorization is enabled. PostgreSQL concurrency, real provider evidence and independent review remain mandatory.
 
 ### Issuer lifecycle shape and custody boundary (#5222)
 
@@ -98,3 +98,49 @@ PostgreSQL concurrent transaction tests and independent custody/Access review
 are mandatory before enabling a writer. No new permission, route, migration,
 provider request, active issuer, or runtime verification wiring is introduced
 by this increment.
+
+
+### Independent issuer custody evidence qualification (#5224)
+
+The admitted shared KV v2 HTTPS transport in `providers/kv2_http.py` enforces
+provider-specific origin/CA settings, rejects redirects and environment
+proxy/netrc credentials, and observes health and bounded AppRole metadata.
+The OpenBao client additionally checks strict internal active health and
+operator audit configuration/mount counts. The Vault client retains its own
+transport policy. None of these mechanisms establishes independently pinned
+deployment identity, issuer custody, actual credential schema or an Access
+decision. A compatible response, TLS peer, endpoint, local instance ID,
+configured audit device or successful AppRole login is not a trust anchor.
+Bundled deployment ownership must come from the reviewed target bootstrap and
+independent recovery authority (#5200/#5202); external ownership requires a
+separately reviewed source-owner authority. No admitted resolver for either
+custody authority is identified in these mechanisms.
+
+The offline `IssuerCustodyEvidenceShape` contract binds the exact provider,
+instance, namespace, mount, deployment and prospective revision, public-key
+digest, independently expected challenge digest, and distinct evidence
+references for deployment identity, proof of possession, independent custody
+and canonical Access decision. It requires distinct source-owner/checker
+identifiers and timezone-aware challenge/receipt/approval chronology. The
+initial proposed upper bound is 24 hours from challenge issuance, with
+exclusive expiry. This is a conservative shape bound, not an operational
+challenge lifetime approval. A repeated or wrong challenge is not admissible:
+the future locked caller must independently issue, resolve and atomically
+consume each challenge exactly once; a pure matcher cannot detect replay of
+the same valid inputs, verify signatures, authenticate actors, or detect
+revoked or unavailable evidence. Each reference must be independently
+resolved and verified against its own authority and the exact binding; four
+distinct digests do not prove four independent facts. The current code has
+no operational evidence resolver or acceptance path. Missing authority
+therefore remains a release blocker, even when synthetic shape tests pass.
+
+Provider-side credential schema validation remains an independent
+per-credential/version obligation, not a generic issuer receipt. Canonical
+Access and Activity Audit remain mandatory for a future governed writer;
+do not create a new permission system or accept caller-supplied approval
+flags. Require independent, current deployment/owner/checker/custody evidence,
+revocation and replay checks, and atomic audit before admitting a writer.
+A real ceremony and disposable provider evidence require separate reviewed
+implementation and operator authorization; no signer, key generation, live
+provider access, secret retrieval, mutation, migration or worker wiring is
+introduced here.
