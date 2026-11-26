@@ -529,3 +529,11 @@ def test_central_case_detail_checks_instance_and_uses_read_only_projection(store
         provider_case_scope.provider_case_detail_response(_central_args(ids, asset=str(ids.other)), case.public_id)
     with pytest.raises(NotFound):
         provider_case_scope.provider_case_detail_response(_central_args(ids, provider='openbao'), case.public_id)
+
+
+def test_generic_mutation_denies_provider_origin_outside_vault(store):
+    _app, ids = store
+    case = _case(ids, foreign=True)
+    invoked = []
+    assert apply_case_mutation(case.public_id, operation=lambda row: invoked.append(row.id)) is None
+    assert not invoked

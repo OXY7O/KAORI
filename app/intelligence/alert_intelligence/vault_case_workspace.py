@@ -186,7 +186,7 @@ def _matches_read_filters(row: dict[str, object], filters: dict[str, str]) -> bo
             return False
     if filters.get('source', 'all') not in ('all', 'provider_alert'):
         return False
-    return filters.get('q', '').casefold() in f"{row['public_id']} {row['title']}".casefold()
+    return filters.get('q', '').casefold() in f'{row["public_id"]} {row["title"]}'.casefold()
 
 
 def read_scoped_vault_cases(
@@ -251,7 +251,11 @@ def vault_case_details_response(
             AlertCase.source_type == 'provider_alert',
             AlertCase.asset_key == str(instance_id),
         ).first()
-        if row is None or not _case_qualified(row, instance_id=instance_id) or (central and row.workflow_state != 'open'):
+        if (
+            row is None
+            or not _case_qualified(row, instance_id=instance_id)
+            or (central and row.workflow_state != 'open')
+        ):
             db.session.rollback()
             abort(404)
         public_case = _safe_case(row)

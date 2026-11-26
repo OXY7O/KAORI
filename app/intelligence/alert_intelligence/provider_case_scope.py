@@ -132,13 +132,16 @@ def provider_scope_context(args: MultiDict[str, str]) -> dict[str, Any]:
 
 
 def _read_filters(args: MultiDict[str, str]) -> dict[str, str]:
-    return {key: str(args.get(key) or default) for key, default in (
-        ('severity', 'all'),
-        ('workflow', 'all'),
-        ('source', 'all'),
-        ('source_state', 'all'),
-        ('q', ''),
-    )}
+    return {
+        key: str(args.get(key) or default)
+        for key, default in (
+            ('severity', 'all'),
+            ('workflow', 'all'),
+            ('source', 'all'),
+            ('source_state', 'all'),
+            ('q', ''),
+        )
+    }
 
 
 def _case_record(row: dict[str, Any], scope: dict[str, Any]) -> dict[str, Any]:
@@ -162,9 +165,7 @@ def _case_record(row: dict[str, Any], scope: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def build_provider_case_payload(
-    args: MultiDict[str, str], *, domain_options: list[dict[str, str]]
-) -> dict[str, Any]:
+def build_provider_case_payload(args: MultiDict[str, str], *, domain_options: list[dict[str, str]]) -> dict[str, Any]:
     domain = str(args.get('domain') or '')
     scope = provider_scope_context(args)
     filters = _read_filters(args)
