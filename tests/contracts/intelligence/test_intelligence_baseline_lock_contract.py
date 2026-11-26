@@ -45,7 +45,7 @@ def test_automation_control_keeps_infrastructure_execution_fail_closed_without_b
 def test_alert_intelligence_uses_supported_multi_domain_alert_operations():
     module = read('app/intelligence/alert_intelligence/service.py')
     lifecycle = read('app/intelligence/alert_intelligence/lifecycle.py')
-    workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
+    page = read('app/templates/intelligence/partials/_alert_intelligence_page.html')
 
     assert "AlertCase.source_type == 'recommendation'" in module
     assert 'load_alerts_by_source' not in module
@@ -55,7 +55,7 @@ def test_alert_intelligence_uses_supported_multi_domain_alert_operations():
     assert 'AlertCase' in module
     assert 'reconcile_alert_cases' in lifecycle  # retained as an unscheduled future adapter
     for label in ('Active Alerts', 'Routing & Channels', 'Templates', 'Silences', 'Resolved'):
-        assert label in workspace
+        assert label in page
 
 
 def test_intelligence_baseline_lock_is_registered_in_quality_gate():
