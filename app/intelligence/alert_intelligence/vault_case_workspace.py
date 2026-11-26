@@ -17,7 +17,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.access.scope_policy import evaluate_exact_vault_instance_case_scope
 from app.common.pagination import paginate_sequence
 from app.extensions.db import db
-from app.intelligence.alert_intelligence.vault_provider_plan import _CASE_KEY_RE, _PROFILE
+from app.intelligence.alert_intelligence.vault_provider_plan import (
+    _CASE_KEY_RE,
+    _PROFILE,
+    admitted_source_state_qualified,
+)
 from app.intelligence.alert_signals.vault_source import read_vault_alert_observations
 from app.models.alert_ops import AlertCase
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -85,7 +89,7 @@ def _safe_case(case: AlertCase, observations: dict[int, dict[str, Any]]) -> dict
         'title': 'Vault Alertmanager source condition',
         'severity': case.severity if case.severity in {'critical', 'warning', 'info'} else 'unknown',
         'source_state': current,
-        'last_admitted_source_state': 'firing',
+        'last_admitted_source_state': case.source_state,
         'workflow_state': case.workflow_state,
         'first_seen_at': case.first_seen_at,
         'last_seen_at': case.last_seen_at,
@@ -104,7 +108,7 @@ def _case_qualified(case: AlertCase, *, instance_id: int) -> bool:
         or case.routing_override_reason != 'policy_ineligible'
         # HV-12 cannot establish provider resolution or verified recovery.
         # Reject rather than render a tampered "resolved" source state.
-        or case.source_state != 'firing'
+        or not admitted_source_state_qualified(case)
         or not isinstance(case.case_key, str)
         or _CASE_KEY_RE.fullmatch(case.case_key) is None
         or case.source_ref != case.case_key
@@ -170,8 +174,8 @@ def _read_cases(
         observations = _read_case_observations(records)
         safe_rows = [_safe_case(case, observations) for case in records]
         if filters is not None:
-            # Provider-origin lifecycle is not qualified beyond read-only open,
-            # committed firing evidence. Never project unsupported transitions.
+            # Provider-origin lifecycle remains limited to read-only open cases.
+            # Never project unsupported workflow transitions.
             if any(row['workflow_state'] != 'open' for row in safe_rows):
                 return {'status': 'unavailable', 'rows': [], 'pagination': None}
             summary = {

@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.intelligence.alert_signals.vault_source import (
+    _persisted_utc,
     _utc,
     _validated_binding,
     read_vault_alert_observations,
@@ -21,6 +22,7 @@ from app.models.alert_ops import AlertCase
 _CASE_PREFIX = 'vault-alert:'
 _PROFILE = 'vault-alert-hmac-v1'
 _MAX_CASES = 100
+_UNKNOWN_REASON = 'provider_observation_unverified'
 _CASE_KEY_RE = re.compile(r'vault-alert:[0-9a-f]{64}\Z')
 _SAFE_PROVENANCE_KEYS = frozenset(
     {
@@ -48,6 +50,17 @@ def _result(status: str, *, candidates: list[dict[str, Any]] | None = None) -> d
         'candidate_count': len(rows) if rows is not None else None,
         'basis': 'Committed, exact-source observations; candidate actions only, never case transitions',
     }
+
+
+def admitted_source_state_qualified(case: AlertCase) -> bool:
+    """Only the admitted firing/unknown contract is supported; never resolved."""
+    if case.source_state == 'firing':
+        return case.source_state_reason is None and case.source_resolved_at is None
+    if case.source_state != 'unknown' or case.source_state_reason != _UNKNOWN_REASON:
+        return False
+    changed = _persisted_utc(case.source_state_changed_at)
+    seen = _persisted_utc(case.last_seen_at)
+    return changed is not None and seen is not None and changed > seen and case.source_resolved_at is None
 
 
 def _provenance_matches(case: AlertCase, *, source_id: int, binding_id: int) -> bool:
@@ -141,7 +154,7 @@ def build_vault_provider_case_plan(
             action = 'retain_unverified' if prior is not None else 'review_source'
         elif prior is None:
             action = 'create_candidate'
-        elif prior.source_state == 'firing':
+        elif admitted_source_state_qualified(prior):
             action = 'refresh_candidate'
         else:
             action = 'retain_unverified'

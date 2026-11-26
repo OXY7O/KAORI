@@ -605,3 +605,18 @@ def test_unverified_current_source_does_not_resolve_admitted_case(store, conditi
     assert result['summary']['source_unknown'] == 1
     assert case.source_state == 'firing'
     assert case.workflow_state == 'open'
+
+
+def test_admitted_unknown_requires_qualified_state_reason_and_order(store):
+    _app, ids = store
+    case = _case(ids)
+    case.source_state = 'unknown'
+    case.source_state_reason = 'provider_observation_unverified'
+    case.source_state_changed_at = case.last_seen_at + timedelta(seconds=1)
+    db.session.commit()
+    result = workspace._read_cases(instance_id=ids.vault, page='1', filters={})
+    assert result['status'] == 'ready'
+    assert result['rows'][0]['last_admitted_source_state'] == 'unknown'
+    case.source_state_reason = 'unqualified'
+    db.session.commit()
+    assert workspace._read_cases(instance_id=ids.vault, page='1')['status'] == 'unavailable'

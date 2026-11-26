@@ -468,3 +468,56 @@ def test_unapproved_source_denial_never_creates_case_even_if_snapshot_fresh(scop
     db.session.commit()
     assert _admit(binding, actor)['created'] == 0
     assert AlertCase.query.count() == 0
+
+
+@pytest.mark.parametrize('condition', ['missing', 'suppressed', 'unprocessed'])
+def test_fresh_unverified_occurrence_is_unknown_not_resolved(scope, condition):
+    vault, _source, binding, actor = scope
+    alert = _alert(vault.id)
+    _commit(binding, [alert])
+    _admit(binding, actor)
+    case = AlertCase.query.one()
+    first_seen = case.last_seen_at
+    later = AT + timedelta(minutes=1)
+    if condition == 'missing':
+        rows = [_alert(vault.id, fingerprint='1111111111111111')]
+    else:
+        rows = [{**alert, 'status': {'state': condition}}]
+    _commit(binding, rows, observed=later)
+    outcome = _admit(binding, actor, at=later)
+    assert outcome['status'] == 'committed'
+    assert outcome['refreshed'] == 1
+    assert case.source_state == 'unknown'
+    assert case.source_state_reason == 'provider_observation_unverified'
+    assert case.last_seen_at == first_seen
+    assert case.source_resolved_at is None
+    assert case.workflow_state == 'open'
+    assert case.routing_state == 'suppressed'
+    assert case.closed_at is None
+    assert AlertCaseEvent.query.filter_by(event_type='provider_alert_source_unknown').count() == 1
+    assert AuditEvent.query.filter_by(action='vault_provider_alert_source_unknown').count() == 1
+    assert _admit(binding, actor, at=later)['status'] == 'unchanged'
+
+    latest = AT + timedelta(minutes=2)
+    _commit(binding, [alert], observed=latest)
+    assert _admit(binding, actor, at=latest)['refreshed'] >= 1
+    assert case.source_state == 'firing'
+    assert case.source_state_reason is None
+    assert case.source_resolved_at is None
+    assert case.workflow_state == 'open'
+    assert case.routing_state == 'suppressed'
+    assert AlertCaseEvent.query.filter_by(case_id=case.id, event_type='provider_alert_observed').count() == 1
+
+
+def test_unverified_state_change_is_not_admitted_without_scope(scope):
+    vault, _source, binding, actor = scope
+    alert = _alert(vault.id)
+    _commit(binding, [alert])
+    _admit(binding, actor)
+    denied = _actor()
+    db.session.commit()
+    later = AT + timedelta(minutes=1)
+    _commit(binding, [{**alert, 'status': {'state': 'suppressed'}}], observed=later)
+    assert _admit(binding, denied, at=later)['status'] == 'forbidden'
+    assert AlertCase.query.one().source_state == 'firing'
+    assert AlertCaseEvent.query.count() == 1
