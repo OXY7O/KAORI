@@ -154,6 +154,8 @@ def test_proof_must_be_contained_in_current_issuer_window():
     active = _record(2, 'active')
     expires = _NOW + timedelta(minutes=10)
     assert issuer_proof_window_qualified(active, issued_at=_NOW, expires_at=expires, now=_NOW)
-    assert not issuer_proof_window_qualified(active, issued_at=_NOW - timedelta(seconds=1), expires_at=expires, now=_NOW)
+    assert not issuer_proof_window_qualified(
+        active, issued_at=_NOW - timedelta(seconds=1), expires_at=expires, now=_NOW
+    )
     assert not issuer_proof_window_qualified(active, issued_at=_NOW, expires_at=_NOW + timedelta(hours=2), now=_NOW)
     assert not issuer_proof_window_qualified(_record(3, 'revoked'), issued_at=_NOW, expires_at=expires, now=_NOW)
