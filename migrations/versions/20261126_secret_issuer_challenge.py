@@ -43,8 +43,13 @@ def upgrade() -> None:
         sa.Column('possession_evidence_ref', sa.String(64), nullable=True),
         sa.UniqueConstraint('challenge_sha256', name='uq_spki_challenge_digest'),
         sa.CheckConstraint("provider_key IN ('vault', 'openbao')", name='ck_spki_challenge_provider'),
-        sa.CheckConstraint("provider_namespace NOT LIKE '%*%' AND provider_namespace NOT LIKE '%+%'", name='ck_spki_challenge_namespace'),
-        sa.CheckConstraint("mount <> '' AND mount NOT LIKE '%*%' AND mount NOT LIKE '%+%'", name='ck_spki_challenge_mount'),
+        sa.CheckConstraint(
+            "provider_namespace NOT LIKE '%*%' AND provider_namespace NOT LIKE '%+%'",
+            name='ck_spki_challenge_namespace',
+        ),
+        sa.CheckConstraint(
+            "mount <> '' AND mount NOT LIKE '%*%' AND mount NOT LIKE '%+%'", name='ck_spki_challenge_mount'
+        ),
         sa.CheckConstraint('revision_number > 0', name='ck_spki_challenge_revision'),
         sa.CheckConstraint('length(deployment_ref) = 64', name='ck_spki_challenge_deployment'),
         sa.CheckConstraint('length(key_sha256) = 64', name='ck_spki_challenge_key'),

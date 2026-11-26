@@ -215,8 +215,13 @@ class SecretCredentialIssuerChallenge(db.Model):
             'revision_number',
         ),
         CheckConstraint("provider_key IN ('vault', 'openbao')", name='ck_spki_challenge_provider'),
-        CheckConstraint("provider_namespace NOT LIKE '%*%' AND provider_namespace NOT LIKE '%+%'", name='ck_spki_challenge_namespace'),
-        CheckConstraint("mount <> '' AND mount NOT LIKE '%*%' AND mount NOT LIKE '%+%'", name='ck_spki_challenge_mount'),
+        CheckConstraint(
+            "provider_namespace NOT LIKE '%*%' AND provider_namespace NOT LIKE '%+%'",
+            name='ck_spki_challenge_namespace',
+        ),
+        CheckConstraint(
+            "mount <> '' AND mount NOT LIKE '%*%' AND mount NOT LIKE '%+%'", name='ck_spki_challenge_mount'
+        ),
         CheckConstraint('revision_number > 0', name='ck_spki_challenge_revision'),
         CheckConstraint('length(deployment_ref) = 64', name='ck_spki_challenge_deployment'),
         CheckConstraint('length(key_sha256) = 64', name='ck_spki_challenge_key'),

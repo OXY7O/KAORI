@@ -119,5 +119,7 @@ def test_challenge_digest_unique_across_scopes_and_providers(challenge_table):
     connection.execute(table.insert().values(**_pending()))
     with pytest.raises(IntegrityError):
         connection.execute(
-            table.insert().values(**{**_pending(), 'integration_instance_id': 2, 'provider_key': 'vault', 'mount': 'other'})
+            table.insert().values(
+                **{**_pending(), 'integration_instance_id': 2, 'provider_key': 'vault', 'mount': 'other'}
+            )
         )
