@@ -111,9 +111,9 @@ def test_invalid_target_and_clock_denied():
         replace(_TARGET, revision_number=0),
     ):
         assert issuer_candidate_key(target=target, source=_source(), latest=_record(), now=_NOW) is None
-    assert issuer_candidate_key(
-        target=_TARGET, source=_source(), latest=_record(), now=_NOW.replace(tzinfo=None)
-    ) is None
+    assert (
+        issuer_candidate_key(target=_TARGET, source=_source(), latest=_record(), now=_NOW.replace(tzinfo=None)) is None
+    )
 
 
 @pytest.mark.parametrize('state', ['draft', 'revoked', 'active'])
