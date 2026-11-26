@@ -232,15 +232,30 @@ def main() -> int:
             f'Alert Operations web request path must not perform live provider reads: {forbidden}',
             errors,
         )
-    for required in (
-        'Overview',
-        'Active Alerts',
-        'Routing & Channels',
-        'Templates',
-        'Silences',
-        'Resolved',
+    for key, label in (
+        ('overview', 'Overview'),
+        ('active', 'Active Alerts'),
+        ('routing', 'Routing & Channels'),
+        ('templates', 'Templates'),
+        ('silences', 'Silences'),
+        ('resolved', 'Resolved'),
     ):
-        require(required in alert_workspace, f'Alert Operations workspace contract missing: {required}', errors)
+        require(
+            f"('{key}', '{label}'" in alert_page_content and f"tab='{key}', **tab_query" in alert_page_content,
+            f'Alert Operations navigation contract missing: {label}',
+            errors,
+        )
+    require(
+        'components/workspace_tabs.html' in alert_page_content
+        and alert_page_content.count('workspace_tabs.render_navigation(') == 1
+        and 0 <= alert_page_content.find('workspace_tabs.render_navigation(')
+        < alert_page_content.find('page_hero.shell_classes()')
+        and "hx_target='#alert-intelligence-page-content'" in alert_page_content
+        and "'domain': payload.domain, 'asset': payload.selected_asset_key" in alert_page_content
+        and 'content_tabs.render_links' not in alert_workspace,
+        'Alert Operations must use one scope-preserving shared navigation above Hero',
+        errors,
+    )
     for required in ('Clear Filters', 'Workflow', 'alert-operations-filter-form'):
         require(required in alert_active, f'Alert Operations active-alert contract missing: {required}', errors)
     require('Resolved Alerts' in alert_history, 'Alert Operations history contract missing: Resolved Alerts', errors)
