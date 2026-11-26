@@ -23,6 +23,12 @@ from app.models.integration import IntegrationInstance
 from app.models.scope_access import ScopeAccessPolicy
 
 _MAX_SCOPE_OPTIONS = 32
+DOMAIN_OPTIONS = [
+    {'value': 'kubernetes', 'label': 'Kubernetes'},
+    {'value': 'object_storage', 'label': 'Object Storage'},
+    {'value': 'registry', 'label': 'Artifact Registry'},
+    {'value': 'secrets_pki', 'label': 'Secrets & PKI'},
+]
 
 
 @dataclass(frozen=True, slots=True)
