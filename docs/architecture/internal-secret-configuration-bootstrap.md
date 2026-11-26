@@ -87,3 +87,19 @@ accepted. Real migration requires separate bounded implementation
 authority and Human UAT.
 
 The internal capability is **KAORI Internal Secret Store** (`secret-store`); the selected provider is OpenBao. Preserve stable capability-level deployment and CLI names, but keep provider-specific transport, identity, native configuration and storage format explicit. A change of provider is a governed migration, not an in-place rename or implicit fallback.
+
+## Credential issuer candidate resolution (#5204)
+
+The initial internal read-only resolver selects the latest persisted issuer
+revision across the exact integration instance, namespace and mount before
+checking provider, deployment, requested revision or lifecycle. A newer
+draft/revoked/mismatched revision denies; no older active key fallback.
+It uses an independent non-writing database session, checks the canonical
+source state, independent approval metadata, validity window, evidence
+reference shape and public-key digest. It returns only a candidate public
+verification key; neither the stored evidence reference nor a valid key
+proves independent custody, actual provider identity, current credential
+version, actor/operation grant or execution permission. No activation,
+HTTP route, worker wiring, secret material or provider request is added.
+Future governed use must revalidate within the operation admission boundary;
+this standalone read is not a durable authorization or concurrency lock.
