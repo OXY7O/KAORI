@@ -52,9 +52,10 @@ def test_copy_is_shortened_on_routing_catalog_and_automation_control() -> None:
         in routing
     )
     assert (
-        'Manage alert ownership, delivery, suppression, recovery, and resolution without duplicating '
-        'channel credentials.' in alert_workspace
+        'Review routing policies and channel readiness without duplicating channel credentials.' in alert_workspace
     )
+    assert 'Review alert posture, delivery readiness, and operational evidence.' in alert_workspace
+    assert 'Review recovery evidence, verification, and case closure.' in alert_workspace
     assert (
         'Review the current catalog scope before scanning definitions, evaluator readiness, and imported-signal coverage.'
         in catalog_summary
