@@ -100,6 +100,7 @@ def test_legacy_wire_bytes_and_signature_domain_separation():
         'issued_at': _ISSUED.isoformat(),
         'expires_at': _EXPIRES.isoformat(),
     }
+    assert legacy is not None
     assert legacy == json.dumps(expected, sort_keys=True, separators=(',', ':'), ensure_ascii=True).encode('ascii')
     statement = _statement(replace(_SELECTOR, provider_key='vault'))
     assert statement is not None
@@ -112,4 +113,8 @@ def test_legacy_wire_bytes_and_signature_domain_separation():
         verification_key=signer.public_key(),
         now=_NOW,
     )
-    assert not _verify(_SELECTOR, signer.public_key(), signer.sign(_statement(_SELECTOR)), now=_EXPIRES)
+    active = _statement(_SELECTOR)
+    assert active is not None
+    signature = signer.sign(active)
+    assert not _verify(_SELECTOR, signer.public_key(), signature, now=_EXPIRES)
+    assert not _verify(_SELECTOR, Ed25519PrivateKey.generate().public_key(), signature)

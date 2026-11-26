@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import asdict, dataclass
+from datetime import UTC, datetime, timedelta
 from typing import Literal
 from uuid import UUID
-from datetime import UTC, datetime, timedelta
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
