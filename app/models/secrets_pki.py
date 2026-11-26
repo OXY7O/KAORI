@@ -199,3 +199,59 @@ class SecretCredentialIssuerRevision(db.Model):
     effective_until: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     recorded_by_user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='RESTRICT'), nullable=False)
     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class SecretCredentialIssuerChallenge(db.Model):
+    """Inactive challenge metadata; storage alone never grants issuer trust."""
+
+    __tablename__ = 'secrets_pki_credential_issuer_challenges'
+    __table_args__ = (
+        UniqueConstraint('challenge_sha256', name='uq_spki_challenge_digest'),
+        Index(
+            'ix_spki_challenge_scope',
+            'integration_instance_id',
+            'provider_namespace',
+            'mount',
+            'revision_number',
+        ),
+        CheckConstraint("provider_key IN ('vault', 'openbao')", name='ck_spki_challenge_provider'),
+        CheckConstraint("provider_namespace NOT LIKE '%*%' AND provider_namespace NOT LIKE '%+%'", name='ck_spki_challenge_namespace'),
+        CheckConstraint("mount <> '' AND mount NOT LIKE '%*%' AND mount NOT LIKE '%+%'", name='ck_spki_challenge_mount'),
+        CheckConstraint('revision_number > 0', name='ck_spki_challenge_revision'),
+        CheckConstraint('length(deployment_ref) = 64', name='ck_spki_challenge_deployment'),
+        CheckConstraint('length(key_sha256) = 64', name='ck_spki_challenge_key'),
+        CheckConstraint('length(challenge_sha256) = 64', name='ck_spki_challenge_digest'),
+        CheckConstraint('expires_at > issued_at', name='ck_spki_challenge_window'),
+        CheckConstraint("lifecycle_status IN ('pending', 'consumed', 'revoked')", name='ck_spki_challenge_state'),
+        CheckConstraint(
+            "(lifecycle_status = 'pending' AND resolved_at IS NULL"
+            ' AND resolved_by_user_id IS NULL AND possession_evidence_ref IS NULL)'
+            " OR (lifecycle_status = 'consumed' AND resolved_at IS NOT NULL"
+            ' AND resolved_by_user_id IS NOT NULL AND resolved_by_user_id <> source_owner_id'
+            ' AND resolved_at >= issued_at AND resolved_at < expires_at'
+            ' AND possession_evidence_ref IS NOT NULL AND length(possession_evidence_ref) = 64)'
+            " OR (lifecycle_status = 'revoked' AND resolved_at IS NOT NULL"
+            ' AND resolved_by_user_id IS NOT NULL AND resolved_at >= issued_at'
+            ' AND possession_evidence_ref IS NULL)',
+            name='ck_spki_challenge_resolution',
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    integration_instance_id: Mapped[int] = mapped_column(
+        ForeignKey('integration_instances.id', ondelete='RESTRICT'), nullable=False
+    )
+    provider_key: Mapped[str] = mapped_column(String(80), nullable=False)
+    provider_namespace: Mapped[str] = mapped_column(String(255), nullable=False)
+    mount: Mapped[str] = mapped_column(String(160), nullable=False)
+    revision_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    deployment_ref: Mapped[str] = mapped_column(String(64), nullable=False)
+    key_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    challenge_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_owner_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='RESTRICT'), nullable=False)
+    issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    lifecycle_status: Mapped[str] = mapped_column(String(20), nullable=False)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    resolved_by_user_id: Mapped[int | None] = mapped_column(ForeignKey('users.id', ondelete='RESTRICT'), nullable=True)
+    possession_evidence_ref: Mapped[str | None] = mapped_column(String(64), nullable=True)
