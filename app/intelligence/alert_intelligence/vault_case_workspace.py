@@ -6,6 +6,8 @@ Instance policy is separate from Secret namespace/mount scope.
 
 from __future__ import annotations
 
+from typing import Any
+
 from flask import abort, render_template, request
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
@@ -126,7 +128,13 @@ def _case_qualified(case: AlertCase, *, instance_id: int) -> bool:
     )
 
 
-def _read_cases(*, instance_id: int, page: str) -> dict[str, object]:
+def _read_cases(
+    *,
+    instance_id: int,
+    page: str,
+    filters: dict[str, str] | None = None,
+    per_page: str | int = 5,
+) -> dict[str, Any]:
     try:
         records = (
             AlertCase.query.filter(
@@ -141,20 +149,66 @@ def _read_cases(*, instance_id: int, page: str) -> dict[str, object]:
         )
         if len(records) > _MAX_CASES or any(not _case_qualified(case, instance_id=instance_id) for case in records):
             return {'status': 'unavailable', 'rows': [], 'pagination': None}
+        safe_rows = [_safe_case(case) for case in records]
+        if filters is not None:
+            # Provider-origin lifecycle is not qualified beyond read-only open,
+            # committed firing evidence. Never project unsupported transitions.
+            if any(row['workflow_state'] != 'open' for row in safe_rows):
+                return {'status': 'unavailable', 'rows': [], 'pagination': None}
+            summary = {
+                'active': len(safe_rows),
+                'critical': sum(row['severity'] == 'critical' for row in safe_rows),
+            }
+            filtered = [row for row in safe_rows if _matches_read_filters(row, filters)]
+        else:
+            summary = {}
+            filtered = safe_rows
         rows, pagination = paginate_sequence(
-            records,
+            filtered,
             page=page,
-            per_page=5,
-            allowed_per_page=(5,),
+            per_page=per_page,
+            allowed_per_page=(5, 10, 25, 50) if filters is not None else (5,),
         )
         return {
             'status': 'ready',
-            'rows': [_safe_case(case) for case in rows],
+            'rows': rows,
             'pagination': pagination,
+            'summary': summary,
         }
     except (SQLAlchemyError, ValueError, TypeError):
         db.session.rollback()
         return {'status': 'unavailable', 'rows': [], 'pagination': None}
+
+
+def _matches_read_filters(row: dict[str, object], filters: dict[str, str]) -> bool:
+    for key, field in (('severity', 'severity'), ('workflow', 'workflow_state'), ('source_state', 'source_state')):
+        if filters.get(key, 'all') not in ('all', row[field]):
+            return False
+    if filters.get('source', 'all') not in ('all', 'provider_alert'):
+        return False
+    return filters.get('q', '').casefold() in f"{row['public_id']} {row['title']}".casefold()
+
+
+def read_scoped_vault_cases(
+    *,
+    instance_id: int,
+    page: str,
+    per_page: str | int,
+    filters: dict[str, str],
+) -> dict[str, Any]:
+    """Audited, bounded adapter for the central provider-origin registry."""
+    if not _admit_read(instance_id):
+        return {'status': 'scope_required', 'rows': [], 'pagination': None}
+    result = _read_cases(instance_id=instance_id, page=page, per_page=per_page, filters=filters)
+    if result['status'] != 'ready':
+        db.session.rollback()
+        return result
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        return {'status': 'unavailable', 'rows': [], 'pagination': None}
+    return result
 
 
 def vault_cases_response() -> ResponseReturnValue:
@@ -183,8 +237,10 @@ def vault_cases_response() -> ResponseReturnValue:
     )
 
 
-def vault_case_details_response(public_id: str) -> ResponseReturnValue:
-    instance_id = _instance_id()
+def vault_case_details_response(
+    public_id: str, *, instance_id: int | None = None, central: bool = False
+) -> ResponseReturnValue:
+    instance_id = instance_id if central else _instance_id()
     if instance_id is None or not _admit_read(instance_id):
         abort(404)
     try:
@@ -195,14 +251,16 @@ def vault_case_details_response(public_id: str) -> ResponseReturnValue:
             AlertCase.source_type == 'provider_alert',
             AlertCase.asset_key == str(instance_id),
         ).first()
-        if row is None or not _case_qualified(row, instance_id=instance_id):
+        if row is None or not _case_qualified(row, instance_id=instance_id) or (central and row.workflow_state != 'open'):
             db.session.rollback()
             abort(404)
+        public_case = _safe_case(row)
         db.session.commit()
         return render_template(
             'intelligence/vault_provider_case_details.html',
-            case=_safe_case(row),
+            case=public_case,
             instance_id=instance_id,
+            central_provider_scope=central,
         )
     except SQLAlchemyError:
         db.session.rollback()

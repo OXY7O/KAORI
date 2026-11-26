@@ -11,8 +11,18 @@
     'source_state': payload.filters.source_state,
     'q': payload.filters.q
 } %}
+{% if payload.provider_case_mode %}
+    {% set _ = pagination_query.update({'provider': payload.selected_provider}) %}
+{% endif %}
 <div id="alert-operations-active-records"
      class="overflow-hidden bg-surface-card">
+    {% if payload.provider_case_mode and payload.provider_case_status != 'ready' %}
+        {% set blocked_state_label = "Evidence Review Required" %}
+        {% set blocked_state_title = "Provider Case Scope Unavailable" %}
+        {% set blocked_state_description = "An exact approved instance and qualified committed evidence are required." %}
+        {% set blocked_state_variant = "table" %}
+        {% include 'components/states/_blocked_state.html' %}
+    {% else %}
     <div class="overflow-x-auto">
         <table class="{{ table_ui.table_classes('min-w-[1080px]') }}">
             <caption class="sr-only">Active alert cases and operational review actions</caption>
@@ -56,6 +66,11 @@
                             {{ table_label.status_label(case.delivery_label, case.delivery_tone, size='compact') }}
                         </td>
                         <td class="{{ table_ui.cell_classes(true) }}">
+                            {% if payload.provider_case_mode %}
+                                <a href="{{ review_url }}" class="{{ table_ui.action_classes() }}">
+                                    <i data-lucide="panel-top-open" class="h-3.5 w-3.5"></i>Review
+                                </a>
+                            {% else %}
                             <a href="{{ review_url }}"
                                data-resource-detail-toggle
                                data-detail-id="{{ case.public_id }}"
@@ -67,12 +82,13 @@
                                class="{{ table_ui.action_classes() }}">
                                 <i data-lucide="panel-top-open" class="h-3.5 w-3.5"></i>Review
                             </a>
+                            {% endif %}
                         </td>
                     </tr>
                 {% else %}
                     <tr>
                         <td colspan="8" class="p-0">
-                            {% set empty_state_icon = "badge-check" %}{% set empty_state_label = "No Active Alerts" %}{% set empty_state_title = "No Open Alert Cases Match This Scope" %}{% set empty_state_description = "KAORI creates durable cases from governed recommendation promotions and preserves open cases when source evidence becomes unavailable." %}{% set empty_state_min_height = "min-h-[180px]" %}
+                            {% set empty_state_icon = "badge-check" %}{% set empty_state_label = "Evidence Review Required" if payload.provider_case_mode else "No Active Alerts" %}{% set empty_state_title = "No Committed Provider Cases Match This Scope" if payload.provider_case_mode else "No Open Alert Cases Match This Scope" %}{% set empty_state_description = "No admitted records match this authorized instance and filters. This does not establish provider health, source freshness or recovery." if payload.provider_case_mode else "KAORI creates durable cases from governed recommendation promotions and preserves open cases when source evidence becomes unavailable." %}{% set empty_state_min_height = "min-h-[180px]" %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
@@ -81,6 +97,7 @@
         </table>
     </div>
     {{ record_pagination.render(payload.active_pagination, 'page', 'per_page', 'alert-operations-active-registry', 'alert-operations-filter-form', 'alert-operations-active-loading', 'alert_intelligence.index', 'alert_intelligence.index', pagination_query, 'Alert Cases', embedded=true) }}
+    {% endif %}
 </div>
 {% if request.headers.get('HX-Request') == 'true' %}
     {% set operation_feedback = load_operational_feedback() %}

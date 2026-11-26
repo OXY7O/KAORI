@@ -1,6 +1,9 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/workspace_tabs.html" as workspace_tabs %}
 {% set tab_query = {'domain': payload.domain, 'asset': payload.selected_asset_key} %}
+{% if payload.provider_case_mode %}
+    {% set _ = tab_query.update({'provider': payload.selected_provider}) %}
+{% endif %}
 {% set navigation_tabs = [
     ('overview', 'Overview', 'layout-dashboard', none, url_for('alert_intelligence.index', tab='overview', **tab_query)),
     ('active', 'Active Alerts', 'siren', none, url_for('alert_intelligence.index', tab='active', **tab_query)),
@@ -32,20 +35,33 @@
                     <div class="{{ page_hero.metadata_row_classes() }}">
                         {{ page_hero.meta_label('boxes', payload.domain_label) }}
                         {{ page_hero.meta_label('box', payload.selected_asset_name) }}
-                        {{ page_hero.meta_label('database', payload.snapshot.label) }}
+                        {{ page_hero.meta_label('database', payload.provider_label if payload.provider_case_mode else payload.snapshot.label) }}
                     </div>
                 {% endcall %}
             </div>
-            {{ page_hero.context_card('Alert Operations posture',
-                        'Alert Operations',
-                        'Open Cases',
-                        payload.summary.active,
-                        'critical' if payload.summary.critical else ('warning' if payload.summary.active else 'normal') ,
-            hero_metrics,
-            'Manage Notification Channels',
-            url_for('notification_channels.index'),
-            'shield-alert'
-            ) }}
+            {% if payload.provider_case_mode %}
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Alert Operations posture">
+                    {{ page_hero.blocked_context_body('Alert Operations',
+                                'Provider Alert Evidence',
+                                [
+                                ('bell-ring', 'Committed Open Cases', payload.summary.active if payload.provider_case_status == 'ready' else '—', 'Exact authorized instance'),
+                                ('shield-alert', 'Lifecycle', 'Read-only', 'Recovery and delivery not qualified')
+                                ],
+                                'Committed evidence is not current provider health. Select an approved instance.',
+                                'Read-only' if payload.provider_case_status == 'ready' else 'Scope or Evidence Required') }}
+                </aside>
+            {% else %}
+                {{ page_hero.context_card('Alert Operations posture',
+                            'Alert Operations',
+                            'Open Cases',
+                            payload.summary.active,
+                            'critical' if payload.summary.critical else ('warning' if payload.summary.active else 'normal') ,
+                hero_metrics,
+                'Manage Notification Channels',
+                url_for('notification_channels.index'),
+                'shield-alert'
+                ) }}
+            {% endif %}
         </div>
     </section>
     {% include 'intelligence/partials/_alert_intelligence_summary.html' %}
