@@ -1,5 +1,4 @@
 {% import "components/table_label.html" as table_label %}
-{% import "components/operational_callout.html" as operational_callout %}
 {% import "components/table_primitives.html" as table_ui %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 <div data-alert-intelligence-panel="overview" class="space-y-5 p-4 sm:p-5">
@@ -47,7 +46,7 @@
                 {% for icon, label, value, supporting, tone in [
                     ('user-check', 'Acknowledged', payload.summary.acknowledged, 'Ownership accepted', 'info'),
                     ('bell-off', 'Silenced', payload.summary.silenced, 'KAORI delivery paused', 'warning' if payload.summary.silenced else 'normal'),
-                    ('circle-check-big', 'Resolved Today', payload.summary.resolved_today, 'Source resolved; closure may still be pending', 'normal'),
+                    ('circle-check-big', 'Resolved Today', payload.summary.resolved_today, 'Closure may be pending.', 'normal'),
                     ('route', 'Routing Policies', payload.summary.routing_policies, 'Governed delivery rules', 'info')
                     ] %}
                     <article class="bg-surface-card p-4">
@@ -74,7 +73,7 @@
                     </span>
                     <div class="min-w-0">
                         <h3 class="{{ table_ui.block_title_classes() }}">Operational Readiness</h3>
-                        <p class="{{ table_ui.block_description_classes() }}">Alert Operations dependencies without duplicating provider ownership.</p>
+                        <p class="{{ table_ui.block_description_classes() }}">Delivery and archive readiness.</p>
                     </div>
                 </div>
             </header>
@@ -112,23 +111,4 @@
             </div>
         </aside>
     </div>
-    {{ operational_callout.render('Ownership Boundary',
-        'Prometheus and Alertmanager own source evaluation, grouping, inhibition, and provider-native silences. KAORI owns operator workflow, governed channel delivery, evidence, history, and archive.',
-        icon='shield',
-        tone='info',
-        variant='semantic') }}
-    {% if not payload.snapshot.available %}
-        {{ operational_callout.render('Committed Evidence Review Required',
-                'One or more managed assets have no committed inventory observation within 24 hours. Zero open cases does not prove source health or worker reconciliation success.',
-                icon='circle-help',
-                tone='warning',
-                variant='semantic') }}
-    {% endif %}
-    {% if payload.snapshot.serving_last_good %}
-        {{ operational_callout.render('Last Good Snapshot Active',
-                'The latest provider refresh is stale or failed. Existing alert cases remain available from committed KAORI evidence while workers retry collection.',
-                icon='history',
-                tone='warning',
-                variant='semantic') }}
-    {% endif %}
 </div>

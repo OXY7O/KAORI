@@ -10,7 +10,7 @@
     {% include 'intelligence/partials/_recommendation_workspace_info.html' %}
     {% include 'intelligence/partials/_recommendation_workspace_header_actions.html' %}
 {% endif %}
-{% if payload.registry_runtime_evidence is defined and payload.registry_runtime_evidence.status != 'ready' %}
+{% if payload['items']|default([], true) and payload.registry_runtime_evidence is defined and payload.registry_runtime_evidence.status != 'ready' %}
     {% import 'components/operational_callout.html' as operational_callout %}
     <div class="p-4">
         {{ operational_callout.render(payload.registry_runtime_evidence.title,
@@ -18,7 +18,7 @@
                 icon='waypoints',
                 tone='warning',
                 variant='semantic',
-                action_href=url_for('artifact_registry.runtime') ,
+                action_href=url_for('artifact_registry.runtime') if current_user.has_permission('artifact_registry.view') else none,
         action_label='Review Runtime Usage',
         compact_message=true
         ) }}
