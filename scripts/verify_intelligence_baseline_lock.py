@@ -248,7 +248,8 @@ def main() -> int:
     require(
         'components/workspace_tabs.html' in alert_page_content
         and alert_page_content.count('workspace_tabs.render_navigation(') == 1
-        and 0 <= alert_page_content.find('workspace_tabs.render_navigation(')
+        and 0
+        <= alert_page_content.find('workspace_tabs.render_navigation(')
         < alert_page_content.find('page_hero.shell_classes()')
         and "hx_target='#alert-intelligence-page-content'" in alert_page_content
         and "'domain': payload.domain, 'asset': payload.selected_asset_key" in alert_page_content
