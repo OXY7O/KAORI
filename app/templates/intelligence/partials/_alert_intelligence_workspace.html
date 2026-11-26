@@ -1,34 +1,20 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
-{% import "components/content_tabs.html" as content_tabs %}
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
-{% set tab_query = {'domain': payload.domain, 'asset': payload.selected_asset_key} %}
-{% set workspace_tabs = [
-    ('overview', 'Overview', 'layout-dashboard', url_for('alert_intelligence.index', tab='overview', **tab_query)),
-    ('active', 'Active Alerts', 'siren', url_for('alert_intelligence.index', tab='active', **tab_query)),
-    ('routing', 'Routing & Channels', 'route', url_for('alert_intelligence.index', tab='routing', **tab_query)),
-    ('templates', 'Templates', 'file-code-2', url_for('alert_intelligence.index', tab='templates', **tab_query)),
-    ('silences', 'Silences', 'bell-off', url_for('alert_intelligence.index', tab='silences', **tab_query)),
-    ('resolved', 'Resolved', 'badge-check', url_for('alert_intelligence.index', tab='resolved', **tab_query))
-] %}
 {% call intelligence_ui.section(
     'Alert Operations Workspace',
-    'Manage alert ownership, delivery, suppression, recovery, and resolution without duplicating channel credentials.',
+    {
+    'overview': 'Review alert posture, delivery readiness, and operational evidence.',
+    'active': 'Review active cases, ownership, mitigation, and source evidence.',
+    'routing': 'Manage governed routing policies and review channel readiness.',
+    'templates': 'Review and manage governed notification templates.',
+    'silences': 'Review active delivery silences and their scope.',
+    'resolved': 'Review recovery evidence, verification, and case closure.'
+    }.get(payload.tab, 'Review alert operations and committed evidence.'),
     'shield-alert',
     payload.summary.active ~ ' Active',
     'warning' if payload.summary.active else 'normal'
     ) %}
-    {{ content_tabs.render_links('alert-operations-sections',
-        workspace_tabs,
-        payload.tab,
-        'Alert Operations Sections',
-        embedded=true,
-        data_namespace='alert-operations',
-        hx_target='#alert-intelligence-page-content',
-        hx_swap='outerHTML show:none focus-scroll:false',
-        hx_push_url='true',
-        nowrap=true,
-        hx_sync='#alert-intelligence-page-content:replace') }}
     <div class="border-b border-outline-subtle bg-surface-card px-4 py-4 sm:px-5">
         <div class="space-y-3">
             <div class="min-w-0">
