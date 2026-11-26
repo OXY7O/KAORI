@@ -7,6 +7,11 @@ on:
         description: Exact signed, approved KAORI RC tag (vX.Y.Z-rc.N)
         required: true
         type: string
+      publisher_run_id:
+        description: Automatic RC publisher run ID; leave empty for authorized manual recovery
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -20,11 +25,12 @@ jobs:
   admission:
     name: Release Evidence
     runs-on: [self-hosted, linux, x64, platform-ci]
-    timeout-minutes: 10
+    timeout-minutes: 15
     outputs:
       accepted_sha: ${{ steps.evidence.outputs.accepted_sha }}
       image_ref: ${{ steps.evidence.outputs.image_ref }}
       candidate_tag: ${{ steps.evidence.outputs.candidate_tag }}
+      publisher_run_id: ${{ steps.evidence.outputs.publisher_run_id }}
     steps:
       - name: Resolve Release Evidence
         id: evidence
@@ -32,6 +38,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           CANDIDATE_TAG: ${{ inputs.candidate_tag }}
+          PUBLISHER_RUN_ID: ${{ inputs.publisher_run_id }}
+          AUTO_STAGING_ENABLED: ${{ vars.KAORI_APP_AUTO_STAGING_ENABLED }}
         run: |
           set -Eeuo pipefail
 
@@ -64,6 +72,13 @@ jobs:
               "$GITHUB_SHA" "$current_staging" >&2
             exit 1
           }
+
+          if [[ -n "$PUBLISHER_RUN_ID" ]]; then
+            [[ "$PUBLISHER_RUN_ID" =~ ^[0-9]+$ && "$AUTO_STAGING_ENABLED" == 'true' && "$GITHUB_REF_PROTECTED" == 'true' ]] || {
+              printf 'Automatic deployment is disabled or publisher run ID is invalid.\n' >&2
+              exit 1
+            }
+          fi
 
           printf '✅ UAT release evidence · request matches current staging source\n'
           printf '⏳ UAT release evidence · validating intentional RC tag and GitHub prerelease\n'
@@ -110,15 +125,53 @@ jobs:
 
           printf '✅ UAT release evidence · staging Full Admission PASS\n'
           printf '⏳ UAT release evidence · verifying successful RC publication and artifact\n'
-          rc_runs_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
-            "$api_root/actions/workflows/publish-staging-image.yml/runs?per_page=100")"
-          rc_run_id="$(jq -r --arg sha "$accepted_sha" \
-            '[.workflow_runs[] | select(.head_sha == $sha and .status == "completed" and .conclusion == "success")] | sort_by(.run_number) | last.id // empty' \
-            <<<"$rc_runs_json")"
-          [[ "$rc_run_id" =~ ^[0-9]+$ ]] || {
-            printf 'Successful publish-staging-image.yml evidence is missing for %s.\n' "$accepted_sha" >&2
-            exit 1
-          }
+          if [[ -n "$PUBLISHER_RUN_ID" ]]; then
+            # The publisher dispatches this workflow before its own run completes.
+            # Wait only for the pinned run; never select another candidate.
+            rc_run_id="$PUBLISHER_RUN_ID"
+            deadline=$(( $(date +%s) + 300 ))
+            while true; do
+              rc_run="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
+                "$api_root/actions/runs/$rc_run_id")"
+              [[ "$(jq -r '.path' <<<"$rc_run")" == '.github/workflows/publish-staging-image.yml' &&
+                 "$(jq -r '.head_sha' <<<"$rc_run")" == "$accepted_sha" &&
+                 "$(jq -r '.head_branch' <<<"$rc_run")" == 'kaori/staging' &&
+                 "$(jq -r '.event' <<<"$rc_run")" == 'push' ]] || {
+                printf 'Automatic RC publisher identity mismatch.\n' >&2
+                exit 1
+              }
+              if [[ "$(jq -r '.status' <<<"$rc_run")" == 'completed' ]]; then
+                [[ "$(jq -r '.conclusion' <<<"$rc_run")" == 'success' ]] || {
+                  printf 'Automatic RC publisher did not succeed.\n' >&2
+                  exit 1
+                }
+                break
+              fi
+              (( $(date +%s) < deadline )) || { printf 'Timed out awaiting pinned RC publication.\n' >&2; exit 1; }
+              sleep 10
+            done
+          else
+            # Manual recovery can use a completed successful Publish RC job even
+            # if its subsequent automatic dispatch failed. Skip no-op runs.
+            rc_runs_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
+              "$api_root/actions/workflows/publish-staging-image.yml/runs?per_page=100")"
+            rc_run_id=''
+            while IFS= read -r candidate_run; do
+              [[ "$candidate_run" =~ ^[0-9]+$ ]] || continue
+              jobs_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
+                "$api_root/actions/runs/$candidate_run/jobs?filter=all&per_page=100")"
+              if jq -e 'any(.jobs[]; .name == "Publish RC" and .conclusion == "success")' <<<"$jobs_json" >/dev/null; then
+                rc_run_id="$candidate_run"
+                break
+              fi
+            done < <(jq -r --arg sha "$accepted_sha" \
+              '[.workflow_runs[] | select(.head_sha == $sha and .status == "completed")] | sort_by(.run_number) | reverse | .[].id' \
+              <<<"$rc_runs_json")
+            [[ "$rc_run_id" =~ ^[0-9]+$ ]] || {
+              printf 'Successful publish-staging-image.yml evidence is missing for %s.\n' "$accepted_sha" >&2
+              exit 1
+            }
+          fi
 
           artifact_name="staging-image-${accepted_sha}"
           artifacts_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
@@ -169,6 +222,7 @@ jobs:
             printf 'accepted_sha=%s\n' "$accepted_sha"
             printf 'image_ref=%s\n' "$KAORI_IMAGE_REF"
             printf 'candidate_tag=%s\n' "$CANDIDATE_TAG"
+            printf 'publisher_run_id=%s\n' "$PUBLISHER_RUN_ID"
           } >> "$GITHUB_OUTPUT"
           printf 'Staging authority resolved: %s %s\n' "$CANDIDATE_TAG" "$accepted_sha"
           printf '📦 Deployment identity: %s\n' "$KAORI_IMAGE_REF"
@@ -196,6 +250,23 @@ jobs:
       REQUESTED_SHA: ${{ needs.admission.outputs.accepted_sha }}
       REQUESTED_VERSION: ${{ needs.admission.outputs.candidate_tag }}
     steps:
+      - name: Recheck Current Staging and Automatic Activation
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISHER_RUN_ID: ${{ needs.admission.outputs.publisher_run_id }}
+          AUTO_STAGING_ENABLED: ${{ vars.KAORI_APP_AUTO_STAGING_ENABLED }}
+        run: |
+          set -Eeuo pipefail
+          current_sha="$(curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/git/ref/heads/kaori/staging" | jq -r '.object.sha')"
+          [[ "$current_sha" == "$REQUESTED_SHA" ]] || { printf 'Staging advanced; refusing stale host deployment.\n' >&2; exit 1; }
+          if [[ -n "$PUBLISHER_RUN_ID" ]]; then
+            [[ "$AUTO_STAGING_ENABLED" == 'true' && "$GITHUB_REF_PROTECTED" == 'true' ]] || { printf 'Automatic host deployment is disabled.\n' >&2; exit 1; }
+          fi
+
       - name: Checkout Staging SHA
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

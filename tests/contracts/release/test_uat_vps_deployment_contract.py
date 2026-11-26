@@ -241,7 +241,7 @@ def test_uat_workflow_requires_intentional_rc_and_pinned_ssh_trust() -> None:
     assert '--password "${' not in source
 
 
-def test_uat_workflow_requires_explicit_manual_rc_and_current_staging_sha() -> None:
+def test_uat_workflow_requires_governed_dispatch_and_current_staging_sha() -> None:
     source = _read(WORKFLOW)
     trigger_section = source.split('on:\n', 1)[1].split('\npermissions:', 1)[0]
 
@@ -596,3 +596,30 @@ def test_staging_environment_selects_configured_target_and_owns_edge_boundary() 
     assert 'KAORI_DEPLOY_ENV_FILE="$deploy_env" KAORI_DEPLOY_ROOT="$deploy_root"' in deploy
     assert 'Distinct Application target requires separate operator-approved ingress.' in publish
     assert 'Refusing canonical public-edge mutation for a distinct Compose runtime.' in publish
+
+
+def test_automatic_staging_rc_uses_existing_publisher_and_deploy_authority() -> None:
+    publisher = _read(ROOT / '.github' / 'workflows' / 'publish-staging-image.yml')
+    deploy = _read(WORKFLOW)
+    activation = "vars.KAORI_APP_AUTO_STAGING_ENABLED == 'true'"
+    assert activation in publisher
+    assert "github.ref == 'refs/heads/kaori/staging'" in publisher
+    assert "needs.publish.result == 'success'" in publisher
+    assert "needs.wait-for-quality.outputs.should_publish == 'true'" in publisher
+    assert "|| 'kaori-release-candidate'" in publisher
+    assert 'github.ref_protected' in publisher
+    assert 'GITHUB_REF_PROTECTED' in deploy
+    assert 'actions: write' in publisher.split('  request-auto-deployment:', 1)[1]
+    assert 'deploy-staging-host.yml/dispatches' in publisher
+    assert 'publisher_run_id:$run' in publisher
+    assert 'publisher_run_id:' in deploy
+    assert 'Automatic deployment is disabled or publisher run ID is invalid.' in deploy
+    assert 'Automatic RC publisher identity mismatch.' in deploy
+    assert 'Automatic RC publisher did not succeed.' in deploy
+    assert '.name == "Publish RC" and .conclusion == "success"' in deploy
+    assert 'Timed out awaiting pinned RC publication.' in deploy
+    assert 'RC artifact source SHA does not match tag authority.' in deploy
+    assert 'RC artifact candidate tag does not match requested prerelease.' in deploy
+    assert 'Staging advanced; refusing stale host deployment.' in deploy
+    assert 'Automatic host deployment is disabled.' in deploy
+    assert deploy.index('Recheck Current Staging and Automatic Activation') < deploy.index('Deploy to Host')
