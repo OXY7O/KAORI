@@ -11,7 +11,7 @@ def publish_source() -> str:
     return PUBLISH_WORKFLOW.read_text(encoding='utf-8')
 
 
-def test_rc_publish_uses_only_deliberate_triggers_and_exact_staging_authority() -> None:
+def test_rc_publish_uses_governed_triggers_and_exact_staging_authority() -> None:
     workflow = publish_source()
     quality = QUALITY_WORKFLOW.read_text(encoding='utf-8')
     trigger_section = workflow.split('on:\n', 1)[1].split('\npermissions:', 1)[0]
@@ -20,7 +20,17 @@ def test_rc_publish_uses_only_deliberate_triggers_and_exact_staging_authority() 
     assert 'workflow_dispatch:' in trigger_section
     assert 'push:' in trigger_section
     assert '- kaori/rc-request' in trigger_section
-    assert '- kaori/staging' not in trigger_section
+    assert '- kaori/staging' in trigger_section
+    assert '- main' not in trigger_section
+    assert 'kaori/uat-request' not in trigger_section
+    auto_gate = (
+        "github.event_name == 'push' && github.ref == 'refs/heads/kaori/staging' && "
+        "github.ref_protected && vars.KAORI_APP_AUTO_STAGING_ENABLED == 'true'"
+    )
+    assert auto_gate in workflow
+    assert '[[ "$AUTO_STAGING_ENABLED" == \'true\' && "$GITHUB_REF_PROTECTED" == \'true\' ]]' in workflow
+    assert '"$GITHUB_SHA" == "$ACCEPTED_SHA"' in workflow
+    assert workflow.index('Require Full Admission') < workflow.index('  publish:\n')
     assert "github.ref == 'refs/heads/kaori/rc-request'" in workflow
     assert 'refs/heads/kaori/staging' in workflow
     assert '/git/ref/heads/kaori/staging' in workflow
