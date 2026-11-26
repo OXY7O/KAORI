@@ -126,5 +126,6 @@ def test_account_title_guides_use_shared_component() -> None:
         header = source.split('</header>', 1)[0]
         assert '{% import "components/info_tip.html" as info_tip %}' in header
         assert header.count("variant='guide'") == 1
-        assert re.search(rf'>{re.escape(heading)}</h2>\s*{{{{ info_tip\.render\('{guide_id}',", header)
+        after_heading = header.split(f'{heading}</h2>', 1)[1].lstrip()
+        assert after_heading.startswith('{{ info_tip.render(' + repr(guide_id) + ',')
         assert 'flex flex-wrap items-center gap-2' in header
