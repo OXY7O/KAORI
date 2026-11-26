@@ -35,6 +35,10 @@ _VALID_ROUTING_STATUSES = {'all', 'enabled', 'disabled'}
 
 
 def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
+    from app.intelligence.alert_intelligence import provider_case_scope
+
+    if provider_case_scope.is_provider_case_domain(str(args.get('domain') or '')):
+        return provider_case_scope.build_provider_case_payload(args, domain_options=provider_case_scope.DOMAIN_OPTIONS)
     clusters = Cluster.query.order_by(Cluster.name.asc()).all()
     systems = ObjectStorageSystem.query.order_by(ObjectStorageSystem.name.asc()).all()
     domain = _selected_domain(args, clusters=clusters, systems=systems)
@@ -181,11 +185,7 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
         'domain': domain,
         'domain_label': _DOMAIN_LABELS[domain],
         'scope_invalid': scope_invalid,
-        'domain_options': [
-            {'value': 'kubernetes', 'label': 'Kubernetes'},
-            {'value': 'object_storage', 'label': 'Object Storage'},
-            {'value': 'registry', 'label': 'Artifact Registry'},
-        ],
+        'domain_options': provider_case_scope.DOMAIN_OPTIONS,
         'assets': assets,
         'selected_asset_key': selected_asset_key,
         'selected_asset_name': selected_asset_name,

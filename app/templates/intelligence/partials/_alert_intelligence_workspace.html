@@ -1,6 +1,29 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/info_tip.html" as info_tip %}
+{% import "components/table_label.html" as table_label %}
+{% set guide_items = [
+    "Ownership Boundary: Prometheus and Alertmanager own source evaluation, grouping, inhibition, and provider-native silences. KAORI owns operator workflow, governed channel delivery, evidence, history, and archive.",
+    "Source recovery and operator closure are separate. Resolved Today does not prove case closure.",
+    "Zero open cases does not prove source health or worker reconciliation success."
+] %}
+{% if payload.provider_case_mode %}
+    {% set guide_items = guide_items + ['Provider-origin cases require an exact independently approved instance grant. Only committed read-only evidence is qualified; source freshness, recovery, mutation and delivery remain unavailable.'] %}
+{% elif not payload.snapshot.available %}
+    {% set guide_items = guide_items + ['Committed Evidence Review Required: One or more managed assets have no committed inventory observation within 24 hours.'] %}
+{% endif %}
+{% if payload.snapshot.serving_last_good %}
+    {% set guide_items = guide_items + ['Last Good Snapshot Active: The latest provider refresh is stale or failed. Existing alert cases remain available from committed KAORI evidence while workers retry collection.'] %}
+{% endif %}
+{% set workspace_guide %}
+    {{ info_tip.render('alert-operations-guide', 'Alert Operations Guide',
+        'Review committed alert evidence within the selected operational scope.',
+        items=guide_items, variant='guide', placement='left') }}
+    {% if payload.snapshot.serving_last_good %}
+        {{ table_label.status_label('Last Good Snapshot Active', 'warning', size='compact') }}
+    {% endif %}
+{% endset %}
 {% call intelligence_ui.section(
     'Alert Operations Workspace',
     {
@@ -12,14 +35,15 @@
     'resolved': 'Review recovery evidence, verification, and case closure.'
     }.get(payload.tab, 'Review alert operations and committed evidence.'),
     'shield-alert',
-    payload.summary.active ~ ' Active',
-    'warning' if payload.summary.active else 'normal'
+    ('Read-only' if payload.provider_case_status == 'ready' else 'Scope or Evidence Required') if payload.provider_case_mode else payload.summary.active ~ ' Active',
+    'warning' if payload.provider_case_mode or payload.summary.active else 'normal',
+    title_extra=workspace_guide
     ) %}
     <div class="border-b border-outline-subtle bg-surface-card px-4 py-4 sm:px-5">
         <div class="space-y-3">
             <div class="min-w-0">
                 <h3 class="{{ table_ui.block_title_classes() }}">Operational Context</h3>
-                <p class="{{ table_ui.block_description_classes() }}">Choose the managed domain and asset scope used by this Alert Operations workspace.</p>
+                <p class="{{ table_ui.block_description_classes() }}">Choose the managed domain, provider and authorized asset scope.</p>
             </div>
             <form id="alert-intelligence-context-form"
                   action="{{ url_for('alert_intelligence.index') }}"
@@ -67,8 +91,20 @@
                         {% endfor %}
                     </select>
                 </label>
+                {% if payload.provider_case_mode %}
+                    <label class="min-w-0">
+                        <span class="{{ table_ui.filter_label_classes() }}">Provider</span>
+                        <select name="provider" class="{{ table_ui.filter_select_classes() }}">
+                            <option value="">Select Qualified Provider</option>
+                            {% for option in payload.provider_options %}
+                                <option value="{{ option.value }}"
+                                        {% if payload.selected_provider == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                {% endif %}
                 <label class="min-w-0">
-                    <span class="{{ table_ui.filter_label_classes() }}">Asset Scope</span>
+                    <span class="{{ table_ui.filter_label_classes() }}">{{ 'Instance' if payload.provider_case_mode else 'Asset Scope' }}</span>
                     <select id="alert-intelligence-asset-select"
                             name="asset"
                             class="{{ table_ui.filter_select_classes() }}">
@@ -88,21 +124,27 @@
             {{ loading_bar.render('alert-intelligence-context-loading', label='Refreshing Operational Context') }}
         </div>
     </div>
-    {% if current_user.has_permission('secrets_pki.view') %}
-        <div class="border-b border-outline-subtle bg-surface-hover px-4 py-3 sm:px-5">
-            <a class="{{ table_ui.action_classes() }}"
-               href="{{ url_for('alert_intelligence.vault_cases') }}">
-                <i data-lucide="key-round" class="h-4 w-4"></i>
-                Vault Provider Cases
-            </a>
-            <p class="mt-2 text-xs text-content-muted">
-                Exact approved Vault instance scope required. Read-only; no case routing or delivery.
-            </p>
-        </div>
-    {% endif %}
     <div data-alert-intelligence-active-section="{{ payload.tab }}"
          class="bg-surface-card">
-        {% if payload.scope_invalid %}
+        {% if payload.provider_case_mode and payload.provider_case_status != 'ready' %}
+            <div class="p-5">
+                {% set blocked_state_icon = "shield-alert" %}
+                {% set blocked_state_label = "Evidence Unavailable" if payload.provider_case_status == 'unavailable' else "Instance Scope Required" %}
+                {% set blocked_state_title = "Unable to Qualify Provider Cases" if payload.provider_case_status == 'unavailable' else "Select an Authorized Provider Instance" %}
+                {% set blocked_state_description = "Only exact approved instance grants can expose committed provider cases. Unavailable or missing evidence never proves source health." %}
+                {% include 'components/states/_blocked_state.html' %}
+            </div>
+        {% elif payload.provider_case_mode and payload.tab != 'active' %}
+            <div class="p-5">
+                {% set blocked_state_icon = "shield-check" %}
+                {% set blocked_state_label = "Read-only" if payload.tab == 'overview' else "Reserved Plan" %}
+                {% set blocked_state_title = "Committed Provider Cases" if payload.tab == 'overview' else "Provider Lifecycle Not Qualified" %}
+                {% set blocked_state_description = "Review exact-instance committed cases in Active Alerts. Recovery, workflow mutations, notification routing, templates and silences are not qualified for this provider." %}
+                {% set blocked_state_action_url = url_for('alert_intelligence.index', domain=payload.domain, provider=payload.selected_provider, asset=payload.selected_asset_key, tab='active') %}
+                {% set blocked_state_action_label = "Review Active Cases" %}
+                {% include 'components/states/_blocked_state.html' %}
+            </div>
+        {% elif payload.scope_invalid %}
             <div class="p-5">
                 {% set blocked_state_icon = "shield-alert" %}
                 {% set blocked_state_label = "Registry Scope Unavailable" %}

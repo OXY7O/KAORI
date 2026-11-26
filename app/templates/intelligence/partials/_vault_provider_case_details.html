@@ -8,7 +8,7 @@
             <h2 class="mt-1 text-lg font-semibold leading-7 text-content-primary">{{ case.title }}</h2>
             <p class="mt-1 text-xs font-mono text-content-muted">{{ case.public_id }}</p>
         </div>
-        <a href="{{ url_for('alert_intelligence.vault_cases', instance_id=instance_id) }}"
+        <a href="{{ url_for('alert_intelligence.index', domain='secrets_pki', provider='vault', asset=instance_id, tab='active') if central_provider_scope else url_for('alert_intelligence.vault_cases', instance_id=instance_id) }}"
            class="{{ table_ui.action_classes() }}">Back to Cases</a>
     </header>
     <dl class="mt-4 grid gap-4 sm:grid-cols-2">
@@ -21,7 +21,7 @@
         <div>
             <dt class="text-xs text-content-muted">Source</dt>
             <dd class="mt-1 font-semibold text-content-primary">
-                {{ case.source_state|title }}
+                {{ 'Last observed firing' if central_provider_scope else case.source_state|title }}
             </dd>
         </div>
         <div>

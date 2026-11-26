@@ -41,6 +41,7 @@ def test_rule_catalog_inline_action_and_recommendation_notice_reuse_shared_geome
     callout = source('app/templates/components/operational_callout.html')
     assert 'table_action=true' in records
     assert 'detail_row.toggle_button(' in records
+    assert "payload['items']|default([], true)" in results
     assert 'compact_message=true' in results
     assert 'compact_message=false' in callout
     assert 'flex min-w-0 flex-1 flex-col gap-1' in callout

@@ -89,3 +89,20 @@ def test_closed_case_dispatch_requires_successful_firing_evidence() -> None:
     assert 'policy_allows_resolved(case, channel_id)' in resolved
     firing = inspect.getsource(notifications._dispatch_firing)
     assert 'routes = firing_routes(case)' in firing
+
+
+def test_provider_origin_cannot_fall_through_to_default_routing(monkeypatch) -> None:
+    def unexpected(*_args):
+        raise AssertionError('Unqualified provider case must not query routing policies')
+
+    monkeypatch.setattr(routing, 'matching_routing_policies', unexpected)
+    for domain in ('kubernetes', 'object_storage', 'registry', 'secrets_pki', 'source_control'):
+        case = SimpleNamespace(
+            domain=domain,
+            source_type='provider_alert',
+            source_state='firing',
+            routing_state='enabled',
+            severity='critical',
+        )
+        assert routing.firing_routes(case) == []
+        assert routing.policy_allows_resolved(case, 42) is False
