@@ -85,3 +85,17 @@ Without --plan the command refuses execution. No provider writes, database
 registration, root custody, init/unseal, privilege grant or actual bootstrap
 apply. Exact mount and component policy names remain subject to #5206/#5203/
 #5204 review; no arbitrary provider paths or new authorization model.
+
+## Provider-qualified credential evidence (#5204)
+
+The shared offline `providers/credential_version_proof.py` defines a new
+versioned signed SSH credential claim binding provider key, deployment
+reference, exact issuer revision, canonical SecretIdentity UUID and
+representation ID, plus existing instance/namespace/mount/path digest,
+version and creation time. Legacy Vault schema and canonical signed bytes
+remain unchanged; signatures cannot transfer between formats/providers.
+A valid signature is not an access grant or proof of current issuer status.
+The caller must independently resolve the admitted issuer revision and
+public key, current version, scope, operation, worker and audit evidence.
+No signing key generation, provider retrieval, runtime activation or
+privilege is introduced; exact mount names remain under separate review.
