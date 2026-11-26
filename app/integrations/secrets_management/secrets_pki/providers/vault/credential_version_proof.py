@@ -10,6 +10,8 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from app.integrations.secrets_management.secrets_pki.providers.credential_version_proof import (
     CredentialVersionSelector as CredentialVersionSelector,
+)
+from app.integrations.secrets_management.secrets_pki.providers.credential_version_proof import (
     canonical_statement,
     credential_statement_payload,
     verify_statement,
