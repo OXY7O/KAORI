@@ -8,7 +8,7 @@ activation, scope authorization, provider identity attestation or execution.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 
@@ -18,6 +18,10 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.extensions.db import db
+from app.integrations.secrets_management.secrets_pki.providers.credential_version_proof import (
+    canonical_statement,
+    verify_statement,
+)
 from app.models.integration import IntegrationInstance
 from app.models.secrets_pki import SecretCredentialIssuerRevision
 
@@ -405,4 +409,73 @@ def issuer_custody_evidence_shape_qualified(
         )
         and challenge_issued_at <= evidence.issued_at <= evidence.approved_at <= now < evidence.expires_at
         and evidence.expires_at - challenge_issued_at <= timedelta(hours=24)
+    )
+
+
+@dataclass(frozen=True, slots=True, repr=False)
+class IssuerPossessionChallenge:
+    """Expected offline challenge context, not a committed or single-use record."""
+
+    target: IssuerResolutionTarget
+    key_sha256: str
+    challenge_sha256: str
+    source_owner_id: int
+    issued_at: datetime
+    expires_at: datetime
+
+
+def issuer_possession_statement(challenge: IssuerPossessionChallenge) -> bytes | None:
+    """Canonical domain-separated signing bytes; no challenge issuance or signer."""
+    if (
+        not isinstance(challenge, IssuerPossessionChallenge)
+        or not _valid_target(challenge.target)
+        or not _digest(challenge.key_sha256)
+        or not _digest(challenge.challenge_sha256)
+        or not _positive_int(challenge.source_owner_id)
+        or not _aware(challenge.issued_at)
+        or not _aware(challenge.expires_at)
+    ):
+        return None
+    issued, expires = challenge.issued_at.astimezone(UTC), challenge.expires_at.astimezone(UTC)
+    if not timedelta(0) < expires - issued <= timedelta(hours=24):
+        return None
+    return canonical_statement(
+        {
+            'schema': 'kaori.secrets.issuer_possession.v1',
+            'target': asdict(challenge.target),
+            'algorithm': 'ed25519',
+            'key_sha256': challenge.key_sha256,
+            'challenge_sha256': challenge.challenge_sha256,
+            'source_owner_id': challenge.source_owner_id,
+            'issued_at': issued.isoformat(),
+            'expires_at': expires.isoformat(),
+        }
+    )
+
+
+def verify_issuer_possession(
+    expected: IssuerPossessionChallenge,
+    *,
+    signature: bytes,
+    verification_key: Ed25519PublicKey,
+    now: datetime,
+) -> bool:
+    """Verify possession only against independently expected context and key.
+
+    Repeated successful verification is possible by design. A governed caller
+    must resolve and consume a current challenge atomically, authenticate the
+    owner and checker, and independently qualify custody, deployment and Access.
+    """
+    statement = issuer_possession_statement(expected)
+    if statement is None or not isinstance(verification_key, Ed25519PublicKey):
+        return False
+    if sha256(verification_key.public_bytes_raw()).hexdigest() != expected.key_sha256:
+        return False
+    return verify_statement(
+        statement,
+        issued_at=expected.issued_at,
+        expires_at=expected.expires_at,
+        signature=signature,
+        verification_key=verification_key,
+        now=now,
     )
