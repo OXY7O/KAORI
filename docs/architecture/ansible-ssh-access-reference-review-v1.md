@@ -213,3 +213,23 @@ the issuance service must enforce a separately reviewed lifetime. Actual
 custody and deployment evidence, Access, issuer writer and worker admission
 remain mandatory. No seed, backfill, live migration or operational trust
 is introduced.
+
+
+### PostgreSQL challenge storage qualification (#5237)
+
+The disposable CI-only qualification uses the exact #5218 database target
+guard and a unique test-owned schema. It invokes the actual #5235 Alembic
+upgrade/downgrade functions, checks reflected schema parity and restrictive
+foreign keys, verifies global digest uniqueness and committed timestamp
+visibility, and exercises actual competing READ COMMITTED transactions.
+The test observes PostgreSQL blocking PIDs before releasing the first
+transaction, with bounded lock/statement timeouts. A pending-only update
+includes the exact stored binding and resolution window; commit/rollback
+and competing consume/revoke cases qualify the storage primitive only.
+
+No application writer, operational nonce issuance, Access decision,
+cryptographic verification, Activity Audit or custody authority is
+introduced by these tests. The later governed service must repeat
+transaction qualification against its actual independently resolved
+inputs, canonical authorization and atomic audit behavior; the test-only
+update is not a production acceptance path. No live database is migrated.
