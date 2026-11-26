@@ -21,7 +21,7 @@
         <div>
             <dt class="text-xs text-content-muted">Source</dt>
             <dd class="mt-1 font-semibold text-content-primary">
-                {{ 'Last observed firing' if central_provider_scope else case.source_state|title }}
+                {{ 'Fresh firing evidence' if case.source_state == 'firing' else 'Source unknown' }}
             </dd>
         </div>
         <div>
@@ -43,7 +43,13 @@
             </dd>
         </div>
         <div>
-            <dt class="text-xs text-content-muted">Last Seen</dt>
+            <dt class="text-xs text-content-muted">Last Admitted Source State</dt>
+            <dd class="mt-1 text-content-primary">
+                {{ case.last_admitted_source_state|title }}
+            </dd>
+        </div>
+        <div>
+            <dt class="text-xs text-content-muted">Last Admitted Observation</dt>
             <dd class="mt-1 text-content-primary">
                 {{ case.last_seen_at|user_datetime }}
             </dd>

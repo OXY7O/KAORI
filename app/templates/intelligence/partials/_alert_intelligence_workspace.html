@@ -9,7 +9,7 @@
     "Zero open cases does not prove source health or worker reconciliation success."
 ] %}
 {% if payload.provider_case_mode %}
-    {% set guide_items = guide_items + ['Provider-origin cases require an exact independently approved instance grant. Only committed read-only evidence is qualified; source freshness, recovery, mutation and delivery remain unavailable.'] %}
+    {% set guide_items = guide_items + ['Provider-origin cases require an exact independently approved instance grant. Fresh matching committed observations are distinct from admitted case history; source absence never establishes recovery. Mutation and delivery remain unavailable.'] %}
 {% elif not payload.snapshot.available %}
     {% set guide_items = guide_items + ['Committed Evidence Review Required: One or more managed assets have no committed inventory observation within 24 hours.'] %}
 {% endif %}

@@ -6,6 +6,7 @@ Instance policy is separate from Secret namespace/mount scope.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
 from flask import abort, render_template, request
@@ -17,6 +18,7 @@ from app.access.scope_policy import evaluate_exact_vault_instance_case_scope
 from app.common.pagination import paginate_sequence
 from app.extensions.db import db
 from app.intelligence.alert_intelligence.vault_provider_plan import _CASE_KEY_RE, _PROFILE
+from app.intelligence.alert_signals.vault_source import read_vault_alert_observations
 from app.models.alert_ops import AlertCase
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.platform_operations.notifications.service import stage_operational_activity
@@ -69,12 +71,21 @@ def _admit_read(instance_id: int) -> bool:
         return False
 
 
-def _safe_case(case: AlertCase) -> dict[str, object]:
+def _safe_case(case: AlertCase, observations: dict[int, dict[str, Any]]) -> dict[str, object]:
+    """Current source observation and last admitted case state are independent."""
+    binding_id = case.evidence_json['source_binding_id']
+    observation = observations[binding_id]
+    current = 'unknown'
+    if observation['state'] == 'fresh':
+        handle = case.case_key.removeprefix('vault-alert:')
+        if any(entry['handle'] == handle and entry['source_state'] == 'firing' for entry in observation['entries']):
+            current = 'firing'
     return {
         'public_id': case.public_id,
         'title': 'Vault Alertmanager source condition',
         'severity': case.severity if case.severity in {'critical', 'warning', 'info'} else 'unknown',
-        'source_state': case.source_state if case.source_state == 'firing' else 'unknown',
+        'source_state': current,
+        'last_admitted_source_state': 'firing',
         'workflow_state': case.workflow_state,
         'first_seen_at': case.first_seen_at,
         'last_seen_at': case.last_seen_at,
@@ -128,6 +139,13 @@ def _case_qualified(case: AlertCase, *, instance_id: int) -> bool:
     )
 
 
+def _read_case_observations(cases: list[AlertCase]) -> dict[int, dict[str, Any]]:
+    """Read each already qualified binding once; absence never implies recovery."""
+    instant = datetime.now(UTC)
+    bindings = {case.evidence_json['source_binding_id'] for case in cases}
+    return {binding: read_vault_alert_observations(binding_id=binding, now=instant) for binding in bindings}
+
+
 def _read_cases(
     *,
     instance_id: int,
@@ -149,7 +167,8 @@ def _read_cases(
         )
         if len(records) > _MAX_CASES or any(not _case_qualified(case, instance_id=instance_id) for case in records):
             return {'status': 'unavailable', 'rows': [], 'pagination': None}
-        safe_rows = [_safe_case(case) for case in records]
+        observations = _read_case_observations(records)
+        safe_rows = [_safe_case(case, observations) for case in records]
         if filters is not None:
             # Provider-origin lifecycle is not qualified beyond read-only open,
             # committed firing evidence. Never project unsupported transitions.
@@ -158,6 +177,7 @@ def _read_cases(
             summary = {
                 'active': len(safe_rows),
                 'critical': sum(row['severity'] == 'critical' for row in safe_rows),
+                'source_unknown': sum(row['source_state'] == 'unknown' for row in safe_rows),
             }
             filtered = [row for row in safe_rows if _matches_read_filters(row, filters)]
         else:
@@ -258,7 +278,7 @@ def vault_case_details_response(
         ):
             db.session.rollback()
             abort(404)
-        public_case = _safe_case(row)
+        public_case = _safe_case(row, _read_case_observations([row]))
         db.session.commit()
         return render_template(
             'intelligence/vault_provider_case_details.html',

@@ -405,3 +405,7 @@ provider recovery evidence. The writer is still default-disabled and
 disconnected from runtime callers; routing/notifications remain suppressed.
 These source remediations **do not constitute DevContainer UAT PASS**.
 See the HV-12 #2821 scenario matrix in `VAULT_INTEGRATED_UAT.md`.
+
+## HV-12 consolidated provider lifecycle work (#5229)
+
+The scoped Central Alert Intelligence read adapter distinguishes the last admitted firing case from current committed source evidence. It reuses the exact-binding, five-minute observation reader after historical case provenance and instance authorization qualify. Only a fresh firing entry matching the case's opaque occurrence handle projects firing; absent, stale, failed, disabled, suppressed and unprocessed source observations project unknown, retain the durable case, and never imply recovery or write a case transition. The source-unknown filter and count describe admitted cases, not fleet health. The shared links retain the selected provider and source-state filter. This is the currentness portion of the consolidated #5229 work branch; positive recovery, scoped mutation, delivery and actual PostgreSQL/provider UAT remain separately qualified before activation.

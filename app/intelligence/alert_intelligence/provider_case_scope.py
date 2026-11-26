@@ -160,8 +160,8 @@ def _case_record(row: dict[str, Any], scope: dict[str, Any]) -> dict[str, Any]:
         'severity_label': row['severity'].title(),
         'severity_tone': row['severity'],
         'source_type_label': 'Provider Alert · ' + scope['provider_label'],
-        'source_state_label': 'Last observed firing',
-        'source_state_tone': 'warning',
+        'source_state_label': 'Fresh firing evidence' if row['source_state'] == 'firing' else 'Source unknown',
+        'source_state_tone': 'warning' if row['source_state'] == 'firing' else 'unknown',
         'workflow_label': 'Open',
         'workflow_tone': 'warning',
         'owner': 'Not qualified',
@@ -212,6 +212,7 @@ def build_provider_case_payload(args: MultiDict[str, str], *, domain_options: li
         'summary': {
             'active': summary.get('active'),
             'critical': summary.get('critical'),
+            'source_unknown': summary.get('source_unknown'),
         },
         'filters': filters,
         'active_cases': records,
