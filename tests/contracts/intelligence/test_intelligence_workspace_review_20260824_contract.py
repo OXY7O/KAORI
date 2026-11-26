@@ -10,9 +10,7 @@ def test_intelligence_workspace_copy_is_shortened_for_alerts_rules_and_control_p
     rule_catalog = read('app/templates/intelligence/rule_catalog.html')
     automation_overview = read('app/templates/intelligence/partials/automation_control/_overview.html')
 
-    assert (
-        'Review routing policies and channel readiness without duplicating channel credentials.' in alert_workspace
-    )
+    assert 'Review routing policies and channel readiness without duplicating channel credentials.' in alert_workspace
     assert 'Review alert posture, delivery readiness, and operational evidence.' in alert_workspace
     assert 'Review recovery evidence, verification, and case closure.' in alert_workspace
     assert (
