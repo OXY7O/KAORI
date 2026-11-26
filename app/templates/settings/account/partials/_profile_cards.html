@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card"
          data-account-profile-workspace="full-width">
@@ -7,7 +8,19 @@
                 <i data-lucide="id-card" class="h-5 w-5"></i>
             </span>
             <div>
-                <h2 class="text-base font-bold text-content-primary">Account Profile & Access</h2>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-base font-bold text-content-primary">Account Profile & Access</h2>
+                    {{ info_tip.render('account-profile-access-guide',
+                                        'Account profile and access',
+                                        'This read-only view separates your canonical identity, account admission and authorization.',
+                                        [
+                                        'Assigned role describes RBAC permissions; account lifecycle governs admission.',
+                                        'Super Admin is a separate Local Database administrative tier.',
+                                        'The identity source owns identity and credential authority; KAORI owns its access controls.'
+                                        ],
+                                        placement='right',
+                                        variant='guide') }}
+                </div>
                 <p class="mt-1 text-sm leading-6 text-content-muted">Read-only identity, authorization posture, provider ownership, and personal account presentation in one workspace.</p>
             </div>
         </div>
