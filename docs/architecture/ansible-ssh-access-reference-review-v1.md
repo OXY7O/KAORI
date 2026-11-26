@@ -59,3 +59,42 @@ The offline Vault adapter helper `verify_credential_version_statement` reconstru
 The Secrets & PKI model `SecretCredentialIssuerRevision` retains one intended append-only revision history per exact integration instance, namespace and mount, with an explicit admitted provider key (`vault` or `openbao`). Each revision records Ed25519 raw public-key hex and SHA-256 key digest, independently qualified external deployment reference and custody evidence reference (both SHA-256 hex), effective validity window, requester, independent approver and recording actor. Active shape requires distinct requester/approver, matching approver/recording actor and a valid approval time. A revoked revision can retain expired history. No wildcard mount, backfill, seed or active issuer is created; downgrade refuses to discard recorded history.
 
 Storage shape alone is not a trust anchor. The existing Vault health projection does not commit an authoritative deployment identity; the new OpenBao integration must independently qualify its own identity. The unmerged registry schema is provider-neutral under #5200/#5204, not a second OpenBao-specific store. A provider key must match the canonical integration instance; the unique scope revision deliberately cannot fork on a changed provider key. A future governed source-owner workflow must independently establish deployment identity (not merely endpoint or local instance ID), prove key custody and actual provider-side credential schema validation, qualify canonical key/digests, enforce one exact-scope issuer and prohibit key reuse across deployment/scope histories. It must lock the canonical provider and latest revision, append audited transitions, re-evaluate the actual latest revision without fallback, require proof issuance within the approved issuer window and bind the signed statement to the admitted provider, deployment and issuer revision before any credential-use activation. The current proof schema must be extended accordingly before operational use. No trust writer, verifier registry reader, signed material access or runtime authorization is enabled by this storage increment. PostgreSQL concurrency, real provider evidence and independent review remain mandatory.
+
+### Issuer lifecycle shape and custody boundary (#5222)
+
+The provider-qualified registry (#5199), signed evidence (#5216), independent
+candidate reader (#5217), and disposable PostgreSQL model-table qualification
+(#5219) are merged. They are not operational trust. The new internal pure
+transition-shape helper qualifies only an intended append against a latest
+exact-scope revision and the complete history for the candidate key digest.
+The conservative initial sequence is absent → draft → independently checked
+active → revoked; a draft may also be revoked. Re-enrollment after revocation
+requires a fresh key and a new draft. No in-place edit, revision reuse, direct
+active-to-active replacement, or fallback to older active history is allowed.
+This initial revoke-then-enroll rotation is deliberately fail-closed and is
+not a zero-downtime rotation contract.
+
+Activation preserves the draft's provider, deployment, scope, key, requester
+and validity window, requires a distinct recording checker and approval after
+the draft was recorded, and requires the current ready integration. Same-binding
+revocation may proceed in the shape model even after expiry or source disablement;
+source/provider/deployment drift must not silently retarget a revision.
+A typed proof must be issued after the approved active revision was recorded,
+and its expiry must not extend beyond the issuer window. Existing signature,
+maximum proof lifetime, canonical selector and provider-schema checks remain
+mandatory.
+
+The pure helper is not a writer or authorization result. A future governed
+caller must derive authenticated source-owner and checker authority from
+canonical Access, independently resolve actual provider deployment identity,
+custody of the provider-side signing key and exact credential-schema evidence.
+An evidence digest, public key, or supplied history alone cannot establish
+any of these facts. The writer must lock current provider and exact-scope
+history, serialize cross-scope key-digest uniqueness including absent history,
+re-read complete committed key history and expected revision, and atomically
+append the new revision with sanitized mandatory Activity Audit. Fail closed
+on missing evidence, stale state, lock conflicts or audit failure. Real
+PostgreSQL concurrent transaction tests and independent custody/Access review
+are mandatory before enabling a writer. No new permission, route, migration,
+provider request, active issuer, or runtime verification wiring is introduced
+by this increment.
