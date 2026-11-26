@@ -270,3 +270,44 @@ writer, operational challenge acceptance or issuer activation. Complete the
 service, provider evidence integration and PostgreSQL qualification within
 the same draft candidate before admission; actual custody ceremony and UAT
 remain separate operator-approved execution.
+
+
+#### Native provider key and independent receipt resolution
+
+The shared `providers/issuer_transit.py` adapter performs only exact native
+key metadata inspection. It requires provider-specific HTTPS egress and
+explicit CA, strict active/unsealed cluster identity before and after the
+read, bounded non-root expiring inspection token, safe single-segment
+Transit mount/key, explicitly pinned current version and Ed25519 public-key
+digest. Missing or unsafe key-policy fields, native key rotation, wrong
+cluster, malformed public key, derived/exportable/deletable key or plaintext
+backup permission deny. The native `vault:vN:<base64>` signature envelope
+must match the enrolled version before offline verification. No generic
+signing, key export, key management, KV material read or provider fallback
+is exposed. Native response semantics and token ACLs require actual
+disposable provider qualification; synthetic fixtures do not prove those.
+
+The deployment-owned authority directory is fixed at
+`/run/kaori/issuer-authority`. It must be root-owned, non-writable to app
+identity, mounted read-only, with a separately pinned Ed25519 `root.pub`
+(raw lowercase hex). The resolver reads canonical JSON envelopes with
+exact `payload` and hex `signature` fields. Active deployment receipts are
+named `deployment-<deployment_ref>.json`; challenge-specific custody
+receipts are `custody-<challenge_sha256>.json`. The domain-separated
+schemas bind exact scope, native cluster identity and Transit key version,
+public-key digest, distinct owner/checker, UTC issue and expiry and
+challenge/revision context. The recovery pin must differ from the issuer
+key. The deployment digest binds provider/instance/namespace/KV mount,
+canonical endpoint and native cluster ID, independent of key rotation.
+Current signed receipts are read afresh for each decision; absent/revoked,
+expired, malformed, substituted or noncanonical evidence denies. Revocation
+requires operator replacement/removal of the current authoritative file;
+application users cannot write this directory. Protect the directory and
+operator publication channel against rollback, prove trusted mount identity
+and test atomic publication/revocation before actual activation. Receipts
+are limited to 24 hours and a custody receipt cannot outlive the challenge
+or deployment receipt. Native observation must be no more than 60 seconds
+old when custody is qualified. The service must acquire observation itself
+outside SQL locks and re-resolve trusted evidence and Access inside its
+transaction. The read-only resolver is not an issuer writer, independently
+authenticated operator or proof of exclusive private-key custody.

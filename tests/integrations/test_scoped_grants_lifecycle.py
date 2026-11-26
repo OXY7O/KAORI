@@ -448,7 +448,9 @@ def test_exact_issuer_scope_is_separate_from_metadata_and_worker_grants(scope_st
     for other_operation in ('request', 'approve', 'revoke'):
         if other_operation != operation:
             assert not scope_policy.evaluate_exact_issuer_scope(
-                actor_user_id=ids['viewer'], scope=scope, permission_key=f'secrets_pki.{other_operation}_credential_issuer'
+                actor_user_id=ids['viewer'],
+                scope=scope,
+                permission_key=f'secrets_pki.{other_operation}_credential_issuer',
             ).allowed
 
 

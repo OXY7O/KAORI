@@ -90,9 +90,7 @@ def _ready_vault_mount_source(source: IntegrationInstance | None) -> bool:
     )
 
 
-def _eligible_exact_revision_end(
-    current: ScopeAccessPolicyRevision | None, *, instant: datetime
-) -> datetime | None:
+def _eligible_exact_revision_end(current: ScopeAccessPolicyRevision | None, *, instant: datetime) -> datetime | None:
     """Only active, separately approved, effective exact revision is eligible."""
     if (
         current is None
@@ -326,8 +324,7 @@ def _valid_issuer_scope(scope: CredentialIssuerScope) -> bool:
         and isinstance(scope.mount, str)
         and 0 < len(scope.mount) <= 160
         and all(
-            ord(char) >= 32 and ord(char) != 127 and char not in '*+'
-            for char in scope.provider_namespace + scope.mount
+            ord(char) >= 32 and ord(char) != 127 and char not in '*+' for char in scope.provider_namespace + scope.mount
         )
     )
 
@@ -345,13 +342,17 @@ def _locked_issuer_actor(actor_id: int, permission_key: str) -> bool:
     if role is None or not role.is_active:
         return False
     required = {permission_key, 'secrets_pki.view'}
-    keys = db.session.execute(
-        select(Permission.key)
-        .join(RolePermission, RolePermission.permission_id == Permission.id)
-        .where(RolePermission.role_id == role.id, Permission.key.in_(required))
-        .order_by(Permission.key)
-        .with_for_update(of=(RolePermission, Permission))
-    ).scalars().all()
+    keys = (
+        db.session.execute(
+            select(Permission.key)
+            .join(RolePermission, RolePermission.permission_id == Permission.id)
+            .where(RolePermission.role_id == role.id, Permission.key.in_(required))
+            .order_by(Permission.key)
+            .with_for_update(of=(RolePermission, Permission))
+        )
+        .scalars()
+        .all()
+    )
     return set(keys) == required
 
 
@@ -370,26 +371,34 @@ def _locked_issuer_source(scope: CredentialIssuerScope, permission_key: str) -> 
     return source.enabled is True and source.lifecycle_status == 'active' and source.readiness_status == 'ready'
 
 
-def _locked_issuer_policies(actor_id: int, scope: CredentialIssuerScope, permission_key: str):
-    return db.session.execute(
-        select(ScopeAccessPolicy)
-        .where(
-            ScopeAccessPolicy.principal_user_id == actor_id,
-            ScopeAccessPolicy.permission_key == permission_key,
-            ScopeAccessPolicy.integration_instance_id == scope.instance_id,
-            ScopeAccessPolicy.scope_level == 'credential_issuer',
-            ScopeAccessPolicy.provider_namespace == scope.provider_namespace,
-            ScopeAccessPolicy.mount == scope.mount,
-            ScopeAccessPolicy.issuer_deployment_ref == scope.deployment_ref,
+def _locked_issuer_policies(
+    actor_id: int, scope: CredentialIssuerScope, permission_key: str
+) -> list[ScopeAccessPolicy]:
+    return list(
+        db.session.execute(
+            select(ScopeAccessPolicy)
+            .where(
+                ScopeAccessPolicy.principal_user_id == actor_id,
+                ScopeAccessPolicy.permission_key == permission_key,
+                ScopeAccessPolicy.integration_instance_id == scope.instance_id,
+                ScopeAccessPolicy.scope_level == 'credential_issuer',
+                ScopeAccessPolicy.provider_namespace == scope.provider_namespace,
+                ScopeAccessPolicy.mount == scope.mount,
+                ScopeAccessPolicy.issuer_deployment_ref == scope.deployment_ref,
+            )
+            .order_by(ScopeAccessPolicy.id)
+            .limit(_MAX_MATCHING_POLICIES + 1)
+            .with_for_update(of=ScopeAccessPolicy)
+            .execution_options(populate_existing=True)
         )
-        .order_by(ScopeAccessPolicy.id)
-        .limit(_MAX_MATCHING_POLICIES + 1)
-        .with_for_update(of=ScopeAccessPolicy)
-        .execution_options(populate_existing=True)
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
 
-def _current_issuer_grant(policy: ScopeAccessPolicy, instant: datetime):
+def _current_issuer_grant(
+    policy: ScopeAccessPolicy, instant: datetime
+) -> tuple[ScopeAccessPolicyRevision, datetime] | None:
     latest = db.session.execute(
         select(ScopeAccessPolicyRevision)
         .where(ScopeAccessPolicyRevision.policy_id == policy.id)
