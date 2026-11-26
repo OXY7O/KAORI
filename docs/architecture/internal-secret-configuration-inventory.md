@@ -278,6 +278,43 @@ not the root example; absence from local development does not establish
 unused or obsolete status:
 `TRUSTED_HOSTS`, `INTEGRATION_VALIDATION_WORKER_CPU_LIMIT`, `INTEGRATION_VALIDATION_WORKER_MEMORY_LIMIT`, `GUNICORN_WORKERS`, `GUNICORN_THREADS`, `GUNICORN_TIMEOUT`, `GUNICORN_GRACEFUL_TIMEOUT`, `GUNICORN_KEEPALIVE`, `GUNICORN_LOG_LEVEL`, `INTEGRATION_RUNTIME_WORKER_CPU_LIMIT`, `INTEGRATION_RUNTIME_WORKER_MEMORY_LIMIT`, `JOB_MAINTENANCE_WORKER_CPU_LIMIT`, `JOB_MAINTENANCE_WORKER_MEMORY_LIMIT`, `RESOLVER_EXECUTION_WORKER_CPU_LIMIT`, `RESOLVER_EXECUTION_WORKER_MEMORY_LIMIT`, `RESOLVER_MAINTENANCE_WORKER_CPU_LIMIT`, `RESOLVER_MAINTENANCE_WORKER_MEMORY_LIMIT`, `REDIS_PASSWORD`, `KAORI_LDAP_BIND_PASSWORD`, `KAORI_APP_ENV_FILE`, `KAORI_SECRETS_ENV_FILE`, `KAORI_POSTGRES_ADMIN_ENV_FILE`, `KAORI_POSTGRES_MIGRATION_ENV_FILE`, `KAORI_ACTIVE_RELEASE_ENV_FILE`, `KAORI_BUNDLED_FRESH_BOOTSTRAP`, `KAORI_BUNDLED_SCHEMA_CUTOVER`, `KAORI_POSTGRES_IMAGE`, `KAORI_REDIS_IMAGE`, `POSTGRES_PASSWORD`, `KAORI_DB_MIGRATION_URL`, `BAO_PG_CONNECTION_URL`.
 
+## Verified code-level dependency observations
+
+Readback at `kaori/staging@e1be7b01223df13ca3690ed0b361f4622bf33ee0`. This is bounded static
+source evidence, not a live effective-configuration audit. References
+are repository-relative source paths; line positions may move.
+
+| Configuration | Confirmed implementation reference | Migration constraint |
+| --- | --- | --- |
+| SECRET_KEY | app/config/default.py:116 | Application config loading; session/signing consumers still require full trace |
+| INTEGRATION_CREDENTIAL_KEY, INTEGRATION_CREDENTIAL_PREVIOUS_KEYS | app/config/default.py:131-135; app/security/credentials.py:23-30 | Encryption code reads app config or ENV outside application context; preserve key history and verify both contexts |
+| DATABASE_URL | app/config/default.py:140; scripts/server_migrate_db.sh:19 | Runtime configuration and migration-only override must remain distinct |
+| REDIS_URL, CELERY_BROKER_URL, CELERY_RESULT_BACKEND | app/config/default.py:145-156, 285-286 | Broker and result backend fall back to REDIS_URL when explicit settings are absent; preserve independent effective URLs and coordinate rotation |
+| RATELIMIT_STORAGE_URI | app/config/default.py:484-485 | Config declaration confirmed; rate limiter initialization needs further tracing |
+| REDIS_PASSWORD | deploy/server/compose.server.yml | Redis command and health check consume the shared secrets file; keep independent service bootstrap |
+| REPORT_S3_ACCESS_KEY_ID, REPORT_S3_SECRET_ACCESS_KEY | app/config/default.py:763-764; app/reports/storage/s3.py:81-82 | Report storage uses application config |
+| ARCHIVE_S3_ACCESS_KEY_ID, ARCHIVE_S3_SECRET_ACCESS_KEY | app/config/default.py:630-634 | Existing per-field fallback to report credentials; review effective credential pairs before introducing independent archive scope |
+| ADMIN_PASSWORD | app/commands/admin.py:72, 130 | Bootstrap and reset paths consume ENV; separate privileged lifecycle, do not change existing behavior here |
+| RESOLVER_TOKEN_SIGNING_KEY | app/config/default.py:275; app/integrations/resolver_bootstrap.py:105-107 | Enabled resolver actions require a signing value with minimum length; preserve startup validation and review rotation |
+| POSTGRES_PASSWORD | deploy/server/compose.server.yml | Admin env file delivered to PostgreSQL and provisioning; actual image-level consumer outside app |
+| KAORI_DB_MIGRATION_URL | scripts/server_migrate_db.sh:9-19 | Explicit foreground migration subprocess override, not general runtime URL |
+| BAO_PG_CONNECTION_URL | deploy/server/secret-store/openbao.hcl.example; secret-store.env.example | Candidate provider storage dependency, independent of OpenBao contents; actual pinned provider startup not tested |
+
+The fallback observations are **existing behavior**, not authorization
+for new fallback across Secret Store scopes. Before a future cutover,
+resolve explicit versus inherited settings, validate complete credential
+pairs and establish independently approved rollback. Do not remove or
+alter existing fallback in this documentation increment.
+
+LDAP and Google/GitHub SSO ENV names remain inventory entries with
+candidate ownership, not verified direct code consumers: the inspected
+identity-provider credential/configuration/browser files did not contain
+those literal names. Trace canonical registry, database-backed provider
+configuration and any compatibility ENV mapping separately; do not infer
+that these variables are active or obsolete from this bounded search.
+Full dependency mapping (including all 221 application settings),
+restart/rotation and runtime proof remain outstanding.
+
 ## Remaining acceptance
 
 Review exact consuming code, owners, generation/restart requirements and
