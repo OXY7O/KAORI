@@ -141,3 +141,76 @@ def test_intelligence_gate_requires_both_permissions(monkeypatch, intelligence, 
         ),
     )
     assert service._can_view_secrets_pki_intelligence() is allowed
+
+
+def _validity_rules():
+    rules = _rules()
+    key = 'secrets_pki.pki.stored_certificate_validity_review'
+    rules[key] = {
+        'rule_key': key,
+        'domain': 'secrets_pki',
+        'source_kind': 'pki_certificate_population',
+        'severity': 'warning',
+        'priority': 'P2',
+        'status': 'available',
+        'alert_escalation': {'eligible': False},
+        'risk_exception': {'enabled': False},
+    }
+    return rules
+
+
+@pytest.mark.parametrize('expired', [0, 1])
+def test_qualified_unknown_validity_is_independent_of_expiry(monkeypatch, expired):
+    snapshot = _snapshot(expired=expired)
+    snapshot['unknown'] = 2
+    snapshot['observed_stored_certificates'] += 2
+    monkeypatch.setattr(evaluator, 'build_stored_pki_validity_posture', lambda: snapshot)
+    findings = evaluator.build_secrets_pki_recommendation_findings(_validity_rules())
+    assert len(findings) == 1 + expired
+    review = findings[-1]
+    assert review['rule_key'] == 'secrets_pki.pki.stored_certificate_validity_review:population'
+    assert review['severity'] == 'warning'
+    assert review['priority'] == 'P2'
+    assert review['alert_escalation']['eligible'] is False
+    assert review['risk_exception']['enabled'] is False
+    assert review['evidence']['unclassified_validity_windows'] == 2
+    assert review['evidence']['trust_verified'] is False
+    assert review['evidence']['endpoint_serving_verified'] is False
+    if expired:
+        assert findings[0]['severity'] == 'critical'
+
+
+def test_future_dated_certificates_are_not_unknown_validity(monkeypatch):
+    snapshot = _snapshot()
+    snapshot['not_yet_valid'] = 3
+    snapshot['observed_stored_certificates'] += 3
+    monkeypatch.setattr(evaluator, 'build_stored_pki_validity_posture', lambda: snapshot)
+    assert evaluator.build_secrets_pki_recommendation_findings(_validity_rules()) == []
+
+
+@pytest.mark.parametrize('status', ['incomplete', 'not_configured', 'blocked', 'unavailable', 'stale'])
+def test_unknown_validity_does_not_override_unqualified_source(monkeypatch, status):
+    snapshot = _snapshot(status=status)
+    snapshot['unknown'] = 2
+    snapshot['observed_stored_certificates'] += 2
+    monkeypatch.setattr(evaluator, 'build_stored_pki_validity_posture', lambda: snapshot)
+    assert evaluator.build_secrets_pki_recommendation_findings(_validity_rules()) == []
+
+
+def test_unknown_validity_count_must_reconcile(monkeypatch):
+    snapshot = _snapshot()
+    snapshot['unknown'] = 2
+    monkeypatch.setattr(evaluator, 'build_stored_pki_validity_posture', lambda: snapshot)
+    assert evaluator.build_secrets_pki_recommendation_findings(_validity_rules()) == []
+
+
+def test_validity_rule_can_be_selected_independently(monkeypatch):
+    snapshot = _snapshot(expired=1)
+    snapshot['unknown'] = 1
+    snapshot['observed_stored_certificates'] += 1
+    monkeypatch.setattr(evaluator, 'build_stored_pki_validity_posture', lambda: snapshot)
+    rules = _validity_rules()
+    rules.pop('secrets_pki.pki.stored_certificate_expiry_pressure')
+    findings = evaluator.build_secrets_pki_recommendation_findings(rules)
+    assert len(findings) == 1
+    assert findings[0]['rule_key'] == 'secrets_pki.pki.stored_certificate_validity_review:population'
