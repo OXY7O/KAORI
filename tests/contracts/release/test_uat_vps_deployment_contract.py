@@ -606,7 +606,9 @@ def test_automatic_staging_rc_uses_existing_publisher_and_deploy_authority() -> 
     assert "github.ref == 'refs/heads/kaori/staging'" in publisher
     assert "needs.publish.result == 'success'" in publisher
     assert "needs.wait-for-quality.outputs.should_publish == 'true'" in publisher
-    assert 'group: kaori-release-candidate\n' in publisher
+    assert "|| 'kaori-release-candidate'" in publisher
+    assert 'github.ref_protected' in publisher
+    assert 'GITHUB_REF_PROTECTED' in deploy
     assert 'actions: write' in publisher.split('  request-auto-deployment:', 1)[1]
     assert 'deploy-staging-host.yml/dispatches' in publisher
     assert 'publisher_run_id:$run' in publisher
@@ -614,6 +616,7 @@ def test_automatic_staging_rc_uses_existing_publisher_and_deploy_authority() -> 
     assert 'Automatic deployment is disabled or publisher run ID is invalid.' in deploy
     assert 'Automatic RC publisher identity mismatch.' in deploy
     assert 'Automatic RC publisher did not succeed.' in deploy
+    assert '.name == "Publish RC" and .conclusion == "success"' in deploy
     assert 'Timed out awaiting pinned RC publication.' in deploy
     assert 'RC artifact source SHA does not match tag authority.' in deploy
     assert 'RC artifact candidate tag does not match requested prerelease.' in deploy
