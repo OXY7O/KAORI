@@ -4,10 +4,10 @@
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
 {% set guide_items = [
-    'Ownership Boundary: Prometheus and Alertmanager own source evaluation, grouping, inhibition, and provider-native silences. KAORI owns operator workflow, governed channel delivery, evidence, history, and archive.',
-    'Source recovery and operator closure are separate. Resolved Today does not prove case closure.',
-    'Zero open cases does not prove source health or worker reconciliation success.'
-    ] %}
+    "Ownership Boundary: Prometheus and Alertmanager own source evaluation, grouping, inhibition, and provider-native silences. KAORI owns operator workflow, governed channel delivery, evidence, history, and archive.",
+    "Source recovery and operator closure are separate. Resolved Today does not prove case closure.",
+    "Zero open cases does not prove source health or worker reconciliation success."
+] %}
 {% if payload.provider_case_mode %}
     {% set guide_items = guide_items + ['Provider-origin cases require an exact independently approved instance grant. Only committed read-only evidence is qualified; source freshness, recovery, mutation and delivery remain unavailable.'] %}
 {% elif not payload.snapshot.available %}
@@ -18,8 +18,8 @@
 {% endif %}
 {% set workspace_guide %}
     {{ info_tip.render('alert-operations-guide', 'Alert Operations Guide',
-                'Review committed alert evidence within the selected operational scope.',
-                items=guide_items, variant='guide', placement='left') }}
+        'Review committed alert evidence within the selected operational scope.',
+        items=guide_items, variant='guide', placement='left') }}
     {% if payload.snapshot.serving_last_good %}
         {{ table_label.status_label('Last Good Snapshot Active', 'warning', size='compact') }}
     {% endif %}

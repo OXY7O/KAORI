@@ -40,22 +40,23 @@
                 {% endcall %}
             </div>
             {% if payload.provider_case_mode %}
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Alert Operations posture">
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Alert Operations posture">
                     {{ page_hero.blocked_context_body('Alert Operations',
-                                'Provider Alert Evidence',
-                                [
-                                ('bell-ring', 'Committed Open Cases', payload.summary.active if payload.provider_case_status == 'ready' else '—', 'Exact authorized instance'),
-                                ('shield-alert', 'Lifecycle', 'Read-only', 'Recovery and delivery not qualified')
-                                ],
-                                'Committed evidence is not current provider health. Select an approved instance.',
-                                'Read-only' if payload.provider_case_status == 'ready' else 'Scope or Evidence Required') }}
+                                        'Provider Alert Evidence',
+                                        [
+                                        ('bell-ring', 'Committed Open Cases', payload.summary.active if payload.provider_case_status == 'ready' else '—', 'Exact authorized instance') ,
+                    ('shield-alert', 'Lifecycle', 'Read-only', 'Recovery and delivery not qualified')
+                    ],
+                    'Committed evidence is not current provider health. Select an approved instance.',
+                    'Read-only' if payload.provider_case_status == 'ready' else 'Scope or Evidence Required') }}
                 </aside>
             {% else %}
                 {{ page_hero.context_card('Alert Operations posture',
-                            'Alert Operations',
-                            'Open Cases',
-                            payload.summary.active,
-                            'critical' if payload.summary.critical else ('warning' if payload.summary.active else 'normal') ,
+                                'Alert Operations',
+                                'Open Cases',
+                                payload.summary.active,
+                                'critical' if payload.summary.critical else ('warning' if payload.summary.active else 'normal') ,
                 hero_metrics,
                 'Manage Notification Channels',
                 url_for('notification_channels.index'),

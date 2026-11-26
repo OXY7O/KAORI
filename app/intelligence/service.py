@@ -702,13 +702,14 @@ def classify_recommendation_readiness(
     recent: int,
     issues: list[str],
     has_findings: bool,
+    source_gaps: list[str] | None = None,
 ) -> str:
-    """Missing observations or evaluator failure never imply a healthy empty set."""
+    """Source gaps are incomplete evidence; actual evaluator errors remain fail-closed."""
     if issues:
         return 'partial' if has_findings else 'unavailable'
     if total == 0:
         return 'not_collected'
-    if recent < total:
+    if recent < total or source_gaps:
         return 'partial'
     return 'baseline_recent'
 
@@ -741,6 +742,7 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
         total = sum(inventory[key]['total'] for key in scopes)
         recent = sum(inventory[key]['recent'] for key in scopes)
         issues = payload['evaluation_issues']
+        source_gaps: list[str] = []
         if domain in ('', 'registry'):
             try:
                 with Session(db.engine) as evidence_session:
@@ -752,19 +754,25 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
                     'description': 'The committed correlation readiness check failed; do not infer remediation.',
                 }
             payload['registry_runtime_evidence'] = runtime_evidence
-            if runtime_evidence['status'] != 'ready':
+            # A failed committed SQL readiness read is an evaluation issue.
+            # Missing/stale/refreshing source correlation is independently qualified.
+            if runtime_evidence['status'] == 'unavailable':
                 issues.append('Registry Runtime: ' + runtime_evidence['title'])
+            elif runtime_evidence['status'] != 'ready':
+                source_gaps.append('Registry Runtime: ' + runtime_evidence['title'])
         state = classify_recommendation_readiness(
             total=total,
             recent=recent,
             issues=issues,
             has_findings=bool(findings),
+            source_gaps=source_gaps,
         )
         payload['evidence_readiness'] = {
             'status': state,
             'total_sources': total,
             'recent_sources': recent,
             'issues': issues,
+            'source_gaps': source_gaps,
             'basis': '24-hour committed Inventory baseline; evaluator and scan coverage remain source-qualified',
         }
         _apply_recommendation_payload(payload, findings)
