@@ -5,13 +5,14 @@ on:
   push:
     branches:
       - kaori/rc-request
+      - kaori/staging
 
 permissions:
   contents: read
   actions: read
 
 concurrency:
-  group: kaori-release-candidate-${{ github.sha }}
+  group: kaori-release-candidate
   cancel-in-progress: false
 
 env:
@@ -22,7 +23,8 @@ jobs:
   wait-for-quality:
     name: Staging Gate
     if: >-
-      ${{ (github.event_name == 'push' && github.ref == 'refs/heads/kaori/rc-request') ||
+      ${{ (github.event_name == 'push' && github.ref == 'refs/heads/kaori/staging' && vars.KAORI_APP_AUTO_STAGING_ENABLED == 'true') ||
+          (github.event_name == 'push' && github.ref == 'refs/heads/kaori/rc-request') ||
           (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/kaori/staging') }}
     runs-on: [self-hosted, linux, x64, platform-ci]
     timeout-minutes: 120
@@ -40,6 +42,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          AUTO_STAGING_ENABLED: ${{ vars.KAORI_APP_AUTO_STAGING_ENABLED }}
         run: |
           set -Eeuo pipefail
           printf '⏳ RC admission · resolving accepted staging SHA\n'
@@ -56,10 +59,15 @@ jobs:
           }
 
           if [[ "$GITHUB_EVENT_NAME" == 'push' ]]; then
-            [[ "$GITHUB_REF" == 'refs/heads/kaori/rc-request' ]] || {
-              printf 'Push-based RC cuts are allowed only from kaori/rc-request.\n' >&2
+            if [[ "$GITHUB_REF" == 'refs/heads/kaori/staging' ]]; then
+              [[ "$AUTO_STAGING_ENABLED" == 'true' ]] || {
+                printf 'Automatic staging RC publication is disabled.\n' >&2
+                exit 1
+              }
+            elif [[ "$GITHUB_REF" != 'refs/heads/kaori/rc-request' ]]; then
+              printf 'Push-based RC cuts require protected staging activation or kaori/rc-request.\n' >&2
               exit 1
-            }
+            fi
           elif [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
             [[ "$GITHUB_REF" == 'refs/heads/kaori/staging' ]] || {
               printf 'Manual RC cuts must be dispatched against kaori/staging.\n' >&2
@@ -299,6 +307,19 @@ jobs:
       COMPARE_BASE: ${{ needs.wait-for-quality.outputs.compare_base }}
       COSIGN_IMAGE: ghcr.io/sigstore/cosign/cosign:v3.1.3
     steps:
+      - name: Recheck Current Staging and Activation
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUTO_STAGING_ENABLED: ${{ vars.KAORI_APP_AUTO_STAGING_ENABLED }}
+        run: |
+          set -Eeuo pipefail
+          current_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/kaori/staging" --jq '.object.sha')"
+          [[ "$current_sha" == "$ACCEPTED_SHA" ]] || { printf 'Staging source advanced; refusing stale publication.\n' >&2; exit 1; }
+          if [[ "$GITHUB_EVENT_NAME" == 'push' && "$GITHUB_REF" == 'refs/heads/kaori/staging' ]]; then
+            [[ "$AUTO_STAGING_ENABLED" == 'true' ]] || { printf 'Automatic staging RC publication is disabled.\n' >&2; exit 1; }
+          fi
+
       - name: Checkout RC Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -741,7 +762,7 @@ jobs:
           Deployment authority: \`${KAORI_IMAGE_REF}\`
 
           ## Known Limitations
-          This prerelease does not itself perform VPS deployment or stable production promotion. UAT remains pending until the governed VPS path passes and the maintainer explicitly accepts this exact source SHA and immutable digest.
+          Publication alone is not VPS deployment or stable production promotion. Activated protected-staging publication may request the separate governed host deployment. UAT remains pending until the governed VPS path passes and the maintainer explicitly accepts this exact source SHA and immutable digest.
 
           ## Promotion Status
           **Pending UAT.** Stable promotion is prohibited until explicit UAT acceptance of this exact source SHA and immutable image digest. Stable \`vX.Y.Z\` must reuse the accepted digest and must not rebuild application bits.
@@ -776,3 +797,37 @@ jobs:
       - name: Log Out from Docker Registry
         if: ${{ always() }}
         run: docker logout "$REGISTRY_HOST"
+
+  request-auto-deployment:
+    name: Request Automatic Staging Deployment
+    needs: [wait-for-quality, publish]
+    if: >-
+      ${{ github.event_name == 'push' && github.ref == 'refs/heads/kaori/staging' &&
+          vars.KAORI_APP_AUTO_STAGING_ENABLED == 'true' &&
+          needs.publish.result == 'success' && needs.wait-for-quality.outputs.should_publish == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ACCEPTED_SHA: ${{ needs.wait-for-quality.outputs.accepted_sha }}
+      CANDIDATE_TAG: ${{ needs.wait-for-quality.outputs.candidate_tag }}
+      AUTO_STAGING_ENABLED: ${{ vars.KAORI_APP_AUTO_STAGING_ENABLED }}
+    steps:
+      - name: Request Exact Published Candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "$AUTO_STAGING_ENABLED" == 'true' && "$GITHUB_REF" == 'refs/heads/kaori/staging' && "$GITHUB_EVENT_NAME" == 'push' ]]
+          [[ "$CANDIDATE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$ ]]
+          current_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/kaori/staging" --jq '.object.sha')"
+          [[ "$current_sha" == "$ACCEPTED_SHA" && "$GITHUB_SHA" == "$ACCEPTED_SHA" ]] || {
+            printf 'Staging advanced; automatic deployment request denied.\n' >&2
+            exit 1
+          }
+          jq -nc --arg tag "$CANDIDATE_TAG" --arg run "$GITHUB_RUN_ID" \
+            '{ref:"kaori/staging",inputs:{candidate_tag:$tag,publisher_run_id:$run}}' |
+            gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/deploy-staging-host.yml/dispatches" --input -
+          printf 'Requested governed staging deployment for %s (%s); deployment success is not implied.\n' "$CANDIDATE_TAG" "$ACCEPTED_SHA"
