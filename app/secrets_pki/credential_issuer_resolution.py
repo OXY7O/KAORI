@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
@@ -341,4 +341,68 @@ def issuer_proof_window_qualified(
         and _aware(expires_at)
         and row.recorded_at <= issued_at
         and row.effective_from <= issued_at <= now < expires_at <= row.effective_until
+    )
+
+
+@dataclass(frozen=True, slots=True, repr=False)
+class IssuerCustodyEvidenceShape:
+    """Prospective evidence references only; none is an admitted trust anchor."""
+
+    target: IssuerResolutionTarget
+    key_sha256: str
+    challenge_sha256: str
+    deployment_evidence_ref: str
+    possession_evidence_ref: str
+    custody_evidence_ref: str
+    access_decision_ref: str
+    source_owner_id: int
+    checker_id: int
+    issued_at: datetime
+    approved_at: datetime
+    expires_at: datetime
+
+
+def issuer_custody_evidence_shape_qualified(
+    evidence: IssuerCustodyEvidenceShape,
+    *,
+    target: IssuerResolutionTarget,
+    key_sha256: str,
+    expected_challenge_sha256: str,
+    challenge_issued_at: datetime,
+    now: datetime,
+) -> bool:
+    """Check offline binding and chronology only; never authorize or consume a challenge.
+
+    The future locked caller must independently resolve the target, single-use
+    challenge, authenticated actors and each current evidence authority. A
+    matching digest, well-formed receipt or signature is not proof of custody.
+    No operational evidence resolver is admitted by this increment.
+    """
+    if not isinstance(evidence, IssuerCustodyEvidenceShape) or not _valid_target(target):
+        return False
+    refs = (
+        evidence.deployment_evidence_ref,
+        evidence.possession_evidence_ref,
+        evidence.custody_evidence_ref,
+        evidence.access_decision_ref,
+    )
+    if not all(_digest(ref) for ref in refs):
+        return False
+    return (
+        _valid_target(evidence.target)
+        and evidence.target == target
+        and _digest(key_sha256)
+        and evidence.key_sha256 == key_sha256
+        and _digest(expected_challenge_sha256)
+        and evidence.challenge_sha256 == expected_challenge_sha256
+        and len(set(refs)) == len(refs)
+        and _positive_int(evidence.source_owner_id)
+        and _positive_int(evidence.checker_id)
+        and evidence.source_owner_id != evidence.checker_id
+        and all(
+            _aware(value)
+            for value in (challenge_issued_at, evidence.issued_at, evidence.approved_at, evidence.expires_at, now)
+        )
+        and challenge_issued_at <= evidence.issued_at <= evidence.approved_at <= now < evidence.expires_at
+        and evidence.expires_at - challenge_issued_at <= timedelta(hours=24)
     )
