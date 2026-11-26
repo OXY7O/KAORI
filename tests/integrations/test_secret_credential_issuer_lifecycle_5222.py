@@ -7,7 +7,10 @@ import pytest
 
 from app.models.integration import IntegrationInstance
 from app.models.secrets_pki import SecretCredentialIssuerRevision
-from app.secrets_pki.credential_issuer_resolution import issuer_proof_window_qualified, issuer_transition_shape_qualified
+from app.secrets_pki.credential_issuer_resolution import (
+    issuer_proof_window_qualified,
+    issuer_transition_shape_qualified,
+)
 
 _NOW = datetime(2026, 11, 26, 6, tzinfo=UTC)
 _PUBLIC = bytes.fromhex('d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a')
