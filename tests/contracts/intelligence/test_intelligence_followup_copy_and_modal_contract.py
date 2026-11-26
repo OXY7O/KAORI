@@ -51,9 +51,7 @@ def test_copy_is_shortened_on_routing_catalog_and_automation_control() -> None:
         'Control which validated Notification Channels receive promoted Alert Cases, how often alerts repeat, and when verified recovery is delivered.'
         in routing
     )
-    assert (
-        'Review routing policies and channel readiness without duplicating channel credentials.' in alert_workspace
-    )
+    assert 'Review routing policies and channel readiness without duplicating channel credentials.' in alert_workspace
     assert 'Review alert posture, delivery readiness, and operational evidence.' in alert_workspace
     assert 'Review recovery evidence, verification, and case closure.' in alert_workspace
     assert (
