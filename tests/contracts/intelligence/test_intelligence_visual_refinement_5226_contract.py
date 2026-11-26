@@ -1,7 +1,9 @@
 from pathlib import Path
 from types import SimpleNamespace
 
-from jinja2 import Environment, FileSystemLoader
+from flask import Flask
+
+from app.bootstrap.presentation import register_presentation
 
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATES = ROOT / 'app/templates'
@@ -15,8 +17,9 @@ def _render_empty(
     filter_count: int = 0,
     allowed: bool = True,
 ) -> str:
-    environment = Environment(loader=FileSystemLoader(str(TEMPLATES)), autoescape=True)
-    template = environment.get_template('intelligence/partials/_recommendation_records.html')
+    app = Flask(__name__, template_folder=str(TEMPLATES))
+    register_presentation(app)
+    template = app.jinja_env.get_template('intelligence/partials/_recommendation_records.html')
     return template.render(
         payload={
             'items': [],
