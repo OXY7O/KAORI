@@ -174,9 +174,7 @@ def test_actual_migration_schema_parity_and_empty_downgrade(challenge_db):
                 item['options'].get('ondelete'),
             )
             for item in inspector.get_foreign_keys(_TABLE.name)
-        } == {
-            ((fk.parent.name,), fk.column.table.name, (fk.column.name,), fk.ondelete) for fk in _TABLE.foreign_keys
-        }
+        } == {((fk.parent.name,), fk.column.table.name, (fk.column.name,), fk.ondelete) for fk in _TABLE.foreign_keys}
         _migrate(connection, downgrade=True)
         assert not inspect(connection).has_table(_TABLE.name)
         _migrate(connection)

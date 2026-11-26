@@ -113,3 +113,19 @@ def test_settings_query_tabs_delegate_to_shared_htmx_tab_authority() -> None:
     assert "workspace_tabs = read('app/templates/components/workspace_tabs.html')" in verifier
     assert 'render_query_tabs' in verifier
     assert 'query-backed-htmx' in verifier
+
+
+def test_account_title_guides_use_shared_component() -> None:
+    for partial, heading, guide_id in (
+        ('_profile_cards.html', 'Account Profile & Access', 'account-profile-access-guide'),
+        ('_recent_login_activity.html', 'Recent Authentication Activity', 'account-recent-authentication-guide'),
+        ('_change_password.html', 'Credential Management', 'account-credential-management-guide'),
+        ('_mfa.html', 'Multi-Factor Authentication', 'account-mfa-enrollment-guide'),
+    ):
+        source = read(f'app/templates/settings/account/partials/{partial}')
+        header = source.split('</header>', 1)[0]
+        assert '{% import "components/info_tip.html" as info_tip %}' in header
+        assert header.count("variant='guide'") == 1
+        after_heading = header.split(f'{heading}</h2>', 1)[1].lstrip()
+        assert after_heading.startswith('{{ info_tip.render(' + repr(guide_id) + ',')
+        assert 'flex flex-wrap items-center gap-2' in header
