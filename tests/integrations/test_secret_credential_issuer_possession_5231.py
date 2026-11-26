@@ -56,9 +56,7 @@ def test_possession_only_and_repeated_verification_not_consumption():
 )
 def test_target_substitution_denied(changes):
     expected = replace(_CHALLENGE, target=replace(_TARGET, **changes))
-    assert not verify_issuer_possession(
-        expected, signature=_signature(_CHALLENGE), verification_key=_PUBLIC, now=_NOW
-    )
+    assert not verify_issuer_possession(expected, signature=_signature(_CHALLENGE), verification_key=_PUBLIC, now=_NOW)
 
 
 @pytest.mark.parametrize(
@@ -92,9 +90,7 @@ def test_wrong_domain_key_and_signature_denied():
     assert not verify_issuer_possession(
         _CHALLENGE, signature=_KEY.sign(wrong_domain), verification_key=_PUBLIC, now=_NOW
     )
-    assert not verify_issuer_possession(
-        _CHALLENGE, signature=_signature(_CHALLENGE), verification_key=other, now=_NOW
-    )
+    assert not verify_issuer_possession(_CHALLENGE, signature=_signature(_CHALLENGE), verification_key=other, now=_NOW)
     assert not verify_issuer_possession(_CHALLENGE, signature=b'invalid', verification_key=_PUBLIC, now=_NOW)
 
 
