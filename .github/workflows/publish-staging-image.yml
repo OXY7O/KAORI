@@ -12,7 +12,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: kaori-release-candidate
+  group: ${{ github.event_name == 'push' && github.ref == 'refs/heads/kaori/staging' && vars.KAORI_APP_AUTO_STAGING_ENABLED != 'true' && format('kaori-release-disabled-{0}', github.sha) || 'kaori-release-candidate' }}
   cancel-in-progress: false
 
 env:
@@ -23,7 +23,7 @@ jobs:
   wait-for-quality:
     name: Staging Gate
     if: >-
-      ${{ (github.event_name == 'push' && github.ref == 'refs/heads/kaori/staging' && vars.KAORI_APP_AUTO_STAGING_ENABLED == 'true') ||
+      ${{ (github.event_name == 'push' && github.ref == 'refs/heads/kaori/staging' && github.ref_protected && vars.KAORI_APP_AUTO_STAGING_ENABLED == 'true') ||
           (github.event_name == 'push' && github.ref == 'refs/heads/kaori/rc-request') ||
           (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/kaori/staging') }}
     runs-on: [self-hosted, linux, x64, platform-ci]
@@ -60,7 +60,7 @@ jobs:
 
           if [[ "$GITHUB_EVENT_NAME" == 'push' ]]; then
             if [[ "$GITHUB_REF" == 'refs/heads/kaori/staging' ]]; then
-              [[ "$AUTO_STAGING_ENABLED" == 'true' ]] || {
+              [[ "$AUTO_STAGING_ENABLED" == 'true' && "$GITHUB_REF_PROTECTED" == 'true' ]] || {
                 printf 'Automatic staging RC publication is disabled.\n' >&2
                 exit 1
               }
@@ -314,10 +314,13 @@ jobs:
           AUTO_STAGING_ENABLED: ${{ vars.KAORI_APP_AUTO_STAGING_ENABLED }}
         run: |
           set -Eeuo pipefail
-          current_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/kaori/staging" --jq '.object.sha')"
+          current_sha="$(curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/git/ref/heads/kaori/staging" | jq -r '.object.sha')"
           [[ "$current_sha" == "$ACCEPTED_SHA" ]] || { printf 'Staging source advanced; refusing stale publication.\n' >&2; exit 1; }
           if [[ "$GITHUB_EVENT_NAME" == 'push' && "$GITHUB_REF" == 'refs/heads/kaori/staging' ]]; then
-            [[ "$AUTO_STAGING_ENABLED" == 'true' ]] || { printf 'Automatic staging RC publication is disabled.\n' >&2; exit 1; }
+            [[ "$AUTO_STAGING_ENABLED" == 'true' && "$GITHUB_REF_PROTECTED" == 'true' ]] || { printf 'Automatic staging RC publication is disabled.\n' >&2; exit 1; }
           fi
 
       - name: Checkout RC Source
@@ -802,7 +805,7 @@ jobs:
     name: Request Automatic Staging Deployment
     needs: [wait-for-quality, publish]
     if: >-
-      ${{ github.event_name == 'push' && github.ref == 'refs/heads/kaori/staging' &&
+      ${{ github.event_name == 'push' && github.ref == 'refs/heads/kaori/staging' && github.ref_protected &&
           vars.KAORI_APP_AUTO_STAGING_ENABLED == 'true' &&
           needs.publish.result == 'success' && needs.wait-for-quality.outputs.should_publish == 'true' }}
     runs-on: ubuntu-24.04
@@ -820,7 +823,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          [[ "$AUTO_STAGING_ENABLED" == 'true' && "$GITHUB_REF" == 'refs/heads/kaori/staging' && "$GITHUB_EVENT_NAME" == 'push' ]]
+          [[ "$AUTO_STAGING_ENABLED" == 'true' && "$GITHUB_REF_PROTECTED" == 'true' && "$GITHUB_REF" == 'refs/heads/kaori/staging' && "$GITHUB_EVENT_NAME" == 'push' ]]
           [[ "$CANDIDATE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$ ]]
           current_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/kaori/staging" --jq '.object.sha')"
           [[ "$current_sha" == "$ACCEPTED_SHA" && "$GITHUB_SHA" == "$ACCEPTED_SHA" ]] || {
