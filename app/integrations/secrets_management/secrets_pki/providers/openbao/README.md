@@ -59,3 +59,29 @@ write is involved. This is a health gate only, not proof of provider identity,
 OCI provenance, storage TLS, policy, audit, AppRole or recovery readiness.
 The actual bootstrap writer remains pending review of exact policy and mount
 contracts; no automatic initialization, unseal or root credential access.
+
+## Governed bootstrap inspection (#5202)
+
+`flask bootstrap-secret-store --plan` is the first non-mutating bootstrap
+increment. It reuses the strict health gate and prompts without echo for a
+short-lived, independently issued non-root operator inspection token. Never
+provide a root token; the command rejects a root policy or non-expiring token
+after lookup-self. No token arguments, general application ENV, persistence
+or output. Use independently controlled native provider administration to
+issue a narrowly scoped inspection identity with lookup-self and only the
+required read authority for sys/audit, sys/mounts and sys/auth (including
+endpoint-specific sudo only where required by upstream). Expiry/revocation
+remain the operator's responsibility. A successful lookup does not prove
+the full effective token policy is least privilege.
+
+The plan observes the configured kaori-operator file audit device and
+expected file path without raw logging, then counts KV v2 and AppRole
+mounts. It never prints provider response bodies, names, paths, token
+metadata or credential material. An observed audit configuration is not
+proof of actual audit delivery. Counts do not qualify a particular mount,
+AppRole or policy, and zero counts are valid inspection evidence before
+bootstrap. Missing audit, malformed responses or denied reads block the plan.
+Without --plan the command refuses execution. No provider writes, database
+registration, root custody, init/unseal, privilege grant or actual bootstrap
+apply. Exact mount and component policy names remain subject to #5206/#5203/
+#5204 review; no arbitrary provider paths or new authorization model.
