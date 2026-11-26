@@ -1619,3 +1619,31 @@ rules:
   visible_in:
   - Recommendations
   - Catalog
+- rule_key: secrets_pki.pki.stored_certificate_validity_review
+  title: Stored Public PKI Validity Evidence Needs Review
+  domain: secrets_pki
+  provider_keys:
+  - vault
+  source_kind: pki_certificate_population
+  category: governance
+  severity: warning
+  priority: P2
+  status: available
+  logic_type: governance_check
+  signal_source: secrets_pki_committed_evidence
+  alert_escalation:
+    eligible: false
+    mode: manual
+    grouping_mode: rule_asset_scope
+  risk_exception:
+    enabled: false
+  summary: Flags observed public certificates with unclassified validity windows in a qualified opted-in Vault stored-certificate population.
+  condition_summary: A complete current-generation committed aggregate has a positive unknown validity-window count.
+  recommended_action: Review authorized PKI inventory and public certificate metadata; independently verify validity bounds before planning remediation.
+  impact: Identifies a validity-evidence review need without asserting certificate invalidity, trust failure or an endpoint outage.
+  evidence_boundary: A bounded population aggregate only. Source gaps, future-dated certificates, and missing collection do not trigger this rule. No source identities, paths, serials, fingerprints or secret values.
+  supported_sources:
+  - KAORI committed opted-in Vault stored public PKI certificate evidence
+  visible_in:
+  - Recommendations
+  - Catalog

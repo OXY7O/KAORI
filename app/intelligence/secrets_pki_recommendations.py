@@ -13,6 +13,7 @@ from typing import Any, cast
 from app.secrets_pki.pki_validity_posture import build_stored_pki_validity_posture
 
 _RULE_KEY = 'secrets_pki.pki.stored_certificate_expiry_pressure'
+_VALIDITY_REVIEW_RULE_KEY = 'secrets_pki.pki.stored_certificate_validity_review'
 _ASSET_KEY = 'secrets_pki:stored_public_certificates'
 _COUNT_KEYS = (
     'observed_stored_certificates',
@@ -27,9 +28,10 @@ _COUNT_KEYS = (
 
 
 def build_secrets_pki_recommendation_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
-    """Return one actionable population-wide finding, never per-certificate data."""
+    """Return qualified population-wide findings, never per-certificate data."""
     rule = rules.get(_RULE_KEY)
-    if rule is None:
+    validity_rule = rules.get(_VALIDITY_REVIEW_RULE_KEY)
+    if rule is None and validity_rule is None:
         return []
 
     snapshot = build_stored_pki_validity_posture()
@@ -51,6 +53,15 @@ def build_secrets_pki_recommendation_findings(rules: dict[str, dict[str, Any]]) 
     if not isinstance(observed_at, datetime) or observed_at.tzinfo is None or observed_at.utcoffset() is None:
         return []
 
+    findings: list[dict[str, Any]] = []
+    if rule is not None:
+        findings.extend(_expiry_findings(rule, counts, observed_at))
+    if validity_rule is not None and counts['unknown'] > 0:
+        findings.append(_validity_review_finding(validity_rule, counts, observed_at))
+    return findings
+
+
+def _expiry_findings(rule: dict[str, Any], counts: dict[str, int], observed_at: datetime) -> list[dict[str, Any]]:
     expired = counts['expired']
     imminent = counts['expires_within_7d']
     approaching = counts['expires_8_to_30d']
@@ -97,3 +108,32 @@ def build_secrets_pki_recommendation_findings(rules: dict[str, dict[str, Any]]) 
             },
         }
     ]
+
+
+def _validity_review_finding(rule: dict[str, Any], counts: dict[str, int], observed_at: datetime) -> dict[str, Any]:
+    unknown = counts['unknown']
+    return {
+        **rule,
+        'rule_key': f'{_VALIDITY_REVIEW_RULE_KEY}:population',
+        'title': 'Stored Public PKI Validity Evidence Needs Review',
+        'severity': 'warning',
+        'priority': 'P2',
+        'status': 'available',
+        'summary': f'{unknown} observed stored public certificates have unclassified validity windows.',
+        'condition_summary': 'Qualified committed observations include absent or incoherent validity bounds.',
+        'recommended_action': (
+            'Review the authorized PKI inventory and public certificate metadata; '
+            'verify validity bounds independently before planning renewal or remediation.'
+        ),
+        'evidence': {
+            'asset_key': _ASSET_KEY,
+            'source_status': 'ready',
+            'source_coverage': 'Opted-in stored public Vault PKI certificates only',
+            'observed_at': observed_at.isoformat(),
+            'observed_stored_certificates': counts['observed_stored_certificates'],
+            'unclassified_validity_windows': unknown,
+            'trust_verified': False,
+            'revocation_verified': False,
+            'endpoint_serving_verified': False,
+        },
+    }
