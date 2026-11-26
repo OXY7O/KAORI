@@ -10,7 +10,7 @@ on:
       publisher_run_id:
         description: Automatic RC publisher run ID; leave empty for authorized manual recovery
         required: false
-        default: ''
+        default: ""
         type: string
 
 permissions:
