@@ -43,5 +43,6 @@ def test_rule_catalog_inline_action_and_recommendation_notice_reuse_shared_geome
     assert 'detail_row.toggle_button(' in records
     assert 'compact_message=true' in results
     assert 'compact_message=false' in callout
-    assert 'lg:flex-row lg:items-baseline' in callout
+    assert 'flex min-w-0 flex-1 flex-col gap-1' in callout
+    assert 'lg:flex-row lg:items-baseline' not in callout
     assert 'if not compact_message' in callout

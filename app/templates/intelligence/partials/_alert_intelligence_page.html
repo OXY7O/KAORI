@@ -1,5 +1,22 @@
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/workspace_tabs.html" as workspace_tabs %}
+{% set tab_query = {'domain': payload.domain, 'asset': payload.selected_asset_key} %}
+{% set navigation_tabs = [
+    ('overview', 'Overview', 'layout-dashboard', none, url_for('alert_intelligence.index', tab='overview', **tab_query)),
+    ('active', 'Active Alerts', 'siren', none, url_for('alert_intelligence.index', tab='active', **tab_query)),
+    ('routing', 'Routing & Channels', 'route', none, url_for('alert_intelligence.index', tab='routing', **tab_query)),
+    ('templates', 'Templates', 'file-code-2', none, url_for('alert_intelligence.index', tab='templates', **tab_query)),
+    ('silences', 'Silences', 'bell-off', none, url_for('alert_intelligence.index', tab='silences', **tab_query)),
+    ('resolved', 'Resolved', 'badge-check', none, url_for('alert_intelligence.index', tab='resolved', **tab_query))
+] %}
 <div id="alert-intelligence-page-content" class="space-y-6">
+    <div hx-sync="#alert-intelligence-page-content:replace">
+        {{ workspace_tabs.render_navigation(navigation_tabs,
+                payload.tab,
+                prefix='alert-operations-sections',
+                aria_label='Alert Operations Sections',
+                hx_target='#alert-intelligence-page-content') }}
+    </div>
     {% set hero_metrics = [
             ('bell-ring', 'Active Cases', payload.summary.active, 'Operator-managed alert cases'),
             ('shield-check', 'Verification Pending', payload.summary.verification_pending, 'Resolved source awaiting closure evidence')
