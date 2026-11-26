@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card"
@@ -8,7 +9,19 @@
                 <i data-lucide="activity" class="h-5 w-5"></i>
             </span>
             <div>
-                <h2 class="text-base font-bold text-content-primary">Recent Authentication Activity</h2>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-base font-bold text-content-primary">Recent Authentication Activity</h2>
+                    {{ info_tip.render('account-recent-authentication-guide',
+                                        'Recent authentication evidence',
+                                        'This personal view summarizes up to five latest recorded sign-ins and sign-outs, not full history.',
+                                        [
+                                        'Summary counts describe only the displayed sample.',
+                                        'Recorded source and context describe authentication evidence, not active sessions.',
+                                        'Open Activity Audit for broader evidence when your permissions allow.'
+                                        ],
+                                        placement='right',
+                                        variant='guide') }}
+                </div>
                 <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">A focused view of recent sign-ins and sign-outs for this account.</p>
             </div>
         </div>
