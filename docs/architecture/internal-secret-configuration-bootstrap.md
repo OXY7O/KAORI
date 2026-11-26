@@ -5,6 +5,9 @@ configuration-source change in this delivery. Existing split environment
 files, runtime target identity and deployment/recovery contracts remain
 authoritative. See [server profile](../../deploy/server/secret-store/README.md).
 
+See the [names-only configuration inventory](internal-secret-configuration-inventory.md)
+for the split examples, current delivery boundary and candidate ownership review.
+
 ## Ownership and dependency order
 
 OpenBao v2.7.3 is the bundled default secret provider, with the existing
