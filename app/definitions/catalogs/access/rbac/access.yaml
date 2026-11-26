@@ -302,6 +302,21 @@ permissions:
   action: use_automation_credential
   description: Qualify a separately governed read-only automation credential-use request; no material access is enabled by this permission alone.
   matrix_description: Qualify internal read-only automation credential use under exact approved scope and typed version, without material reveal or execution authorization.
+- key: secrets_pki.request_credential_issuer
+  module: secrets_pki
+  action: request_credential_issuer
+  description: Request a governed credential issuer lifecycle action under explicit exact deployment scope.
+  matrix_description: Request credential issuer authority under the separately approved exact issuer scope; no material reveal, worker execution, or provider mutation permission.
+- key: secrets_pki.approve_credential_issuer
+  module: secrets_pki
+  action: approve_credential_issuer
+  description: Approve a governed credential issuer lifecycle action under explicit exact deployment scope.
+  matrix_description: Approve credential issuer authority under the separately approved exact issuer scope; no material reveal, worker execution, or provider mutation permission.
+- key: secrets_pki.revoke_credential_issuer
+  module: secrets_pki
+  action: revoke_credential_issuer
+  description: Revoke a governed credential issuer lifecycle action under explicit exact deployment scope.
+  matrix_description: Revoke credential issuer authority under the separately approved exact issuer scope; no material reveal, worker execution, or provider mutation permission.
 - key: integrations.manage
   module: integrations
   action: manage_integrations
@@ -394,6 +409,9 @@ permission_dependencies:
   artifact_registry.sync: [artifact_registry.view, jobs.execute]
   secrets_pki.sync: [secrets_pki.view, jobs.execute]
   secrets_pki.use_automation_credential: [secrets_pki.view, inventory.view, jobs.execute]
+  secrets_pki.request_credential_issuer: [secrets_pki.view]
+  secrets_pki.approve_credential_issuer: [secrets_pki.view]
+  secrets_pki.revoke_credential_issuer: [secrets_pki.view]
   kubernetes_configmaps.create: [kubernetes_configmaps.view]
   kubernetes_configmaps.update: [kubernetes_configmaps.view]
   kubernetes_configmaps.delete: [kubernetes_configmaps.view]

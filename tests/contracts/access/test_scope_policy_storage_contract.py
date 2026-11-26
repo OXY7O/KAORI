@@ -108,3 +108,47 @@ def test_credential_scope_cannot_inherit_metadata_scope(level, permission, names
                 )
     finally:
         engine.dispose()
+
+
+@pytest.mark.parametrize(
+    ('level', 'permission', 'deployment', 'namespace', 'mount', 'accepted'),
+    [
+        ('credential_issuer', 'secrets_pki.request_credential_issuer', 'a' * 64, '', 'kv', True),
+        ('credential_issuer', 'secrets_pki.approve_credential_issuer', 'a' * 64, '', 'kv', True),
+        ('credential_issuer', 'secrets_pki.revoke_credential_issuer', 'a' * 64, '', 'kv', True),
+        ('credential_issuer', 'secrets_pki.view', 'a' * 64, '', 'kv', False),
+        ('credential_issuer', 'secrets_pki.use_automation_credential', 'a' * 64, '', 'kv', False),
+        ('vault_mount', 'secrets_pki.request_credential_issuer', None, '', 'kv', False),
+        ('vault_mount', 'secrets_pki.view', 'a' * 64, '', 'kv', False),
+        ('credential_issuer', 'secrets_pki.request_credential_issuer', None, '', 'kv', False),
+        ('credential_issuer', 'secrets_pki.request_credential_issuer', 'a' * 63, '', 'kv', False),
+        ('credential_issuer', 'secrets_pki.request_credential_issuer', 'a' * 64, '+', 'kv', False),
+        ('credential_issuer', 'secrets_pki.request_credential_issuer', 'a' * 64, '', '+', False),
+    ],
+)
+def test_issuer_scope_has_explicit_permission_and_deployment(level, permission, deployment, namespace, mount, accepted):
+    engine = create_engine('sqlite://')
+    table = ScopeAccessPolicy.__table__
+    try:
+        with engine.begin() as connection:
+            table.create(connection)
+            insert = table.insert().values(
+                id='fixture-issuer-policy',
+                principal_user_id=1,
+                permission_key=permission,
+                integration_instance_id=1,
+                scope_level=level,
+                provider_namespace=namespace,
+                mount=mount,
+                issuer_deployment_ref=deployment,
+                current_revision=1,
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            )
+            if accepted:
+                connection.execute(insert)
+            else:
+                with pytest.raises(IntegrityError):
+                    connection.execute(insert)
+    finally:
+        engine.dispose()

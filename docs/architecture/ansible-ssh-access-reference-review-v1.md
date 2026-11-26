@@ -233,3 +233,40 @@ introduced by these tests. The later governed service must repeat
 transaction qualification against its actual independently resolved
 inputs, canonical authorization and atomic audit behavior; the test-only
 update is not a production acceptance path. No live database is migrated.
+
+
+### Governed credential issuer authority (#5245)
+
+Maintainer architecture acceptance is recorded in #5245 comment 7205030372.
+Issuer administration uses three distinct explicit permissions
+(`secrets_pki.request_credential_issuer`, `secrets_pki.approve_credential_issuer`,
+`secrets_pki.revoke_credential_issuer`) with `secrets_pki.view` dependency
+and no default role grants. The canonical ScopeAccessPolicy owns the exact
+`credential_issuer` scope: instance, provider derived from IntegrationInstance,
+namespace, mount and immutable deployment digest. The additive nullable
+`issuer_deployment_ref` is restricted to that scope; legacy policies retain
+null. Downgrade refuses to discard issuer grant history. No grant backfill.
+The locked Access precondition reads the authenticated actor's active role
+and actual permission memberships, source, exact scope policy and latest
+revision, denies ambiguity and stale pointers, and permits only explicitly
+scoped revocation of a disabled same-provider source. It does not establish
+provider deployment identity, custody or an authenticated HTTP caller.
+No existing metadata grant or worker-use permission can substitute for it.
+
+Use provider-native non-exportable Ed25519 Transit keys with explicitly
+qualified key version; never copy signing private keys into KAORI. Independent
+deployment/custody attestation must come from an operator-held recovery
+authority pinned outside provider-controlled or web-writable state. The
+receipt must bind verified native deployment identity, provider, exact target,
+Transit key/version and public-key digest, with independent owner/checker,
+validity and revocation evidence. Neither Transit signature nor a local
+policy proves custody or typed SSH credential schema. Challenge issuance
+uses a 256-bit random value digest and a 10-minute exclusive lifetime.
+The transaction service must derive and verify these authorities, acquire
+current policy/source/challenge/history locks, serialize key digest
+uniqueness, and commit lifecycle, one-time challenge and mandatory audit
+atomically. The permission/scope increment alone does not expose a grant
+writer, operational challenge acceptance or issuer activation. Complete the
+service, provider evidence integration and PostgreSQL qualification within
+the same draft candidate before admission; actual custody ceremony and UAT
+remain separate operator-approved execution.
