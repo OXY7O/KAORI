@@ -144,3 +144,35 @@ A real ceremony and disposable provider evidence require separate reviewed
 implementation and operator authorization; no signer, key generation, live
 provider access, secret retrieval, mutation, migration or worker wiring is
 introduced here.
+
+
+### Issuer proof of possession (#5231)
+
+The offline Ed25519 challenge statement uses the existing compact sorted
+ASCII JSON and UTC timestamp conventions. The distinct schema
+`kaori.secrets.issuer_possession.v1` binds the complete issuer target,
+algorithm, candidate public-key digest, challenge digest, source-owner
+identifier, issue time and exclusive expiry. The verifier reconstructs
+bytes from independently expected context, checks the raw public-key
+SHA-256 digest and verifies the signature using existing offline primitives.
+Credential version statement bytes and legacy Vault behavior are unchanged.
+The existing proposed 24-hour shape ceiling is reused; it is not approval
+of an operational challenge lifetime.
+
+A matching signature proves possession of the corresponding signing key
+for that message only. Neither a supplied expected challenge nor a valid
+signature proves deployment identity, exclusive custody, authenticated
+ownership, checker authorization or actual provider credential schema.
+There is deliberately no signer, nonce generator, issuance endpoint,
+persistence or acceptance path in this increment. Repeated successful
+offline verification is possible and does not authorize anything.
+
+A separate governed implementation must issue unpredictable single-use
+challenges, persist only bounded metadata, bind current exact target and
+key to authenticated source-owner intent, resolve current challenge state
+independently of any response, and atomically consume it with the verified
+evidence and sanitized Activity Audit. Deny already consumed, revoked,
+expired, missing, substituted or unavailable records without fallback.
+The actual deployment identity and independent custody ceremony require
+reviewed authority and disposable environment evidence before any active
+issuer writer or worker use.
