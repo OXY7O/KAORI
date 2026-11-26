@@ -299,3 +299,21 @@ def test_active_alert_table_names_eight_columns_and_preserves_source_state() -> 
     assert "'source_state': payload.filters.source_state" in source
     for heading in ('Alert', 'Severity', 'Source', 'Workflow', 'Owner', 'Age', 'Delivery', 'Action'):
         assert f'>{heading}</th>' in source
+
+
+def test_alert_lifecycle_navigation_is_above_hero_and_scope_preserving() -> None:
+    page = read('app/templates/intelligence/partials/_alert_intelligence_page.html')
+    workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
+    summary = read('app/templates/intelligence/partials/_alert_intelligence_summary.html')
+
+    assert page.count('workspace_tabs.render_navigation(') == 1
+    assert page.index('workspace_tabs.render_navigation(') < page.index('page_hero.shell_classes()')
+    assert "hx_target='#alert-intelligence-page-content'" in page
+    assert 'hx-sync="#alert-intelligence-page-content:replace"' in page
+    assert "'domain': payload.domain, 'asset': payload.selected_asset_key" in page
+    for tab in ('overview', 'active', 'routing', 'templates', 'silences', 'resolved'):
+        assert f"tab='{tab}', **tab_query" in page
+    assert 'content_tabs.render_links' not in workspace
+    assert 'name="tab"' in workspace
+    assert 'value="{{ payload.tab }}"' in workspace
+    assert 'lifecycle navigation above' in summary
