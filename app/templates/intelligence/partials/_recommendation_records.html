@@ -150,6 +150,8 @@
 {% else %}
     {% set readiness = payload.evidence_readiness|default({}) %}
     {% set readiness_status = readiness.status|default('not_collected') %}
+    {% set runtime_evidence = payload.registry_runtime_evidence|default(none) %}
+    {% set runtime_review_required = runtime_evidence and runtime_evidence.status != 'ready' %}
     {% if readiness_status == 'unavailable' %}
         {% set empty_state_icon = "shield-alert" %}
         {% set empty_state_label = "Evidence Unavailable" %}
@@ -160,6 +162,14 @@
         {% set empty_state_label = "No Matching Findings" %}
         {% set empty_state_title = "No Recommendations Match the Current Filters" %}
         {% set empty_state_description = "Adjust the filters. This does not prove that the underlying asset or source evidence is healthy." %}
+    {% elif runtime_review_required %}
+        {% set empty_state_icon = "waypoints" %}
+        {% set empty_state_label = "Evidence Review Required" %}
+        {% set empty_state_title = runtime_evidence.title %}
+        {% set empty_state_description = runtime_evidence.description %}
+        {% if readiness_status in ['partial', 'not_collected'] %}
+            {% set empty_state_description = empty_state_description ~ " Recent inventory or evaluation coverage is also incomplete." %}
+        {% endif %}
     {% elif readiness_status in ['partial', 'not_collected'] %}
         {% set empty_state_icon = "shield-alert" %}
         {% set empty_state_label = "Evidence Review Required" %}
@@ -170,6 +180,14 @@
         {% set empty_state_label = "No Active Findings" %}
         {% set empty_state_title = "No Active Recommendations From Current Evidence" %}
         {% set empty_state_description = "No rule match is projected from the recent committed inventory baseline. This is not a provider-health guarantee." %}
+    {% endif %}
+    {% if runtime_review_required %}
+        {% if readiness_status == 'unavailable' or payload.active_filter_count|default(0) > 0 %}
+            {% set empty_state_description = empty_state_description ~ ' ' ~ runtime_evidence.title ~ ': ' ~ runtime_evidence.description %}
+        {% endif %}
+        {% set empty_state_action_url = url_for('artifact_registry.runtime') %}
+        {% set empty_state_action_label = "Review Runtime Usage" %}
+        {% set empty_state_permission = "artifact_registry.view" %}
     {% endif %}
     {% set empty_state_variant = "panel" %}
     {% set empty_state_min_height = "min-h-[170px]" %}

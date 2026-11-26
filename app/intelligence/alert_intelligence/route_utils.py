@@ -20,6 +20,13 @@ def index_response() -> ResponseReturnValue:
 
 
 def case_details_response(public_id: str) -> ResponseReturnValue:
+    from app.intelligence.alert_intelligence.provider_case_scope import (
+        is_provider_case_domain,
+        provider_case_detail_response,
+    )
+
+    if is_provider_case_domain(str(request.args.get('domain') or '')):
+        return provider_case_detail_response(request.args, public_id)
     args = request.args.copy()
     args['case'] = public_id
     if not args.get('tab'):
