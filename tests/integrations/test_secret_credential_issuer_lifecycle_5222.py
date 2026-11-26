@@ -100,6 +100,29 @@ def test_stale_or_incomplete_history_and_source_drift_denied():
     assert not _qualify(active, draft, key_history=(draft, _record(1, 'draft', deployment_ref='c' * 64)))
 
 
+@pytest.mark.parametrize(
+    'changes',
+    [
+        {'evidence_ref': 'c' * 64},
+        {'requested_by_user_id': 3},
+        {'lifecycle_status': 'active'},
+        {'recorded_at': _NOW - timedelta(seconds=1)},
+        {'effective_until': _NOW + timedelta(hours=2)},
+    ],
+)
+def test_latest_snapshot_cannot_be_substituted_by_revision_number(changes):
+    draft = _record(1, 'draft')
+    history = _record(1, 'draft', **changes)
+    assert not _qualify(_record(2, 'active'), draft, key_history=(history,))
+
+
+def test_duplicate_history_and_malformed_draft_denied():
+    draft = _record(1, 'draft')
+    assert not _qualify(_record(2, 'active'), draft, key_history=(draft, draft))
+    malformed = _record(1, 'draft', approved_by_user_id=2, approved_at=_NOW)
+    assert not _qualify(_record(2, 'active'), malformed)
+
+
 def test_revocation_terminal_and_reenrollment_requires_fresh_key():
     active = _record(2, 'active')
     revoked = _record(3, 'revoked')
@@ -107,6 +130,7 @@ def test_revocation_terminal_and_reenrollment_requires_fresh_key():
     assert not _qualify(_record(3, 'draft'), active, key_history=())
     assert not _qualify(_record(4, 'active'), revoked)
     assert not _qualify(_record(4, 'draft'), revoked)
+    assert not _qualify(_record(4, 'draft'), revoked, key_history=())
     fresh = bytes.fromhex('3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c')
     assert _qualify(
         _record(4, 'draft', public_key_hex=fresh.hex(), key_sha256=sha256(fresh).hexdigest()), revoked, key_history=()

@@ -174,6 +174,7 @@ def resolve_issuer_candidate(target: IssuerResolutionTarget) -> Ed25519PublicKey
     except SQLAlchemyError:
         return None
 
+
 def _record_target(row: SecretCredentialIssuerRevision) -> IssuerResolutionTarget:
     return IssuerResolutionTarget(
         row.integration_instance_id,
@@ -209,15 +210,42 @@ def _revision_shape(row: SecretCredentialIssuerRevision, now: datetime) -> bool:
     )
 
 
+def _draft_actor_shape(row: SecretCredentialIssuerRevision) -> bool:
+    return (
+        row.approved_by_user_id is None
+        and row.approved_at is None
+        and row.recorded_by_user_id == row.requested_by_user_id
+    )
+
+
+def _revision_snapshot(row: SecretCredentialIssuerRevision) -> tuple[object, ...]:
+    return (
+        *_binding(row),
+        row.revision_number,
+        row.lifecycle_status,
+        row.algorithm,
+        row.evidence_ref,
+        row.requested_by_user_id,
+        row.approved_by_user_id,
+        row.recorded_by_user_id,
+        row.approved_at,
+        row.recorded_at,
+        row.effective_from,
+        row.effective_until,
+    )
+
+
 def _continuation_shape(
     candidate: SecretCredentialIssuerRevision,
     latest: SecretCredentialIssuerRevision,
     key_history: tuple[SecretCredentialIssuerRevision, ...],
+    now: datetime,
 ) -> bool:
     approved = candidate.approved_at
     return (
         latest.lifecycle_status in ('draft', 'active')
         and (candidate.lifecycle_status == 'revoked' or latest.lifecycle_status == 'draft')
+        and (latest.lifecycle_status != 'draft' or _draft_actor_shape(latest))
         and _binding(candidate) == _binding(latest)
         and candidate.requested_by_user_id == latest.requested_by_user_id
         and candidate.effective_from == latest.effective_from
@@ -226,9 +254,11 @@ def _continuation_shape(
         and approved is not None
         and _aware(approved)
         and latest.recorded_at <= approved <= candidate.recorded_at
-        and any(row.revision_number == latest.revision_number for row in key_history)
+        and len({row.revision_number for row in key_history}) == len(key_history)
+        and any(_revision_snapshot(row) == _revision_snapshot(latest) for row in key_history)
         and all(
-            _binding(row) == _binding(candidate)
+            _revision_shape(row, now)
+            and _binding(row) == _binding(candidate)
             and row.lifecycle_status in ('draft', 'active')
             and row.revision_number <= latest.revision_number
             for row in key_history
@@ -282,14 +312,16 @@ def issuer_transition_shape_qualified(
     if state == 'draft':
         # Initial enrollment or explicit revoke-then-enroll with a fresh key.
         return (
-            (latest is None or latest.lifecycle_status == 'revoked')
+            (latest is None or (latest.lifecycle_status == 'revoked' and latest.key_sha256 != candidate.key_sha256))
             and not key_history
-            and candidate.approved_by_user_id is None
-            and candidate.approved_at is None
-            and candidate.recorded_by_user_id == candidate.requested_by_user_id
+            and _draft_actor_shape(candidate)
             and now < candidate.effective_until
         )
-    if latest is None or state not in ('active', 'revoked') or not _continuation_shape(candidate, latest, key_history):
+    if (
+        latest is None
+        or state not in ('active', 'revoked')
+        or not _continuation_shape(candidate, latest, key_history, now)
+    ):
         return False
     if state == 'revoked':
         # Expired or disabled sources must not prevent same-binding revocation.
