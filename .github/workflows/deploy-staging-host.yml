@@ -74,7 +74,7 @@ jobs:
           }
 
           if [[ -n "$PUBLISHER_RUN_ID" ]]; then
-            [[ "$PUBLISHER_RUN_ID" =~ ^[0-9]+$ && "$AUTO_STAGING_ENABLED" == 'true' ]] || {
+            [[ "$PUBLISHER_RUN_ID" =~ ^[0-9]+$ && "$AUTO_STAGING_ENABLED" == 'true' && "$GITHUB_REF_PROTECTED" == 'true' ]] || {
               printf 'Automatic deployment is disabled or publisher run ID is invalid.\n' >&2
               exit 1
             }
@@ -151,11 +151,22 @@ jobs:
               sleep 10
             done
           else
+            # Manual recovery can use a completed successful Publish RC job even
+            # if its subsequent automatic dispatch failed. Skip no-op runs.
             rc_runs_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
               "$api_root/actions/workflows/publish-staging-image.yml/runs?per_page=100")"
-            rc_run_id="$(jq -r --arg sha "$accepted_sha" \
-              '[.workflow_runs[] | select(.head_sha == $sha and .status == "completed" and .conclusion == "success")] | sort_by(.run_number) | last.id // empty' \
-              <<<"$rc_runs_json")"
+            rc_run_id=''
+            while IFS= read -r candidate_run; do
+              [[ "$candidate_run" =~ ^[0-9]+$ ]] || continue
+              jobs_json="$(curl --fail-with-body --silent --show-error "${headers[@]}" \
+                "$api_root/actions/runs/$candidate_run/jobs?filter=all&per_page=100")"
+              if jq -e 'any(.jobs[]; .name == "Publish RC" and .conclusion == "success")' <<<"$jobs_json" >/dev/null; then
+                rc_run_id="$candidate_run"
+                break
+              fi
+            done < <(jq -r --arg sha "$accepted_sha" \
+              '[.workflow_runs[] | select(.head_sha == $sha and .status == "completed")] | sort_by(.run_number) | reverse | .[].id' \
+              <<<"$rc_runs_json")
             [[ "$rc_run_id" =~ ^[0-9]+$ ]] || {
               printf 'Successful publish-staging-image.yml evidence is missing for %s.\n' "$accepted_sha" >&2
               exit 1
@@ -247,10 +258,13 @@ jobs:
           AUTO_STAGING_ENABLED: ${{ vars.KAORI_APP_AUTO_STAGING_ENABLED }}
         run: |
           set -Eeuo pipefail
-          current_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/kaori/staging" --jq '.object.sha')"
+          current_sha="$(curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/git/ref/heads/kaori/staging" | jq -r '.object.sha')"
           [[ "$current_sha" == "$REQUESTED_SHA" ]] || { printf 'Staging advanced; refusing stale host deployment.\n' >&2; exit 1; }
           if [[ -n "$PUBLISHER_RUN_ID" ]]; then
-            [[ "$AUTO_STAGING_ENABLED" == 'true' ]] || { printf 'Automatic host deployment is disabled.\n' >&2; exit 1; }
+            [[ "$AUTO_STAGING_ENABLED" == 'true' && "$GITHUB_REF_PROTECTED" == 'true' ]] || { printf 'Automatic host deployment is disabled.\n' >&2; exit 1; }
           fi
 
       - name: Checkout Staging SHA
