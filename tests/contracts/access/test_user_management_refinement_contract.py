@@ -508,6 +508,10 @@ def test_user_directory_guide_preserves_credential_and_lifecycle_authority() -> 
     Environment().parse(summary)
     Environment().parse(source)
     assert 'info_tip.render(' not in summary
+    summary_title = summary.split('<div class="flex flex-wrap items-center gap-2">', 1)[1].split('</div>', 1)[0]
+    label = "table_label.metadata_label(table_label.count_text(summary.managed, 'Managed Account'), icon='users-round')"
+    assert summary_title.index('>Account &amp; Identity Posture</h2>') < summary_title.index(label)
+    assert 'pagination.total_items' not in summary_title
     assert '{% import "components/info_tip.html" as info_tip %}' in source
     assert source.count('info_tip.render(') == 1
     title_group = source.split('<div class="flex flex-wrap items-center gap-2">', 1)[1].split('</div>', 1)[0]
