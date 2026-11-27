@@ -60,6 +60,10 @@ def validate_channel_input(
         errors.append('Select at least one delivery domain for this notification channel.')
     if not data.event_types:
         errors.append('Select at least one allowed use for this notification channel.')
+    if 'secrets_pki' in data.domains and (
+        set(data.domains) != {'secrets_pki'} or set(data.event_types) != {'alert_ops.firing'}
+    ):
+        errors.append('Secrets & PKI requires a dedicated firing-only notification channel.')
     if data.domains and data.event_types:
         ineligible_domains = [
             domain

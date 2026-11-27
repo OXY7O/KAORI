@@ -185,7 +185,65 @@ database containing real provider connections.
    fail closed. Check audit records with redacted evidence.
 
 The Overview must show admitted cases, critical severity, fresh firing and
-unknown separately; no records is not a provider health claim. Recovery,
-closure and actual notification delivery remain unqualified; they must not
-be simulated as successful. Local functional review is distinct from
-Developer Check, Full Admission and Human Acceptance.
+unknown separately; no records is not a provider health claim. Local
+functional review is distinct from Developer Check, Full Admission and
+Human Acceptance. The recovery and delivery implementation below is
+conditional on independently provisioned real evidence; never simulate
+successful provider recovery or transport acceptance.
+
+
+## HV-12 — Signed recovery and explicit delivery local UAT (#5252 / #5253)
+
+Code is available in the review workbench; all executable and browser
+validation remains pending. Use the same isolated Dev Container, disposable
+provider instances, and existing local-only opt-ins above. Do not create a
+real notification destination or configure a production signer for this UAT.
+
+1. **Recovery source prerequisite.** Identify the actual provider-owned rule
+   evaluator's retained explicit resolution record for the exact Alertmanager
+   occurrence. Establish fingerprint/startsAt continuity, source/binding
+   identity and completeness. A GET response that omits an alert, elapsed
+   endsAt or a silent source is not an authority. Provision the independently
+   pinned provider exporter described in
+   `app/secrets_pki/TELEMETRY_BINDING.md` in the read-only deployment mount
+   `/run/kaori/vault-alert-authority`. Keep private signing keys outside
+   KAORI; do not generate a synthetic recovery receipt. A trusted exporter
+   has not yet been configured in this workbench.
+2. Observe real firing, reconcile and acknowledge/mitigate in the case.
+   Trigger a real recovery in the disposable source and have its authoritative
+   exporter emit the signed exact receipt. Execute the existing observation
+   job, then use **Admit Provider Recovery (Local UAT)** on the case if the
+   action qualifies. Confirm source resolved and workflow verification
+   pending, with separate source and operator evidence. No same-occurrence
+   active/suppressed response or older resolution may be accepted.
+3. Run another observation after verification started. Signer evidence
+   must still qualify, then a different operator with independent exact
+   read and decision scope may choose **Verify and Close (Local UAT)**.
+   Review Resolved history and the redacted timeline. Reject same actor,
+   stale generation, missing/tampered receipt, revoked scope and replay.
+4. **Destination prerequisite.** Use a dedicated disposable Notification
+   Channel configured only for Secrets & PKI / alert_ops.firing; validate
+   it using canonical Test Delivery. The maker must also hold explicit
+   integrations.manage. Create the candidate on the exact Vault Routing tab
+   and obtain its canonical policy ID. A distinct checker with normalized
+   roles.manage/users.manage/integrations.manage and an approved exact read
+   grant reviews the actual disposable destination outside KAORI and signs
+   the exact case/binding/source/policy/channel revision and validity receipt.
+   Mount its separate verification pin and receipt in the same fixed
+   read-only authority directory; no private key in application containers.
+5. With a fresh open firing case, use Review Approval (no network call), then
+   only with explicit disposable-channel authorization select Send Approved
+   Firing. Confirm the redacted journal and audit, and a single accepted
+   notification at the approved destination. Attempt duplicate submission,
+   changed channel/receipt, revoked grant and acknowledged/unknown source:
+   no new transport. A crash or ambiguous failure is review-required, never
+   automatically retried. Only a definitive Slack 429 with valid Retry-After
+   permits a new signed approval and explicit retry of the same transport
+   after its due time; generic recovery remains suppressed.
+6. Review all views in light/dark/mobile and validate CSRF, permissions,
+   independent approvals, source freshness, exact occurrence, PostgreSQL
+   claim/lock concurrency and no leaked raw payloads or credentials. Record
+   exact tested SHA and real provider evidence. Resolved notification,
+   automatic repeats and provider-specific postmortem editing remain
+   unqualified. Do not run official admission or deploy an RC until local
+   validation and human approval are complete.

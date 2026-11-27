@@ -70,6 +70,7 @@ def _action_for(case: AlertCase, *, actor_id: int, generation: datetime, resolve
     started = _persisted_utc(case.verification_started_at)
     if (
         recovered is None or recovered.actor_user_id == actor_id
+        or _latest_event_id(case) != recovered.id
         or started is None or generation <= started
         or resolved != _persisted_utc(case.source_resolved_at)
     ):
