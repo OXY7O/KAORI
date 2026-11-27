@@ -46,5 +46,24 @@
                 {% endfor %}
             </div>
         </section>
+        <section class="{{ table_ui.block_classes() }}" aria-label="OpenBao Runtime History">
+            <header class="{{ table_ui.block_header_classes() }}">
+                <div>
+                    <h2 class="{{ table_ui.block_title_classes() }}">Recent Runtime Observations</h2>
+                    <p class="{{ table_ui.block_description_classes() }}">Last five observations for this exact canonical OpenBao connection.</p>
+                </div>
+            </header>
+            <div class="divide-y divide-outline-subtle">
+                {% for observation in history %}
+                    <div class="grid gap-2 px-5 py-3 text-sm sm:grid-cols-3">
+                        <span>{{ observation.observed_at|user_datetime }}</span>
+                        <span>{{ observation.health_status|title }}</span>
+                        <span>{{ observation.readiness|replace('_', ' ')|title }}</span>
+                    </div>
+                {% else %}
+                    <p class="p-5 text-sm text-content-muted">No committed runtime history. Request a connection validation.</p>
+                {% endfor %}
+            </div>
+        </section>
     </div>
 {% endblock dashboard_content %}

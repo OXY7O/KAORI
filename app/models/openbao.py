@@ -45,3 +45,15 @@ class OpenBaoInstance(db.Model):
     @property
     def enabled(self) -> bool:
         return self.integration_instance.enabled
+
+    @property
+    def provider_key(self) -> str:
+        return self.integration_instance.provider_key
+
+    @property
+    def adapter_key(self) -> str:
+        return self.integration_instance.adapter_key
+
+    @property
+    def readiness_status(self) -> str | None:
+        return self.integration_instance.readiness_status

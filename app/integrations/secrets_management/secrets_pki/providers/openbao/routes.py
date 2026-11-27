@@ -14,6 +14,7 @@ from app.integrations.secrets_management.secrets_pki.providers.openbao.service i
     list_connections,
     local_provider_enabled,
     register_connection,
+    runtime_history,
 )
 from app.integrations.validation.state import get_active_validation_task_id
 from app.integrations.validation.web import enqueue_instance_validation, enqueue_runtime_health_refresh
@@ -78,7 +79,9 @@ def detail(instance_id: int) -> ResponseReturnValue:
         )
         for operation in ('full_validation', 'runtime_refresh')
     }
-    return render_template('integrations/secrets_management/openbao/detail.html', row=row, active=active)
+    return render_template(
+        'integrations/secrets_management/openbao/detail.html', row=row, active=active, history=runtime_history(row)
+    )
 
 
 @openbao_bp.post('/instances/<int:instance_id>/<string:operation>')

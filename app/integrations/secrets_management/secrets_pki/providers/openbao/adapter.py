@@ -46,7 +46,7 @@ class OpenBaoRuntimeAdapter:
     @staticmethod
     def _guard(row: OpenBaoInstance) -> None:
         identity = ensure_provider_operational(row, integration_type='secrets_pki')
-        if not local_provider_enabled() or identity.provider_key != 'openbao':
+        if not local_provider_enabled() or identity.provider_key != 'openbao' or identity.adapter_key != 'openbao_http_v1':
             raise ValueError('OpenBao runtime operations are restricted to local development.')
 
     def refresh(self, row: OpenBaoInstance) -> dict[str, Any]:
@@ -82,7 +82,12 @@ class OpenBaoRuntimeAdapter:
 
     def get_state(self, row: OpenBaoInstance, *, validation_result: Any = None) -> RuntimeState:
         identity = row.integration_instance
-        available = identity.health_status == 'connected' and local_provider_enabled() and identity.enabled
+        available = (
+            identity.health_status == 'connected'
+            and local_provider_enabled()
+            and identity.enabled
+            and identity.lifecycle_status == 'active'
+        )
         now = datetime.now(UTC)
         return RuntimeState(
             integration_type='secrets_pki',

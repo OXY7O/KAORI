@@ -25,6 +25,7 @@ from app.integrations.secrets_management.secrets_pki.providers.openbao.client im
 from app.integrations.secrets_management.secrets_pki.providers.openbao.qualification import _require_current_cluster
 from app.models.integration import IntegrationInstance
 from app.models.openbao import OpenBaoInstance
+from app.models.runtime import IntegrationRuntimeObservation
 from app.platform_operations.notifications.service import stage_operational_activity
 
 _INTERNAL = 'https://secret-store:8200'
@@ -79,6 +80,12 @@ def _require_connection(values: OpenBaoConnectionInput) -> None:
 def verify_health(row: OpenBaoInstance) -> None:
     if not local_provider_enabled() or not os.getenv(OpenBaoClient.ca_bundle_env, '').strip():
         raise SecretProviderError('OpenBao local development and explicit CA trust are required.')
+    if row.ownership == 'internal' and (
+        os.getenv('KAORI_INTERNAL_SECRET_STORE_PROVIDER') != 'openbao'
+        or os.getenv('KAORI_INTERNAL_SECRET_STORE_ENDPOINT') != _INTERNAL
+        or row.endpoint != _INTERNAL
+    ):
+        raise SecretProviderError('Internal deployment configuration changed.')
     transport = KV2HTTPTransport(
         endpoint=row.endpoint,
         provider_label=OpenBaoClient.provider_label,
@@ -170,3 +177,17 @@ def list_connections(*, page: int, per_page: int) -> tuple[list[OpenBaoInstance]
         IntegrationInstance.integration_type == 'secrets_pki', IntegrationInstance.provider_key == 'openbao'
     ).order_by(OpenBaoInstance.id.asc())
     return paginate_query(query, page=page, per_page=per_page)
+
+def runtime_history(row: OpenBaoInstance) -> list[IntegrationRuntimeObservation]:
+    """Do not join Vault history by the independent provider-record primary key."""
+    return (
+        IntegrationRuntimeObservation.query.filter_by(
+            integration_instance_id=row.integration_instance_id,
+            integration_type='secrets_pki',
+            provider_key='openbao',
+            adapter_key='openbao_http_v1',
+        )
+        .order_by(IntegrationRuntimeObservation.observed_at.desc(), IntegrationRuntimeObservation.id.desc())
+        .limit(5)
+        .all()
+    )
