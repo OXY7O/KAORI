@@ -103,6 +103,9 @@
                     <label>
                         <span class="{{ table_ui.filter_label_classes() }}">Eligible Owner</span>
                         <select name="owner_user_id" class="{{ table_ui.filter_select_classes() }}">
+                            {% if operator_controls.has_owner and not operator_controls.owner_user_id %}
+                                <option value="" disabled selected>Current owner unavailable</option>
+                            {% endif %}
                             <option value="">Unassigned</option>
                             {% for recipient in operator_controls.recipients %}
                                 <option value="{{ recipient.id }}"
@@ -117,7 +120,7 @@
         </section>
     {% endif %}
     <p class="mt-5 text-xs text-content-muted">
-        Read-only committed AlertCase evidence. Source absence does not imply recovery.
+        Committed AlertCase evidence. Source absence does not imply recovery.
         Committed operator workflow is shown independently of source state. Recovery requires positive source evidence.
         Routing and notifications remain disabled pending governed delivery qualification.
     </p>

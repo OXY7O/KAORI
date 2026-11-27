@@ -698,12 +698,14 @@ def test_web_mutation_rejects_missing_csrf_and_extra_fields(scope, monkeypatch):
         from flask import request
 
         form = request.form.copy()
-        form.update({
-            'csrf_token': generate_csrf(),
-            'instance_id': str(vault.id),
-            'expected_event_id': str(AlertCaseEvent.query.one().id),
-            'action': 'acknowledge',
-        })
+        form.update(
+            {
+                'csrf_token': generate_csrf(),
+                'instance_id': str(vault.id),
+                'expected_event_id': str(AlertCaseEvent.query.one().id),
+                'action': 'acknowledge',
+            }
+        )
         monkeypatch.setattr(request, 'form', form)
         with pytest.raises(BadRequest):
             web.operator_action_response(case_id)
@@ -720,3 +722,37 @@ def test_recipient_selector_uses_only_exact_operator_grants(scope):
     _grant(vault, other, permission='intelligence.decisions.create')
     assert web._recipient_options(vault.id, now=AT) == [{'id': actor.id, 'label': actor.username}]
     db.session.rollback()
+
+
+def test_web_adapter_passes_authenticated_actor_and_refreshes_only_after_commit(scope, monkeypatch):
+    from flask import current_app, request
+    from flask_wtf.csrf import generate_csrf
+
+    from app.intelligence.alert_intelligence import vault_operator_web as web
+
+    vault, _source, _binding, actor = scope
+    case = _operator_case(scope)
+    _grant(vault, actor, permission='intelligence.decisions.create')
+    monkeypatch.setenv(web._WEB_ENABLE_ENV, 'true')
+    monkeypatch.setattr(web, 'current_user', actor)
+    monkeypatch.setattr(web, 'url_for', lambda *_args, **_kwargs: '/case-detail')
+    feedback = []
+    monkeypatch.setattr(web, 'create_transient_feedback', lambda **kwargs: feedback.append(kwargs))
+    command = web.apply_vault_provider_operator_action
+    monkeypatch.setattr(web, 'apply_vault_provider_operator_action', lambda **kwargs: command(**kwargs, now=AT))
+    with current_app.test_request_context(method='POST', headers={'HX-Request': 'true'}):
+        form = request.form.copy()
+        form.update(
+            {
+                'csrf_token': generate_csrf(),
+                'instance_id': str(vault.id),
+                'expected_event_id': str(AlertCaseEvent.query.one().id),
+                'action': 'acknowledge',
+            }
+        )
+        monkeypatch.setattr(request, 'form', form)
+        response = web.operator_action_response(case.public_id)
+        assert response.headers['HX-Redirect'] == '/case-detail'
+    assert AlertCase.query.one().workflow_state == 'acknowledged'
+    assert AlertCaseEvent.query.count() == AuditEvent.query.count() == 2
+    assert feedback[0]['status'] == 'success'

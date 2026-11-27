@@ -98,8 +98,10 @@ def operator_controls(*, instance_id: int, public_id: str) -> dict[str, Any] | N
     Binding-first order matches the mutation command. No fleet/user enumeration;
     selector candidates originate only from the exact decision scope.
     """
+    if not _enabled():
+        return None
     actor_id = getattr(current_user, 'id', None)
-    if not _enabled() or type(actor_id) is not int:
+    if type(actor_id) is not int:
         return None
     now = datetime.now(UTC)
     try:
