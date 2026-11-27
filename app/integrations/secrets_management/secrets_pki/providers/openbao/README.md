@@ -2,7 +2,8 @@
 
 The accepted direction is one OpenBao provider for both bundled platform-owned
 and optional external managed instances. Ownership is not inferred from an
-endpoint or name. This package is not yet registered in the runtime catalog.
+endpoint or name. The local Dev Container implementation is registered in the
+Integration Kernel; independent operational authority remains pending.
 
 The read-only `OpenBaoClient` and existing `VaultClient` share
 `providers/kv2_http.py`, `kv2_transport.py` and `kv2_metadata.py`. Existing
@@ -123,8 +124,44 @@ it is not a signed deployment receipt, authorization, or persisted admission
 evidence. It does not prove complete ACL containment, AppRole login, audit delivery,
 provider provenance, or worker credential compatibility.
 
-The provider selector continues to report OpenBao registration as unavailable.
+The provider selector permits local registration after this implementation;
+registration is distinct from operational qualification.
 No runtime registration, database write, provider modification, secret retrieval,
 ENV migration or credential activation is performed. Qualify the disposable
 deployment, preserve the evidence in the issue, and obtain the separate
 independent approval before changing the provider lifecycle or bootstrap policy.
+
+## Local provider integration (#5203)
+
+OpenBao has a separate provider record and migration, canonical IntegrationInstance
+identity, distinct openbao_http_v1 adapter, explicit internal/external ownership,
+unique cluster and endpoint, and encrypted AppRole SecretID. Vault records are
+unchanged. Local activation requires explicit APP_ENV=development in both the
+process and Flask config. The provider matrix makes the implementation available;
+outside this local context registration and adapter execution are denied.
+
+External: Integrations → Secrets Management → Secrets & PKI → Choose Provider →
+OpenBao. Enter the independently verified cluster UUID and approved HTTPS origin,
+AppRole mount, RoleID and SecretID. Verify and Register performs a fresh pinned
+2.7.3 active-health and bounded non-root AppRole lookup before committing the
+canonical connection and mandatory audit. SecretID is never rendered back.
+Use the existing local pre-registration CLI to qualify exact audit and mount
+metadata independently; connection registration does not attest those policies.
+
+Internal: use deployment-owned KAORI_INTERNAL_SECRET_STORE_PROVIDER=openbao
+and KAORI_INTERNAL_SECRET_STORE_ENDPOINT=https://secret-store:8200, with the
+OpenBao-specific CA and allowlist. In the isolated Dev Container run
+`flask register-internal-openbao --help`. The CLI obtains the AppRole SecretID
+without echo, checks the configured endpoint and operator-pinned cluster, and
+uses the same registration service. It creates one bundled connection, never
+registers it as external, and refuses duplicates without destructive replacement.
+
+The connection detail reads committed state, provides the canonical validation
+worker action and runtime health refresh, and displays independent credential
+authority as pending. Validation confirms connection evidence, never grants
+ready status; scheduled health does not authenticate or retrieve secret data.
+No generic client.build, credential onboarding, secret read/write, issuer
+activation, worker material delivery, live policy change or production activation
+is admitted. OpenBao-specific runtime history uses the canonical identity to
+avoid cross-provider record-ID collisions. Local tests, migration rehearsal,
+real provider UAT and official admission remain mandatory before promotion.

@@ -1,5 +1,7 @@
 """Register the OpenBao implementation alongside the existing Secrets & PKI module."""
 
+from sqlalchemy.orm import defer
+
 from app.integrations.kernel.registry import IntegrationImplementation, IntegrationRegistry
 from app.integrations.secrets_management.secrets_pki.providers.openbao.adapter import record_failure, runtime_adapter
 from app.integrations.secrets_management.secrets_pki.providers.openbao.service import get_connection, local_provider_enabled
@@ -9,7 +11,7 @@ from app.models.openbao import OpenBaoInstance
 def _canonical_loader(instance_id: int) -> OpenBaoInstance | None:
     if not local_provider_enabled():
         return None
-    return OpenBaoInstance.query.filter_by(integration_instance_id=instance_id).first()
+    return OpenBaoInstance.query.options(defer(OpenBaoInstance.secret_id)).filter_by(integration_instance_id=instance_id).first()
 
 
 def _record_loader(instance_id: int) -> OpenBaoInstance | None:

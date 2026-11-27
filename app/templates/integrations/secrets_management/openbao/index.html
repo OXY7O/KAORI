@@ -1,0 +1,50 @@
+{% extends "layouts/app.html" %}
+{% import "integrations/components/_provider_frontpage.html" as provider_front %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/pagination.html" as pagination_ui %}
+{% block title %}OpenBao Integrations · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div class="kaori-integration-semantic space-y-6">
+        {{ provider_front.hero("key-round", "shield-check", "OpenBao Integrations", "Review internal and external local connections. Connection evidence is independent of credential authority.", pagination.total_items, 0, 0, "Attention", url_for("openbao.new_instance"), register_label="Register External Connection") }}
+        <section class="{{ table_ui.block_classes() }}" aria-label="OpenBao Connection Registry">
+            <header class="{{ table_ui.block_header_classes() }}">
+                <div>
+                    <h2 class="{{ table_ui.block_title_classes() }}">OpenBao Connection Registry</h2>
+                    <p class="{{ table_ui.block_description_classes() }}">Internal registration is deployment-owned. External connections are registered explicitly.</p>
+                </div>
+            </header>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="border-b border-outline-subtle text-content-muted">
+                        <tr>
+                            {% for heading in ["Connection", "Ownership", "Version", "Health", "Readiness", "Action"] %}
+                                <th scope="col" class="px-4 py-3">{{ heading }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-outline-subtle">
+                        {% for row in rows %}
+                            <tr>
+                                <td class="px-4 py-3 font-semibold text-content-primary">{{ row.name }}</td>
+                                <td class="px-4 py-3">{{ row.ownership|title }}</td>
+                                <td class="px-4 py-3">{{ row.detected_version or 'Unknown' }}</td>
+                                <td class="px-4 py-3">{{ row.integration_instance.health_status or 'Unknown' }}</td>
+                                <td class="px-4 py-3">{{ row.integration_instance.readiness_status or 'Validation required' }}</td>
+                                <td class="px-4 py-3"><a class="{{ table_ui.action_classes() }}" href="{{ url_for('openbao.detail', instance_id=row.id) }}">Review</a></td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="6" class="px-4 py-6 text-content-muted">No registered OpenBao connections. Register an external connection or use the deployment-owned internal CLI.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="{{ pagination_ui.footer_classes() }}">
+                <span>{{ pagination.total_items }} connections</span>
+                <div class="{{ pagination_ui.navigation_group_classes() }}">
+                    {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, endpoint='openbao.index', query_params={'per_page': pagination.per_page}) }}
+                </div>
+            </div>
+        </section>
+    </div>
+{% endblock dashboard_content %}

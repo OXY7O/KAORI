@@ -1,0 +1,50 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/action_button.html" as action_button %}
+{% block title %}{{ row.name }} · OpenBao · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div class="kaori-integration-semantic space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro("key-round", "Secrets & PKI · OpenBao", "shield-check") %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ row.name }}</h1>
+                        <p class="{{ page_hero.description_classes() }}">Local connection evidence · {{ row.ownership|title }} ownership</p>
+                    {% endcall %}
+                </div>
+                <a href="{{ url_for('openbao.index') }}" class="{{ action_button.classes('secondary') }}">Back to Registry</a>
+            </div>
+        </section>
+        <section class="{{ table_ui.block_classes() }}" id="validation">
+            <header class="{{ table_ui.block_header_classes() }}">
+                <div>
+                    <h2 class="{{ table_ui.block_title_classes() }}">Connection and Readiness</h2>
+                    <p class="{{ table_ui.block_description_classes() }}">Committed provider observations; not secret or issuer authority.</p>
+                </div>
+            </header>
+            <dl class="grid gap-4 p-5 sm:grid-cols-2">
+                {% for label, value in [("Provider", "OpenBao"), ("Ownership", row.ownership|title), ("Version", row.detected_version or "Unknown"), ("Health", row.integration_instance.health_status or "Unknown"), ("Readiness", row.integration_instance.readiness_status or "Validation required"), ("Last Validation", row.last_validated_at|user_datetime if row.last_validated_at else "Not validated"), ("Credential Authority", "Pending independent qualification")] %}
+                    <div>
+                        <dt class="text-xs text-content-muted">{{ label }}</dt>
+                        <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value }}</dd>
+                    </div>
+                {% endfor %}
+            </dl>
+            {% if row.integration_instance.last_error %}
+                <p class="px-5 text-sm text-status-critical-text">{{ row.integration_instance.last_error }}</p>
+            {% endif %}
+            <div class="flex flex-wrap items-center gap-3 border-t border-outline-subtle p-5" id="runtime">
+                {% if active.full_validation or active.runtime_refresh %}
+                    <p class="text-sm text-content-secondary" role="status">Observation in progress. Refresh this page after the worker completes.</p>
+                {% endif %}
+                {% for operation, label in [("validate", "Validate Connection"), ("refresh", "Runtime Refresh")] %}
+                    <form method="post" action="{{ url_for('openbao.validate_connection', instance_id=row.id, operation=operation) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="{{ action_button.classes('secondary') }}" {% if active.full_validation or active.runtime_refresh or not row.enabled %}disabled{% endif %}>{{ label }}</button>
+                    </form>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+{% endblock dashboard_content %}

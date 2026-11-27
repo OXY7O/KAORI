@@ -1,0 +1,29 @@
+{% extends "layouts/app.html" %}
+{% import "integrations/components/_provider_registration_hero.html" as registration_hero %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/action_button.html" as action_button %}
+{% block title %}Register OpenBao · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div class="kaori-integration-semantic space-y-6">
+        {{ registration_hero.render("key-round", "Secrets & PKI", "key-round", "Register External OpenBao", "Register a locally qualified external connection with independently verified cluster identity.", "shield-check", "OpenBao HTTP API", url_for("openbao.index"), "OpenBao local registration", binding_label="Approved HTTPS + AppRole", after_save_description="Independent authority remains pending") }}
+        <form method="post" autocomplete="off" class="{{ integration_ui.section_shell_classes() }}">
+            {{ form.hidden_tag() }}
+            <div class="grid gap-4 p-5 md:grid-cols-2">
+                {% for field in [form.name, form.endpoint, form.cluster_id, form.auth_mount, form.role_id, form.secret_id] %}
+                    <div>
+                        <label for="{{ field.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">{{ field.label.text }}</label>
+                        {{ field(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}
+                        {% for error in field.errors %}
+                            <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+                <p class="text-xs leading-5 text-content-muted md:col-span-2">Use only a disposable local provider and independently approved scoped AppRole. SecretID is encrypted at rest and never returned in the form. Registration tests connection before saving; it does not approve secret access.</p>
+            </div>
+            <footer class="flex flex-wrap justify-end gap-2 border-t border-outline-subtle p-5">
+                <a href="{{ url_for('openbao.index') }}" class="{{ action_button.classes('secondary') }}">Cancel</a>
+                <button type="submit" class="{{ action_button.classes('primary') }}">Verify and Register</button>
+            </footer>
+        </form>
+    </div>
+{% endblock dashboard_content %}

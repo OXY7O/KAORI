@@ -1,1 +1,1 @@
-"""OpenBao provider package; no runtime registration until qualification."""
+"""OpenBao provider package; local registration and connection evidence only."""

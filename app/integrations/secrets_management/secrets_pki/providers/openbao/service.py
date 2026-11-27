@@ -5,14 +5,15 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
 from flask import current_app, has_app_context
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import defer
 
 from app.common.pagination import paginate_query
 from app.extensions.db import db
-from app.integrations.secrets_management.secrets_pki.providers.kv2_http import SecretProviderError
+from app.integrations.secrets_management.secrets_pki.providers.kv2_http import KV2HTTPTransport, SecretProviderError
 from app.integrations.secrets_management.secrets_pki.providers.kv2_transport import (
     validate_auth_mount,
     validate_secret_endpoint,
@@ -73,6 +74,20 @@ def _require_connection(values: OpenBaoConnectionInput) -> None:
         or not 1 <= len(values.secret_id) <= 4096
     ):
         raise SecretProviderError('Canonical endpoint, cluster UUID and AppRole settings are required.')
+
+
+def verify_health(row: OpenBaoInstance) -> None:
+    if not local_provider_enabled() or not os.getenv(OpenBaoClient.ca_bundle_env, '').strip():
+        raise SecretProviderError('OpenBao local development and explicit CA trust are required.')
+    transport = KV2HTTPTransport(
+        endpoint=row.endpoint,
+        provider_label=OpenBaoClient.provider_label,
+        allowed_origins_env=OpenBaoClient.allowed_origins_env,
+        ca_bundle_env=OpenBaoClient.ca_bundle_env,
+    )
+    if transport.endpoint != row.endpoint:
+        raise SecretProviderError('OpenBao endpoint is not canonical.')
+    _require_current_cluster(transport, cluster_id=row.cluster_id)
 
 
 def verify_connection(values: OpenBaoConnectionInput) -> None:
@@ -143,15 +158,15 @@ def connection_values(row: OpenBaoInstance) -> OpenBaoConnectionInput:
 
 
 def get_connection(instance_id: int) -> OpenBaoInstance | None:
-    return OpenBaoInstance.query.join(OpenBaoInstance.integration_instance).filter(
+    return OpenBaoInstance.query.options(defer(OpenBaoInstance.secret_id)).join(OpenBaoInstance.integration_instance).filter(
         OpenBaoInstance.id == instance_id,
         IntegrationInstance.integration_type == 'secrets_pki',
         IntegrationInstance.provider_key == 'openbao',
     ).first()
 
 
-def list_connections(*, page: int, per_page: int):
-    query = OpenBaoInstance.query.join(OpenBaoInstance.integration_instance).filter(
+def list_connections(*, page: int, per_page: int) -> tuple[list[OpenBaoInstance], dict[str, Any]]:
+    query = OpenBaoInstance.query.options(defer(OpenBaoInstance.secret_id)).join(OpenBaoInstance.integration_instance).filter(
         IntegrationInstance.integration_type == 'secrets_pki', IntegrationInstance.provider_key == 'openbao'
     ).order_by(OpenBaoInstance.id.asc())
     return paginate_query(query, page=page, per_page=per_page)

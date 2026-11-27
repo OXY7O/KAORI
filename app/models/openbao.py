@@ -17,7 +17,7 @@ class OpenBaoInstance(db.Model):
     __table_args__ = (
         CheckConstraint("ownership IN ('internal', 'external')", name='ck_openbao_ownership'),
         CheckConstraint(
-            "(ownership = 'internal' AND internal_slot = 'bundled') OR "
+            "(ownership = 'internal' AND internal_slot IS NOT NULL AND internal_slot = 'bundled') OR "
             "(ownership = 'external' AND internal_slot IS NULL)",
             name='ck_openbao_internal_slot',
         ),

@@ -13,6 +13,7 @@ from app.integrations.secrets_management.secrets_pki.providers.openbao.service i
     connection_values,
     local_provider_enabled,
     verify_connection,
+    verify_health,
 )
 from app.models.openbao import OpenBaoInstance
 from app.security.credentials import CredentialEncryptionError
@@ -30,8 +31,10 @@ class OpenBaoRuntimeAdapter:
     integration_type = 'secrets_pki'
 
     def execute(self, operation: str, row: OpenBaoInstance, **kwargs: Any) -> Any:
-        if operation in ('runtime.validate', 'runtime.health'):
+        if operation == 'runtime.validate':
             return self.refresh(row)
+        if operation == 'runtime.health':
+            return self.refresh_health(row)
         if operation == 'connection.test':
             self._guard(row)
             verify_connection(connection_values(row))
@@ -64,20 +67,31 @@ class OpenBaoRuntimeAdapter:
         return {'connected': identity.health_status == 'connected', 'readiness_status': identity.readiness_status}
 
     def refresh_health(self, row: OpenBaoInstance) -> dict[str, Any]:
-        return self.refresh(row)
+        self._guard(row)
+        identity = row.integration_instance
+        try:
+            verify_health(row)
+        except ValueError as exc:
+            record_failure(row, exc)
+        else:
+            identity.health_status = 'connected'
+            identity.last_checked_at = datetime.now(UTC)
+            identity.last_error = None
+        db.session.commit()
+        return {'connected': identity.health_status == 'connected', 'readiness_status': identity.readiness_status}
 
     def get_state(self, row: OpenBaoInstance, *, validation_result: Any = None) -> RuntimeState:
         identity = row.integration_instance
-        available = identity.health_status == 'connected' and local_provider_enabled()
+        available = identity.health_status == 'connected' and local_provider_enabled() and identity.enabled
         now = datetime.now(UTC)
         return RuntimeState(
             integration_type='secrets_pki',
             provider_key='openbao',
             adapter_key='openbao_http_v1',
-            instance_id=str(row.id),
+            instance_id=f'openbao:{row.id}',
             instance_name=row.name,
             observed_at=identity.last_checked_at or now,
-            readiness=identity.readiness_status or 'validation_required' if available else 'blocked',
+            readiness=(identity.readiness_status or 'validation_required') if available else 'blocked',
             health=calculate_health((
                 HealthFactor('connection', 'OpenBao Connection', 'success' if available else 'failed', 50, 100 if available else 0),
                 HealthFactor('authority', 'Credential Authority', 'warning', 50, 50),
@@ -94,7 +108,7 @@ class OpenBaoRuntimeAdapter:
             snapshot=CapabilitySnapshot(
                 profile='openbao.local-connection.v1',
                 compatibility_profile=None,
-                capabilities=('health', 'approle', 'token_lookup') if available else (),
+                capabilities=('health',) if available else (),
                 observed_at=row.last_validated_at or identity.last_checked_at or now,
                 metadata={'version': row.detected_version, 'ownership': row.ownership},
             ),

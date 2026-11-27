@@ -27,7 +27,7 @@ def upgrade() -> None:
         sa.Column('last_validated_at', sa.DateTime(timezone=True)),
         sa.CheckConstraint("ownership IN ('internal', 'external')", name='ck_openbao_ownership'),
         sa.CheckConstraint(
-            "(ownership = 'internal' AND internal_slot = 'bundled') OR "
+            "(ownership = 'internal' AND internal_slot IS NOT NULL AND internal_slot = 'bundled') OR "
             "(ownership = 'external' AND internal_slot IS NULL)",
             name='ck_openbao_internal_slot',
         ),
