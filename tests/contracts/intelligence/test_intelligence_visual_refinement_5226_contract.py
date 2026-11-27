@@ -16,6 +16,8 @@ def _render_empty(
     runtime_status: str = 'not_materialized',
     filter_count: int = 0,
     allowed: bool = True,
+    domain: str = '',
+    pki_status: str | None = None,
 ) -> str:
     app = Flask(__name__, template_folder=str(TEMPLATES))
     register_presentation(app)
@@ -24,7 +26,8 @@ def _render_empty(
         payload={
             'items': [],
             'active_filter_count': filter_count,
-            'evidence_readiness': {'status': status},
+            'evidence_readiness': {'status': status, 'pki_population_status': pki_status},
+            'filters': {'domain': domain},
             'registry_runtime_evidence': {
                 'status': runtime_status,
                 'title': 'Runtime Correlation Required',
@@ -88,3 +91,28 @@ def test_alert_metadata_guide_and_scoped_vault_boundary() -> None:
     routes = (ROOT / 'app/intelligence/alert_intelligence/routes.py').read_text(encoding='utf-8')
     assert "@alert_intelligence_bp.get('/vault-cases')" in routes
     assert "@alert_intelligence_bp.get('/vault-cases/<string:public_id>/details')" in routes
+
+
+def test_pki_population_gap_is_not_hidden_by_domain_filter() -> None:
+    html = _render_empty(
+        'not_collected',
+        runtime_status='ready',
+        filter_count=1,
+        domain='secrets_pki',
+        pki_status='incomplete',
+    )
+    assert html.count('data-kaori-empty-state') == 1
+    assert 'Stored PKI Evidence Requires Review' in html
+    assert 'No Active Recommendations From Current Evidence' not in html
+
+
+def test_pki_population_ready_does_not_override_filter_context() -> None:
+    html = _render_empty(
+        'baseline_recent',
+        runtime_status='ready',
+        filter_count=1,
+        domain='secrets_pki',
+        pki_status='ready',
+    )
+    assert 'No Recommendations Match the Current Filters' in html
+    assert 'Stored PKI Evidence Requires Review' not in html
