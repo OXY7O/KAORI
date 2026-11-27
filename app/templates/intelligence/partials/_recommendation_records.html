@@ -157,6 +157,11 @@
         {% set empty_state_label = "Evidence Unavailable" %}
         {% set empty_state_title = "Recommendation Evaluation Unavailable" %}
         {% set empty_state_description = "A committed evidence evaluation or readiness read failed. Do not interpret this empty result as healthy; review collection and worker evidence." %}
+    {% elif payload.filters.domain|default('') == 'secrets_pki' and readiness.pki_population_status|default(none) in ['not_configured', 'incomplete', 'blocked', 'stale'] %}
+        {% set empty_state_icon = "shield-alert" %}
+        {% set empty_state_label = "Evidence Review Required" %}
+        {% set empty_state_title = "Stored PKI Evidence Requires Review" %}
+        {% set empty_state_description = "Opted-in stored public certificate evidence is not configured or is incomplete. Review committed PKI collection coverage; no finding is not a health assertion." %}
     {% elif payload.active_filter_count|default(0) > 0 %}
         {% set empty_state_icon = "search-x" %}
         {% set empty_state_label = "No Matching Findings" %}
@@ -179,7 +184,7 @@
         {% set empty_state_icon = "list-checks" %}
         {% set empty_state_label = "No Active Findings" %}
         {% set empty_state_title = "No Active Recommendations From Current Evidence" %}
-        {% set empty_state_description = "No rule match is projected from the recent committed inventory baseline. This is not a provider-health guarantee." %}
+        {% set empty_state_description = "No rule match is projected from qualified committed evidence in this scope. This is not a provider-health guarantee." %}
     {% endif %}
     {% if runtime_review_required %}
         {% if readiness_status == 'unavailable' or payload.active_filter_count|default(0) > 0 %}

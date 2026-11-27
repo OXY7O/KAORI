@@ -24,6 +24,18 @@
         ) }}
     </div>
 {% endif %}
+{% if payload['items']|default([], true) and payload.evidence_readiness is defined and payload.evidence_readiness.pki_population_status|default(none) in ['incomplete', 'blocked', 'stale', 'unavailable'] %}
+    {% import 'components/operational_callout.html' as operational_callout %}
+    <div class="p-4">
+        {{ operational_callout.render('Stored PKI Evidence Requires Review',
+                'Committed public certificate population coverage is incomplete or unavailable. Existing findings do not establish PKI health.',
+                icon='shield-alert',
+                tone='warning',
+                variant='semantic',
+                compact_message=true
+        ) }}
+    </div>
+{% endif %}
 {% include 'intelligence/partials/_recommendation_records.html' %}
 {% set query_params = payload.filters.copy() %}
 {% set _ = query_params.update({'per_page': payload.pagination.per_page}) %}

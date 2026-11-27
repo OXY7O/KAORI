@@ -132,6 +132,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
 
     catalog = decorate_catalog_rules([normalize_rule(rule) for rule in INTELLIGENCE_CATALOG])
     evaluation_issues: list[str] = []
+    pki_readiness: dict[str, str] = {}
     source_items = (
         catalog
         if page_mode == 'catalog'
@@ -139,6 +140,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
             get_active_recommendation_findings(
                 domain=filters['domain'] or None,
                 evidence_issues=evaluation_issues,
+                pki_readiness=pki_readiness,
             )
         )
     )
@@ -193,6 +195,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
     return {
         'page_mode': page_mode,
         'evaluation_issues': evaluation_issues,
+        'pki_readiness': pki_readiness,
         'matching_findings': filtered if page_mode != 'catalog' else [],
         'active_filter_count': active_filter_count,
         'filters': filters,
@@ -283,6 +286,7 @@ def _build_recommendation_findings(
     catalog: list[dict[str, Any]],
     *,
     evidence_issues: list[str] | None = None,
+    pki_readiness: dict[str, str] | None = None,
 ) -> list[dict[str, Any]]:
     """Evaluate currently available catalog rules into actionable findings.
 
@@ -320,7 +324,7 @@ def _build_recommendation_findings(
     if any(key.startswith('registry.') for key in rules):
         collect('Artifact Registry', build_registry_recommendation_findings)
     if any(key.startswith('secrets_pki.') for key in rules) and _can_view_secrets_pki_intelligence():
-        collect('Secrets & PKI', build_secrets_pki_recommendation_findings)
+        collect('Secrets & PKI', lambda rules: build_secrets_pki_recommendation_findings(rules, readiness=pki_readiness))
 
     return _finalize_recommendation_findings(findings)
 
@@ -343,6 +347,7 @@ def get_active_recommendation_findings(
     limit: int | None = None,
     rule_keys: set[str] | None = None,
     evidence_issues: list[str] | None = None,
+    pki_readiness: dict[str, str] | None = None,
 ) -> list[dict[str, Any]]:
     """Return active catalog-backed findings for reusable product surfaces.
 
@@ -358,7 +363,7 @@ def get_active_recommendation_findings(
     if rule_keys is not None:
         catalog = [rule for rule in catalog if str(rule.get('rule_key')) in rule_keys]
 
-    findings = _build_recommendation_findings(catalog, evidence_issues=evidence_issues)
+    findings = _build_recommendation_findings(catalog, evidence_issues=evidence_issues, pki_readiness=pki_readiness)
 
     selected_asset = clean(asset_key)
     if selected_asset:
@@ -703,11 +708,12 @@ def classify_recommendation_readiness(
     issues: list[str],
     has_findings: bool,
     source_gaps: list[str] | None = None,
+    qualified_population: bool = False,
 ) -> str:
     """Source gaps are incomplete evidence; actual evaluator errors remain fail-closed."""
     if issues:
         return 'partial' if has_findings else 'unavailable'
-    if total == 0:
+    if total == 0 and not qualified_population:
         return 'not_collected'
     if recent < total or source_gaps:
         return 'partial'
@@ -760,12 +766,20 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
                 issues.append('Registry Runtime: ' + runtime_evidence['title'])
             elif runtime_evidence['status'] != 'ready':
                 source_gaps.append('Registry Runtime: ' + runtime_evidence['title'])
+        pki_status = payload.get('pki_readiness', {}).get('status')
+        if pki_status == 'unavailable':
+            issues.append('Secrets & PKI: Stored Certificate Evidence Unavailable')
+        elif pki_status in ('incomplete', 'blocked', 'stale') or (
+            domain == 'secrets_pki' and pki_status == 'not_configured'
+        ):
+            source_gaps.append('Secrets & PKI: Stored Certificate Coverage Incomplete')
         state = classify_recommendation_readiness(
             total=total,
             recent=recent,
             issues=issues,
             has_findings=bool(findings),
             source_gaps=source_gaps,
+            qualified_population=pki_status == 'ready',
         )
         payload['evidence_readiness'] = {
             'status': state,
@@ -773,7 +787,8 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
             'recent_sources': recent,
             'issues': issues,
             'source_gaps': source_gaps,
-            'basis': '24-hour committed Inventory baseline; evaluator and scan coverage remain source-qualified',
+            'pki_population_status': pki_status,
+            'basis': '24-hour committed Inventory baseline and separately qualified stored PKI population evidence',
         }
         _apply_recommendation_payload(payload, findings)
     return payload

@@ -27,7 +27,9 @@ _COUNT_KEYS = (
 )
 
 
-def build_secrets_pki_recommendation_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+def build_secrets_pki_recommendation_findings(
+    rules: dict[str, dict[str, Any]], *, readiness: dict[str, str] | None = None
+) -> list[dict[str, Any]]:
     """Return qualified population-wide findings, never per-certificate data."""
     rule = rules.get(_RULE_KEY)
     validity_rule = rules.get(_VALIDITY_REVIEW_RULE_KEY)
@@ -35,7 +37,12 @@ def build_secrets_pki_recommendation_findings(rules: dict[str, dict[str, Any]]) 
         return []
 
     snapshot = build_stored_pki_validity_posture()
-    if snapshot.get('status') != 'ready':
+    status = snapshot.get('status')
+    if readiness is not None:
+        readiness['status'] = (
+            status if status in ('not_configured', 'incomplete', 'blocked', 'unavailable', 'stale') else 'unavailable'
+        )
+    if status != 'ready':
         # Unknown/stale/partial is not zero evidence or an assertion of safety.
         return []
     unvalidated_counts = {key: snapshot.get(key) for key in _COUNT_KEYS}
@@ -53,6 +60,8 @@ def build_secrets_pki_recommendation_findings(rules: dict[str, dict[str, Any]]) 
     if not isinstance(observed_at, datetime) or observed_at.tzinfo is None or observed_at.utcoffset() is None:
         return []
 
+    if readiness is not None:
+        readiness['status'] = 'ready'
     findings: list[dict[str, Any]] = []
     if rule is not None:
         findings.extend(_expiry_findings(rule, counts, observed_at))
