@@ -128,6 +128,9 @@ def case_delivery_rows(case: AlertCase, *, limit: int = 20) -> list[dict[str, An
 
 def _dispatch_firing(case: AlertCase) -> dict[str, int]:
     stats = {'firing': 0, 'resolved': 0, 'failed': 0, 'skipped': 0}
+    if case.source_type != 'recommendation':
+        stats['skipped'] += 1
+        return stats
     now = datetime.now(UTC)
     if active_delivery_silence(case, now=now) is not None:
         stats['skipped'] += 1
@@ -212,6 +215,9 @@ def _pending_resolved_channel_ids(
 
 def _dispatch_resolved(case: AlertCase) -> dict[str, int]:
     stats = {'firing': 0, 'resolved': 0, 'failed': 0, 'skipped': 0}
+    if case.source_type != 'recommendation':
+        stats['skipped'] += 1
+        return stats
     if case.domain == 'registry' and not registry_case_route_eligible(case):
         stats['skipped'] += 1
         return stats
@@ -269,6 +275,9 @@ def _deliver_case_event(
     sequence: str,
     route: FiringRoute | None = None,
 ) -> dict[str, Any]:
+    # Guard the transport seam even when a caller bypasses worker selection.
+    if case.source_type != 'recommendation':
+        return {'successful': 0, 'failed': 0, 'skipped': 1}
     channel = db.session.get(NotificationChannel, channel_id)
     if channel is None:
         return {'successful': 0, 'failed': 0, 'skipped': 1}

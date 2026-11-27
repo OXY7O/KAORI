@@ -10,11 +10,11 @@ from werkzeug.exceptions import NotFound
 
 from app.access.scope_policy import evaluate_exact_vault_instance_case_scope
 from app.extensions.db import db
-from app.intelligence.alert_intelligence import provider_case_scope
+from app.intelligence.alert_intelligence import lifecycle, notifications, provider_case_scope
 from app.intelligence.alert_intelligence import vault_case_workspace as workspace
 from app.intelligence.alert_intelligence.application import apply_case_mutation
 from app.intelligence.alert_signals.vault_source import commit_vault_alert_observations
-from app.models.alert_ops import AlertCase
+from app.models.alert_ops import AlertCase, AlertCaseEvent, AlertSilence
 from app.models.alert_signal import AlertSignalSnapshot
 from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -46,6 +46,8 @@ def store():
         ScopeAccessPolicy.__table__,
         ScopeAccessPolicyRevision.__table__,
         AlertCase.__table__,
+        AlertCaseEvent.__table__,
+        AlertSilence.__table__,
         AlertSignalSnapshot.__table__,
     ]
     with app.app_context():
@@ -620,3 +622,71 @@ def test_admitted_unknown_requires_qualified_state_reason_and_order(store):
     case.source_state_reason = 'unqualified'
     db.session.commit()
     assert workspace._read_cases(instance_id=ids.vault, page='1')['status'] == 'unavailable'
+
+
+@pytest.mark.parametrize(
+    'operation',
+    [
+        lambda case: lifecycle.acknowledge_case(case, actor_user_id=1),
+        lambda case: lifecycle.assign_case(case, owner_user_id=1, actor_user_id=1),
+        lambda case: lifecycle.mark_mitigating(case, actor_user_id=1),
+        lambda case: lifecycle.create_delivery_silence(case, duration_minutes=60, reason='test', actor_user_id=1),
+        lambda case: lifecycle.revoke_delivery_silence(case, actor_user_id=1),
+        lambda case: lifecycle.close_case(
+            case,
+            resolution_summary='test',
+            remediation_steps=['test'],
+            verification_evidence='test',
+            change_reference=None,
+            ticket_reference=None,
+            actor_user_id=1,
+        ),
+        lambda case: lifecycle.save_postmortem(case, payload={}, complete=False, actor_user_id=1),
+        lambda case: lifecycle.mark_case_source_resolved(case, source_summary='unqualified'),
+    ],
+)
+def test_generic_lifecycle_helpers_cannot_bypass_provider_action_qualification(store, operation):
+    _app, ids = store
+    _grant(ids)
+    case = _case(ids)
+    with pytest.raises(ValueError, match='Provider case lifecycle action is not qualified'):
+        operation(case)
+    assert case.workflow_state == 'open'
+    assert case.source_state == 'firing'
+    assert case.routing_state == 'suppressed'
+    assert not db.session.new
+    assert not db.session.dirty
+
+
+def test_provider_delivery_transport_and_dispatch_helpers_fail_closed(store, monkeypatch):
+    _app, ids = store
+    case = _case(ids)
+    monkeypatch.setattr(notifications, 'render_case_message', lambda *a, **kw: pytest.fail('Unexpected render'))
+    monkeypatch.setattr(notifications, 'dispatch_notification_event', lambda **kw: pytest.fail('Unexpected delivery'))
+    expected = {'firing': 0, 'resolved': 0, 'failed': 0, 'skipped': 1}
+    assert notifications._dispatch_firing(case) == expected
+    assert notifications._dispatch_resolved(case) == expected
+    for state in ('firing', 'resolved'):
+        assert notifications._deliver_case_event(
+            case, channel_id=1, event_state=state, sequence='test'
+        ) == {'successful': 0, 'failed': 0, 'skipped': 1}
+    assert case.last_firing_notified_at is None
+    assert case.last_resolved_notified_at is None
+
+
+def test_expired_provider_silence_cannot_generate_notification(store, monkeypatch):
+    _app, ids = store
+    case = _case(ids)
+    db.session.add(
+        AlertSilence(
+            case_id=case.id,
+            starts_at=AT - timedelta(hours=2),
+            ends_at=AT - timedelta(hours=1),
+            reason='historical unqualified silence',
+            created_by_user_id=ids.actor,
+        )
+    )
+    db.session.commit()
+    monkeypatch.setattr(lifecycle, 'create_notification', lambda **kw: pytest.fail('Unexpected notification'))
+    assert lifecycle.expire_silences_and_notify() == 0
+    assert AlertCaseEvent.query.count() == 0
