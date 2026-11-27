@@ -8,14 +8,17 @@ exact-policy admission under that transaction.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Literal
 
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
 from app.models.integration import IntegrationInstance
+from app.models.rbac import Permission, Role, RolePermission
 from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.user import User
 from app.models.vault import VaultInstance
@@ -88,9 +91,7 @@ def _ready_vault_mount_source(source: IntegrationInstance | None) -> bool:
     )
 
 
-def _eligible_vault_mount_revision_end(
-    current: ScopeAccessPolicyRevision | None, *, instant: datetime
-) -> datetime | None:
+def _eligible_exact_revision_end(current: ScopeAccessPolicyRevision | None, *, instant: datetime) -> datetime | None:
     """Only active, separately approved, effective exact revision is eligible."""
     if (
         current is None
@@ -167,7 +168,7 @@ def evaluate_exact_vault_scope(
             if lock_for_read:
                 revisions = revisions.with_for_update(of=ScopeAccessPolicyRevision)
             current = revisions.first()
-            ends = _eligible_vault_mount_revision_end(current, instant=instant)
+            ends = _eligible_exact_revision_end(current, instant=instant)
             if ends is None or current is None:
                 continue
             approved_matches.append((policy, current, ends))
@@ -333,6 +334,176 @@ def _evaluate_exact_vault_instance_case_permission(
             policy_ref=policy.id,
             revision=revision.revision_number,
             expires_at=end,
+        )
+    except (SQLAlchemyError, TypeError, ValueError, AttributeError):
+        return ScopeAdmission('unavailable', 'policy_evidence_unavailable')
+
+
+# No default grant or implied permission. These names belong to the canonical Access catalog.
+_ISSUER_PERMISSIONS = frozenset(
+    {
+        'secrets_pki.request_credential_issuer',
+        'secrets_pki.approve_credential_issuer',
+        'secrets_pki.revoke_credential_issuer',
+    }
+)
+_ISSUER_DEPLOYMENT = re.compile(r'[a-f0-9]{64}')
+
+
+@dataclass(frozen=True, slots=True, repr=False)
+class CredentialIssuerScope:
+    instance_id: int
+    provider_key: str
+    provider_namespace: str
+    mount: str
+    deployment_ref: str
+
+
+def _valid_issuer_scope(scope: CredentialIssuerScope) -> bool:
+    return (
+        isinstance(scope, CredentialIssuerScope)
+        and type(scope.instance_id) is int
+        and scope.instance_id > 0
+        and scope.provider_key in ('vault', 'openbao')
+        and isinstance(scope.deployment_ref, str)
+        and _ISSUER_DEPLOYMENT.fullmatch(scope.deployment_ref) is not None
+        and isinstance(scope.provider_namespace, str)
+        and len(scope.provider_namespace) <= 255
+        and isinstance(scope.mount, str)
+        and 0 < len(scope.mount) <= 160
+        and all(
+            ord(char) >= 32 and ord(char) != 127 and char not in '*+' for char in scope.provider_namespace + scope.mount
+        )
+    )
+
+
+def lock_explicit_permissions(actor_id: int, required: set[str]) -> bool:
+    # Lock actual role membership rows, not only a previously loaded relationship.
+    actor = db.session.execute(
+        select(User).where(User.id == actor_id).with_for_update(of=User).execution_options(populate_existing=True)
+    ).scalar_one_or_none()
+    if actor is None or not actor.is_active or actor.role_id is None:
+        return False
+    role = db.session.execute(
+        select(Role).where(Role.id == actor.role_id).with_for_update(of=Role).execution_options(populate_existing=True)
+    ).scalar_one_or_none()
+    if role is None or not role.is_active:
+        return False
+    keys = (
+        db.session.execute(
+            select(Permission.key)
+            .join(RolePermission, RolePermission.permission_id == Permission.id)
+            .where(RolePermission.role_id == role.id, Permission.key.in_(required))
+            .order_by(Permission.key)
+            .with_for_update(of=(RolePermission, Permission))
+        )
+        .scalars()
+        .all()
+    )
+    return set(keys) == required
+
+
+def _locked_issuer_source(scope: CredentialIssuerScope, permission_key: str) -> bool:
+    source = db.session.execute(
+        select(IntegrationInstance)
+        .where(IntegrationInstance.id == scope.instance_id)
+        .with_for_update(of=IntegrationInstance)
+        .execution_options(populate_existing=True)
+    ).scalar_one_or_none()
+    if source is None or source.integration_type != 'secrets_pki' or source.provider_key != scope.provider_key:
+        return False
+    if permission_key == 'secrets_pki.revoke_credential_issuer':
+        # Revocation must remain possible even when the original source is disabled.
+        return True
+    return source.enabled is True and source.lifecycle_status == 'active' and source.readiness_status == 'ready'
+
+
+def _locked_issuer_policies(
+    actor_id: int, scope: CredentialIssuerScope, permission_key: str
+) -> list[ScopeAccessPolicy]:
+    return list(
+        db.session.execute(
+            select(ScopeAccessPolicy)
+            .where(
+                ScopeAccessPolicy.principal_user_id == actor_id,
+                ScopeAccessPolicy.permission_key == permission_key,
+                ScopeAccessPolicy.integration_instance_id == scope.instance_id,
+                ScopeAccessPolicy.scope_level == 'credential_issuer',
+                ScopeAccessPolicy.provider_namespace == scope.provider_namespace,
+                ScopeAccessPolicy.mount == scope.mount,
+                ScopeAccessPolicy.issuer_deployment_ref == scope.deployment_ref,
+            )
+            .order_by(ScopeAccessPolicy.id)
+            .limit(_MAX_MATCHING_POLICIES + 1)
+            .with_for_update(of=ScopeAccessPolicy)
+            .execution_options(populate_existing=True)
+        )
+        .scalars()
+        .all()
+    )
+
+
+def _current_issuer_grant(
+    policy: ScopeAccessPolicy, instant: datetime
+) -> tuple[ScopeAccessPolicyRevision, datetime] | None:
+    latest = db.session.execute(
+        select(ScopeAccessPolicyRevision)
+        .where(ScopeAccessPolicyRevision.policy_id == policy.id)
+        .order_by(ScopeAccessPolicyRevision.revision_number.desc())
+        .limit(1)
+        .with_for_update(of=ScopeAccessPolicyRevision)
+        .execution_options(populate_existing=True)
+    ).scalar_one_or_none()
+    if latest is None or latest.revision_number != policy.current_revision:
+        return None
+    expires = _eligible_exact_revision_end(latest, instant=instant)
+    return (latest, expires) if expires is not None else None
+
+
+def evaluate_exact_issuer_scope(
+    *, actor_user_id: int, scope: CredentialIssuerScope, permission_key: str, now: datetime | None = None
+) -> ScopeAdmission:
+    """Locked Access precondition only, never a custody or deployment attestation.
+
+    Authenticated service caller owns the transaction, current independently
+    verified deployment/intent, mandatory audit and rollback. No public route
+    may treat this result as a transferable permit. Source and actor locks
+    must remain held through the protected transaction.
+    """
+    if (
+        type(actor_user_id) is not int
+        or actor_user_id <= 0
+        or permission_key not in _ISSUER_PERMISSIONS
+        or not _valid_issuer_scope(scope)
+    ):
+        return ScopeAdmission('deny', 'invalid_scope')
+    instant = now or datetime.now(UTC)
+    if not isinstance(instant, datetime) or instant.utcoffset() is None:
+        return ScopeAdmission('deny', 'invalid_time')
+    try:
+        if not lock_explicit_permissions(actor_user_id, {permission_key, 'secrets_pki.view'}):
+            return ScopeAdmission('deny', 'permission_required')
+        if not _locked_issuer_source(scope, permission_key):
+            return ScopeAdmission('deny', 'source_unqualified')
+        candidates = _locked_issuer_policies(actor_user_id, scope, permission_key)
+        if len(candidates) > _MAX_MATCHING_POLICIES:
+            return ScopeAdmission('deny', 'ambiguous_scope')
+        matches = []
+        for candidate in candidates:
+            grant = _current_issuer_grant(candidate, instant)
+            if grant is not None:
+                matches.append((candidate, *grant))
+        if len(matches) != 1:
+            return ScopeAdmission('deny', 'ambiguous_scope' if matches else 'scope_grant_required')
+        policy, current, expires = matches[0]
+        return ScopeAdmission(
+            'allow',
+            'exact_approved_issuer_grant',
+            actor_id=actor_user_id,
+            instance_id=scope.instance_id,
+            policy_ref=policy.id,
+            revision=current.revision_number,
+            expires_at=expires,
         )
     except (SQLAlchemyError, TypeError, ValueError, AttributeError):
         return ScopeAdmission('unavailable', 'policy_evidence_unavailable')

@@ -57,3 +57,13 @@ def test_automation_credential_use_is_explicit_and_has_no_default_grant():
     assert DEFAULT_PERMISSION_DEPENDENCIES[key] == {'secrets_pki.view', 'inventory.view', 'jobs.execute'}
     assert all(key not in grants for grants in DEFAULT_ROLE_PERMISSIONS.values())
     assert all(key not in dependencies for dependencies in DEFAULT_PERMISSION_DEPENDENCIES.values())
+
+
+def test_issuer_administration_permissions_are_distinct_and_not_default_grants():
+    permissions = {name: (module, action) for name, module, action, _description in DEFAULT_PERMISSIONS}
+    for action in ('request_credential_issuer', 'approve_credential_issuer', 'revoke_credential_issuer'):
+        key = f'secrets_pki.{action}'
+        assert permissions[key] == ('secrets_pki', action)
+        assert DEFAULT_PERMISSION_DEPENDENCIES[key] == {'secrets_pki.view'}
+        assert all(key not in grants for grants in DEFAULT_ROLE_PERMISSIONS.values())
+        assert all(key not in dependencies for dependencies in DEFAULT_PERMISSION_DEPENDENCIES.values())

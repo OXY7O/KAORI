@@ -19,6 +19,7 @@ def test_policy_identity_is_exact_and_existing_authorities_are_referenced():
         'scope_level',
         'provider_namespace',
         'mount',
+        'issuer_deployment_ref',
         'current_revision',
     } <= set(table.columns.keys())
     foreign_targets = {fk.target_fullname for col in table.columns for fk in col.foreign_keys}
@@ -29,7 +30,10 @@ def test_policy_identity_is_exact_and_existing_authorities_are_referenced():
     assert 'ck_access_scope_policy_exact_target' in checks
     assert "mount NOT LIKE '%*%'" in checks['ck_access_scope_policy_exact_target']
     assert "scope_level = 'instance'" in checks['ck_access_scope_policy_exact_target']
-    assert "scope_level = 'vault_mount'" in checks['ck_access_scope_policy_exact_target']
+    assert (
+        "scope_level IN ('vault_mount', 'automation_credential', 'credential_issuer')"
+        in checks['ck_access_scope_policy_exact_target']
+    )
 
 
 def test_revisions_are_approval_gated_even_before_service_activation():
@@ -106,5 +110,92 @@ def test_credential_scope_cannot_inherit_metadata_scope(level, permission, names
                         updated_at=datetime.now(UTC),
                     )
                 )
+    finally:
+        engine.dispose()
+
+
+@pytest.mark.parametrize(
+    ('level', 'permission', 'deployment', 'namespace', 'mount', 'accepted'),
+    [
+        ('credential_issuer', 'secrets_pki.request_credential_issuer', 'a' * 64, '', 'kv', True),
+        ('credential_issuer', 'secrets_pki.approve_credential_issuer', 'a' * 64, '', 'kv', True),
+        ('credential_issuer', 'secrets_pki.revoke_credential_issuer', 'a' * 64, '', 'kv', True),
+        ('credential_issuer', 'secrets_pki.view', 'a' * 64, '', 'kv', False),
+        ('credential_issuer', 'secrets_pki.use_automation_credential', 'a' * 64, '', 'kv', False),
+        ('vault_mount', 'secrets_pki.request_credential_issuer', None, '', 'kv', False),
+        ('vault_mount', 'secrets_pki.view', 'a' * 64, '', 'kv', False),
+        ('credential_issuer', 'secrets_pki.request_credential_issuer', None, '', 'kv', False),
+        ('credential_issuer', 'secrets_pki.request_credential_issuer', 'a' * 63, '', 'kv', False),
+        ('credential_issuer', 'secrets_pki.request_credential_issuer', 'a' * 64, '+', 'kv', False),
+        ('credential_issuer', 'secrets_pki.request_credential_issuer', 'a' * 64, '', '+', False),
+    ],
+)
+def test_issuer_scope_has_explicit_permission_and_deployment(level, permission, deployment, namespace, mount, accepted):
+    engine = create_engine('sqlite://')
+    table = ScopeAccessPolicy.__table__
+    try:
+        with engine.begin() as connection:
+            table.create(connection)
+            insert = table.insert().values(
+                id='fixture-issuer-policy',
+                principal_user_id=1,
+                permission_key=permission,
+                integration_instance_id=1,
+                scope_level=level,
+                provider_namespace=namespace,
+                mount=mount,
+                issuer_deployment_ref=deployment,
+                current_revision=1,
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            )
+            if accepted:
+                connection.execute(insert)
+            else:
+                with pytest.raises(IntegrityError):
+                    connection.execute(insert)
+    finally:
+        engine.dispose()
+
+
+@pytest.mark.parametrize(
+    ('level', 'permission', 'namespace', 'mount', 'accepted'),
+    [
+        ('instance', 'secrets_pki.view', None, None, True),
+        ('instance', 'secrets_pki.view', '', None, False),
+        ('instance', 'secrets_pki.view', None, 'kv', False),
+        ('vault_mount', 'secrets_pki.view', '', 'kv', True),
+        ('vault_mount', 'secrets_pki.view', None, 'kv', False),
+        ('vault_mount', 'secrets_pki.view', '', None, False),
+        ('vault_mount', 'secrets_pki.view', '', '', False),
+        ('vault_mount', 'secrets_pki.view', '', '*', False),
+        ('automation_credential', 'secrets_pki.use_automation_credential', '', 'kv', True),
+    ],
+)
+def test_legacy_exact_scope_target_contract_is_preserved(level, permission, namespace, mount, accepted):
+    # Prove behavior, not only SQL spelling; issuer binding must remain NULL on legacy scopes.
+    engine = create_engine('sqlite://')
+    table = ScopeAccessPolicy.__table__
+    try:
+        with engine.begin() as connection:
+            table.create(connection)
+            insert = table.insert().values(
+                id='fixture-legacy-policy',
+                principal_user_id=1,
+                permission_key=permission,
+                integration_instance_id=1,
+                scope_level=level,
+                provider_namespace=namespace,
+                mount=mount,
+                issuer_deployment_ref=None,
+                current_revision=1,
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            )
+            if accepted:
+                connection.execute(insert)
+            else:
+                with pytest.raises(IntegrityError):
+                    connection.execute(insert)
     finally:
         engine.dispose()

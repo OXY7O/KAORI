@@ -213,3 +213,170 @@ the issuance service must enforce a separately reviewed lifetime. Actual
 custody and deployment evidence, Access, issuer writer and worker admission
 remain mandatory. No seed, backfill, live migration or operational trust
 is introduced.
+
+
+### PostgreSQL challenge storage qualification (#5237)
+
+The disposable CI-only qualification uses the exact #5218 database target
+guard and a unique test-owned schema. It invokes the actual #5235 Alembic
+upgrade/downgrade functions, checks reflected schema parity and restrictive
+foreign keys, verifies global digest uniqueness and committed timestamp
+visibility, and exercises actual competing READ COMMITTED transactions.
+The test observes PostgreSQL blocking PIDs before releasing the first
+transaction, with bounded lock/statement timeouts. A pending-only update
+includes the exact stored binding and resolution window; commit/rollback
+and competing consume/revoke cases qualify the storage primitive only.
+
+No application writer, operational nonce issuance, Access decision,
+cryptographic verification, Activity Audit or custody authority is
+introduced by these tests. The later governed service must repeat
+transaction qualification against its actual independently resolved
+inputs, canonical authorization and atomic audit behavior; the test-only
+update is not a production acceptance path. No live database is migrated.
+
+
+### Governed credential issuer authority (#5245)
+
+Maintainer architecture acceptance is recorded in #5245 comment 7205030372.
+Issuer administration uses three distinct explicit permissions
+(`secrets_pki.request_credential_issuer`, `secrets_pki.approve_credential_issuer`,
+`secrets_pki.revoke_credential_issuer`) with `secrets_pki.view` dependency
+and no default role grants. The canonical ScopeAccessPolicy owns the exact
+`credential_issuer` scope: instance, provider derived from IntegrationInstance,
+namespace, mount and immutable deployment digest. The additive nullable
+`issuer_deployment_ref` is restricted to that scope; legacy policies retain
+null. Downgrade refuses to discard issuer grant history. No grant backfill.
+The locked Access precondition reads the authenticated actor's active role
+and actual permission memberships, source, exact scope policy and latest
+revision, denies ambiguity and stale pointers, and permits only explicitly
+scoped revocation of a disabled same-provider source. It does not establish
+provider deployment identity, custody or an authenticated HTTP caller.
+No existing metadata grant or worker-use permission can substitute for it.
+
+Use provider-native non-exportable Ed25519 Transit keys with explicitly
+qualified key version; never copy signing private keys into KAORI. Independent
+deployment/custody attestation must come from an operator-held recovery
+authority pinned outside provider-controlled or web-writable state. The
+receipt must bind verified native deployment identity, provider, exact target,
+Transit key/version and public-key digest, with independent owner/checker,
+validity and revocation evidence. Neither Transit signature nor a local
+policy proves custody or typed SSH credential schema. Challenge issuance
+uses a 256-bit random value digest and a 10-minute exclusive lifetime.
+The transaction service must derive and verify these authorities, acquire
+current policy/source/challenge/history locks, serialize key digest
+uniqueness, and commit lifecycle, one-time challenge and mandatory audit
+atomically. The permission/scope increment alone does not expose a grant
+writer, operational challenge acceptance or issuer activation. Complete the
+service, provider evidence integration and PostgreSQL qualification within
+the same draft candidate before admission; actual custody ceremony and UAT
+remain separate operator-approved execution.
+
+
+#### Native provider key and independent receipt resolution
+
+The shared `providers/issuer_transit.py` adapter performs only exact native
+key metadata inspection. It requires provider-specific HTTPS egress and
+explicit CA, strict active/unsealed cluster identity before and after the
+read, bounded non-root expiring inspection token, safe single-segment
+Transit mount/key, explicitly pinned current version and Ed25519 public-key
+digest. Missing or unsafe key-policy fields, native key rotation, wrong
+cluster, malformed public key, derived/exportable/deletable key or plaintext
+backup permission deny. The native `vault:vN:<base64>` signature envelope
+must match the enrolled version before offline verification. No generic
+signing, key export, key management, KV material read or provider fallback
+is exposed. Native response semantics and token ACLs require actual
+disposable provider qualification; synthetic fixtures do not prove those.
+
+The deployment-owned authority directory is fixed at
+`/run/kaori/issuer-authority`. It must be root-owned, non-writable to app
+identity, mounted read-only, with a separately pinned Ed25519 `root.pub`
+(raw lowercase hex). The resolver reads canonical JSON envelopes with
+exact `payload` and hex `signature` fields. Active deployment receipts are
+named `deployment-<deployment_ref>.json`; challenge-specific custody
+receipts are `custody-<challenge_sha256>.json`. The domain-separated
+schemas bind exact scope, native cluster identity and Transit key version,
+public-key digest, distinct owner/checker, UTC issue and expiry and
+challenge/revision context. The recovery pin must differ from the issuer
+key. The deployment digest binds provider/instance/namespace/KV mount,
+canonical endpoint and native cluster ID, independent of key rotation.
+Current signed receipts are read afresh for each decision; absent/revoked,
+expired, malformed, substituted or noncanonical evidence denies. Revocation
+requires operator replacement/removal of the current authoritative file;
+application users cannot write this directory. Protect the directory and
+operator publication channel against rollback, prove trusted mount identity
+and test atomic publication/revocation before actual activation. Receipts
+are limited to 24 hours and a custody receipt cannot outlive the challenge
+or deployment receipt. Native observation must be no more than 60 seconds
+old when custody is qualified. The service must acquire observation itself
+outside SQL locks and re-resolve trusted evidence and Access inside its
+transaction. The read-only resolver is not an issuer writer, independently
+authenticated operator or proof of exclusive private-key custody.
+
+
+#### Internal governed grant and enrollment transactions
+
+`issuer_grants.py` uses the canonical Access administrator guard, existing
+policy/revision storage and commit-with-Activity-Audit primitive. Request
+creates only a draft, approval needs a distinct administrator other than
+the subject, and revocation appends history without requiring provider
+availability. The signed enrollment receipt restricts the requester and
+checker subjects. No public administrative route or automatic role grant.
+
+`issuer_lifecycle.py` requires PostgreSQL READ COMMITTED, rejects dirty
+session state, and uses a bounded domain-wide transaction advisory lock
+before current issuer policy/source/history/challenge locks. The conservative
+domain lock serializes even absent histories and cross-scope key reuse; it
+trades issuer enrollment throughput for simpler correctness. The service
+qualifies Access before native read, releases that transaction before network
+IO, then rechecks locked Access and independently rereads current receipts.
+For Vault it also checks the canonical connection endpoint/namespace/KV
+mount/TLS without loading the AppRole secret. OpenBao uses the signed
+operator enrollment mapping pending provider registration qualification.
+Draft and its one-time prospective activation challenge are committed
+together; the random 256-bit challenge digest, 10-minute maximum expiry and
+exact expected revision are generated by the service. The checker must
+present a versioned native signature of the returned canonical statement
+and current independently signed challenge custody receipt; the owner's
+request permission is also re-evaluated. Consumption, active append and
+sanitized mandatory audit share one transaction. Revocation appends an
+exact same-binding terminal revision and revokes any matching pending
+challenge, even when the provider is unavailable. No reset, retry with
+old challenge, older active fallback or raw signature persistence.
+
+This internal source candidate is not operationally enabled. Actual
+authority directory publication/revocation anti-rollback, provider
+registration/TLS/ACL/native metadata, authenticated caller and currentness
+of external evidence must be independently qualified. The database lock
+cannot serialize an external filesystem publication or provider state
+change; provider observation is bounded but not a distributed transaction.
+Transaction-bound credential-use verification remains a separate worker
+workstream. No live provider request, key operation or migration is
+authorized by this implementation.
+
+
+The issuer grant and enrollment services share the same bounded PostgreSQL
+transaction serialization and explicit role-membership locking. The
+disposable service suite uses canonical tables, actual Access grant
+transitions, actual Ed25519 receipt/signature verification, real committed
+issuer/challenge/audit writes, stale/withdrawn authority negatives, audit
+flush rollback and competing independent application contexts. Only the
+operator filesystem and provider network observation are substituted with
+synthetic fixtures. Source tests do not substitute for successful CI or
+actual provider/ceremony UAT.
+
+
+#### Consolidated source audit
+
+All issuer lifecycle and issuer-specific grant mutations require a clean
+service-owned PostgreSQL transaction; an existing caller transaction cannot
+be committed by an issuer operation. The generic Access revoke path rejects
+issuer scopes, so the issuer-specific grant writer owns the shared lock.
+Recheck evidence, observation age and grant/issuer validity after row locks;
+for activation re-read the exact custody receipt before staging audit.
+Signed scope comparisons use canonical encoding (boolean IDs cannot equal
+integer IDs). Test the actual scope migration downgrade/upgrade against
+legacy policy rows, retained-history downgrade refusal, generic grant revoke
+denial, and service approval/revocation contention. External authority
+publication and native observation remain outside PostgreSQL's transaction;
+actual monotonic publication, revocation and deployment UAT are still
+mandatory and cannot be inferred from a successful database transaction.
