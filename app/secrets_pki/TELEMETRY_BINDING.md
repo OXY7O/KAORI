@@ -568,3 +568,7 @@ read model projects only qualified journal status and attempt count, not
 destination, channel configuration or provider response. Actual source
 and destination provisioning and local functional, security and concurrency
 verification remain outstanding; no production activation or CI admission.
+
+### Consolidated review qualifications (#5252 / #5253)
+
+The dedicated destination receipt additionally binds the current canonical Alert Source ID and binding/source revisions. The independent checker must hold an approved exact-instance read grant in addition to normalized administration permissions. A dedicated firing-only Secrets & PKI channel is enforced in the form validator. Recovery verification requires the recovery event to remain the latest canonical case event. The local runbook records the genuine exporter, checker and disposable-channel prerequisites; these are not simulated by fixtures. No changes to deployment, provider configuration or secret-bearing data were executed.

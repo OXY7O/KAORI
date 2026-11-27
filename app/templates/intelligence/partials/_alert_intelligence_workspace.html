@@ -164,7 +164,7 @@
                 {% if payload.tab == 'resolved' %}
                     {% set blocked_state_description = "Positive recovery evidence is not qualified for this source. Missing, empty, expired or unavailable observations never establish resolution." %}
                 {% else %}
-                    {% set blocked_state_description = "Governed provider notification routing, templates and delivery silences are not qualified. Delivery remains suppressed." %}
+                    {% set blocked_state_description = "Provider templates, delivery silences and automatic routing remain unqualified. Explicit local firing requires independently approved routing and destination." %}
                 {% endif %}
                 {% set blocked_state_action_url = url_for('alert_intelligence.index', domain=payload.domain, provider=payload.selected_provider, asset=payload.selected_asset_key, tab='active') %}
                 {% set blocked_state_action_label = "Review Active Cases" %}
