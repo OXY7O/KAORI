@@ -722,14 +722,14 @@ def test_web_mutation_rejects_missing_csrf_and_extra_fields(scope, monkeypatch):
 
 
 def test_recipient_selector_uses_only_exact_operator_grants(scope):
-    from app.intelligence.alert_intelligence import vault_operator_web as web
+    from app.intelligence.alert_intelligence import vault_operator_service as service
 
     vault, _source, _binding, actor = scope
     _grant(vault, actor, permission='intelligence.decisions.create')
     other = _actor()
     db.session.commit()
     _grant(vault, other, permission='intelligence.decisions.create')
-    assert web._recipient_options(vault.id, now=AT) == [{'id': actor.id, 'label': actor.username}]
+    assert service._recipient_options(vault.id, now=AT) == [{'id': actor.id, 'label': actor.username}]
     db.session.rollback()
 
 
