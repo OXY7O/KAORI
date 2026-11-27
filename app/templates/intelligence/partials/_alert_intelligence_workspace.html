@@ -35,7 +35,7 @@
     'resolved': 'Review recovery evidence, verification, and case closure.'
     }.get(payload.tab, 'Review alert operations and committed evidence.'),
     'shield-alert',
-    (('Local UAT' if payload.local_case_reconcile else 'Read-only') if payload.provider_case_status == 'ready' else 'Scope or Evidence Required') if payload.provider_case_mode else payload.summary.active ~ ' Active',
+    (('Local UAT' if payload.local_case_reconcile else 'Scoped Cases') if payload.provider_case_status == 'ready' else 'Scope or Evidence Required') if payload.provider_case_mode else payload.summary.active ~ ' Active',
     'warning' if payload.provider_case_mode or payload.summary.active else 'normal',
     title_extra=workspace_guide
     ) %}
@@ -134,15 +134,15 @@
                 {% set blocked_state_description = "Only exact approved instance grants can expose committed provider cases. Unavailable or missing evidence never proves source health." %}
                 {% include 'components/states/_blocked_state.html' %}
             </div>
+        {% elif payload.provider_case_mode and payload.tab == 'overview' %}
+            {% include 'intelligence/partials/_vault_provider_case_overview.html' %}
         {% elif payload.provider_case_mode and payload.tab != 'active' %}
             <div class="p-5">
                 {% set blocked_state_icon = "shield-check" %}
-                {% set blocked_state_label = "Read-only" if payload.tab == 'overview' else "Reserved Plan" %}
-                {% set blocked_state_title = "Committed Provider Cases" if payload.tab == 'overview' else "Provider Lifecycle Not Qualified" %}
+                {% set blocked_state_label = "Reserved Plan" %}
+                {% set blocked_state_title = "Provider Lifecycle Not Qualified" %}
                 {% if payload.tab == 'resolved' %}
                     {% set blocked_state_description = "Positive recovery evidence is not qualified for this source. Missing, empty, expired or unavailable observations never establish resolution." %}
-                {% elif payload.tab == 'overview' %}
-                    {% set blocked_state_description = "Review exact-instance committed cases in Active Alerts. The approved read grant does not qualify operator actions." %}
                 {% else %}
                     {% set blocked_state_description = "Governed provider notification routing, templates and delivery silences are not qualified. Delivery remains suppressed." %}
                 {% endif %}

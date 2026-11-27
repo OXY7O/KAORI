@@ -460,6 +460,10 @@ Observation admission revalidates the binding under lock, refreshes and locks ex
 
 The HTTP adapter performs feature gating, authenticated actor extraction, CSRF/form validation and response selection only. Operator control qualification, exact active Alert Source selection, scope/recipient locks, committed observation checks and atomic read audit belong to vault_operator_service. The existing operator command requalifies the binding and scope under lock before mutation. Other integration types do not compete with the exact Alert Source selector; ambiguous active Alert Sources still fail closed. No feature flags, source recovery or delivery authority are changed. Local application-package and quality gates must pass before staging admission.
 
+### Local review usability (#5229)
+
+The central provider overview now renders only scoped admitted-case counts (active, critical severity, fresh firing, unknown); it does not substitute counts for source health. Lifecycle readiness separates observation, conditional operator workflow, unavailable positive recovery and suppressed delivery. The scoped detail shows a generic controls-unavailable state rather than silently hiding the action section; the legacy read-only detail links to the exact central context. Unavailable owner selection cannot submit an implicit unassign. A qualified first empty observation with no actionable prior case is a successful no-op, not recovery or source outage. No runtime capability is enabled by these changes.
+
 ### Local Dev Container case reconciliation (#5229 / #2227)
 
 The central Alert Intelligence Active queue offers **Reconcile Cases (Local
