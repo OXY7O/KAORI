@@ -264,7 +264,11 @@ def resolve_custody_authority(
         return None
     target = expected.target
     scope = CredentialIssuerScope(
-        target.integration_instance_id, target.provider_key, target.provider_namespace, target.mount, target.deployment_ref
+        target.integration_instance_id,
+        target.provider_key,
+        target.provider_namespace,
+        target.mount,
+        target.deployment_ref,
     )
     deployment = resolve_deployment_authority(scope, now=now)
     if (
@@ -286,7 +290,8 @@ def resolve_custody_authority(
         return None
     payload, issued, expires, evidence_ref = result
     if (
-        set(payload) != {
+        set(payload)
+        != {
             'schema',
             'state',
             'deployment_evidence_ref',
@@ -310,4 +315,6 @@ def resolve_custody_authority(
         or not expected.issued_at <= issued <= now < expires <= min(expected.expires_at, deployment.expires_at)
     ):
         return None
-    return CustodyAuthority(deployment, target.revision_number, expected.challenge_sha256, issued, expires, evidence_ref)
+    return CustodyAuthority(
+        deployment, target.revision_number, expected.challenge_sha256, issued, expires, evidence_ref
+    )

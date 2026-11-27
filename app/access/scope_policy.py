@@ -370,7 +370,9 @@ def _locked_issuer_source(scope: CredentialIssuerScope, permission_key: str) -> 
     return source.enabled is True and source.lifecycle_status == 'active' and source.readiness_status == 'ready'
 
 
-def _locked_issuer_policies(actor_id: int, scope: CredentialIssuerScope, permission_key: str) -> list[ScopeAccessPolicy]:
+def _locked_issuer_policies(
+    actor_id: int, scope: CredentialIssuerScope, permission_key: str
+) -> list[ScopeAccessPolicy]:
     return list(
         db.session.execute(
             select(ScopeAccessPolicy)

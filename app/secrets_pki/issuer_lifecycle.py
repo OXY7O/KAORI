@@ -309,7 +309,9 @@ def _challenge(scope: CredentialIssuerScope, row: SecretCredentialIssuerChalleng
     )
 
 
-def _new_challenge(scope: CredentialIssuerScope, draft: SecretCredentialIssuerRevision, now: datetime) -> IssuedChallenge:
+def _new_challenge(
+    scope: CredentialIssuerScope, draft: SecretCredentialIssuerRevision, now: datetime
+) -> IssuedChallenge:
     challenge = SecretCredentialIssuerChallenge()
     challenge.integration_instance_id = scope.instance_id
     challenge.provider_key = scope.provider_key
@@ -330,7 +332,9 @@ def _new_challenge(scope: CredentialIssuerScope, draft: SecretCredentialIssuerRe
     return IssuedChallenge(challenge.challenge_sha256, statement, challenge.expires_at, draft.revision_number)
 
 
-def request_issuer_enrollment(*, actor_id: int, intent: IssuerEnrollmentIntent, inspection_token: str) -> IssuedChallenge:
+def request_issuer_enrollment(
+    *, actor_id: int, intent: IssuerEnrollmentIntent, inspection_token: str
+) -> IssuedChallenge:
     """Append draft and issue its one-time approval challenge in one audit transaction."""
     committed = False
     try:

@@ -157,7 +157,8 @@ def qualify_transit_public_key(data: object, binding: TransitIssuerBinding) -> b
         or data.get('type') != 'ed25519'
         or data.get('supports_signing') is not True
         or any(
-            data.get(flag) is not False for flag in ('derived', 'exportable', 'allow_plaintext_backup', 'deletion_allowed')
+            data.get(flag) is not False
+            for flag in ('derived', 'exportable', 'allow_plaintext_backup', 'deletion_allowed')
         )
         or data.get('imported_key', False) is not False
         or type(data.get('auto_rotate_period')) is not int

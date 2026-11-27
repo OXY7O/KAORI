@@ -84,7 +84,9 @@ def _setup(engine):
         permissions = ('secrets_pki.view', _REQUEST, _APPROVE, _REVOKE, 'roles.manage', 'users.manage')
         for index, key in enumerate(permissions, start=1):
             connection.execute(
-                Permission.__table__.insert().values(id=index, key=key, module=key.split('.')[0], action=key.split('.')[1])
+                Permission.__table__.insert().values(
+                    id=index, key=key, module=key.split('.')[0], action=key.split('.')[1]
+                )
             )
             connection.execute(
                 RolePermission.__table__.insert().values(role_id=1 if index <= 4 else 2, permission_id=index)
@@ -235,7 +237,9 @@ def _approve(intent):
 def _state(engine):
     with Session(engine) as session:
         revisions = session.scalars(
-            select(SecretCredentialIssuerRevision.lifecycle_status).order_by(SecretCredentialIssuerRevision.revision_number)
+            select(SecretCredentialIssuerRevision.lifecycle_status).order_by(
+                SecretCredentialIssuerRevision.revision_number
+            )
         ).all()
         challenges = session.scalars(select(SecretCredentialIssuerChallenge.lifecycle_status)).all()
         events = session.scalars(select(Notification.event_type).order_by(Notification.id)).all()
@@ -292,7 +296,9 @@ def test_approval_denial_leaves_draft_and_challenge_unchanged(issuer_store, fail
         del issuer_store[3][f'custody-{intent.challenge_sha256}.json']
     else:
         with Session(engine) as reader:
-            policy_id = reader.scalars(select(ScopeAccessPolicy.id).where(ScopeAccessPolicy.permission_key == _REQUEST)).one()
+            policy_id = reader.scalars(
+                select(ScopeAccessPolicy.id).where(ScopeAccessPolicy.permission_key == _REQUEST)
+            ).one()
         issuer_grants.revoke_issuer_grant(actor_user_id=3, policy_id=policy_id, expected_revision=2)
     before = _state(engine)
     with pytest.raises(issuer_lifecycle.IssuerLifecycleDenied):
@@ -372,9 +378,9 @@ def test_scope_migration_roundtrip_preserves_legacy_rows_and_refuses_history_los
             }
             connection.execute(
                 text(
-                    "INSERT INTO access_scope_policies "
-                    "(id, principal_user_id, permission_key, integration_instance_id, scope_level, "
-                    "provider_namespace, mount, current_revision, created_at, updated_at) "
+                    'INSERT INTO access_scope_policies '
+                    '(id, principal_user_id, permission_key, integration_instance_id, scope_level, '
+                    'provider_namespace, mount, current_revision, created_at, updated_at) '
                     "VALUES (:id, 1, 'secrets_pki.view', 1, 'instance', NULL, NULL, 1, :now, :now)"
                 ),
                 {'id': str(uuid4()), 'now': now},
@@ -413,9 +419,7 @@ def test_competing_approval_and_revocation_only_one_terminal_transition(issuer_s
         with app.app_context():
             barrier.wait(timeout=5)
             try:
-                return issuer_lifecycle.revoke_issuer_enrollment(
-                    actor_id=2, scope=intent.scope, expected_revision=1
-                )
+                return issuer_lifecycle.revoke_issuer_enrollment(actor_id=2, scope=intent.scope, expected_revision=1)
             except issuer_lifecycle.IssuerLifecycleDenied:
                 return None
 
