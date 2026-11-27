@@ -76,7 +76,7 @@ def _validated_binding(
 ) -> tuple[IntegrationBinding, IntegrationInstance] | None:
     if type(binding_id) is not int or binding_id < 1:
         return None
-    binding = db.session.get(IntegrationBinding, binding_id, populate_existing=lock, with_for_update=lock)
+    binding = db.session.get(IntegrationBinding, binding_id, populate_existing=True, with_for_update=lock)
     if (
         binding is None
         or not binding.enabled
@@ -88,8 +88,8 @@ def _validated_binding(
     vault_id = _identity(binding.asset_key)
     if vault_id is None:
         return None
-    vault = db.session.get(IntegrationInstance, vault_id, populate_existing=lock)
-    source = db.session.get(IntegrationInstance, binding.integration_instance_id, populate_existing=lock)
+    vault = db.session.get(IntegrationInstance, vault_id, populate_existing=True)
+    source = db.session.get(IntegrationInstance, binding.integration_instance_id, populate_existing=True)
     if (
         vault is None
         or vault.integration_type != 'secrets_pki'
@@ -342,6 +342,7 @@ def _qualified_snapshot_payload(
     """Fail closed unless the stored observation belongs to the exact binding and source."""
     if (
         not isinstance(payload, dict)
+        or set(payload) != {'schema_version', 'source_binding_id', 'source_integration_id', 'status', 'entries'}
         or type(payload.get('schema_version')) is not int
         or payload['schema_version'] != 1
         or type(payload.get('source_binding_id')) is not int
@@ -407,11 +408,15 @@ def read_vault_alert_observations(
     if eligible is None:
         return {'state': 'unavailable', 'entries': None}
     binding, source = eligible
-    snapshot = AlertSignalSnapshot.query.filter_by(
-        domain='secrets_pki',
-        asset_key=binding.asset_key,
-        signal_key=SIGNAL_KEY,
-    ).first()
+    snapshot = (
+        AlertSignalSnapshot.query.filter_by(
+            domain='secrets_pki',
+            asset_key=binding.asset_key,
+            signal_key=SIGNAL_KEY,
+        )
+        .populate_existing()
+        .first()
+    )
     if snapshot is None or snapshot.status != 'ready':
         return {'state': 'unavailable', 'entries': None}
     created = _persisted_utc(snapshot.generated_at)

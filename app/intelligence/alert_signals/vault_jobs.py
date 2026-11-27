@@ -179,13 +179,13 @@ def observe_vault_alert_binding(binding_id: int, *, key: bytes) -> str:
     try:
         client = build_client(provider)
         response = client.get_alerts(filters=[f'vault_instance="{binding.asset_key}"'])
-        observed = datetime.now(UTC)
+        completed = datetime.now(UTC)
         result = commit_vault_alert_observations(
             binding_id=binding.id,
             alerts=response,
             hmac_key=key,
-            observed_at=observed,
-            now=observed,
+            observed_at=now,
+            now=completed,
         )
         return result['state']
     except Exception:
@@ -193,7 +193,7 @@ def observe_vault_alert_binding(binding_id: int, *, key: bytes) -> str:
         # Never include the exception in JobExecution, logs or committed evidence.
         db.session.rollback()
         try:
-            fail_vault_alert_observations(binding_id=binding_id, observed_at=datetime.now(UTC))
+            fail_vault_alert_observations(binding_id=binding_id, observed_at=now)
         except Exception:
             db.session.rollback()
         return 'unavailable'
