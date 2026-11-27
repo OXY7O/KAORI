@@ -154,6 +154,18 @@ def build_vault_provider_case_plan(
         if cases.get(case.case_key) is not case:
             return _result('blocked')
 
+    plan = _candidate_rows(entries, cases=cases, proposed_keys=proposed_keys)
+    if state == 'unobserved' and not plan:
+        return _result('unobserved')
+    if any(item['action'] not in _ACTIONS for item in plan):
+        return _result('blocked')
+    plan.sort(key=lambda row: row['case_key'])
+    return _result('qualified', candidates=plan)
+
+
+def _candidate_rows(
+    entries: list[dict[str, Any]], *, cases: dict[str, AlertCase], proposed_keys: set[str]
+) -> list[dict[str, Any]]:
     plan: list[dict[str, Any]] = []
     for entry in entries:
         case_key = _CASE_PREFIX + entry['handle']
@@ -193,9 +205,4 @@ def build_vault_provider_case_plan(
                     'proposed_routing_state': 'suppressed',
                 }
             )
-    if state == 'unobserved' and not plan:
-        return _result('unobserved')
-    if any(item['action'] not in _ACTIONS for item in plan):
-        return _result('blocked')
-    plan.sort(key=lambda row: row['case_key'])
-    return _result('qualified', candidates=plan)
+    return plan

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
 
 from app.integrations.delivery.notification_channels.catalog import domain_label, event_type_label
@@ -293,3 +294,10 @@ def _alert_message(
         action_url=action_url,
         action_label='Open Alert Intelligence',
     )
+
+
+def _set_replay_status(delivery: NotificationDelivery, *, status: str, reason: str) -> None:
+    """Stage a blocked or exhausted replay outcome; caller owns the commit."""
+    delivery.status = status
+    delivery.error_message = reason
+    delivery.updated_at = datetime.now(UTC)

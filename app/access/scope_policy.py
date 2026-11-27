@@ -236,6 +236,17 @@ def evaluate_exact_vault_instance_operator_scope(
     )
 
 
+def _approved_instance_revision_end(revision: ScopeAccessPolicyRevision, *, instant: datetime) -> datetime | None:
+    if not _approved_instance_case_revision(revision):
+        return None
+    start = _timestamp(revision.effective_from)
+    end = _timestamp(revision.effective_until)
+    approval = _timestamp(revision.approved_at)
+    if start is None or end is None or approval is None or start > instant or instant >= end or approval > instant:
+        return None
+    return end
+
+
 def _evaluate_exact_vault_instance_case_permission(
     *,
     actor_user_id: int,
@@ -305,19 +316,10 @@ def _evaluate_exact_vault_instance_case_permission(
                 .with_for_update(of=ScopeAccessPolicyRevision)
                 .first()
             )
-            if revision is None or not _approved_instance_case_revision(revision):
+            if revision is None:
                 continue
-            start = _timestamp(revision.effective_from)
-            end = _timestamp(revision.effective_until)
-            approval = _timestamp(revision.approved_at)
-            if (
-                start is None
-                or end is None
-                or approval is None
-                or start > instant
-                or instant >= end
-                or approval > instant
-            ):
+            end = _approved_instance_revision_end(revision, instant=instant)
+            if end is None:
                 continue
             approved.append((policy, revision, end))
         if len(approved) != 1:

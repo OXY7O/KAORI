@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -81,6 +82,10 @@ def admitted_operator_workflow_qualified(case: AlertCase) -> bool:
     prior = db.session.get(AlertCaseEvent, metadata['previous_event_id'])
     if prior is None or prior.case_id != case.id:
         return False
+    return _operator_audit_matches(case, event=event, previous_event_id=metadata['previous_event_id'])
+
+
+def _operator_audit_matches(case: AlertCase, *, event: AlertCaseEvent, previous_event_id: int) -> bool:
     action = {'acknowledged': 'acknowledge', 'assigned': 'assign', 'mitigating': 'mitigating'}[event.event_type]
     audit = (
         AuditEvent.query.filter_by(
@@ -101,7 +106,7 @@ def admitted_operator_workflow_qualified(case: AlertCase) -> bool:
         and evidence.get('permission_key') == 'intelligence.decisions.create'
         and isinstance(evidence.get('policy_ref'), str)
         and type(evidence.get('policy_revision')) is int
-        and evidence.get('previous_event_id') == metadata['previous_event_id']
+        and evidence.get('previous_event_id') == previous_event_id
         and evidence.get('workflow_state') == case.workflow_state
         and 'owner_user_id' in evidence
         and evidence['owner_user_id'] == case.owner_user_id
@@ -176,6 +181,22 @@ def _stage_evidence(
     db.session.add(audit)
 
 
+def _current_firing_case(
+    case: AlertCase, *, source_id: int, binding_id: int, generated_at: datetime | None, entries: list[dict[str, Any]]
+) -> bool:
+    return bool(
+        _provenance_matches(case, source_id=source_id, binding_id=binding_id)
+        and admitted_source_state_qualified(case)
+        and admitted_operator_workflow_qualified(case)
+        and case.source_state == 'firing'
+        and _persisted_utc(case.last_seen_at) == _persisted_utc(generated_at)
+        and any(
+            entry['handle'] == case.case_key.removeprefix('vault-alert:') and entry['source_state'] == 'firing'
+            for entry in entries
+        )
+    )
+
+
 def apply_vault_provider_operator_action(
     *,
     binding_id: int,
@@ -245,17 +266,12 @@ def apply_vault_provider_operator_action(
             .with_for_update(of=AlertCase)
             .first()
         )
-        if (
-            case is None
-            or not _provenance_matches(case, source_id=source.id, binding_id=binding.id)
-            or not admitted_source_state_qualified(case)
-            or not admitted_operator_workflow_qualified(case)
-            or case.source_state != 'firing'
-            or _persisted_utc(case.last_seen_at) != _persisted_utc(snapshot.generated_at)
-            or not any(
-                entry['handle'] == case.case_key.removeprefix('vault-alert:') and entry['source_state'] == 'firing'
-                for entry in observation['entries']
-            )
+        if case is None or not _current_firing_case(
+            case,
+            source_id=source.id,
+            binding_id=binding.id,
+            generated_at=snapshot.generated_at,
+            entries=observation['entries'],
         ):
             return _stop('unavailable')
         if _latest_event_id(case) != expected_event_id:

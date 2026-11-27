@@ -400,7 +400,12 @@ def test_explicit_credential_use_role_still_cannot_use_metadata_scope(scope_stor
 
 def _request_instance(ids, *, permission_key='secrets_pki.view', scope_level='instance'):
     now = datetime.now(UTC)
-    return scoped_grants.request_scope_grant(
+    request_grant = (
+        scoped_grants.request_vault_case_operator_grant
+        if permission_key == 'intelligence.decisions.create'
+        else scoped_grants.request_scope_grant
+    )
+    return request_grant(
         actor_user_id=ids['requester'],
         principal_user_id=ids['viewer'],
         integration_instance_id=ids['source'],
@@ -412,7 +417,6 @@ def _request_instance(ids, *, permission_key='secrets_pki.view', scope_level='in
             effective_until=now + timedelta(hours=1),
         ),
         reason_code='incident_response',
-        permission_key=permission_key,
     )
 
 

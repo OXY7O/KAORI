@@ -47,6 +47,7 @@ from app.integrations.delivery.notification_channels.service_helpers import (
     _normalize_severity,
     _provider_label,
     _reset_channel_validation,
+    _set_replay_status,
 )
 from app.integrations.delivery.notification_channels.service_helpers import (
     DeliveryPagination as DeliveryPagination,
@@ -901,27 +902,21 @@ def recover_notification_deliveries(*, limit: int = 25) -> dict[str, int]:
         )
         if delivery is None:
             break
-        if delivery.domain == 'secrets_pki':
-            # Existing recovery has no source/instance/target requalification.
-            # Never replay a Secrets & PKI delivery through this generic worker.
-            delivery.status = 'skipped'
-            delivery.error_message = 'Replay suppressed: Secrets & PKI delivery is not qualified.'
-            delivery.updated_at = datetime.now(UTC)
+        if delivery.domain == 'secrets_pki' or delivery.channel.lifecycle_state != 'active':
+            reason = (
+                'Replay suppressed: Secrets & PKI delivery is not qualified.'
+                if delivery.domain == 'secrets_pki'
+                else 'Replay suppressed: notification channel has been retired.'
+            )
+            _set_replay_status(delivery, status='skipped', reason=reason)
             db.session.commit()
             totals['skipped'] += 1
             continue
         channel = delivery.channel
-        if channel.lifecycle_state != 'active':
-            delivery.status = 'skipped'
-            delivery.error_message = 'Replay suppressed: notification channel has been retired.'
-            delivery.updated_at = datetime.now(UTC)
-            db.session.commit()
-            totals['skipped'] += 1
-            continue
         if delivery.attempt_count >= max_attempts:
-            delivery.status = 'failed'
-            delivery.error_message = 'Delivery attempts exhausted; last provider outcome may be unknown.'
-            delivery.updated_at = datetime.now(UTC)
+            _set_replay_status(
+                delivery, status='failed', reason='Delivery attempts exhausted; last provider outcome may be unknown.'
+            )
             db.session.commit()
             totals['skipped'] += 1
             continue
@@ -929,11 +924,11 @@ def recover_notification_deliveries(*, limit: int = 25) -> dict[str, int]:
         if message is None or not _channel_matches_event(
             channel, domain=delivery.domain, event_type=delivery.event_type, severity=delivery.severity
         ):
-            delivery.status = 'skipped'
-            delivery.error_message = (
-                'Replay unavailable: source snapshot missing, invalid, or channel policy/transport changed.'
+            _set_replay_status(
+                delivery,
+                status='skipped',
+                reason='Replay unavailable: source snapshot missing, invalid, or channel policy/transport changed.',
             )
-            delivery.updated_at = datetime.now(UTC)
             db.session.commit()
             totals['skipped'] += 1
             continue
@@ -952,9 +947,6 @@ def _channel_matches_event(
     event_type: str,
     severity: str | None = None,
 ) -> bool:
-    # Fail closed even if a future catalog edit adds this domain prematurely.
-    if domain == 'secrets_pki':
-        return False
     allowed_events = set(channel.event_types or [])
     if event_type in {'alert_ops.firing', 'alert_ops.resolved'} and 'alert_intelligence.active_alert' in allowed_events:
         allowed_events.add(event_type)
@@ -964,6 +956,7 @@ def _channel_matches_event(
         and channel.configured
         and channel.test_status == 'success'
         and domain in (channel.domains or [])
+        and domain != 'secrets_pki'
         and domain_event_allowed(domain, event_type)
         and event_type in allowed_events
     ):
@@ -995,9 +988,4 @@ def _channel_matches(
     severity: str,
     event_type: str,
 ) -> bool:
-    return _channel_matches_event(
-        channel,
-        domain=domain,
-        event_type=event_type,
-        severity=severity,
-    )
+    return _channel_matches_event(channel, domain=domain, event_type=event_type, severity=severity)
