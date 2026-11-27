@@ -18,6 +18,7 @@ from app.intelligence.alert_signals.vault_source import (
     _validated_binding,
     commit_vault_alert_observations,
     fail_vault_alert_observations,
+    source_revision,
 )
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -173,7 +174,10 @@ def observe_vault_alert_binding(binding_id: int, *, key: bytes) -> str:
     eligible = _validated_binding(binding_id, now=now)
     if eligible is None:
         return 'blocked'
-    binding, _source = eligible
+    binding, source = eligible
+    revision = source_revision(binding, source)
+    if revision is None:
+        return 'blocked'
     provider = _provider_for(binding)
     if provider is None:
         return 'blocked'
@@ -187,6 +191,7 @@ def observe_vault_alert_binding(binding_id: int, *, key: bytes) -> str:
             hmac_key=key,
             observed_at=now,
             now=completed,
+            expected_revision=revision,
         )
         if result['state'] in {'qualified', 'unobserved'}:
             # Independent positive evidence is optional. It never changes the
@@ -201,7 +206,7 @@ def observe_vault_alert_binding(binding_id: int, *, key: bytes) -> str:
         # Never include the exception in JobExecution, logs or committed evidence.
         db.session.rollback()
         try:
-            fail_vault_alert_observations(binding_id=binding_id, observed_at=now)
+            fail_vault_alert_observations(binding_id=binding_id, observed_at=now, expected_revision=revision)
         except Exception:
             db.session.rollback()
         return 'unavailable'

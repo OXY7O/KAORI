@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import re
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -60,6 +61,23 @@ def _identity(value: object) -> int | None:
     return parsed if parsed > 0 and str(parsed) == value else None
 
 
+@dataclass(frozen=True, slots=True)
+class VaultSourceRevision:
+    binding_id: int
+    source_id: int
+    binding_revision: datetime
+    source_revision: datetime
+
+
+def source_revision(binding: IntegrationBinding, source: IntegrationInstance) -> VaultSourceRevision | None:
+    """Capture non-secret canonical source revisions, never connection material."""
+    binding_revision = _persisted_utc(binding.updated_at)
+    source_revision_at = _persisted_utc(source.updated_at)
+    if binding_revision is None or source_revision_at is None:
+        return None
+    return VaultSourceRevision(binding.id, source.id, binding_revision, source_revision_at)
+
+
 def _has_exact_vault_matcher(binding: IntegrationBinding) -> bool:
     """Require one exact per-Vault Alert Source matcher."""
     selector = binding.selector_json
@@ -89,7 +107,9 @@ def _validated_binding(
     if vault_id is None:
         return None
     vault = db.session.get(IntegrationInstance, vault_id, populate_existing=True)
-    source = db.session.get(IntegrationInstance, binding.integration_instance_id, populate_existing=True)
+    source = db.session.get(
+        IntegrationInstance, binding.integration_instance_id, populate_existing=True, with_for_update=lock
+    )
     if (
         vault is None
         or vault.integration_type != 'secrets_pki'
@@ -223,6 +243,7 @@ def commit_vault_alert_observations(
     hmac_key: bytes,
     observed_at: datetime | None = None,
     now: datetime | None = None,
+    expected_revision: VaultSourceRevision | None = None,
 ) -> dict[str, Any]:
     """Commit one worker-supplied source snapshot without fetching the provider.
 
@@ -242,6 +263,10 @@ def commit_vault_alert_observations(
         db.session.rollback()
         return {'state': 'blocked', 'observed_rows': None}
     binding, source = eligible
+    revision = source_revision(binding, source)
+    if revision is None or (expected_revision is not None and expected_revision != revision):
+        db.session.rollback()
+        return {'state': 'blocked', 'observed_rows': None}
     snapshot = _locked_observation_snapshot(binding.asset_key)
     if snapshot is not None and snapshot.generated_at is not None:
         previous = _persisted_utc(snapshot.generated_at)
@@ -280,9 +305,11 @@ def commit_vault_alert_observations(
         db.session.add(snapshot)
     snapshot.status = 'ready'
     snapshot.payload_json = {
-        'schema_version': 1,
+        'schema_version': 2,
         'source_binding_id': binding.id,
         'source_integration_id': source.id,
+        'binding_revision': revision.binding_revision.isoformat(),
+        'source_revision': revision.source_revision.isoformat(),
         'status': normalized['status'],
         'entries': normalized['entries'],
     }
@@ -301,6 +328,7 @@ def fail_vault_alert_observations(
     *,
     binding_id: int,
     observed_at: datetime | None = None,
+    expected_revision: VaultSourceRevision | None = None,
 ) -> bool:
     """Invalidate a previously ready source after a trusted provider read fails.
 
@@ -314,7 +342,11 @@ def fail_vault_alert_observations(
     if eligible is None:
         db.session.rollback()
         return False
-    binding, _source = eligible
+    binding, source = eligible
+    revision = source_revision(binding, source)
+    if revision is None or (expected_revision is not None and expected_revision != revision):
+        db.session.rollback()
+        return False
     snapshot = _locked_observation_snapshot(binding.asset_key)
     if snapshot is None:
         snapshot = AlertSignalSnapshot()
@@ -340,11 +372,18 @@ def _qualified_snapshot_payload(
     payload: object, *, binding: IntegrationBinding, source: IntegrationInstance
 ) -> dict[str, Any] | None:
     """Fail closed unless the stored observation belongs to the exact binding and source."""
+    revision = source_revision(binding, source)
     if (
-        not isinstance(payload, dict)
-        or set(payload) != {'schema_version', 'source_binding_id', 'source_integration_id', 'status', 'entries'}
+        revision is None
+        or not isinstance(payload, dict)
+        or set(payload) != {
+            'schema_version', 'source_binding_id', 'source_integration_id',
+            'binding_revision', 'source_revision', 'status', 'entries'
+        }
         or type(payload.get('schema_version')) is not int
-        or payload['schema_version'] != 1
+        or payload['schema_version'] != 2
+        or payload['binding_revision'] != revision.binding_revision.isoformat()
+        or payload['source_revision'] != revision.source_revision.isoformat()
         or type(payload.get('source_binding_id')) is not int
         or payload['source_binding_id'] != binding.id
         or type(payload.get('source_integration_id')) is not int

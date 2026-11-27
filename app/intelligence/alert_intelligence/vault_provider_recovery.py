@@ -53,7 +53,9 @@ class _RecoveryCandidate:
     policy_revision: int
 
 
-def _action_for(case: AlertCase, *, actor_id: int, generation: datetime, resolved: datetime) -> str | None:
+def _action_for(
+    case: AlertCase, *, actor_id: int, generation: datetime, resolved: datetime, issued: datetime, evidence_ref: str
+) -> str | None:
     seen = _persisted_utc(case.last_seen_at)
     if seen is None or resolved <= seen:
         return None
@@ -71,7 +73,8 @@ def _action_for(case: AlertCase, *, actor_id: int, generation: datetime, resolve
     if (
         recovered is None or recovered.actor_user_id == actor_id
         or _latest_event_id(case) != recovered.id
-        or started is None or generation <= started
+        or started is None or generation <= started or issued <= started
+        or evidence_ref == recovered.metadata_json['authority_ref']
         or resolved != _persisted_utc(case.source_resolved_at)
     ):
         return None
@@ -119,7 +122,13 @@ def _qualify(
     resolved = receipt_time(matches[0]['resolved_at'])
     if resolved is None:
         return None
-    action = _action_for(case, actor_id=actor_id, generation=generation, resolved=resolved)
+    issued = receipt_time(evidence['issued_at'])
+    if issued is None:
+        return None
+    action = _action_for(
+        case, actor_id=actor_id, generation=generation, resolved=resolved,
+        issued=issued, evidence_ref=evidence['evidence_ref']
+    )
     if action is None:
         return None
     return _RecoveryCandidate(
