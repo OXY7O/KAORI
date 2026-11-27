@@ -312,13 +312,13 @@ def _admission_scope(
     actor_id: int, binding: IntegrationBinding, instant: datetime, local_instance_id: int | None
 ) -> bool:
     instance_id = int(binding.asset_key)
+    if not lock_explicit_permissions(actor_id, set(_REQUIRED_PERMISSIONS)):
+        return False
     if local_instance_id is None:
         return evaluate_exact_vault_instance_case_scope(
             actor_user_id=actor_id, instance_id=instance_id, now=instant
         ).allowed
     if type(local_instance_id) is not int or local_instance_id != instance_id:
-        return False
-    if not lock_explicit_permissions(actor_id, set(_REQUIRED_PERMISSIONS)):
         return False
     return evaluate_exact_vault_instance_operator_scope(
         actor_user_id=actor_id, instance_id=instance_id, now=instant

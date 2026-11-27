@@ -86,8 +86,9 @@ def _collection_state_incomplete(row: Any, *, instant: datetime) -> bool:
         or not 0 <= row[4] <= _MAX_CERTS_PER_MOUNT
         or observed is None
         or committed is None
-        or not timedelta(0) <= instant - observed <= _FRESHNESS
-        or not timedelta(0) <= instant - committed <= _FRESHNESS
+        or not observed <= committed <= instant
+        or instant - observed > _FRESHNESS
+        or instant - committed > _FRESHNESS
     )
 
 
@@ -166,8 +167,9 @@ def build_stored_pki_validity_posture(*, now: datetime | None = None) -> dict[st
         ).all()
         if len(states) > _MAX_SCOPES:
             return _result('blocked', 'PKI Collection State Limit Exceeded')
-        state_by_scope = {(row[0], row[1], row[2]): row for row in states if (row[0], row[1], row[2]) in scopes}
-        if set(state_by_scope) != scopes:
+        selected_states = [row for row in states if (row[0], row[1], row[2]) in scopes]
+        state_by_scope = {(row[0], row[1], row[2]): row for row in selected_states}
+        if len(state_by_scope) != len(selected_states) or set(state_by_scope) != scopes:
             return _result('incomplete', 'PKI Collection Coverage Incomplete')
         for row in state_by_scope.values():
             if _collection_state_incomplete(row, instant=instant):

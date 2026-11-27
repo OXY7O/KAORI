@@ -138,6 +138,8 @@ def build_vault_provider_case_plan(
     for case in existing:
         if not _provenance_matches(case, source_id=source.id, binding_id=binding.id):
             return _result('blocked')
+        if case.workflow_state != 'closed' and not admitted_source_state_qualified(case):
+            return _result('blocked')
         if case.case_key in cases:
             return _result('blocked')
         cases[case.case_key] = case
@@ -176,10 +178,8 @@ def _candidate_rows(
             action = 'retain_unverified' if prior is not None else 'review_source'
         elif prior is None:
             action = 'create_candidate'
-        elif admitted_source_state_qualified(prior):
-            action = 'refresh_candidate'
         else:
-            action = 'retain_unverified'
+            action = 'refresh_candidate'
         plan.append(
             {
                 'action': action,
