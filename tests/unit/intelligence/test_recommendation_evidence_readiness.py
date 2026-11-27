@@ -112,9 +112,7 @@ def test_qualified_population_is_not_counted_as_inventory_asset() -> None:
         == 'unavailable'
     )
     assert (
-        classify_recommendation_readiness(
-            total=2, recent=1, issues=[], has_findings=True, qualified_population=True
-        )
+        classify_recommendation_readiness(total=2, recent=1, issues=[], has_findings=True, qualified_population=True)
         == 'partial'
     )
     assert (

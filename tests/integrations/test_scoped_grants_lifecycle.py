@@ -417,9 +417,7 @@ def _request_instance(ids, *, permission_key='secrets_pki.view', scope_level='in
 
 
 def _approve_instance(ids, policy):
-    return scoped_grants.approve_scope_grant(
-        policy_id=policy.id, approver_user_id=ids['approver'], expected_revision=1
-    )
+    return scoped_grants.approve_scope_grant(policy_id=policy.id, approver_user_id=ids['approver'], expected_revision=1)
 
 
 def _operator_role(ids):
@@ -447,9 +445,7 @@ def test_operator_scope_requires_two_independent_approved_instance_grants(scope_
     _approve_instance(ids, operator)
     decision = _operator_scope(ids)
     assert decision.allowed and decision.policy_ref == operator.id and decision.revision == 2
-    scoped_grants.revoke_scope_grant(
-        policy_id=read.id, actor_user_id=ids['requester'], expected_revision=2
-    )
+    scoped_grants.revoke_scope_grant(policy_id=read.id, actor_user_id=ids['requester'], expected_revision=2)
     assert not _operator_scope(ids).allowed
 
 
@@ -473,9 +469,7 @@ def test_operator_permission_absent_or_revoked_denies(scope_store):
     _approve_instance(ids, _request_instance(ids))
     operator = _approve_instance(ids, _request_instance(ids, permission_key='intelligence.decisions.create'))
     assert _operator_scope(ids).allowed
-    scoped_grants.revoke_scope_grant(
-        policy_id=operator.id, actor_user_id=ids['requester'], expected_revision=2
-    )
+    scoped_grants.revoke_scope_grant(policy_id=operator.id, actor_user_id=ids['requester'], expected_revision=2)
     assert not _operator_scope(ids).allowed
 
 
@@ -496,9 +490,7 @@ def test_operator_grant_approval_requires_independence_and_atomic_audit(scope_st
     _operator_role(ids)
     operator = _request_instance(ids, permission_key='intelligence.decisions.create')
     with pytest.raises(scoped_grants.ScopedGrantRejected):
-        scoped_grants.approve_scope_grant(
-            policy_id=operator.id, approver_user_id=ids['requester'], expected_revision=1
-        )
+        scoped_grants.approve_scope_grant(policy_id=operator.id, approver_user_id=ids['requester'], expected_revision=1)
 
     def sink_failure(**_kwargs):
         raise RuntimeError('persistence unavailable')

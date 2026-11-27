@@ -225,9 +225,7 @@ def evaluate_exact_vault_instance_operator_scope(
     source, case and mandatory audit in the same transaction. No route is wired.
     """
     instant = now or datetime.now(UTC)
-    read = evaluate_exact_vault_instance_case_scope(
-        actor_user_id=actor_user_id, instance_id=instance_id, now=instant
-    )
+    read = evaluate_exact_vault_instance_case_scope(actor_user_id=actor_user_id, instance_id=instance_id, now=instant)
     if not read.allowed:
         return read
     return _evaluate_exact_vault_instance_case_permission(

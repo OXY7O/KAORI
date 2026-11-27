@@ -143,8 +143,7 @@ def preflight_vault_provider_firing(
             or _persisted_utc(case.last_seen_at) != _persisted_utc(snapshot.generated_at)
             or observation['state'] != 'fresh'
             or not any(
-                entry['handle'] == case.case_key.removeprefix('vault-alert:')
-                and entry['source_state'] == 'firing'
+                entry['handle'] == case.case_key.removeprefix('vault-alert:') and entry['source_state'] == 'firing'
                 for entry in observation['entries']
             )
         ):
@@ -176,9 +175,7 @@ def preflight_vault_provider_firing(
         db.session.rollback()
 
 
-def _candidate_blocker(
-    case: AlertCase, *, binding_id: int, policy_id: int, channel_id: int, now: datetime
-) -> str:
+def _candidate_blocker(case: AlertCase, *, binding_id: int, policy_id: int, channel_id: int, now: datetime) -> str:
     # No repeat/reminder semantics have been admitted for this provider.
     if case.workflow_state != 'open' or case.acknowledged_at is not None:
         return 'workflow_suppressed'

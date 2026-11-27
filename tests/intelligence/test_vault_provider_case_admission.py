@@ -546,9 +546,9 @@ def _operate(scope, action, *, expected=None, owner=None, at=AT):
         public_id=case.public_id,
         actor_user_id=actor.id,
         action=action,
-        expected_event_id=expected if expected is not None else AlertCaseEvent.query.order_by(
-            AlertCaseEvent.id.desc()
-        ).first().id,
+        expected_event_id=expected
+        if expected is not None
+        else AlertCaseEvent.query.order_by(AlertCaseEvent.id.desc()).first().id,
         owner_user_id=owner,
         now=at,
     )
@@ -679,9 +679,12 @@ def test_web_operator_controls_disabled_independently(scope, monkeypatch):
     _grant(vault, actor, permission='intelligence.decisions.create')
     monkeypatch.delenv(web._WEB_ENABLE_ENV, raising=False)
     assert not web._enabled()
-    assert web.operator_controls(
-        instance_id=vault.id, public_id=case.public_id, expected_event_id=AlertCaseEvent.query.one().id
-    ) is None
+    assert (
+        web.operator_controls(
+            instance_id=vault.id, public_id=case.public_id, expected_event_id=AlertCaseEvent.query.one().id
+        )
+        is None
+    )
 
 
 def test_web_mutation_rejects_missing_csrf_and_extra_fields(scope, monkeypatch):

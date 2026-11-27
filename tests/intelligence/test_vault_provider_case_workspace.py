@@ -669,9 +669,11 @@ def test_provider_delivery_transport_and_dispatch_helpers_fail_closed(store, mon
     assert notifications._dispatch_firing(case) == expected
     assert notifications._dispatch_resolved(case) == expected
     for state in ('firing', 'resolved'):
-        assert notifications._deliver_case_event(
-            case, channel_id=1, event_state=state, sequence='test'
-        ) == {'successful': 0, 'failed': 0, 'skipped': 1}
+        assert notifications._deliver_case_event(case, channel_id=1, event_state=state, sequence='test') == {
+            'successful': 0,
+            'failed': 0,
+            'skipped': 1,
+        }
     assert case.last_firing_notified_at is None
     assert case.last_resolved_notified_at is None
 

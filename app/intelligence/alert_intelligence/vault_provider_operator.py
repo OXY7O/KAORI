@@ -34,11 +34,7 @@ def _stop(status: str) -> str:
 
 
 def _latest_event_id(case: AlertCase) -> int | None:
-    event = (
-        AlertCaseEvent.query.filter_by(case_id=case.id)
-        .order_by(AlertCaseEvent.id.desc())
-        .first()
-    )
+    event = AlertCaseEvent.query.filter_by(case_id=case.id).order_by(AlertCaseEvent.id.desc()).first()
     return event.id if event is not None else None
 
 
@@ -46,11 +42,7 @@ def admitted_operator_workflow_qualified(case: AlertCase) -> bool:
     """Require committed workflow evidence; never infer source recovery."""
     if case.workflow_state not in _ACTIVE_WORKFLOW or case.acknowledgement_expires_at is not None:
         return False
-    if (
-        case.closed_at is not None
-        or case.closure_reason is not None
-        or case.verification_started_at is not None
-    ):
+    if case.closed_at is not None or case.closure_reason is not None or case.verification_started_at is not None:
         return False
     if case.workflow_state == 'open':
         if (
@@ -116,9 +108,7 @@ def admitted_operator_workflow_qualified(case: AlertCase) -> bool:
     )
 
 
-def _apply_workflow(
-    case: AlertCase, *, action: str, actor_id: int, owner_id: int | None, instant: datetime
-) -> bool:
+def _apply_workflow(case: AlertCase, *, action: str, actor_id: int, owner_id: int | None, instant: datetime) -> bool:
     """Change only existing operator workflow fields, never source or routing state."""
     if action == 'acknowledge':
         if case.workflow_state != 'open' or case.acknowledged_at is not None:
@@ -209,8 +199,7 @@ def apply_vault_provider_operator_action(
     if (
         instant is None
         or any(
-            type(value) is not int or value < 1
-            for value in (binding_id, instance_id, actor_user_id, expected_event_id)
+            type(value) is not int or value < 1 for value in (binding_id, instance_id, actor_user_id, expected_event_id)
         )
         or not isinstance(public_id, str)
         or not 1 <= len(public_id) <= 64
@@ -264,17 +253,14 @@ def apply_vault_provider_operator_action(
             or case.source_state != 'firing'
             or _persisted_utc(case.last_seen_at) != _persisted_utc(snapshot.generated_at)
             or not any(
-                entry['handle'] == case.case_key.removeprefix('vault-alert:')
-                and entry['source_state'] == 'firing'
+                entry['handle'] == case.case_key.removeprefix('vault-alert:') and entry['source_state'] == 'firing'
                 for entry in observation['entries']
             )
         ):
             return _stop('unavailable')
         if _latest_event_id(case) != expected_event_id:
             return _stop('stale')
-        if not _apply_workflow(
-            case, action=action, actor_id=actor_user_id, owner_id=owner_user_id, instant=instant
-        ):
+        if not _apply_workflow(case, action=action, actor_id=actor_user_id, owner_id=owner_user_id, instant=instant):
             return _stop('unchanged')
         _stage_evidence(
             case,

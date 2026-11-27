@@ -80,9 +80,7 @@ def _recipient_options(instance_id: int, *, now: datetime) -> list[dict[str, Any
         return None
     options = []
     for (user_id,) in ids:
-        scope = evaluate_exact_vault_instance_operator_scope(
-            actor_user_id=user_id, instance_id=instance_id, now=now
-        )
+        scope = evaluate_exact_vault_instance_operator_scope(actor_user_id=user_id, instance_id=instance_id, now=now)
         if scope.status == 'unavailable':
             return None
         if scope.allowed:
@@ -92,9 +90,7 @@ def _recipient_options(instance_id: int, *, now: datetime) -> list[dict[str, Any
     return options
 
 
-def operator_controls(
-    *, instance_id: int, public_id: str, expected_event_id: int
-) -> dict[str, Any] | None:
+def operator_controls(*, instance_id: int, public_id: str, expected_event_id: int) -> dict[str, Any] | None:
     """Independent audited read of eligible actions after the case read commits.
 
     Binding-first order matches the mutation command. No fleet/user enumeration;
@@ -114,9 +110,7 @@ def operator_controls(
         binding, source = eligible
         if binding.asset_key != str(instance_id):
             return None
-        scope = evaluate_exact_vault_instance_operator_scope(
-            actor_user_id=actor_id, instance_id=instance_id, now=now
-        )
+        scope = evaluate_exact_vault_instance_operator_scope(actor_user_id=actor_id, instance_id=instance_id, now=now)
         if not scope.allowed:
             return None
         # Recipient locks precede snapshot/case locks, as in the command.
@@ -148,8 +142,7 @@ def operator_controls(
             or _persisted_utc(case.last_seen_at) != _persisted_utc(snapshot.generated_at)
             or observation['state'] != 'fresh'
             or not any(
-                entry['handle'] == case.case_key.removeprefix('vault-alert:')
-                and entry['source_state'] == 'firing'
+                entry['handle'] == case.case_key.removeprefix('vault-alert:') and entry['source_state'] == 'firing'
                 for entry in observation['entries']
             )
         ):

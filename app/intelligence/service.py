@@ -324,7 +324,9 @@ def _build_recommendation_findings(
     if any(key.startswith('registry.') for key in rules):
         collect('Artifact Registry', build_registry_recommendation_findings)
     if any(key.startswith('secrets_pki.') for key in rules) and _can_view_secrets_pki_intelligence():
-        collect('Secrets & PKI', lambda rules: build_secrets_pki_recommendation_findings(rules, readiness=pki_readiness))
+        collect(
+            'Secrets & PKI', lambda rules: build_secrets_pki_recommendation_findings(rules, readiness=pki_readiness)
+        )
 
     return _finalize_recommendation_findings(findings)
 
