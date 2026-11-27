@@ -22,6 +22,7 @@ from app.intelligence.alert_signals.vault_source import (
     _normalize,
     _persisted_utc,
     _validated_binding,
+    read_vault_alert_observations,
 )
 from app.models.alert_signal import AlertSignalSnapshot
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -34,8 +35,12 @@ _DIGEST = re.compile(r'[a-f0-9]{64}')
 def _exact_receipt(
     payload: dict[str, Any], *, binding: IntegrationBinding, source: IntegrationInstance
 ) -> bool:
+    binding_revision = _persisted_utc(binding.updated_at)
+    source_revision = _persisted_utc(source.updated_at)
     return (
-        set(payload) == {
+        binding_revision is not None
+        and source_revision is not None
+        and set(payload) == {
             'schema', 'state', 'binding_id', 'instance_id', 'source_id',
             'binding_revision', 'source_revision', 'issued_at', 'expires_at', 'complete', 'entries'
         }
@@ -45,14 +50,14 @@ def _exact_receipt(
         and str(payload['instance_id']) == binding.asset_key
         and type(payload['source_id']) is int
         and payload['source_id'] == source.id
-        and receipt_time(payload['binding_revision']) == _persisted_utc(binding.updated_at)
-        and receipt_time(payload['source_revision']) == _persisted_utc(source.updated_at)
+        and receipt_time(payload['binding_revision']) == binding_revision
+        and receipt_time(payload['source_revision']) == source_revision
         and payload['complete'] is True
     )
 
 
 def _project_entries(
-    entries: object, *, binding: IntegrationBinding, source_id: int, key: bytes, observed: datetime
+    entries: object, *, binding: IntegrationBinding, source_id: int, key: bytes, observed: datetime, issued: datetime
 ) -> list[dict[str, str]] | None:
     if not isinstance(entries, list) or not 0 <= len(entries) <= _MAX_ALERTS:
         return None
@@ -65,7 +70,7 @@ def _project_entries(
         rule_ref = entry['rule_ref']
         if (
             entry['state'] != 'resolved'
-            or starts is None or resolved is None or not starts <= resolved <= observed
+            or starts is None or resolved is None or not starts <= resolved <= min(observed, issued)
             or not isinstance(rule_ref, str) or not _DIGEST.fullmatch(rule_ref)
         ):
             return None
@@ -111,15 +116,22 @@ def collect_vault_recovery(
         active = _locked_observation_snapshot(binding.asset_key)
         if active is None or active.status != 'ready' or _persisted_utc(active.generated_at) != observed:
             return 'unavailable'
+        if read_vault_alert_observations(binding_id=binding.id, now=now)['state'] not in ('fresh', 'unobserved'):
+            return 'unavailable'
         signed = read_signed_authority(f'recovery-{binding.id}', schema=_SCHEMA, now=now)
         if signed is None:
             return 'unavailable'
         payload, evidence_ref = signed
         if not _exact_receipt(payload, binding=binding, source=source):
             return 'unavailable'
+        issued = receipt_time(payload['issued_at'])
         expires = receipt_time(payload['expires_at'])
-        entries = _project_entries(payload['entries'], binding=binding, source_id=source.id, key=key, observed=observed)
-        if entries is None or expires is None or min(expires, observed + _TTL) <= now:
+        if issued is None or expires is None or min(expires, observed + _TTL) <= now:
+            return 'unavailable'
+        entries = _project_entries(
+            payload['entries'], binding=binding, source_id=source.id, key=key, observed=observed, issued=issued
+        )
+        if entries is None:
             return 'unavailable'
         snapshot = _recovery_snapshot(binding.asset_key, lock=True)
         if snapshot is None:
@@ -134,12 +146,13 @@ def collect_vault_recovery(
         snapshot.last_attempt_at = observed
         snapshot.last_error = None
         snapshot.payload_json = {
-            'schema_version': 1,
+            'schema_version': 2,
             'binding_id': binding.id,
             'source_id': source.id,
             'binding_revision': payload['binding_revision'],
             'source_revision': payload['source_revision'],
             'evidence_ref': evidence_ref,
+            'issued_at': issued.isoformat(),
             'entries': entries,
         }
         db.session.commit()
@@ -160,17 +173,29 @@ def read_vault_recovery(
     if expires is None or not observed <= now < expires <= observed + _TTL or not isinstance(payload, dict):
         return None
     if set(payload) != {
-        'schema_version', 'binding_id', 'source_id', 'binding_revision', 'source_revision', 'evidence_ref', 'entries'
+        'schema_version', 'binding_id', 'source_id', 'binding_revision', 'source_revision', 'evidence_ref', 'issued_at', 'entries'
     }:
         return None
     if (
-        type(payload['schema_version']) is not int or payload['schema_version'] != 1
+        type(payload['schema_version']) is not int or payload['schema_version'] != 2
         or type(payload['binding_id']) is not int or payload['binding_id'] != binding.id
         or type(payload['source_id']) is not int or payload['source_id'] != source.id
         or receipt_time(payload['binding_revision']) != _persisted_utc(binding.updated_at)
         or receipt_time(payload['source_revision']) != _persisted_utc(source.updated_at)
         or not isinstance(payload['evidence_ref'], str) or not _DIGEST.fullmatch(payload['evidence_ref'])
     ):
+        return None
+    issued = receipt_time(payload['issued_at'])
+    if issued is None or issued > now:
+        return None
+    # Removing, replacing, or revoking a receipt immediately blocks mutation,
+    # even during the short committed snapshot lifetime.
+    signed = read_signed_authority(f'recovery-{binding.id}', schema=_SCHEMA, now=now)
+    if signed is None or signed[1] != payload['evidence_ref'] or not _exact_receipt(
+        signed[0], binding=binding, source=source
+    ):
+        return None
+    if receipt_time(signed[0]['issued_at']) != issued:
         return None
     entries = payload['entries']
     if not isinstance(entries, list) or len(entries) > _MAX_ALERTS:
@@ -182,7 +207,7 @@ def read_vault_recovery(
         handle, resolved = entry['handle'], receipt_time(entry['resolved_at'])
         if not isinstance(handle, str) or not _HANDLE.fullmatch(handle) or handle in handles:
             return None
-        if resolved is None or resolved > observed:
+        if resolved is None or resolved > min(observed, issued):
             return None
         handles.add(handle)
     return payload

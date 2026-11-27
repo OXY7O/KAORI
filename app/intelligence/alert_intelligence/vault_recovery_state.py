@@ -105,6 +105,7 @@ def admitted_recovery_qualified(case: AlertCase) -> bool:
         and closure.actor_user_id != recovered.actor_user_id
         and closure.metadata_json['previous_event_id'] == recovered.id
         and closure.metadata_json['resolved_at'] == recovered.metadata_json['resolved_at']
+        and closure.metadata_json['authority_ref'] != recovered.metadata_json['authority_ref']
         and generation is not None and started < generation <= closed
         and case.resolution_summary and case.verification_evidence and case.remediation_steps_json
     )
