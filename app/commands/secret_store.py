@@ -142,5 +142,5 @@ def qualify_openbao(
         del token
     click.echo(f'OpenBao {ownership} candidate: observed active version {evidence.version}.')
     click.echo('Cluster match, bounded token, exact KV v2/AppRole mounts and audit configuration: observed.')
-    click.echo(f'Observation reference: {evidence.evidence_ref}')
+    click.echo(f'Observation reference: {evidence.evidence_ref} at {evidence.observed_at.isoformat()}')
     click.echo('REGISTRATION PENDING: independent identity, policy, audit delivery and human acceptance required.')

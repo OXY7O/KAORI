@@ -93,7 +93,7 @@ def _require_exact_mounts(
     audit = audits.get(target.audit_mount + '/')
     if (
         not isinstance(audit, dict)
-        or audit.get('type') not in {'file', 'socket', 'syslog'}
+        or audit.get('type') not in ('file', 'socket', 'syslog')
         or not isinstance(audit.get('options'), dict)
         or audit['options'].get('log_raw', 'false') != 'false'
     ):
