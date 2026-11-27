@@ -103,3 +103,20 @@ version, actor/operation grant or execution permission. No activation,
 HTTP route, worker wiring, secret material or provider request is added.
 Future governed use must revalidate within the operation admission boundary;
 this standalone read is not a durable authorization or concurrency lock.
+
+
+### Independent credential issuer enrollment authority (#5245)
+
+The approved design separates provider-native Transit Ed25519 key custody
+from deployment recovery/attestation authority. The latter retains its
+private signing key outside KAORI and the provider under enrollment.
+The runtime receives only a read-only operator-managed root pin and current
+signed receipts through `/run/kaori/issuer-authority`; missing or writable
+authority configuration denies. Do not populate the directory from the web
+UI, the provider response, general runtime ENV or synthetic CI fixtures.
+No default trust pin is supplied. The deployment operator must separately
+qualify mount ownership, read-only flags, native provider cluster identity,
+exact scoped short-lived inspection ACL, independent approval, atomic
+receipt publication/revocation and anti-rollback controls in disposable UAT.
+No live mount, key creation, migration, sign or recovery operation is
+introduced by the source resolver.

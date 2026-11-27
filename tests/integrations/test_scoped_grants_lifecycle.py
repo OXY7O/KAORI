@@ -393,3 +393,115 @@ def test_explicit_credential_use_role_still_cannot_use_metadata_scope(scope_stor
     assert not result.allowed
     assert result.reason == 'invalid_scope'
     assert result.policy_ref is None
+
+
+def _issuer_grant(ids, permission, *, provider='vault', state='active'):
+    # Fixture-only rows: this is not a production grant writer.
+    user = db.session.get(User, ids['viewer'])
+    source = db.session.get(IntegrationInstance, ids['source'])
+    source.provider_key = provider
+    role_permission = Permission(key=permission, module='secrets_pki', action=permission.split('.')[1])
+    db.session.add(role_permission)
+    db.session.flush()
+    db.session.add(RolePermission(role_id=user.role_id, permission_id=role_permission.id))
+    now = datetime.now(UTC)
+    policy = ScopeAccessPolicy()
+    policy.principal_user_id = user.id
+    policy.permission_key = permission
+    policy.integration_instance_id = source.id
+    policy.scope_level = 'credential_issuer'
+    policy.provider_namespace = ''
+    policy.mount = 'kv'
+    policy.issuer_deployment_ref = 'a' * 64
+    policy.current_revision = 1
+    revision = ScopeAccessPolicyRevision()
+    revision.policy = policy
+    revision.revision_number = 1
+    revision.lifecycle_status = state
+    revision.effective_from = now - timedelta(minutes=1)
+    revision.effective_until = now + timedelta(minutes=10)
+    revision.requested_by_user_id = ids['requester']
+    revision.approved_by_user_id = ids['approver']
+    revision.approved_at = now - timedelta(seconds=10)
+    revision.change_reason = 'operational_access'
+    db.session.add_all([policy, revision])
+    db.session.commit()
+    return scope_policy.CredentialIssuerScope(source.id, provider, '', 'kv', 'a' * 64), policy
+
+
+@pytest.mark.parametrize('provider', ['vault', 'openbao'])
+@pytest.mark.parametrize('operation', ['request', 'approve', 'revoke'])
+def test_exact_issuer_scope_is_separate_from_metadata_and_worker_grants(scope_store, provider, operation):
+    ids = scope_store
+    permission = f'secrets_pki.{operation}_credential_issuer'
+    scope, policy = _issuer_grant(ids, permission, provider=provider)
+    result = scope_policy.evaluate_exact_issuer_scope(
+        actor_user_id=ids['viewer'], scope=scope, permission_key=permission
+    )
+    assert result.allowed
+    assert result.policy_ref == policy.id
+    assert result.revision == 1
+    for other in ('secrets_pki.view', 'secrets_pki.use_automation_credential', 'integrations.manage'):
+        assert not scope_policy.evaluate_exact_issuer_scope(
+            actor_user_id=ids['viewer'], scope=scope, permission_key=other
+        ).allowed
+    for other_operation in ('request', 'approve', 'revoke'):
+        if other_operation != operation:
+            assert not scope_policy.evaluate_exact_issuer_scope(
+                actor_user_id=ids['viewer'],
+                scope=scope,
+                permission_key=f'secrets_pki.{other_operation}_credential_issuer',
+            ).allowed
+
+
+def test_issuer_scope_denies_substitution_and_stale_pointer(scope_store):
+    ids = scope_store
+    permission = 'secrets_pki.approve_credential_issuer'
+    scope, policy = _issuer_grant(ids, permission)
+    for changed in (
+        scope_policy.CredentialIssuerScope(scope.instance_id, 'openbao', '', 'kv', 'a' * 64),
+        scope_policy.CredentialIssuerScope(scope.instance_id, 'vault', 'other', 'kv', 'a' * 64),
+        scope_policy.CredentialIssuerScope(scope.instance_id, 'vault', '', 'other', 'a' * 64),
+        scope_policy.CredentialIssuerScope(scope.instance_id, 'vault', '', 'kv', 'b' * 64),
+    ):
+        assert not scope_policy.evaluate_exact_issuer_scope(
+            actor_user_id=ids['viewer'], scope=changed, permission_key=permission
+        ).allowed
+    current = ScopeAccessPolicyRevision.query.filter_by(policy_id=policy.id, revision_number=1).one()
+    revoked = ScopeAccessPolicyRevision()
+    revoked.policy_id = policy.id
+    revoked.revision_number = 2
+    revoked.lifecycle_status = 'revoked'
+    revoked.effective_from = current.effective_from
+    revoked.effective_until = current.effective_until
+    revoked.requested_by_user_id = ids['approver']
+    revoked.change_reason = 'revocation'
+    db.session.add(revoked)
+    db.session.commit()
+    assert not scope_policy.evaluate_exact_issuer_scope(
+        actor_user_id=ids['viewer'], scope=scope, permission_key=permission
+    ).allowed
+
+
+@pytest.mark.parametrize('operation', ['request', 'approve', 'revoke'])
+def test_issuer_scope_disabled_source_only_allows_explicit_revoke(scope_store, operation):
+    ids = scope_store
+    permission = f'secrets_pki.{operation}_credential_issuer'
+    scope, _policy = _issuer_grant(ids, permission)
+    source = db.session.get(IntegrationInstance, scope.instance_id)
+    source.enabled = False
+    db.session.commit()
+    result = scope_policy.evaluate_exact_issuer_scope(
+        actor_user_id=ids['viewer'], scope=scope, permission_key=permission
+    )
+    assert result.allowed == (operation == 'revoke')
+
+
+@pytest.mark.parametrize('state', ['draft', 'revoked', 'suspended'])
+def test_issuer_scope_inactive_revision_denied(scope_store, state):
+    ids = scope_store
+    permission = 'secrets_pki.request_credential_issuer'
+    scope, _policy = _issuer_grant(ids, permission, state=state)
+    assert not scope_policy.evaluate_exact_issuer_scope(
+        actor_user_id=ids['viewer'], scope=scope, permission_key=permission
+    ).allowed

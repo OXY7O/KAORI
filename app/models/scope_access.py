@@ -23,12 +23,12 @@ class ScopeAccessPolicy(db.Model):
     __tablename__ = 'access_scope_policies'
     __table_args__ = (
         CheckConstraint(
-            "scope_level IN ('instance', 'vault_mount', 'automation_credential')",
+            "scope_level IN ('instance', 'vault_mount', 'automation_credential', 'credential_issuer')",
             name='ck_access_scope_policy_level',
         ),
         CheckConstraint(
             "(scope_level = 'instance' AND provider_namespace IS NULL AND mount IS NULL)"
-            " OR ((scope_level = 'vault_mount' OR scope_level = 'automation_credential')"
+            " OR (scope_level IN ('vault_mount', 'automation_credential', 'credential_issuer')"
             ' AND provider_namespace IS NOT NULL'
             " AND mount IS NOT NULL AND mount <> '' AND mount NOT LIKE '%*%')",
             name='ck_access_scope_policy_exact_target',
@@ -37,6 +37,17 @@ class ScopeAccessPolicy(db.Model):
             "(scope_level = 'automation_credential' AND permission_key = 'secrets_pki.use_automation_credential')"
             " OR (scope_level <> 'automation_credential' AND permission_key <> 'secrets_pki.use_automation_credential')",
             name='ck_access_scope_policy_credential_permission',
+        ),
+        CheckConstraint(
+            "(scope_level = 'credential_issuer' AND permission_key IN ("
+            "'secrets_pki.request_credential_issuer', 'secrets_pki.approve_credential_issuer', "
+            "'secrets_pki.revoke_credential_issuer') AND issuer_deployment_ref IS NOT NULL"
+            " AND length(issuer_deployment_ref) = 64 AND provider_namespace NOT LIKE '%*%'"
+            " AND provider_namespace NOT LIKE '%+%' AND mount NOT LIKE '%+%')"
+            " OR (scope_level <> 'credential_issuer' AND permission_key NOT IN ("
+            "'secrets_pki.request_credential_issuer', 'secrets_pki.approve_credential_issuer', "
+            "'secrets_pki.revoke_credential_issuer') AND issuer_deployment_ref IS NULL)",
+            name='ck_access_scope_policy_issuer_target',
         ),
         CheckConstraint(
             'current_revision > 0',
@@ -72,6 +83,7 @@ class ScopeAccessPolicy(db.Model):
     scope_level: Mapped[str] = mapped_column(String(24), nullable=False)
     provider_namespace: Mapped[str | None] = mapped_column(String(255), nullable=True)
     mount: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    issuer_deployment_ref: Mapped[str | None] = mapped_column(String(64), nullable=True)
     current_revision: Mapped[int] = mapped_column(
         Integer,
         nullable=False,

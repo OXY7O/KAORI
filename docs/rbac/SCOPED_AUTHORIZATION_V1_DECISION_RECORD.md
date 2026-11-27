@@ -336,3 +336,23 @@ environment toggle to bypass the evaluator are added in this phase.
 Developer Check, full admission, exact SHA UAT including revocation lock
 and audit failure, visual QA, and explicit human acceptance. Rollback for
 new Secret route = disable the route; never restore an unscoped query.
+
+
+## 13. Exact credential issuer administration (#5245)
+
+The maintainer accepted separate request, approve and revoke permissions
+in #5245 (comment 7205030372). These require explicit `secrets_pki.view`
+dependency but no protected/default role receives any of the three.
+The canonical policy's `credential_issuer` scope binds exact integration
+instance, namespace, mount and pinned deployment digest. Existing
+`instance`, `vault_mount` and `automation_credential` grants cannot imply
+issuer administration. Source type/provider is derived from the canonical
+integration instance. Current explicit role permission, active independent
+policy revision, current deployment/ownership evidence, authenticated actor
+and mandatory transactional Activity Audit are all necessary; the locked
+scope evaluator is only an Access precondition. A scoped revoker may revoke
+the same binding when the source is disabled or expired, without granting
+read/approval authority. No routine super-admin bypass or parallel grant
+registry. The operational grant/issuer writer and independent custody
+verification must be qualified in the same functional workstream; catalog
+and storage changes alone do not activate permissions or grants.
