@@ -135,3 +135,71 @@ light/dark, mobile, forms, filter/pagination, independent committed evidence,
 RBAC and toast/error states. The external UI Style findings remain a
 separate global gate; don't claim Full Admission PASS based on the scoped
 Vault rerun alone.
+
+
+## HV-12 — Local provider AlertCase review (#5229)
+
+Use the review workbench only. Do not run a broad GitHub admission or deploy an
+RC during this checkpoint. Use an isolated Dev Container database and approved
+disposable Vault/Alertmanager pair; do not point a fleet observation at a local
+database containing real provider connections.
+
+1. Sync `kaori/review/staging-uat` with a clean worktree. If the local
+   database is behind, follow the guarded Dev Container PostgreSQL migration
+   runbook; never reset a volume or migrate using the runtime identity.
+2. Register and validate the disposable Vault and Alertmanager using the
+   canonical integration workspaces. Approve the exact Vault alert binding
+   (`vault_instance=<canonical instance ID>`), then check the committed
+   binding validation and worker readiness. The existing Vault Alert Source
+   Observation job is manual-only, defaults disabled and selects the eligible
+   local fleet. Its stable HMAC key belongs only to the authorized inventory
+   worker; never print, rotate ad hoc, commit or put it in JobExecution.
+3. In Access, ensure the operator has an active normalized role with
+   `secrets_pki.view`, `intelligence.view`,
+   `intelligence.decisions.create` and `secrets_pki.sync` for admission.
+   Exact instance read and decision policies are independent. Existing backend
+   request/approval commands in `app.access.scoped_grants` are the authority;
+   only the approved independent administrators may create/approve grants.
+   Use bounded validity and a separate approver. No direct policy SQL inserts,
+   implicit Super Admin permits or automatic grant activation.
+4. After local review of that scope and explicit operator approval, run the
+   existing manual `secrets_pki.vault_alerts.observe` job, and inspect its
+   committed result. No direct provider call from the UI. The internal
+   admission command is a separate manual action; it does not collect data or
+   dispatch notifications. In the isolated workspace shell, use the explicit
+   local opt-in:
+
+   ```bash
+   APP_ENV=development KAORI_VAULT_PROVIDER_CASE_ADMISSION_ENABLED=true flask --app app shell
+   ```
+
+   ```python
+   from app.intelligence.alert_intelligence.vault_provider_admission import admit_vault_provider_cases
+   # Supply the approved disposable binding ID and the actual authorized actor ID.
+   # Do not substitute a different user's ID or create a grant to bypass review.
+   result = admit_vault_provider_cases(binding_id=binding_id, actor_user_id=actor_id)
+   print(result)
+   ```
+
+   The placeholders must be assigned from the approved local test inventory.
+   The result exposes only status/created/refreshed. An empty first observation
+   is unchanged, not recovered. Refresh an expired observation before retrying.
+5. Review Intelligence → Alert Intelligence → Secrets & PKI → HashiCorp Vault →
+   approved instance → Overview / Active. The default read UI is available
+   with the exact read grant. Only for the approved local operator-action UAT,
+   start/restart the existing local web process with both
+   `KAORI_VAULT_PROVIDER_CASE_ADMISSION_ENABLED=true` and
+   `KAORI_VAULT_PROVIDER_CASE_OPERATOR_WEB_ENABLED=true` in its environment.
+   A shell export alone does not change a running web process. Do not set these
+   in shared or deployed environments. Remove them after the local review.
+6. With fresh admitted firing, review, acknowledge, assign/unassign an
+   eligible owner explicitly, then mark as mitigating as the assigned owner.
+   Refresh the observation and admit again before its freshness deadline.
+   Confirm stale/unknown source, revoked grant or unavailable owner controls
+   fail closed. Check audit records with redacted evidence.
+
+The Overview must show admitted cases, critical severity, fresh firing and
+unknown separately; no records is not a provider health claim. Recovery,
+closure and actual notification delivery remain unqualified; they must not
+be simulated as successful. Local functional review is distinct from
+Developer Check, Full Admission and Human Acceptance.

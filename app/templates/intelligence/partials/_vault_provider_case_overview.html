@@ -1,0 +1,48 @@
+{% import "intelligence/components/_workspace.html" as intelligence_ui %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+<div data-alert-intelligence-panel="overview" class="space-y-5 p-4 sm:p-5">
+    {% set active_url = url_for('alert_intelligence.index', domain=payload.domain, provider=payload.selected_provider, asset=payload.selected_asset_key, tab='active') %}
+    {% call intelligence_ui.posture_panel(
+        'Committed Provider Cases',
+        'Exact-instance case history and current source evidence are independent of provider health.',
+        icon='shield-alert',
+        badge_text='Scoped evidence',
+        badge_tone='info',
+        footer_text='Counts represent admitted records only. An empty registry does not establish healthy source coverage or recovery.',
+        actions=[('list-filter', 'Review Active Cases', active_url)]
+        ) %}
+        <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+            {{ intelligence_ui.posture_metric('siren', 'Active Cases', payload.summary.active, 'Admitted, non-closed cases') }}
+            {{ intelligence_ui.posture_metric('triangle-alert', 'Critical Cases', payload.summary.critical, 'Admitted critical severity') }}
+            {{ intelligence_ui.posture_metric('activity', 'Fresh Firing', payload.summary.active - payload.summary.source_unknown, 'Matching committed firing evidence') }}
+            {{ intelligence_ui.posture_metric('circle-help', 'Source Unknown', payload.summary.source_unknown, 'Current firing is not verified') }}
+        </div>
+    {% endcall %}
+    <section class="{{ table_ui.block_classes() }}">
+        <header class="{{ table_ui.block_header_classes() }}">
+            <div>
+                <h3 class="{{ table_ui.block_title_classes() }}">Lifecycle Readiness</h3>
+                <p class="{{ table_ui.block_description_classes() }}">Provider source and KAORI operator workflow have separate qualification requirements.</p>
+            </div>
+        </header>
+        <dl class="divide-y divide-outline-subtle px-5">
+            {% for label, status, tone, description in [
+                ('Source observation', 'Committed evidence', 'info', 'Review current firing or unknown on each admitted case.'),
+                ('Operator workflow', 'Conditional', 'warning', 'Requires explicit opt-in, independently approved exact decision scope and a fresh matching generation.'),
+                ('Recovery and closure', 'Not qualified', 'unknown', 'No positive recovery authority has been admitted; absence and expiry are not resolution.'),
+                ('Routing and delivery', 'Suppressed', 'unknown', 'No governed target authority or transport activation is available.')
+                ] %}
+                <div class="flex flex-col gap-2 py-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="min-w-0">
+                        <dt class="text-sm font-semibold text-content-primary">{{ label }}</dt>
+                        <dd class="mt-1 text-xs leading-5 text-content-muted">
+                            {{ description }}
+                        </dd>
+                    </div>
+                    <div class="shrink-0">{{ table_label.status_label(status, tone, size='compact') }}</div>
+                </div>
+            {% endfor %}
+        </dl>
+    </section>
+</div>

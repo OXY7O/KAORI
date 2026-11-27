@@ -354,6 +354,11 @@ def admit_vault_provider_cases(
             db.session.rollback()
             return _result('unavailable')
         plan = build_vault_provider_case_plan(binding_id=binding_id, now=instant)
+        if plan.get('status') == 'unobserved':
+            # A qualified empty generation with no actionable prior cases is a
+            # valid no-op, not an outage and never a recovered case.
+            db.session.rollback()
+            return _result('unchanged')
         candidates = _qualified_case_candidates(plan)
         if candidates is None:
             db.session.rollback()

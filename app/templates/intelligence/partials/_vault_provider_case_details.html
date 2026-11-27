@@ -115,7 +115,7 @@
                         <span class="{{ table_ui.filter_label_classes() }}">Eligible Owner</span>
                         <select name="owner_user_id" class="{{ table_ui.filter_select_classes() }}">
                             {% if operator_controls.has_owner and not operator_controls.owner_user_id %}
-                                <option value="" disabled selected>Current owner unavailable</option>
+                                <option value="unavailable" disabled selected>Current owner unavailable — choose explicitly</option>
                             {% endif %}
                             <option value="">Unassigned</option>
                             {% for recipient in operator_controls.recipients %}
@@ -129,6 +129,24 @@
             </div>
             <p class="text-xs text-content-muted">Actions require current source evidence and an independently approved operator grant. No alert delivery is enabled.</p>
         </section>
+    {% elif central_provider_scope %}
+        <section class="mt-5 border-t border-outline-subtle pt-4"
+                 aria-label="Operator Actions Readiness">
+            {% set blocked_state_icon = "shield-check" %}
+            {% set blocked_state_label = "Action Not Qualified" %}
+            {% set blocked_state_title = "Operator Controls Unavailable" %}
+            {% if case.source_state == 'unknown' %}
+                {% set blocked_state_description = "Current source firing is not verified. Refresh and admit a qualified observation before changing operator workflow." %}
+            {% else %}
+                {% set blocked_state_description = "Controls require explicit opt-in, independent exact read and decision grants, a matching admitted generation and committed audit evidence. Refresh the case after these requirements are met." %}
+            {% endif %}
+            {% include 'components/states/_blocked_state.html' %}
+        </section>
+    {% else %}
+        <div class="mt-5 border-t border-outline-subtle pt-4">
+            <a href="{{ url_for('alert_intelligence.case_details', public_id=case.public_id, domain='secrets_pki', provider='vault', asset=instance_id, tab='active') }}"
+               class="{{ table_ui.action_classes() }}">Review in Alert Intelligence</a>
+        </div>
     {% endif %}
     <p class="mt-5 text-xs text-content-muted">
         Committed AlertCase evidence. Source absence does not imply recovery.
