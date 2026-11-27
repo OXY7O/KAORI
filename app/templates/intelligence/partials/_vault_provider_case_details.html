@@ -80,7 +80,7 @@
     {% if operator_controls %}
         <section class="mt-5 space-y-3 border-t border-outline-subtle pt-4"
                  aria-label="Scoped Operator Actions">
-            <h3 class="text-sm font-semibold text-content-primary">Operator Actions</h3>
+            <h3 class="text-sm font-semibold leading-5 text-content-primary">Operator Actions</h3>
             <div class="flex flex-wrap items-end gap-3">
                 {% for action, label in [('acknowledge', 'Acknowledge'), ('mitigating', 'Mark as Mitigating')] %}
                     {% if operator_controls[action] %}

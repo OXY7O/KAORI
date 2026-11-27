@@ -1,5 +1,6 @@
 """Source contract: Registry correlation warnings are not generic evaluator SQL failures."""
 
+import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -33,6 +34,15 @@ def test_actual_sql_failures_still_fail_closed_and_catalog_has_separate_evaluati
     service = source('app/intelligence/service.py')
     catalog = source('app/intelligence/catalog.py')
     alerting = source('app/intelligence/recommendation_alerting.py')
+    evaluator_labels = {
+        node.args[0].value
+        for node in ast.walk(ast.parse(service))
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == 'collect'
+        and node.args
+        and isinstance(node.args[0], ast.Constant)
+    }
     for evaluator in (
         'Kubernetes Workload Governance',
         'Kubernetes Runtime',
@@ -41,7 +51,7 @@ def test_actual_sql_failures_still_fail_closed_and_catalog_has_separate_evaluati
         'Artifact Registry',
         'Secrets & PKI',
     ):
-        assert f"collect('{evaluator}'" in service
+        assert evaluator in evaluator_labels
     assert 'except SQLAlchemyError:' in service
     assert 'db.session.rollback()' in service
     assert 'evidence_issues.append(label)' in service

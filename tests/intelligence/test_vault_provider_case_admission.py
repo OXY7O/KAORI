@@ -715,7 +715,7 @@ def test_web_mutation_rejects_missing_csrf_and_extra_fields(scope, monkeypatch):
                 'action': 'acknowledge',
             }
         )
-        monkeypatch.setattr(request, 'form', form)
+        monkeypatch.setattr(request._get_current_object(), 'form', form)
         with pytest.raises(BadRequest):
             web.operator_action_response(case_id)
     assert AlertCase.query.one().workflow_state == 'open'
@@ -759,7 +759,7 @@ def test_web_adapter_passes_authenticated_actor_and_refreshes_only_after_commit(
                 'action': 'acknowledge',
             }
         )
-        monkeypatch.setattr(request, 'form', form)
+        monkeypatch.setattr(request._get_current_object(), 'form', form)
         response = web.operator_action_response(case.public_id)
         assert response.headers['HX-Redirect'] == '/case-detail'
     assert AlertCase.query.one().workflow_state == 'acknowledged'
