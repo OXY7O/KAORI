@@ -511,10 +511,10 @@ def test_user_directory_guide_preserves_credential_and_lifecycle_authority() -> 
     assert '{% import "components/info_tip.html" as info_tip %}' in source
     assert source.count('info_tip.render(') == 1
     title_group = source.split('<div class="flex flex-wrap items-center gap-2">', 1)[1].split('</div>', 1)[0]
-    assert title_group.index('>User Directory</h2>') < title_group.index('table_label.result_count(pagination.total_items)')
-    assert title_group.index('table_label.result_count(pagination.total_items)') < title_group.index(
-        "info_tip.render('user-directory-guide'"
-    )
+    heading_position = title_group.index('>User Directory</h2>')
+    results_position = title_group.index('table_label.result_count(pagination.total_items)')
+    guide_position = title_group.index("info_tip.render('user-directory-guide'")
+    assert heading_position < results_position < guide_position
     assert "variant='guide'" in title_group
     assert "placement='right'" in title_group
     assert 'surface_ui.block_classes(allow_overflow=true)' in source
