@@ -12,19 +12,18 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.access.scope_policy import CredentialIssuerScope
+from app.access.scope_policy import CredentialIssuerScope, lock_explicit_permissions
 from app.access.scoped_grants import (
     ScopedGrantRejected,
     ScopeGrantValidity,
     commit_scope_grant_transition,
     qualify_scope_grant_validity,
-    require_scope_grant_administrator,
-    require_scope_grant_principal,
 )
 from app.extensions.db import db
 from app.models.integration import IntegrationInstance
 from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.secrets_pki.issuer_authority import resolve_deployment_authority
+from app.secrets_pki.issuer_lifecycle import begin_issuer_transaction
 
 _REQUEST = 'secrets_pki.request_credential_issuer'
 _APPROVE = 'secrets_pki.approve_credential_issuer'
@@ -48,8 +47,8 @@ def _deny() -> ScopedGrantRejected:
 def _require_principal(principal: int, permission: str, scope: CredentialIssuerScope, now: datetime) -> None:
     if type(principal) is not int or principal <= 0 or permission not in _PERMISSIONS:
         raise _deny()
-    require_scope_grant_principal(principal, permission)
-    require_scope_grant_principal(principal, 'secrets_pki.view')
+    if not lock_explicit_permissions(principal, {permission, 'secrets_pki.view'}):
+        raise _deny()
     source = db.session.get(IntegrationInstance, scope.instance_id, with_for_update=True, populate_existing=True)
     evidence = resolve_deployment_authority(scope, now=now)
     if (
@@ -73,7 +72,9 @@ def _require_principal(principal: int, permission: str, scope: CredentialIssuerS
 def request_issuer_grant(*, actor_user_id: int, intent: IssuerGrantIntent) -> str:
     committed = False
     try:
-        require_scope_grant_administrator(actor_user_id)
+        begin_issuer_transaction()
+        if not lock_explicit_permissions(actor_user_id, {'roles.manage', 'users.manage'}):
+            raise _deny()
         if not isinstance(intent, IssuerGrantIntent) or not isinstance(intent.scope, CredentialIssuerScope):
             raise _deny()
         now = datetime.now(UTC)
@@ -154,7 +155,9 @@ def _policy_scope(policy: ScopeAccessPolicy) -> CredentialIssuerScope:
 def approve_issuer_grant(*, actor_user_id: int, policy_id: str, expected_revision: int) -> None:
     committed = False
     try:
-        require_scope_grant_administrator(actor_user_id)
+        begin_issuer_transaction()
+        if not lock_explicit_permissions(actor_user_id, {'roles.manage', 'users.manage'}):
+            raise _deny()
         policy, current = _locked_policy(policy_id)
         now = datetime.now(UTC)
         if (
@@ -199,7 +202,9 @@ def revoke_issuer_grant(*, actor_user_id: int, policy_id: str, expected_revision
     """Immediate scoped grant withdrawal; no provider availability prerequisite."""
     committed = False
     try:
-        require_scope_grant_administrator(actor_user_id)
+        begin_issuer_transaction()
+        if not lock_explicit_permissions(actor_user_id, {'roles.manage', 'users.manage'}):
+            raise _deny()
         policy, current = _locked_policy(policy_id)
         if (
             type(expected_revision) is not int

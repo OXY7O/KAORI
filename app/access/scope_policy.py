@@ -329,7 +329,7 @@ def _valid_issuer_scope(scope: CredentialIssuerScope) -> bool:
     )
 
 
-def _locked_issuer_actor(actor_id: int, permission_key: str) -> bool:
+def lock_explicit_permissions(actor_id: int, required: set[str]) -> bool:
     # Lock actual role membership rows, not only a previously loaded relationship.
     actor = db.session.execute(
         select(User).where(User.id == actor_id).with_for_update(of=User).execution_options(populate_existing=True)
@@ -341,7 +341,6 @@ def _locked_issuer_actor(actor_id: int, permission_key: str) -> bool:
     ).scalar_one_or_none()
     if role is None or not role.is_active:
         return False
-    required = {permission_key, 'secrets_pki.view'}
     keys = (
         db.session.execute(
             select(Permission.key)
@@ -434,7 +433,7 @@ def evaluate_exact_issuer_scope(
     if not isinstance(instant, datetime) or instant.utcoffset() is None:
         return ScopeAdmission('deny', 'invalid_time')
     try:
-        if not _locked_issuer_actor(actor_user_id, permission_key):
+        if not lock_explicit_permissions(actor_user_id, {permission_key, 'secrets_pki.view'}):
             return ScopeAdmission('deny', 'permission_required')
         if not _locked_issuer_source(scope, permission_key):
             return ScopeAdmission('deny', 'source_unqualified')

@@ -88,7 +88,7 @@ def _digest(value: object) -> bool:
     return isinstance(value, str) and _DIGEST.fullmatch(value) is not None
 
 
-def _start() -> None:
+def begin_issuer_transaction() -> None:
     session = db.session()
     if session.new or session.dirty or session.deleted or db.engine.dialect.name != 'postgresql':
         raise _deny()
@@ -177,6 +177,7 @@ def _observe(
     if db.session().new or db.session().dirty or db.session().deleted:
         raise _deny()
     try:
+        begin_issuer_transaction()
         _scope_admission(actor, scope, permission, datetime.now(UTC))
     finally:
         db.session.rollback()
@@ -330,7 +331,7 @@ def request_issuer_enrollment(*, actor_id: int, intent: IssuerEnrollmentIntent, 
         if not isinstance(intent, IssuerEnrollmentIntent) or not isinstance(intent.scope, CredentialIssuerScope):
             raise _deny()
         authority, observation = _observe(intent.scope, inspection_token, actor=actor_id, permission=_REQUEST)
-        _start()
+        begin_issuer_transaction()
         now = datetime.now(UTC)
         grant = _scope_admission(actor_id, intent.scope, _REQUEST, now)
         now = datetime.now(UTC)
@@ -432,7 +433,7 @@ def approve_issuer_enrollment(*, actor_id: int, intent: IssuerApprovalIntent, in
         ):
             raise _deny()
         authority, observation = _observe(intent.scope, inspection_token, actor=actor_id, permission=_APPROVE)
-        _start()
+        begin_issuer_transaction()
         now = datetime.now(UTC)
         grant = _scope_admission(actor_id, intent.scope, _APPROVE, now)
         owner_grant = _scope_admission(authority.source_owner_id, intent.scope, _REQUEST, now)
@@ -503,7 +504,7 @@ def revoke_issuer_enrollment(*, actor_id: int, scope: CredentialIssuerScope, exp
     """Same-binding immediate revocation, including expired or unavailable provider."""
     committed = False
     try:
-        _start()
+        begin_issuer_transaction()
         now = datetime.now(UTC)
         grant = _scope_admission(actor_id, scope, _REVOKE, now)
         source = _source(scope)

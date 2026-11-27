@@ -352,3 +352,14 @@ change; provider observation is bounded but not a distributed transaction.
 Transaction-bound credential-use verification remains a separate worker
 workstream. No live provider request, key operation or migration is
 authorized by this implementation.
+
+
+The issuer grant and enrollment services share the same bounded PostgreSQL
+transaction serialization and explicit role-membership locking. The
+disposable service suite uses canonical tables, actual Access grant
+transitions, actual Ed25519 receipt/signature verification, real committed
+issuer/challenge/audit writes, stale/withdrawn authority negatives, audit
+flush rollback and competing independent application contexts. Only the
+operator filesystem and provider network observation are substituted with
+synthetic fixtures. Source tests do not substitute for successful CI or
+actual provider/ceremony UAT.
