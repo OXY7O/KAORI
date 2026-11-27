@@ -136,8 +136,8 @@ integration_types:
     protocol: vault_http_v1
   - key: openbao
     label: OpenBao
-    adapter_key: vault_http_v1
-    lifecycle: planned
+    adapter_key: openbao_http_v1
+    lifecycle: available
     protocol: vault_http_v1
 
 - key: source_control
