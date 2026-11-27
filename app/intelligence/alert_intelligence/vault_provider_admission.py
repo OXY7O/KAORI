@@ -193,6 +193,8 @@ def _apply_existing_observation(
         return False
     if action == 'retain_unverified':
         if case.source_state == 'unknown':
+            # The committed producer rejects older/replayed generations.
+            # Preserve the first uncertainty transition and avoid duplicate events.
             return False
         case.source_state = 'unknown'
         case.source_state_reason = _UNKNOWN_REASON
@@ -305,7 +307,10 @@ def admit_vault_provider_cases(
             db.session.rollback()
             return _result('forbidden')
         binding = db.session.execute(
-            select(IntegrationBinding).where(IntegrationBinding.id == binding_id).with_for_update()
+            select(IntegrationBinding)
+            .where(IntegrationBinding.id == binding_id)
+            .execution_options(populate_existing=True)
+            .with_for_update()
         ).scalar_one_or_none()
         if binding is None:
             db.session.rollback()
@@ -335,6 +340,7 @@ def admit_vault_provider_cases(
                 AlertSignalSnapshot.asset_key == binding.asset_key,
                 AlertSignalSnapshot.signal_key == SIGNAL_KEY,
             )
+            .execution_options(populate_existing=True)
             .with_for_update()
         ).scalar_one_or_none()
         observed = _persisted_utc(snapshot.generated_at) if snapshot is not None else None

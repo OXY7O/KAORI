@@ -278,15 +278,13 @@ def test_next_fresh_generation_refreshes_only_safe_case_fields(scope):
     assert AuditEvent.query.count() == 2
 
 
-@pytest.mark.parametrize('status', ['unobserved', 'disabled', 'expired', 'blocked'])
+@pytest.mark.parametrize('status', ['disabled', 'expired', 'blocked'])
 def test_invalid_observation_never_resolves_case(scope, status):
     vault, _source, binding, actor = scope
     _commit(binding, [_alert(vault.id)])
     _admit(binding, actor)
     at = AT + timedelta(minutes=1)
-    if status == 'unobserved':
-        _commit(binding, [], observed=at)
-    elif status == 'disabled':
+    if status == 'disabled':
         binding.enabled = False
         db.session.commit()
     elif status == 'expired':
@@ -756,3 +754,48 @@ def test_web_adapter_passes_authenticated_actor_and_refreshes_only_after_commit(
     assert AlertCase.query.one().workflow_state == 'acknowledged'
     assert AlertCaseEvent.query.count() == AuditEvent.query.count() == 2
     assert feedback[0]['status'] == 'success'
+
+
+def test_fresh_empty_generation_commits_unknown_without_resolving_or_erasing_workflow(scope):
+    vault, _source, binding, actor = scope
+    case = _operator_case(scope)
+    _grant(vault, actor, permission='intelligence.decisions.create')
+    assert _operate(scope, 'acknowledge') == 'committed'
+    assert _operate(scope, 'mitigating') == 'committed'
+    original_seen = case.last_seen_at
+    later = AT + timedelta(minutes=1)
+    _commit(binding, [], observed=later)
+    assert _admit(binding, actor, at=later) == {'status': 'committed', 'created': 0, 'refreshed': 1}
+    assert case.source_state == 'unknown'
+    assert case.last_seen_at == original_seen
+    assert case.source_resolved_at is None
+    assert case.closed_at is None
+    assert case.workflow_state == 'mitigating'
+    assert case.owner_user_id == actor.id
+    assert case.routing_state == 'suppressed'
+    assert _admit(binding, actor, at=later)['status'] == 'unchanged'
+    assert AlertCaseEvent.query.filter_by(event_type='provider_alert_source_unknown').count() == 1
+    assert AuditEvent.query.filter_by(action='vault_provider_alert_source_unknown').count() == 1
+    latest = AT + timedelta(minutes=2)
+    _commit(binding, [_alert(vault.id)], observed=latest)
+    assert _admit(binding, actor, at=latest)['refreshed'] == 1
+    assert case.source_state == 'firing'
+    assert case.workflow_state == 'mitigating'
+    assert case.source_resolved_at is None
+
+
+def test_empty_observation_cannot_create_case_or_mutate_without_scope(scope):
+    vault, _source, binding, actor = scope
+    _commit(binding, [])
+    assert _admit(binding, actor)['created'] == 0
+    assert AlertCase.query.count() == 0
+    later = AT + timedelta(minutes=1)
+    _commit(binding, [_alert(vault.id)], observed=later)
+    assert _admit(binding, actor, at=later)['created'] == 1
+    denied = _actor()
+    db.session.commit()
+    latest = AT + timedelta(minutes=2)
+    _commit(binding, [], observed=latest)
+    assert _admit(binding, denied, at=latest)['status'] == 'forbidden'
+    assert AlertCase.query.one().source_state == 'firing'
+    assert AlertCaseEvent.query.count() == AuditEvent.query.count() == 1

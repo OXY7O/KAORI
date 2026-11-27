@@ -140,7 +140,7 @@
                 {% set blocked_state_label = "Read-only" if payload.tab == 'overview' else "Reserved Plan" %}
                 {% set blocked_state_title = "Committed Provider Cases" if payload.tab == 'overview' else "Provider Lifecycle Not Qualified" %}
                 {% if payload.tab == 'resolved' %}
-                    {% set blocked_state_description = "Positive recovery evidence is not qualified. Missing source observations never establish resolution." %}
+                    {% set blocked_state_description = "Positive recovery evidence is not qualified for this source. Missing, empty, expired or unavailable observations never establish resolution." %}
                 {% elif payload.tab == 'overview' %}
                     {% set blocked_state_description = "Review exact-instance committed cases in Active Alerts. The approved read grant does not qualify operator actions." %}
                 {% else %}

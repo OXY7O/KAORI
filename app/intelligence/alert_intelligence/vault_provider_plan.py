@@ -105,11 +105,18 @@ def build_vault_provider_case_plan(
     binding, source = eligible
     observation = read_vault_alert_observations(binding_id=binding.id, now=instant)
     state = observation['state']
-    if state != 'fresh':
-        return _result('unobserved' if state == 'unobserved' else 'unavailable')
-    entries = observation['entries']
-    if not isinstance(entries, list) or not 1 <= len(entries) <= _MAX_CASES:
-        return _result('blocked')
+    if state == 'unobserved':
+        # A successful, current, exact-source empty generation is evidence
+        # of unverified firing, never positive recovery. Do not create cases.
+        if observation['entries'] is not None:
+            return _result('blocked')
+        entries: list[dict[str, Any]] = []
+    elif state == 'fresh':
+        entries = observation['entries']
+        if not isinstance(entries, list) or not 1 <= len(entries) <= _MAX_CASES:
+            return _result('blocked')
+    else:
+        return _result('unavailable')
     proposed_keys = {_CASE_PREFIX + entry['handle'] for entry in entries}
     if len(proposed_keys) != len(entries):
         return _result('blocked')
@@ -137,7 +144,10 @@ def build_vault_provider_case_plan(
 
     # Key collision with another domain/asset/source must never silently
     # attach or materialize a foreign provider AlertCase.
-    collisions = AlertCase.query.filter(AlertCase.case_key.in_(proposed_keys)).limit(_MAX_CASES + 1).all()
+    collision_keys = proposed_keys | set(cases)
+    if len(collision_keys) > _MAX_CASES:
+        return _result('blocked')
+    collisions = AlertCase.query.filter(AlertCase.case_key.in_(collision_keys)).limit(_MAX_CASES + 1).all()
     if len(collisions) > _MAX_CASES:
         return _result('blocked')
     for case in collisions:
@@ -183,6 +193,8 @@ def build_vault_provider_case_plan(
                     'proposed_routing_state': 'suppressed',
                 }
             )
+    if state == 'unobserved' and not plan:
+        return _result('unobserved')
     if any(item['action'] not in _ACTIONS for item in plan):
         return _result('blocked')
     plan.sort(key=lambda row: row['case_key'])
