@@ -17,6 +17,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.access.scope_policy import evaluate_exact_vault_instance_case_scope
 from app.common.pagination import paginate_sequence
 from app.extensions.db import db
+from app.intelligence.alert_intelligence.vault_case_timeline import read_case_timeline
 from app.intelligence.alert_intelligence.vault_provider_operator import (
     _latest_event_id,
     admitted_operator_workflow_qualified,
@@ -93,6 +94,7 @@ def _safe_case(case: AlertCase, observations: dict[int, dict[str, Any]]) -> dict
         'title': 'Vault Alertmanager source condition',
         'severity': case.severity if case.severity in {'critical', 'warning', 'info'} else 'unknown',
         'source_state': current,
+        'observation_status': observation['state'],
         'last_admitted_source_state': case.source_state,
         'workflow_state': case.workflow_state,
         'owner_label': 'Unassigned' if case.owner_user_id is None else 'Assigned',
@@ -289,6 +291,8 @@ def vault_case_details_response(
             db.session.rollback()
             abort(404)
         public_case = _safe_case(row, _read_case_observations([row]))
+        public_case.update(read_case_timeline(row))
+        public_case['provider_delivery_qualified'] = False
         expected_event_id = _latest_event_id(row) if central else None
         db.session.commit()
         from app.intelligence.alert_intelligence.vault_operator_web import operator_controls

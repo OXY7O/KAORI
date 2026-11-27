@@ -14,11 +14,7 @@ from app.access.scope_policy import evaluate_exact_vault_instance_operator_scope
 from app.extensions.db import db
 from app.integrations.delivery.notification_channels.catalog import domain_event_allowed
 from app.integrations.delivery.notification_channels.providers import get_notification_provider
-from app.intelligence.alert_intelligence.vault_provider_operator import admitted_operator_workflow_qualified
-from app.intelligence.alert_intelligence.vault_provider_plan import (
-    _provenance_matches,
-    admitted_source_state_qualified,
-)
+from app.intelligence.alert_intelligence.vault_provider_operator import _current_firing_case
 from app.intelligence.alert_signals.vault_source import (
     _locked_observation_snapshot,
     _persisted_utc,
@@ -134,18 +130,14 @@ def preflight_vault_provider_firing(
             .with_for_update(of=AlertCase)
             .first()
         )
-        if (
-            case is None
-            or not _provenance_matches(case, source_id=source.id, binding_id=binding.id)
-            or not admitted_source_state_qualified(case)
-            or not admitted_operator_workflow_qualified(case)
-            or case.source_state != 'firing'
-            or _persisted_utc(case.last_seen_at) != _persisted_utc(snapshot.generated_at)
-            or observation['state'] != 'fresh'
-            or not any(
-                entry['handle'] == case.case_key.removeprefix('vault-alert:') and entry['source_state'] == 'firing'
-                for entry in observation['entries']
-            )
+        if case is None or observation['state'] != 'fresh':
+            return 'source_unavailable'
+        if not _current_firing_case(
+            case,
+            source_id=source.id,
+            binding_id=binding.id,
+            generated_at=snapshot.generated_at,
+            entries=observation['entries'],
         ):
             return 'source_unavailable'
         status = _candidate_blocker(

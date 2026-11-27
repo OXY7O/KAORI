@@ -482,3 +482,7 @@ automatic scheduler. A production config cannot enable this local route.
 Only use a disposable Dev Container database and approved source fixtures;
 leave both opt-ins disabled elsewhere. Local functional/visual validation
 and official staging admission are pending.
+
+### Scoped incident evidence and lifecycle review (#5229)
+
+The exact-instance audited case detail now projects a bounded latest 25 recorded lifecycle events (five recent, up to twenty expandable) through the shared incident timeline. Only allowlisted event types and metadata shapes qualify, with fixed redacted labels and descriptions; no persisted summary, actor identity, opaque handle or provider payload is exposed. A malformed selected event produces unavailable timeline evidence, not a misleading empty successful history. The projection is not proof of each historical audit or an unbounded audit export. Committed observation state (fresh/expired/unobserved/unavailable) is distinct from current firing and admitted workflow. The shared delivery ledger explicitly reports Not Qualified, not zero attempts. Delivery preflight reuses the same current firing predicate as operator controls and mutation. No recovery, closure, notification transport or policy activation is added by this view.
