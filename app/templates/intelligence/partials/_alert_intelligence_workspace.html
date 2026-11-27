@@ -9,7 +9,7 @@
     "Zero open cases does not prove source health or worker reconciliation success."
 ] %}
 {% if payload.provider_case_mode %}
-    {% set guide_items = guide_items + ['Provider-origin cases require an exact independently approved instance grant. Fresh matching committed observations are distinct from admitted case history; source absence never establishes recovery. Operator controls require separate opt-in and exact decision scope; delivery remains unavailable.'] %}
+    {% set guide_items = guide_items + ['Provider-origin cases require an exact independently approved instance grant. Fresh matching committed observations are distinct from admitted case history; source absence never establishes recovery. Operator controls require separate opt-in and exact decision scope; local firing delivery additionally requires independent destination approval.'] %}
 {% elif not payload.snapshot.available %}
     {% set guide_items = guide_items + ['Committed Evidence Review Required: One or more managed assets have no committed inventory observation within 24 hours.'] %}
 {% endif %}
@@ -141,6 +141,20 @@
                 <h3 class="text-sm font-semibold text-content-primary">Committed Provider Recovery & Closure</h3>
                 <p class="text-xs text-content-muted">Only independently signed positive provider recovery and scoped verification records appear here. Missing alerts never establish recovery.</p>
                 {% include 'intelligence/partials/_alert_ops_active_table.html' %}
+            </section>
+        {% elif payload.provider_case_mode and payload.tab == 'routing' and payload.local_case_reconcile and current_user.has_permission('integrations.manage') %}
+            <section class="space-y-3 p-4 sm:p-5">
+                <h3 class="text-sm font-semibold text-content-primary">Exact Vault Firing Routing Candidate (Local UAT)</h3>
+                <p class="text-xs text-content-muted">Create a dedicated policy for this authorized instance and a validated Secrets & PKI firing channel. This is not destination approval and will never start automatic delivery.</p>
+                <form method="post" action="{{ url_for('alert_intelligence.vault_case_local_routing') }}" class="flex flex-wrap items-end gap-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="instance_id" value="{{ payload.selected_asset_key }}">
+                    <label>
+                        <span class="{{ table_ui.filter_label_classes() }}">Channel ID</span>
+                        <input name="channel_id" type="number" min="1" required class="{{ table_ui.filter_select_classes() }}">
+                    </label>
+                    <button type="submit" class="{{ table_ui.action_classes() }}">Create Routing Candidate</button>
+                </form>
             </section>
         {% elif payload.provider_case_mode and payload.tab != 'active' %}
             <div class="p-5">

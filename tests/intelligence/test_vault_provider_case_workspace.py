@@ -19,6 +19,7 @@ from app.models.alert_signal import AlertSignalSnapshot
 from app.models.audit import AuditEvent
 from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationBinding, IntegrationInstance
+from app.models.notification_channel import NotificationChannel, NotificationDelivery
 from app.models.rbac import Permission, Role, RolePermission
 from app.models.runtime import IntegrationRuntimeObservation
 from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
@@ -46,6 +47,8 @@ def store():
         IntegrationInstance.__table__,
         IntegrationBinding.__table__,
         IntegrationRuntimeObservation.__table__,
+        NotificationChannel.__table__,
+        NotificationDelivery.__table__,
         ScopeAccessPolicy.__table__,
         ScopeAccessPolicyRevision.__table__,
         AlertCase.__table__,

@@ -192,7 +192,7 @@ def observe_vault_alert_binding(binding_id: int, *, key: bytes) -> str:
             # Independent positive evidence is optional. It never changes the
             # outcome of the existing firing observation.
             try:
-                collect_vault_recovery(binding_id, key=key, observed=now, now=completed)
+                collect_vault_recovery(binding_id, key=key, observed=now, now=datetime.now(UTC))
             except Exception:
                 db.session.rollback()
         return result['state']

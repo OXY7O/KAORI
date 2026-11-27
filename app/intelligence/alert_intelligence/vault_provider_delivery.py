@@ -198,4 +198,4 @@ def _candidate_blocker(
     receipt = qualify_destination_receipt(
         case, binding_id=binding_id, policy=policy, channel=channel, actor_id=actor_id, now=now
     )
-    return 'transport_claim_unqualified' if receipt is not None else 'target_authority_unqualified'
+    return 'target_qualified' if receipt is not None else 'target_authority_unqualified'

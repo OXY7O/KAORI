@@ -538,3 +538,33 @@ automatic source mutation, new channel transport or production activation.
 ### Local positive recovery and verification transaction (#5252)
 
 The existing local-only operator POST now supports explicit Admit Provider Recovery and Verify and Close, never from request-supplied evidence. Binding, normalized permissions, exact operator scope, current active snapshot, same-generation signed recovery snapshot and canonical case are locked and rechecked. Positive receipt resolution must be later than the last admitted firing, with no matching occurrence in the current source response (including suppressed/unprocessed). A signed receipt is mandatory; absence is only a conflict check, not evidence. Recovery records the actual resolved timestamp and enters verification_pending. Closure requires a subsequent fresh source generation after verification started, the same explicit resolution timestamp and a different independently scoped operator. Canonical AlertCaseEvent/AuditEvent commit atomically, with opaque receipt reference, generation, previous event and approved policy revision. Read qualification rejects incomplete or forged recovery/closure records, and same-occurrence reappearance blocks reconciliation. Resolved tab shares the scoped registry. No automatic mutation, provider operation, notification, postmortem editing or live evidence qualification. Existing local feature gates remain mandatory. A real provider exporter and independent signed receipts must be provisioned and accepted before this path can work.
+
+
+### Explicit local firing claim and restricted retry (#5253)
+
+The outbound catalog admits Secrets & PKI firing configuration only; generic
+notification matching and automatic replay continue to deny this domain.
+The local routing candidate writer uses the canonical AlertRoutingPolicy,
+one exact Vault binding and dedicated validated channel, with no generic
+broadcast or automatic routing. Candidate creation is not disclosure
+approval. An authenticated exact-instance operator with integrations.manage
+must obtain an independent, current signed destination receipt before an
+explicit Send Approved Firing action. Existing local development opt-ins
+are mandatory. Source freshness, workflow, roles, grant, binding, policy,
+channel, receipt and prior journal requalify under locks. A fixed redacted
+message contains no provider labels, identities, paths, URLs or custom
+templates. Existing NotificationDelivery reservation and encrypted transport
+replay envelope commit before transport. A second locked qualification
+checks the same receipt and claim before invoking the existing sender; only
+sanitized provider outcome is recorded. One occurrence has at most one first
+claim across destinations. Uncertain or queued outcomes require review and
+cannot be automatically replayed. Explicit retry is possible only for the
+same journal and transport, a new approval after an explicitly classified
+provider rejection and a persisted retry deadline (Slack HTTP 429 with a
+valid Retry-After only), within the existing attempt bounds. Other failures
+are ambiguous for retry purposes. No exactly-once transport guarantee,
+repeat broadcast, resolved delivery or provider mutation. The scoped
+read model projects only qualified journal status and attempt count, not
+destination, channel configuration or provider response. Actual source
+and destination provisioning and local functional, security and concurrency
+verification remain outstanding; no production activation or CI admission.

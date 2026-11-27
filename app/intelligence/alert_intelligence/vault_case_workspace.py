@@ -18,7 +18,9 @@ from app.access.scope_policy import evaluate_exact_vault_instance_case_scope
 from app.common.pagination import paginate_sequence
 from app.extensions.db import db
 from app.intelligence.alert_intelligence.vault_case_context import read_vault_case_runtime_context
+from app.intelligence.alert_intelligence.vault_case_delivery_evidence import read_case_delivery_evidence
 from app.intelligence.alert_intelligence.vault_case_timeline import read_case_timeline
+from app.intelligence.alert_intelligence.vault_provider_admission import local_reconcile_enabled
 from app.intelligence.alert_intelligence.vault_provider_operator import (
     _latest_event_id,
     admitted_operator_workflow_qualified,
@@ -87,15 +89,17 @@ def _safe_case(case: AlertCase, observations: dict[int, dict[str, Any]]) -> dict
     binding_id = case.evidence_json['source_binding_id']
     observation = observations[binding_id]
     current = 'unknown'
+    matching = []
     if observation['state'] == 'fresh':
         handle = case.case_key.removeprefix('vault-alert:')
-        if any(entry['handle'] == handle and entry['source_state'] == 'firing' for entry in observation['entries']):
+        matching = [entry for entry in observation['entries'] if entry['handle'] == handle]
+        if any(entry['source_state'] == 'firing' for entry in matching):
             current = 'firing'
     return {
         'public_id': case.public_id,
         'title': 'Vault Alertmanager source condition',
         'severity': case.severity if case.severity in {'critical', 'warning', 'info'} else 'unknown',
-        'source_state': ('conflict' if current == 'firing' else 'resolved') if case.source_state == 'resolved' else current,
+        'source_state': ('conflict' if matching else 'resolved') if case.source_state == 'resolved' else current,
         'observation_status': observation['state'],
         'last_admitted_source_state': case.source_state,
         'source_resolved_at': case.source_resolved_at,
@@ -301,7 +305,7 @@ def vault_case_details_response(
         public_case = _safe_case(row, _read_case_observations([row]))
         public_case.update(read_case_timeline(row))
         public_case['runtime_context'] = read_vault_case_runtime_context(instance_id)
-        public_case['provider_delivery_qualified'] = False
+        public_case.update(read_case_delivery_evidence(row))
         expected_event_id = _latest_event_id(row) if central else None
         db.session.commit()
         from app.intelligence.alert_intelligence.vault_operator_web import operator_controls, recovery_controls
@@ -322,6 +326,10 @@ def vault_case_details_response(
             instance_id=instance_id,
             central_provider_scope=central,
             operator_controls=controls,
+            local_delivery_available=bool(
+                local_reconcile_enabled() and controls and controls['acknowledge']
+                and current_user.has_permission('integrations.manage')
+            ),
         )
     except SQLAlchemyError:
         db.session.rollback()

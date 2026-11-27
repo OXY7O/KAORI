@@ -138,7 +138,8 @@ def test_vault_channel_dispatch_remains_blocked_even_if_catalog_changes(monkeypa
         event_types=['alert_ops.firing'],
         minimum_severity='info',
     )
-    assert not domain_event_allowed('secrets_pki', 'alert_ops.firing')
+    assert domain_event_allowed('secrets_pki', 'alert_ops.firing')
+    assert not domain_event_allowed('secrets_pki', 'alert_ops.resolved')
     monkeypatch.setattr(service, 'domain_event_allowed', lambda *_: True)
     assert not service._channel_matches_event(
         channel, domain='secrets_pki', event_type='alert_ops.firing', severity='warning'

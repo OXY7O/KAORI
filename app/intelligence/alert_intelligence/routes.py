@@ -133,6 +133,28 @@ def vault_case_local_reconcile() -> ResponseReturnValue:
     return local_reconcile_response()
 
 
+@alert_intelligence_bp.post('/vault-cases/local-routing')
+@permission_required('integrations.manage')
+@permission_required('intelligence.view')
+@permission_required('secrets_pki.view')
+@permission_required('intelligence.decisions.create')
+def vault_case_local_routing() -> ResponseReturnValue:
+    from app.intelligence.alert_intelligence.vault_delivery_web import local_policy_response
+
+    return local_policy_response()
+
+
+@alert_intelligence_bp.post('/vault-cases/<string:public_id>/local-delivery')
+@permission_required('integrations.manage')
+@permission_required('intelligence.view')
+@permission_required('secrets_pki.view')
+@permission_required('intelligence.decisions.create')
+def vault_case_local_delivery(public_id: str) -> ResponseReturnValue:
+    from app.intelligence.alert_intelligence.vault_delivery_web import local_delivery_response
+
+    return local_delivery_response()
+
+
 @alert_intelligence_bp.get('/records')
 @permission_required('intelligence.view')
 def records() -> ResponseReturnValue:

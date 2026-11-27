@@ -933,6 +933,7 @@ def test_delivery_preflight_never_admits_transport_even_with_matching_policy(sco
     from app.intelligence.alert_intelligence import vault_provider_delivery as delivery
 
     case, policy, channel = _delivery_candidate(scope)
+    monkeypatch.setattr('app.intelligence.alert_intelligence.vault_provider_delivery.domain_event_allowed', lambda *_: False)
     assert _delivery_preflight(scope, case, policy, channel) == 'catalog_unqualified'
     monkeypatch.setattr(delivery, 'domain_event_allowed', lambda *_: True)
     assert _delivery_preflight(scope, case, policy, channel) == 'target_authority_unqualified'

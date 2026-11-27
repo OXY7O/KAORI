@@ -19,6 +19,7 @@ class DeliveryResult:
     message: str
     provider_message_id: str | None = None
     retry_after_seconds: int | None = None
+    definitively_rejected: bool = False
 
 
 @dataclass(frozen=True, slots=True)

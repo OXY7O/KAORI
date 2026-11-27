@@ -90,6 +90,7 @@ def send_slack_message(
                 False,
                 'Slack webhook rate limited the delivery (HTTP 429).',
                 retry_after_seconds=delay,
+                definitively_rejected=True,
             )
         return DeliveryResult(False, f'Slack webhook rejected delivery with HTTP {exc.code}.')
     except (URLError, TimeoutError, OSError, ValueError):

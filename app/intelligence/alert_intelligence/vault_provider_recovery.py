@@ -192,6 +192,13 @@ def local_recovery_action(
         if candidate is None:
             return 'unavailable'
         if action == 'preview':
+            db.session.add(AuditEvent(
+                actor_user_id=actor_id, target_type='alert_case', target_id=public_id,
+                action='vault_provider_recovery_preview', summary='Scoped recovery readiness reviewed.',
+                metadata_json={'instance_id': instance_id, 'policy_ref': candidate.policy_ref,
+                               'policy_revision': candidate.policy_revision},
+            ))
+            db.session.commit()
             return candidate.action
         if candidate.action != action:
             return 'unavailable'

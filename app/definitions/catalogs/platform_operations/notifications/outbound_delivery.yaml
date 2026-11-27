@@ -21,6 +21,11 @@ domains:
     hint: Failed Jobs only
     allowed_events:
       - jobs.execution_failed
+  secrets_pki:
+    label: Secrets & PKI
+    hint: Explicitly approved scoped firing only
+    allowed_events:
+      - alert_ops.firing
   registry:
     label: Registry Alerts
     hint: Governed AlertCases only

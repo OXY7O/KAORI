@@ -204,6 +204,30 @@
             </div>
         </dl>
     </section>
+    {% if local_delivery_available %}
+        <section class="mt-5 space-y-3 border-t border-outline-subtle pt-4"
+                 aria-label="Scoped Notification Delivery">
+            <h3 class="text-sm font-semibold text-content-primary">Scoped Notification Delivery (Local UAT)</h3>
+            <p class="text-xs text-content-muted">A dedicated policy, validated channel and independent signed approval are mandatory. No default or automatic delivery. Retry only after explicit provider rejection and a new approval.</p>
+            <form method="post"
+                  action="{{ url_for('alert_intelligence.vault_case_local_delivery', public_id=case.public_id) }}"
+                  class="flex flex-wrap items-end gap-2">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="instance_id" value="{{ instance_id }}">
+                <label>
+                    <span class="{{ table_ui.filter_label_classes() }}">Policy ID</span>
+                    <input name="policy_id" type="number" min="1" required class="{{ table_ui.filter_select_classes() }}">
+                </label>
+                <label>
+                    <span class="{{ table_ui.filter_label_classes() }}">Channel ID</span>
+                    <input name="channel_id" type="number" min="1" required class="{{ table_ui.filter_select_classes() }}">
+                </label>
+                <button type="submit" name="action" value="review" class="{{ table_ui.action_classes() }}">Review Approval</button>
+                <button type="submit" name="action" value="send" class="{{ table_ui.action_classes() }}">Send Approved Firing</button>
+                <button type="submit" name="action" value="retry" class="{{ table_ui.action_classes() }}">Retry Explicit Rejection</button>
+            </form>
+        </section>
+    {% endif %}
     {% include 'intelligence/partials/_alert_ops_case_activity_streams.html' %}
     <p class="mt-5 text-xs text-content-muted">
         Committed AlertCase evidence. Source absence does not imply recovery.
