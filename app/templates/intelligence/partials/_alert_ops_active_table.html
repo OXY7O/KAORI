@@ -2,7 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "analytics/components/_record_pagination.html" as record_pagination %}
 {% set pagination_query = {
-    'tab': 'active',
+    'tab': payload.tab if payload.provider_case_mode else 'active',
     'domain': payload.domain,
     'asset': payload.selected_asset_key,
     'severity': payload.filters.severity,
@@ -40,7 +40,7 @@
                 </thead>
                 <tbody class="{{ table_ui.body_classes() }}">
                     {% for case in payload.active_cases %}
-                        {% set review_url = url_for('alert_intelligence.case_details', public_id=case.public_id, tab='active', domain=payload.domain, asset=payload.selected_asset_key, provider=payload.selected_provider if payload.provider_case_mode else none, severity=payload.filters.severity, workflow=payload.filters.workflow, source=payload.filters.source, source_state=payload.filters.source_state, q=payload.filters.q, page=payload.active_pagination.page, per_page=payload.active_pagination.per_page) %}
+                        {% set review_url = url_for('alert_intelligence.case_details', public_id=case.public_id, tab=payload.tab if payload.provider_case_mode else 'active', domain=payload.domain, asset=payload.selected_asset_key, provider=payload.selected_provider if payload.provider_case_mode else none, severity=payload.filters.severity, workflow=payload.filters.workflow, source=payload.filters.source, source_state=payload.filters.source_state, q=payload.filters.q, page=payload.active_pagination.page, per_page=payload.active_pagination.per_page) %}
                         <tr id="alert-case-row-{{ case.public_id }}"
                             class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }}">

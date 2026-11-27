@@ -136,6 +136,12 @@
             </div>
         {% elif payload.provider_case_mode and payload.tab == 'overview' %}
             {% include 'intelligence/partials/_vault_provider_case_overview.html' %}
+        {% elif payload.provider_case_mode and payload.tab == 'resolved' %}
+            <section id="alert-operations-active-registry" class="space-y-3 p-4 sm:p-5">
+                <h3 class="text-sm font-semibold text-content-primary">Committed Provider Recovery & Closure</h3>
+                <p class="text-xs text-content-muted">Only independently signed positive provider recovery and scoped verification records appear here. Missing alerts never establish recovery.</p>
+                {% include 'intelligence/partials/_alert_ops_active_table.html' %}
+            </section>
         {% elif payload.provider_case_mode and payload.tab != 'active' %}
             <div class="p-5">
                 {% set blocked_state_icon = "shield-check" %}

@@ -28,6 +28,7 @@ from app.intelligence.alert_intelligence.vault_provider_plan import (
     _PROFILE,
     admitted_source_state_qualified,
 )
+from app.intelligence.alert_intelligence.vault_recovery_state import admitted_recovery_qualified
 from app.intelligence.alert_signals.vault_source import read_vault_alert_observations
 from app.models.alert_ops import AlertCase
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -94,9 +95,12 @@ def _safe_case(case: AlertCase, observations: dict[int, dict[str, Any]]) -> dict
         'public_id': case.public_id,
         'title': 'Vault Alertmanager source condition',
         'severity': case.severity if case.severity in {'critical', 'warning', 'info'} else 'unknown',
-        'source_state': current,
+        'source_state': ('conflict' if current == 'firing' else 'resolved') if case.source_state == 'resolved' else current,
         'observation_status': observation['state'],
         'last_admitted_source_state': case.source_state,
+        'source_resolved_at': case.source_resolved_at,
+        'closed_at': case.closed_at,
+        'postmortem_required': case.postmortem_required,
         'workflow_state': case.workflow_state,
         'owner_label': 'Unassigned' if case.owner_user_id is None else 'Assigned',
         'acknowledged_at': case.acknowledged_at,
@@ -116,10 +120,10 @@ def _case_qualified(case: AlertCase, *, instance_id: int) -> bool:
         or case.asset_key != str(instance_id)
         or case.routing_state != 'suppressed'
         or case.routing_override_reason != 'policy_ineligible'
-        # HV-12 cannot establish provider resolution or verified recovery.
-        # Reject rather than render a tampered "resolved" source state.
-        or not admitted_source_state_qualified(case)
-        or not admitted_operator_workflow_qualified(case)
+        or not (
+            admitted_recovery_qualified(case) if case.source_state == 'resolved'
+            else admitted_source_state_qualified(case) and admitted_operator_workflow_qualified(case)
+        )
         or not isinstance(case.case_key, str)
         or _CASE_KEY_RE.fullmatch(case.case_key) is None
         or case.source_ref != case.case_key
@@ -186,12 +190,15 @@ def _read_cases(
         safe_rows = [_safe_case(case, observations) for case in records]
         if filters is not None:
             # Every row already passed source and committed workflow qualification.
+            active_rows = [row for row in safe_rows if row['last_admitted_source_state'] != 'resolved']
+            history_rows = [row for row in safe_rows if row['last_admitted_source_state'] == 'resolved']
             summary = {
-                'active': len(safe_rows),
-                'critical': sum(row['severity'] == 'critical' for row in safe_rows),
-                'source_unknown': sum(row['source_state'] == 'unknown' for row in safe_rows),
+                'active': len(active_rows),
+                'critical': sum(row['severity'] == 'critical' for row in active_rows),
+                'source_unknown': sum(row['source_state'] == 'unknown' for row in active_rows),
             }
-            filtered = [row for row in safe_rows if _matches_read_filters(row, filters)]
+            selected_rows = history_rows if filters.get('history') == '1' else active_rows
+            filtered = [row for row in selected_rows if _matches_read_filters(row, filters)]
         else:
             summary = {}
             filtered = safe_rows
@@ -297,16 +304,21 @@ def vault_case_details_response(
         public_case['provider_delivery_qualified'] = False
         expected_event_id = _latest_event_id(row) if central else None
         db.session.commit()
-        from app.intelligence.alert_intelligence.vault_operator_web import operator_controls
+        from app.intelligence.alert_intelligence.vault_operator_web import operator_controls, recovery_controls
 
         controls = (
             operator_controls(instance_id=instance_id, public_id=public_id, expected_event_id=expected_event_id)
             if central and public_case['source_state'] == 'firing' and expected_event_id is not None
             else None
         )
+        recovery = (
+            recovery_controls(instance_id=instance_id, public_id=public_id, expected_event_id=expected_event_id)
+            if central and expected_event_id is not None else None
+        )
         return render_template(
             'intelligence/vault_provider_case_details.html',
             case=public_case,
+            recovery_controls=recovery,
             instance_id=instance_id,
             central_provider_scope=central,
             operator_controls=controls,

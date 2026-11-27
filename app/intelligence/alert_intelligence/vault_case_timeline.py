@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.intelligence.alert_intelligence.vault_recovery_state import CLOSURE_EVENT, RECOVERY_EVENT, qualified_recovery_event
 from app.intelligence.alert_signals.vault_source import _persisted_utc
 from app.models.alert_ops import AlertCase, AlertCaseEvent
 
@@ -12,6 +13,8 @@ _RECENT_TIMELINE = 5
 _SOURCE_METADATA = {'source_type': 'provider_alert', 'domain': 'secrets_pki'}
 _OPERATOR_METADATA_KEYS = {'source_type', 'domain', 'previous_event_id', 'workflow_state', 'owner_user_id'}
 _EVENT_PRESENTATION = {
+    RECOVERY_EVENT: ('Provider recovered', 'Explicit provider resolution was admitted.', 'shield-check', 'info'),
+    CLOSURE_EVENT: ('Verified and closed', 'Independent operator verified and closed the case.', 'badge-check', 'normal'),
     'provider_alert_admitted': ('Case admitted', 'Qualified source firing was recorded.', 'siren', 'warning'),
     'provider_alert_observed': ('Source observed', 'Fresh firing evidence was admitted.', 'activity', 'info'),
     'provider_alert_source_unknown': ('Source unverified', 'Current firing is unverified; recovery is not proven.', 'circle-help', 'warning'),
@@ -25,6 +28,8 @@ def _qualified_event(event: AlertCaseEvent) -> bool:
     metadata = event.metadata_json
     if event.event_type not in _EVENT_PRESENTATION or not isinstance(metadata, dict):
         return False
+    if event.event_type in (RECOVERY_EVENT, CLOSURE_EVENT):
+        return qualified_recovery_event(event)
     if event.event_type.startswith('provider_alert_'):
         return metadata == _SOURCE_METADATA
     return (

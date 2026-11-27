@@ -22,6 +22,7 @@ from app.intelligence.alert_intelligence.vault_provider_admission import (
     local_reconcile_enabled,
 )
 from app.intelligence.alert_intelligence.vault_provider_operator import apply_vault_provider_operator_action
+from app.intelligence.alert_intelligence.vault_provider_recovery import local_recovery_action
 from app.platform_operations.notifications.service import create_transient_feedback
 
 def _enabled() -> bool:
@@ -45,6 +46,22 @@ def operator_controls(*, instance_id: int, public_id: str, expected_event_id: in
     )
 
 
+def recovery_controls(*, instance_id: int, public_id: str, expected_event_id: int) -> dict[str, Any] | None:
+    if not local_reconcile_enabled():
+        return None
+    actor_id = getattr(current_user, 'id', None)
+    binding_id = resolve_operator_binding(instance_id)
+    if type(actor_id) is not int or binding_id is None:
+        return None
+    action = local_recovery_action(
+        binding_id=binding_id, instance_id=instance_id, public_id=public_id,
+        actor_id=actor_id, expected_event_id=expected_event_id, action='preview',
+    )
+    if action not in {'admit_recovery', 'verify_close'}:
+        return None
+    return {'action': action, 'expected_event_id': expected_event_id}
+
+
 def operator_action_response(public_id: str) -> ResponseReturnValue:
     """Accept only explicit scoped form input; actor is the authenticated session."""
     if not _enabled():
@@ -62,7 +79,7 @@ def operator_action_response(public_id: str) -> ResponseReturnValue:
     fields = {'csrf_token', 'instance_id', 'expected_event_id', 'action'}
     if action == 'assign':
         fields.add('owner_user_id')
-    if action not in {'acknowledge', 'assign', 'mitigating'} or set(request.form) != fields:
+    if action not in {'acknowledge', 'assign', 'mitigating', 'admit_recovery', 'verify_close'} or set(request.form) != fields:
         abort(400)
     if any(len(request.form.getlist(key)) != 1 for key in fields):
         abort(400)
@@ -76,15 +93,21 @@ def operator_action_response(public_id: str) -> ResponseReturnValue:
     binding_id = resolve_operator_binding(instance_id)
     if binding_id is None:
         abort(404)
-    status = apply_vault_provider_operator_action(
-        binding_id=binding_id,
-        instance_id=instance_id,
-        public_id=public_id,
-        actor_user_id=actor_id,
-        action=action,
-        expected_event_id=expected,
-        owner_user_id=owner,
-    )
+    if action in {'admit_recovery', 'verify_close'}:
+        status = local_recovery_action(
+            binding_id=binding_id, instance_id=instance_id, public_id=public_id,
+            actor_id=actor_id, expected_event_id=expected, action=action,
+        )
+    else:
+        status = apply_vault_provider_operator_action(
+            binding_id=binding_id,
+            instance_id=instance_id,
+            public_id=public_id,
+            actor_user_id=actor_id,
+            action=action,
+            expected_event_id=expected,
+            owner_user_id=owner,
+        )
     if status not in {'committed', 'unchanged', 'stale'}:
         abort(404)
     create_transient_feedback(
