@@ -14,6 +14,7 @@ from app.access.scope_policy import evaluate_exact_vault_instance_operator_scope
 from app.extensions.db import db
 from app.integrations.delivery.notification_channels.catalog import domain_event_allowed
 from app.integrations.delivery.notification_channels.providers import get_notification_provider
+from app.intelligence.alert_intelligence.vault_delivery_authority import qualify_destination_receipt
 from app.intelligence.alert_intelligence.vault_provider_operator import _current_firing_case
 from app.intelligence.alert_signals.vault_source import (
     _locked_observation_snapshot,
@@ -141,7 +142,7 @@ def preflight_vault_provider_firing(
         ):
             return 'source_unavailable'
         status = _candidate_blocker(
-            case, binding_id=binding.id, policy_id=policy_id, channel_id=channel_id, now=instant
+            case, binding_id=binding.id, policy_id=policy_id, channel_id=channel_id, now=instant, actor_id=actor_user_id
         )
         audit = AuditEvent()
         audit.actor_user_id = actor_user_id
@@ -167,7 +168,9 @@ def preflight_vault_provider_firing(
         db.session.rollback()
 
 
-def _candidate_blocker(case: AlertCase, *, binding_id: int, policy_id: int, channel_id: int, now: datetime) -> str:
+def _candidate_blocker(
+    case: AlertCase, *, binding_id: int, policy_id: int, channel_id: int, now: datetime, actor_id: int
+) -> str:
     # No repeat/reminder semantics have been admitted for this provider.
     if case.workflow_state != 'open' or case.acknowledged_at is not None:
         return 'workflow_suppressed'
@@ -190,6 +193,9 @@ def _candidate_blocker(case: AlertCase, *, binding_id: int, policy_id: int, chan
         return 'prior_delivery_review_required'
     if not domain_event_allowed('secrets_pki', 'alert_ops.firing'):
         return 'catalog_unqualified'
-    # Catalog membership is not target authorization. There is deliberately
-    # no success branch until target governance and retry requalification exist.
-    return 'target_authority_unqualified'
+    # Catalog membership is not target authorization. Even an independently
+    # signed receipt cannot authorize transport before claim/replay admission.
+    receipt = qualify_destination_receipt(
+        case, binding_id=binding_id, policy=policy, channel=channel, actor_id=actor_id, now=now
+    )
+    return 'transport_claim_unqualified' if receipt is not None else 'target_authority_unqualified'

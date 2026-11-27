@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 from app.common.job_execution_presentation import present_job_execution
 from app.extensions.db import db
 from app.integrations.observability.alert_source.providers.alertmanager.client_factory import build_client
+from app.intelligence.alert_signals.vault_recovery import collect_vault_recovery
 from app.intelligence.alert_signals.vault_source import (
     _validated_binding,
     commit_vault_alert_observations,
@@ -187,6 +188,13 @@ def observe_vault_alert_binding(binding_id: int, *, key: bytes) -> str:
             observed_at=now,
             now=completed,
         )
+        if result['state'] in {'qualified', 'unobserved'}:
+            # Independent positive evidence is optional. It never changes the
+            # outcome of the existing firing observation.
+            try:
+                collect_vault_recovery(binding_id, key=key, observed=now, now=completed)
+            except Exception:
+                db.session.rollback()
         return result['state']
     except Exception:
         # Alertmanager/transport errors may include credentials, paths and URLs.

@@ -494,3 +494,43 @@ Case detail includes the most recent committed IntegrationRuntimeObservation for
 ### Consolidated source and evidence integrity batch (#5229 / #2595)
 
 Provider observation generation is now ordered by the initiation of the bounded read rather than network completion; delayed responses/failures cannot supersede a newer committed generation, and a read exceeding the existing freshness window is unavailable. Snapshot reads refresh ORM state and require the exact versioned payload key set. All internal case admission paths lock the explicit normalized role permission rows before evaluating the exact grant. An invalid admitted source state blocks the candidate plan rather than being relabeled unverified. PKI validity population evaluation additionally requires ordered observation/commit timestamps and rejects duplicate selected collection-state identities. These are implementation changes only; actual PostgreSQL concurrency, worker/provider and consolidated UAT remain pending. The positive recovery source and authorized notification destination contract remain separate unresolved prerequisites; no transport or recovery is enabled.
+
+
+### Independent signed authority contract (#5252 / #5253)
+
+Approved direction: use deployment-owned, separately pinned Ed25519 evidence
+following the existing issuer authority pattern, not a new webhook listener
+or alert engine. The fixed `/run/kaori/vault-alert-authority` directory must
+be root-owned, non-writable by application principals, and mounted read-only.
+No private signing key is part of KAORI. Missing files, bad signatures,
+unexpected fields, expired receipts or revision mismatch fail closed.
+
+Recovery exporter must be provider-owned and attest explicit resolution of
+the exact Alertmanager occurrence, from authoritative rule/evaluator event
+history. The canonical JSON envelope contains only payload and signature.
+`recovery-<binding_id>.pub` is the independently pinned hex Ed25519 public
+key; the matching JSON payload schema is `kaori.vault.alert_recovery.v1`,
+state active, exact binding/instance/source IDs, binding/source updated_at
+UTC ISO timestamps, issued_at/expires_at UTC, complete=true, and a bounded
+entries list of fingerprint, starts_at, resolved_at, opaque rule_ref (64
+lowercase hex), state=resolved. The signer must prove the occurrence
+continuity and completeness; active GET, silence, outage and missing alerts
+are not acceptable producer inputs. The existing manual observation worker
+alone derives the same HMAC occurrence handles and commits a separate,
+short-lived AlertSignalSnapshot linked to the active GET generation. No raw
+fingerprint, rule identifier, signed payload or provider data is persisted.
+No recovery producer/exporter has yet been provisioned or validated.
+
+Destination approval is independently pinned per exact binding/policy/channel
+(`delivery-<binding_id>-<policy_id>-<channel_id>.pub/.json`). Schema
+`kaori.vault.alert_destination.v1` binds exact case public ID, canonical
+instance/binding, policy/channel IDs, policy/channel updated_at, channel
+last_tested_at, purpose alert_ops.firing, maker/checker IDs and signed validity.
+Checker must differ from the acting maker and hold explicit normalized
+roles.manage, users.manage, integrations.manage. Existing exact operator
+scope and channel eligibility are still mandatory. Any channel/policy
+update invalidates this conservative one-attempt receipt. No secret values,
+transport config, credentials or destination are persisted in authority
+evidence. Signed receipt qualification is not yet transport authorization;
+catalog, claim and replay admission remain gated. No receipt generation,
+automatic source mutation, new channel transport or production activation.
