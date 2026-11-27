@@ -149,6 +149,9 @@ def _render_domain_page(domain_key: str) -> ResponseReturnValue:
         ),
         include_capabilities=not is_workspace_partial,
     )
+    from app.integrations.secrets_management.secrets_pki.providers.openbao.service import local_provider_enabled
+
+    context['openbao_local_enabled'] = local_provider_enabled()
     if is_workspace_partial:
         return render_template('integrations/partials/_domain_workspace.html', **context)
     return render_template('integrations/domain.html', **context)

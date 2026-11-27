@@ -155,3 +155,17 @@ This is not a distributed atomic transaction. No secret values are printed,
 no ENV is migrated, no host access, credential activation or Plan execution.
 Worker consumption of exact current provider versions and its approval
 boundary remain separately owned by #5204/#4800/#4801.
+
+### Local Ansible inventory parsing
+
+After publication, repeat the exact command without `--publish` and with
+`--check-ansible` in a local operator environment with pinned ansible-core
+2.19.15 installed. The exact native KV readback is compared to the current
+canonical document, converted to the fixed Kubespray groups
+`kube_control_plane`, `kube_node`, `etcd` and `k8s_cluster`, and parsed
+with the installed Ansible YAML inventory plugin. The generated inventory
+exists only in a private temporary directory; no playbook, SSH, credential
+or external inventory plugin is invoked. The parser result is checked for
+the exact host/group memberships and allowed network/endpoint fields;
+only a sanitized historical result is committed. This is not remote host
+preflight, source/EE execution authorization, or a provisioning Plan.

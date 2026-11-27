@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import String, and_, case, cast, func, literal, select, union_all
+from sqlalchemy import String, and_, case, cast, func, literal, or_, select, union_all
 from sqlalchemy.dialects.postgresql import JSONB, JSONPATH
 from sqlalchemy.orm import aliased
 
@@ -56,8 +56,12 @@ def runtime_fleet():
             else:
                 # All other current providers use a collection of validated
                 # capability names/profiles. Empty persisted evidence is attention.
-                missing = model.capabilities.is_(None) | cast(model.capabilities, String).in_(('[]', '{}', 'null'))
-                attention = case((missing, 1), else_=0)
+                capabilities = getattr(model, 'capabilities', None)
+                if capabilities is None:
+                    attention = literal(1)
+                else:
+                    missing = capabilities.is_(None) | cast(capabilities, String).in_(('[]', '{}', 'null'))
+                    attention = case((missing, 1), else_=0)
             provider = provider_kind(module.integration_type, implementation.provider_key)
             projections.append(
                 select(
@@ -87,7 +91,13 @@ def runtime_fleet():
         .where(
             lookup.integration_type == candidates.c.integration_type,
             lookup.provider_key == candidates.c.provider_key,
-            lookup.instance_id == cast(candidates.c.provider_record_id, String),
+            or_(
+                lookup.integration_instance_id == candidates.c.canonical_id,
+                and_(
+                    lookup.integration_instance_id.is_(None),
+                    lookup.instance_id == cast(candidates.c.provider_record_id, String),
+                ),
+            ),
         )
         .order_by(lookup.observed_at.desc(), lookup.id.desc())
         .limit(1)

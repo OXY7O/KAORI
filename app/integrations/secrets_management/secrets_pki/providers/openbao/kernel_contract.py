@@ -4,6 +4,7 @@ from sqlalchemy.orm import defer
 
 from app.integrations.kernel.registry import IntegrationImplementation, IntegrationRegistry
 from app.integrations.secrets_management.secrets_pki.providers.openbao.adapter import record_failure, runtime_adapter
+from app.integrations.secrets_management.secrets_pki.providers.openbao.presentation import build_runtime_overview_rows
 from app.integrations.secrets_management.secrets_pki.providers.openbao.service import get_connection, local_provider_enabled
 from app.models.openbao import OpenBaoInstance
 
@@ -35,5 +36,6 @@ def register_implementation(registry: IntegrationRegistry) -> None:
             module_path='app.integrations.secrets_management.secrets_pki.providers.openbao',
             detail_url_builder=_detail_url,
             failure_recorder=record_failure,
+            runtime_overview_builder=build_runtime_overview_rows,
         )
     )
