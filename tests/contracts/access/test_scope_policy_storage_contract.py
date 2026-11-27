@@ -30,9 +30,10 @@ def test_policy_identity_is_exact_and_existing_authorities_are_referenced():
     assert 'ck_access_scope_policy_exact_target' in checks
     assert "mount NOT LIKE '%*%'" in checks['ck_access_scope_policy_exact_target']
     assert "scope_level = 'instance'" in checks['ck_access_scope_policy_exact_target']
-    assert "scope_level IN ('vault_mount', 'automation_credential', 'credential_issuer')" in checks[
-        'ck_access_scope_policy_exact_target'
-    ]
+    assert (
+        "scope_level IN ('vault_mount', 'automation_credential', 'credential_issuer')"
+        in checks['ck_access_scope_policy_exact_target']
+    )
 
 
 def test_revisions_are_approval_gated_even_before_service_activation():
