@@ -32,18 +32,24 @@
         </div>
         <div>
             <dt class="text-xs text-content-muted">Ownership</dt>
-            <dd class="mt-1 text-content-primary">{{ case.owner_label }}</dd>
+            <dd class="mt-1 text-content-primary">
+                {{ case.owner_label }}
+            </dd>
         </div>
         {% if case.acknowledged_at %}
             <div>
                 <dt class="text-xs text-content-muted">Acknowledged At</dt>
-                <dd class="mt-1 text-content-primary">{{ case.acknowledged_at|user_datetime }}</dd>
+                <dd class="mt-1 text-content-primary">
+                    {{ case.acknowledged_at|user_datetime }}
+                </dd>
             </div>
         {% endif %}
         {% if case.mitigating_at %}
             <div>
                 <dt class="text-xs text-content-muted">Mitigation Started</dt>
-                <dd class="mt-1 text-content-primary">{{ case.mitigating_at|user_datetime }}</dd>
+                <dd class="mt-1 text-content-primary">
+                    {{ case.mitigating_at|user_datetime }}
+                </dd>
             </div>
         {% endif %}
         <div>
@@ -72,7 +78,8 @@
         </div>
     </dl>
     {% if operator_controls %}
-        <section class="mt-5 space-y-3 border-t border-outline-subtle pt-4" aria-label="Scoped Operator Actions">
+        <section class="mt-5 space-y-3 border-t border-outline-subtle pt-4"
+                 aria-label="Scoped Operator Actions">
             <h3 class="text-sm font-semibold text-content-primary">Operator Actions</h3>
             <div class="flex flex-wrap items-end gap-3">
                 {% for action, label in [('acknowledge', 'Acknowledge'), ('mitigating', 'Mark as Mitigating')] %}
@@ -84,7 +91,9 @@
                               hx-disabled-elt="find button">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="instance_id" value="{{ instance_id }}">
-                            <input type="hidden" name="expected_event_id" value="{{ operator_controls.expected_event_id }}">
+                            <input type="hidden"
+                                   name="expected_event_id"
+                                   value="{{ operator_controls.expected_event_id }}">
                             <input type="hidden" name="action" value="{{ action }}">
                             <button type="submit" class="{{ table_ui.action_classes() }}">{{ label }}</button>
                         </form>
@@ -98,7 +107,9 @@
                       class="flex flex-wrap items-end gap-2">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="instance_id" value="{{ instance_id }}">
-                    <input type="hidden" name="expected_event_id" value="{{ operator_controls.expected_event_id }}">
+                    <input type="hidden"
+                           name="expected_event_id"
+                           value="{{ operator_controls.expected_event_id }}">
                     <input type="hidden" name="action" value="assign">
                     <label>
                         <span class="{{ table_ui.filter_label_classes() }}">Eligible Owner</span>
