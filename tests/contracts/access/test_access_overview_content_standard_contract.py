@@ -21,6 +21,23 @@ def test_access_overview_workspace_posture_matches_kaori_operational_card_gramma
     assert 'workspace.grid_classes' in template
 
 
+
+def test_access_overview_metric_labels_preserve_local_super_admin_semantics() -> None:
+    source = read('app/access/overview/presentation.py')
+    template = read('app/templates/access/overview/index.html')
+
+    assert "('shield-check', 'Super Admins', users['active_super_admins'], 'Local Super Admins')" in source
+    assert "('users-round', 'Active Users', users['active'], 'Active Users')" in source
+    assert "('contact-round', 'External Users', users['external'], 'External Users')" in source
+    assert 'active Local DB break-glass admin' in source
+    assert "{% for icon, label, value, full_label in workspace.metrics %}" in template
+    assert 'title="{{ full_label }}"' in template
+    assert '<span class="min-w-0 break-words" aria-hidden="true">{{ label }}</span>' in template
+    assert '<span class="sr-only">{{ full_label }}</span>' in template
+    assert '{{ value }}' in template
+    assert 'whitespace-nowrap' not in template
+
+
 def test_access_overview_composes_domain_owned_posture_contracts() -> None:
     presentation = read('app/access/overview/presentation.py')
     for token in (
