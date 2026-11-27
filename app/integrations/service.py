@@ -870,7 +870,29 @@ def build_integration_runtime_detail(integration_type: str, instance_id: str) ->
         if record is None:
             return None
         provider_record_id = str(record.id)
-        observation = _latest_runtime_observation(integration_type, provider_record_id)
-        latest = {(integration_type, provider_record_id): observation} if observation is not None else {}
+        canonical = record.integration_instance
+        observation = (
+            IntegrationRuntimeObservation.query.filter_by(
+                integration_type=integration_type,
+                provider_key=canonical.provider_key,
+                adapter_key=canonical.adapter_key,
+                integration_instance_id=canonical.id,
+            )
+            .order_by(IntegrationRuntimeObservation.observed_at.desc(), IntegrationRuntimeObservation.id.desc())
+            .first()
+        )
+        if observation is None:
+            observation = (
+                IntegrationRuntimeObservation.query.filter_by(
+                    integration_type=integration_type,
+                    provider_key=canonical.provider_key,
+                    adapter_key=canonical.adapter_key,
+                    instance_id=provider_record_id,
+                    integration_instance_id=None,
+                )
+                .order_by(IntegrationRuntimeObservation.observed_at.desc(), IntegrationRuntimeObservation.id.desc())
+                .first()
+            )
+        latest = {(integration_type, observation.instance_id): observation} if observation is not None else {}
         rows = module.build_runtime_overview_rows(latest, target_id)
     return rows[0] if rows else None

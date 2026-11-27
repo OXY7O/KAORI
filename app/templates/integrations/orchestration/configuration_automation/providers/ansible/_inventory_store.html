@@ -9,7 +9,7 @@
     </header>
     {% if receipt %}
         <dl class="grid gap-4 p-5 sm:grid-cols-2">
-            {% for label, value in [("Provider", receipt.provider_key|title), ("Canonical Connection", receipt.provider_id), ("Native Version", receipt.version), ("Last Observation", receipt.observed_at)] %}
+            {% for label, value in [("Provider", receipt.provider_key|title), ("Canonical Connection", receipt.provider_id), ("Native Version", receipt.version), ("Last Observation", receipt.observed_at), ("Ansible Inventory Parser", receipt.get('ansible_inventory_parser', 'not_checked')|replace('_', ' ')|title)] %}
                 <div>
                     <dt class="text-xs text-content-muted">{{ label }}</dt>
                     <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value }}</dd>

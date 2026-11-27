@@ -17,6 +17,7 @@ from app.infrastructure_automation.kubernetes.inventory_kv import (
     stored_document,
     verify_or_publish,
 )
+from app.infrastructure_automation.kubernetes.inventory_parser import verify_ansible_inventory
 from app.integrations.secrets_management.secrets_pki.providers.kv2_http import KV2HTTPTransport, SecretProviderError
 from app.integrations.secrets_management.secrets_pki.providers.kv2_transport import validate_auth_mount
 from app.integrations.secrets_management.secrets_pki.providers.openbao.client import OpenBaoClient, _verify_inspection_authority
@@ -138,7 +139,8 @@ def _reference(intent: LocalInventoryStoreIntent, provider_key: str, inventory: 
 
 
 def _commit_receipt(
-    intent: LocalInventoryStoreIntent, reference: InventoryStoreReference, endpoint: str, *, publish: bool
+    intent: LocalInventoryStoreIntent, reference: InventoryStoreReference, endpoint: str, *, publish: bool,
+    parser_verified: bool = False
 ) -> dict[str, Any]:
     _require_scope(intent)
     connection, current = _source(intent)
@@ -155,6 +157,7 @@ def _commit_receipt(
         'version': 1,
         'observed_at': datetime.now(UTC).isoformat(),
         'execution_authorized': False,
+        'ansible_inventory_parser': 'verified' if parser_verified else 'not_checked',
     }
     # This is historical readback evidence, not a lease or currentness grant.
     connection.metadata_json = {**(connection.metadata_json or {}), 'local_inventory_store_receipt': receipt}
@@ -173,9 +176,11 @@ def _commit_receipt(
 
 
 def observe_inventory_store(
-    intent: LocalInventoryStoreIntent, *, token: str, publish: bool = False
+    intent: LocalInventoryStoreIntent, *, token: str, publish: bool = False, check_ansible: bool = False
 ) -> dict[str, Any]:
     _require_scope(intent)
+    if publish and check_ansible:
+        raise SecretProviderError('Inventory parser verification is read-only; publish first.')
     if not isinstance(token, str) or not 1 <= len(token) <= 4096 or not token.isascii() or any(
         not 33 <= ord(char) <= 126 for char in token
     ):
@@ -190,7 +195,11 @@ def observe_inventory_store(
         verify_or_publish(transport, reference, inventory, token=token, publish=publish)
         _cluster(transport, provider_key, intent.cluster_id)
         _verify_inspection_authority(transport, token, max_ttl=3600)
-        return _commit_receipt(intent, reference, transport.endpoint, publish=publish)
+        if check_ansible:
+            verify_ansible_inventory(inventory)
+        return _commit_receipt(
+            intent, reference, transport.endpoint, publish=publish, parser_verified=check_ansible
+        )
     except Exception:
         db.session.rollback()
         raise
