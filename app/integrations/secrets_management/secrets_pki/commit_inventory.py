@@ -1,7 +1,7 @@
 """Atomic KV v2 metadata reconciliation into provider-neutral Secret evidence.
 
-Only admitted inventory workers may invoke this service. It does not expose
-an HTTP route, dispatch its own Celery task, or store provider responses.
+Only admitted inventory workers or the explicitly scoped local operator
+may invoke this service. It exposes no HTTP route and stores no raw responses.
 """
 
 from __future__ import annotations
@@ -109,7 +109,10 @@ def _commit_inventory(
     # committed under a stale pre-collection authorization decision.
     try:
         identity = db.session.execute(
-            select(IntegrationInstance).where(IntegrationInstance.id == integration_instance_id).with_for_update()
+            select(IntegrationInstance)
+            .where(IntegrationInstance.id == integration_instance_id)
+            .execution_options(populate_existing=True)
+            .with_for_update()
         ).scalar_one_or_none()
         if identity is None:
             raise ValueError('The canonical provider is unavailable.')
@@ -175,14 +178,14 @@ def _commit_inventory(
             path_fingerprint = sha256(record.path.encode('utf-8')).hexdigest()
             conflicting_path = digests.get(path_fingerprint)
             if conflicting_path is not None and conflicting_path != record.path:
-                raise ValueError('Conflicting Vault path identity evidence.')
+                raise ValueError('Conflicting KV v2 path identity evidence.')
             digests[path_fingerprint] = record.path
             representation = existing.pop(record.path, None)
             if representation is None:
-                identity = SecretIdentity()
-                identity.lifecycle_status = 'discovered'
+                secret_identity = SecretIdentity()
+                secret_identity.lifecycle_status = 'discovered'
                 representation = SecretProviderRepresentation()
-                representation.secret_identity = identity
+                representation.secret_identity = secret_identity
                 representation.integration_instance_id = integration_instance_id
                 representation.provider_key = provider_key
                 representation.provider_namespace = namespace
