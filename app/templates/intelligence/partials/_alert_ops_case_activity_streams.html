@@ -23,7 +23,11 @@
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">Source, operator, and workflow events.</p>
                     </div>
                 </div>
-                {{ table_label.metadata_label(case.timeline|length ~ ' Events', 'history') }}
+                {% if case.timeline_unavailable %}
+                    {{ table_label.status_label('Evidence Unavailable', 'unknown', size='compact') }}
+                {% else %}
+                    {{ table_label.metadata_label(case.timeline|length ~ (' Latest Events' if case.timeline_truncated else ' Events'), 'history') }}
+                {% endif %}
             </header>
             <div class="divide-y divide-outline-subtle px-4">
                 {% for event in case.timeline_recent %}
@@ -43,7 +47,7 @@
                         <time class="text-xs leading-5 text-content-muted sm:text-right">{{ event.created_at|user_datetime }}</time>
                     </article>
                 {% else %}
-                    <p class="py-5 text-sm text-content-muted">No timeline evidence recorded yet.</p>
+                    <p class="py-5 text-sm text-content-muted">{{ 'Unable to qualify the bounded event history.' if case.timeline_unavailable else 'No timeline evidence recorded yet.' }}</p>
                 {% endfor %}
             </div>
             {% if case.timeline_older %}
@@ -66,6 +70,9 @@
                     </div>
                 </details>
             {% endif %}
+            {% if case.timeline_truncated %}
+                <p class="border-t border-outline-subtle px-4 py-3 text-xs text-content-muted">Showing the latest bounded event history, not a complete audit export.</p>
+            {% endif %}
         </article>
         <article class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
             <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
@@ -79,8 +86,15 @@
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">Channel attempts and delivery outcomes.</p>
                     </div>
                 </div>
-                {{ table_label.metadata_label(case.deliveries|length ~ ' Attempts', 'send') }}
+                {% if case.provider_delivery_qualified is sameas false %}
+                    {{ table_label.status_label('Not Qualified', 'unknown', size='compact') }}
+                {% else %}
+                    {{ table_label.metadata_label(case.deliveries|length ~ ' Attempts', 'send') }}
+                {% endif %}
             </header>
+            {% if case.provider_delivery_qualified is sameas false %}
+                <p class="px-4 py-5 text-sm text-content-muted">Governed provider delivery is not qualified. The ledger is unavailable; this is not a zero-attempt claim.</p>
+            {% else %}
             <div class="divide-y divide-outline-subtle px-4">
                 {% for delivery in case.deliveries_recent %}
                     {% set delivery_tone = 'normal' if delivery.status == 'sent' else ('critical' if delivery.status == 'failed' else ('warning' if delivery.status == 'suppressed' else 'info')) %}
@@ -122,6 +136,7 @@
                         {% endfor %}
                     </div>
                 </details>
+            {% endif %}
             {% endif %}
         </article>
     </div>

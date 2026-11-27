@@ -25,6 +25,12 @@
             </dd>
         </div>
         <div>
+            <dt class="text-xs text-content-muted">Committed Observation</dt>
+            <dd class="mt-1 text-content-primary">
+                {{ {'fresh': 'Fresh', 'stale': 'Expired', 'unobserved': 'No alerts observed', 'unavailable': 'Unavailable'}.get(case.observation_status, 'Unavailable') }}
+            </dd>
+        </div>
+        <div>
             <dt class="text-xs text-content-muted">Workflow</dt>
             <dd class="mt-1 text-content-primary">
                 {{ case.workflow_state|replace('_', ' ') |title }}
@@ -148,6 +154,7 @@
                class="{{ table_ui.action_classes() }}">Review in Alert Intelligence</a>
         </div>
     {% endif %}
+    {% include 'intelligence/partials/_alert_ops_case_activity_streams.html' %}
     <p class="mt-5 text-xs text-content-muted">
         Committed AlertCase evidence. Source absence does not imply recovery.
         Committed operator workflow is shown independently of source state. Recovery requires positive source evidence.
