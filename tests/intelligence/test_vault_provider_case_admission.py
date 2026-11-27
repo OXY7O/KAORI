@@ -8,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
 from app.intelligence.alert_intelligence import vault_provider_admission as admission
+from app.intelligence.alert_intelligence import vault_provider_operator as operator
 from app.intelligence.alert_signals.vault_source import commit_vault_alert_observations
 from app.models.alert_ops import AlertCase, AlertCaseEvent
 from app.models.alert_signal import AlertSignalSnapshot
@@ -155,12 +156,14 @@ def _admit(binding, actor, *, at=AT):
     )
 
 
-def _grant(vault, actor, *, level='instance', state='active', target_id=None, until=None):
+def _grant(
+    vault, actor, *, level='instance', state='active', target_id=None, until=None, permission='secrets_pki.view'
+):
     requester = _actor(approved=False)
     approver = _actor(approved=False)
     policy = ScopeAccessPolicy(
         principal_user_id=actor.id,
-        permission_key='secrets_pki.view',
+        permission_key=permission,
         integration_instance_id=target_id or vault.id,
         scope_level=level,
         provider_namespace='' if level == 'vault_mount' else None,
@@ -521,3 +524,113 @@ def test_unverified_state_change_is_not_admitted_without_scope(scope):
     assert _admit(binding, denied, at=later)['status'] == 'forbidden'
     assert AlertCase.query.one().source_state == 'firing'
     assert AlertCaseEvent.query.count() == 1
+
+
+def _operator_case(scope):
+    vault, _source, binding, actor = scope
+    _commit(binding, [_alert(vault.id)])
+    assert _admit(binding, actor)['created'] == 1
+    return AlertCase.query.one()
+
+
+def _operate(scope, action, *, expected=None, owner=None, at=AT):
+    vault, _source, binding, actor = scope
+    case = AlertCase.query.one()
+    return operator.apply_vault_provider_operator_action(
+        binding_id=binding.id,
+        instance_id=vault.id,
+        public_id=case.public_id,
+        actor_user_id=actor.id,
+        action=action,
+        expected_event_id=expected if expected is not None else AlertCaseEvent.query.order_by(
+            AlertCaseEvent.id.desc()
+        ).first().id,
+        owner_user_id=owner,
+        now=at,
+    )
+
+
+def test_operator_action_requires_independent_decision_scope(scope):
+    case = _operator_case(scope)
+    assert _operate(scope, 'acknowledge') == 'forbidden'
+    assert case.workflow_state == 'open'
+    assert AlertCaseEvent.query.count() == AuditEvent.query.count() == 1
+
+
+def test_operator_acknowledgement_and_mitigation_preserve_source_and_suppression(scope):
+    vault, _source, _binding, actor = scope
+    _operator_case(scope)
+    _grant(vault, actor, permission='intelligence.decisions.create')
+    previous = AlertCaseEvent.query.one().id
+    assert _operate(scope, 'acknowledge', expected=previous) == 'committed'
+    assert _operate(scope, 'acknowledge', expected=previous) == 'stale'
+    assert _operate(scope, 'mitigating') == 'committed'
+    case = AlertCase.query.one()
+    assert case.workflow_state == 'mitigating'
+    assert case.owner_user_id == actor.id
+    assert case.acknowledgement_expires_at is None
+    assert case.source_state == 'firing'
+    assert case.source_resolved_at is None
+    assert case.routing_state == 'suppressed'
+    assert case.last_firing_notified_at is None
+    assert AlertCaseEvent.query.count() == AuditEvent.query.count() == 3
+
+
+def test_operator_assignment_requires_eligible_recipient(scope):
+    vault, _source, _binding, actor = scope
+    _operator_case(scope)
+    _grant(vault, actor, permission='intelligence.decisions.create')
+    recipient = _actor()
+    db.session.commit()
+    assert _operate(scope, 'assign', owner=recipient.id) == 'forbidden'
+    _grant(vault, recipient)
+    assert _operate(scope, 'assign', owner=recipient.id) == 'forbidden'
+    _grant(vault, recipient, permission='intelligence.decisions.create')
+    assert _operate(scope, 'assign', owner=recipient.id) == 'committed'
+    assert _operate(scope, 'assign', owner=recipient.id) == 'unchanged'
+    assert AlertCase.query.one().owner_user_id == recipient.id
+    assert AlertCaseEvent.query.count() == AuditEvent.query.count() == 2
+
+
+@pytest.mark.parametrize('condition', ['stale', 'empty', 'disabled', 'new_generation'])
+def test_operator_does_not_mutate_unqualified_current_source(scope, condition):
+    vault, _source, binding, actor = scope
+    _operator_case(scope)
+    _grant(vault, actor, permission='intelligence.decisions.create')
+    at = AT + timedelta(minutes=1)
+    if condition == 'stale':
+        at = AT + timedelta(minutes=6)
+    elif condition == 'empty':
+        _commit(binding, [], observed=at)
+    elif condition == 'disabled':
+        binding.enabled = False
+        db.session.commit()
+    else:
+        _commit(binding, [_alert(vault.id)], observed=at)
+    assert _operate(scope, 'acknowledge', at=at) == 'unavailable'
+    assert AlertCase.query.one().workflow_state == 'open'
+    assert AlertCaseEvent.query.count() == AuditEvent.query.count() == 1
+
+
+def test_operator_audit_failure_rolls_back_workflow(scope, monkeypatch):
+    vault, _source, _binding, actor = scope
+    _operator_case(scope)
+    _grant(vault, actor, permission='intelligence.decisions.create')
+
+    def fail(*_args, **_kwargs):
+        raise SQLAlchemyError('audit failure')
+
+    monkeypatch.setattr(operator, '_stage_evidence', fail)
+    assert _operate(scope, 'acknowledge') == 'unavailable'
+    assert AlertCase.query.one().workflow_state == 'open'
+    assert AlertCaseEvent.query.count() == AuditEvent.query.count() == 1
+
+
+def test_operator_command_default_disabled_and_unsupported_action(scope, monkeypatch):
+    vault, _source, _binding, actor = scope
+    _operator_case(scope)
+    _grant(vault, actor, permission='intelligence.decisions.create')
+    assert _operate(scope, 'resolve') == 'blocked'
+    monkeypatch.delenv('KAORI_VAULT_PROVIDER_CASE_ADMISSION_ENABLED', raising=False)
+    assert _operate(scope, 'acknowledge') == 'disabled'
+    assert AlertCase.query.one().workflow_state == 'open'
