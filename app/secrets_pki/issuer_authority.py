@@ -241,16 +241,9 @@ def resolve_deployment_authority(scope: CredentialIssuerScope, *, now: datetime)
     return DeploymentAuthority(scope, transit, owner, checker, issued, expires, evidence_ref)
 
 
-def resolve_custody_authority(
-    expected: IssuerPossessionChallenge, *, checker_id: int, observation: TransitIssuerObservation, now: datetime
-) -> CustodyAuthority | None:
-    """Bind fresh independent receipt to expected committed challenge and native read.
-
-    Internal caller must reconstruct expected from locked persisted intent,
-    obtain the native observation itself before DB locks, and authenticate
-    actors with canonical Access. No caller-supplied authority is sufficient.
-    """
-    if (
+def _challenge_window_current(expected: IssuerPossessionChallenge, now: datetime) -> bool:
+    """Reject malformed or expired challenge context before resolving authority."""
+    return not (
         not isinstance(expected, IssuerPossessionChallenge)
         or not _digest(expected.challenge_sha256)
         or not isinstance(now, datetime)
@@ -260,7 +253,19 @@ def resolve_custody_authority(
         or not isinstance(expected.expires_at, datetime)
         or expected.expires_at.utcoffset() is None
         or not expected.issued_at <= now < expected.expires_at
-    ):
+    )
+
+
+def resolve_custody_authority(
+    expected: IssuerPossessionChallenge, *, checker_id: int, observation: TransitIssuerObservation, now: datetime
+) -> CustodyAuthority | None:
+    """Bind fresh independent receipt to expected committed challenge and native read.
+
+    Internal caller must reconstruct expected from locked persisted intent,
+    obtain the native observation itself before DB locks, and authenticate
+    actors with canonical Access. No caller-supplied authority is sufficient.
+    """
+    if not _challenge_window_current(expected, now):
         return None
     target = expected.target
     scope = CredentialIssuerScope(
