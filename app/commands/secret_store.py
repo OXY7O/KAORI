@@ -5,9 +5,14 @@ from __future__ import annotations
 import os
 
 import click
+from flask import current_app
 from flask.cli import with_appcontext
 
 from app.integrations.secrets_management.secrets_pki.providers.openbao.client import OpenBaoClient
+from app.integrations.secrets_management.secrets_pki.providers.openbao.qualification import (
+    OpenBaoQualificationTarget,
+    inspect_registration_candidate,
+)
 
 
 @click.command('secret-store-status', short_help='Read internal secret store initialization and seal status.')
@@ -92,3 +97,50 @@ def bootstrap_secret_store(plan: bool) -> None:
         f'KV v2 mounts={summary[0]}, AppRole mounts={summary[1]}.'
     )
     click.echo('PLAN ONLY: no provider writes; mount, policy, identity and runtime admission remain pending.')
+
+@click.command('qualify-openbao', short_help='Inspect a local OpenBao registration candidate without activating it.')
+@click.option('--ownership', type=click.Choice(['internal', 'external']), required=True)
+@click.option('--endpoint', help='Approved external HTTPS origin; omit for the deployment-owned internal store.')
+@click.option('--cluster-id', required=True, help='Expected native cluster UUID from independent operator evidence.')
+@click.option('--kv-mount', required=True, help='Independently approved exact KV v2 mount segment.')
+@click.option('--auth-mount', required=True, help='Independently approved exact AppRole mount segment.')
+@click.option('--audit-mount', required=True, help='Independently approved exact audit device mount segment.')
+@with_appcontext
+def qualify_openbao(
+    ownership: str,
+    endpoint: str | None,
+    cluster_id: str,
+    kv_mount: str,
+    auth_mount: str,
+    audit_mount: str,
+) -> None:
+    """Local inspection only: no provider writes, registration, credential use or authorization."""
+    if os.getenv('APP_ENV') != 'development' or current_app.config.get('APP_ENV') != 'development':
+        raise click.ClickException('OpenBao candidate qualification is restricted to explicit local development.')
+    if ownership == 'internal':
+        if endpoint is not None:
+            raise click.ClickException('The internal endpoint is deployment-owned; omit --endpoint.')
+        endpoint = _internal_endpoint()
+    elif endpoint is None:
+        raise click.ClickException('An approved external HTTPS origin is required.')
+    target = OpenBaoQualificationTarget(
+        ownership=ownership,
+        endpoint=endpoint,
+        cluster_id=cluster_id,
+        kv_mount=kv_mount,
+        auth_mount=auth_mount,
+        audit_mount=audit_mount,
+    )
+    token = click.prompt('Short-lived non-root inspection token', hide_input=True)
+    try:
+        evidence = inspect_registration_candidate(target, token=token)
+    except ValueError as exc:
+        raise click.ClickException(
+            'OpenBao inspection blocked; review approved TLS, cluster, version, token and exact mounts.'
+        ) from exc
+    finally:
+        del token
+    click.echo(f'OpenBao {ownership} candidate: observed active version {evidence.version}.')
+    click.echo('Cluster match, bounded token, exact KV v2/AppRole mounts and audit configuration: observed.')
+    click.echo(f'Observation reference: {evidence.evidence_ref}')
+    click.echo('REGISTRATION PENDING: independent identity, policy, audit delivery and human acceptance required.')
