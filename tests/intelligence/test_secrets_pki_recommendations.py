@@ -214,3 +214,51 @@ def test_validity_rule_can_be_selected_independently(monkeypatch):
     findings = evaluator.build_secrets_pki_recommendation_findings(rules)
     assert len(findings) == 1
     assert findings[0]['rule_key'] == 'secrets_pki.pki.stored_certificate_validity_review:population'
+
+
+@pytest.mark.parametrize('status', ['not_configured', 'incomplete', 'blocked', 'unavailable', 'stale', 'ready'])
+def test_population_readiness_uses_same_evaluation_generation(monkeypatch, status):
+    calls = []
+
+    def read():
+        calls.append(True)
+        return _snapshot(status=status)
+
+    monkeypatch.setattr(evaluator, 'build_stored_pki_validity_posture', read)
+    readiness = {}
+    assert evaluator.build_secrets_pki_recommendation_findings(_rules(), readiness=readiness) == []
+    assert readiness == {'status': status}
+    assert len(calls) == 1
+
+
+def test_invalid_ready_population_is_not_qualified(monkeypatch):
+    snapshot = _snapshot(expired=2)
+    snapshot['observed_stored_certificates'] += 1
+    monkeypatch.setattr(evaluator, 'build_stored_pki_validity_posture', lambda: snapshot)
+    readiness = {}
+    assert evaluator.build_secrets_pki_recommendation_findings(_rules(), readiness=readiness) == []
+    assert readiness == {'status': 'unavailable'}
+
+
+def test_population_readiness_remains_unset_without_scope(monkeypatch):
+    from app.intelligence import service
+
+    monkeypatch.setattr(service, '_can_view_secrets_pki_intelligence', lambda: False)
+
+    def denied():
+        pytest.fail('Unauthorized actor must not read population evidence')
+
+    monkeypatch.setattr(evaluator, 'build_stored_pki_validity_posture', denied)
+    readiness = {}
+    assert service._build_recommendation_findings(list(_rules().values()), pki_readiness=readiness) == []
+    assert readiness == {}
+
+
+def test_authorized_population_evaluation_propagates_readiness(monkeypatch):
+    from app.intelligence import service
+
+    monkeypatch.setattr(service, '_can_view_secrets_pki_intelligence', lambda: True)
+    monkeypatch.setattr(evaluator, 'build_stored_pki_validity_posture', _snapshot)
+    readiness = {}
+    assert service._build_recommendation_findings(list(_rules().values()), pki_readiness=readiness) == []
+    assert readiness == {'status': 'ready'}

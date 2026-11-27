@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.intelligence.alert_signals.vault_source import (
+    _persisted_utc,
     _utc,
     _validated_binding,
     read_vault_alert_observations,
@@ -21,6 +22,7 @@ from app.models.alert_ops import AlertCase
 _CASE_PREFIX = 'vault-alert:'
 _PROFILE = 'vault-alert-hmac-v1'
 _MAX_CASES = 100
+_UNKNOWN_REASON = 'provider_observation_unverified'
 _CASE_KEY_RE = re.compile(r'vault-alert:[0-9a-f]{64}\Z')
 _SAFE_PROVENANCE_KEYS = frozenset(
     {
@@ -48,6 +50,17 @@ def _result(status: str, *, candidates: list[dict[str, Any]] | None = None) -> d
         'candidate_count': len(rows) if rows is not None else None,
         'basis': 'Committed, exact-source observations; candidate actions only, never case transitions',
     }
+
+
+def admitted_source_state_qualified(case: AlertCase) -> bool:
+    """Only the admitted firing/unknown contract is supported; never resolved."""
+    if case.source_state == 'firing':
+        return case.source_state_reason is None and case.source_resolved_at is None
+    if case.source_state != 'unknown' or case.source_state_reason != _UNKNOWN_REASON:
+        return False
+    changed = _persisted_utc(case.source_state_changed_at)
+    seen = _persisted_utc(case.last_seen_at)
+    return changed is not None and seen is not None and changed > seen and case.source_resolved_at is None
 
 
 def _provenance_matches(case: AlertCase, *, source_id: int, binding_id: int) -> bool:
@@ -92,11 +105,18 @@ def build_vault_provider_case_plan(
     binding, source = eligible
     observation = read_vault_alert_observations(binding_id=binding.id, now=instant)
     state = observation['state']
-    if state != 'fresh':
-        return _result('unobserved' if state == 'unobserved' else 'unavailable')
-    entries = observation['entries']
-    if not isinstance(entries, list) or not 1 <= len(entries) <= _MAX_CASES:
-        return _result('blocked')
+    if state == 'unobserved':
+        # A successful, current, exact-source empty generation is evidence
+        # of unverified firing, never positive recovery. Do not create cases.
+        if observation['entries'] is not None:
+            return _result('blocked')
+        entries: list[dict[str, Any]] = []
+    elif state == 'fresh':
+        entries = observation['entries']
+        if not isinstance(entries, list) or not 1 <= len(entries) <= _MAX_CASES:
+            return _result('blocked')
+    else:
+        return _result('unavailable')
     proposed_keys = {_CASE_PREFIX + entry['handle'] for entry in entries}
     if len(proposed_keys) != len(entries):
         return _result('blocked')
@@ -124,13 +144,28 @@ def build_vault_provider_case_plan(
 
     # Key collision with another domain/asset/source must never silently
     # attach or materialize a foreign provider AlertCase.
-    collisions = AlertCase.query.filter(AlertCase.case_key.in_(proposed_keys)).limit(_MAX_CASES + 1).all()
+    collision_keys = proposed_keys | set(cases)
+    if len(collision_keys) > _MAX_CASES:
+        return _result('blocked')
+    collisions = AlertCase.query.filter(AlertCase.case_key.in_(collision_keys)).limit(_MAX_CASES + 1).all()
     if len(collisions) > _MAX_CASES:
         return _result('blocked')
     for case in collisions:
         if cases.get(case.case_key) is not case:
             return _result('blocked')
 
+    plan = _candidate_rows(entries, cases=cases, proposed_keys=proposed_keys)
+    if state == 'unobserved' and not plan:
+        return _result('unobserved')
+    if any(item['action'] not in _ACTIONS for item in plan):
+        return _result('blocked')
+    plan.sort(key=lambda row: row['case_key'])
+    return _result('qualified', candidates=plan)
+
+
+def _candidate_rows(
+    entries: list[dict[str, Any]], *, cases: dict[str, AlertCase], proposed_keys: set[str]
+) -> list[dict[str, Any]]:
     plan: list[dict[str, Any]] = []
     for entry in entries:
         case_key = _CASE_PREFIX + entry['handle']
@@ -141,7 +176,7 @@ def build_vault_provider_case_plan(
             action = 'retain_unverified' if prior is not None else 'review_source'
         elif prior is None:
             action = 'create_candidate'
-        elif prior.source_state == 'firing':
+        elif admitted_source_state_qualified(prior):
             action = 'refresh_candidate'
         else:
             action = 'retain_unverified'
@@ -170,7 +205,4 @@ def build_vault_provider_case_plan(
                     'proposed_routing_state': 'suppressed',
                 }
             )
-    if any(item['action'] not in _ACTIONS for item in plan):
-        return _result('blocked')
-    plan.sort(key=lambda row: row['case_key'])
-    return _result('qualified', candidates=plan)
+    return plan

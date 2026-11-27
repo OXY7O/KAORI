@@ -19,6 +19,9 @@ from app.intelligence.alert_intelligence.vault_provider_plan import (
     _CASE_KEY_RE,
     _MAX_CASES,
     _PROFILE,
+    _UNKNOWN_REASON,
+    _provenance_matches,
+    admitted_source_state_qualified,
     build_vault_provider_case_plan,
 )
 from app.intelligence.alert_signals.vault_source import (
@@ -79,7 +82,7 @@ def _audit(case: AlertCase, *, actor_id: int, action: str) -> None:
     audit.target_type = 'alert_case'
     audit.target_id = case.public_id
     audit.action = action
-    audit.summary = 'A qualified Vault Alert Source case was admitted or refreshed.'
+    audit.summary = 'A qualified Vault Alert Source case observation was committed.'
     audit.metadata_json = {
         'case_id': case.public_id,
         'source_type': 'provider_alert',
@@ -167,17 +170,60 @@ def _eligible_case_identity(case_key: object, severity: object) -> bool:
 
 
 def _eligible_existing_provider_case(case: AlertCase | None, *, case_key: str, vault_id: str) -> bool:
-    """Only a matching suppressed firing case may be refreshed."""
+    """Only a matching suppressed, admitted firing/unknown case may change."""
     return not (
         case is None
         or case.case_key != case_key
         or case.domain != 'secrets_pki'
         or case.asset_key != vault_id
         or case.source_type != 'provider_alert'
-        or case.source_state != 'firing'
+        or not admitted_source_state_qualified(case)
         or case.workflow_state == 'closed'
         or case.routing_state != 'suppressed'
     )
+
+
+def _apply_existing_observation(
+    case: AlertCase, *, action: str, severity: str, observed: datetime, actor_id: int
+) -> bool:
+    """Apply a new qualified generation without treating omission as recovery."""
+    seen = _persisted_utc(case.last_seen_at)
+    changed = _persisted_utc(case.source_state_changed_at)
+    if seen is None or observed <= seen or (changed is not None and observed <= changed):
+        return False
+    if action == 'retain_unverified':
+        if case.source_state == 'unknown':
+            # The committed producer rejects older/replayed generations.
+            # Preserve the first uncertainty transition and avoid duplicate events.
+            return False
+        case.source_state = 'unknown'
+        case.source_state_reason = _UNKNOWN_REASON
+        case.source_state_changed_at = observed
+        _event(
+            case,
+            event_type='provider_alert_source_unknown',
+            actor_id=actor_id,
+            summary='Fresh source generation did not verify the admitted occurrence as firing; recovery is unproven.',
+        )
+        _audit(case, actor_id=actor_id, action='vault_provider_alert_source_unknown')
+        return True
+    if case.source_state == 'unknown':
+        case.source_state = 'firing'
+        case.source_state_reason = None
+        case.source_state_changed_at = observed
+    if case.severity != severity:
+        case.previous_severity = case.severity
+        case.severity = severity
+        case.severity_changed_at = observed
+    case.last_seen_at = observed
+    _event(
+        case,
+        event_type='provider_alert_observed',
+        actor_id=actor_id,
+        summary='Vault source condition is firing in fresh committed evidence.',
+    )
+    _audit(case, actor_id=actor_id, action='vault_provider_alert_observed')
+    return True
 
 
 def _apply_qualified_case_candidates(
@@ -189,11 +235,13 @@ def _apply_qualified_case_candidates(
     actor_user_id: int,
 ) -> tuple[int, int] | None:
     """Apply only qualified candidates within the original caller-owned transaction."""
+    from app.intelligence.alert_intelligence.vault_provider_operator import admitted_operator_workflow_qualified
+
     changed_create = 0
     changed_refresh = 0
     for candidate in candidates:
         action = candidate['action']
-        if action not in {'create_candidate', 'refresh_candidate'}:
+        if action not in {'create_candidate', 'refresh_candidate', 'retain_unverified'}:
             continue
         case_key = candidate.get('case_key')
         severity = candidate.get('severity')
@@ -220,25 +268,24 @@ def _apply_qualified_case_candidates(
         existing_id = candidate.get('existing_case_id')
         if type(existing_id) is not int or existing_id < 1:
             return None
-        case = db.session.get(AlertCase, existing_id)
-        if case is None or not _eligible_existing_provider_case(case, case_key=case_key, vault_id=binding.asset_key):
+        case = db.session.get(AlertCase, existing_id, populate_existing=True, with_for_update=True)
+        if (
+            case is None
+            or not _eligible_existing_provider_case(case, case_key=case_key, vault_id=binding.asset_key)
+            or not admitted_operator_workflow_qualified(case)
+        ):
             return None
-        prior = _persisted_utc(case.last_seen_at)
-        if prior is not None and observed <= prior:
-            continue  # Same generation is idempotent; never duplicate events.
-        if case.severity != severity:
-            case.previous_severity = case.severity
-            case.severity = severity
-            case.severity_changed_at = observed
-        case.last_seen_at = observed
-        _event(
-            case,
-            event_type='provider_alert_observed',
-            actor_id=actor_user_id,
-            summary='Vault source condition remains firing in fresh committed evidence.',
-        )
-        _audit(case, actor_id=actor_user_id, action='vault_provider_alert_observed')
-        changed_refresh += 1
+        if not _provenance_matches(case, source_id=source_id, binding_id=binding.id):
+            return None
+        source_state = candidate.get('observed_source_state')
+        if action == 'refresh_candidate' and source_state != 'firing':
+            return None
+        if action == 'retain_unverified' and source_state not in {'unknown', 'suppressed', 'unprocessed'}:
+            return None
+        if _apply_existing_observation(
+            case, action=action, severity=severity, observed=observed, actor_id=actor_user_id
+        ):
+            changed_refresh += 1
 
     return changed_create, changed_refresh
 
@@ -249,7 +296,7 @@ def admit_vault_provider_cases(
     actor_user_id: int,
     now: datetime | None = None,
 ) -> dict[str, int | str]:
-    """Explicit, opt-in standalone transaction; never provider-origin recovery.
+    """Explicit, opt-in standalone transaction; firing/unknown only, never recovery.
 
     IMPORTANT: this internal command intentionally has no production caller.
     Approval to invoke must follow #724 resource-level review and UAT.
@@ -266,12 +313,15 @@ def admit_vault_provider_cases(
             db.session.rollback()
             return _result('forbidden')
         binding = db.session.execute(
-            select(IntegrationBinding).where(IntegrationBinding.id == binding_id).with_for_update()
+            select(IntegrationBinding)
+            .where(IntegrationBinding.id == binding_id)
+            .execution_options(populate_existing=True)
+            .with_for_update()
         ).scalar_one_or_none()
         if binding is None:
             db.session.rollback()
             return _result('unavailable')
-        eligible = _validated_binding(binding_id, now=instant)
+        eligible = _validated_binding(binding_id, now=instant, lock=True)
         if eligible is None:
             db.session.rollback()
             return _result('unavailable')
@@ -296,6 +346,7 @@ def admit_vault_provider_cases(
                 AlertSignalSnapshot.asset_key == binding.asset_key,
                 AlertSignalSnapshot.signal_key == SIGNAL_KEY,
             )
+            .execution_options(populate_existing=True)
             .with_for_update()
         ).scalar_one_or_none()
         observed = _persisted_utc(snapshot.generated_at) if snapshot is not None else None

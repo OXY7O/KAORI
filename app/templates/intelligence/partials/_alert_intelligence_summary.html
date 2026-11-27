@@ -9,7 +9,7 @@
     'activity',
     payload.snapshot.label,
     payload.snapshot.tone,
-    'Provider case evidence is read-only; source freshness, recovery and delivery are not qualified.' if payload.provider_case_mode else 'Committed AlertCase evidence remains available even when live providers are temporarily unavailable.',
+    'Provider cases are read-only. Fresh matching source observations are distinct from admitted case history; recovery and delivery remain unqualified.' if payload.provider_case_mode else 'Committed AlertCase evidence remains available even when live providers are temporarily unavailable.',
     actions=[] if payload.provider_case_mode else [
     ('send', 'Notification Channels', url_for('notification_channels.index')),
     ('badge-check', 'Resolved Alerts', url_for('alert_intelligence.index', tab='resolved', domain=payload.domain, asset=payload.selected_asset_key))
@@ -18,9 +18,9 @@
     ) %}
     <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
         {% if payload.provider_case_mode %}
-            {{ intelligence_ui.posture_metric('siren', 'Committed Open Cases', payload.summary.active if payload.provider_case_status == 'ready' else '—', 'Last observed firing evidence') }}
+            {{ intelligence_ui.posture_metric('siren', 'Committed Open Cases', payload.summary.active if payload.provider_case_status == 'ready' else '—', 'Durable admitted cases, not provider health') }}
             {{ intelligence_ui.posture_metric('triangle-alert', 'Critical Cases', payload.summary.critical if payload.provider_case_status == 'ready' else '—', 'Committed severity') }}
-            {{ intelligence_ui.posture_metric('bell-off', 'Delivery', '—', 'Not qualified') }}
+            {{ intelligence_ui.posture_metric('circle-help', 'Source Unknown', payload.summary.source_unknown if payload.provider_case_status == 'ready' else '—', 'No fresh matching firing evidence') }}
             {{ intelligence_ui.posture_metric('badge-check', 'Resolved Today', '—', 'Recovery not qualified') }}
         {% else %}
             {{ intelligence_ui.posture_metric('siren', 'Active Alerts', payload.summary.active, payload.summary.critical ~ ' critical') }}

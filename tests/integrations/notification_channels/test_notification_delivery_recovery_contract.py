@@ -89,14 +89,15 @@ def test_retry_stale_threshold_exceeds_transport_timeout(monkeypatch: pytest.Mon
     assert config.notification_delivery_timeout_seconds() == 60
 
 
-def test_due_recovery_claims_a_row_before_replaying(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize('domain', ['kubernetes', 'secrets_pki'])
+def test_due_recovery_claims_a_row_before_replaying(monkeypatch: pytest.MonkeyPatch, domain: str) -> None:
     calls: list[str] = []
     item = SimpleNamespace(
         attempt_count=1,
         status='failed',
         channel=channel(),
-        domain='kubernetes',
-        event_type='report.generated',
+        domain=domain,
+        event_type='report.generated' if domain == 'kubernetes' else 'alert_ops.firing',
         severity='info',
         updated_at=None,
     )
@@ -160,6 +161,15 @@ def test_due_recovery_claims_a_row_before_replaying(monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(service, '_begin_delivery_attempt', claim)
     monkeypatch.setattr(service, '_deliver', send)
     monkeypatch.setattr(service, '_record_delivery_outcome', lambda *_: calls.append('result-commit'))
+    if domain == 'secrets_pki':
+        monkeypatch.setattr(
+            service, 'db', SimpleNamespace(session=SimpleNamespace(commit=lambda: calls.append('blocked')))
+        )
     result = service.recover_notification_deliveries(limit=1)
-    assert result == {'claimed': 1, 'sent': 1, 'failed': 0, 'skipped': 0}
-    assert calls == ['locked', 'committed-claim', 'provider', 'result-commit']
+    if domain == 'secrets_pki':
+        assert result == {'claimed': 0, 'sent': 0, 'failed': 0, 'skipped': 1}
+        assert item.status == 'skipped'
+        assert calls == ['locked', 'blocked']
+    else:
+        assert result == {'claimed': 1, 'sent': 1, 'failed': 0, 'skipped': 0}
+        assert calls == ['locked', 'committed-claim', 'provider', 'result-commit']

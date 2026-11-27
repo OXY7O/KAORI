@@ -48,6 +48,8 @@ def scope_store():
             Permission(key='roles.manage', module='access', action='manage'),
             Permission(key='users.manage', module='access', action='manage'),
             Permission(key='secrets_pki.view', module='secrets_pki', action='view'),
+            Permission(key='intelligence.view', module='intelligence', action='view'),
+            Permission(key='intelligence.decisions.create', module='intelligence', action='decisions.create'),
         ]
         db.session.add_all([role, viewer_role, *permissions])
         db.session.flush()
@@ -56,6 +58,7 @@ def scope_store():
                 RolePermission(role_id=role.id, permission_id=permissions[0].id),
                 RolePermission(role_id=role.id, permission_id=permissions[1].id),
                 RolePermission(role_id=viewer_role.id, permission_id=permissions[2].id),
+                RolePermission(role_id=viewer_role.id, permission_id=permissions[3].id),
             ]
         )
         actors = [
@@ -505,3 +508,111 @@ def test_issuer_scope_inactive_revision_denied(scope_store, state):
     assert not scope_policy.evaluate_exact_issuer_scope(
         actor_user_id=ids['viewer'], scope=scope, permission_key=permission
     ).allowed
+
+
+def _request_instance(ids, *, permission_key='secrets_pki.view', scope_level='instance'):
+    now = datetime.now(UTC)
+    request_grant = (
+        scoped_grants.request_vault_case_operator_grant
+        if permission_key == 'intelligence.decisions.create'
+        else scoped_grants.request_scope_grant
+    )
+    return request_grant(
+        actor_user_id=ids['requester'],
+        principal_user_id=ids['viewer'],
+        integration_instance_id=ids['source'],
+        scope_level=scope_level,
+        provider_namespace=None if scope_level == 'instance' else '',
+        mount=None if scope_level == 'instance' else 'kv',
+        validity=scoped_grants.ScopeGrantValidity(
+            effective_from=now - timedelta(minutes=1),
+            effective_until=now + timedelta(hours=1),
+        ),
+        reason_code='incident_response',
+    )
+
+
+def _approve_instance(ids, policy):
+    return scoped_grants.approve_scope_grant(policy_id=policy.id, approver_user_id=ids['approver'], expected_revision=1)
+
+
+def _operator_role(ids):
+    actor = db.session.get(User, ids['viewer'])
+    permission = Permission.query.filter_by(key='intelligence.decisions.create').one()
+    db.session.add(RolePermission(role_id=actor.role_id, permission_id=permission.id))
+    db.session.commit()
+
+
+def _operator_scope(ids):
+    decision = scope_policy.evaluate_exact_vault_instance_operator_scope(
+        actor_user_id=ids['viewer'], instance_id=ids['source']
+    )
+    db.session.rollback()
+    return decision
+
+
+def test_operator_scope_requires_two_independent_approved_instance_grants(scope_store):
+    ids = scope_store
+    _operator_role(ids)
+    read = _approve_instance(ids, _request_instance(ids))
+    assert not _operator_scope(ids).allowed
+    operator = _request_instance(ids, permission_key='intelligence.decisions.create')
+    assert not _operator_scope(ids).allowed
+    _approve_instance(ids, operator)
+    decision = _operator_scope(ids)
+    assert decision.allowed and decision.policy_ref == operator.id and decision.revision == 2
+    scoped_grants.revoke_scope_grant(policy_id=read.id, actor_user_id=ids['requester'], expected_revision=2)
+    assert not _operator_scope(ids).allowed
+
+
+def test_operator_grant_cannot_supply_read_scope_or_mount_scope(scope_store):
+    ids = scope_store
+    _operator_role(ids)
+    with pytest.raises(scoped_grants.ScopedGrantRejected):
+        _request_instance(ids, permission_key='intelligence.decisions.create', scope_level='vault_mount')
+    _approve_instance(ids, _request_instance(ids, permission_key='intelligence.decisions.create'))
+    assert not _operator_scope(ids).allowed
+    assert not scope_policy.evaluate_exact_vault_instance_case_scope(
+        actor_user_id=ids['viewer'], instance_id=ids['source']
+    ).allowed
+
+
+def test_operator_permission_absent_or_revoked_denies(scope_store):
+    ids = scope_store
+    with pytest.raises(scoped_grants.ScopedGrantRejected):
+        _request_instance(ids, permission_key='intelligence.decisions.create')
+    _operator_role(ids)
+    _approve_instance(ids, _request_instance(ids))
+    operator = _approve_instance(ids, _request_instance(ids, permission_key='intelligence.decisions.create'))
+    assert _operator_scope(ids).allowed
+    scoped_grants.revoke_scope_grant(policy_id=operator.id, actor_user_id=ids['requester'], expected_revision=2)
+    assert not _operator_scope(ids).allowed
+
+
+def test_operator_grant_ambiguity_denies_without_read_scope_regression(scope_store):
+    ids = scope_store
+    _operator_role(ids)
+    _approve_instance(ids, _request_instance(ids))
+    for _ in range(2):
+        _approve_instance(ids, _request_instance(ids, permission_key='intelligence.decisions.create'))
+    assert _operator_scope(ids).reason == 'ambiguous_scope'
+    assert scope_policy.evaluate_exact_vault_instance_case_scope(
+        actor_user_id=ids['viewer'], instance_id=ids['source']
+    ).allowed
+
+
+def test_operator_grant_approval_requires_independence_and_atomic_audit(scope_store, monkeypatch):
+    ids = scope_store
+    _operator_role(ids)
+    operator = _request_instance(ids, permission_key='intelligence.decisions.create')
+    with pytest.raises(scoped_grants.ScopedGrantRejected):
+        scoped_grants.approve_scope_grant(policy_id=operator.id, approver_user_id=ids['requester'], expected_revision=1)
+
+    def sink_failure(**_kwargs):
+        raise RuntimeError('persistence unavailable')
+
+    monkeypatch.setattr(scoped_grants, 'stage_operational_activity', sink_failure)
+    with pytest.raises(RuntimeError, match='persistence unavailable'):
+        _approve_instance(ids, operator)
+    assert db.session.get(ScopeAccessPolicy, operator.id).current_revision == 1
+    assert ScopeAccessPolicyRevision.query.filter_by(policy_id=operator.id).count() == 1

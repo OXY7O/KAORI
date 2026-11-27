@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
+from app.access.scope_policy import VAULT_CASE_OPERATOR_PERMISSION
 from app.extensions.db import db
 from app.models.integration import IntegrationInstance
 from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
@@ -49,6 +50,14 @@ def require_scope_grant_principal(user_id: int, permission_key: str) -> None:
         or permission_key not in user.role_record.permission_keys()
     ):
         raise ScopedGrantRejected('Grant principal is not eligible for the requested permission.')
+
+
+def _require_supported_grant_scope(*, permission_key: str, scope_level: str) -> None:
+    if permission_key == _SUPPORTED_PERMISSION:
+        return
+    if permission_key == VAULT_CASE_OPERATOR_PERMISSION and scope_level == 'instance':
+        return
+    raise ScopedGrantRejected('Grant permission or scope is not qualified.')
 
 
 def _target(
@@ -144,6 +153,14 @@ def qualify_scope_grant_validity(
     return starts, ends
 
 
+@dataclass(frozen=True, slots=True)
+class _ScopeGrantTarget:
+    integration_instance_id: int
+    scope_level: str
+    provider_namespace: str | None
+    mount: str | None
+
+
 def request_scope_grant(
     *,
     actor_user_id: int,
@@ -155,21 +172,63 @@ def request_scope_grant(
     validity: ScopeGrantValidity,
     reason_code: str,
 ) -> ScopeAccessPolicy:
-    """Create draft only; requesting a policy NEVER activates a permit."""
+    """Create a read grant draft only; requesting NEVER activates a permit."""
+    return _request_grant(
+        actor_user_id=actor_user_id,
+        principal_user_id=principal_user_id,
+        target=_ScopeGrantTarget(integration_instance_id, scope_level, provider_namespace, mount),
+        validity=validity,
+        reason_code=reason_code,
+        permission_key=_SUPPORTED_PERMISSION,
+    )
+
+
+def request_vault_case_operator_grant(
+    *,
+    actor_user_id: int,
+    principal_user_id: int,
+    integration_instance_id: int,
+    scope_level: str,
+    provider_namespace: str | None,
+    mount: str | None,
+    validity: ScopeGrantValidity,
+    reason_code: str,
+) -> ScopeAccessPolicy:
+    """Create an independently approved exact-instance operator grant draft."""
+    return _request_grant(
+        actor_user_id=actor_user_id,
+        principal_user_id=principal_user_id,
+        target=_ScopeGrantTarget(integration_instance_id, scope_level, provider_namespace, mount),
+        validity=validity,
+        reason_code=reason_code,
+        permission_key=VAULT_CASE_OPERATOR_PERMISSION,
+    )
+
+
+def _request_grant(
+    *,
+    actor_user_id: int,
+    principal_user_id: int,
+    target: _ScopeGrantTarget,
+    validity: ScopeGrantValidity,
+    reason_code: str,
+    permission_key: str,
+) -> ScopeAccessPolicy:
     require_scope_grant_administrator(actor_user_id)
-    require_scope_grant_principal(principal_user_id, _SUPPORTED_PERMISSION)
+    _require_supported_grant_scope(permission_key=permission_key, scope_level=target.scope_level)
+    require_scope_grant_principal(principal_user_id, permission_key)
     namespace, exact_mount = _target(
-        integration_instance_id=integration_instance_id,
-        scope_level=scope_level,
-        provider_namespace=provider_namespace,
-        mount=mount,
+        integration_instance_id=target.integration_instance_id,
+        scope_level=target.scope_level,
+        provider_namespace=target.provider_namespace,
+        mount=target.mount,
     )
     starts, ends = qualify_scope_grant_validity(validity, reason_code, now=datetime.now(UTC))
     policy = ScopeAccessPolicy()
     policy.principal_user_id = principal_user_id
-    policy.permission_key = _SUPPORTED_PERMISSION
-    policy.integration_instance_id = integration_instance_id
-    policy.scope_level = scope_level
+    policy.permission_key = permission_key
+    policy.integration_instance_id = target.integration_instance_id
+    policy.scope_level = target.scope_level
     policy.provider_namespace = namespace
     policy.mount = exact_mount
     policy.current_revision = 1
@@ -232,6 +291,7 @@ def approve_scope_grant(
             or current.requested_by_user_id == approver_user_id
         ):
             raise ScopedGrantRejected('Grant approval is stale or is not independent.')
+        _require_supported_grant_scope(permission_key=policy.permission_key, scope_level=policy.scope_level)
         require_scope_grant_principal(policy.principal_user_id, policy.permission_key)
         _target(
             integration_instance_id=policy.integration_instance_id,

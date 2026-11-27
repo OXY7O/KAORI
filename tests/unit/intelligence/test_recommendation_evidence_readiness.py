@@ -98,3 +98,26 @@ def test_historical_tenant_events_do_not_become_current_recommendations(monkeypa
     ):
         monkeypatch.setattr(tenant, name, lambda _rules: [])
     assert tenant.build_tenant_governance_recommendation_findings({}) == []
+
+
+def test_qualified_population_is_not_counted_as_inventory_asset() -> None:
+    assert (
+        classify_recommendation_readiness(total=0, recent=0, issues=[], has_findings=False, qualified_population=True)
+        == 'baseline_recent'
+    )
+    assert (
+        classify_recommendation_readiness(
+            total=0, recent=0, issues=['PKI evidence failed'], has_findings=False, qualified_population=True
+        )
+        == 'unavailable'
+    )
+    assert (
+        classify_recommendation_readiness(total=2, recent=1, issues=[], has_findings=True, qualified_population=True)
+        == 'partial'
+    )
+    assert (
+        classify_recommendation_readiness(
+            total=0, recent=0, issues=[], has_findings=True, qualified_population=True, source_gaps=['Registry']
+        )
+        == 'partial'
+    )

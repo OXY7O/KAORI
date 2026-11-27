@@ -51,6 +51,7 @@ def reconcile_alert_cases() -> dict[str, int]:
 
 
 def acknowledge_case(case: AlertCase, *, actor_user_id: int | None) -> None:
+    _require_non_vault_provider_case(case)
     _require_open(case)
     from app.intelligence.alert_intelligence.routing import acknowledgement_timeout_for_case
 
@@ -74,6 +75,7 @@ def acknowledge_case(case: AlertCase, *, actor_user_id: int | None) -> None:
 
 
 def assign_case(case: AlertCase, *, owner_user_id: int | None, actor_user_id: int | None) -> None:
+    _require_non_vault_provider_case(case)
     _require_open(case)
     case.owner_user_id = owner_user_id
     _event(
@@ -87,6 +89,7 @@ def assign_case(case: AlertCase, *, owner_user_id: int | None, actor_user_id: in
 
 
 def mark_mitigating(case: AlertCase, *, actor_user_id: int | None, note: str | None = None) -> None:
+    _require_non_vault_provider_case(case)
     _require_open(case)
     now = datetime.now(UTC)
     case.workflow_state = 'mitigating'
@@ -102,6 +105,7 @@ def create_delivery_silence(
     reason: str,
     actor_user_id: int | None,
 ) -> AlertSilence:
+    _require_non_vault_provider_case(case)
     _require_open(case)
     normalized_reason = str(reason or '').strip()
     if not normalized_reason:
@@ -127,6 +131,7 @@ def create_delivery_silence(
 
 
 def revoke_delivery_silence(case: AlertCase, *, actor_user_id: int | None) -> None:
+    _require_non_vault_provider_case(case)
     now = datetime.now(UTC)
     active = active_delivery_silence(case, now=now)
     if active is None:
@@ -147,6 +152,7 @@ def close_case(
     ticket_reference: str | None,
     actor_user_id: int | None,
 ) -> None:
+    _require_non_vault_provider_case(case)
     if case.source_state != 'resolved':
         raise ValueError('The source alert must be resolved before the case can be closed.')
     if case.workflow_state == 'closed':
@@ -257,6 +263,7 @@ def save_postmortem(
     complete: bool,
     actor_user_id: int | None,
 ) -> None:
+    _require_non_vault_provider_case(case)
     if case.workflow_state != 'closed':
         raise ValueError('Postmortem evidence can only be recorded after case closure.')
     normalized = {key: str(value or '').strip() for key, value in payload.items()}
@@ -348,6 +355,7 @@ def expire_silences_and_notify() -> int:
         .filter(
             AlertSilence.ends_at <= now,
             AlertSilence.revoked_at.is_(None),
+            ~((AlertCase.domain == 'secrets_pki') & (AlertCase.source_type == 'provider_alert')),
             AlertCase.source_state == 'firing',
             AlertCase.workflow_state != 'closed',
         )
@@ -393,6 +401,7 @@ def mark_case_source_resolved(
 ) -> str:
     """Move a fresh, evaluable source to resolved without conflating recovery and closure."""
 
+    _require_non_vault_provider_case(case)
     current = now or datetime.now(UTC)
     if case.source_state == 'resolved':
         return case.workflow_state
@@ -617,6 +626,12 @@ def _requires_postmortem(case: AlertCase) -> bool:
     end = case.closed_at or case.source_resolved_at or datetime.now(UTC)
     duration = end - case.first_seen_at
     return case.severity == 'warning' and duration >= timedelta(minutes=_POSTMORTEM_DURATION_MINUTES)
+
+
+def _require_non_vault_provider_case(case: AlertCase) -> None:
+    # HV-12 has no qualified operator grant or positive recovery contract.
+    if case.domain == 'secrets_pki' and case.source_type == 'provider_alert':
+        raise ValueError('Provider case lifecycle action is not qualified.')
 
 
 def _require_open(case: AlertCase) -> None:

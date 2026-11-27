@@ -24,6 +24,7 @@ from app.models.user import User
 from app.models.vault import VaultInstance
 
 _SENSITIVE_PERMISSION = 'secrets_pki.view'
+VAULT_CASE_OPERATOR_PERMISSION = 'intelligence.decisions.create'
 _MAX_MATCHING_POLICIES = 32
 
 
@@ -204,6 +205,56 @@ def evaluate_exact_vault_instance_case_scope(
     instance_id: int,
     now: datetime | None = None,
 ) -> ScopeAdmission:
+    """Authorize exact read scope; never treat it as operator authorization."""
+    return _evaluate_exact_vault_instance_case_permission(
+        actor_user_id=actor_user_id,
+        instance_id=instance_id,
+        permission_key=_SENSITIVE_PERMISSION,
+        now=now,
+    )
+
+
+def evaluate_exact_vault_instance_operator_scope(
+    *,
+    actor_user_id: int,
+    instance_id: int,
+    now: datetime | None = None,
+) -> ScopeAdmission:
+    """Require independent exact read and decision grants in fixed lock order.
+
+    Internal precondition only. The owning command must requalify its action,
+    source, case and mandatory audit in the same transaction. No route is wired.
+    """
+    instant = now or datetime.now(UTC)
+    read = evaluate_exact_vault_instance_case_scope(actor_user_id=actor_user_id, instance_id=instance_id, now=instant)
+    if not read.allowed:
+        return read
+    return _evaluate_exact_vault_instance_case_permission(
+        actor_user_id=actor_user_id,
+        instance_id=instance_id,
+        permission_key=VAULT_CASE_OPERATOR_PERMISSION,
+        now=instant,
+    )
+
+
+def _approved_instance_revision_end(revision: ScopeAccessPolicyRevision, *, instant: datetime) -> datetime | None:
+    if not _approved_instance_case_revision(revision):
+        return None
+    start = _timestamp(revision.effective_from)
+    end = _timestamp(revision.effective_until)
+    approval = _timestamp(revision.approved_at)
+    if start is None or end is None or approval is None or start > instant or instant >= end or approval > instant:
+        return None
+    return end
+
+
+def _evaluate_exact_vault_instance_case_permission(
+    *,
+    actor_user_id: int,
+    instance_id: int,
+    permission_key: str,
+    now: datetime | None = None,
+) -> ScopeAdmission:
     """Authorize exact instance-level case access, never inherited mount access.
 
     An allowed decision is only a precondition: the caller must audit and
@@ -211,20 +262,24 @@ def evaluate_exact_vault_instance_case_scope(
     """
     if type(actor_user_id) is not int or actor_user_id < 1 or type(instance_id) is not int or instance_id < 1:
         return ScopeAdmission('deny', 'invalid_scope')
+    if permission_key not in {_SENSITIVE_PERMISSION, VAULT_CASE_OPERATOR_PERMISSION}:
+        return ScopeAdmission('deny', 'invalid_scope')
     instant = _timestamp(now or datetime.now(UTC))
     if instant is None:
         return ScopeAdmission('deny', 'invalid_time')
     try:
-        actor = db.session.get(User, actor_user_id)
+        actor = db.session.get(User, actor_user_id, populate_existing=True)
         if (
             actor is None
             or not actor.is_active
             or actor.role_record is None
             or not actor.role_record.is_active
-            or not {'secrets_pki.view', 'intelligence.view'}.issubset(actor.role_record.permission_keys())
+            or not {_SENSITIVE_PERMISSION, 'intelligence.view', permission_key}.issubset(
+                actor.role_record.permission_keys()
+            )
         ):
             return ScopeAdmission('deny', 'permission_required')
-        source = db.session.get(IntegrationInstance, instance_id)
+        source = db.session.get(IntegrationInstance, instance_id, populate_existing=True)
         if (
             source is None
             or source.integration_type != 'secrets_pki'
@@ -236,13 +291,14 @@ def evaluate_exact_vault_instance_case_scope(
         policies = (
             ScopeAccessPolicy.query.filter(
                 ScopeAccessPolicy.principal_user_id == actor_user_id,
-                ScopeAccessPolicy.permission_key == 'secrets_pki.view',
+                ScopeAccessPolicy.permission_key == permission_key,
                 ScopeAccessPolicy.integration_instance_id == instance_id,
                 ScopeAccessPolicy.scope_level == 'instance',
                 ScopeAccessPolicy.provider_namespace.is_(None),
                 ScopeAccessPolicy.mount.is_(None),
             )
             .enable_eagerloads(False)
+            .populate_existing()
             .order_by(ScopeAccessPolicy.id.asc())
             .limit(_MAX_MATCHING_POLICIES + 1)
             .with_for_update(of=ScopeAccessPolicy)
@@ -257,22 +313,14 @@ def evaluate_exact_vault_instance_case_scope(
                     ScopeAccessPolicyRevision.policy_id == policy.id,
                     ScopeAccessPolicyRevision.revision_number == policy.current_revision,
                 )
+                .populate_existing()
                 .with_for_update(of=ScopeAccessPolicyRevision)
                 .first()
             )
-            if revision is None or not _approved_instance_case_revision(revision):
+            if revision is None:
                 continue
-            start = _timestamp(revision.effective_from)
-            end = _timestamp(revision.effective_until)
-            approval = _timestamp(revision.approved_at)
-            if (
-                start is None
-                or end is None
-                or approval is None
-                or start > instant
-                or instant >= end
-                or approval > instant
-            ):
+            end = _approved_instance_revision_end(revision, instant=instant)
+            if end is None:
                 continue
             approved.append((policy, revision, end))
         if len(approved) != 1:

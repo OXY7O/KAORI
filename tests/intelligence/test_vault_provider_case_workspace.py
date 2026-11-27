@@ -10,10 +10,13 @@ from werkzeug.exceptions import NotFound
 
 from app.access.scope_policy import evaluate_exact_vault_instance_case_scope
 from app.extensions.db import db
-from app.intelligence.alert_intelligence import provider_case_scope
+from app.intelligence.alert_intelligence import lifecycle, notifications, provider_case_scope
 from app.intelligence.alert_intelligence import vault_case_workspace as workspace
 from app.intelligence.alert_intelligence.application import apply_case_mutation
-from app.models.alert_ops import AlertCase
+from app.intelligence.alert_signals.vault_source import commit_vault_alert_observations
+from app.models.alert_ops import AlertCase, AlertCaseEvent, AlertSilence
+from app.models.alert_signal import AlertSignalSnapshot
+from app.models.audit import AuditEvent
 from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.rbac import Permission, Role, RolePermission
@@ -44,6 +47,10 @@ def store():
         ScopeAccessPolicy.__table__,
         ScopeAccessPolicyRevision.__table__,
         AlertCase.__table__,
+        AlertCaseEvent.__table__,
+        AuditEvent.__table__,
+        AlertSilence.__table__,
+        AlertSignalSnapshot.__table__,
     ]
     with app.app_context():
         db.Model.metadata.create_all(bind=db.engine, tables=tables)
@@ -473,12 +480,12 @@ def test_central_registry_reuses_safe_projection_and_audited_read(store, monkeyp
     monkeypatch.setattr(workspace, 'stage_operational_activity', lambda **kw: audits.append(kw))
     payload = provider_case_scope.build_provider_case_payload(_central_args(ids), domain_options=_DOMAIN_OPTIONS)
     assert payload['provider_case_status'] == 'ready'
-    assert payload['summary'] == {'active': 1, 'critical': 0}
+    assert payload['summary'] == {'active': 1, 'critical': 0, 'source_unknown': 1}
     assert payload['snapshot']['available'] is False
     assert payload['selected_case'] is None
     assert payload['active_pagination']['per_page'] == 5
     assert [row['public_id'] for row in payload['active_cases']] == [case.public_id]
-    assert payload['active_cases'][0]['source_state_label'] == 'Last observed firing'
+    assert payload['active_cases'][0]['source_state_label'] == 'Source unknown'
     assert 'SHOULD-NOT-RENDER' not in repr(payload)
     assert 'source_binding_id' not in repr(payload)
     assert audits[0]['metadata']['integration_instance_id'] == ids.vault
@@ -537,3 +544,170 @@ def test_generic_mutation_denies_provider_origin_outside_vault(store):
     invoked = []
     assert apply_case_mutation(case.public_id, operation=lambda row: invoked.append(row.id)) is None
     assert not invoked
+
+
+def _commit_current_observation(ids, *, state='active', offset=0, empty=False):
+    binding = db.session.get(IntegrationBinding, ids.binding)
+    binding.validation_status = 'ready'
+    binding.last_validated_at = AT
+    binding.validation_evidence = {'profile_key': 'vault-alerts-v1', 'vault_alert_sample': {'status': 'qualified'}}
+    db.session.commit()
+    raw = {
+        'labels': {'vault_instance': str(ids.vault), 'severity': 'warning'},
+        'status': {'state': state},
+        'fingerprint': 'aabbccddeeff1234',
+        'startsAt': (AT - timedelta(hours=1)).isoformat(),
+    }
+    result = commit_vault_alert_observations(
+        binding_id=ids.binding,
+        alerts=[] if empty else [raw],
+        hmac_key=bytes.fromhex('ab' * 32),
+        now=AT + timedelta(seconds=offset),
+    )
+    assert result['state'] == ('unobserved' if empty else 'qualified')
+    row = AlertSignalSnapshot.query.one()
+    return None if empty else 'vault-alert:' + row.payload_json['entries'][0]['handle']
+
+
+def test_current_observation_matches_only_exact_admitted_occurrence(store):
+    _app, ids = store
+    key = _commit_current_observation(ids)
+    matched = _case(ids, key=key)
+    other = _case(ids, key='vault-alert:' + 'f' * 64)
+    result = workspace._read_cases(instance_id=ids.vault, page='1', filters={})
+    by_id = {row['public_id']: row for row in result['rows']}
+    assert by_id[matched.public_id]['source_state'] == 'firing'
+    assert by_id[other.public_id]['source_state'] == 'unknown'
+    assert by_id[other.public_id]['last_admitted_source_state'] == 'firing'
+    assert result['summary']['source_unknown'] == 1
+    filtered = workspace._read_cases(instance_id=ids.vault, page='1', filters={'source_state': 'unknown'})
+    assert [row['public_id'] for row in filtered['rows']] == [other.public_id]
+    assert matched.source_state == other.source_state == 'firing'
+
+
+@pytest.mark.parametrize('condition', ['empty', 'suppressed', 'unprocessed', 'stale', 'failed', 'disabled'])
+def test_unverified_current_source_does_not_resolve_admitted_case(store, condition):
+    _app, ids = store
+    key = _commit_current_observation(ids, state=condition if condition in {'suppressed', 'unprocessed'} else 'active')
+    case = _case(ids, key=key)
+    snapshot = AlertSignalSnapshot.query.one()
+    if condition == 'empty':
+        _commit_current_observation(ids, offset=1, empty=True)
+    elif condition == 'stale':
+        snapshot.generated_at = AT - timedelta(minutes=6)
+        snapshot.expires_at = AT - timedelta(minutes=1)
+    elif condition == 'failed':
+        snapshot.status = 'failed'
+        snapshot.payload_json = None
+    elif condition == 'disabled':
+        db.session.get(IntegrationInstance, ids.source).enabled = False
+    db.session.commit()
+    result = workspace._read_cases(instance_id=ids.vault, page='1', filters={})
+    assert result['status'] == 'ready'
+    assert result['rows'][0]['source_state'] == 'unknown'
+    assert result['rows'][0]['last_admitted_source_state'] == 'firing'
+    assert result['summary']['source_unknown'] == 1
+    assert case.source_state == 'firing'
+    assert case.workflow_state == 'open'
+
+
+def test_admitted_unknown_requires_qualified_state_reason_and_order(store):
+    _app, ids = store
+    case = _case(ids)
+    case.source_state = 'unknown'
+    case.source_state_reason = 'provider_observation_unverified'
+    case.source_state_changed_at = case.last_seen_at + timedelta(seconds=1)
+    db.session.commit()
+    result = workspace._read_cases(instance_id=ids.vault, page='1', filters={})
+    assert result['status'] == 'ready'
+    assert result['rows'][0]['last_admitted_source_state'] == 'unknown'
+    case.source_state_reason = 'unqualified'
+    db.session.commit()
+    assert workspace._read_cases(instance_id=ids.vault, page='1')['status'] == 'unavailable'
+
+
+@pytest.mark.parametrize(
+    'operation',
+    [
+        lambda case: lifecycle.acknowledge_case(case, actor_user_id=1),
+        lambda case: lifecycle.assign_case(case, owner_user_id=1, actor_user_id=1),
+        lambda case: lifecycle.mark_mitigating(case, actor_user_id=1),
+        lambda case: lifecycle.create_delivery_silence(case, duration_minutes=60, reason='test', actor_user_id=1),
+        lambda case: lifecycle.revoke_delivery_silence(case, actor_user_id=1),
+        lambda case: lifecycle.close_case(
+            case,
+            resolution_summary='test',
+            remediation_steps=['test'],
+            verification_evidence='test',
+            change_reference=None,
+            ticket_reference=None,
+            actor_user_id=1,
+        ),
+        lambda case: lifecycle.save_postmortem(case, payload={}, complete=False, actor_user_id=1),
+        lambda case: lifecycle.mark_case_source_resolved(case, source_summary='unqualified'),
+    ],
+)
+def test_generic_lifecycle_helpers_cannot_bypass_provider_action_qualification(store, operation):
+    _app, ids = store
+    _grant(ids)
+    case = _case(ids)
+    with pytest.raises(ValueError, match='Provider case lifecycle action is not qualified'):
+        operation(case)
+    assert case.workflow_state == 'open'
+    assert case.source_state == 'firing'
+    assert case.routing_state == 'suppressed'
+    assert not db.session.new
+    assert not db.session.dirty
+
+
+def test_provider_delivery_transport_and_dispatch_helpers_fail_closed(store, monkeypatch):
+    _app, ids = store
+    case = _case(ids)
+    monkeypatch.setattr(notifications, 'render_case_message', lambda *a, **kw: pytest.fail('Unexpected render'))
+    monkeypatch.setattr(notifications, 'dispatch_notification_event', lambda **kw: pytest.fail('Unexpected delivery'))
+    expected = {'firing': 0, 'resolved': 0, 'failed': 0, 'skipped': 1}
+    assert notifications._dispatch_firing(case) == expected
+    assert notifications._dispatch_resolved(case) == expected
+    for state in ('firing', 'resolved'):
+        assert notifications._deliver_case_event(case, channel_id=1, event_state=state, sequence='test') == {
+            'successful': 0,
+            'failed': 0,
+            'skipped': 1,
+        }
+    assert case.last_firing_notified_at is None
+    assert case.last_resolved_notified_at is None
+
+
+def test_expired_provider_silence_cannot_generate_notification(store, monkeypatch):
+    _app, ids = store
+    case = _case(ids)
+    db.session.add(
+        AlertSilence(
+            case_id=case.id,
+            starts_at=AT - timedelta(hours=2),
+            ends_at=AT - timedelta(hours=1),
+            reason='historical unqualified silence',
+            created_by_user_id=ids.actor,
+        )
+    )
+    db.session.commit()
+    monkeypatch.setattr(lifecycle, 'create_notification', lambda **kw: pytest.fail('Unexpected notification'))
+    assert lifecycle.expire_silences_and_notify() == 0
+    assert AlertCaseEvent.query.count() == 0
+
+
+@pytest.mark.parametrize('state', ['acknowledged', 'mitigating', 'verification_pending', 'closed'])
+def test_unqualified_workflow_is_not_projected(store, state):
+    _app, ids = store
+    case = _case(ids)
+    case.workflow_state = state
+    if state in {'acknowledged', 'mitigating'}:
+        case.acknowledged_at = AT
+        case.acknowledged_by_user_id = ids.actor
+    if state == 'mitigating':
+        case.mitigating_at = AT
+    db.session.commit()
+    for filters in (None, {}):
+        result = workspace._read_cases(instance_id=ids.vault, page='1', filters=filters)
+        assert result['status'] == 'unavailable'
+        assert result['rows'] == []

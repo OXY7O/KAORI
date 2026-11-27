@@ -51,8 +51,8 @@
                     <div class="flex flex-wrap items-center gap-2"
                          aria-label="Active alert quick views">
                         <span class="text-xs font-semibold text-content-muted">Quick Views</span>
-                        <a href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key) }}"
-                           hx-get="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key) }}"
+                        <a href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, provider=payload.selected_provider if payload.provider_case_mode else none) }}"
+                           hx-get="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, provider=payload.selected_provider if payload.provider_case_mode else none) }}"
                            hx-target="#alert-operations-active-registry"
                            hx-select="#alert-operations-active-registry"
                            hx-swap="outerHTML"
@@ -88,7 +88,7 @@
             </div>
         </section>
     {% endif %}
-    {% set active_registry_url = url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, severity=payload.filters.severity, workflow=payload.filters.workflow, source=payload.filters.source, source_state=payload.filters.source_state, q=payload.filters.q, page=payload.active_pagination.page, per_page=payload.active_pagination.per_page) %}
+    {% set active_registry_url = url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, provider=payload.selected_provider if payload.provider_case_mode else none, severity=payload.filters.severity, workflow=payload.filters.workflow, source=payload.filters.source, source_state=payload.filters.source_state, q=payload.filters.q, page=payload.active_pagination.page, per_page=payload.active_pagination.per_page) %}
     <section id="alert-operations-active-registry"
              class="{{ table_ui.block_classes() }}"
              hx-get="{{ active_registry_url }}"
@@ -106,15 +106,15 @@
                     </span>
                     <div class="min-w-0">
                         <h3 class="{{ table_ui.block_title_classes() }}">Active Alert Queue</h3>
-                        <p class="{{ table_ui.block_description_classes() }}">{{ 'Review committed provider cases in the authorized instance. Source state is last observed; recovery and mutation are not qualified.' if payload.provider_case_mode else 'Filter the active queue by alert text, severity, source state, or operator workflow. Results refresh inline while preserving the current operational context.' }}</p>
+                        <p class="{{ table_ui.block_description_classes() }}">{{ 'Review committed provider cases in the authorized instance. Fresh source evidence is checked independently of the last admitted case. Unknown does not establish recovery.' if payload.provider_case_mode else 'Filter the active queue by alert text, severity, source state, or operator workflow. Results refresh inline while preserving the current operational context.' }}</p>
                     </div>
                 </div>
                 <div class="flex shrink-0 flex-wrap items-center justify-end gap-2"
                      data-kaori-table-header-actions>
                     {% if payload.filters.q or payload.filters.severity != 'all' or payload.filters.source_state != 'all' or payload.filters.workflow != 'all' %}
                         <a data-kaori-filter-action
-                           href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key) }}"
-                           hx-get="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key) }}"
+                           href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, provider=payload.selected_provider if payload.provider_case_mode else none) }}"
+                           hx-get="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, provider=payload.selected_provider if payload.provider_case_mode else none) }}"
                            hx-target="#alert-operations-active-registry"
                            hx-select="#alert-operations-active-registry"
                            hx-swap="outerHTML"
@@ -167,26 +167,24 @@
                         {% endfor %}
                     </select>
                 </label>
-                {% if not payload.provider_case_mode %}
-                    <label>
-                        <span class="{{ table_ui.filter_label_classes() }}">Source State</span>
-                        <select name="source_state" class="{{ table_ui.filter_select_classes() }}">
-                            {% for value, label in [('all','All Source States'),('firing','Firing'),('unknown','Source Unknown')] %}
-                                <option value="{{ value }}"
-                                        {% if payload.filters.source_state == value %}selected{% endif %}>{{ label }}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-                    <label>
-                        <span class="{{ table_ui.filter_label_classes() }}">Workflow</span>
-                        <select name="workflow" class="{{ table_ui.filter_select_classes() }}">
-                            {% for value, label in [('all','All Open States'),('open','Open'),('acknowledged','Acknowledged'),('mitigating','Mitigating')] %}
-                                <option value="{{ value }}"
-                                        {% if payload.filters.workflow == value %}selected{% endif %}>{{ label }}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-                {% endif %}
+                <label>
+                    <span class="{{ table_ui.filter_label_classes() }}">Source State</span>
+                    <select name="source_state" class="{{ table_ui.filter_select_classes() }}">
+                        {% for value, label in [('all','All Source States'),('firing','Firing'),('unknown','Source Unknown')] %}
+                            <option value="{{ value }}"
+                                    {% if payload.filters.source_state == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span class="{{ table_ui.filter_label_classes() }}">Workflow</span>
+                    <select name="workflow" class="{{ table_ui.filter_select_classes() }}">
+                        {% for value, label in [('all','All Open States'),('open','Open'),('acknowledged','Acknowledged'),('mitigating','Mitigating')] %}
+                            <option value="{{ value }}"
+                                    {% if payload.filters.workflow == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
             </form>
         </div>
         {% include 'intelligence/partials/_alert_ops_active_table.html' %}

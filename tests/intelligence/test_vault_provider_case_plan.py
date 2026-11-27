@@ -284,8 +284,14 @@ def test_absent_or_untrustworthy_source_never_resolves_case(store, condition):
         vault.enabled = False
         db.session.commit()
     result = _plan(binding, now=current)
-    assert result['status'] == ('unobserved' if condition == 'unobserved' else 'unavailable')
-    assert result['candidates'] is None
+    if condition == 'unobserved':
+        assert result['status'] == 'qualified'
+        assert result['candidate_count'] == 1
+        assert result['candidates'][0]['action'] == 'retain_unverified'
+        assert result['candidates'][0]['observed_source_state'] == 'unknown'
+    else:
+        assert result['status'] == 'unavailable'
+        assert result['candidates'] is None
     assert AlertCase.query.one().source_state == 'firing'
     assert AlertCaseEvent.query.count() == 0
 
@@ -387,3 +393,36 @@ def test_policy_ineligible_routing_marker_is_required_for_prior_vault_case(store
     case.routing_override_reason = 'policy_ineligible'
     db.session.commit()
     assert _plan(binding)['candidates'][0]['action'] == 'refresh_candidate'
+
+
+def test_empty_qualified_observation_does_not_create_a_case(store):
+    _vault, _source_identity, binding = _source()
+    _commit(binding, [])
+    result = _plan(binding)
+    assert result['status'] == 'unobserved'
+    assert result['candidates'] is None
+    assert AlertCase.query.count() == 0
+
+
+def test_empty_snapshot_never_reopens_closed_occurrence(store):
+    vault, source, binding = _source()
+    _commit(binding, [_alert(vault)])
+    key = _plan(binding)['candidates'][0]['case_key']
+    _case(vault, source, binding, key, closed=True)
+    later = AT + timedelta(minutes=1)
+    _commit(binding, [], now=later)
+    assert _plan(binding, now=later)['status'] == 'unobserved'
+    assert AlertCase.query.one().workflow_state == 'closed'
+
+
+def test_empty_snapshot_does_not_hide_foreign_case_collision(store):
+    vault, source, binding = _source()
+    _commit(binding, [_alert(vault)])
+    key = _plan(binding)['candidates'][0]['case_key']
+    _case(vault, source, binding, key)
+    foreign = _case(vault, source, binding, key)
+    foreign.domain = 'registry'
+    db.session.commit()
+    later = AT + timedelta(minutes=1)
+    _commit(binding, [], now=later)
+    assert _plan(binding, now=later)['status'] == 'blocked'

@@ -9,7 +9,7 @@
     "Zero open cases does not prove source health or worker reconciliation success."
 ] %}
 {% if payload.provider_case_mode %}
-    {% set guide_items = guide_items + ['Provider-origin cases require an exact independently approved instance grant. Only committed read-only evidence is qualified; source freshness, recovery, mutation and delivery remain unavailable.'] %}
+    {% set guide_items = guide_items + ['Provider-origin cases require an exact independently approved instance grant. Fresh matching committed observations are distinct from admitted case history; source absence never establishes recovery. Operator controls require separate opt-in and exact decision scope; delivery remains unavailable.'] %}
 {% elif not payload.snapshot.available %}
     {% set guide_items = guide_items + ['Committed Evidence Review Required: One or more managed assets have no committed inventory observation within 24 hours.'] %}
 {% endif %}
@@ -139,7 +139,13 @@
                 {% set blocked_state_icon = "shield-check" %}
                 {% set blocked_state_label = "Read-only" if payload.tab == 'overview' else "Reserved Plan" %}
                 {% set blocked_state_title = "Committed Provider Cases" if payload.tab == 'overview' else "Provider Lifecycle Not Qualified" %}
-                {% set blocked_state_description = "Review exact-instance committed cases in Active Alerts. Recovery, workflow mutations, notification routing, templates and silences are not qualified for this provider." %}
+                {% if payload.tab == 'resolved' %}
+                    {% set blocked_state_description = "Positive recovery evidence is not qualified for this source. Missing, empty, expired or unavailable observations never establish resolution." %}
+                {% elif payload.tab == 'overview' %}
+                    {% set blocked_state_description = "Review exact-instance committed cases in Active Alerts. The approved read grant does not qualify operator actions." %}
+                {% else %}
+                    {% set blocked_state_description = "Governed provider notification routing, templates and delivery silences are not qualified. Delivery remains suppressed." %}
+                {% endif %}
                 {% set blocked_state_action_url = url_for('alert_intelligence.index', domain=payload.domain, provider=payload.selected_provider, asset=payload.selected_asset_key, tab='active') %}
                 {% set blocked_state_action_label = "Review Active Cases" %}
                 {% include 'components/states/_blocked_state.html' %}
