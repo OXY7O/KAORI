@@ -229,3 +229,10 @@ def test_missing_real_authority_directory_denies(monkeypatch, tmp_path):
     monkeypatch.setattr(issuer_authority, '_AUTHORITY_DIR', tmp_path / 'missing')
     assert issuer_authority._read_authority_file('root.pub') is None
     assert issuer_authority._read_authority_file('../root.pub') is None
+
+
+def test_boolean_source_identity_cannot_match_integer_scope(authority_files):
+    files, scope, deployment_file, deployment, _, _, _, _ = authority_files
+    altered_scope = dict(deployment['scope'], instance_id=True)
+    files[deployment_file] = _envelope(deployment | {'scope': altered_scope})
+    assert issuer_authority.resolve_deployment_authority(scope, now=_NOW) is None

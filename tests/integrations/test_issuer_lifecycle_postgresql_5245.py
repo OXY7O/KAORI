@@ -12,18 +12,22 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, replace
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
+from importlib import import_module
 from threading import Barrier
 from uuid import uuid4
 
 import pytest
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from flask import Flask
-from sqlalchemy import create_engine, select, text
+from sqlalchemy import create_engine, inspect, select, text
 from sqlalchemy.orm import Session
 from sqlalchemy.schema import CreateSchema, DropSchema
 
 from app.access.scope_policy import CredentialIssuerScope
-from app.access.scoped_grants import ScopeGrantValidity, ScopedGrantRejected
+from app.access import scoped_grants
+from app.access.scoped_grants import ScopedGrantRejected, ScopeGrantValidity
 from app.extensions.db import db
 from app.integrations.secrets_management.secrets_pki.providers.credential_version_proof import canonical_statement
 from app.integrations.secrets_management.secrets_pki.providers.issuer_transit import (
@@ -70,27 +74,45 @@ def _setup(engine):
     )
     with engine.begin() as connection:
         db.Model.metadata.create_all(bind=connection, tables=tables)
-        connection.execute(Role.__table__.insert(), [
-            {'id': 1, 'name': 'issuer_fixture', 'display_name': 'Issuer fixture'},
-            {'id': 2, 'name': 'admin_fixture', 'display_name': 'Admin fixture'},
-        ])
+        connection.execute(
+            Role.__table__.insert(),
+            [
+                {'id': 1, 'name': 'issuer_fixture', 'display_name': 'Issuer fixture'},
+                {'id': 2, 'name': 'admin_fixture', 'display_name': 'Admin fixture'},
+            ],
+        )
         permissions = ('secrets_pki.view', _REQUEST, _APPROVE, _REVOKE, 'roles.manage', 'users.manage')
         for index, key in enumerate(permissions, start=1):
-            connection.execute(Permission.__table__.insert().values(
-                id=index, key=key, module=key.split('.')[0], action=key.split('.')[1]
-            ))
-            connection.execute(RolePermission.__table__.insert().values(
-                role_id=1 if index <= 4 else 2, permission_id=index
-            ))
-        connection.execute(User.__table__.insert(), [
-            {'id': index, 'username': f'fixture-{index}', 'email': f'{index}@fixture.invalid',
-             'role_id': 1 if index <= 2 else 2}
-            for index in range(1, 5)
-        ])
-        connection.execute(IntegrationInstance.__table__.insert().values(
-            id=1, integration_type='secrets_pki', provider_key='openbao', adapter_key='openbao',
-            name='issuer fixture', enabled=True, lifecycle_status='active', readiness_status='ready'
-        ))
+            connection.execute(
+                Permission.__table__.insert().values(id=index, key=key, module=key.split('.')[0], action=key.split('.')[1])
+            )
+            connection.execute(
+                RolePermission.__table__.insert().values(role_id=1 if index <= 4 else 2, permission_id=index)
+            )
+        connection.execute(
+            User.__table__.insert(),
+            [
+                {
+                    'id': index,
+                    'username': f'fixture-{index}',
+                    'email': f'{index}@fixture.invalid',
+                    'role_id': 1 if index <= 2 else 2,
+                }
+                for index in range(1, 5)
+            ],
+        )
+        connection.execute(
+            IntegrationInstance.__table__.insert().values(
+                id=1,
+                integration_type='secrets_pki',
+                provider_key='openbao',
+                adapter_key='openbao',
+                name='issuer fixture',
+                enabled=True,
+                lifecycle_status='active',
+                readiness_status='ready',
+            )
+        )
 
 
 @pytest.fixture
@@ -127,8 +149,9 @@ def issuer_store(monkeypatch):
                         assert connection.scalar(text('SELECT current_schema()')) == schema
                     _setup(engine)
                     now = datetime.now(UTC)
-                    transit = TransitIssuerBinding('openbao', 'https://fixture.invalid', 'fixture-cluster', '',
-                                                   'transit', 'issuer', 1, _KEY)
+                    transit = TransitIssuerBinding(
+                        'openbao', 'https://fixture.invalid', 'fixture-cluster', '', 'transit', 'issuer', 1, _KEY
+                    )
                     scope = CredentialIssuerScope(1, 'openbao', '', 'kv', 'a' * 64)
                     scope = replace(scope, deployment_ref=issuer_authority.deployment_identity_ref(scope, transit))
                     deployment = {
@@ -149,7 +172,8 @@ def issuer_store(monkeypatch):
                     }
                     monkeypatch.setattr(issuer_authority, '_read_authority_file', files.get)
                     monkeypatch.setattr(
-                        issuer_lifecycle, 'observe_transit_issuer',
+                        issuer_lifecycle,
+                        'observe_transit_issuer',
                         lambda binding, *, token: TransitIssuerObservation(binding, _PUBLIC.hex(), datetime.now(UTC)),
                     )
                     yield app, engine, scope, files
@@ -166,8 +190,11 @@ def issuer_store(monkeypatch):
 def _grant(store, actor, permission):
     now = datetime.now(UTC)
     intent = issuer_grants.IssuerGrantIntent(
-        store[2], actor, permission,
-        ScopeGrantValidity(now - timedelta(minutes=1), now + timedelta(minutes=30)), 'operational_access',
+        store[2],
+        actor,
+        permission,
+        ScopeGrantValidity(now - timedelta(minutes=1), now + timedelta(minutes=30)),
+        'operational_access',
     )
     policy = issuer_grants.request_issuer_grant(actor_user_id=3, intent=intent)
     issuer_grants.approve_issuer_grant(actor_user_id=4, policy_id=policy, expected_revision=1)
@@ -227,28 +254,32 @@ def test_governed_end_to_end_issuer_lifecycle_and_replay(issuer_store):
     revisions, challenges, events = _state(engine)
     assert revisions == ['draft', 'active', 'revoked']
     assert challenges == ['consumed']
-    assert events[-3:] == [
-        'secrets_pki_issuer_draft', 'secrets_pki_issuer_active', 'secrets_pki_issuer_revoked'
-    ]
+    assert events[-3:] == ['secrets_pki_issuer_draft', 'secrets_pki_issuer_active', 'secrets_pki_issuer_revoked']
 
 
 def test_independent_grant_approval_and_withdrawal(issuer_store):
     now = datetime.now(UTC)
     intent = issuer_grants.IssuerGrantIntent(
-        issuer_store[2], 1, _REQUEST,
-        ScopeGrantValidity(now - timedelta(minutes=1), now + timedelta(minutes=30)), 'operational_access',
+        issuer_store[2],
+        1,
+        _REQUEST,
+        ScopeGrantValidity(now - timedelta(minutes=1), now + timedelta(minutes=30)),
+        'operational_access',
     )
     policy_id = issuer_grants.request_issuer_grant(actor_user_id=3, intent=intent)
     with pytest.raises(ScopedGrantRejected):
         issuer_grants.approve_issuer_grant(actor_user_id=3, policy_id=policy_id, expected_revision=1)
     issuer_grants.approve_issuer_grant(actor_user_id=4, policy_id=policy_id, expected_revision=1)
+    with pytest.raises(ScopedGrantRejected):
+        scoped_grants.revoke_scope_grant(actor_user_id=3, policy_id=policy_id, expected_revision=2)
     issuer_grants.revoke_issuer_grant(actor_user_id=3, policy_id=policy_id, expected_revision=2)
     with Session(issuer_store[1]) as session:
         policy = session.get(ScopeAccessPolicy, policy_id)
         assert policy.current_revision == 3
-        assert session.scalars(select(ScopeAccessPolicyRevision.lifecycle_status).order_by(
-            ScopeAccessPolicyRevision.revision_number
-        )).all() == ['draft', 'active', 'revoked']
+        states = session.scalars(
+            select(ScopeAccessPolicyRevision.lifecycle_status).order_by(ScopeAccessPolicyRevision.revision_number)
+        ).all()
+        assert states == ['draft', 'active', 'revoked']
 
 
 @pytest.mark.parametrize('failure', ['signature', 'custody_removed', 'owner_grant_revoked'])
@@ -260,8 +291,9 @@ def test_approval_denial_leaves_draft_and_challenge_unchanged(issuer_store, fail
     elif failure == 'custody_removed':
         del issuer_store[3][f'custody-{intent.challenge_sha256}.json']
     else:
-        policy = ScopeAccessPolicy.query.filter_by(permission_key=_REQUEST).one()
-        issuer_grants.revoke_issuer_grant(actor_user_id=3, policy_id=policy.id, expected_revision=2)
+        with Session(engine) as reader:
+            policy_id = reader.scalars(select(ScopeAccessPolicy.id).where(ScopeAccessPolicy.permission_key == _REQUEST)).one()
+        issuer_grants.revoke_issuer_grant(actor_user_id=3, policy_id=policy_id, expected_revision=2)
     before = _state(engine)
     with pytest.raises(issuer_lifecycle.IssuerLifecycleDenied):
         _approve(intent)
@@ -325,3 +357,84 @@ def test_competing_real_service_approvals_have_one_winner(issuer_store, monkeypa
     assert revisions == ['draft', 'active']
     assert challenges == ['consumed']
     assert events.count('secrets_pki_issuer_active') == 1
+
+
+def test_scope_migration_roundtrip_preserves_legacy_rows_and_refuses_history_loss(issuer_store):
+    engine = issuer_store[1]
+    migration = import_module('migrations.versions.20261127_issuer_admin_scope')
+    table = ScopeAccessPolicy.__table__
+    now = datetime.now(UTC)
+    with engine.begin() as connection:
+        with Operations.context(MigrationContext.configure(connection)):
+            migration.downgrade()
+            assert 'issuer_deployment_ref' not in {
+                column['name'] for column in inspect(connection).get_columns(table.name)
+            }
+            connection.execute(
+                text(
+                    "INSERT INTO access_scope_policies "
+                    "(id, principal_user_id, permission_key, integration_instance_id, scope_level, "
+                    "provider_namespace, mount, current_revision, created_at, updated_at) "
+                    "VALUES (:id, 1, 'secrets_pki.view', 1, 'instance', NULL, NULL, 1, :now, :now)"
+                ),
+                {'id': str(uuid4()), 'now': now},
+            )
+            migration.upgrade()
+        assert connection.scalar(select(table.c.issuer_deployment_ref)) is None
+        checks = {item['name'] for item in inspect(connection).get_check_constraints(table.name)}
+        assert 'ck_access_scope_policy_issuer_target' in checks
+    _grant(issuer_store, 1, _REQUEST)
+    with engine.begin() as connection:
+        with Operations.context(MigrationContext.configure(connection)):
+            with pytest.raises(RuntimeError, match='must be retained'):
+                migration.downgrade()
+        assert 'issuer_deployment_ref' in {column['name'] for column in inspect(connection).get_columns(table.name)}
+
+
+def test_competing_approval_and_revocation_only_one_terminal_transition(issuer_store, monkeypatch):
+    intent = _enroll(issuer_store)
+    app, engine = issuer_store[:2]
+    barrier = Barrier(2)
+
+    def observe(binding, *, token):
+        barrier.wait(timeout=5)
+        return TransitIssuerObservation(binding, _PUBLIC.hex(), datetime.now(UTC))
+
+    monkeypatch.setattr(issuer_lifecycle, 'observe_transit_issuer', observe)
+
+    def approve():
+        with app.app_context():
+            try:
+                return _approve(intent)
+            except issuer_lifecycle.IssuerLifecycleDenied:
+                return None
+
+    def revoke():
+        with app.app_context():
+            barrier.wait(timeout=5)
+            try:
+                return issuer_lifecycle.revoke_issuer_enrollment(
+                    actor_id=2, scope=intent.scope, expected_revision=1
+                )
+            except issuer_lifecycle.IssuerLifecycleDenied:
+                return None
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        approval = pool.submit(approve)
+        revocation = pool.submit(revoke)
+        results = [approval.result(timeout=25), revocation.result(timeout=25)]
+    assert results.count(2) == results.count(None) == 1
+    revisions, challenges, events = _state(engine)
+    assert (revisions, challenges) in (
+        (['draft', 'active'], ['consumed']),
+        (['draft', 'revoked'], ['revoked']),
+    )
+    assert events.count('secrets_pki_issuer_active') + events.count('secrets_pki_issuer_revoked') == 1
+
+
+def test_prior_caller_transaction_cannot_be_committed_with_issuer_grant(issuer_store):
+    scope = issuer_store[2]
+    db.session.execute(text('SELECT 1'))
+    with pytest.raises(issuer_lifecycle.IssuerLifecycleDenied):
+        issuer_lifecycle.revoke_issuer_enrollment(actor_id=2, scope=scope, expected_revision=1)
+    assert _state(issuer_store[1])[:2] == ([], [])

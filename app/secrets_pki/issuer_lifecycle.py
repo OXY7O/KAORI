@@ -90,7 +90,13 @@ def _digest(value: object) -> bool:
 
 def begin_issuer_transaction() -> None:
     session = db.session()
-    if session.new or session.dirty or session.deleted or db.engine.dialect.name != 'postgresql':
+    if (
+        session.in_transaction()
+        or session.new
+        or session.dirty
+        or session.deleted
+        or db.engine.dialect.name != 'postgresql'
+    ):
         raise _deny()
     if session.execute(text('SHOW transaction_isolation')).scalar_one() != 'read committed':
         raise _deny()
@@ -174,7 +180,7 @@ def _observe(
     scope: CredentialIssuerScope, token: str, *, actor: int, permission: str
 ) -> tuple[DeploymentAuthority, TransitIssuerObservation]:
     # No provider request occurs under the protected writer's SQL locks.
-    if db.session().new or db.session().dirty or db.session().deleted:
+    if db.session().in_transaction():
         raise _deny()
     try:
         begin_issuer_transaction()
@@ -349,6 +355,10 @@ def request_issuer_enrollment(*, actor_id: int, intent: IssuerEnrollmentIntent, 
         ):
             raise _deny()
         latest = _latest(intent.scope)
+        now = datetime.now(UTC)
+        authority = _revalidate(authority, observation, now)
+        if grant.expires_at is None or grant.expires_at <= now or intent.effective_until <= now:
+            raise _deny()
         draft = _revision(intent.scope, latest=latest, actor=actor_id, state='draft', now=now)
         draft.public_key_hex = observation.public_key_hex
         draft.key_sha256 = authority.transit.key_sha256
@@ -357,6 +367,10 @@ def request_issuer_enrollment(*, actor_id: int, intent: IssuerEnrollmentIntent, 
         draft.effective_until = intent.effective_until
         draft.evidence_ref = _evidence(authority.evidence_ref, _grant_ref(grant))
         _append(source, latest, draft, intent.expected_revision, now)
+        current = datetime.now(UTC)
+        _revalidate(authority, observation, current)
+        if min(grant.expires_at, draft.effective_until) <= current:
+            raise _deny()
         issued = _new_challenge(intent.scope, draft, now)
         _audit(draft, grant)
         db.session.commit()
@@ -454,6 +468,10 @@ def approve_issuer_enrollment(*, actor_id: int, intent: IssuerApprovalIntent, in
             or min(grant.expires_at, owner_grant.expires_at) <= now
         ):
             raise _deny()
+        now = datetime.now(UTC)
+        authority = _revalidate(authority, observation, now)
+        if min(grant.expires_at, owner_grant.expires_at) <= now or latest.effective_until <= now:
+            raise _deny()
         challenge, custody_ref, possession_ref = _approve_challenge(intent, authority, observation, now)
         if challenge.key_sha256 != latest.key_sha256 or challenge.source_owner_id != latest.requested_by_user_id:
             raise _deny()
@@ -462,6 +480,18 @@ def approve_issuer_enrollment(*, actor_id: int, intent: IssuerApprovalIntent, in
             authority.evidence_ref, custody_ref, possession_ref, _grant_ref(grant), _grant_ref(owner_grant)
         )
         _append(source, latest, active, intent.expected_revision, now)
+        current = datetime.now(UTC)
+        _revalidate(authority, observation, current)
+        custody = resolve_custody_authority(
+            _challenge(intent.scope, challenge), checker_id=actor_id, observation=observation, now=current
+        )
+        if (
+            custody is None
+            or custody.deployment != authority
+            or custody.evidence_ref != custody_ref
+            or min(grant.expires_at, owner_grant.expires_at, active.effective_until) <= current
+        ):
+            raise _deny()
         _audit(active, grant)
         revision = active.revision_number
         db.session.commit()

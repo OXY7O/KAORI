@@ -363,3 +363,20 @@ flush rollback and competing independent application contexts. Only the
 operator filesystem and provider network observation are substituted with
 synthetic fixtures. Source tests do not substitute for successful CI or
 actual provider/ceremony UAT.
+
+
+#### Consolidated source audit
+
+All issuer lifecycle and issuer-specific grant mutations require a clean
+service-owned PostgreSQL transaction; an existing caller transaction cannot
+be committed by an issuer operation. The generic Access revoke path rejects
+issuer scopes, so the issuer-specific grant writer owns the shared lock.
+Recheck evidence, observation age and grant/issuer validity after row locks;
+for activation re-read the exact custody receipt before staging audit.
+Signed scope comparisons use canonical encoding (boolean IDs cannot equal
+integer IDs). Test the actual scope migration downgrade/upgrade against
+legacy policy rows, retained-history downgrade refusal, generic grant revoke
+denial, and service approval/revocation contention. External authority
+publication and native observation remain outside PostgreSQL's transaction;
+actual monotonic publication, revocation and deployment UAT are still
+mandatory and cannot be inferred from a successful database transaction.

@@ -186,12 +186,23 @@ def _deployment_fields(payload: dict[str, object], scope: CredentialIssuerScope)
         'expires_at',
     }:
         return None
-    if payload['scope'] != asdict(scope) or not isinstance(payload['transit'], dict):
+    if canonical_statement({'scope': payload['scope']}) != canonical_statement({'scope': asdict(scope)}):
         return None
-    try:
-        transit = TransitIssuerBinding(**payload['transit'])
-    except TypeError:
+    if not isinstance(payload['transit'], dict):
         return None
+    fields = payload['transit']
+    if set(fields) != {
+        'provider_key',
+        'endpoint',
+        'cluster_id',
+        'namespace',
+        'transit_mount',
+        'key_name',
+        'key_version',
+        'key_sha256',
+    }:
+        return None
+    transit = TransitIssuerBinding(**fields)
     if (
         not valid_transit_binding(transit)
         or transit.provider_key != scope.provider_key

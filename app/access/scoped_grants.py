@@ -277,7 +277,11 @@ def revoke_scope_grant(
     require_scope_grant_administrator(actor_user_id)
     try:
         policy, current = _lock_current(policy_id)
-        if expected_revision != policy.current_revision or current.lifecycle_status != 'active':
+        if (
+            policy.scope_level == 'credential_issuer'
+            or expected_revision != policy.current_revision
+            or current.lifecycle_status != 'active'
+        ):
             raise ScopedGrantRejected('Scoped grant is not active or revision has changed.')
         revision = ScopeAccessPolicyRevision()
         revision.policy_id = policy.id
