@@ -35,7 +35,7 @@
     'resolved': 'Review recovery evidence, verification, and case closure.'
     }.get(payload.tab, 'Review alert operations and committed evidence.'),
     'shield-alert',
-    ('Scoped Cases' if payload.provider_case_status == 'ready' else 'Scope or Evidence Required') if payload.provider_case_mode else payload.summary.active ~ ' Active',
+    (('Local UAT' if payload.local_case_reconcile else 'Scoped Cases') if payload.provider_case_status == 'ready' else 'Scope or Evidence Required') if payload.provider_case_mode else payload.summary.active ~ ' Active',
     'warning' if payload.provider_case_mode or payload.summary.active else 'normal',
     title_extra=workspace_guide
     ) %}

@@ -11,13 +11,18 @@ from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
 from wtforms.validators import ValidationError
 
-from app.intelligence.alert_intelligence.vault_operator_service import load_operator_controls, resolve_operator_binding
-from app.intelligence.alert_intelligence.vault_provider_admission import _ENABLE_ENV
+from app.intelligence.alert_intelligence.vault_operator_service import (
+    load_operator_controls,
+    reconcile_local_provider_cases,
+    resolve_operator_binding,
+)
+from app.intelligence.alert_intelligence.vault_provider_admission import (
+    _ENABLE_ENV,
+    _WEB_ENABLE_ENV,
+    local_reconcile_enabled,
+)
 from app.intelligence.alert_intelligence.vault_provider_operator import apply_vault_provider_operator_action
 from app.platform_operations.notifications.service import create_transient_feedback
-
-_WEB_ENABLE_ENV = 'KAORI_VAULT_PROVIDER_CASE_OPERATOR_WEB_ENABLED'
-
 
 def _enabled() -> bool:
     return os.getenv(_ENABLE_ENV) == 'true' and os.getenv(_WEB_ENABLE_ENV) == 'true'
@@ -99,6 +104,50 @@ def operator_action_response(public_id: str) -> ResponseReturnValue:
         provider='vault',
         asset=instance_id,
         tab='active',
+    )
+    if request.headers.get('HX-Request') == 'true':
+        response = make_response('', 200)
+        response.headers['HX-Redirect'] = destination
+        return response
+    return redirect(destination, code=303)
+
+
+def local_reconcile_response() -> ResponseReturnValue:
+    """Explicit local action on committed evidence; no provider request or delivery."""
+    if not local_reconcile_enabled():
+        abort(404)
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError:
+        abort(400)
+    if set(request.form) != {'csrf_token', 'instance_id'} or any(
+        len(request.form.getlist(key)) != 1 for key in request.form
+    ):
+        abort(400)
+    actor_id = getattr(current_user, 'id', None)
+    instance_id = _positive(request.form.get('instance_id'))
+    if type(actor_id) is not int or instance_id is None:
+        abort(404)
+    result = reconcile_local_provider_cases(actor_id=actor_id, instance_id=instance_id)
+    status = result['status']
+    if status in {'forbidden', 'disabled'}:
+        abort(404)
+    committed = status == 'committed'
+    unchanged = status == 'unchanged'
+    if committed:
+        message = f"Committed cases: {result['created']} created, {result['refreshed']} refreshed."
+    elif unchanged:
+        message = 'No changes were required by the committed observation.'
+    else:
+        message = 'No cases changed. Review the exact source binding, fresh evidence and admission limits.'
+    create_transient_feedback(
+        status='success' if committed or unchanged else 'warning',
+        title='Local case reconciliation',
+        message=message,
+        queue_feedback=True,
+    )
+    destination = url_for(
+        'alert_intelligence.index', domain='secrets_pki', provider='vault', asset=instance_id, tab='active'
     )
     if request.headers.get('HX-Request') == 'true':
         response = make_response('', 200)

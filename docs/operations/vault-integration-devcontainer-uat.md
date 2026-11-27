@@ -163,35 +163,21 @@ database containing real provider connections.
    Use bounded validity and a separate approver. No direct policy SQL inserts,
    implicit Super Admin permits or automatic grant activation.
 4. After local review of that scope and explicit operator approval, run the
-   existing manual `secrets_pki.vault_alerts.observe` job, and inspect its
-   committed result. No direct provider call from the UI. The internal
-   admission command is a separate manual action; it does not collect data or
-   dispatch notifications. In the isolated workspace shell, use the explicit
-   local opt-in:
-
-   ```bash
-   APP_ENV=development KAORI_VAULT_PROVIDER_CASE_ADMISSION_ENABLED=true flask --app app shell
-   ```
-
-   ```python
-   from app.intelligence.alert_intelligence.vault_provider_admission import admit_vault_provider_cases
-   # Supply the approved disposable binding ID and the actual authorized actor ID.
-   # Do not substitute a different user's ID or create a grant to bypass review.
-   result = admit_vault_provider_cases(binding_id=binding_id, actor_user_id=actor_id)
-   print(result)
-   ```
-
-   The placeholders must be assigned from the approved local test inventory.
-   The result exposes only status/created/refreshed. An empty first observation
-   is unchanged, not recovered. Refresh an expired observation before retrying.
-5. Review Intelligence → Alert Intelligence → Secrets & PKI → HashiCorp Vault →
-   approved instance → Overview / Active. The default read UI is available
-   with the exact read grant. Only for the approved local operator-action UAT,
-   start/restart the existing local web process with both
+   existing manual `secrets_pki.vault_alerts.observe` job and inspect its
+   committed result. The browser does not call the provider directly.
+5. For the approved local operator UAT only, start/restart the existing
+   Dev Container web process with `APP_ENV=development` and both
    `KAORI_VAULT_PROVIDER_CASE_ADMISSION_ENABLED=true` and
-   `KAORI_VAULT_PROVIDER_CASE_OPERATOR_WEB_ENABLED=true` in its environment.
-   A shell export alone does not change a running web process. Do not set these
-   in shared or deployed environments. Remove them after the local review.
+   `KAORI_VAULT_PROVIDER_CASE_OPERATOR_WEB_ENABLED=true`. A shell export
+   alone does not change a running web process. Do not set these in shared
+   or deployed environments. Remove them after the local review.
+   Navigate to Intelligence → Alert Intelligence → Secrets & PKI →
+   HashiCorp Vault → approved instance → Active, then select
+   **Reconcile Cases (Local UAT)**. The action requires both independent
+   exact instance grants and the four role permissions above. It only
+   admits existing committed observations, never collects provider data
+   or dispatches delivery. An empty first observation is unchanged, not
+   recovered. Refresh an expired observation before retrying.
 6. With fresh admitted firing, review, acknowledge, assign/unassign an
    eligible owner explicitly, then mark as mitigating as the assigned owner.
    Refresh the observation and admit again before its freshness deadline.

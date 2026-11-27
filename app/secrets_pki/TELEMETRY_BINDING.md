@@ -463,3 +463,22 @@ The HTTP adapter performs feature gating, authenticated actor extraction, CSRF/f
 ### Local review usability (#5229)
 
 The central provider overview now renders only scoped admitted-case counts (active, critical severity, fresh firing, unknown); it does not substitute counts for source health. Lifecycle readiness separates observation, conditional operator workflow, unavailable positive recovery and suppressed delivery. The scoped detail shows a generic controls-unavailable state rather than silently hiding the action section; the legacy read-only detail links to the exact central context. Unavailable owner selection cannot submit an implicit unassign. A qualified first empty observation with no actionable prior case is a successful no-op, not recovery or source outage. No runtime capability is enabled by these changes.
+
+### Local Dev Container case reconciliation (#5229 / #2227)
+
+The central Alert Intelligence Active queue offers **Reconcile Cases (Local
+UAT)** only for an authorized Vault instance when explicit APP_ENV=development
+matches application configuration and both existing admission/operator web
+opt-ins are true. The authenticated actor must have all four explicit role
+permissions (intelligence.view, intelligence.decisions.create,
+secrets_pki.view, secrets_pki.sync) and independently approved exact-instance
+read and decision grants. The POST accepts only CSRF and the selected instance,
+resolves the unique active Alert Source and rechecks exact identity, locked
+role membership, grants and committed source generation in the owning
+admission transaction. Existing audit, capacity and deduplication rules
+remain authoritative. Reconciling the queue is not a provider refresh.
+There is no provider call, notification delivery, recovery inference or
+automatic scheduler. A production config cannot enable this local route.
+Only use a disposable Dev Container database and approved source fixtures;
+leave both opt-ins disabled elsewhere. Local functional/visual validation
+and official staging admission are pending.

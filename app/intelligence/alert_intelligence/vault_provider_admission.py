@@ -1,7 +1,8 @@
 """Opt-in internal Vault provider AlertCase admission using existing KAORI lifecycle.
 
-Not wired to HTTP, Celery, dashboards, routing or notifications. The
-read-only candidate planner and source identity remain authoritative.
+No production HTTP, Celery, routing or notification caller. The explicit
+Dev Container reconciliation path adds exact operator authorization; the
+committed planner and source identity remain authoritative.
 """
 
 from __future__ import annotations
@@ -10,10 +11,15 @@ import os
 from datetime import UTC, datetime
 from typing import Any, cast
 
+from flask import current_app, has_app_context
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.access.scope_policy import evaluate_exact_vault_instance_case_scope
+from app.access.scope_policy import (
+    evaluate_exact_vault_instance_case_scope,
+    evaluate_exact_vault_instance_operator_scope,
+    lock_explicit_permissions,
+)
 from app.extensions.db import db
 from app.intelligence.alert_intelligence.vault_provider_plan import (
     _CASE_KEY_RE,
@@ -37,6 +43,7 @@ from app.models.integration import IntegrationBinding
 from app.models.user import User
 
 _ENABLE_ENV = 'KAORI_VAULT_PROVIDER_CASE_ADMISSION_ENABLED'
+_WEB_ENABLE_ENV = 'KAORI_VAULT_PROVIDER_CASE_OPERATOR_WEB_ENABLED'
 _MAX_CREATE = 10
 _MAX_PLAN = 2 * _MAX_CASES
 _REQUIRED_PERMISSIONS = (
@@ -45,6 +52,17 @@ _REQUIRED_PERMISSIONS = (
     'secrets_pki.sync',
     'secrets_pki.view',
 )
+
+
+def local_reconcile_enabled() -> bool:
+    """Temporary local UAT boundary; never enabled by a production config."""
+    return (
+        has_app_context()
+        and os.getenv('APP_ENV') == 'development'
+        and current_app.config.get('APP_ENV') == 'development'
+        and os.getenv(_ENABLE_ENV) == 'true'
+        and os.getenv(_WEB_ENABLE_ENV) == 'true'
+    )
 
 
 def _result(status: str, *, created: int = 0, refreshed: int = 0) -> dict[str, int | str]:
@@ -290,20 +308,40 @@ def _apply_qualified_case_candidates(
     return changed_create, changed_refresh
 
 
+def _admission_scope(
+    actor_id: int, binding: IntegrationBinding, instant: datetime, local_instance_id: int | None
+) -> bool:
+    instance_id = int(binding.asset_key)
+    if local_instance_id is None:
+        return evaluate_exact_vault_instance_case_scope(
+            actor_user_id=actor_id, instance_id=instance_id, now=instant
+        ).allowed
+    if type(local_instance_id) is not int or local_instance_id != instance_id:
+        return False
+    if not lock_explicit_permissions(actor_id, set(_REQUIRED_PERMISSIONS)):
+        return False
+    return evaluate_exact_vault_instance_operator_scope(
+        actor_user_id=actor_id, instance_id=instance_id, now=instant
+    ).allowed
+
+
 def admit_vault_provider_cases(
     *,
     binding_id: int,
     actor_user_id: int,
     now: datetime | None = None,
+    local_instance_id: int | None = None,
 ) -> dict[str, int | str]:
     """Explicit, opt-in standalone transaction; firing/unknown only, never recovery.
 
-    IMPORTANT: this internal command intentionally has no production caller.
-    Approval to invoke must follow #724 resource-level review and UAT.
+    The internal command has no production caller. A local HTTP caller must
+    supply its exact instance and pass the independent operator grant gate.
     A binding row lock serializes same-source admission on PostgreSQL;
     the existing AlertCase model is reused, never duplicated.
     """
     if os.getenv(_ENABLE_ENV) != 'true':
+        return _result('disabled')
+    if local_instance_id is not None and not local_reconcile_enabled():
         return _result('disabled')
     instant = _utc(now or datetime.now(UTC))
     if instant is None or type(binding_id) is not int or binding_id < 1:
@@ -329,12 +367,8 @@ def admit_vault_provider_cases(
         # Scope is a separate mandatory, row-locked authorization decision.
         # Neither global RBAC, Super Admin nor a Vault mount grant admits
         # writes to a different Vault instance.
-        scope = evaluate_exact_vault_instance_case_scope(
-            actor_user_id=actor_user_id,
-            instance_id=int(binding.asset_key),
-            now=instant,
-        )
-        if not scope.allowed:
+        scope = _admission_scope(actor_user_id, binding, instant, local_instance_id)
+        if not scope:
             db.session.rollback()
             return _result('forbidden')
         # Lock the exact source generation while the planner and case writes
