@@ -500,17 +500,25 @@ def test_access_user_and_reset_password_fields_keep_explicit_labels() -> None:
     assert 'data-operation-submit' in reset_form
 
 
-def test_account_identity_overview_guide_preserves_credential_and_lifecycle_authority() -> None:
+def test_user_directory_guide_preserves_credential_and_lifecycle_authority() -> None:
     from jinja2 import Environment
 
-    source = read('app/templates/access/users/partials/_summary_cards.html')
+    summary = read('app/templates/access/users/partials/_summary_cards.html')
+    source = read('app/templates/access/users/partials/_directory.html')
+    Environment().parse(summary)
     Environment().parse(source)
+    assert 'info_tip.render(' not in summary
     assert '{% import "components/info_tip.html" as info_tip %}' in source
-    assert source.count("info_tip.render('account-identity-posture-guide'") == 1
-    assert source.index('>Account &amp; Identity Posture</h2>') < source.index(
-        "info_tip.render('account-identity-posture-guide'"
-    )
-    assert "variant='guide'" in source
+    assert source.count('info_tip.render(') == 1
+    title_group = source.split('<div class="flex flex-wrap items-center gap-2">', 1)[1].split('</div>', 1)[0]
+    heading_position = title_group.index('>User Directory</h2>')
+    results_position = title_group.index('table_label.result_count(pagination.total_items)')
+    guide_position = title_group.index("info_tip.render('user-directory-guide'")
+    assert heading_position < results_position < guide_position
+    assert "variant='guide'" in title_group
+    assert "placement='right'" in title_group
+    assert 'surface_ui.block_classes(allow_overflow=true)' in source
+    assert 'overflow-x-auto' in read('app/templates/access/users/partials/_table.html')
     for meaning in (
         'Directory and SSO providers own upstream credentials',
         'last active Super Admin is protected',

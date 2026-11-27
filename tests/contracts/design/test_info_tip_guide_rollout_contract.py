@@ -29,7 +29,7 @@ TITLE_GUIDE_TEMPLATES = (
     'access/activity_audit/partials/_activity_summary_cards.html',
     'access/permissions/index.html',
     'access/roles/index.html',
-    'access/users/partials/_summary_cards.html',
+    'access/users/partials/_directory.html',
     'access/identity_providers/form.html',
     'access/identity_providers/partials/_overview.html',
     'access/identity_providers/partials/_sso_configuration.html',
@@ -81,12 +81,13 @@ def test_title_level_guides_use_canonical_variant_and_preserve_scope() -> None:
     wrapper = _read('kubernetes/tenant/partials/_tenant_namespace_access_workspace.html')
     assert 'kubernetes/tenant/partials/_namespace_access_registry.html' in wrapper
 
-    # Overview owns one Guide per capability, not duplicate Guides in its registries.
+    # Each Access capability owns one Guide, with User Directory owning its registry Guide.
     for template in (
         'access/activity_audit/partials/_activity_table_card.html',
         'access/activity_audit/partials/_administrative_evidence.html',
         'access/identity_providers/partials/_registry.html',
         'access/identity_providers/partials/_directory_provisioning_strip.html',
+        'access/users/partials/_summary_cards.html',
     ):
         assert 'info_tip.render(' not in _read(template), template
 
