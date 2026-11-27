@@ -165,3 +165,25 @@ activation, worker material delivery, live policy change or production activatio
 is admitted. OpenBao-specific runtime history uses the canonical identity to
 avoid cross-provider record-ID collisions. Local tests, migration rehearsal,
 real provider UAT and official admission remain mandatory before promotion.
+
+## Local metadata inventory (#5203 / #5204)
+
+The local operator may collect one independently approved disposable KV v2
+mount on an exact registered OpenBao connection. Set
+`KAORI_LOCAL_OPENBAO_INVENTORY_PROVIDER_ID` to its canonical integration ID
+and `KAORI_LOCAL_OPENBAO_INVENTORY_MOUNT` to the independently approved
+mount, with the existing explicit development mode and provider-specific
+TLS/CA/allowlist. Run `flask collect-openbao-inventory --help`. Supply the
+short-lived non-root metadata token at the hidden prompt; its policy must be
+limited to lookup-self, sys/mounts and LIST/GET on the approved metadata
+mount, never KV data, Transit signing or administration. No mount/policy is
+created. The scope, pinned native cluster UUID, exact KV v2 engine, token and
+local registration are checked before/after the bounded metadata-only scan.
+The commit requalifies the exact connection under lock and uses the existing
+atomic SecretIdentity, SecretProviderRepresentation, SecretVersionObservation
+and collection-state reconciliation, plus mandatory Activity Audit.
+A failed scan retains history as stale/failed if the exact source remains
+eligible; no partial snapshot is committed. OpenBao Detail shows counts and
+timestamps only. Credential type, signed version proof, independent host
+trust and worker use remain separate; metadata does not mark the integration
+ready. No global Secret Detail exposure or provider access from GET.

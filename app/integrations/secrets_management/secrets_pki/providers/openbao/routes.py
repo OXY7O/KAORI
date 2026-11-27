@@ -9,6 +9,7 @@ from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import permission_required
 from app.integrations.secrets_management.secrets_pki.providers.openbao.forms import OpenBaoConnectionForm
+from app.integrations.secrets_management.secrets_pki.providers.openbao.inventory import local_inventory_summary
 from app.integrations.secrets_management.secrets_pki.providers.openbao.service import (
     get_connection,
     list_connections,
@@ -80,7 +81,8 @@ def detail(instance_id: int) -> ResponseReturnValue:
         for operation in ('full_validation', 'runtime_refresh')
     }
     return render_template(
-        'integrations/secrets_management/openbao/detail.html', row=row, active=active, history=runtime_history(row)
+        'integrations/secrets_management/openbao/detail.html',
+        row=row, active=active, history=runtime_history(row), inventory=local_inventory_summary(row.integration_instance_id),
     )
 
 

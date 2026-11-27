@@ -14,9 +14,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.extensions.db import db
-from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import (
+from app.integrations.secrets_management.secrets_pki.providers.kv2_metadata import (
     KV2CollectionEvidence,
     parse_approved_kv2_mounts,
+)
+from app.integrations.secrets_management.secrets_pki.providers.openbao.inventory_scope import (
+    LocalOpenBaoInventoryScope,
+    require_local_inventory_source,
 )
 from app.models.integration import IntegrationInstance
 from app.models.secrets_pki import (
@@ -26,6 +30,7 @@ from app.models.secrets_pki import (
     SecretVersionObservation,
 )
 from app.models.vault import VaultInstance
+from app.platform_operations.notifications.service import stage_operational_activity
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,6 +85,22 @@ def commit_kv2_inventory(
     authorization, and provider access. This function enforces a second source
     eligibility boundary, a per-mount database lock and all-or-nothing commit.
     """
+    return _commit_inventory(integration_instance_id, evidence)
+
+
+def commit_local_openbao_inventory(
+    scope: LocalOpenBaoInventoryScope, evidence: KV2CollectionEvidence
+) -> KV2CommitSummary:
+    """Local operator-only metadata observation; never operational credential authority."""
+    if scope.mount != evidence.mount:
+        raise ValueError('OpenBao collection scope mismatch.')
+    return _commit_inventory(scope.instance_id, evidence, openbao_scope=scope)
+
+
+def _commit_inventory(
+    integration_instance_id: int, evidence: KV2CollectionEvidence, *,
+    openbao_scope: LocalOpenBaoInventoryScope | None = None,
+) -> KV2CommitSummary:
     _validate_kv2_collection_evidence(evidence)
 
     # Serialize provider configuration admission with concurrent Vault edits:
@@ -90,15 +111,21 @@ def commit_kv2_inventory(
         identity = db.session.execute(
             select(IntegrationInstance).where(IntegrationInstance.id == integration_instance_id).with_for_update()
         ).scalar_one_or_none()
-        instance = db.session.execute(
-            select(VaultInstance)
-            .where(VaultInstance.integration_instance_id == integration_instance_id)
-            .with_for_update(of=VaultInstance)
-        ).scalar_one_or_none()
-        if identity is None or instance is None or not _is_eligible_kv2_source(identity, instance, evidence.mount):
-            raise ValueError('The Vault provider and metadata mount are not eligible for committed reconciliation.')
-
-        namespace = instance.namespace or ''
+        if identity is None:
+            raise ValueError('The canonical provider is unavailable.')
+        if openbao_scope is None:
+            instance = db.session.execute(
+                select(VaultInstance)
+                .where(VaultInstance.integration_instance_id == integration_instance_id)
+                .with_for_update(of=VaultInstance)
+            ).scalar_one_or_none()
+            if instance is None or not _is_eligible_kv2_source(identity, instance, evidence.mount):
+                raise ValueError('The Vault provider and metadata mount are not eligible for committed reconciliation.')
+            namespace = instance.namespace or ''
+        else:
+            require_local_inventory_source(openbao_scope, identity=identity, lock=True)
+            namespace = ''
+        provider_key = identity.provider_key
         if len(namespace) > 255 or any(len(row.path) > 1024 or row.mount != evidence.mount for row in evidence.records):
             raise ValueError('KV v2 representation scope exceeds supported bounds.')
 
@@ -136,6 +163,8 @@ def commit_kv2_inventory(
             )
             .all()
         )
+        if any(row.provider_key != provider_key for row in existing_rows):
+            raise ValueError('Committed representation provider identity differs.')
         existing = {row.path: row for row in existing_rows}
         digests = {row.path_sha256: row.path for row in existing_rows}
         if existing_rows and not evidence.records:
@@ -155,7 +184,7 @@ def commit_kv2_inventory(
                 representation = SecretProviderRepresentation()
                 representation.secret_identity = identity
                 representation.integration_instance_id = integration_instance_id
-                representation.provider_key = 'vault'
+                representation.provider_key = provider_key
                 representation.provider_namespace = namespace
                 representation.mount = evidence.mount
                 representation.path = record.path
@@ -197,6 +226,16 @@ def commit_kv2_inventory(
         state.last_observed_at = evidence.observed_at
         state.last_committed_at = committed
         state.last_error = None
+        if openbao_scope is not None:
+            stage_operational_activity(
+                user_id=None,
+                event_type='openbao_local_inventory_observed',
+                status='success',
+                title='OpenBao metadata inventory observed',
+                message='Local metadata-only inventory generation committed; credential use remains blocked.',
+                metadata={'integration_instance_id': integration_instance_id, 'observed_count': len(evidence.records)},
+                delivery_policy='audit_only',
+            )
         db.session.commit()
     except Exception:
         db.session.rollback()
