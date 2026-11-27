@@ -13,7 +13,7 @@ import os
 import re
 import stat
 from dataclasses import asdict, dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from hashlib import sha256
 from pathlib import Path
 
