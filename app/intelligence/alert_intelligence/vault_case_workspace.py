@@ -17,7 +17,10 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.access.scope_policy import evaluate_exact_vault_instance_case_scope
 from app.common.pagination import paginate_sequence
 from app.extensions.db import db
-from app.intelligence.alert_intelligence.vault_provider_operator import admitted_operator_workflow_qualified
+from app.intelligence.alert_intelligence.vault_provider_operator import (
+    _latest_event_id,
+    admitted_operator_workflow_qualified,
+)
 from app.intelligence.alert_intelligence.vault_provider_plan import (
     _CASE_KEY_RE,
     _PROFILE,
@@ -270,24 +273,31 @@ def vault_case_details_response(
     if instance_id is None or not _admit_read(instance_id):
         abort(404)
     try:
-        row = AlertCase.query.filter(
-            AlertCase.public_id == public_id,
-            AlertCase.domain == 'secrets_pki',
-            AlertCase.asset_type == 'vault_instance',
-            AlertCase.source_type == 'provider_alert',
-            AlertCase.asset_key == str(instance_id),
-        ).first()
-        if (
-            row is None
-            or not _case_qualified(row, instance_id=instance_id)
-        ):
+        row = (
+            AlertCase.query.filter(
+                AlertCase.public_id == public_id,
+                AlertCase.domain == 'secrets_pki',
+                AlertCase.asset_type == 'vault_instance',
+                AlertCase.source_type == 'provider_alert',
+                AlertCase.asset_key == str(instance_id),
+            )
+            .populate_existing()
+            .with_for_update(of=AlertCase)
+            .first()
+        )
+        if row is None or not _case_qualified(row, instance_id=instance_id):
             db.session.rollback()
             abort(404)
         public_case = _safe_case(row, _read_case_observations([row]))
+        expected_event_id = _latest_event_id(row) if central else None
         db.session.commit()
         from app.intelligence.alert_intelligence.vault_operator_web import operator_controls
 
-        controls = operator_controls(instance_id=instance_id, public_id=public_id) if central else None
+        controls = (
+            operator_controls(instance_id=instance_id, public_id=public_id, expected_event_id=expected_event_id)
+            if central and public_case['source_state'] == 'firing' and expected_event_id is not None
+            else None
+        )
         return render_template(
             'intelligence/vault_provider_case_details.html',
             case=public_case,

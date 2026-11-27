@@ -679,7 +679,9 @@ def test_web_operator_controls_disabled_independently(scope, monkeypatch):
     _grant(vault, actor, permission='intelligence.decisions.create')
     monkeypatch.delenv(web._WEB_ENABLE_ENV, raising=False)
     assert not web._enabled()
-    assert web.operator_controls(instance_id=vault.id, public_id=case.public_id) is None
+    assert web.operator_controls(
+        instance_id=vault.id, public_id=case.public_id, expected_event_id=AlertCaseEvent.query.one().id
+    ) is None
 
 
 def test_web_mutation_rejects_missing_csrf_and_extra_fields(scope, monkeypatch):
@@ -937,3 +939,27 @@ def test_delivery_preflight_detects_prior_attempt_across_routing_policy(scope, s
     db.session.commit()
     assert _delivery_preflight(scope, case, policy, channel) == 'prior_delivery_review_required'
     assert NotificationDelivery.query.count() == 1
+
+
+def test_observation_admission_rejects_unqualified_operator_workflow(scope):
+    vault, _source, binding, actor = scope
+    case = _operator_case(scope)
+    case.workflow_state = 'mitigating'
+    db.session.commit()
+    later = AT + timedelta(minutes=1)
+    _commit(binding, [], observed=later)
+    assert _admit(binding, actor, at=later)['status'] == 'blocked'
+    assert case.source_state == 'firing'
+    assert AlertCaseEvent.query.count() == AuditEvent.query.count() == 1
+
+
+def test_operator_workflow_audit_must_match_owner_and_state(scope):
+    vault, _source, _binding, actor = scope
+    _operator_case(scope)
+    _grant(vault, actor, permission='intelligence.decisions.create')
+    assert _operate(scope, 'acknowledge') == 'committed'
+    audit = AuditEvent.query.filter_by(action='vault_provider_case_acknowledge').one()
+    audit.metadata_json = {**audit.metadata_json, 'owner_user_id': None}
+    db.session.commit()
+    assert not operator.admitted_operator_workflow_qualified(AlertCase.query.one())
+    assert _operate(scope, 'mitigating') == 'unavailable'

@@ -235,6 +235,8 @@ def _apply_qualified_case_candidates(
     actor_user_id: int,
 ) -> tuple[int, int] | None:
     """Apply only qualified candidates within the original caller-owned transaction."""
+    from app.intelligence.alert_intelligence.vault_provider_operator import admitted_operator_workflow_qualified
+
     changed_create = 0
     changed_refresh = 0
     for candidate in candidates:
@@ -266,8 +268,12 @@ def _apply_qualified_case_candidates(
         existing_id = candidate.get('existing_case_id')
         if type(existing_id) is not int or existing_id < 1:
             return None
-        case = db.session.get(AlertCase, existing_id)
-        if case is None or not _eligible_existing_provider_case(case, case_key=case_key, vault_id=binding.asset_key):
+        case = db.session.get(AlertCase, existing_id, populate_existing=True, with_for_update=True)
+        if (
+            case is None
+            or not _eligible_existing_provider_case(case, case_key=case_key, vault_id=binding.asset_key)
+            or not admitted_operator_workflow_qualified(case)
+        ):
             return None
         if not _provenance_matches(case, source_id=source_id, binding_id=binding.id):
             return None
@@ -315,7 +321,7 @@ def admit_vault_provider_cases(
         if binding is None:
             db.session.rollback()
             return _result('unavailable')
-        eligible = _validated_binding(binding_id, now=instant)
+        eligible = _validated_binding(binding_id, now=instant, lock=True)
         if eligible is None:
             db.session.rollback()
             return _result('unavailable')

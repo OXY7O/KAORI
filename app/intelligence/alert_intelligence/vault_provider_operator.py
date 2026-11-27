@@ -86,6 +86,9 @@ def admitted_operator_workflow_qualified(case: AlertCase) -> bool:
         or not 0 < metadata['previous_event_id'] < event.id
     ):
         return False
+    prior = db.session.get(AlertCaseEvent, metadata['previous_event_id'])
+    if prior is None or prior.case_id != case.id:
+        return False
     action = {'acknowledged': 'acknowledge', 'assigned': 'assign', 'mitigating': 'mitigating'}[event.event_type]
     audit = (
         AuditEvent.query.filter_by(
@@ -107,6 +110,9 @@ def admitted_operator_workflow_qualified(case: AlertCase) -> bool:
         and isinstance(evidence.get('policy_ref'), str)
         and type(evidence.get('policy_revision')) is int
         and evidence.get('previous_event_id') == metadata['previous_event_id']
+        and evidence.get('workflow_state') == case.workflow_state
+        and 'owner_user_id' in evidence
+        and evidence['owner_user_id'] == case.owner_user_id
     )
 
 
@@ -174,6 +180,8 @@ def _stage_evidence(
         'policy_ref': policy_ref,
         'policy_revision': policy_revision,
         'previous_event_id': prior_event_id,
+        'workflow_state': case.workflow_state,
+        'owner_user_id': case.owner_user_id,
     }
     db.session.add(audit)
 

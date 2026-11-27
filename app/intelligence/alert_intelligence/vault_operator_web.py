@@ -92,7 +92,9 @@ def _recipient_options(instance_id: int, *, now: datetime) -> list[dict[str, Any
     return options
 
 
-def operator_controls(*, instance_id: int, public_id: str) -> dict[str, Any] | None:
+def operator_controls(
+    *, instance_id: int, public_id: str, expected_event_id: int
+) -> dict[str, Any] | None:
     """Independent audited read of eligible actions after the case read commits.
 
     Binding-first order matches the mutation command. No fleet/user enumeration;
@@ -153,7 +155,7 @@ def operator_controls(*, instance_id: int, public_id: str) -> dict[str, Any] | N
         ):
             return None
         event_id = _latest_event_id(case)
-        if event_id is None:
+        if event_id is None or event_id != expected_event_id:
             return None
         result = {
             'expected_event_id': event_id,

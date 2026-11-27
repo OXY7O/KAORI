@@ -258,7 +258,7 @@ def _evaluate_exact_vault_instance_case_permission(
     if instant is None:
         return ScopeAdmission('deny', 'invalid_time')
     try:
-        actor = db.session.get(User, actor_user_id)
+        actor = db.session.get(User, actor_user_id, populate_existing=True)
         if (
             actor is None
             or not actor.is_active
@@ -269,7 +269,7 @@ def _evaluate_exact_vault_instance_case_permission(
             )
         ):
             return ScopeAdmission('deny', 'permission_required')
-        source = db.session.get(IntegrationInstance, instance_id)
+        source = db.session.get(IntegrationInstance, instance_id, populate_existing=True)
         if (
             source is None
             or source.integration_type != 'secrets_pki'
@@ -288,6 +288,7 @@ def _evaluate_exact_vault_instance_case_permission(
                 ScopeAccessPolicy.mount.is_(None),
             )
             .enable_eagerloads(False)
+            .populate_existing()
             .order_by(ScopeAccessPolicy.id.asc())
             .limit(_MAX_MATCHING_POLICIES + 1)
             .with_for_update(of=ScopeAccessPolicy)
@@ -302,6 +303,7 @@ def _evaluate_exact_vault_instance_case_permission(
                     ScopeAccessPolicyRevision.policy_id == policy.id,
                     ScopeAccessPolicyRevision.revision_number == policy.current_revision,
                 )
+                .populate_existing()
                 .with_for_update(of=ScopeAccessPolicyRevision)
                 .first()
             )
