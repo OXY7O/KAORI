@@ -83,7 +83,11 @@
                             </div>
                             <p class="mt-4 min-h-10 text-sm leading-5 text-content-secondary">
                                 {% if provider.lifecycle == 'planned' %}
-                                    Registration is not yet available.
+                                    {% if provider.key == 'openbao' and integration_type == 'secrets_pki' %}
+                                        Registration requires independent deployment and policy qualification. Local operators can inspect the approved candidate using flask qualify-openbao --help in Dev Container.
+                                    {% else %}
+                                        Registration is not yet available.
+                                    {% endif %}
                                 {% elif provider.description is defined and provider.description %}
                                     {{ provider.description }}
                                 {% else %}

@@ -99,3 +99,32 @@ The caller must independently resolve the admitted issuer revision and
 public key, current version, scope, operation, worker and audit evidence.
 No signing key generation, provider retrieval, runtime activation or
 privilege is introduced; exact mount names remain under separate review.
+
+## Local pre-registration qualification (#5203 / #2227)
+
+The same read-only provider transport can inspect an internal deployment or
+an explicitly selected external deployment. Run `flask qualify-openbao --help`
+in an isolated Dev Container with explicit `APP_ENV=development`. Use the
+deployment-owned internal endpoint (omit `--endpoint`) or an approved external
+HTTPS origin (`--ownership external --endpoint ...`). Supply the expected
+native cluster UUID obtained independently, and the exact operator-approved KV
+v2, AppRole and audit mount segments. Do not invent or apply mount names from a
+proposal. The internal audit device must be the existing `kaori-operator` file
+audit configuration. Both ownership modes use the same implementation and the
+selected OpenBao v2.7.3 release; other versions are not qualified by this slice.
+
+A transient inspection token is prompted without echo. It must be non-root,
+expiring within one hour, and independently issued with only the read authority
+required by lookup-self, sys/mounts, sys/auth and sys/audit. Never pass the token
+as an argument or environment variable. Exact mount and audit metadata are
+checked against the approved names. The cluster UUID and active version are
+rechecked after inspection. The emitted digest identifies a sanitized observation;
+it is not a signed deployment receipt, authorization, or persisted admission
+evidence. It does not prove complete ACL containment, AppRole login, audit delivery,
+provider provenance, or worker credential compatibility.
+
+The provider selector continues to report OpenBao registration as unavailable.
+No runtime registration, database write, provider modification, secret retrieval,
+ENV migration or credential activation is performed. Qualify the disposable
+deployment, preserve the evidence in the issue, and obtain the separate
+independent approval before changing the provider lifecycle or bootstrap policy.

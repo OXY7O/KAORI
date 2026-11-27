@@ -59,7 +59,9 @@ class OpenBaoClient(KV2HTTPClient):
         return kv2_count, approle_count
 
 
-def _verify_inspection_authority(transport: KV2HTTPTransport, token: str) -> None:
+def _verify_inspection_authority(
+    transport: KV2HTTPTransport, token: str, *, max_ttl: int | None = None
+) -> None:
     status, response = transport._request('/v1/auth/token/lookup-self', token=token)
     data = response.get('data')
     if status != 200 or not isinstance(data, dict):
@@ -73,6 +75,7 @@ def _verify_inspection_authority(transport: KV2HTTPTransport, token: str) -> Non
         or 'root' in policies
         or type(ttl) is not int
         or ttl <= 0
+        or (max_ttl is not None and ttl > max_ttl)
     ):
         raise SecretProviderError('Inspection requires a non-root expiring token.')
 
