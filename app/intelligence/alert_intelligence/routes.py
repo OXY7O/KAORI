@@ -112,6 +112,16 @@ def case_details(public_id: str) -> ResponseReturnValue:
     return _case_details_response(public_id)
 
 
+@alert_intelligence_bp.post('/vault-cases/<string:public_id>/operator')
+@permission_required('intelligence.view')
+@permission_required('secrets_pki.view')
+@permission_required('intelligence.decisions.create')
+def vault_case_operator(public_id: str) -> ResponseReturnValue:
+    from app.intelligence.alert_intelligence.vault_operator_web import operator_action_response
+
+    return operator_action_response(public_id)
+
+
 @alert_intelligence_bp.get('/records')
 @permission_required('intelligence.view')
 def records() -> ResponseReturnValue:

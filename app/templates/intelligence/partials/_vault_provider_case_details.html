@@ -71,9 +71,54 @@
             </dd>
         </div>
     </dl>
+    {% if operator_controls %}
+        <section class="mt-5 space-y-3 border-t border-outline-subtle pt-4" aria-label="Scoped Operator Actions">
+            <h3 class="text-sm font-semibold text-content-primary">Operator Actions</h3>
+            <div class="flex flex-wrap items-end gap-3">
+                {% for action, label in [('acknowledge', 'Acknowledge'), ('mitigating', 'Mark as Mitigating')] %}
+                    {% if operator_controls[action] %}
+                        <form method="post"
+                              action="{{ url_for('alert_intelligence.vault_case_operator', public_id=case.public_id) }}"
+                              hx-post="{{ url_for('alert_intelligence.vault_case_operator', public_id=case.public_id) }}"
+                              hx-swap="none"
+                              hx-disabled-elt="find button">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="instance_id" value="{{ instance_id }}">
+                            <input type="hidden" name="expected_event_id" value="{{ operator_controls.expected_event_id }}">
+                            <input type="hidden" name="action" value="{{ action }}">
+                            <button type="submit" class="{{ table_ui.action_classes() }}">{{ label }}</button>
+                        </form>
+                    {% endif %}
+                {% endfor %}
+                <form method="post"
+                      action="{{ url_for('alert_intelligence.vault_case_operator', public_id=case.public_id) }}"
+                      hx-post="{{ url_for('alert_intelligence.vault_case_operator', public_id=case.public_id) }}"
+                      hx-swap="none"
+                      hx-disabled-elt="find button"
+                      class="flex flex-wrap items-end gap-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="instance_id" value="{{ instance_id }}">
+                    <input type="hidden" name="expected_event_id" value="{{ operator_controls.expected_event_id }}">
+                    <input type="hidden" name="action" value="assign">
+                    <label>
+                        <span class="{{ table_ui.filter_label_classes() }}">Eligible Owner</span>
+                        <select name="owner_user_id" class="{{ table_ui.filter_select_classes() }}">
+                            <option value="">Unassigned</option>
+                            {% for recipient in operator_controls.recipients %}
+                                <option value="{{ recipient.id }}"
+                                        {% if recipient.id == operator_controls.owner_user_id %}selected{% endif %}>{{ recipient.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <button type="submit" class="{{ table_ui.action_classes() }}">Update Owner</button>
+                </form>
+            </div>
+            <p class="text-xs text-content-muted">Actions require current source evidence and an independently approved operator grant. No alert delivery is enabled.</p>
+        </section>
+    {% endif %}
     <p class="mt-5 text-xs text-content-muted">
         Read-only committed AlertCase evidence. Source absence does not imply recovery.
-        Committed operator workflow is shown independently of source state. Operator controls remain unpublished pending qualification; recovery requires positive source evidence.
+        Committed operator workflow is shown independently of source state. Recovery requires positive source evidence.
         Routing and notifications remain disabled pending governed delivery qualification.
     </p>
 </section>

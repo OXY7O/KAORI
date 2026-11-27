@@ -189,7 +189,7 @@ def apply_vault_provider_operator_action(
     owner_user_id: int | None = None,
     now: datetime | None = None,
 ) -> str:
-    """Standalone trusted command; no HTTP/worker caller and no notification.
+    """Standalone trusted command; the gated HTTP adapter is separate, with no worker or notification.
 
     Lock order matches observation/admission: binding, actor scopes, snapshot,
     case. The expected latest event fences replay and concurrent changes.

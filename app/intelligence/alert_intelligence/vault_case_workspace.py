@@ -285,11 +285,15 @@ def vault_case_details_response(
             abort(404)
         public_case = _safe_case(row, _read_case_observations([row]))
         db.session.commit()
+        from app.intelligence.alert_intelligence.vault_operator_web import operator_controls
+
+        controls = operator_controls(instance_id=instance_id, public_id=public_id) if central else None
         return render_template(
             'intelligence/vault_provider_case_details.html',
             case=public_case,
             instance_id=instance_id,
             central_provider_scope=central,
+            operator_controls=controls,
         )
     except SQLAlchemyError:
         db.session.rollback()

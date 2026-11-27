@@ -665,3 +665,58 @@ def test_operator_projection_rejects_missing_audit_and_unqualified_mutation(scop
     db.session.commit()
     assert not operator.admitted_operator_workflow_qualified(AlertCase.query.one())
     assert _operate(scope, 'mitigating') == 'unavailable'
+
+
+def test_web_operator_controls_disabled_independently(scope, monkeypatch):
+    from app.intelligence.alert_intelligence import vault_operator_web as web
+
+    vault, _source, _binding, actor = scope
+    case = _operator_case(scope)
+    _grant(vault, actor, permission='intelligence.decisions.create')
+    monkeypatch.delenv(web._WEB_ENABLE_ENV, raising=False)
+    assert not web._enabled()
+    assert web.operator_controls(instance_id=vault.id, public_id=case.public_id) is None
+
+
+def test_web_mutation_rejects_missing_csrf_and_extra_fields(scope, monkeypatch):
+    from flask import current_app
+    from flask_wtf.csrf import generate_csrf
+    from werkzeug.exceptions import BadRequest
+
+    from app.intelligence.alert_intelligence import vault_operator_web as web
+
+    vault, _source, _binding, actor = scope
+    case = _operator_case(scope)
+    _grant(vault, actor, permission='intelligence.decisions.create')
+    monkeypatch.setenv(web._WEB_ENABLE_ENV, 'true')
+    monkeypatch.setattr(web, 'current_user', actor)
+    case_id = case.public_id
+    with current_app.test_request_context(method='POST'):
+        with pytest.raises(BadRequest):
+            web.operator_action_response(case_id)
+    with current_app.test_request_context(method='POST', data={'actor_user_id': actor.id}):
+        from flask import request
+
+        form = request.form.copy()
+        form.update({
+            'csrf_token': generate_csrf(),
+            'instance_id': str(vault.id),
+            'expected_event_id': str(AlertCaseEvent.query.one().id),
+            'action': 'acknowledge',
+        })
+        monkeypatch.setattr(request, 'form', form)
+        with pytest.raises(BadRequest):
+            web.operator_action_response(case_id)
+    assert AlertCase.query.one().workflow_state == 'open'
+
+
+def test_recipient_selector_uses_only_exact_operator_grants(scope):
+    from app.intelligence.alert_intelligence import vault_operator_web as web
+
+    vault, _source, _binding, actor = scope
+    _grant(vault, actor, permission='intelligence.decisions.create')
+    other = _actor()
+    db.session.commit()
+    _grant(vault, other, permission='intelligence.decisions.create')
+    assert web._recipient_options(vault.id, now=AT) == [{'id': actor.id, 'label': actor.username}]
+    db.session.rollback()
