@@ -31,6 +31,22 @@
             </dd>
         </div>
         <div>
+            <dt class="text-xs text-content-muted">Ownership</dt>
+            <dd class="mt-1 text-content-primary">{{ case.owner_label }}</dd>
+        </div>
+        {% if case.acknowledged_at %}
+            <div>
+                <dt class="text-xs text-content-muted">Acknowledged At</dt>
+                <dd class="mt-1 text-content-primary">{{ case.acknowledged_at|user_datetime }}</dd>
+            </div>
+        {% endif %}
+        {% if case.mitigating_at %}
+            <div>
+                <dt class="text-xs text-content-muted">Mitigation Started</dt>
+                <dd class="mt-1 text-content-primary">{{ case.mitigating_at|user_datetime }}</dd>
+            </div>
+        {% endif %}
+        <div>
             <dt class="text-xs text-content-muted">Routing</dt>
             <dd class="mt-1 text-content-primary">
                 Suppressed
@@ -57,7 +73,7 @@
     </dl>
     <p class="mt-5 text-xs text-content-muted">
         Read-only committed AlertCase evidence. Source absence does not imply recovery.
-        Operator actions require a separately qualified scoped permission; recovery requires positive source evidence.
+        Committed operator workflow is shown independently of source state. Operator controls remain unpublished pending qualification; recovery requires positive source evidence.
         Routing and notifications remain disabled pending governed delivery qualification.
     </p>
 </section>

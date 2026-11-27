@@ -16,6 +16,7 @@ from app.intelligence.alert_intelligence.application import apply_case_mutation
 from app.intelligence.alert_signals.vault_source import commit_vault_alert_observations
 from app.models.alert_ops import AlertCase, AlertCaseEvent, AlertSilence
 from app.models.alert_signal import AlertSignalSnapshot
+from app.models.audit import AuditEvent
 from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.rbac import Permission, Role, RolePermission
@@ -47,6 +48,7 @@ def store():
         ScopeAccessPolicyRevision.__table__,
         AlertCase.__table__,
         AlertCaseEvent.__table__,
+        AuditEvent.__table__,
         AlertSilence.__table__,
         AlertSignalSnapshot.__table__,
     ]
@@ -690,3 +692,20 @@ def test_expired_provider_silence_cannot_generate_notification(store, monkeypatc
     monkeypatch.setattr(lifecycle, 'create_notification', lambda **kw: pytest.fail('Unexpected notification'))
     assert lifecycle.expire_silences_and_notify() == 0
     assert AlertCaseEvent.query.count() == 0
+
+
+@pytest.mark.parametrize('state', ['acknowledged', 'mitigating', 'verification_pending', 'closed'])
+def test_unqualified_workflow_is_not_projected(store, state):
+    _app, ids = store
+    case = _case(ids)
+    case.workflow_state = state
+    if state in {'acknowledged', 'mitigating'}:
+        case.acknowledged_at = AT
+        case.acknowledged_by_user_id = ids.actor
+    if state == 'mitigating':
+        case.mitigating_at = AT
+    db.session.commit()
+    for filters in (None, {}):
+        result = workspace._read_cases(instance_id=ids.vault, page='1', filters=filters)
+        assert result['status'] == 'unavailable'
+        assert result['rows'] == []

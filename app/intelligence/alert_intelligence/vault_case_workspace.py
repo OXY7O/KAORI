@@ -17,6 +17,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.access.scope_policy import evaluate_exact_vault_instance_case_scope
 from app.common.pagination import paginate_sequence
 from app.extensions.db import db
+from app.intelligence.alert_intelligence.vault_provider_operator import admitted_operator_workflow_qualified
 from app.intelligence.alert_intelligence.vault_provider_plan import (
     _CASE_KEY_RE,
     _PROFILE,
@@ -91,6 +92,9 @@ def _safe_case(case: AlertCase, observations: dict[int, dict[str, Any]]) -> dict
         'source_state': current,
         'last_admitted_source_state': case.source_state,
         'workflow_state': case.workflow_state,
+        'owner_label': 'Unassigned' if case.owner_user_id is None else 'Assigned',
+        'acknowledged_at': case.acknowledged_at,
+        'mitigating_at': case.mitigating_at,
         'first_seen_at': case.first_seen_at,
         'last_seen_at': case.last_seen_at,
         'routing': 'Suppressed',
@@ -109,6 +113,7 @@ def _case_qualified(case: AlertCase, *, instance_id: int) -> bool:
         # HV-12 cannot establish provider resolution or verified recovery.
         # Reject rather than render a tampered "resolved" source state.
         or not admitted_source_state_qualified(case)
+        or not admitted_operator_workflow_qualified(case)
         or not isinstance(case.case_key, str)
         or _CASE_KEY_RE.fullmatch(case.case_key) is None
         or case.source_ref != case.case_key
@@ -174,10 +179,7 @@ def _read_cases(
         observations = _read_case_observations(records)
         safe_rows = [_safe_case(case, observations) for case in records]
         if filters is not None:
-            # Provider-origin lifecycle remains limited to read-only open cases.
-            # Never project unsupported workflow transitions.
-            if any(row['workflow_state'] != 'open' for row in safe_rows):
-                return {'status': 'unavailable', 'rows': [], 'pagination': None}
+            # Every row already passed source and committed workflow qualification.
             summary = {
                 'active': len(safe_rows),
                 'critical': sum(row['severity'] == 'critical' for row in safe_rows),
@@ -278,7 +280,6 @@ def vault_case_details_response(
         if (
             row is None
             or not _case_qualified(row, instance_id=instance_id)
-            or (central and row.workflow_state != 'open')
         ):
             db.session.rollback()
             abort(404)

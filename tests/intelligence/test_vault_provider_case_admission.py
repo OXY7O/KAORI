@@ -634,3 +634,34 @@ def test_operator_command_default_disabled_and_unsupported_action(scope, monkeyp
     monkeypatch.delenv('KAORI_VAULT_PROVIDER_CASE_ADMISSION_ENABLED', raising=False)
     assert _operate(scope, 'acknowledge') == 'disabled'
     assert AlertCase.query.one().workflow_state == 'open'
+
+
+def test_committed_operator_workflow_projection_survives_source_unknown(scope):
+    from app.intelligence.alert_intelligence import vault_case_workspace as workspace
+
+    vault, _source, binding, actor = scope
+    _operator_case(scope)
+    _grant(vault, actor, permission='intelligence.decisions.create')
+    assert _operate(scope, 'acknowledge') == 'committed'
+    assert _operate(scope, 'mitigating') == 'committed'
+    _commit(binding, [], observed=AT + timedelta(minutes=1))
+    case = AlertCase.query.one()
+    assert workspace._case_qualified(case, instance_id=vault.id)
+    row = workspace._safe_case(case, {binding.id: {'state': 'unobserved', 'entries': None}})
+    assert row['workflow_state'] == 'mitigating'
+    assert row['owner_label'] == 'Assigned'
+    assert row['source_state'] == 'unknown'
+    assert row['routing'] == 'Suppressed'
+    assert 'owner_user_id' not in row
+
+
+def test_operator_projection_rejects_missing_audit_and_unqualified_mutation(scope):
+    vault, _source, _binding, actor = scope
+    _operator_case(scope)
+    _grant(vault, actor, permission='intelligence.decisions.create')
+    assert _operate(scope, 'acknowledge') == 'committed'
+    audit = AuditEvent.query.filter_by(action='vault_provider_case_acknowledge').one()
+    db.session.delete(audit)
+    db.session.commit()
+    assert not operator.admitted_operator_workflow_qualified(AlertCase.query.one())
+    assert _operate(scope, 'mitigating') == 'unavailable'

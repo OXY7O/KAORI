@@ -176,17 +176,15 @@
                         {% endfor %}
                     </select>
                 </label>
-                {% if not payload.provider_case_mode %}
-                    <label>
-                        <span class="{{ table_ui.filter_label_classes() }}">Workflow</span>
-                        <select name="workflow" class="{{ table_ui.filter_select_classes() }}">
-                            {% for value, label in [('all','All Open States'),('open','Open'),('acknowledged','Acknowledged'),('mitigating','Mitigating')] %}
-                                <option value="{{ value }}"
-                                        {% if payload.filters.workflow == value %}selected{% endif %}>{{ label }}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-                {% endif %}
+                <label>
+                    <span class="{{ table_ui.filter_label_classes() }}">Workflow</span>
+                    <select name="workflow" class="{{ table_ui.filter_select_classes() }}">
+                        {% for value, label in [('all','All Open States'),('open','Open'),('acknowledged','Acknowledged'),('mitigating','Mitigating')] %}
+                            <option value="{{ value }}"
+                                    {% if payload.filters.workflow == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
             </form>
         </div>
         {% include 'intelligence/partials/_alert_ops_active_table.html' %}

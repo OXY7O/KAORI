@@ -42,6 +42,74 @@ def _latest_event_id(case: AlertCase) -> int | None:
     return event.id if event is not None else None
 
 
+def admitted_operator_workflow_qualified(case: AlertCase) -> bool:
+    """Require committed workflow evidence; never infer source recovery."""
+    if case.workflow_state not in _ACTIVE_WORKFLOW or case.acknowledgement_expires_at is not None:
+        return False
+    if (
+        case.closed_at is not None
+        or case.closure_reason is not None
+        or case.verification_started_at is not None
+    ):
+        return False
+    if case.workflow_state == 'open':
+        if (
+            case.acknowledged_at is not None
+            or case.acknowledged_by_user_id is not None
+            or case.mitigating_at is not None
+        ):
+            return False
+    elif case.acknowledged_at is None or case.acknowledged_by_user_id is None:
+        return False
+    if (case.workflow_state == 'mitigating') != (case.mitigating_at is not None):
+        return False
+    event = (
+        AlertCaseEvent.query.filter(
+            AlertCaseEvent.case_id == case.id,
+            AlertCaseEvent.event_type.in_(('acknowledged', 'assigned', 'mitigating')),
+        )
+        .order_by(AlertCaseEvent.id.desc())
+        .first()
+    )
+    if event is None:
+        return case.workflow_state == 'open' and case.owner_user_id is None
+    metadata = event.metadata_json
+    if (
+        event.actor_user_id is None
+        or not isinstance(metadata, dict)
+        or set(metadata) != {'source_type', 'domain', 'previous_event_id', 'workflow_state', 'owner_user_id'}
+        or metadata['source_type'] != 'provider_alert'
+        or metadata['domain'] != 'secrets_pki'
+        or metadata['workflow_state'] != case.workflow_state
+        or metadata['owner_user_id'] != case.owner_user_id
+        or type(metadata['previous_event_id']) is not int
+        or not 0 < metadata['previous_event_id'] < event.id
+    ):
+        return False
+    action = {'acknowledged': 'acknowledge', 'assigned': 'assign', 'mitigating': 'mitigating'}[event.event_type]
+    audit = (
+        AuditEvent.query.filter_by(
+            target_type='alert_case',
+            target_id=case.public_id,
+            action='vault_provider_case_' + action,
+            actor_user_id=event.actor_user_id,
+        )
+        .order_by(AuditEvent.id.desc())
+        .first()
+    )
+    evidence = audit.metadata_json if audit is not None else None
+    return bool(
+        isinstance(evidence, dict)
+        and evidence.get('case_id') == case.public_id
+        and evidence.get('domain') == 'secrets_pki'
+        and evidence.get('asset_key') == case.asset_key
+        and evidence.get('permission_key') == 'intelligence.decisions.create'
+        and isinstance(evidence.get('policy_ref'), str)
+        and type(evidence.get('policy_revision')) is int
+        and evidence.get('previous_event_id') == metadata['previous_event_id']
+    )
+
+
 def _apply_workflow(
     case: AlertCase, *, action: str, actor_id: int, owner_id: int | None, instant: datetime
 ) -> bool:
@@ -184,7 +252,7 @@ def apply_vault_provider_operator_action(
             case is None
             or not _provenance_matches(case, source_id=source.id, binding_id=binding.id)
             or not admitted_source_state_qualified(case)
-            or case.workflow_state not in _ACTIVE_WORKFLOW
+            or not admitted_operator_workflow_qualified(case)
             or case.source_state != 'firing'
             or _persisted_utc(case.last_seen_at) != _persisted_utc(snapshot.generated_at)
             or not any(
