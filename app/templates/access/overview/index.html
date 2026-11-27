@@ -65,13 +65,15 @@
                         </div>
                         <p class="px-5 text-sm leading-6 text-content-secondary">{{ workspace.description }}</p>
                         <dl class="mt-5 grid grid-cols-1 divide-y divide-outline-subtle border-y border-outline-subtle bg-surface-subtle sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                            {% for icon, label, value in workspace.metrics %}
+                            {% for icon, label, value, full_label in workspace.metrics %}
                                 <div class="flex min-w-0 flex-col px-3 py-3 sm:py-4">
-                                    <dt class="flex min-w-0 flex-1 items-start gap-1.5 text-xs font-semibold leading-5 text-content-muted">
+                                    <dt class="flex min-w-0 flex-1 items-start gap-1.5 text-xs font-semibold leading-5 text-content-muted"
+                                        title="{{ full_label }}">
                                         <i data-lucide="{{ icon }}"
                                            class="mt-0.5 h-3.5 w-3.5 shrink-0"
                                            aria-hidden="true"></i>
-                                        <span class="min-w-0 break-words">{{ label }}</span>
+                                        <span class="min-w-0 break-words" aria-hidden="true">{{ label }}</span>
+                                        <span class="sr-only">{{ full_label }}</span>
                                     </dt>
                                     <dd class="mt-1 text-lg font-semibold leading-6 text-content-primary">
                                         {{ value }}
