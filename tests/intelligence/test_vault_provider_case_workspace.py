@@ -20,6 +20,7 @@ from app.models.audit import AuditEvent
 from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.rbac import Permission, Role, RolePermission
+from app.models.runtime import IntegrationRuntimeObservation
 from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.user import User
 
@@ -44,6 +45,7 @@ def store():
         ExternalIdentityLink.__table__,
         IntegrationInstance.__table__,
         IntegrationBinding.__table__,
+        IntegrationRuntimeObservation.__table__,
         ScopeAccessPolicy.__table__,
         ScopeAccessPolicyRevision.__table__,
         AlertCase.__table__,

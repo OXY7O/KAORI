@@ -17,6 +17,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.access.scope_policy import evaluate_exact_vault_instance_case_scope
 from app.common.pagination import paginate_sequence
 from app.extensions.db import db
+from app.intelligence.alert_intelligence.vault_case_context import read_vault_case_runtime_context
 from app.intelligence.alert_intelligence.vault_case_timeline import read_case_timeline
 from app.intelligence.alert_intelligence.vault_provider_operator import (
     _latest_event_id,
@@ -292,6 +293,7 @@ def vault_case_details_response(
             abort(404)
         public_case = _safe_case(row, _read_case_observations([row]))
         public_case.update(read_case_timeline(row))
+        public_case['runtime_context'] = read_vault_case_runtime_context(instance_id)
         public_case['provider_delivery_qualified'] = False
         expected_event_id = _latest_event_id(row) if central else None
         db.session.commit()

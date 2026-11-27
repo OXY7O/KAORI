@@ -154,6 +154,32 @@
                class="{{ table_ui.action_classes() }}">Review in Alert Intelligence</a>
         </div>
     {% endif %}
+    <section class="mt-5 border-t border-outline-subtle pt-4"
+             aria-label="Related Vault Runtime Evidence">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-sm font-semibold leading-5 text-content-primary">Related Vault Runtime Evidence</h3>
+            {{ table_label.status_label(case.runtime_context.status, case.runtime_context.tone, size='compact') }}
+        </div>
+        <p class="mt-1 text-xs leading-5 text-content-muted">Latest committed runtime observation for this exact Vault instance. Historical context only; not live health, alert recovery, or proof of root cause.</p>
+        <dl class="mt-3 grid gap-3 sm:grid-cols-3">
+            <div>
+                <dt class="text-xs text-content-muted">Observed At</dt>
+                <dd class="mt-1 text-content-primary">
+                    {{ case.runtime_context.observed_at|user_datetime if case.runtime_context.observed_at else 'Not available' }}
+                </dd>
+            </div>
+            <div>
+                <dt class="text-xs text-content-muted">Readiness at Observation</dt>
+                <dd class="mt-1 text-content-primary">{{ case.runtime_context.readiness or 'Not available' }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs text-content-muted">Recorded Health Score</dt>
+                <dd class="mt-1 text-content-primary">
+                    {{ (case.runtime_context.score ~ '/100') if case.runtime_context.score is not none else 'Not available' }}
+                </dd>
+            </div>
+        </dl>
+    </section>
     {% include 'intelligence/partials/_alert_ops_case_activity_streams.html' %}
     <p class="mt-5 text-xs text-content-muted">
         Committed AlertCase evidence. Source absence does not imply recovery.
