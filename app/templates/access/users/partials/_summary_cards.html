@@ -9,6 +9,7 @@
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="text-base font-semibold text-content-primary">Account &amp; Identity Posture</h2>
+                        {{ table_label.metadata_label(table_label.count_text(summary.managed, 'Managed Account'), icon='users-round') }}
                     </div>
                     <p class="mt-0.5 text-xs leading-5 text-content-muted">Current account lifecycle, privileged access, and identity-source ownership.</p>
                 </div>
