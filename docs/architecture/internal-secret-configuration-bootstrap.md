@@ -120,3 +120,38 @@ exact scoped short-lived inspection ACL, independent approval, atomic
 receipt publication/revocation and anti-rollback controls in disposable UAT.
 No live mount, key creation, migration, sign or recovery operation is
 introduced by the source resolver.
+
+## First local inventory/config migration slice (#5257)
+
+The canonical Ansible source connection and host assets remain the identity
+authority. For the disposable one-control-plane/two-worker pilot, the
+`automation-inventory-store` command builds a deterministic KV v2 document
+containing the approved source and Kubespray versions, exact host identities,
+role topology, SSH endpoints (not credentials), and explicitly selected pod
+and service networks. The data is protected in an independently approved
+local provider mount; this is not a runnable inventory or an authorization.
+
+Before use, select an existing registered OpenBao or Vault connection and
+independently establish its native cluster UUID, TLS trust, mount policy and
+audit delivery. Configure the local process with APP_ENV=development,
+KAORI_LOCAL_INVENTORY_PROVIDER_ID=<canonical IntegrationInstance ID>,
+and KAORI_LOCAL_INVENTORY_KV_MOUNT=<approved disposable KV v2 mount>.
+These are local UAT scope selectors, not approved production mount names.
+Vault additionally requires the mount in its approved KV v2 configuration.
+Use a non-root operator token with at most one hour TTL and native access
+only to the exact derived data path. The token is prompted without echo.
+Do not use root, a general app credential, or a production store.
+
+`flask automation-inventory-store --help` shows the exact command.
+The default is read/compare only. Explicit `--publish` creates the
+content-addressed `kubespray/connection-<id>/<digest>` entry using CAS 0,
+never updates/deletes a previous version, and reads it back as version 1.
+The current source and inventory are rechecked before committing a sanitized
+Activity Audit and reference in canonical Ansible connection metadata.
+The UI shows the last observed receipt, not live currentness. A failed audit
+or concurrent inventory change can leave an unreferenced immutable provider
+entry; retry only after reviewing current intent and the exact native version.
+This is not a distributed atomic transaction. No secret values are printed,
+no ENV is migrated, no host access, credential activation or Plan execution.
+Worker consumption of exact current provider versions and its approval
+boundary remain separately owned by #5204/#4800/#4801.

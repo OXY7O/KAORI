@@ -54,7 +54,7 @@ class KV2HTTPTransport:
         self.timeout = max(1, min(int(timeout), 30))
 
     def _request(
-        self, path: str, *, method: str = 'GET', token: str | None = None, payload: dict[str, str] | None = None
+        self, path: str, *, method: str = 'GET', token: str | None = None, payload: dict[str, Any] | None = None
     ) -> tuple[int, dict[str, Any]]:
         if not path.startswith('/v1/') or '//' in path or '?' in path:
             raise SecretProviderError(f'Unsupported {self.provider_label} API request.')
