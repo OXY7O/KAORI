@@ -67,6 +67,7 @@ def runtime_fleet():
                 select(
                     literal(module.integration_type).label('integration_type'),
                     literal(implementation.provider_key).label('provider_key'),
+                    literal(implementation.adapter_key).label('adapter_key'),
                     literal(provider.label).label('provider_label'),
                     canonical.id.label('canonical_id'),
                     model.id.label('provider_record_id'),
@@ -91,6 +92,7 @@ def runtime_fleet():
         .where(
             lookup.integration_type == candidates.c.integration_type,
             lookup.provider_key == candidates.c.provider_key,
+            lookup.adapter_key == candidates.c.adapter_key,
             or_(
                 lookup.integration_instance_id == candidates.c.canonical_id,
                 and_(

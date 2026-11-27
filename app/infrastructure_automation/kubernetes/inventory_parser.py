@@ -14,7 +14,10 @@ from app.infrastructure_automation.kubernetes.source_policy import ANSIBLE_CORE_
 
 def compile_inventory(document: dict[str, Any]) -> dict[str, Any]:
     """Convert only the canonical inventory document, never caller extra-vars."""
-    if document.get('schema') != 'kaori.kubespray.inventory_config.v1' or document.get('execution_authorized') is not False:
+    if (
+        document.get('schema') != 'kaori.kubespray.inventory_config.v1'
+        or document.get('execution_authorized') is not False
+    ):
         raise ValueError('The canonical non-executable inventory document is required.')
     hosts = document['hosts']
     control = {h['name']: {} for h in hosts if h['role'] == 'control_plane'}
@@ -25,8 +28,10 @@ def compile_inventory(document: dict[str, Any]) -> dict[str, Any]:
         'all': {
             'hosts': {
                 h['name']: {
-                    'ansible_host': h['address'], 'ansible_port': h['ssh_port'],
-                    'ip': h['address'], 'access_ip': h['address'],
+                    'ansible_host': h['address'],
+                    'ansible_port': h['ssh_port'],
+                    'ip': h['address'],
+                    'access_ip': h['address'],
                 }
                 for h in hosts
             },

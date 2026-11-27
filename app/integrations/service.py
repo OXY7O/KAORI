@@ -873,7 +873,9 @@ def build_integration_runtime_detail(integration_type: str, instance_id: str) ->
         canonical = record.integration_instance
         observation = (
             IntegrationRuntimeObservation.query.filter_by(
-                integration_type=integration_type, provider_key=canonical.provider_key, adapter_key=canonical.adapter_key,
+                integration_type=integration_type,
+                provider_key=canonical.provider_key,
+                adapter_key=canonical.adapter_key,
                 integration_instance_id=canonical.id,
             )
             .order_by(IntegrationRuntimeObservation.observed_at.desc(), IntegrationRuntimeObservation.id.desc())
@@ -882,8 +884,11 @@ def build_integration_runtime_detail(integration_type: str, instance_id: str) ->
         if observation is None:
             observation = (
                 IntegrationRuntimeObservation.query.filter_by(
-                    integration_type=integration_type, provider_key=canonical.provider_key,
-                    instance_id=provider_record_id, integration_instance_id=None,
+                    integration_type=integration_type,
+                    provider_key=canonical.provider_key,
+                    adapter_key=canonical.adapter_key,
+                    instance_id=provider_record_id,
+                    integration_instance_id=None,
                 )
                 .order_by(IntegrationRuntimeObservation.observed_at.desc(), IntegrationRuntimeObservation.id.desc())
                 .first()

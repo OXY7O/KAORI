@@ -4,12 +4,12 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.infrastructure_automation.kubernetes.inventory_parser import compile_inventory
+from app.infrastructure_automation.kubernetes.inventory_parser import compile_inventory, verify_ansible_inventory
 from app.integrations.secrets_management.secrets_pki.providers.openbao import presentation
 
 
-def test_inventory_compiler_fixed_groups_no_credentials():
-    document = {
+def _document():
+    return {
         'schema': 'kaori.kubespray.inventory_config.v1',
         'execution_authorized': False,
         'hosts': [
@@ -20,6 +20,10 @@ def test_inventory_compiler_fixed_groups_no_credentials():
         ],
         'config': {'pod_cidr': '10.244.0.0/16', 'service_cidr': '10.96.0.0/16'},
     }
+
+
+def test_inventory_compiler_fixed_groups_no_credentials():
+    document = _document()
     result = compile_inventory(document)['all']
     assert set(result['children']['etcd']['hosts']) == {'cp'}
     assert set(result['children']['kube_node']['hosts']) == {'worker-a', 'worker-b'}
@@ -43,3 +47,8 @@ def test_openbao_runtime_never_uses_vault_observation(monkeypatch):
     assert result['detail_key'] == 'secrets_pki:91'
     assert result['instance_id'] == 'openbao:3'
     assert result['readiness'] == 'degraded'
+
+
+def test_native_ansible_parser_when_dependency_installed():
+    pytest.importorskip('ansible')
+    verify_ansible_inventory(_document())

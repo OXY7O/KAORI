@@ -12,12 +12,12 @@ from sqlalchemy.orm import defer, joinedload
 
 from app.extensions.db import db
 from app.infrastructure_automation.kubernetes.inventory_document import build_inventory_document, digest
-from app.infrastructure_automation.kubernetes.inventory_parser import verify_ansible_inventory
 from app.infrastructure_automation.kubernetes.inventory_kv import (
     InventoryStoreReference,
     stored_document,
     verify_or_publish,
 )
+from app.infrastructure_automation.kubernetes.inventory_parser import verify_ansible_inventory
 from app.integrations.secrets_management.secrets_pki.providers.kv2_http import KV2HTTPTransport, SecretProviderError
 from app.integrations.secrets_management.secrets_pki.providers.kv2_transport import validate_auth_mount
 from app.integrations.secrets_management.secrets_pki.providers.openbao.client import OpenBaoClient, _verify_inspection_authority
