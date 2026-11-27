@@ -901,6 +901,15 @@ def recover_notification_deliveries(*, limit: int = 25) -> dict[str, int]:
         )
         if delivery is None:
             break
+        if delivery.domain == 'secrets_pki':
+            # Existing recovery has no source/instance/target requalification.
+            # Never replay a Secrets & PKI delivery through this generic worker.
+            delivery.status = 'skipped'
+            delivery.error_message = 'Replay suppressed: Secrets & PKI delivery is not qualified.'
+            delivery.updated_at = datetime.now(UTC)
+            db.session.commit()
+            totals['skipped'] += 1
+            continue
         channel = delivery.channel
         if channel.lifecycle_state != 'active':
             delivery.status = 'skipped'
@@ -943,6 +952,9 @@ def _channel_matches_event(
     event_type: str,
     severity: str | None = None,
 ) -> bool:
+    # Fail closed even if a future catalog edit adds this domain prematurely.
+    if domain == 'secrets_pki':
+        return False
     allowed_events = set(channel.event_types or [])
     if event_type in {'alert_ops.firing', 'alert_ops.resolved'} and 'alert_intelligence.active_alert' in allowed_events:
         allowed_events.add(event_type)

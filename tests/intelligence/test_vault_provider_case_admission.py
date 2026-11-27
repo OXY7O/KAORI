@@ -10,11 +10,12 @@ from app.extensions.db import db
 from app.intelligence.alert_intelligence import vault_provider_admission as admission
 from app.intelligence.alert_intelligence import vault_provider_operator as operator
 from app.intelligence.alert_signals.vault_source import commit_vault_alert_observations
-from app.models.alert_ops import AlertCase, AlertCaseEvent
+from app.models.alert_ops import AlertCase, AlertCaseEvent, AlertRoutingPolicy
 from app.models.alert_signal import AlertSignalSnapshot
 from app.models.audit import AuditEvent
 from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationBinding, IntegrationInstance
+from app.models.notification_channel import NotificationChannel, NotificationDelivery
 from app.models.rbac import Permission, Role, RolePermission
 from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.user import User
@@ -30,6 +31,7 @@ def store():
         SECRET_KEY='test-only',
         SQLALCHEMY_DATABASE_URI='sqlite://',
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        INTEGRATION_CREDENTIAL_KEY='fixture-only-delivery-encryption-key',
     )
     db.init_app(app)
     with app.app_context():
@@ -48,10 +50,14 @@ def store():
             AlertCase.__table__,
             AlertCaseEvent.__table__,
             AuditEvent.__table__,
+            AlertRoutingPolicy.__table__,
+            NotificationChannel.__table__,
+            NotificationDelivery.__table__,
         ]
         db.Model.metadata.create_all(bind=db.engine, tables=tables)
         role = Role(name='vault_alert_admission_operator', display_name='Vault Case Operator')
         keys = (
+            'integrations.manage',
             'intelligence.decisions.create',
             'intelligence.view',
             'secrets_pki.sync',
@@ -799,3 +805,135 @@ def test_empty_observation_cannot_create_case_or_mutate_without_scope(scope):
     assert _admit(binding, denied, at=latest)['status'] == 'forbidden'
     assert AlertCase.query.one().source_state == 'firing'
     assert AlertCaseEvent.query.count() == AuditEvent.query.count() == 1
+
+
+def _delivery_candidate(scope):
+    vault, _source, binding, actor = scope
+    case = _operator_case(scope)
+    _grant(vault, actor, permission='intelligence.decisions.create')
+    channel = NotificationChannel(
+        name='Fixture Only',
+        provider_key='email',
+        enabled=True,
+        lifecycle_state='active',
+        credential_payload='fixture-only-credential',
+        destination='fixture@example.invalid',
+        test_status='success',
+        last_tested_at=AT,
+        domains=['secrets_pki'],
+        event_types=['alert_ops.firing'],
+        minimum_severity='warning',
+    )
+    db.session.add(channel)
+    db.session.flush()
+    policy = AlertRoutingPolicy(
+        name='Fixture Only',
+        enabled=True,
+        domains_json=['secrets_pki'],
+        source_types_json=['provider_alert'],
+        matchers_json={'vault_instance': str(vault.id), 'source_binding_id': str(binding.id)},
+        severities_json=['warning'],
+        channel_ids_json=[channel.id],
+        send_resolved=False,
+    )
+    db.session.add(policy)
+    db.session.commit()
+    return case, policy, channel
+
+
+def _delivery_preflight(scope, case, policy, channel, *, at=AT, actor_id=None):
+    from app.intelligence.alert_intelligence.vault_provider_delivery import preflight_vault_provider_firing
+
+    vault, _source, binding, actor = scope
+    return preflight_vault_provider_firing(
+        binding_id=binding.id,
+        instance_id=vault.id,
+        public_id=case.public_id,
+        actor_user_id=actor.id if actor_id is None else actor_id,
+        policy_id=policy.id,
+        channel_id=channel.id,
+        now=at,
+    )
+
+
+def test_delivery_preflight_never_admits_transport_even_with_matching_policy(scope, monkeypatch):
+    from app.intelligence.alert_intelligence import vault_provider_delivery as delivery
+
+    case, policy, channel = _delivery_candidate(scope)
+    assert _delivery_preflight(scope, case, policy, channel) == 'catalog_unqualified'
+    monkeypatch.setattr(delivery, 'domain_event_allowed', lambda *_: True)
+    assert _delivery_preflight(scope, case, policy, channel) == 'target_authority_unqualified'
+    assert NotificationDelivery.query.count() == 0
+    assert case.routing_state == 'suppressed'
+    audits = AuditEvent.query.filter_by(action='vault_provider_delivery_preflight').all()
+    assert len(audits) == 2
+    assert 'fixture@example.invalid' not in repr([audit.metadata_json for audit in audits])
+    assert 'fixture-only-credential' not in repr([audit.metadata_json for audit in audits])
+
+
+@pytest.mark.parametrize('condition', ['foreign', 'broad', 'resolved', 'disabled', 'mixed'])
+def test_delivery_preflight_requires_dedicated_exact_policy(scope, condition):
+    case, policy, channel = _delivery_candidate(scope)
+    if condition == 'foreign':
+        policy.matchers_json = {'vault_instance': '9999', 'source_binding_id': '9999'}
+    elif condition == 'broad':
+        policy.matchers_json = {}
+    elif condition == 'resolved':
+        policy.send_resolved = True
+    elif condition == 'disabled':
+        policy.enabled = False
+    else:
+        policy.domains_json = ['secrets_pki', 'kubernetes']
+    db.session.commit()
+    assert _delivery_preflight(scope, case, policy, channel) == 'policy_unqualified'
+    assert NotificationDelivery.query.count() == 0
+
+
+@pytest.mark.parametrize('condition', ['retired', 'unvalidated', 'foreign', 'wrong_event', 'severity'])
+def test_delivery_preflight_requires_dedicated_validated_channel(scope, condition):
+    case, policy, channel = _delivery_candidate(scope)
+    if condition == 'retired':
+        channel.lifecycle_state = 'retired'
+    elif condition == 'unvalidated':
+        channel.test_status = 'not_tested'
+    elif condition == 'foreign':
+        channel.domains = ['registry']
+    elif condition == 'wrong_event':
+        channel.event_types = ['alert_ops.resolved']
+    else:
+        channel.minimum_severity = 'critical'
+    db.session.commit()
+    assert _delivery_preflight(scope, case, policy, channel) == 'channel_unqualified'
+    assert NotificationDelivery.query.count() == 0
+
+
+def test_delivery_preflight_checks_scope_freshness_and_acknowledgement(scope):
+    case, policy, channel = _delivery_candidate(scope)
+    denied = _actor()
+    db.session.commit()
+    assert _delivery_preflight(scope, case, policy, channel, actor_id=denied.id) == 'forbidden'
+    assert _delivery_preflight(scope, case, policy, channel, at=AT + timedelta(minutes=6)) == 'source_unavailable'
+    assert _operate(scope, 'acknowledge') == 'committed'
+    assert _delivery_preflight(scope, case, policy, channel) == 'workflow_suppressed'
+    assert NotificationDelivery.query.count() == 0
+
+
+@pytest.mark.parametrize('status', ['sent', 'queued', 'failed', 'skipped'])
+def test_delivery_preflight_detects_prior_attempt_across_routing_policy(scope, status):
+    case, policy, channel = _delivery_candidate(scope)
+    db.session.add(
+        NotificationDelivery(
+            channel_id=channel.id,
+            event_key=f'alert-case:{case.public_id}:firing:route-policy-999:1',
+            event_type='alert_ops.firing',
+            domain='secrets_pki',
+            asset_type='vault_instance',
+            asset_key=case.asset_key,
+            severity=case.severity,
+            status=status,
+            payload_json={},
+        )
+    )
+    db.session.commit()
+    assert _delivery_preflight(scope, case, policy, channel) == 'prior_delivery_review_required'
+    assert NotificationDelivery.query.count() == 1

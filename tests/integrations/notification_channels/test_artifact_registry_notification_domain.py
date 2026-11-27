@@ -126,3 +126,20 @@ def test_delivery_matcher_preserves_report_only_boundary_even_for_stale_policy()
     assert not service._channel_matches_event(
         channel, domain='artifact_registry', event_type='report.generated', severity='info'
     )
+
+
+def test_vault_channel_dispatch_remains_blocked_even_if_catalog_changes(monkeypatch: pytest.MonkeyPatch) -> None:
+    channel = SimpleNamespace(
+        enabled=True,
+        lifecycle_state='active',
+        configured=True,
+        test_status='success',
+        domains=['secrets_pki'],
+        event_types=['alert_ops.firing'],
+        minimum_severity='info',
+    )
+    assert not domain_event_allowed('secrets_pki', 'alert_ops.firing')
+    monkeypatch.setattr(service, 'domain_event_allowed', lambda *_: True)
+    assert not service._channel_matches_event(
+        channel, domain='secrets_pki', event_type='alert_ops.firing', severity='warning'
+    )
