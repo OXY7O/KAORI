@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime
 from typing import Any
 
@@ -9,9 +10,11 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.scope_policy import evaluate_exact_vault_instance_operator_scope
 from app.extensions.db import db
+from app.intelligence.alert_intelligence.vault_provider_admission import _ENABLE_ENV
 from app.intelligence.alert_intelligence.vault_provider_operator import _current_firing_case, _latest_event_id
 from app.intelligence.alert_signals.vault_source import (
     _locked_observation_snapshot,
+    _utc,
     _validated_binding,
     read_vault_alert_observations,
 )
@@ -72,14 +75,18 @@ def _recipient_options(instance_id: int, *, now: datetime) -> list[dict[str, Any
 
 
 def load_operator_controls(
-    *, instance_id: int, public_id: str, expected_event_id: int, actor_id: int
+    *, instance_id: int, public_id: str, expected_event_id: int, actor_id: int, now: datetime | None = None
 ) -> dict[str, Any] | None:
     """Independent audited read of eligible actions after the case read commits.
 
     Binding-first order matches the mutation command. No fleet/user enumeration;
     selector candidates originate only from the exact decision scope.
     """
-    now = datetime.now(UTC)
+    if os.getenv(_ENABLE_ENV) != 'true':
+        return None
+    now = _utc(now or datetime.now(UTC))
+    if now is None:
+        return None
     try:
         binding_id = _binding_id(instance_id)
         eligible = _validated_binding(binding_id, now=now, lock=True) if binding_id is not None else None

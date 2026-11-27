@@ -15,6 +15,7 @@ from app.models.alert_signal import AlertSignalSnapshot
 from app.models.audit import AuditEvent
 from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationBinding, IntegrationInstance
+from app.models.notification import Notification
 from app.models.notification_channel import NotificationChannel, NotificationDelivery
 from app.models.rbac import Permission, Role, RolePermission
 from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
@@ -51,6 +52,7 @@ def store():
             AlertCaseEvent.__table__,
             AuditEvent.__table__,
             AlertRoutingPolicy.__table__,
+            Notification.__table__,
             NotificationChannel.__table__,
             NotificationDelivery.__table__,
         ]
@@ -731,6 +733,72 @@ def test_recipient_selector_uses_only_exact_operator_grants(scope):
     _grant(vault, other, permission='intelligence.decisions.create')
     assert service._recipient_options(vault.id, now=AT) == [{'id': actor.id, 'label': actor.username}]
     db.session.rollback()
+
+
+def test_operator_service_controls_require_current_event_and_committed_audit(scope, monkeypatch):
+    from app.intelligence.alert_intelligence import vault_operator_service as service
+
+    vault, _source, _binding, actor = scope
+    case = _operator_case(scope)
+    _grant(vault, actor, permission='intelligence.decisions.create')
+    event_id = AlertCaseEvent.query.one().id
+    params = {
+        'instance_id': vault.id,
+        'public_id': case.public_id,
+        'actor_id': actor.id,
+        'now': AT,
+    }
+    assert service.load_operator_controls(expected_event_id=event_id + 1, **params) is None
+    assert Notification.query.count() == 0
+    stage = service.stage_operational_activity
+
+    def reject_audit(**kwargs):
+        stage(**kwargs)
+        db.session.flush()
+        raise SQLAlchemyError('fixture audit failure')
+
+    with monkeypatch.context() as patch:
+        patch.setattr(service, 'stage_operational_activity', reject_audit)
+        assert service.load_operator_controls(expected_event_id=event_id, **params) is None
+    assert Notification.query.count() == 0
+    controls = service.load_operator_controls(expected_event_id=event_id, **params)
+    assert controls is not None
+    assert controls['expected_event_id'] == event_id
+    assert controls['acknowledge']
+    assert controls['recipients'] == [{'id': actor.id, 'label': actor.username}]
+    audit = Notification.query.one()
+    assert audit.event_type == 'vault_provider_case_operator_controls_read'
+    assert audit.user_id == actor.id
+    assert AlertCase.query.one().workflow_state == 'open'
+    monkeypatch.delenv(admission._ENABLE_ENV, raising=False)
+    assert service.load_operator_controls(expected_event_id=event_id, **params) is None
+    assert Notification.query.count() == 1
+
+
+def test_operator_service_binding_selector_rejects_ambiguous_active_sources(scope):
+    from app.intelligence.alert_intelligence import vault_operator_service as service
+
+    vault, source, binding, _actor_user = scope
+    instance_id, binding_id = vault.id, binding.id
+    unrelated = IntegrationBinding(
+        integration_instance_id=vault.id,
+        asset_type='vault_instance',
+        asset_key=str(instance_id),
+        enabled=True,
+    )
+    db.session.add(unrelated)
+    db.session.commit()
+    assert service.resolve_operator_binding(instance_id) == binding_id
+    second = IntegrationBinding(
+        integration_instance_id=source.id,
+        asset_type='vault_instance',
+        asset_key=str(instance_id),
+        binding_role='secondary',
+        enabled=True,
+    )
+    db.session.add(second)
+    db.session.commit()
+    assert service.resolve_operator_binding(instance_id) is None
 
 
 def test_web_adapter_passes_authenticated_actor_and_refreshes_only_after_commit(scope, monkeypatch):
