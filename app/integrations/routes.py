@@ -523,6 +523,7 @@ _PROVIDER_REGISTRATION_ENDPOINTS = {
     ('object_storage', 'minio'): 'minio.new_instance',
     ('registry', 'harbor'): 'harbor.new_instance',
     ('secrets_pki', 'vault'): 'vault.new_instance',
+    ('secrets_pki', 'openbao'): 'openbao.new_instance',
     ('source_control', 'github'): 'github_source.new_connection',
 }
 
@@ -537,6 +538,8 @@ def choose_integration_provider(integration_type: str) -> ResponseReturnValue:
     kinds = sorted(provider_kinds(integration_type), key=lambda kind: (not kind.available, kind.label.casefold()))
     if not kinds:
         abort(404)
+
+    from app.integrations.secrets_management.secrets_pki.providers.openbao.service import local_provider_enabled
 
     domain = get_domain_definition(kinds[0].domain_key)
     providers = [
@@ -553,7 +556,9 @@ def choose_integration_provider(integration_type: str) -> ResponseReturnValue:
             'available': kind.available,
             'registration_url': (
                 url_for(_PROVIDER_REGISTRATION_ENDPOINTS[(kind.integration_type, kind.key)])
-                if kind.available and (kind.integration_type, kind.key) in _PROVIDER_REGISTRATION_ENDPOINTS
+                if kind.available
+                and (kind.integration_type, kind.key) in _PROVIDER_REGISTRATION_ENDPOINTS
+                and (kind.key != 'openbao' or local_provider_enabled())
                 else None
             ),
         }

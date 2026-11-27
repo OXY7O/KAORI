@@ -245,6 +245,11 @@ class IntegrationRegistry:
                 'app.integrations.secrets_management.secrets_pki.providers.vault',
             ):
                 import_module(module_path)
+            if provider_kind('secrets_pki', 'openbao').available:
+                provider = import_module(
+                    'app.integrations.secrets_management.secrets_pki.providers.openbao.kernel_contract'
+                )
+                provider.register_implementation(self)
             # GitHub App remains inert while provider_matrix is planned.
             # Once an explicitly admitted UAT/provider matrix is deployed,
             # register the existing SC-02 Kernel descriptor on web and workers.

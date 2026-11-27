@@ -162,6 +162,7 @@ from app.models.tenant_policy import (
     TenantExposurePolicyStatus,
 )
 from app.models.user import User
+from app.models.openbao import OpenBaoInstance
 from app.models.vault import VaultInstance
 
 __all__ = [
@@ -187,6 +188,7 @@ __all__ = [
     'IdentityProvider',
     'HarborInstance',
     'VaultInstance',
+    'OpenBaoInstance',
     'IntegrationRuntimeObservation',
     'JobExecution',
     'JobExecutionSubscriber',
