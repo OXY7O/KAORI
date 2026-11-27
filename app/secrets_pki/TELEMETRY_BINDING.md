@@ -459,3 +459,22 @@ Observation admission revalidates the binding under lock, refreshes and locks ex
 ### Dev Container review — operator application boundary (#5229)
 
 The HTTP adapter performs feature gating, authenticated actor extraction, CSRF/form validation and response selection only. Operator control qualification, exact active Alert Source selection, scope/recipient locks, committed observation checks and atomic read audit belong to vault_operator_service. The existing operator command requalifies the binding and scope under lock before mutation. Other integration types do not compete with the exact Alert Source selector; ambiguous active Alert Sources still fail closed. No feature flags, source recovery or delivery authority are changed. Local application-package and quality gates must pass before staging admission.
+
+### Local Dev Container case reconciliation (#5229 / #2227)
+
+The central Alert Intelligence Active queue offers **Reconcile Cases (Local
+UAT)** only for an authorized Vault instance when explicit APP_ENV=development
+matches application configuration and both existing admission/operator web
+opt-ins are true. The authenticated actor must have all four explicit role
+permissions (intelligence.view, intelligence.decisions.create,
+secrets_pki.view, secrets_pki.sync) and independently approved exact-instance
+read and decision grants. The POST accepts only CSRF and the selected instance,
+resolves the unique active Alert Source and rechecks exact identity, locked
+role membership, grants and committed source generation in the owning
+admission transaction. Existing audit, capacity and deduplication rules
+remain authoritative. Reconciling the queue is not a provider refresh.
+There is no provider call, notification delivery, recovery inference or
+automatic scheduler. A production config cannot enable this local route.
+Only use a disposable Dev Container database and approved source fixtures;
+leave both opt-ins disabled elsewhere. Local functional/visual validation
+and official staging admission are pending.

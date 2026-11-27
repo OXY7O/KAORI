@@ -111,6 +111,20 @@
                 </div>
                 <div class="flex shrink-0 flex-wrap items-center justify-end gap-2"
                      data-kaori-table-header-actions>
+                    {% if payload.local_case_reconcile %}
+                        <form method="post"
+                              action="{{ url_for('alert_intelligence.vault_case_local_reconcile') }}"
+                              hx-post="{{ url_for('alert_intelligence.vault_case_local_reconcile') }}"
+                              hx-swap="none"
+                              hx-disabled-elt="find button">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="instance_id" value="{{ payload.selected_asset_key }}">
+                            <button type="submit" class="{{ table_ui.action_classes() }}">
+                                <i data-lucide="refresh-cw" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                Reconcile Cases (Local UAT)
+                            </button>
+                        </form>
+                    {% endif %}
                     {% if payload.filters.q or payload.filters.severity != 'all' or payload.filters.source_state != 'all' or payload.filters.workflow != 'all' %}
                         <a data-kaori-filter-action
                            href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, provider=payload.selected_provider if payload.provider_case_mode else none) }}"

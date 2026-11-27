@@ -122,6 +122,17 @@ def vault_case_operator(public_id: str) -> ResponseReturnValue:
     return operator_action_response(public_id)
 
 
+@alert_intelligence_bp.post('/vault-cases/local-reconcile')
+@permission_required('intelligence.view')
+@permission_required('secrets_pki.view')
+@permission_required('secrets_pki.sync')
+@permission_required('intelligence.decisions.create')
+def vault_case_local_reconcile() -> ResponseReturnValue:
+    from app.intelligence.alert_intelligence.vault_operator_web import local_reconcile_response
+
+    return local_reconcile_response()
+
+
 @alert_intelligence_bp.get('/records')
 @permission_required('intelligence.view')
 def records() -> ResponseReturnValue:

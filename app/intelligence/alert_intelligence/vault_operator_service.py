@@ -10,7 +10,12 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.scope_policy import evaluate_exact_vault_instance_operator_scope
 from app.extensions.db import db
-from app.intelligence.alert_intelligence.vault_provider_admission import _ENABLE_ENV
+from app.intelligence.alert_intelligence.vault_provider_admission import (
+    _ENABLE_ENV,
+    _actor_authorized,
+    admit_vault_provider_cases,
+    local_reconcile_enabled,
+)
 from app.intelligence.alert_intelligence.vault_provider_operator import _current_firing_case, _latest_event_id
 from app.intelligence.alert_signals.vault_source import (
     _locked_observation_snapshot,
@@ -168,3 +173,35 @@ def resolve_operator_binding(instance_id: int) -> int | None:
         return None
     finally:
         db.session.rollback()
+
+
+def _local_reconcile_authorized(*, actor_id: int, instance_id: int) -> bool:
+    if not local_reconcile_enabled() or type(actor_id) is not int or type(instance_id) is not int:
+        return False
+    try:
+        return _actor_authorized(actor_id) and evaluate_exact_vault_instance_operator_scope(
+            actor_user_id=actor_id, instance_id=instance_id
+        ).allowed
+    except (SQLAlchemyError, ValueError, TypeError, AttributeError):
+        return False
+    finally:
+        db.session.rollback()
+
+
+def local_reconcile_available(*, actor_id: int, instance_id: int) -> bool:
+    """Only display a local action for the selected, independently granted scope."""
+    return _local_reconcile_authorized(
+        actor_id=actor_id, instance_id=instance_id
+    ) and resolve_operator_binding(instance_id) is not None
+
+
+def reconcile_local_provider_cases(*, actor_id: int, instance_id: int) -> dict[str, int | str]:
+    """Local UAT only; existing admission owns source locks, mutation and audit."""
+    if not local_reconcile_enabled():
+        return {'status': 'disabled', 'created': 0, 'refreshed': 0}
+    if not _local_reconcile_authorized(actor_id=actor_id, instance_id=instance_id):
+        return {'status': 'forbidden', 'created': 0, 'refreshed': 0}
+    binding_id = resolve_operator_binding(instance_id)
+    if binding_id is None:
+        return {'status': 'unavailable', 'created': 0, 'refreshed': 0}
+    return admit_vault_provider_cases(binding_id=binding_id, actor_user_id=actor_id, local_instance_id=instance_id)

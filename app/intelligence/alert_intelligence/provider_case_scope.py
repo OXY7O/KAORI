@@ -19,6 +19,7 @@ from app.intelligence.alert_intelligence.vault_case_workspace import (
     read_scoped_vault_cases,
     vault_case_details_response,
 )
+from app.intelligence.alert_intelligence.vault_operator_service import local_reconcile_available
 from app.models.integration import IntegrationInstance
 from app.models.scope_access import ScopeAccessPolicy
 
@@ -194,8 +195,17 @@ def build_provider_case_payload(args: MultiDict[str, str], *, domain_options: li
     _, empty_pagination = paginate_sequence([], page=1, per_page=5)
     summary = result.get('summary', {}) if status == 'ready' else {}
     records = [_case_record(row, scope) for row in result.get('rows', [])] if status == 'ready' else []
+    actor_id = getattr(current_user, 'id', None)
+    can_reconcile = (
+        status == 'ready'
+        and domain == 'secrets_pki'
+        and scope['selected_provider'] == 'vault'
+        and type(actor_id) is int
+        and local_reconcile_available(actor_id=actor_id, instance_id=int(scope['selected_asset_key']))
+    )
     return {
         **scope,
+        'local_case_reconcile': can_reconcile,
         'domain': domain,
         'domain_label': next(option['label'] for option in domain_options if option['value'] == domain),
         'domain_options': domain_options,
@@ -205,7 +215,11 @@ def build_provider_case_payload(args: MultiDict[str, str], *, domain_options: li
         'tab': tab,
         'snapshot': {
             'available': False,
-            'label': 'Committed provider cases · read-only' if status == 'ready' else 'Evidence Review Required',
+            'label': (
+                ('Committed provider cases · local UAT' if can_reconcile else 'Committed provider cases · read-only')
+                if status == 'ready'
+                else 'Evidence Review Required'
+            ),
             'tone': 'warning',
             'serving_last_good': False,
         },
