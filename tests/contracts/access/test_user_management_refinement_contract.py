@@ -59,6 +59,9 @@ def test_user_management_posture_matches_permission_registry_overview_structure(
     assert 'Account &amp; Identity Posture' in summary
     assert 'grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4' in summary
     assert 'border-t border-outline-subtle bg-surface-hover' in summary
+    boundary_cards = summary.split('{% for icon, title, value, description in boundaries %}', 1)[1]
+    assert '<div class="min-w-0 flex-1">' in boundary_cards
+    assert 'flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5' in boundary_cards
     for label in ('Active Accounts', 'Inactive Accounts', 'Access Findings', 'Local Super Admins'):
         assert label in summary
     for label in ('Local Database', 'Directory', 'SSO Providers', 'Deleted & Restore'):
