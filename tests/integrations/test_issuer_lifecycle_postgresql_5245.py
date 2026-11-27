@@ -25,8 +25,8 @@ from sqlalchemy import create_engine, inspect, select, text
 from sqlalchemy.orm import Session
 from sqlalchemy.schema import CreateSchema, DropSchema
 
-from app.access.scope_policy import CredentialIssuerScope
 from app.access import scoped_grants
+from app.access.scope_policy import CredentialIssuerScope
 from app.access.scoped_grants import ScopedGrantRejected, ScopeGrantValidity
 from app.extensions.db import db
 from app.integrations.secrets_management.secrets_pki.providers.credential_version_proof import canonical_statement

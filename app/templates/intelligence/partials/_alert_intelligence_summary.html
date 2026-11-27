@@ -1,20 +1,32 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
+{% import "components/table_label.html" as table_label %}
+{% set summary_title_label %}
+    {{ table_label.metadata_label('4 Indicators', icon='layout-dashboard') }}
+{% endset %}
 {% call intelligence_ui.posture_panel(
     'Alert Operations Summary',
     'Fleet-level operational posture. Use the lifecycle navigation above to investigate and manage cases.',
     'activity',
     payload.snapshot.label,
     payload.snapshot.tone,
-    'Committed AlertCase evidence remains available even when live providers are temporarily unavailable.',
-    actions=[
+    'Provider case evidence is read-only; source freshness, recovery and delivery are not qualified.' if payload.provider_case_mode else 'Committed AlertCase evidence remains available even when live providers are temporarily unavailable.',
+    actions=[] if payload.provider_case_mode else [
     ('send', 'Notification Channels', url_for('notification_channels.index')),
     ('badge-check', 'Resolved Alerts', url_for('alert_intelligence.index', tab='resolved', domain=payload.domain, asset=payload.selected_asset_key))
-    ]
+    ],
+    title_extra=summary_title_label
     ) %}
     <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
-        {{ intelligence_ui.posture_metric('siren', 'Active Alerts', payload.summary.active, payload.summary.critical ~ ' critical') }}
-        {{ intelligence_ui.posture_metric('user-check', 'Acknowledged', payload.summary.acknowledged, 'Operator ownership accepted') }}
-        {{ intelligence_ui.posture_metric('bell-off', 'Silenced', payload.summary.silenced, 'KAORI delivery silences') }}
-        {{ intelligence_ui.posture_metric('badge-check', 'Resolved Today', payload.summary.resolved_today, payload.summary.verification_pending ~ ' awaiting verification') }}
+        {% if payload.provider_case_mode %}
+            {{ intelligence_ui.posture_metric('siren', 'Committed Open Cases', payload.summary.active if payload.provider_case_status == 'ready' else '—', 'Last observed firing evidence') }}
+            {{ intelligence_ui.posture_metric('triangle-alert', 'Critical Cases', payload.summary.critical if payload.provider_case_status == 'ready' else '—', 'Committed severity') }}
+            {{ intelligence_ui.posture_metric('bell-off', 'Delivery', '—', 'Not qualified') }}
+            {{ intelligence_ui.posture_metric('badge-check', 'Resolved Today', '—', 'Recovery not qualified') }}
+        {% else %}
+            {{ intelligence_ui.posture_metric('siren', 'Active Alerts', payload.summary.active, payload.summary.critical ~ ' critical') }}
+            {{ intelligence_ui.posture_metric('user-check', 'Acknowledged', payload.summary.acknowledged, 'Operator ownership accepted') }}
+            {{ intelligence_ui.posture_metric('bell-off', 'Silenced', payload.summary.silenced, 'KAORI delivery silences') }}
+            {{ intelligence_ui.posture_metric('badge-check', 'Resolved Today', payload.summary.resolved_today, payload.summary.verification_pending ~ ' awaiting verification') }}
+        {% endif %}
     </div>
 {% endcall %}

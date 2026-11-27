@@ -193,6 +193,8 @@ def matching_routing_policies(case: AlertCase) -> list[AlertRoutingPolicy]:
 
 def firing_routes(case: AlertCase) -> list[FiringRoute]:
     """Return independent route/channel schedules; never collapse cadence across channels."""
+    if case.source_type != KAORI_ALERT_SOURCE_TYPE:
+        return []
     if case.source_state != 'firing' or case.routing_state != 'enabled':
         return []
     if case.domain == 'registry' and not registry_case_route_eligible(case):
@@ -262,6 +264,8 @@ def acknowledgement_timeout_for_case(case: AlertCase) -> int:
 
 
 def policy_allows_resolved(case: AlertCase, channel_id: int) -> bool:
+    if case.source_type != KAORI_ALERT_SOURCE_TYPE:
+        return False
     policies = matching_routing_policies(case)
     if case.domain == 'registry':
         return any(

@@ -33,8 +33,15 @@ def test_alert_context_filters_submit_one_canonical_form_state() -> None:
     assert 'assets = _asset_options(domain, clusters=clusters, systems=systems)' in service
     assert 'selected_asset_key = _selected_asset_key(args, assets, domain=domain)' in service
     assert "return _INVALID_REGISTRY_SCOPE if domain == 'registry' else 'all'" in service
-    assert "{'value': 'kubernetes', 'label': 'Kubernetes'}" in service
-    assert "{'value': 'registry', 'label': 'Artifact Registry'}" in service
+    provider_scope = read('app/intelligence/alert_intelligence/provider_case_scope.py')
+    assert "'domain_options': provider_case_scope.DOMAIN_OPTIONS" in service
+    assert "{'value': 'kubernetes', 'label': 'Kubernetes'}" in provider_scope
+    assert "{'value': 'object_storage', 'label': 'Object Storage'}" in provider_scope
+    assert "{'value': 'registry', 'label': 'Artifact Registry'}" in provider_scope
+    assert "{'value': 'secrets_pki', 'label': 'Secrets & PKI'}" in provider_scope
+    assert 'provider_case_scope.is_provider_case_domain' in service
+    assert 'provider_case_scope.build_provider_case_payload' in service
+    assert 'name="provider"' in context_form
     assert 'scope_invalid = selected_asset_key == _INVALID_REGISTRY_SCOPE' in service
     assert 'scoped_cases = [] if scope_invalid else _case_rows(' in service
     assert 'get_case(requested)' not in service
@@ -57,7 +64,9 @@ def test_registry_alert_intelligence_handoff_and_notification_policy_are_explici
     assert 'IntegrationInstance.enabled.is_(True)' in service
     assert "IntegrationInstance.lifecycle_status == 'active'" in service
     assert 'scope_invalid = selected_asset_key == _INVALID_REGISTRY_SCOPE' in service
-    assert '{% if payload.scope_invalid %}' in workspace
+    assert '{% elif payload.scope_invalid %}' in workspace
+    assert "{% if payload.provider_case_mode and payload.provider_case_status != 'ready' %}" in workspace
+    assert workspace.index('payload.provider_case_status') < workspace.index('{% elif payload.scope_invalid %}')
     assert 'Select an Active Registry Provider' in workspace
     assert "{% elif payload.tab == 'routing' %}" in workspace
     assert "if 'registry' in normalized_domains and len(normalized_domains) != 1:" in routing

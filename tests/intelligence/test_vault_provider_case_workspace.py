@@ -5,10 +5,12 @@ from types import SimpleNamespace
 
 import pytest
 from flask import Flask
+from werkzeug.datastructures import MultiDict
 from werkzeug.exceptions import NotFound
 
 from app.access.scope_policy import evaluate_exact_vault_instance_case_scope
 from app.extensions.db import db
+from app.intelligence.alert_intelligence import provider_case_scope
 from app.intelligence.alert_intelligence import vault_case_workspace as workspace
 from app.intelligence.alert_intelligence.application import apply_case_mutation
 from app.models.alert_ops import AlertCase
@@ -434,3 +436,104 @@ def test_unverified_resolved_vault_case_blocks_list_and_direct_detail(store, mon
     with app.test_request_context(f'/vault-cases/{case.public_id}/details?instance_id={ids.vault}'):
         with pytest.raises(NotFound):
             workspace.vault_case_details_response(case.public_id)
+
+
+_DOMAIN_OPTIONS = [{'value': 'secrets_pki', 'label': 'Secrets & PKI'}]
+
+
+def _central_args(ids, **extra):
+    return MultiDict({'domain': 'secrets_pki', 'provider': 'vault', 'asset': str(ids.vault), 'tab': 'active', **extra})
+
+
+def test_central_scope_lists_only_exact_authorized_instances(store, monkeypatch):
+    _app, ids = store
+    monkeypatch.setattr(provider_case_scope, 'current_user', SimpleNamespace(id=ids.actor))
+    _grant(ids, level='vault_mount')
+    assert provider_case_scope.provider_scope_context(_central_args(ids))['selected_asset_key'] == ''
+    _grant(ids)
+    scope = provider_case_scope.provider_scope_context(_central_args(ids))
+    assert scope['selected_asset_key'] == str(ids.vault)
+    assert scope['selected_provider'] == 'vault'
+    assert [item['value'] for item in scope['assets']] == ['', str(ids.vault)]
+    wrong = provider_case_scope.provider_scope_context(_central_args(ids, provider='openbao'))
+    assert wrong['selected_asset_key'] == ''
+    foreign = provider_case_scope.provider_scope_context(_central_args(ids, asset=str(ids.other)))
+    assert foreign['selected_asset_key'] == ''
+
+
+def test_central_registry_reuses_safe_projection_and_audited_read(store, monkeypatch):
+    _app, ids = store
+    _grant(ids)
+    case = _case(ids)
+    _case(ids, vault_id=ids.other, key='vault-alert:' + 'b' * 64)
+    actor = SimpleNamespace(id=ids.actor)
+    monkeypatch.setattr(provider_case_scope, 'current_user', actor)
+    monkeypatch.setattr(workspace, 'current_user', actor)
+    audits = []
+    monkeypatch.setattr(workspace, 'stage_operational_activity', lambda **kw: audits.append(kw))
+    payload = provider_case_scope.build_provider_case_payload(_central_args(ids), domain_options=_DOMAIN_OPTIONS)
+    assert payload['provider_case_status'] == 'ready'
+    assert payload['summary'] == {'active': 1, 'critical': 0}
+    assert payload['snapshot']['available'] is False
+    assert payload['selected_case'] is None
+    assert payload['active_pagination']['per_page'] == 5
+    assert [row['public_id'] for row in payload['active_cases']] == [case.public_id]
+    assert payload['active_cases'][0]['source_state_label'] == 'Last observed firing'
+    assert 'SHOULD-NOT-RENDER' not in repr(payload)
+    assert 'source_binding_id' not in repr(payload)
+    assert audits[0]['metadata']['integration_instance_id'] == ids.vault
+    filtered = provider_case_scope.build_provider_case_payload(
+        _central_args(ids, severity='critical'), domain_options=_DOMAIN_OPTIONS
+    )
+    assert filtered['active_cases'] == []
+    assert filtered['summary']['active'] == 1
+
+
+def test_central_scope_and_audit_failure_never_project_case_or_healthy_zero(store, monkeypatch):
+    _app, ids = store
+    _grant(ids)
+    _case(ids)
+    actor = SimpleNamespace(id=ids.actor)
+    monkeypatch.setattr(provider_case_scope, 'current_user', actor)
+    monkeypatch.setattr(workspace, 'current_user', actor)
+    monkeypatch.setattr(
+        workspace,
+        'stage_operational_activity',
+        lambda **_kw: (_ for _ in ()).throw(RuntimeError('audit-store-offline')),
+    )
+    payload = provider_case_scope.build_provider_case_payload(_central_args(ids), domain_options=_DOMAIN_OPTIONS)
+    assert payload['provider_case_status'] != 'ready'
+    assert payload['active_cases'] == []
+    assert payload['summary']['active'] is None
+    foreign = provider_case_scope.build_provider_case_payload(
+        _central_args(ids, asset=str(ids.other)), domain_options=_DOMAIN_OPTIONS
+    )
+    assert foreign['active_cases'] == []
+    assert foreign['summary']['active'] is None
+
+
+def test_central_case_detail_checks_instance_and_uses_read_only_projection(store, monkeypatch):
+    _app, ids = store
+    _grant(ids)
+    case = _case(ids)
+    actor = SimpleNamespace(id=ids.actor)
+    monkeypatch.setattr(provider_case_scope, 'current_user', actor)
+    monkeypatch.setattr(workspace, 'current_user', actor)
+    monkeypatch.setattr(workspace, 'stage_operational_activity', lambda **_kw: None)
+    monkeypatch.setattr(workspace, 'render_template', lambda _template, **kw: kw)
+    result = provider_case_scope.provider_case_detail_response(_central_args(ids), case.public_id)
+    assert result['central_provider_scope'] is True
+    assert result['case']['public_id'] == case.public_id
+    assert 'SHOULD-NOT-RENDER' not in repr(result)
+    with pytest.raises(NotFound):
+        provider_case_scope.provider_case_detail_response(_central_args(ids, asset=str(ids.other)), case.public_id)
+    with pytest.raises(NotFound):
+        provider_case_scope.provider_case_detail_response(_central_args(ids, provider='openbao'), case.public_id)
+
+
+def test_generic_mutation_denies_provider_origin_outside_vault(store):
+    _app, ids = store
+    case = _case(ids, foreign=True)
+    invoked = []
+    assert apply_case_mutation(case.public_id, operation=lambda row: invoked.append(row.id)) is None
+    assert not invoked

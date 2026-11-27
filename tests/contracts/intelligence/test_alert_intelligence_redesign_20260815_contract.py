@@ -74,8 +74,12 @@ def test_alert_operations_sections_own_distinct_operator_responsibilities() -> N
     silences = read('app/templates/intelligence/partials/_alert_ops_silences.html')
     history = read('app/templates/intelligence/partials/_alert_ops_history.html')
 
-    for required in ('Alert Operations Snapshot', 'Lifecycle Control', 'Operational Readiness', 'Ownership Boundary'):
+    for required in ('Alert Operations Snapshot', 'Lifecycle Control', 'Operational Readiness'):
         assert required in overview
+    workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
+    assert 'Ownership Boundary' in workspace
+    assert "variant='guide'" in workspace
+    assert 'operational_callout.render' not in overview
     assert 'Review' in active
     for required in (
         'Acknowledge',
