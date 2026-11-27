@@ -11,6 +11,7 @@ import re
 from datetime import UTC, datetime
 from typing import Any
 
+from app.intelligence.alert_intelligence.vault_recovery_state import admitted_recovery_qualified
 from app.intelligence.alert_signals.vault_source import (
     _persisted_utc,
     _utc,
@@ -138,7 +139,10 @@ def build_vault_provider_case_plan(
     for case in existing:
         if not _provenance_matches(case, source_id=source.id, binding_id=binding.id):
             return _result('blocked')
-        if case.workflow_state != 'closed' and not admitted_source_state_qualified(case):
+        if case.source_state == 'resolved':
+            if not admitted_recovery_qualified(case) or case.case_key in proposed_keys:
+                return _result('blocked')
+        elif case.workflow_state != 'closed' and not admitted_source_state_qualified(case):
             return _result('blocked')
         if case.case_key in cases:
             return _result('blocked')
@@ -194,7 +198,7 @@ def _candidate_rows(
     # A fully fresh but non-exhaustive Alertmanager response cannot prove
     # resolution, including absence of a previously committed case key.
     for case_key, case in cases.items():
-        if case_key not in proposed_keys and case.workflow_state != 'closed':
+        if case_key not in proposed_keys and case.workflow_state != 'closed' and case.source_state != 'resolved':
             plan.append(
                 {
                     'action': 'retain_unverified',

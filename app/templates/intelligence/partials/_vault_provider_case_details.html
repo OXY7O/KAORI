@@ -21,7 +21,7 @@
         <div>
             <dt class="text-xs text-content-muted">Source</dt>
             <dd class="mt-1 font-semibold text-content-primary">
-                {{ 'Fresh firing evidence' if case.source_state == 'firing' else 'Source unknown' }}
+                {{ {'firing': 'Fresh firing evidence', 'resolved': 'Committed recovery', 'conflict': 'Source evidence conflict', 'unknown': 'Source unknown'}.get(case.source_state, 'Source unknown') }}
             </dd>
         </div>
         <div>
@@ -83,6 +83,30 @@
             </dd>
         </div>
     </dl>
+    {% if recovery_controls %}
+        <section class="mt-5 space-y-3 border-t border-outline-subtle pt-4" aria-label="Scoped Recovery">
+            <h3 class="text-sm font-semibold text-content-primary">Provider Recovery Verification</h3>
+            <p class="text-xs text-content-muted">Explicit signed occurrence evidence is required. Closure requires a newer committed observation and a different authorized operator.</p>
+            <form method="post"
+                  action="{{ url_for('alert_intelligence.vault_case_operator', public_id=case.public_id) }}"
+                  hx-post="{{ url_for('alert_intelligence.vault_case_operator', public_id=case.public_id) }}"
+                  hx-swap="none" hx-disabled-elt="find button">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="instance_id" value="{{ instance_id }}">
+                <input type="hidden" name="expected_event_id" value="{{ recovery_controls.expected_event_id }}">
+                <input type="hidden" name="action" value="{{ recovery_controls.action }}">
+                <button type="submit" class="{{ table_ui.action_classes() }}">
+                    {{ 'Admit Provider Recovery (Local UAT)' if recovery_controls.action == 'admit_recovery' else 'Verify and Close (Local UAT)' }}
+                </button>
+            </form>
+        </section>
+    {% elif case.last_admitted_source_state == 'resolved' %}
+        <section class="mt-5 space-y-2 border-t border-outline-subtle pt-4" aria-label="Recorded Recovery">
+            <h3 class="text-sm font-semibold text-content-primary">Recorded Provider Recovery</h3>
+            <p class="text-xs text-content-muted">Resolved at {{ case.source_resolved_at|user_datetime }}. {{ 'Independent verification is recorded.' if case.workflow_state == 'closed' else 'Independent verification requires a different authorized operator and newer qualifying source evidence.' }}</p>
+            {% if case.postmortem_required %}<p class="text-xs text-content-muted">Postmortem required; provider-specific editing remains unqualified.</p>{% endif %}
+        </section>
+    {% endif %}
     {% if operator_controls %}
         <section class="mt-5 space-y-3 border-t border-outline-subtle pt-4"
                  aria-label="Scoped Operator Actions">
@@ -135,7 +159,7 @@
             </div>
             <p class="text-xs text-content-muted">Actions require current source evidence and an independently approved operator grant. No alert delivery is enabled.</p>
         </section>
-    {% elif central_provider_scope %}
+    {% elif central_provider_scope and not recovery_controls and case.last_admitted_source_state != 'resolved' %}
         <section class="mt-5 border-t border-outline-subtle pt-4"
                  aria-label="Operator Actions Readiness">
             {% set blocked_state_icon = "shield-check" %}

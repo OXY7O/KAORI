@@ -161,10 +161,14 @@ def _case_record(row: dict[str, Any], scope: dict[str, Any]) -> dict[str, Any]:
         'severity_label': row['severity'].title(),
         'severity_tone': row['severity'],
         'source_type_label': 'Provider Alert · ' + scope['provider_label'],
-        'source_state_label': 'Fresh firing evidence' if row['source_state'] == 'firing' else 'Source unknown',
-        'source_state_tone': 'warning' if row['source_state'] == 'firing' else 'unknown',
-        'workflow_label': row['workflow_state'].title(),
-        'workflow_tone': {'open': 'critical', 'acknowledged': 'info', 'mitigating': 'warning'}[row['workflow_state']],
+        'source_state_label': {
+            'firing': 'Fresh firing evidence', 'resolved': 'Committed recovery',
+            'conflict': 'Source evidence conflict', 'unknown': 'Source unknown'
+        }[row['source_state']],
+        'source_state_tone': {'firing': 'warning', 'resolved': 'normal', 'conflict': 'critical', 'unknown': 'unknown'}[row['source_state']],
+        'workflow_label': row['workflow_state'].replace('_', ' ').title(),
+        'workflow_tone': {'open': 'critical', 'acknowledged': 'info', 'mitigating': 'warning',
+                          'verification_pending': 'warning', 'closed': 'normal'}[row['workflow_state']],
         'owner': row['owner_label'],
         'duration': '—',
         'delivery_label': 'Suppressed',
@@ -181,6 +185,8 @@ def build_provider_case_payload(args: MultiDict[str, str], *, domain_options: li
         tab = 'resolved'
     if tab not in {'overview', 'active', 'routing', 'templates', 'silences', 'resolved'}:
         tab = 'overview'
+    if tab == 'resolved':
+        filters['history'] = '1'
     status = 'scope_required'
     result: dict[str, Any] = {}
     if scope['selected_asset_key']:
