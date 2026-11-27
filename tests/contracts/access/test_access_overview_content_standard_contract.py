@@ -21,7 +21,6 @@ def test_access_overview_workspace_posture_matches_kaori_operational_card_gramma
     assert 'workspace.grid_classes' in template
 
 
-
 def test_access_overview_metric_labels_preserve_local_super_admin_semantics() -> None:
     source = read('app/access/overview/presentation.py')
     template = read('app/templates/access/overview/index.html')
@@ -36,6 +35,23 @@ def test_access_overview_metric_labels_preserve_local_super_admin_semantics() ->
     assert '<span class="sr-only">{{ full_label }}</span>' in template
     assert '{{ value }}' in template
     assert 'whitespace-nowrap' not in template
+
+    import ast
+
+    metric_groups = [
+        value
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.Dict)
+        for key, value in zip(node.keys, node.values, strict=True)
+        if isinstance(key, ast.Constant) and key.value == 'metrics'
+    ]
+    assert len(metric_groups) == 5
+    assert all(isinstance(group, ast.Tuple) and len(group.elts) == 3 for group in metric_groups)
+    assert all(
+        isinstance(metric, ast.Tuple) and len(metric.elts) == 4
+        for group in metric_groups
+        for metric in group.elts
+    )
 
 
 def test_access_overview_composes_domain_owned_posture_contracts() -> None:
