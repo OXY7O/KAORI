@@ -86,6 +86,18 @@ def _owns_pending_setup(factor: AuthenticationMfaFactor, generation: int, *, aut
     )
 
 
+def has_owned_pending_setup(user_id: int, generation: int, *, authenticated: bool) -> bool:
+    """Read only setup ownership, not the encrypted seed or recovery hashes."""
+    return db.session.execute(
+        select(AuthenticationMfaFactor.id).where(
+            AuthenticationMfaFactor.user_id == user_id,
+            AuthenticationMfaFactor.enabled.is_(False),
+            AuthenticationMfaFactor.enrollment_generation == generation,
+            AuthenticationMfaFactor.enrollment_authenticated.is_(authenticated),
+        )
+    ).scalar_one_or_none() is not None
+
+
 def mfa_enrollment_state(
     factor: AuthenticationMfaFactor | None, *, now: datetime, expected_generation: int, authenticated: bool
 ) -> Literal['enrolled', 'pending', 'expired', 'not_enrolled']:

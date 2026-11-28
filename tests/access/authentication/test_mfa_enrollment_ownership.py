@@ -18,9 +18,13 @@ NOW = datetime(2026, 11, 28, tzinfo=UTC)
     ('generation', 'authenticated', 'expected'),
     [(7, True, 'pending'), (8, True, 'expired'), (7, False, 'expired'), (None, None, 'expired')],
 )
-def test_pending_setup_requires_original_owner(generation, authenticated, expected) -> None:
+def test_pending_setup_requires_original_owner(
+    generation: int | None, authenticated: bool | None, expected: str
+) -> None:
     factor = AuthenticationMfaFactor(
-        enabled=False, enrollment_generation=generation, enrollment_authenticated=authenticated,
+        enabled=False,
+        enrollment_generation=generation,
+        enrollment_authenticated=authenticated,
         enrollment_expires_at=NOW + timedelta(minutes=1),
     )
     assert service.mfa_enrollment_state(factor, now=NOW, expected_generation=7, authenticated=True) == expected
@@ -61,7 +65,9 @@ def test_cancellation_only_deletes_owned_inactive_setup(condition: str, monkeypa
 def test_confirmation_rejects_foreign_generation_before_otp(monkeypatch: pytest.MonkeyPatch) -> None:
     user = User(id=42, auth_session_version=8)
     factor = AuthenticationMfaFactor(
-        enabled=False, enrollment_generation=7, enrollment_authenticated=True,
+        enabled=False,
+        enrollment_generation=7,
+        enrollment_authenticated=True,
         enrollment_expires_at=datetime.now(UTC) + timedelta(minutes=1),
     )
     store = Mock()

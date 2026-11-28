@@ -67,3 +67,16 @@ def test_required_mfa_enrollment_and_recovery_responses_are_sensitive() -> None:
         "response.headers['Referrer-Policy'] = 'no-referrer'",
     ):
         assert challenge.count(header) == 2
+
+
+def test_required_enrollment_cancellation_does_not_admit_primary_only_login() -> None:
+    root = Path(__file__).resolve().parents[3]
+    routes = (root / 'app/access/authentication/routes.py').read_text(encoding='utf-8')
+    template = (root / 'app/templates/access/authentication/mfa_enrollment.html').read_text(encoding='utf-8')
+    branch = routes.split("elif action == 'cancel':", 1)[1].split("elif action == 'confirm'", 1)[0]
+    assert "expected_generation=pending['version'], authenticated=False" in branch
+    assert 'session.pop(MFA_PENDING_SESSION_KEY, None)' in branch
+    assert "return redirect(url_for('auth.login'))" in branch
+    assert '_complete_successful_login' not in branch
+    assert '{% if pending_setup_owned %}' in template
+    assert 'name="mfa_action" value="cancel"' in template
