@@ -291,9 +291,11 @@ The shared `page_hero.integration_navigation_label(endpoint)` and `page_hero.int
 | vault.index | Open Vault Integrations |
 | integrations.ansible | Open Ansible Integrations |
 | integrations.observability | Open Observability Integrations |
+| integrations.metrics_sources | Open Metrics Source Integrations |
+| integrations.alertmanager | Open Alertmanager Integrations |
 | notification_channels.index | Open Notification Channels |
 
-A capability-neutral Automation or Secrets CTA may only be used if its destination actually covers that capability. Existing provider-specific registry routes remain explicitly named. Additional destinations require source/permission qualification before registry extension.
+A capability-neutral Automation or Secrets CTA may only be used if its destination actually covers that capability. Existing provider-specific registry routes remain explicitly named. Additional destinations require source/permission qualification before registry extension. Shared `operational_dashboard` and `context_card` callers pass `integration_endpoint` and `integration_permitted` with legacy action label/href set to `none`; the shared renderer owns the canonical link. Dynamic alert-source destinations are resolved only from qualified, allowlisted endpoint names.
 
 When a below-Hero prerequisite blocker owns registration/setup, the Hero explains the state and omits the duplicate navigation or registration action. A separate read-only review workflow remains accessible where authorized. The Infrastructure Automation pilot uses policy-backed Not Admitted with separate Source Setup and Approval metrics; it does not claim that source registration proves execution readiness. Compatibility callers migrate in issue-scoped batches; no global parity claim until the active consumer census and visual qualification are complete.
 
