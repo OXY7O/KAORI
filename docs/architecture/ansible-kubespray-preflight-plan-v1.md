@@ -161,8 +161,14 @@ all seven active claims, current explicit permissions, original maker and no
 child JobExecution of the Plan. It retains released records and appends
 mandatory audit. No timer, retry, cancellation or generic stale-job
 recovery removes claims. The migration starts empty and refuses downgrade
-when reservation history exists. Job retention must account for the
-restrictive Plan FK; do not discard referenced Plan history.
+when reservation history exists. The canonical JobExecution retention domain excludes Plans referenced by
+any target claim, including released history, from archive selection and
+rechecks the exclusion under ordered JobExecution row locks before cleanup.
+If a claim appears after archive selection, cleanup preserves the Plan and
+the existing partial-cleanup reporting remains authoritative. The restrictive
+Plan FK stays as a final database safeguard; no claim is removed by retention.
+The review-lane regression uses synthetic SQLite data; native PostgreSQL
+concurrency and migration validation remain pending.
 
 This service does not establish Run admission, freeze every provider or connection change,
 start a worker or approve a mutation. Future admitted worker integration
