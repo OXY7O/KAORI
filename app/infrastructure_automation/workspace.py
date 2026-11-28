@@ -19,6 +19,7 @@ from app.infrastructure_automation.kubernetes.committed_preflight import committ
 from app.infrastructure_automation.kubernetes.inventory_receipt import committed_inventory_receipt_review
 from app.infrastructure_automation.kubernetes.plan_currentness import committed_kubespray_plan_currentness
 from app.infrastructure_automation.kubernetes.source_policy import committed_source_state
+from app.infrastructure_automation.remote_review_posture import committed_remote_review_posture
 from app.models.automation import AutomationInventoryAssignment
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -201,6 +202,7 @@ def build_automation_workspace(
             'plan': current_plan.presentation(),
             'jobs': jobs,
             'job_total': scoped_jobs.count() if can_jobs else None,
+            'remote_review': committed_remote_review_posture(selected).presentation() if can_jobs else None,
             'cluster_bindings': _cluster_bindings(selected) if can_inventory else [],
             'assets': _committed_host_assets(selected, page=asset_page, per_page=asset_per_page)
             if can_inventory
