@@ -131,3 +131,37 @@ def test_shared_verification_panel_preserves_visible_evidence_and_copy_boundarie
     script = str(panel('Verification Command', 'Operator guidance', value='example\ncommand', copy_label='Copy Script'))
     assert 'example\ncommand' in script
     assert 'Copy Script' in script
+
+
+def test_shared_capability_content_keeps_distinct_registered_queries_visible():
+    environment = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
+    render = environment.get_template('integrations/components/_provider_capability_detail.html').module.content
+    row = {
+        'available': True,
+        'required': True,
+        'status_key': 'ready',
+        'status_label': 'Verified',
+        'category': 'inventory',
+        'evidence': 'Committed observation text',
+        'success_criteria': 'Expected evidence',
+        'impact': 'Operational impact',
+        'next_action': 'Next operator action',
+        'remediation': [],
+        'technical_checks': [{
+            'label': 'Technical check',
+            'status_label': 'Verified',
+            'tone': 'normal',
+            'icon': 'circle-check',
+            'evidence': 'Committed observation text',
+            'query': 'observed_expression',
+            'registered_query': 'registered_expression',
+        }],
+    }
+    for provider in ('GitHub', 'Metrics Source', 'Alertmanager', 'Harbor', 'MinIO'):
+        html = str(render(row, provider, 'Owner', 'Technical evidence', 'Provider boundary'))
+        assert '<details' not in html
+        assert html.count('x-ref="script"') == 2
+        assert 'observed_expression' in html
+        assert 'registered_expression' in html
+        assert html.count('Committed observation text') == 1
+        assert html.index('Technical Verification') < html.index('Evidence Boundary')
