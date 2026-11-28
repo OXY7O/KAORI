@@ -194,6 +194,8 @@ def review_credential_grant_approval(
         or current.effective_until <= now
     ):
         return None
+    if not lock_explicit_permissions(current.requested_by_user_id, {'roles.manage', 'users.manage'}):
+        return None
     if not lock_explicit_permissions(
         policy.principal_user_id,
         {CREDENTIAL_USE_PERMISSION, 'secrets_pki.view', 'inventory.view', 'jobs.execute'},
