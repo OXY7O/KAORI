@@ -38,7 +38,7 @@
             <div class="mt-4 grid divide-y divide-outline-subtle overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
                 {% for icon, label, value, helper, tone in [
                     ('route', 'Policies', payload.summary.routing_policies, 'Governed routing rules', 'info' if payload.summary.routing_policies else 'unknown'),
-                    ('send', 'Eligible Channels', payload.notification.eligible, 'Validated destinations ready for routing', 'normal' if payload.notification.eligible else 'warning'),
+                    ('send', 'Eligible Channels', payload.notification.eligible, 'Validated destinations across channel inventory', 'normal' if payload.notification.eligible else 'warning'),
                     ('radio', 'Operational Channels', payload.notification.operational, 'Channels with successful recent delivery', 'normal' if payload.notification.operational else 'info'),
                     ('triangle-alert', 'Attention Needed', payload.notification.failed, 'Validation or delivery failures', 'warning' if payload.notification.failed else 'normal')
                     ] %}
@@ -67,7 +67,7 @@
                 </span>
                 <div class="min-w-0">
                     <h3 class="{{ table_ui.block_title_classes() }}">Channel Readiness</h3>
-                    <p class="{{ table_ui.block_description_classes() }}">Review destination eligibility for the selected routing domain.</p>
+                    <p class="{{ table_ui.block_description_classes() }}">Review destination eligibility for the selected domain. Configuration remains in Integrations → Notification Channels.</p>
                 </div>
             </div>
             <div class="flex shrink-0 flex-wrap items-center gap-2">

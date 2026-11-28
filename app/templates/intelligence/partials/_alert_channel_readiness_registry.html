@@ -72,7 +72,7 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(channel.status, 'normal' if channel.status == 'Operational' else 'unknown' if channel.status == 'Retired' else 'warning', size='compact') }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(channel.status, 'normal' if channel.status in ['Operational', 'Ready'] else 'unknown' if channel.status in ['Retired', 'Disabled'] else 'warning', size='compact') }}</td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label('Eligible' if channel.eligible else 'Unavailable', 'normal' if channel.eligible else 'warning', size='compact') }}</td>
                     </tr>
                 {% else %}

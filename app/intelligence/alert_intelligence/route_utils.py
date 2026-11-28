@@ -14,7 +14,11 @@ def index_response() -> ResponseReturnValue:
     if request.headers.get('HX-Request') == 'true':
         target = str(request.headers.get('HX-Target') or '').strip()
         if target == 'alert-channel-readiness-registry':
-            if payload.get('tab') != 'routing' or payload.get('provider_case_mode') or payload.get('channel_readiness') is None:
+            if (
+                payload.get('tab') != 'routing'
+                or payload.get('provider_case_mode')
+                or payload.get('channel_readiness') is None
+            ):
                 response = make_response('', 200)
                 response.headers['HX-Redirect'] = url_for(
                     'alert_intelligence.index',

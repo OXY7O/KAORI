@@ -90,7 +90,7 @@ def test_alert_operations_sections_own_distinct_operator_responsibilities() -> N
         'Verification Evidence',
     ):
         assert required in case_workspace
-    for required in ('Routing & Channels', 'Policy Registry', 'Channel Readiness', 'Routing Guidance', 'New Policy'):
+    for required in ('Routing & Channels', 'Policy Registry', 'Channel Readiness', 'View Channels', 'New Policy'):
         assert required in routing
     assert "table_ui.table_classes('w-full table-fixed')" in routing
     assert 'overflow-x-auto' not in routing
@@ -99,7 +99,10 @@ def test_alert_operations_sections_own_distinct_operator_responsibilities() -> N
     assert 'data-resource-detail-toggle' in routing
     assert 'alert_intelligence.routing_policy_details' in routing
     assert 'table_registry.footer' in routing
-    assert 'max-h-[30rem]' in routing
+    assert 'max-h-[30rem]' not in routing
+    assert 'data-dialog-target="alert-channel-readiness-dialog"' in routing
+    assert 'Routing Guidance' not in routing
+    assert 'Routing Guidance' in workspace
     assert 'Template Registry' in templates
     assert '<details class="group bg-surface-card">' in templates
     assert 'Save Override' in templates
