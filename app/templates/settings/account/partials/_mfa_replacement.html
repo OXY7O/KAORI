@@ -108,6 +108,14 @@
             </section>
         </div>
     {% else %}
-        <p class="mt-4 text-sm leading-6 text-content-secondary">Self-service replacement requires verified provider reauthentication, which is not available for this identity or its current directory configuration. Contact an authorized administrator for governed recovery.</p>
+        {% if mfa_state.replacement_browser_sso %}
+            <p class="mt-4 text-sm leading-6 text-content-secondary">
+                Your SSO provider does not have a qualified strict reauthentication flow in KAORI. A recent sign-in or account selection alone does not authorize replacement. Contact an authorized administrator for governed MFA recovery. Your existing authenticator remains active.
+            </p>
+        {% else %}
+            <p class="mt-4 text-sm leading-6 text-content-secondary">
+                Self-service replacement requires verified provider reauthentication, which is not available for this identity or its current directory configuration. Contact an authorized administrator for governed recovery.
+            </p>
+        {% endif %}
     {% endif %}
 </section>

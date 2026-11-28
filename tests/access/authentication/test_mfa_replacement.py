@@ -227,3 +227,43 @@ def test_stale_ldap_provider_fence_prevents_replacement_confirmation(
     stage.assert_not_called()
     store.commit.assert_not_called()
     store.rollback.assert_called_once()
+
+
+@pytest.mark.parametrize('source', ('google', 'github', 'unsupported'))
+@pytest.mark.parametrize('action', ('begin', 'confirm', 'cancel'))
+def test_unsupported_replacement_cannot_use_fresh_admission_or_direct_post(
+    source: str, action: str, replacement_fixture: ReplacementFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    user, factor, store, stage = replacement_fixture
+    user.auth_source = source
+    user.auth_session_issued_at = datetime.now(UTC)
+    factor.replacement_totp_secret = 'pending-test-seed'
+    factor.replacement_generation = 7
+    factor.replacement_expires_at = datetime.now(UTC) + timedelta(minutes=1)
+    account_lock = Mock()
+    factor_lock = Mock()
+    ldap_bind = Mock()
+    local_check = Mock()
+    monkeypatch.setattr(service, '_lock_mfa_user', account_lock)
+    monkeypatch.setattr(service, '_locked_factor', factor_lock)
+    monkeypatch.setattr(service, 'reauthenticate_ldap_account', ldap_bind)
+    monkeypatch.setattr(User, 'check_password', local_check)
+    with pytest.raises(service.MfaVerificationError, match='Verified provider reauthentication'):
+        if action == 'begin':
+            service.begin_mfa_replacement(user, '123456', expected_generation=7, current_password='forged-password')
+        elif action == 'confirm':
+            service.confirm_mfa_replacement(user, '123456', expected_generation=7)
+        else:
+            service.cancel_mfa_replacement(user, expected_generation=7)
+    account_lock.assert_not_called()
+    factor_lock.assert_not_called()
+    ldap_bind.assert_not_called()
+    local_check.assert_not_called()
+    stage.assert_not_called()
+    store.commit.assert_not_called()
+    store.rollback.assert_called_once()
+    assert factor.enabled
+    assert factor.totp_secret == 'existing-test-seed'
+    assert factor.recovery_hashes == ['old-test-hash']
+    assert factor.replacement_totp_secret == 'pending-test-seed'
+    assert user.auth_session_version == 7

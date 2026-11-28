@@ -22,6 +22,7 @@ from wtforms.validators import ValidationError
 
 from app.access.authentication.forms import ChangePasswordForm
 from app.access.authentication.identity_provider.adapters.ldap.reauthentication import ldap_reauthentication_available
+from app.access.authentication.identity_provider.catalog import is_browser_provider_key
 from app.access.authentication.mfa.qr import build_totp_qr_data_uri
 from app.access.authentication.mfa.service import (
     MfaVerificationError,
@@ -34,6 +35,7 @@ from app.access.authentication.mfa.service import (
     mfa_enrollment_state,
     mfa_policy_mode,
     mfa_replacement_state,
+    mfa_replacement_supports_source,
     regenerate_mfa_recovery_codes,
 )
 from app.access.authentication.session import (
@@ -300,7 +302,7 @@ def _process_account_mfa_action(
                 expected_generation=generation,
                 current_password=(
                     str(request.form.get('replacement_password') or '')
-                    if user.auth_source in {'database', 'ldap'}
+                    if mfa_replacement_supports_source(user.auth_source)
                     else None
                 ),
             )
@@ -417,14 +419,15 @@ def account():
         mfa_factor, now=datetime.now(UTC), expected_generation=user.auth_session_version, authenticated=True
     )
     replacement_state = mfa_replacement_state(mfa_factor, generation=user.auth_session_version, now=datetime.now(UTC))
-    can_replace_authenticator = can_change_password or (
+    can_replace_authenticator = mfa_replacement_supports_source(auth_source) and (can_change_password or (
         active_tab == 'mfa'
         and enrollment_state == 'enrolled'
         and auth_source == 'ldap'
         and ldap_reauthentication_available(user.id, expected_subject=user.external_id)
-    )
+    ))
     mfa_state = {
         'can_replace_authenticator': can_replace_authenticator,
+        'replacement_browser_sso': is_browser_provider_key(auth_source),
         'replacement_password_label': 'Directory Password' if auth_source == 'ldap' else 'Current Password',
         'replacement_pending': replacement_state == 'pending',
         'replacement_expired': replacement_state == 'expired',

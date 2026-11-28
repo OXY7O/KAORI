@@ -459,10 +459,26 @@ def mfa_replacement_state(
     return 'pending' if now < expires else 'expired'
 
 
+def mfa_replacement_supports_source(source: str) -> bool:
+    """Only sources with implemented strict primary proof may replace a factor.
+
+    Browser account selection, consent, token issuance and KAORI session recency
+    do not establish upstream reauthentication. New sources require explicit
+    qualification, not a fallback to the ordinary browser sign-in adapter.
+    """
+    return source in {'database', 'ldap'}
+
+
+def _require_replacement_source(source: str) -> None:
+    if not mfa_replacement_supports_source(source):
+        raise MfaVerificationError('Verified provider reauthentication is required.')
+
+
 def begin_mfa_replacement(user: User, submitted: str, *, expected_generation: int, current_password: str | None) -> str:
     """Verify current primary and active factor; never replace the active seed here."""
     try:
         source = user.auth_source
+        _require_replacement_source(source)
         provider_proof = None
         if source == 'ldap':
             # No remote bind while holding database row locks.
@@ -522,6 +538,7 @@ def confirm_mfa_replacement(user: User, code: str, *, expected_generation: int) 
     """Swap the factor and recovery codes, revoke the prior generation and audit atomically."""
     try:
         source = user.auth_source
+        _require_replacement_source(source)
         provider_proof = None
         if source == 'ldap':
             record = db.session.execute(
@@ -534,8 +551,6 @@ def confirm_mfa_replacement(user: User, code: str, *, expected_generation: int) 
             if provider_proof is None:
                 raise MfaVerificationError('Verified provider reauthentication is required.')
             lock_ldap_reauthentication_proof(user.id, provider_proof)
-        elif source != 'database':
-            raise MfaVerificationError('Verified provider reauthentication is required.')
         user = _lock_mfa_user(user, expected_generation, authenticated=True)
         if user.auth_source != source or (provider_proof is not None and user.external_id != provider_proof.subject):
             raise MfaVerificationError('Verified provider reauthentication is required.')
@@ -593,11 +608,12 @@ def confirm_mfa_replacement(user: User, code: str, *, expected_generation: int) 
 def cancel_mfa_replacement(user: User, *, expected_generation: int) -> None:
     """Discard only the caller's pending replacement; leave the active factor intact."""
     try:
+        _require_replacement_source(user.auth_source)
         user = _lock_mfa_user(user, expected_generation, authenticated=True)
+        _require_replacement_source(user.auth_source)
         factor = _locked_factor(user.id)
         if (
-            user.auth_source not in {'database', 'ldap'}
-            or factor is None
+            factor is None
             or not factor.enabled
             or factor.replacement_generation != expected_generation
         ):

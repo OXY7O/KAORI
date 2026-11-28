@@ -209,3 +209,7 @@ The enrolled MFA tab retains its accepted recovery action/context cards and adds
 ## LDAP governed replacement extension (#5374)
 
 Reuse the existing Replace Authenticator action and setup layout for LDAP accounts with a single eligible configured identity binding. Label the credential field Directory Password, do not render it for Google/GitHub, and do not enable Change Password for LDAP. The strict operation is bounded to explicit LDAP reauthentication through verified TLS and the same stable directory identity; no provider password is stored. Existing active-factor and one-time response protections remain. Unsupported/ambiguous configurations show unavailable guidance. Visual and provider acceptance pending.
+
+## Browser SSO replacement boundary (#5376)
+
+For browser SSO accounts, keep Replace Authenticator visible as unavailable with concise provider assurance and governed recovery guidance. Do not render a provider password or replacement mutation form, offer a misleading account-selection/consent step-up, or imply that a recent KAORI sign-in proves recent upstream credentials. Local and eligible LDAP use the existing replacement workspace. No new tab or global sign-in behavior. Actual rendering/browser acceptance remains pending.
