@@ -384,3 +384,27 @@ def test_active_alert_triage_and_filters_follow_registry_hierarchy() -> None:
         assert f'case.{field}' in identity
     assert 'case.source_type_label' not in identity
     assert 'case.source_type_label' in table
+
+
+def test_case_evidence_facts_and_activity_streams_use_content_aware_layout() -> None:
+    from jinja2 import Environment
+
+    active = read('app/templates/intelligence/partials/_alert_ops_case_workspace.html')
+    streams = read('app/templates/intelligence/partials/_alert_ops_case_activity_streams.html')
+    for template in (active, streams):
+        Environment().parse(template)
+    assert 'data-alert-evidence-facts' in active
+    assert 'fact_count = case.evidence_facts|length' in active
+    assert "'sm:grid-cols-2' if fact_count > 1 else ''" in active
+    assert "'xl:grid-cols-3' if fact_count == 3" in active
+    assert "'sm:col-span-2 xl:col-span-1' if fact_count == 3 and loop.last" in active
+    assert 'data-alert-evidence-streams' in streams
+    assert streams.count('flex min-w-0 flex-col overflow-hidden rounded-xl') == 2
+    assert 'group mt-auto border-t' in streams
+    assert streams.count('timeline_row(event)') == 3
+    assert streams.count('delivery_row(delivery)') == 3
+    assert streams.count("sort(reverse=true, attribute='created_at')") == 2
+    assert "case.deliveries|length ~ ' Records'" in streams
+    assert "case.deliveries[0].attempt_count ~ ' Attempts'" in streams
+    assert 'truncate' not in streams.replace('timeline_truncated', '')
+    assert 'max-h-72' in streams

@@ -221,3 +221,18 @@ The Alert identity cell uses wrapped title and asset/namespace context, a
 muted full Case ID, and no duplicate source origin (shown in the Source
 column). Long names and identifiers must wrap without losing content; narrow
 screens retain the table's horizontal scroll. No new alert data or controls.
+
+
+### Alert Case modal evidence layout
+
+Operational Evidence facts use a content-aware grid: one fact fills the
+entire row, two share it, three use a balanced responsive layout, and four
+use four columns at wide viewports. Never leave colored empty grid cells.
+Activity & Delivery Evidence uses matching flexible panel headers, shared
+row geometry for current and expanded records, wrap-safe text, aligned
+history disclosures, and bounded internal scrolling. Display timeline events
+newest first within their existing recent/older groups. Preserve delivery
+journal ordering, timestamps, qualification states and per-record attempt
+counts. Label generic bounded delivery totals as records, not attempts;
+scoped qualified delivery retains its actual attempt count. No change to
+admission, stored evidence, recovery or delivery authority.
