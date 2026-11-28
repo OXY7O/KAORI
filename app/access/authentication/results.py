@@ -50,6 +50,7 @@ class AuthResult:
     message: str | None = None
     local_credential_proof: LocalCredentialProof | None = field(default=None, repr=False, compare=False)
     external_credential_proof: ExternalCredentialProof | None = field(default=None, repr=False, compare=False)
+    local_authoritative: bool = field(default=False, repr=False, compare=False)
 
 
 INVALID_LOGIN_MESSAGE = 'Invalid username or password.'

@@ -267,6 +267,7 @@ def test_stale_local_proof_cannot_issue_a_generation(monkeypatch: pytest.MonkeyP
 
 @pytest.mark.parametrize('source', ('database', 'ldap', 'google'))
 def test_pending_mfa_issuance_guards_original_generation(monkeypatch: pytest.MonkeyPatch, source: str) -> None:
+    monkeypatch.setattr(services, 'require_local_login_gate', lambda _user_id: None)
     store = GenerationStore(issued=None)
     monkeypatch.setattr(services.db, 'session', store)
     actor = User(id=42, auth_source=source, auth_session_version=9)

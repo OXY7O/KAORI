@@ -9,7 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from wtforms.validators import ValidationError
 
 from app.access.authentication.admission import enforce_login_admission
-from app.access.authentication.audit import record_authentication_activity
+from app.access.authentication.audit import record_authentication_activity, record_identity_budget_observation
 from app.access.authentication.bot_protection.service import (
     BotConfigurationError,
     bot_policy_state,
@@ -207,10 +207,7 @@ def login():
         try:
             protection = check_login_request(username)
             if protection.over_budget:
-                record_authentication_activity(
-                    action='login', username='', source='credentials', result='failed',
-                    reason='rate_limited' if protection.blocked else 'identity_budget_observed',
-                )
+                record_identity_budget_observation(enforced=protection.blocked)
             if protection.blocked:
                 result = AuthResult(False, 'rate_limited', source='credentials')
             else:
@@ -251,7 +248,8 @@ def login():
                     _record_result(username, result)
                 return response
 
-        _record_result(username, result)
+        if not protection.blocked:
+            _record_result(username, result)
         message = credential_failure_message(result)
         queue_transient_feedback(
             status='error',

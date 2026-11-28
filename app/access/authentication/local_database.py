@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import check_password_hash
 
+from app.access.authentication.lockout_policy import LockoutMode
 from app.access.authentication.lockout_state import lock_account_state, stage_password_outcome
 from app.access.authentication.login_protection import (
     LoginProtectionUnavailable,
@@ -64,7 +65,10 @@ class DatabaseAuthProvider:
                 _dummy_check(password)
                 reason: AuthReason = 'user_inactive' if not user.is_active else 'invalid_credentials'
                 db.session.rollback()
-                return AuthResult(False, reason, source=self.source, user=user, message=USER_INACTIVE_MESSAGE)
+                return AuthResult(
+                    False, reason, source=self.source, user=user, message=USER_INACTIVE_MESSAGE,
+                    local_authoritative=True,
+                )
             context = lock_account_state(user.id)
             if context is None and not user.is_super_admin:
                 raise ValueError('Local lockout account fence changed.')
@@ -72,6 +76,8 @@ class DatabaseAuthProvider:
                 mode, revision = read_login_policy(lock=True)
             else:
                 mode, revision = context.decision.mode, context.revision
+            if protection is None and mode != LockoutMode.DISABLED:
+                raise ValueError('Shared login protection proof is required.')
             if protection is not None and (protection.revision != revision or protection.mode != mode):
                 # Do not let an in-flight Disabled request skip the newly
                 # activated shared request budget or reuse an obsolete mode.
@@ -93,5 +99,8 @@ class DatabaseAuthProvider:
             db.session.rollback()
             return AuthResult(False, 'database_unavailable', source=self.source, message=DATABASE_UNAVAILABLE_MESSAGE)
         if not verified:
-            return AuthResult(False, 'invalid_credentials', source=self.source, user=user, message=INVALID_LOGIN_MESSAGE)
+            return AuthResult(
+                False, 'invalid_credentials', source=self.source, user=user, message=INVALID_LOGIN_MESSAGE,
+                local_authoritative=True,
+            )
         return AuthResult(True, 'success', source=self.source, user=user, local_credential_proof=proof)

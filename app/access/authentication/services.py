@@ -45,6 +45,7 @@ def authenticate(
     local_user = local_result.user
     if (
         local_result.success
+        or local_result.local_authoritative
         or local_result.reason in {'user_inactive', 'database_unavailable', 'access_not_permitted', 'account_gate_rejected'}
         or (local_user is not None and local_user.auth_source == 'database')
     ):

@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from flask import Flask
@@ -54,9 +54,9 @@ def test_shared_budget_requires_redis_and_fails_closed(monkeypatch: pytest.Monke
     app.config.update(SECRET_KEY='fixture-secret-key-not-production', RATELIMIT_ENABLED=True,
                       RATELIMIT_STORAGE_URI='memory://')
     client = Mock()
-    factory = Mock()
-    factory.return_value.__enter__ = Mock(return_value=client)
-    factory.return_value.__exit__ = Mock(return_value=False)
+    factory = MagicMock()
+    factory.return_value.__enter__.return_value = client
+    factory.return_value.__exit__.return_value = False
     monkeypatch.setattr(login_protection.Redis, 'from_url', factory)
     with app.app_context():
         with pytest.raises(LoginProtectionUnavailable):
