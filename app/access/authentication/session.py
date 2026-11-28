@@ -71,6 +71,7 @@ def establish_authenticated_session(
     source: str,
     remember_requested: bool,
     issued_session_version: int | None = None,
+    issued_session_reference: str | None = None,
 ) -> bool:
     """Rotate the Flask session and establish an authenticated user session.
 
@@ -99,7 +100,7 @@ def establish_authenticated_session(
     session['auth_source'] = source
     # Audit correlation only. This opaque value is never an authentication
     # credential and cannot be used to look up or authorize a session.
-    session['auth_session_ref'] = token_hex(16)
+    session['auth_session_ref'] = issued_session_reference if issued_session_reference is not None else token_hex(16)
 
     return remember
 

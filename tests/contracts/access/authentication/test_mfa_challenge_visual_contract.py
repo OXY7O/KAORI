@@ -54,7 +54,9 @@ def test_mfa_challenge_template_keeps_existing_server_authentication_boundary() 
     assert "@auth_bp.route('/mfa', methods=['GET', 'POST'])" in routes
     assert 'MFA_PENDING_SESSION_KEY' in routes
     assert 'form.validate_on_submit()' in routes
-    assert 'verify_mfa_challenge(' in routes
-    assert "user, str(form.verification_code.data or ''), expected_generation=pending['version']" in routes
-    assert 'mfa_verified=True' in routes
+    assert 'complete_pending_mfa_login(' in routes
+    assert "expected_generation=pending['version']" in routes
+    assert "expires_at=pending['expires_at']" in routes
+    assert '_establish_pending_mfa_session(user, admission' in routes
+    assert 'mfa_verified=True' not in routes
     assert "render_template('access/authentication/mfa_challenge.html', form=form, error=error)" in routes

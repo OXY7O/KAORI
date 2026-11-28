@@ -69,6 +69,7 @@ def record_authentication_activity(
     reason: str,
     user: User | None = None,
     commit: bool = True,
+    issued_session_reference: str | None = None,
 ) -> None:
     """Persist one login or logout event in the unified Activity Audit Log.
 
@@ -99,6 +100,16 @@ def record_authentication_activity(
     # Failed attempts are not an authenticated actor and must never inherit
     # a session correlation reference from a previous/other account.
     session_reference = _audit_session_reference() if authenticated_actor is not None else None
+    if issued_session_reference is not None:
+        if (
+            commit
+            or action != 'login'
+            or not success
+            or authenticated_actor is None
+            or not fullmatch(r'[0-9a-f]{32}', issued_session_reference)
+        ):
+            raise ValueError('Invalid staged authentication correlation.')
+        session_reference = issued_session_reference
 
     activity = Notification()
     # Keep failed attempts linked to a resolved target account so Account &
@@ -129,6 +140,8 @@ def record_authentication_activity(
             else f'KAORI rejected the sign-in attempt. {_reason_label(normalized_reason)}.'
         )
     )
+    if issued_session_reference is not None:
+        activity.detail = 'KAORI verified the identity and committed session admission; browser delivery is not asserted.'
     activity.metadata_json = {
         'audit_schema': AUTHENTICATION_AUDIT_SCHEMA,
         'access_action': action,

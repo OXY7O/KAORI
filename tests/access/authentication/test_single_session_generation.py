@@ -112,13 +112,17 @@ def test_browser_and_remember_cookie_use_issued_version_not_later_orm_version(
     monkeypatch.setattr(auth_session, 'login_user', login_stub)
     with app.test_request_context('/auth/login', method='POST'):
         authenticated = auth_session.establish_authenticated_session(
-            actor, source='ldap', remember_requested=True, issued_session_version=9
+            actor,
+            source='ldap',
+            remember_requested=True,
+            issued_session_version=9,
+            issued_session_reference='c' * 32,
         )
         assert authenticated is True
         assert session['_user_id'] == '44:9'
         assert session['_remember'] == 'set'
         assert session['auth_source'] == 'ldap'
-        assert len(session['auth_session_ref']) == 32
+        assert session['auth_session_ref'] == 'c' * 32
         assert auth_session.parse_authenticated_user_identifier(session['_user_id']) == (44, 9)
         # The authoritative user generation is 10, so the old login is no
         # longer admissible on the next Flask-Login load.
@@ -206,6 +210,20 @@ def test_authentication_audit_correlates_only_actual_authenticated_sessions(
         assert committed[-1].metadata_json['session_policy'] == 'single_active_login_generation'
 
         audit.record_authentication_activity(
+            action='login',
+            username=actor.username,
+            source='database',
+            result='success',
+            reason='success',
+            user=actor,
+            commit=False,
+            issued_session_reference='c' * 32,
+        )
+        assert committed[-1].metadata_json['session_reference'] == 'c' * 32
+        assert 'browser delivery is not asserted' in committed[-1].detail
+        assert session['auth_session_ref'] == 'b' * 32
+
+        audit.record_authentication_activity(
             action='logout',
             username=actor.username,
             source='database',
@@ -248,8 +266,8 @@ def test_pending_mfa_issuance_guards_original_generation(monkeypatch: pytest.Mon
     monkeypatch.setattr(services.db, 'session', store)
     actor = User(id=42, auth_source=source, auth_session_version=9)
     with pytest.raises(auth_session.AuthSessionError):
-        services.record_successful_authentication(actor, source=source, client_ip=None, pending_generation=7)
-    assert store.events == ['execute', 'rollback']
+        services.stage_successful_authentication(actor, source=source, client_ip=None, pending_generation=7)
+    assert store.events == ['execute']
     statement = store.statements[0]
     assert 'users.auth_session_version =' in str(statement).lower()
     assert 7 in statement.compile().params.values()
