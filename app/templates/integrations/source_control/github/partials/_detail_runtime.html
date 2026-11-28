@@ -100,18 +100,44 @@
                 'Runtime Refresh owns installation health; Full Validation owns permission evidence. Job and webhook receipts do not establish synchronized repository inventory.') }}
     </div>
 </section>
-{% with runtime_history_id='github-runtime-history', runtime_history_loading_id='github-history-loading',
-    runtime_history_url=url_for('github_source_uat.runtime_history', installation_id=installation.id),
-    runtime_history_endpoint='github_source_uat.runtime_history',
-    runtime_history_route_args={'installation_id': installation.id},
-    runtime_history_detail_url=url_for('github_source_uat.detail', installation_id=installation.id),
-    runtime_history_detail_endpoint='github_source_uat.detail',
-    runtime_history_tab='runtime', runtime_history_filters_enabled=true, provider_label='GitHub',
-    runtime_history_oob=runtime_history_oob|default(false) %}
-    {% include 'integrations/partials/_runtime_history.html' %}
-{% endwith %}
-{% if not runtime_refresh_partial|default(false) %}
-    {% include "integrations/source_control/github/partials/_runtime_deliveries.html" %}
+{% set history_panel %}
+    {% with runtime_history_id='github-runtime-history', runtime_history_loading_id='github-history-loading',
+        runtime_history_url=url_for('github_source_uat.runtime_history', installation_id=installation.id),
+        runtime_history_endpoint='github_source_uat.runtime_history',
+        runtime_history_route_args={'installation_id': installation.id},
+        runtime_history_detail_url=url_for('github_source_uat.detail', installation_id=installation.id),
+        runtime_history_detail_endpoint='github_source_uat.detail',
+        runtime_history_tab='runtime', runtime_history_filters_enabled=true, provider_label='GitHub',
+        runtime_history_oob=runtime_history_oob|default(false), runtime_history_embedded=true %}
+        {% include 'integrations/partials/_runtime_history.html' %}
+    {% endwith %}
+{% endset %}
+{% if runtime_refresh_partial|default(false) %}
+    {{ history_panel }}
+{% else %}
+    <section id="github-runtime-evidence-registry"
+             class="{{ ui.section_shell_classes() }} overflow-hidden"
+             x-data="integrationWorkspaceTabs(['history', 'deliveries'], 'history', null, 'runtime_view')"
+             data-kaori-github-runtime-evidence-tabs>
+        <div x-cloak>
+            {{ framed_tabs.render([
+                ('history', 'Recent Runtime Observations', 'history'),
+                ('deliveries', 'Signed Webhook Deliveries', 'webhook')
+            ], prefix='github-runtime-evidence', aria_label='GitHub Runtime Evidence History') }}
+        </div>
+        <div id="github-runtime-evidence-panel-history"
+             role="tabpanel"
+             aria-labelledby="github-runtime-evidence-tab-history"
+             x-show="activeTab === 'history'">
+            {{ history_panel }}
+        </div>
+        <div id="github-runtime-evidence-panel-deliveries"
+             role="tabpanel"
+             aria-labelledby="github-runtime-evidence-tab-deliveries"
+             x-show="activeTab === 'deliveries'">
+            {% include "integrations/source_control/github/partials/_runtime_deliveries.html" %}
+        </div>
+    </section>
 {% endif %}
 {% if runtime_refresh_partial|default(false) %}
     {{ framed_tabs.badge_oob('github', 'runtime', runtime_health_label) }}

@@ -4,14 +4,15 @@
     window.integrationWorkspaceTabs = function integrationWorkspaceTabs(
         tabs,
         defaultTab = 'configuration',
-        workspaceId = null
+        workspaceId = null,
+        queryKey = 'tab'
     ) {
         const allowedTabs = Array.isArray(tabs) ? tabs : []
 
         const resolveTab = () => {
             const url = new URL(window.location.href)
-            const queryTab = url.searchParams.get('tab')
-            const hashTab = window.location.hash.replace('#', '')
+            const queryTab = url.searchParams.get(queryKey)
+            const hashTab = queryKey === 'tab' ? window.location.hash.replace('#', '') : ''
             if (allowedTabs.includes(queryTab)) return queryTab
             if (allowedTabs.includes(hashTab)) return hashTab
             return allowedTabs.includes(defaultTab) ? defaultTab : allowedTabs[0]
@@ -24,8 +25,8 @@
                 if (!this.tabs.includes(tab)) return
                 this.activeTab = tab
                 const nextUrl = new URL(window.location.href)
-                nextUrl.searchParams.set('tab', tab)
-                nextUrl.hash = tab
+                nextUrl.searchParams.set(queryKey, tab)
+                if (queryKey === 'tab') nextUrl.hash = tab
                 window.history.replaceState(null, '', nextUrl)
                 if (moveToWorkspace && workspaceId) {
                     this.$nextTick(() =>

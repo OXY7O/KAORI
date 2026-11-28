@@ -158,23 +158,31 @@ def test_github_header_help_reuses_accessible_kaori_info_tip():
     # KAORI title-level guidance uses the visible Guide trigger, never a bare question-mark icon.
 
 
-def test_github_runtime_history_has_one_standalone_transport_registry():
+def test_github_runtime_history_has_one_framed_evidence_workspace():
     runtime = _read(GITHUB / 'partials/_detail_runtime.html')
     deliveries = _read(GITHUB / 'partials/_runtime_deliveries.html')
     routes = _read(ROUTES)
     projection = _read(RUNTIME_PRESENTATION)
 
     assert not (GITHUB / 'partials/_runtime_jobs.html').exists()
+    assert 'framed_tabs.render(' in runtime
     assert 'framed_tabs.render_navigation(' not in runtime
-    assert 'github-runtime-evidence-registry' not in runtime
+    assert 'github-runtime-evidence-registry' in runtime
+    assert 'github-runtime-evidence-panel-history' in runtime
+    assert 'github-runtime-evidence-panel-deliveries' in runtime
+    assert "x-show=\"activeTab === 'history'\"" in runtime
+    assert "x-show=\"activeTab === 'deliveries'\"" in runtime
+    assert 'runtime_history_embedded=true' in runtime
+    assert 'runtime_history_embedded=True' in routes
     assert 'Execution References' not in runtime
     assert 'Recent Jobs' not in runtime
     assert runtime.count('partials/_runtime_deliveries.html') == 1
     assert 'def runtime_jobs(' not in routes
     assert '/runtime/jobs' not in routes
     assert 'runtime_table_embedded' not in deliveries + routes
-    assert 'runtime_view' not in deliveries + runtime
-    assert 'table_ui.block_classes(allow_overflow=true)' in deliveries
+    assert "'runtime_view'" in runtime
+    assert 'name="runtime_view" value="deliveries"' in deliveries
+    assert 'class="min-w-0"' in deliveries
     assert 'SourceWebhookDelivery.query.filter_by(installation_id=installation.id)' in projection
     for removed in ('jobs_query', 'job_queue_options', 'job_search', 'job_pagination'):
         assert removed not in projection
@@ -215,6 +223,7 @@ def test_runtime_history_uses_full_kaori_table_components():
     runtime = _read(GITHUB / 'partials/_detail_runtime.html')
     shared_table = _read(ROOT / 'app/templates/components/table.html')
     shared_registry = _read(ROOT / 'app/templates/components/table_registry.html')
+    assert 'framed_tabs.render(' in runtime
     assert 'framed_tabs.render_navigation(' not in runtime
     assert 'macro inventory_block_header(' in shared_table
     assert 'macro clear_filters_action(' in shared_registry
@@ -243,7 +252,7 @@ def test_runtime_history_uses_full_kaori_table_components():
             'integration_status(',
         ):
             assert token in page, (filename, token)
-        assert 'runtime_view' not in page
+        assert 'name="runtime_view" value="deliveries"' in page
         assert 'payload_sha256' not in page
 
 
@@ -443,7 +452,7 @@ def test_github_runtime_uses_canonical_history_and_shared_evidence():
     assert "paginate_runtime_history(" in projection
     assert "runtime_history_view(" in projection
     assert "rows, pagination=pagination, job_public_ids=" in projection
-    assert 'runtime_view' not in runtime
+    assert "'runtime_view'" in runtime
     assert 'runtime_state.diagnostics' in runtime
     assert 'hx-include="#github-runtime-history [data-kaori-runtime-history-filters] form"' in runtime
     history = _read(ROOT / 'app/templates/integrations/partials/_runtime_history.html')
@@ -600,3 +609,19 @@ def test_runtime_job_navigation_reuses_canonical_registry():
     assert "row.job_execution_public_id|default(none)" in modal
     assert "@permission_required('jobs.view')" in routes
     assert 'JobExecution.public_id.ilike(value)' in presentation
+
+
+def test_github_nested_runtime_tabs_preserve_outer_navigation_and_oob_target():
+    runtime = _read(GITHUB / 'partials/_detail_runtime.html')
+    helper = _read(ROOT / 'app/static/js/integration_workspace_tabs.js')
+    history = _read(ROOT / 'app/templates/integrations/partials/_runtime_history.html')
+    assert "integrationWorkspaceTabs(['history', 'deliveries'], 'history', null, 'runtime_view')" in runtime
+    assert "queryKey = 'tab'" in helper
+    assert 'url.searchParams.get(queryKey)' in helper
+    assert 'nextUrl.searchParams.set(queryKey, tab)' in helper
+    assert "if (queryKey === 'tab') nextUrl.hash = tab" in helper
+    assert runtime.count("include 'integrations/partials/_runtime_history.html'") == 1
+    assert runtime.count('{{ history_panel }}') == 2
+    assert 'runtime_history_oob=runtime_history_oob|default(false)' in runtime
+    assert 'runtime_history_embedded|default(false)' in history
+    assert 'hx-swap-oob="outerHTML"' in history

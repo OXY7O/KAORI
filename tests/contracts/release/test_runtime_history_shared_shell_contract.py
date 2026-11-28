@@ -15,6 +15,8 @@ def test_runtime_history_uses_shared_surface_shell_authority() -> None:
 
     assert '{% import "components/table_primitives.html" as surface_ui %}' in source
     assert f'class="relative {SHARED_SHELL}"' in source
+    assert 'runtime_history_embedded|default(false)' in source
+    assert 'class="relative min-w-0"' in source
     assert COPIED_SHELL not in source
 
     assert '<section id="{{ runtime_history_id }}"' in source
