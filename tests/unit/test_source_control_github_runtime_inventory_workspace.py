@@ -646,6 +646,9 @@ def test_github_repository_sync_uses_scoped_canonical_job_poll_and_oob_inventory
     assert 'validation_poll_response(response.get_data(as_text=True), snapshot=job_snapshot(job))' in routes
     assert 'hx-post="{{ url_for(\'github_source_uat.synchronize\'' in inventory
     assert 'validation_poller.render(sync_active,' in inventory
+    assert 'components/operation_feedback_oob.html' in inventory
+    assert 'operational_callout.render(' not in inventory
+    assert 'operation_feedback=_repository_sync_feedback(job)' in routes
     assert 'hx-target="#github-inventory-decision"' in inventory
     assert 'data-kaori-inventory-query-state' in registry and 'data-kaori-inventory-query-state' in inventory
     assert 'hx-swap-oob="outerHTML"' in registry

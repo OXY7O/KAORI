@@ -172,16 +172,31 @@ def _repository_sync_feedback(job: JobExecution | None) -> dict | None:
     if user_id != job.requested_by_user_id and user_id not in subscriber_user_ids(job):
         return None
     outcomes = {
-        'succeeded': ('success', 'Repository Sync Completed',
-                      'Repository synchronization completed. Review the committed inventory.'),
-        'partially_succeeded': ('warning', 'Repository Sync Partially Completed',
-                                'Review committed inventory and revision evidence gaps in Jobs.'),
-        'failed': ('error', 'Repository Sync Failed',
-                   'Repository synchronization did not complete. Review the committed inventory and Jobs.'),
-        'canceled': ('warning', 'Repository Sync Canceled',
-                     'Synchronization was canceled. The registry shows committed evidence only.'),
-        'expired': ('warning', 'Repository Sync Expired',
-                    'Synchronization expired. Review job status before retrying.'),
+        'succeeded': (
+            'success',
+            'Repository Sync Completed',
+            'Repository synchronization completed. Review the committed inventory.',
+        ),
+        'partially_succeeded': (
+            'warning',
+            'Repository Sync Partially Completed',
+            'Review committed inventory and revision evidence gaps in Jobs.',
+        ),
+        'failed': (
+            'error',
+            'Repository Sync Failed',
+            'Repository synchronization did not complete. Review the committed inventory and Jobs.',
+        ),
+        'canceled': (
+            'warning',
+            'Repository Sync Canceled',
+            'Synchronization was canceled. The registry shows committed evidence only.',
+        ),
+        'expired': (
+            'warning',
+            'Repository Sync Expired',
+            'Synchronization expired. Review job status before retrying.',
+        ),
     }
     outcome = outcomes.get(job.status)
     if outcome is None:
@@ -771,7 +786,9 @@ def synchronize_status(installation_id: int, job_id: int) -> ResponseReturnValue
     if request.headers.get('HX-Request') != 'true':
         return redirect(_detail_url(installation_id, tab='inventory'))
     response = _render_inventory_content(
-        installation, sync_job=job, refresh_registry=job.is_terminal,
+        installation,
+        sync_job=job,
+        refresh_registry=job.is_terminal,
         operation_feedback=_repository_sync_feedback(job),
     )
     return validation_poll_response(response.get_data(as_text=True), snapshot=job_snapshot(job))

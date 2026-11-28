@@ -162,11 +162,19 @@ def test_sync_poll_rejects_missing_or_foreign_job(app: Flask, monkeypatch: pytes
         uat_routes.synchronize_status.__wrapped__(17, 81)
 
 
-@pytest.mark.parametrize(('job_status', 'tone'), [
-    ('succeeded', 'success'), ('partially_succeeded', 'warning'), ('failed', 'error'),
-    ('canceled', 'warning'), ('expired', 'warning'),
-])
-def test_sync_terminal_feedback_is_scoped_and_not_queued(app, monkeypatch, job_status, tone):
+@pytest.mark.parametrize(
+    ('job_status', 'tone'),
+    [
+        ('succeeded', 'success'),
+        ('partially_succeeded', 'warning'),
+        ('failed', 'error'),
+        ('canceled', 'warning'),
+        ('expired', 'warning'),
+    ],
+)
+def test_sync_terminal_feedback_is_scoped_and_not_queued(
+    app: Flask, monkeypatch: pytest.MonkeyPatch, job_status: str, tone: str
+) -> None:
     monkeypatch.setattr(uat_routes, 'current_user', SimpleNamespace(id=1))
     job = SimpleNamespace(id=81, status=job_status, is_terminal=True, requested_by_user_id=2)
     monkeypatch.setattr(uat_routes, 'subscriber_user_ids', lambda _job: [])
@@ -177,11 +185,14 @@ def test_sync_terminal_feedback_is_scoped_and_not_queued(app, monkeypatch, job_s
         assert feedback['status'] == tone
         assert feedback['feedback_id'] == f'repository-sync-81-{job_status}'
         assert feedback['activity_audit_expected'] is False
+        job.requested_by_user_id = 2
+        monkeypatch.setattr(uat_routes, 'subscriber_user_ids', lambda _job: [1])
+        assert uat_routes._repository_sync_feedback(job)['status'] == tone
         job.is_terminal = False
         assert uat_routes._repository_sync_feedback(job) is None
 
 
-def test_sync_blocked_htmx_delivers_feedback_without_session_queue(app, monkeypatch):
+def test_sync_blocked_htmx_delivers_feedback_without_session_queue(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
     installation = SimpleNamespace(id=17, integration_instance_id=21)
     monkeypatch.setattr(uat_routes, '_installation_or_404', lambda _identity: installation)
     monkeypatch.setattr(uat_routes, 'current_user', SimpleNamespace(id=1))
