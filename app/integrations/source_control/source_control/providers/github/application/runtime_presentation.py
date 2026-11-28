@@ -125,7 +125,13 @@ def _observation_job_public_ids(
         snapshot = row.capability_snapshot or {}
         job_id = snapshot.get('job_execution_id')
         operation = snapshot.get('operation')
-        if type(job_id) is int and job_id > 0 and operation in {'full_validation', 'runtime_refresh'}:
+        if (
+            isinstance(job_id, int)
+            and not isinstance(job_id, bool)
+            and job_id > 0
+            and isinstance(operation, str)
+            and operation in {'full_validation', 'runtime_refresh'}
+        ):
             candidates[job_id] = operation
     if not candidates or not current_user.is_authenticated or not current_user.has_permission('jobs.view'):
         return {}

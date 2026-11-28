@@ -441,7 +441,8 @@ def test_github_runtime_uses_canonical_history_and_shared_evidence():
     assert "'provider_key': 'github'" in projection
     assert "'adapter_key': 'github_rest_v3'" in projection
     assert "paginate_runtime_history(" in projection
-    assert "runtime_history_view(rows, pagination=pagination)" in projection
+    assert "runtime_history_view(" in projection
+    assert "rows, pagination=pagination, job_public_ids=" in projection
     assert 'runtime_view' not in runtime
     assert 'runtime_state.diagnostics' in runtime
     assert 'hx-include="#github-runtime-history [data-kaori-runtime-history-filters] form"' in runtime
@@ -560,7 +561,21 @@ def test_runtime_job_reference_is_permission_gated_and_exact_scope(monkeypatch):
     user = SimpleNamespace(is_authenticated=True, has_permission=lambda _permission: False)
     monkeypatch.setattr(runtime_presentation, 'current_user', user)
     query = MagicMock()
-    monkeypatch.setattr(runtime_presentation.JobExecution, 'query', query)
+    model = runtime_presentation.JobExecution
+    monkeypatch.setattr(
+        runtime_presentation,
+        'JobExecution',
+        SimpleNamespace(
+            query=query,
+            **{
+                name: getattr(model, name)
+                for name in (
+                    'id', 'public_id', 'operation', 'integration_type', 'job_type',
+                    'scope_type', 'scope_key', 'integration_instance_id',
+                )
+            },
+        ),
+    )
     assert runtime_presentation._observation_job_public_ids(installation, rows) == {}
     query.with_entities.assert_not_called()
 

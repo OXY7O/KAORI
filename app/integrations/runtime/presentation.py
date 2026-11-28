@@ -227,7 +227,7 @@ def runtime_history_view(
                 ),
                 'job_execution_id': snapshot.get('job_execution_id'),
                 'job_execution_public_id': (job_public_ids or {}).get(snapshot.get('job_execution_id'))
-                if type(snapshot.get('job_execution_id')) is int
+                if isinstance(snapshot.get('job_execution_id'), int) and not isinstance(snapshot.get('job_execution_id'), bool)
                 else None,
                 'readiness': row.readiness,
                 'readiness_label': present_key_label(row.readiness),
