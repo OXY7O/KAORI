@@ -1,5 +1,6 @@
 """Durable reservation adoption correlation, never execution authorization."""
 
+from dataclasses import replace
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from uuid import uuid4
@@ -81,18 +82,58 @@ def _child(reservation_id, plan):
     )
 
 
-@pytest.mark.parametrize('failure', [None, 'other_child', 'parent_job_id', 'attempt_count', 'operation', 'payload_json'])
-def test_stage_adoption_requires_exact_child_and_flushes_audit_without_commit(monkeypatch, failure):
+def _spec(reservation_id, plan):
+    return service.JobCreationSpec(
+        job_type='infrastructure_automation',
+        operation=service.RUN_OPERATION,
+        queue_name='automation',
+        workload_class='validation',
+        requested_by_user_id=7,
+        integration_type='configuration_automation',
+        integration_instance_id=31,
+        scope_type='ansible_source_connection',
+        scope_key='31',
+        parent_job_id=plan.id,
+        parameters=_child(reservation_id, plan).payload_json,
+        max_attempts=1,
+    )
+
+
+@pytest.mark.parametrize('failure', [
+    None, 'other_child', 'duplicate', 'parent_job_id', 'attempt_count', 'operation', 'payload_json',
+    'spec_parent', 'spec_operation', 'spec_task', 'spec_payload',
+])
+def test_stage_adoption_requires_new_exact_child_and_flushes_audit_without_commit(monkeypatch, failure):
     reservation_id = str(uuid4())
     plan = SimpleNamespace(id=1, public_id='plan', integration_instance_id=31)
     child = _child(reservation_id, plan)
-    if failure not in (None, 'other_child'):
+    spec = _spec(reservation_id, plan)
+    if failure in ('parent_job_id', 'attempt_count', 'operation', 'payload_json'):
         setattr(child, failure, None)
-    monkeypatch.setattr(service, 'lock_reserved_plan', lambda **kwargs: plan)
+    if failure == 'spec_parent':
+        spec = replace(spec, parent_job_id=99)
+    elif failure == 'spec_operation':
+        spec = replace(spec, operation='fixture')
+    elif failure == 'spec_task':
+        spec = replace(spec, celery_task_id='previous-dispatch')
+    elif failure == 'spec_payload':
+        spec = replace(spec, payload={'fixture': 'different'})
+
     staged = []
     events = []
+
+    def lock(**kwargs):
+        events.append('lock')
+        return plan
+
+    def stage(actual):
+        assert actual is spec
+        events.append('stage')
+        return child, failure != 'duplicate'
+
+    monkeypatch.setattr(service, 'lock_reserved_plan', lock)
+    monkeypatch.setattr(service, 'stage_job_execution', stage)
     monkeypatch.setattr(service, 'db', SimpleNamespace(session=SimpleNamespace(
-        get=lambda *args, **kwargs: child,
         execute=lambda statement: SimpleNamespace(
             scalar_one_or_none=lambda: 9 if failure == 'other_child' else None
         ),
@@ -100,19 +141,21 @@ def test_stage_adoption_requires_exact_child_and_flushes_audit_without_commit(mo
         flush=lambda: events.append('flush'),
     )))
     kwargs = dict(reservation_id=reservation_id, connection_id=31, plan_fingerprint='a' * 64,
-                  actor_id=7, run_job_id=2)
+                  actor_id=7, run_spec=spec)
     if failure is not None:
         with pytest.raises(service.TargetReservationDenied):
             service.stage_run_reservation_adoption(**kwargs)
         assert staged == []
+        if failure == 'other_child' or failure.startswith('spec_'):
+            assert events == ['lock']
         return
-    service.stage_run_reservation_adoption(**kwargs)
+    assert service.stage_run_reservation_adoption(**kwargs) is child
     assert len(staged) == 2
     assert isinstance(staged[0], AutomationRunReservationAdoption)
     assert staged[0].run_job_id == 2
     assert isinstance(staged[1], AuditEvent)
     assert staged[1].metadata_json['execution_authorized'] is False
-    assert events == ['flush']
+    assert events == ['lock', 'stage', 'flush']
 
 
 @pytest.mark.parametrize('failure', [None, 'missing_claim', 'released', 'wrong_plan', 'wrong_actor', 'adopted', 'stale'])

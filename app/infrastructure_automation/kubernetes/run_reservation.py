@@ -30,7 +30,7 @@ from app.models.automation import (
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
 from app.platform_operations.jobs.fingerprint import payload_fingerprint
-from app.platform_operations.jobs.service import acquire_resource_admission_locks
+from app.platform_operations.jobs.service import JobCreationSpec, acquire_resource_admission_locks, stage_job_execution
 
 _PERMISSIONS = {'integrations.manage', 'inventory.view', 'jobs.execute'}
 _TARGET = 'automation_kubespray_target_reservation'
@@ -172,12 +172,16 @@ def reserve_review_targets(*, connection_id: int, plan_fingerprint: str, actor_i
             db.session.rollback()
 
 
-def _reservation_rows(reservation_id: str) -> list[AutomationRunTargetClaim]:
+def _require_reservation_id(reservation_id: str) -> None:
     try:
-        if not isinstance(reservation_id, str) or str(UUID(reservation_id)) != reservation_id:
+        if not isinstance(reservation_id, str) or len(reservation_id) != 36 or str(UUID(reservation_id)) != reservation_id:
             raise _deny()
     except ValueError:
         raise _deny() from None
+
+
+def _reservation_rows(reservation_id: str) -> list[AutomationRunTargetClaim]:
+    _require_reservation_id(reservation_id)
     return list(db.session.execute(
         select(AutomationRunTargetClaim)
         .where(AutomationRunTargetClaim.reservation_id == reservation_id)
@@ -207,6 +211,7 @@ def lock_reserved_plan(
     Caller owns the transaction; review acknowledgement is never mutation
     authority. No job, adoption, audit or dispatch is created by this helper.
     """
+    _require_reservation_id(reservation_id)
     approval = review_current_plan_acknowledgement(
         connection_id=connection_id, plan_fingerprint=plan_fingerprint, now=datetime.now(UTC)
     )
@@ -271,32 +276,58 @@ def _require_staged_child(
         raise _deny()
 
 
-def stage_run_reservation_adoption(
-    *, reservation_id: str, connection_id: int, plan_fingerprint: str, actor_id: int, run_job_id: int
+def _require_run_spec(
+    spec: JobCreationSpec, plan: JobExecution, *, reservation_id: str, plan_fingerprint: str, actor_id: int
 ) -> None:
-    """Stage durable correlation and audit for a separately admitted child.
+    if (
+        not isinstance(spec, JobCreationSpec)
+        or spec.parent_job_id != plan.id
+        or spec.operation != RUN_OPERATION
+        or spec.job_type != 'infrastructure_automation'
+        or spec.queue_name != 'automation'
+        or spec.integration_type != 'configuration_automation'
+        or spec.integration_instance_id != plan.integration_instance_id
+        or spec.scope_type != 'ansible_source_connection'
+        or spec.scope_key != str(plan.integration_instance_id)
+        or spec.requested_by_user_id != actor_id
+        or type(spec.max_attempts) is not int
+        or spec.max_attempts != 1
+        or spec.celery_task_id is not None
+        or not isinstance(spec.parameters, dict)
+        or spec.parameters.get('reservation_id') != reservation_id
+        or spec.parameters.get('plan_job_public_id') != plan.public_id
+        or spec.parameters.get('plan_fingerprint') != plan_fingerprint
+        or (spec.payload is not None and payload_fingerprint(spec.payload) != payload_fingerprint(spec.parameters))
+    ):
+        raise _deny()
 
-    The future domain writer must establish operation-specific authority,
-    call lock_reserved_plan before stage_job_execution, require a newly
-    created child, and own the single transaction and rollback. This
-    helper cannot create jobs, authorize execution, commit, or dispatch.
-    No application/worker caller is enabled by this review-lane change.
+
+def stage_run_reservation_adoption(
+    *, reservation_id: str, connection_id: int, plan_fingerprint: str, actor_id: int, run_spec: JobCreationSpec
+) -> JobExecution:
+    """Stage a NEW child, its subscriber, adoption and audit together.
+
+    Only a future domain writer with independent operation-specific authority
+    may call this internal primitive. No existing child identity is accepted.
+    The caller owns commit/rollback; no execution authority or dispatch
+    follows from staging. A competing or previously committed child denies.
     """
     plan = lock_reserved_plan(
         reservation_id=reservation_id, connection_id=connection_id,
         plan_fingerprint=plan_fingerprint, actor_id=actor_id,
     )
-    if type(run_job_id) is not int or run_job_id <= 0:
-        raise _deny()
-    child = db.session.get(JobExecution, run_job_id, with_for_update=True, populate_existing=True)
-    _require_staged_child(child, plan, reservation_id=reservation_id, plan_fingerprint=plan_fingerprint, actor_id=actor_id)
-    if child is None:
-        raise _deny()
+    _require_run_spec(
+        run_spec, plan, reservation_id=reservation_id, plan_fingerprint=plan_fingerprint, actor_id=actor_id
+    )
     other = db.session.execute(
-        select(JobExecution.id).where(JobExecution.parent_job_id == plan.id, JobExecution.id != run_job_id).limit(1)
+        select(JobExecution.id).where(JobExecution.parent_job_id == plan.id).limit(1)
     ).scalar_one_or_none()
     if other is not None:
         raise _deny()
+    child, created = stage_job_execution(run_spec)
+    if not created:
+        raise _deny()
+    _require_staged_child(child, plan, reservation_id=reservation_id, plan_fingerprint=plan_fingerprint, actor_id=actor_id)
     db.session.add(AutomationRunReservationAdoption(
         reservation_id=reservation_id,
         plan_job_id=plan.id,
@@ -320,6 +351,7 @@ def stage_run_reservation_adoption(
         },
     ))
     db.session.flush()
+    return child
 
 
 def release_review_targets(*, reservation_id: str, actor_id: int) -> None:
@@ -331,6 +363,7 @@ def release_review_targets(*, reservation_id: str, actor_id: int) -> None:
     committed = False
     try:
         begin_security_review_transaction()
+        _require_reservation_id(reservation_id)
         if type(actor_id) is not int or actor_id <= 0 or not lock_explicit_permissions(actor_id, _PERMISSIONS):
             raise _deny()
         # Match adoption's Plan-before-claim lock order. Resolve the identity
