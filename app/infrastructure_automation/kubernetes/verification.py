@@ -319,5 +319,11 @@ def observe_independent_pilot_api(
         # Provider exceptions may include sensitive endpoint, body or credentials.
         raise _deny() from None
     finally:
+        cleanup_failed = False
         for api_client in clients:
-            api_client.close()
+            try:
+                api_client.close()
+            except Exception:
+                cleanup_failed = True
+        if cleanup_failed:
+            raise _deny() from None
