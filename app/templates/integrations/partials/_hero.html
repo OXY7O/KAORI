@@ -20,7 +20,8 @@
                         <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Integration Portfolio</p>
                         <h2 class="{{ page_hero.context_panel_title_classes() }}">Provider Readiness</h2>
                     </div>
-                    <span class="{{ page_hero.context_icon_classes() }}"><i data-lucide="waypoints" class="h-5 w-5"></i></span>
+                    {% set portfolio_status = 'Not Configured' if not stats.total or not stats.configured else ('Ready' if stats.ready == stats.total else 'Attention') %}
+                    {{ page_hero.context_status_badge(portfolio_status, 'normal' if portfolio_status == 'Ready' else ('warning' if portfolio_status == 'Attention' else 'unknown')) }}
                 </div>
                 <div class="{{ page_hero.context_panel_metrics_classes() }}">
                     {{ page_hero.context_metric('plug-zap', 'Configured', stats.configured, 'Registered provider targets') }}

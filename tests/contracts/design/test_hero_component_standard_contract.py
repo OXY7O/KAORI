@@ -618,3 +618,33 @@ def test_profile_integration_navigation_keeps_blocked_and_denied_states_link_fre
     for rendered in (denied, blocked, denied_card, blocked_card):
         assert 'data-kaori-hero-cta="integration-navigation"' not in rendered
         assert f'href="/navigation/{endpoint}"' not in rendered
+
+
+def test_integration_hero_status_adapter_preserves_semantic_tones() -> None:
+    environment = Environment(loader=FileSystemLoader(ROOT / 'app/templates'), autoescape=True)
+    adapter = environment.get_template('integrations/components/_semantic_status.html').module
+    for value, label, tone in (
+        ('ready', 'Ready', 'normal'),
+        ('degraded', 'Attention', 'warning'),
+        ('blocked', 'Blocked', 'critical'),
+        ('validation_required', 'Validation Required', 'info'),
+        ('not_configured', 'Draft', 'unknown'),
+    ):
+        rendered = str(adapter.integration_hero_status(value, label))
+        assert 'data-kaori-hero-header-accessory="status"' in rendered
+        assert f'kaori-hero-status-{tone}' in rendered
+        assert label in rendered
+    assert 'data-kaori-hero-header-accessory' not in str(adapter.integration_status('ready', 'Ready'))
+
+
+def test_integration_provider_detail_oob_uses_same_hero_badge() -> None:
+    from types import SimpleNamespace
+
+    environment = Environment(loader=FileSystemLoader(ROOT / 'app/templates'), autoescape=True)
+    environment.globals['request'] = SimpleNamespace(headers={'HX-Request': 'true'})
+    posture = environment.get_template('integrations/components/_provider_detail_posture.html').module
+    rendered = str(posture.state_oob('example', 'ready', 2))
+    assert 'id="example-posture-status"' in rendered
+    assert 'hx-swap-oob="innerHTML"' in rendered
+    assert 'data-kaori-hero-header-accessory="status"' in rendered
+    assert 'kaori-hero-status-normal' in rendered
