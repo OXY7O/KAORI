@@ -77,7 +77,7 @@ def origin_identity_bucket(username: str, origin: str | None, secret: str | byte
         address = address.ipv4_mapped
     key = secret.encode() if isinstance(secret, str) else secret
     namespace = hmac.digest(key, b'kaori:login-origin-identity:namespace:v1', hashlib.sha256).hex()[:24]
-    payload = b'kaori:login-origin-identity:v1:' + str(address).encode() + b'\\x00'
+    payload = b'kaori:login-origin-identity:v1:' + str(address).encode() + b'\x00'
     payload += username.strip().casefold().encode()
     digest = hmac.digest(key, payload, hashlib.sha256)
     bucket = int.from_bytes(digest[:4], 'big') % BUCKET_COUNT
