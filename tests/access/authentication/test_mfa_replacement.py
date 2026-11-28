@@ -44,7 +44,9 @@ def replacement_fixture(monkeypatch: pytest.MonkeyPatch) -> ReplacementFixture:
     return user, factor, store, stage
 
 
-def test_begin_preserves_active_factor_and_confirmation_rotates_generation(replacement_fixture: ReplacementFixture) -> None:
+def test_begin_preserves_active_factor_and_confirmation_rotates_generation(
+    replacement_fixture: ReplacementFixture,
+) -> None:
     user, factor, store, stage = replacement_fixture
     issued_at = user.auth_session_issued_at
     activity_at = user.auth_session_activity_at
@@ -97,7 +99,7 @@ def test_confirmation_failures_do_not_commit(
         assert user.auth_session_version == 7
 
 
-def test_cancel_preserves_active_factor(replacement_fixture) -> None:
+def test_cancel_preserves_active_factor(replacement_fixture: ReplacementFixture) -> None:
     user, factor, store, stage = replacement_fixture
     factor.replacement_totp_secret = 'new-test-seed'
     factor.replacement_generation = 7
@@ -111,7 +113,9 @@ def test_cancel_preserves_active_factor(replacement_fixture) -> None:
 
 
 @pytest.mark.parametrize('source,password', [('database', 'wrong'), ('ldap', None), ('google', None), ('github', None)])
-def test_begin_denies_unverified_primary(source, password, replacement_fixture) -> None:
+def test_begin_denies_unverified_primary(
+    source: str, password: str | None, replacement_fixture: ReplacementFixture
+) -> None:
     user, factor, store, _ = replacement_fixture
     user.auth_source = source
     with pytest.raises(service.MfaVerificationError):
@@ -153,3 +157,18 @@ def test_recovery_rotation_invalidates_pending_replacement(replacement_fixture: 
         'mfa_recovery_regenerated',
     ]
     store.commit.assert_called_once()
+
+
+def test_invalid_existing_factor_cannot_start_replacement(
+    replacement_fixture: ReplacementFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    user, factor, store, stage = replacement_fixture
+    monkeypatch.setattr(service, '_accepted_step', Mock(return_value=None))
+    monkeypatch.setattr(service, 'check_password_hash', Mock(return_value=False))
+    with pytest.raises(service.MfaVerificationError):
+        service.begin_mfa_replacement(user, '123456', expected_generation=7, current_password='fixture-password')
+    assert factor.replacement_totp_secret is None
+    assert factor.totp_secret == 'existing-test-seed'
+    stage.assert_not_called()
+    store.commit.assert_not_called()
+    store.rollback.assert_called_once()
