@@ -98,6 +98,20 @@ def qualify_exact_ssh_version(
         raise _deny()
     selected = selector.credential
     try:
+        # The shared inventory parser permits absent optional timestamps.
+        # Material use requires explicit native fields for the selected version.
+        for response in (metadata_before, metadata_after):
+            data = response.get('data')
+            if not isinstance(data, dict) or type(data.get('current_version')) is not int:
+                raise _deny()
+            rows = data.get('versions')
+            native_row = rows.get(str(selected.version)) if isinstance(rows, dict) else None
+            if (
+                not isinstance(native_row, dict)
+                or not {'created_time', 'deletion_time', 'destroyed'}.issubset(native_row)
+                or native_row['destroyed'] is not False
+            ):
+                raise _deny()
         before = _safe_metadata(mount=selected.mount, path='', body=metadata_before)
         after = _safe_metadata(mount=selected.mount, path='', body=metadata_after)
         if before != after or before.current_version != selected.version:
