@@ -12,7 +12,6 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.authentication.break_glass import recover_bot_protection
 from app.access.authentication.mfa.cleanup import MAX_BATCH, cleanup_pending_mfa
-from app.security.credentials import CredentialEncryptionError
 
 
 @click.command('mfa-pending-cleanup')
@@ -53,7 +52,7 @@ def recover_bot_protection_command() -> None:
             username=username, operator=operator, ticket=ticket, reason=reason,
             password=password, code=code, acknowledged=True,
         )
-    except (SQLAlchemyError, RuntimeError, ValueError, CredentialEncryptionError):
+    except (SQLAlchemyError, RuntimeError, ValueError):
         # Do not expose SQL parameters, credentials, or underlying provider errors.
         raise click.ClickException('Recovery did not complete; no successful transition is asserted.') from None
     click.echo(f'Committed Bot Protection result: {result.previous_mode} -> {result.new_mode}')

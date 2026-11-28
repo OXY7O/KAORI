@@ -182,6 +182,9 @@ def test_rc_example_keeps_only_required_operator_overrides() -> None:
     for inherited_default in (
         'RATELIMIT_ENABLED=',
         'AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME=',
+        'AUTH_LOCKOUT_MONITOR_ALLOWED=',
+        'AUTH_LOCKOUT_ENFORCEMENT_ALLOWED=',
+        'AUTH_BREAK_GLASS_RECOVERY_ALLOWED=',
         'KUBERNETES_SECRET_REVEAL_ENABLED=',
         'REPORT_STORAGE_BACKEND=',
         'REPORT_LOCAL_STORAGE_DIR=',

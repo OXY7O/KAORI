@@ -104,7 +104,12 @@ def recover_bot_protection(
                 User.deleted_at.is_(None),
             ).with_for_update(of=User).execution_options(populate_existing=True)
         ).scalar_one_or_none()
-        if actor is None or session_admission_reason(actor, source='database') is not None:
+        if (
+            actor is None
+            or actor.auth_source != 'database'
+            or not actor.is_super_admin
+            or session_admission_reason(actor, source='database') is not None
+        ):
             raise BreakGlassDenied('Recovery assurance rejected.')
         # Lock account -> policy -> factor. Select only required policy fields,
         # so an unavailable encrypted Turnstile secret cannot obstruct recovery.
