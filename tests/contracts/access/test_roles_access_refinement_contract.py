@@ -270,20 +270,27 @@ def test_permission_matrix_has_descriptive_copy_for_every_canonical_permission()
     assert 'permission.description' in role_form  # DB-only registry entries retain their fallback
 
 
-def test_role_registry_overview_has_single_shared_guide() -> None:
+def test_role_registry_owns_guide_and_overview_has_total_metadata() -> None:
     from jinja2 import Environment
 
-    source = read('app/templates/access/roles/index.html')
-    Environment().parse(source)
-    assert '{% import "components/info_tip.html" as info_tip %}' in source
-    assert source.count("info_tip.render('role-registry-overview-guide'") == 1
-    assert source.index('>Role Registry Overview</h2>') < source.index("info_tip.render('role-registry-overview-guide'")
-    assert "variant='guide'" in source
+    overview = read('app/templates/access/roles/index.html')
+    registry = read('app/templates/access/roles/partials/_registry.html')
+    Environment().parse(overview)
+    Environment().parse(registry)
+    assert 'info_tip.render(' not in overview
+    assert "table_label.metadata_label(table_label.count_text(summary.total_roles, 'Role'), icon='shield')" in overview
+    assert registry.count('info_tip.render(') == 1
+    heading = registry.index('>Role Registry</h2>')
+    count = registry.index('table_label.result_count(summary.matching)')
+    guide = registry.index("info_tip.render('role-registry-guide'")
+    assert heading < count < guide
+    assert "variant='guide'" in registry
+    assert 'table_ui.block_classes(allow_overflow=true)' in registry
     for meaning in (
         'code-owned protected defaults',
         'inactive roles fail closed',
         'effective access',
         'baseline drift requires explicit review',
     ):
-        assert meaning in source
-    assert 'whitespace-nowrap' not in source
+        assert meaning in registry
+    assert 'whitespace-nowrap' not in overview

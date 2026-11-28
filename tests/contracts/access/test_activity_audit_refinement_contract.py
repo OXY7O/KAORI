@@ -481,7 +481,7 @@ def test_uat_administrative_evidence_uses_shared_title_result_count() -> None:
     assert "loading_bar.render('administrative-activity-loading'" in header
 
 
-def test_activity_audit_overview_owns_single_shared_accessible_evidence_guide() -> None:
+def test_activity_audit_workspaces_own_guides_and_overview_has_24h_metadata() -> None:
     from jinja2 import Environment
 
     overview = read('app/templates/access/activity_audit/partials/_activity_summary_cards.html')
@@ -490,26 +490,27 @@ def test_activity_audit_overview_owns_single_shared_accessible_evidence_guide() 
     shared = read('app/templates/components/info_tip.html')
     workspace = read('app/templates/access/activity_audit/partials/_audit_records_workspace.html')
 
-    for fragment in (overview, activity, administrative):
+    for fragment in (overview, activity, administrative, workspace):
         Environment().parse(fragment)
-    assert '{% import "components/info_tip.html" as info_tip %}' in overview
-    assert overview.count('info_tip.render(') == 1
-    assert overview.count("variant='guide'") == 1
-    assert (
-        overview.index('>Audit Evidence Overview</h2>')
-        < overview.index("info_tip.render('activity-audit-overview-guide'")
-        < overview.index('Recent evidence volume')
-    )
-    for fragment in (activity, administrative):
-        assert 'info_tip.render(' not in fragment
-        assert "variant='guide'" not in fragment
+    assert 'info_tip.render(' not in overview
+    assert "table_label.count_text(summary.events_24h, 'Event') ~ ' · 24H'" in overview
+    for fragment, title, guide in (
+        (activity, 'Activity Register', 'activity-register-guide'),
+        (administrative, 'Administrative Source Evidence', 'administrative-source-evidence-guide'),
+    ):
+        assert fragment.count('info_tip.render(') == 1
+        assert fragment.count("variant='guide'") == 1
+        heading = fragment.index(f'>{title}</h2>')
+        count = fragment.index('table_label.result_count(')
+        assert heading < count < fragment.index(f"info_tip.render('{guide}'")
+        assert 'table_ui.block_classes(allow_overflow=true)' in fragment
+        assert 'Notification-backed activity with actor identity snapshotted at commit' in fragment
+        assert 'hot AuditEvent records; actor references are foreign keys' in fragment
+        assert 'Automatic Jobs and Tenant Inventory Sync remain source-owned' in fragment
+        assert 'Register filters and totals do not cover administrative sources' in fragment
+        assert 'browsing archive bundles does not prove a specific job match' in fragment
 
-    assert 'Notification-backed activity with actor identity snapshotted at commit' in overview
-    assert 'hot AuditEvent records; actor references are foreign keys' in overview
-    assert 'Automatic Jobs and Tenant Inventory Sync remain source-owned' in overview
-    assert 'Register filters and totals do not cover administrative sources' in overview
-    assert 'browsing archive bundles does not prove a specific job match' in overview
-
+    assert 'table_ui.block_classes(allow_overflow=true)' in workspace
     assert 'data-kaori-info-tip-trigger' in shared
     assert 'aria-expanded="false"' in shared
     assert 'role="tooltip"' in shared

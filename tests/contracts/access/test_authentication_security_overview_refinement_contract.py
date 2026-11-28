@@ -67,11 +67,13 @@ def test_overview_reuses_existing_access_tab_routes_and_never_mutates_policy() -
     assert 'csrf_token()' not in overview
 
 
-def test_kaori_canonical_posture_guide_replaces_inline_header_help() -> None:
+def test_kaori_canonical_control_header_guide_replaces_posture_help() -> None:
     source = _template()
     overview = _overview()
     assert '{% import "components/info_tip.html" as info_tip %}' in source
     assert "'authentication-assurance-posture-guide'" in overview
+    assert overview.index('assurance.control_header(') < overview.index('guide=info_tip.render(')
+    assert "metadata=table_label.metadata_label('Policy Controls', icon='shield-check')" in overview
     assert "'Authentication assurance posture'" in overview
     assert "variant='guide'" in overview
     assert "placement='right'" in overview

@@ -26,9 +26,12 @@ TITLE_GUIDE_TEMPLATES = (
     'storage/object_storage/inventory/systems/partials/_table_card.html',
     'storage/object_storage/inventory/buckets/partials/_table_card.html',
     'artifact_registry/partials/_inventory_workspace.html',
-    'access/activity_audit/partials/_activity_summary_cards.html',
-    'access/permissions/index.html',
-    'access/roles/index.html',
+    'access/activity_audit/partials/_activity_table_card.html',
+    'access/activity_audit/partials/_administrative_evidence.html',
+    'access/permissions/partials/_registry.html',
+    'access/permissions/partials/_coverage.html',
+    'access/roles/partials/_registry.html',
+    'access/authentication_security/partials/_page_content.html',
     'access/users/partials/_directory.html',
     'access/identity_providers/form.html',
     'access/identity_providers/partials/_registry.html',
@@ -82,10 +85,11 @@ def test_title_level_guides_use_canonical_variant_and_preserve_scope() -> None:
     wrapper = _read('kubernetes/tenant/partials/_tenant_namespace_access_workspace.html')
     assert 'kubernetes/tenant/partials/_namespace_access_registry.html' in wrapper
 
-    # Users and Identity Providers own Guides in their active registry/workspace headers.
+    # Access Guides belong to the active registry/control workspace, not posture summaries.
     for template in (
-        'access/activity_audit/partials/_activity_table_card.html',
-        'access/activity_audit/partials/_administrative_evidence.html',
+        'access/activity_audit/partials/_activity_summary_cards.html',
+        'access/permissions/index.html',
+        'access/roles/index.html',
         'access/identity_providers/partials/_overview.html',
         'access/users/partials/_summary_cards.html',
     ):

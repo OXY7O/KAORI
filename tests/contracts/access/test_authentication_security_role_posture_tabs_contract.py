@@ -74,7 +74,7 @@ def test_every_tab_has_shared_header_inside_single_accessible_control_hub() -> N
     shared = read(SUMMARY)
     Environment().parse(source)
     Environment().parse(shared)
-    assert '{% macro control_header(id, title, description, status, status_tone, icon) -%}' in shared
+    assert 'macro control_header(id, title, description, status, status_tone, icon, guide=none)' in shared
     assert 'data-auth-security-card-header="{{ id }}"' in shared
     assert 'table_label.status_indicator_label(status, status_tone)' in shared
     for name, tab in data.items():
@@ -86,6 +86,13 @@ def test_every_tab_has_shared_header_inside_single_accessible_control_hub() -> N
         assert tab.count(hub_marker) == 1
         assert intro_marker in tab
         assert tab.index(intro_marker) < tab.index(hub_marker) < tab.index('assurance.control_header(')
+        posture, controls = tab.split('assurance.control_header(', 1)
+        assert 'metadata=table_label.metadata_label(' in posture
+        assert 'guide=info_tip.render(' not in posture
+        assert controls.count('guide=info_tip.render(') == 1
+        assert 'overflow-visible rounded-2xl' in posture
+    assert '{% if metadata %}{{ metadata }}{% endif %}' in shared
+    assert '{% if guide %}{{ guide }}{% endif %}' in shared
     assert source.count('assurance.render(') == 4
     assert source.count('assurance.control_header(') == 4
 
