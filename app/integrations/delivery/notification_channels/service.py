@@ -56,6 +56,7 @@ from app.integrations.delivery.notification_channels.service_helpers import (
 from app.integrations.delivery.notification_channels.service_helpers import (
     recent_delivery_summary as recent_delivery_summary,
 )
+from app.intelligence.alert_intelligence.delivery_mode import DOMAINS, EVENTS, recommendation_event_allowed
 from app.models.notification_channel import NotificationChannel, NotificationDelivery
 from app.models.report import Report
 from app.security.credentials import CredentialEncryptionError, decrypt_credential, encrypt_credential
@@ -540,6 +541,12 @@ def dispatch_alert_notification(
     stats = {'eligible': 0, 'sent': 0, 'failed': 0, 'retried': 0, 'duplicate': 0, 'skipped': 0}
     max_attempts = notification_delivery_max_attempts()
     for channel in channels:
+        if not recommendation_event_allowed(
+            domain=domain, event_type='alert_intelligence.active_alert', asset_type=asset_type,
+            asset_key=str(asset_key), event_key=event_key, channel_id=channel.id, payload={},
+        ):
+            stats['skipped'] += 1
+            continue
         if not _channel_matches(
             channel,
             domain=domain,
@@ -696,6 +703,17 @@ def dispatch_notification_event(*, channel_ids: list[int], event: NotificationEv
     }
     max_attempts = notification_delivery_max_attempts()
     for channel_id in normalized_ids:
+        if not recommendation_event_allowed(
+            domain=event.domain, event_type=event.event_type, asset_type=event.asset_type,
+            asset_key=str(event.asset_key), event_key=event.event_key, channel_id=channel_id,
+            payload=dict(event.payload or {}),
+        ):
+            stats['skipped'] += 1
+            stats['results'].append({
+                'channel_id': channel_id, 'channel': f'Channel {channel_id}', 'provider': '-',
+                'status': 'skipped', 'message': 'Delivery blocked by current alert routing mode.',
+            })
+            continue
         channel = db.session.get(NotificationChannel, channel_id)
         if channel is None:
             stats['skipped'] += 1
@@ -986,6 +1004,16 @@ def recover_notification_deliveries(*, limit: int = 25) -> dict[str, int]:
                 else 'Replay suppressed: notification channel has been retired.'
             )
             _set_replay_status(delivery, status='skipped', reason=reason)
+            db.session.commit()
+            totals['skipped'] += 1
+            continue
+        if delivery.domain in DOMAINS and delivery.event_type in EVENTS and not recommendation_event_allowed(
+            domain=delivery.domain, event_type=delivery.event_type,
+            asset_type=delivery.asset_type, asset_key=str(delivery.asset_key),
+            event_key=delivery.event_key, channel_id=delivery.channel_id,
+            payload=dict(delivery.payload_json or {}),
+        ):
+            _set_replay_status(delivery, status='skipped', reason='Replay blocked by current alert routing mode.')
             db.session.commit()
             totals['skipped'] += 1
             continue
