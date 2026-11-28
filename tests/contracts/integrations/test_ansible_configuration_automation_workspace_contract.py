@@ -119,6 +119,27 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
             jobs=[],
             pagination=pagination_payload(build_pagination_window(total_items=0)),
         )
+        allowed_inventory = render_template(
+            DETAIL.replace('detail.html', '_detail_inventory.html'),
+            connection=connection,
+            inventory_targets=[],
+            inventory_pagination=pagination_payload(build_pagination_window(total_items=0)),
+            pagination=pagination_payload(build_pagination_window(total_items=0)),
+            current_user=SimpleNamespace(
+                is_authenticated=True, has_permission=lambda permission: permission == 'integrations.manage'
+            ),
+        )
+    hero = detail.split('data-kaori-ansible-framed-detail', 1)[0]
+    assert 'data-kaori-provider-detail-posture' in hero
+    assert 'data-kaori-hero-header-accessory="status"' in hero
+    assert 'data-kaori-hero-metadata-policy="persistent"' in hero
+    assert 'Source qualification requires review' in hero
+    assert 'Independent execution approval required' in hero
+    assert source_validation_posture(connection)['source_description'] not in hero
+    assert 'Open Infrastructure Automation' not in detail  # Denied principal.
+    assert allowed_inventory.count('Open Infrastructure Automation') == 1
+    assert 'connection_id=1' in allowed_inventory
+    assert 'Open Cluster Integrations' in allowed_inventory
     assert 'data-kaori-ansible-workspace' in full
     assert 'Connection Registry' in full
     assert 'No Ansible Connections' in full
@@ -254,3 +275,5 @@ def test_registry_does_not_read_live_runner_or_fabricate_inventory() -> None:
     detail = (ROOT / 'app/templates/' / DETAIL).read_text()
     assert 'framed_workspace_tabs' in detail
     assert 'integrationWorkspaceTabs' in detail
+    assert re.search(r'</section>\s*<section id="ansible-detail-tabs"', detail)
+    assert 'Open Infrastructure Automation' not in detail

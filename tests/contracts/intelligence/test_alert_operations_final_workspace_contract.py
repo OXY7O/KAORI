@@ -546,7 +546,7 @@ def test_routing_editor_compact_summary_and_bounded_channel_choices() -> None:
     assert 'available.count' in rail
     assert 'Based on initial policy scope' in rail
     assert 'Routing lifecycle' not in rail and 'Durable Alert Cases' not in rail
-    assert 'max-h-64 divide-y divide-outline-subtle overflow-y-auto' in editor
+    assert 'max-h-48 overflow-y-auto overscroll-contain' in editor
     assert 'data-routing-channel-options' in editor
     assert 'name="channel_ids"' in editor
     assert 'if not channel_available' in editor
@@ -556,3 +556,20 @@ def test_routing_editor_compact_summary_and_bounded_channel_choices() -> None:
     assert 'data-routing-matchers' in editor
     assert '<details class="group border-t' in editor
     assert 'Policy Checklist' in editor
+
+
+def test_routing_editor_cadence_alignment_and_non_destructive_channel_search() -> None:
+    editor = read('app/templates/intelligence/partials/_alert_ops_routing_editor_modal.html')
+    assert 'grid items-end gap-4' in editor
+    toggles = editor.split('data-routing-cadence-toggles', 1)[1].split('</div>', 1)[0]
+    assert toggles.count('flex h-10 min-w-0 items-center') == 2
+    assert 'pt-6' not in editor
+    assert 'payload.channel_options|length > 3' in editor
+    assert 'type="search" x-model="query"' in editor
+    assert 'aria-label="Search notification channels"' in editor
+    assert 'data-routing-channel-row' in editor
+    assert 'x-show="$el.dataset.channelSearch.toLowerCase().includes(query.trim().toLowerCase())"' in editor
+    assert 'No matching channels.' in editor
+    assert 'x-if=' not in editor
+    assert 'name="channel_ids"' in editor
+    assert 'if not channel_available' in editor

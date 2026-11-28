@@ -456,7 +456,9 @@ def mark_case_source_resolved(
 
 
 def get_case(public_id: str) -> AlertCase | None:
-    return AlertCase.query.filter_by(public_id=str(public_id)).first()
+    case = AlertCase.query.filter_by(public_id=str(public_id)).first()
+    # Authentication recommendation cases have no admitted scoped read surface.
+    return None if case is not None and case.domain == 'authentication' else case
 
 
 def _reconcile_asset(

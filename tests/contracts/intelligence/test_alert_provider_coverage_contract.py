@@ -4,7 +4,7 @@ from app.intelligence.alert_intelligence.provider_case_scope import registered_p
 from app.intelligence.alert_intelligence.provider_coverage import provider_coverage_rows
 
 
-def test_coverage_tracks_seven_explicit_provider_contracts_without_runtime_claims():
+def test_coverage_tracks_provider_and_reserved_domain_contracts_without_runtime_claims():
     rows = provider_coverage_rows()
     assert [(row['domain'], row['provider']) for row in rows] == [
         ('Kubernetes', 'Kubernetes'),
@@ -14,10 +14,11 @@ def test_coverage_tracks_seven_explicit_provider_contracts_without_runtime_claim
         ('Secrets & PKI', 'OpenBao'),
         ('Source Control', 'GitHub'),
         ('Infrastructure Automation', 'Ansible'),
+        ('Authentication', 'Domain-owned'),
     ]
     assert [row['origin'] for row in rows] == [
         'Recommendation', 'Recommendation', 'Recommendation', 'Provider alert',
-        'Not admitted', 'Not admitted', 'Not admitted',
+        'Not admitted', 'Not admitted', 'Not admitted', 'Not admitted',
     ]
     assert all('available' not in row['status'].lower() for row in rows)
     assert all(set(row) == {'domain', 'provider', 'origin', 'status', 'tone', 'limitation'} for row in rows)
