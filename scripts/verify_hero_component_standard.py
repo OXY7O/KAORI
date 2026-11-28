@@ -1370,6 +1370,8 @@ def _verify_hero_context_semantics() -> None:
         'vault.index': 'Open Vault Integrations',
         'integrations.ansible': 'Open Ansible Integrations',
         'integrations.observability': 'Open Observability Integrations',
+        'integrations.metrics_sources': 'Open Metrics Source Integrations',
+        'integrations.alertmanager': 'Open Alertmanager Integrations',
         'notification_channels.index': 'Open Notification Channels',
     }
     start = hero.index('{% macro integration_navigation_label(endpoint)')
@@ -1407,6 +1409,57 @@ def _verify_hero_context_semantics() -> None:
     for retired in ('Manage Integrations', 'ansible_new_connection'):
         if retired in automation:
             raise AssertionError(f'Infrastructure Automation Hero repeats or mislabels setup CTA: {retired}')
+
+
+def _verify_migrated_integration_navigation() -> None:
+    """Keep the first domain batch on the shared exact-destination contract."""
+    permission_guard = (
+        "integration_permitted=current_user.is_authenticated and "
+        "current_user.has_permission('integrations.manage')"
+    )
+    consumers = {
+        'storage/object_storage/dashboard/partials/_hero.html': 'integrations.storage',
+        'storage/object_storage/inventory/overview/partials/_hero.html': 'integrations.storage',
+        'storage/object_storage/inventory/systems/partials/_hero.html': 'integrations.storage',
+        'source_control/overview.html': 'integrations.source_control',
+        'source_control/repositories.html': 'integrations.source_control',
+        'source_control/analytics.html': 'integrations.source_control',
+    }
+    for relative, endpoint in consumers.items():
+        source = _read(TEMPLATES / relative)
+        _require_tokens(
+            source,
+            (
+                f"integration_endpoint='{endpoint}'",
+                permission_guard,
+            ),
+            relative,
+        )
+        for retired in (
+            'Manage Storage',
+            'Open Object Storage Integrations',
+            'Manage GitHub Integrations',
+            'Manage Source Control Integrations',
+        ):
+            if retired in source:
+                raise AssertionError(f'{relative}: retired Integration CTA {retired}')
+    storage_analytics = _read(TEMPLATES / 'storage/object_storage/analytics/partials/_hero_posture.html')
+    _require_tokens(
+        storage_analytics,
+        (
+            "'Open Storage Inventory'",
+            "url_for('object_storage_inventory.overview')",
+            "integration_endpoint=alert_action_endpoint",
+            (
+                "'integrations.alertmanager' if alert_source.resolved_source == 'alertmanager' "
+                "else 'integrations.metrics_sources'"
+            ),
+            permission_guard,
+        ),
+        'Storage Analytics Hero destination ownership',
+    )
+    if 'Manage Object Storage' in storage_analytics or 'Review Alert Source' in storage_analytics:
+        raise AssertionError('Storage Analytics Hero must distinguish Inventory and Integration navigation')
 
 
 def verify() -> None:
@@ -1562,6 +1615,7 @@ def verify() -> None:
     _verify_dynamic_hero_identity_authorities()
     _verify_dashboard_profile()
     _verify_hero_context_semantics()
+    _verify_migrated_integration_navigation()
     _verify_blocked_context_ownership()
     _verify_registry_blocked_hero_actions()
     _verify_analytics_metadata_ownership()

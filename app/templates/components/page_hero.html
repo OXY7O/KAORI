@@ -26,7 +26,7 @@
         <span class="break-words [overflow-wrap:anywhere]">{{ label }}</span>
     </span>
 {%- endmacro %}
-{% macro context_card_body(eyebrow_label, title, status_label, status_tone, metrics, action_label, action_href, action_icon='server-cog') -%}
+{% macro context_card_body(eyebrow_label, title, status_label, status_tone, metrics, action_label, action_href, action_icon='server-cog', integration_endpoint=None, integration_permitted=false) -%}
     <div class="{{ context_panel_classes() }}">
         <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
@@ -44,14 +44,18 @@
                 {{ context_metric(metric_icon, metric_label, metric_value, metric_description) }}
             {% endfor %}
         </div>
-        <a href="{{ action_href }}"
-           class="{{ context_single_action_classes() }}">
-            <i data-lucide="{{ action_icon }}" class="h-4 w-4" aria-hidden="true"></i>
-            {{ action_label }}
-        </a>
+        {% if integration_endpoint %}
+            {{ integration_navigation(integration_endpoint, integration_permitted) }}
+        {% elif action_label and action_href %}
+            <a href="{{ action_href }}"
+               class="{{ context_single_action_classes() }}">
+                <i data-lucide="{{ action_icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                {{ action_label }}
+            </a>
+        {% endif %}
     </div>
 {%- endmacro %}
-{% macro context_card(aria_label, eyebrow_label, title, status_label, status_tone, metrics, action_label, action_href, action_icon='server-cog', blocked=false, blocked_info='Complete provider setup to access this workspace.', blocked_label='Setup Required') -%}
+{% macro context_card(aria_label, eyebrow_label, title, status_label, status_tone, metrics, action_label, action_href, action_icon='server-cog', blocked=false, blocked_info='Complete provider setup to access this workspace.', blocked_label='Setup Required', integration_endpoint=None, integration_permitted=false) -%}
     <aside class="{{ aside_classes() }}" aria-label="{{ aria_label }}">
         {% if blocked %}
             {{ blocked_context_body(eyebrow_label,
@@ -68,7 +72,9 @@
                         metrics,
                         action_label,
                         action_href,
-                        action_icon) }}
+                        action_icon,
+                        integration_endpoint,
+                        integration_permitted) }}
         {% endif %}
     </aside>
 {%- endmacro %}
@@ -100,7 +106,7 @@
         {% endif %}
     </div>
 {%- endmacro %}
-{% macro operational_dashboard(eyebrow_label, leading_icon, title, description, metadata, active_scope, action_label, action_href, action_icon='settings-2', data_authority='Committed Snapshots', state='normal', blocked_title='Setup Required', blocked_info='Complete setup to activate operational signals.') -%}
+{% macro operational_dashboard(eyebrow_label, leading_icon, title, description, metadata, active_scope, action_label, action_href, action_icon='settings-2', data_authority='Committed Snapshots', state='normal', blocked_title='Setup Required', blocked_info='Complete setup to activate operational signals.', integration_endpoint=None, integration_permitted=false) -%}
     <section class="{{ shell_classes() }}"
              data-kaori-hero-profile="operational-dashboard"
              data-kaori-hero-state="{{ state }}">
@@ -126,13 +132,16 @@
                     'lock-keyhole',
                     'info') }}
                 {% else %}
-                    <div class="{{ context_panel_classes() }} {{ 'justify-center' if not (action_label and action_href) else '' }}">
+                    {% set has_action = (integration_permitted and integration_navigation_label(integration_endpoint)|trim) if integration_endpoint else (action_label and action_href) %}
+                    <div class="{{ context_panel_classes() }} {{ 'justify-center' if not has_action else '' }}">
                         {{ context_header('Dashboard Context', 'Operational Signal Scope', 'scan-search') }}
                         <div class="{{ context_panel_metrics_classes() }}">
                             {{ context_metric('scan-search', 'Active Scope', active_scope, 'Applied across dashboard signals', 'text-sm font-semibold leading-5') }}
                             {{ context_metric('database-zap', 'Data Authority', data_authority, 'No live provider query on page load', 'text-sm font-semibold leading-5') }}
                         </div>
-                        {% if action_label and action_href %}
+                        {% if integration_endpoint %}
+                            {{ integration_navigation(integration_endpoint, integration_permitted) }}
+                        {% elif action_label and action_href %}
                             <a href="{{ action_href }}"
                                class="{{ context_single_action_classes() }}">
                                 <i data-lucide="{{ action_icon }}" class="h-4 w-4" aria-hidden="true"></i>
@@ -197,6 +206,8 @@
         'vault.index': 'Open Vault Integrations',
         'integrations.ansible': 'Open Ansible Integrations',
         'integrations.observability': 'Open Observability Integrations',
+        'integrations.metrics_sources': 'Open Metrics Source Integrations',
+        'integrations.alertmanager': 'Open Alertmanager Integrations',
         'notification_channels.index': 'Open Notification Channels'
     }.get(endpoint, '') }}
 {%- endmacro %}

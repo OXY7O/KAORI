@@ -29,9 +29,10 @@
                         ('database-backup', 'Quota Evidence', overview.bucket_posture.quota_assessed ~ '/' ~ overview.bucket_posture.total_assets, 'Assessed inventory assets') ,
             ('scan-search', 'Active Signals', overview.active_signal_count, 'Fleet exceptions')
             ],
-            'Manage Storage',
-            url_for('integrations.storage'),
-            action_icon='database-zap'
+            none,
+            none,
+            integration_endpoint='integrations.storage',
+            integration_permitted=current_user.is_authenticated and current_user.has_permission('integrations.manage')
             ) }}
         {% endif %}
     </div>

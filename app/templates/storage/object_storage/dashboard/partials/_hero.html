@@ -11,11 +11,12 @@
 ('bell-ring', 'Worker Alerts')
 ],
 dashboard_scope,
-'Open Object Storage Integrations',
-url_for('integrations.storage'),
-'plug-zap',
-'Committed Snapshots',
-dashboard_state,
-'Object Storage Setup Required',
-'Register an Object Storage system to activate operational signals.'
+none,
+none,
+data_authority='Committed Snapshots',
+state=dashboard_state,
+blocked_title='Object Storage Setup Required',
+blocked_info='Register an Object Storage system to activate operational signals.',
+integration_endpoint='integrations.storage',
+integration_permitted=current_user.is_authenticated and current_user.has_permission('integrations.manage')
 ) }}

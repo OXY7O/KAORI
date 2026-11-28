@@ -16,7 +16,9 @@
         ('database-zap', 'Committed Snapshots')
         ],
         selected.connection.name if selected else 'Select One Installation',
-        'Manage GitHub Integrations', url_for('integrations.source_control'),
+        none, none,
+        integration_endpoint='integrations.source_control',
+        integration_permitted=current_user.is_authenticated and current_user.has_permission('integrations.manage'),
         data_authority='SC-03 Committed State',
         state='normal' if selected and inventory.total is not none else 'blocked',
         blocked_title='Repository Inventory Unavailable',
