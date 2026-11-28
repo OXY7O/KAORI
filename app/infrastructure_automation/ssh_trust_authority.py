@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from hashlib import sha256
 from pathlib import Path
 
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from app.infrastructure_automation.host_enrollment import host_revision
@@ -67,6 +68,10 @@ def console_target(
     if (
         any(type(value) is not int or value <= 0 for value in (revision_number, requester_id, verifier_id))
         or verifier_id in (requester_id, binding.recorded_by_user_id)
+        or type(assignment.id) is not int
+        or assignment.id <= 0
+        or type(assignment.integration_instance_id) is not int
+        or assignment.integration_instance_id <= 0
         or assignment.enabled is not True
         or binding.assignment_id != assignment.id
         or assignment.host.id != assignment.host_id
@@ -159,6 +164,10 @@ def resolve_console_evidence(target: ConsoleTarget, *, now: datetime) -> Console
                 now=now,
             )
         ):
+            return None
+        host_key = serialization.load_ssh_public_key(key.public_key.encode('ascii'))
+        if not isinstance(host_key, Ed25519PublicKey) or host_key.public_bytes_raw().hex() == pin_text:
+            # The host itself must not be its own independent console authority.
             return None
         return ConsoleEvidence(target, key.public_key, 'sha256:' + sha256(raw.strip()).hexdigest(), verified, expires)
     except (UnicodeError, ValueError, TypeError, RecursionError):
