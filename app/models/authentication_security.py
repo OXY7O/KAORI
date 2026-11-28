@@ -61,6 +61,9 @@ class AuthenticationMfaFactor(db.Model):
     enrollment_expires_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True))
     enrollment_generation: Mapped[int | None] = mapped_column(db.BigInteger, nullable=True)
     enrollment_authenticated: Mapped[bool | None] = mapped_column(db.Boolean, nullable=True)
+    replacement_totp_secret: Mapped[str | None] = mapped_column(EncryptedText(), nullable=True)
+    replacement_generation: Mapped[int | None] = mapped_column(db.BigInteger, nullable=True)
+    replacement_expires_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
     enrolled_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow

@@ -104,8 +104,8 @@ def establish_authenticated_session(
     return remember
 
 
-def preserve_current_session_after_password_change(*, user_id: int, issued_session_version: int) -> None:
-    """Bind only the authorized browser to the exact committed password generation.
+def preserve_current_session_after_security_change(*, user_id: int, issued_session_version: int) -> None:
+    """Bind only the authorized browser to the exact committed security generation.
 
     Never reload a newer concurrent login generation after the mutation commits.
     Remembered sign-ins are cleared and server-owned deadlines remain unchanged.
@@ -114,6 +114,10 @@ def preserve_current_session_after_password_change(*, user_id: int, issued_sessi
     session['_fresh'] = True
     session['_remember'] = 'clear'
     session.modified = True
+
+
+def preserve_current_session_after_password_change(*, user_id: int, issued_session_version: int) -> None:
+    preserve_current_session_after_security_change(user_id=user_id, issued_session_version=issued_session_version)
 
 
 def clear_authenticated_session() -> None:
