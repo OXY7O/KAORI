@@ -10,7 +10,11 @@ from flask import request, session
 from app.access.authentication.results import ExternalCredentialProof
 from app.models.notification import Notification
 from app.models.user import User
-from app.platform_operations.notifications.actors import actor_snapshot_for_user, unauthenticated_actor_snapshot
+from app.platform_operations.notifications.actors import (
+    actor_snapshot_for_user,
+    system_actor_snapshot,
+    unauthenticated_actor_snapshot,
+)
 from app.platform_operations.notifications.event_catalog import event_category_key
 
 MfaSecurityAction = Literal[
@@ -83,6 +87,38 @@ def stage_authentication_security_event(
     if previous_policy is not None and next_policy is not None:
         event.metadata_json['previous_policy'] = previous_policy
         event.metadata_json['new_policy'] = next_policy
+    event.deck_visible = False
+    event.read_at = now
+    event.created_at = now
+    return event
+
+
+def stage_pending_mfa_cleanup_event(
+    *, user_id: int, factor_id: int, kind: Literal['enrollment', 'replacement'], reason: str, now: datetime
+) -> Notification:
+    """System-owned, audit-only evidence; no HTTP context or credential material."""
+    actor = system_actor_snapshot()
+    event = Notification()
+    event.user_id = user_id
+    event.event_type = 'authentication'
+    event.category_key = event_category_key('authentication')
+    event.actor_key = actor.key
+    event.actor_label = actor.label
+    event.actor_snapshot_json = actor.as_json()
+    event.status = 'success'
+    event.title = 'Pending MFA Material Removed'
+    event.message = 'KAORI removed invalid pending MFA material.'
+    event.detail = 'Active authenticator, recovery codes and session generation were preserved.'
+    event.metadata_json = {
+        'audit_schema': 'authentication.security.v1',
+        'access_action': 'mfa_pending_material_cleanup',
+        'result': 'success',
+        'target_user_id': user_id,
+        'factor_id': factor_id,
+        'pending_kind': kind,
+        'reason': reason,
+        'trigger_type': 'cli',
+    }
     event.deck_visible = False
     event.read_at = now
     event.created_at = now

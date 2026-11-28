@@ -21,8 +21,12 @@ class LdapReauthenticationError(ValueError):
     """Generic provider reauthentication rejection, never remote diagnostic text."""
 
 
+def ldap_binding_fingerprint(subject: str, distinguished_name: str | None) -> str:
+    return sha256(f'{subject}\x00{distinguished_name or ""}'.encode()).hexdigest()
+
+
 def _binding_fingerprint(link: ExternalIdentityLink) -> str:
-    return sha256(f'{link.subject}\x00{link.distinguished_name or ""}'.encode()).hexdigest()
+    return ldap_binding_fingerprint(link.subject, link.distinguished_name)
 
 
 @dataclass(frozen=True)
