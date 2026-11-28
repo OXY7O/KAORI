@@ -1,32 +1,26 @@
 {% import "components/action_button.html" as action_button %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "access/authentication_security/partials/_assurance_summary.html" as assurance %}
 {% set mode_label = {'disabled': 'Disabled', 'monitor_only': 'Monitor Only', 'enforced': 'Enforced'}.get(lockout_mode|default('disabled'), 'Unknown') %}
+<header class="space-y-1" data-auth-security-login-protection-intro="above-card">
+    <h2 id="login-protection-controls-heading" class="text-base font-semibold text-content-primary">Login Protection Controls</h2>
+    <p class="text-sm leading-6 text-content-secondary">Configure protection policy and review enforcement and recovery safeguards.</p>
+</header>
 <section id="login-protection-control"
-         class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
-         aria-labelledby="login-protection-control-heading" data-auth-login-protection>
-    {{ assurance.control_header('login-protection', 'Login Protection',
-        'Bounded local password protection and shared request throttling.',
-        mode_label, 'warning' if lockout_mode == 'enforced' else 'info', 'shield-alert') }}
-    <div class="grid gap-4 p-4 lg:p-5 xl:grid-cols-5">
-        <section class="min-w-0 rounded-xl border border-outline-default bg-surface-card p-4 xl:col-span-2"
-                 aria-label="Committed protection thresholds">
-            <h4 class="text-sm font-semibold text-content-primary">Committed Policy</h4>
-            <dl class="mt-3 divide-y divide-outline-subtle">
-                {% for label, value in [('Mode', mode_label), ('Revision', lockout_revision|default(1)),
-                    ('Observation Window', '15 minutes'), ('3–4 Failures', '5 seconds'),
-                    ('5–9 Failures', '30 seconds'), ('10 Failures', '15-minute lock')] %}
-                    <div class="flex flex-wrap items-baseline justify-between gap-2 py-2.5">
-                        <dt class="text-xs text-content-muted">{{ label }}</dt>
-                        <dd class="text-sm font-semibold text-content-primary">{{ value }}</dd>
-                    </div>
-                {% endfor %}
-            </dl>
-            <p class="mt-3 text-xs leading-5 text-content-secondary">Local accounts only. Existing sessions are preserved; LDAP and SSO retain upstream authority.</p>
-        </section>
+         class="overflow-visible rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+         aria-labelledby="login-protection-controls-heading" data-auth-login-protection
+         data-auth-security-login-protection-hub="true">
+    {{ assurance.control_header('login-protection', 'Policy & Recovery',
+        'Governed local password protection and shared request throttling.',
+        mode_label, 'warning' if lockout_mode == 'enforced' else ('info' if lockout_mode == 'monitor_only' else 'unknown'), 'shield-alert',
+        guide=info_tip.render('login-protection-guide', 'Login Protection',
+        'Monitor before enforcing; preserve independent administrator recovery.',
+        ['Disabled retains independent endpoint limits.', 'Monitor Only records observations without policy denial.', 'Enforced applies qualified cooldown and temporary locks.', 'LDAP and SSO retain upstream credential authority.'], placement='right', variant='guide')) }}
+    <div class="grid items-stretch gap-4 p-4 lg:p-5 xl:grid-cols-5">
         <section class="min-w-0 rounded-xl border border-outline-default bg-surface-card p-4 xl:col-span-3"
                  aria-label="Governed policy configuration">
             <h4 class="text-sm font-semibold text-content-primary">Policy Configuration</h4>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Mode changes invalidate earlier observations. A current Local Database password and a fresh, unused TOTP are required. Activation also requires environment authorization and recovery qualification.</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Mode changes require fresh local password and TOTP verification, incident evidence, and qualified recovery.</p>
             {% if can_manage_lockout and lockout_initialized %}
                 <form method="post" action="{{ url_for('access.authentication_security.save_lockout_policy') }}"
                       class="mt-4 space-y-4" hx-history="false" data-auth-lockout-policy-form>
@@ -44,6 +38,10 @@
                     {% if not lockout_monitor_allowed or not lockout_enforcement_allowed %}
                         <p class="text-xs leading-5 text-content-muted">Activation is held until authorized qualification. Disabled remains available for rollback.</p>
                     {% endif %}
+                    <div class="rounded-lg border border-status-warning-border bg-status-warning-soft p-3 text-xs leading-5 text-content-secondary">
+                        <p class="font-semibold text-status-warning-text">Change Impact</p>
+                        <p class="mt-1">Mode changes invalidate earlier observations. Activation requires environment authorization and recovery qualification.</p>
+                    </div>
                     {% include "access/authentication_security/partials/_lockout_assurance_fields.html" %}
                     <label class="flex items-start gap-2 text-xs text-content-secondary">
                         <input type="checkbox" name="acknowledge_lockout_impact" value="yes" required>
@@ -56,6 +54,23 @@
             {% else %}
                 <p class="mt-4 text-sm text-content-secondary">Read-only. A current Local Database administrator with enrolled TOTP and applicable permissions is required to change the policy.</p>
             {% endif %}
+        </section>
+        <section class="min-w-0 rounded-xl border border-outline-default bg-surface-card p-4 xl:col-span-2"
+                 aria-label="Enforcement and recovery">
+            <h4 class="text-sm font-semibold text-content-primary">Enforcement &amp; Recovery</h4>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Fixed protection thresholds and account recovery boundaries.</p>
+            <dl class="mt-3 divide-y divide-outline-subtle">
+                {% for label, value in [('3–4 Failures', '5 seconds cooldown'),
+                    ('5–9 Failures', '30 seconds cooldown'), ('10 Failures', '15-minute lock'),
+                    ('Recovery', 'Automatic / authorized unlock')] %}
+                    <div class="flex flex-wrap items-baseline justify-between gap-2 py-2.5">
+                        <dt class="text-xs text-content-muted">{{ label }}</dt>
+                        <dd class="text-sm font-semibold text-content-primary">{{ value }}</dd>
+                    </div>
+                {% endfor %}
+            </dl>
+            <p class="mt-3 text-xs leading-5 text-content-secondary">Local accounts only. Existing sessions are preserved; LDAP and SSO retain upstream authority.</p>
+            <p class="mt-3 text-xs leading-5 text-content-muted">Authorized unlock is governed in Access → Users. Independent recovery must be qualified before activation.</p>
         </section>
     </div>
 </section>
