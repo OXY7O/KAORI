@@ -298,3 +298,24 @@ receipt. In the absence of those external authorities, review firing,
 acknowledgement, ownership, mitigation, scoped routing candidates and
 negative/blocked recovery and delivery states only. Do not claim successful
 positive recovery or provider delivery based on code availability.
+
+
+### Local delivery evidence: unconfirmed journal claims (#5253)
+
+The Vault provider-origin Notification Delivery Ledger projects only a
+canonical exact-case firing claim with matching audit. It displays **Sent**
+only for a matching committed accepted outcome, **Failed** only for an
+explicit audited rejection, and **Review Required** for a durable claim
+without confirmed transport outcome (including a queued claim after a crash,
+a worker-suppressed row, or an audited ambiguous outcome). A mismatched
+outcome/status/rejection flag is **Not Qualified**, never reported as sent.
+The ledger is a bounded redacted case projection, not proof of exactly-once
+transport and not permission to retry an unconfirmed send.
+
+When consolidated Dev Container checks are approved, exercise positive
+accepted/rejected cases, no-audit crash after claim, skipped by generic
+recovery, missing/out-of-order outcome audit, and altered rejection marker.
+Compare the journal with canonical audit and independently approved
+disposable provider receipt. No automatic recovery or retry is authorized
+by this display change; **actual outbound tests remain HOLD** until signed
+destination approval and local human acceptance.
