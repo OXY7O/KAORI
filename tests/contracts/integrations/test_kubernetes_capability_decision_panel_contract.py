@@ -130,8 +130,9 @@ def test_capability_registry_keeps_readiness_progress_and_modal_detail_boundary(
 
     assert 'record_actions.view_more(' in source
     assert 'record_detail_modal.render(' in source
-    assert 'Capability Decision' in source
-    assert 'Contract Snapshot' in source
+    assert 'capability_detail.contract(' in source
+    assert 'decision_title=decision_title' in source
+    assert 'snapshot_marker=' in source
     assert 'Validation Evidence' in source
     assert 'Operational Decision' in source
     assert 'Verification Command' in source

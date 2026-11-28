@@ -531,17 +531,19 @@ def test_vault_capability_modal_parity_with_kubernetes_without_invented_checks()
         'data-kaori-capability-verification-unavailable',
     ):
         assert section in modal
+    shared = (ROOT / 'app/templates/integrations/components/_provider_capability_detail.html').read_text()
     for title in (
-        'Capability Decision',
-        'Contract Snapshot',
+        'Capability Contract',
         'Validation Evidence',
         'Operational Decision',
-        'Operational Impact',
-        'Recommended Action',
-        'Governance Boundary',
+        'Impact',
+        'Next Action',
+        'Evidence Boundary',
         'Verification Command',
     ):
-        assert title in modal
+        assert title in modal + shared
+    for macro in ('contract', 'grouped_section', 'field', 'boundary'):
+        assert f'capability_detail.{macro}(' in modal
 
     # Three evidence dimensions explain real adapter facts, not three
     # independent persisted per-capability checks which Vault does not store.
@@ -614,11 +616,10 @@ def test_vault_view_more_copy_line_budgets_cover_all_capabilities_and_statuses()
         assert len(variants) == expected_count, name
         assert max(map(len, variants)) <= max_chars, name
 
-    assert 'lg:line-clamp-1"' in modal
-    assert 'title="{{ decision_message }}">{{ decision_message }}</p>' in modal
-    assert "{% if label == 'Identity Boundary' %}lg:line-clamp-1{% endif %}" in modal
-    assert 'lg:line-clamp-2"' in modal
-    assert 'title="{{ description }}">{{ description }}</p>' in modal
+    assert 'decision_message=decision_message' in modal
+    assert 'capability_detail.contract(' in modal
+    assert '{{ description }}' in modal
+    assert 'lg:line-clamp-2' not in modal
     assert "('03', 'Committed Observation', result.status_label, observation_description)" in modal
     assert "('03', 'Committed Observation', result.status_label, decision_message)" not in modal
 
