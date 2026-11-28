@@ -10,6 +10,9 @@ from sqlalchemy.orm import joinedload, load_only
 
 from app.extensions.db import db
 from app.infrastructure_automation.host_access_reference import assess_bound_host_access_references
+from app.integrations.secrets_management.secrets_pki.providers.openbao.inventory_scope import (
+    local_inventory_deployment_ref,
+)
 from app.models.automation import AutomationHostAccessBinding, AutomationInventoryAssignment
 from app.models.integration import IntegrationInstance
 from app.models.secrets_pki import (
@@ -65,6 +68,13 @@ def _member_reference(
     )
     if provider is None or collection is None or version is None:
         return None
+    deployment_ref = None
+    if representation.provider_key == 'openbao':
+        deployment_ref = local_inventory_deployment_ref(
+            provider, namespace=representation.provider_namespace, mount=representation.mount, lock=False
+        )
+        if deployment_ref is None:
+            return None
     review = assess_bound_host_access_references(
         binding=binding,
         connection=connection,
@@ -74,6 +84,7 @@ def _member_reference(
         collection=collection,
         version=version,
         now=now,
+        provider_deployment_ref=deployment_ref,
     )
     generation = collection.last_committed_at
     if review.state != 'references_recorded' or review.fingerprint is None or generation is None:
