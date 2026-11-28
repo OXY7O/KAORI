@@ -6,52 +6,47 @@
 {% import "components/operational_section_card.html" as section_card %}
 {% import "components/section_intro.html" as section_intro %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-{% import "components/content_tabs.html" as content_tabs %}
+{% import "components/workspace_tabs.html" as workspace_tabs %}
 {% import "components/section_link_button.html" as section_link_button %}
 {% set active_tab = active_tab|default('overview') %}
 {% set scope_id = selected_connection_id if active_tab not in ['overview', 'profiles'] else none %}
-{% set active_workspace = 'profiles' if active_tab in ['profiles', 'connections', 'lifecycle'] else ('runs-evidence' if active_tab == 'executions' else active_tab) %}
+{% set active_workspace = 'profiles' if active_tab == 'connections' else ('plans' if active_tab == 'lifecycle' else ('runs-evidence' if active_tab == 'executions' else active_tab)) %}
 {% set endpoint = 'platform_operations.infrastructure_automation.index' %}
 {% set top_tabs = [
-    ('overview', 'Overview', 'layout-dashboard', url_for(endpoint, tab='overview')),
-    ('profiles', 'Profiles', 'layers-3', url_for(endpoint, tab='profiles')),
-    ('inventory', 'Inventory', 'server', url_for(endpoint, tab='inventory', connection_id=scope_id)),
-    ('runs-evidence', 'Runs & Evidence', 'file-check-2', url_for(endpoint, tab='runs-evidence', connection_id=scope_id))
+    ('overview', 'Overview', 'layout-dashboard', none, url_for(endpoint, tab='overview')),
+    ('inventory', 'Hosts & Inventories', 'server', none, url_for(endpoint, tab='inventory', connection_id=scope_id)),
+    ('profiles', 'Profiles', 'layers-3', none, url_for(endpoint, tab='profiles')),
+    ('patching', 'Patching', 'package-check', none, url_for(endpoint, tab='patching')),
+    ('plans', 'Plans', 'clipboard-check', none, url_for(endpoint, tab='plans', connection_id=scope_id)),
+    ('runs-evidence', 'Runs & Evidence', 'file-check-2', none, url_for(endpoint, tab='runs-evidence', connection_id=scope_id)),
+    ('schedules', 'Schedules', 'calendar-clock', none, url_for(endpoint, tab='schedules')),
+    ('compliance', 'Compliance', 'shield-check', none, url_for(endpoint, tab='compliance'))
 ] %}
 <section id="infrastructure-automation-results"
          class="space-y-5"
          aria-label="Infrastructure automation workspaces"
          data-kaori-infrastructure-automation-results>
-    {{ content_tabs.render_links('infrastructure-automation', top_tabs, active_workspace,
-        'Infrastructure Automation Workspaces',
-        data_namespace='infrastructure-automation',
+    {{ workspace_tabs.render_navigation(top_tabs, active_workspace,
+        prefix='infrastructure-automation',
+        aria_label='Infrastructure Automation Workspaces',
         hx_target='#infrastructure-automation-results',
         hx_select='#infrastructure-automation-results',
-        hx_swap='outerHTML show:none focus-scroll:false',
-        hx_indicator='#infrastructure-automation-loading',
-        hx_sync='#infrastructure-automation-results:replace',
-        nowrap=true) }}
+        hx_indicator='#infrastructure-automation-loading') }}
     {{ loading_bar.render('infrastructure-automation-loading', label='Loading committed automation evidence') }}
+    {% include "infrastructure_automation/_hero.html" %}
     <div class="space-y-5" data-kaori-automation-tab="{{ active_tab }}">
-        {% if active_tab in ['connections', 'lifecycle'] %}
+        {% if active_tab == 'connections' %}
             <div class="flex flex-wrap items-center justify-between gap-3">
                 {{ section_intro.render('Kubernetes Lifecycle', 'Kubespray · Ansible execution provider') }}
                 {{ section_link_button.render(url_for(endpoint, tab='profiles'), 'All Profiles', icon='arrow-left') }}
             </div>
-            {% set profile_tabs = [
-                ('connections', 'Connections', 'plug', url_for(endpoint, tab='connections', connection_id=scope_id)),
-                ('lifecycle', 'Readiness & Plan', 'clipboard-check', url_for(endpoint, tab='lifecycle', connection_id=scope_id))
-            ] %}
-            {{ content_tabs.render_links('kubernetes-lifecycle', profile_tabs, active_tab,
-                'Kubernetes Lifecycle Workspace', data_namespace='kubernetes-lifecycle',
-                hx_target='#infrastructure-automation-results', hx_select='#infrastructure-automation-results',
-                hx_swap='outerHTML show:none focus-scroll:false', hx_indicator='#infrastructure-automation-loading',
-                hx_sync='#infrastructure-automation-results:replace', nowrap=true) }}
         {% endif %}
         {% if active_tab == 'overview' %}
             {% include "infrastructure_automation/_overview.html" %}
         {% elif active_tab == 'profiles' %}
             {% include "infrastructure_automation/_profiles.html" %}
+        {% elif active_tab in ['patching', 'schedules', 'compliance'] %}
+            {% include "infrastructure_automation/_planned_workspace.html" %}
         {% elif active_tab == 'connections' %}
             <div class="{{ section_card.shell_classes() }}" data-kaori-automation-connection-registry>
                 <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle p-4 sm:p-5">
@@ -221,7 +216,7 @@
                     <article class="{{ section_card.shell_classes() }}" data-kaori-automation-lifecycle-posture>
                         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-5 py-4">
                             <div>
-                                <h3 class="text-base font-semibold text-content-primary">Lifecycle Readiness</h3>
+                                <h3 class="text-base font-semibold text-content-primary">Kubernetes Lifecycle · Readiness &amp; Plan</h3>
                                 <p class="mt-1 text-sm text-content-secondary">Source, technical preflight and immutable Plan.</p>
                             </div>
                             {{ integration_status("blocked", "Cluster Mutation Not Admitted", display="text") }}

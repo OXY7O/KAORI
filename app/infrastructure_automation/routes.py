@@ -8,7 +8,11 @@ from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
 from app.common.http import htmx_target, is_htmx_request
-from app.infrastructure_automation.workspace import build_automation_overview, build_automation_workspace
+from app.infrastructure_automation.workspace import (
+    automation_connection_count,
+    build_automation_overview,
+    build_automation_workspace,
+)
 
 bp = Blueprint('infrastructure_automation', __name__)
 
@@ -30,12 +34,17 @@ def index() -> ResponseReturnValue:
             tab = 'overview'
     if tab == 'runs-evidence':
         tab = 'executions'
-    if tab not in {'overview', 'profiles', 'connections', 'inventory', 'lifecycle', 'executions'}:
+    elif tab == 'plans':
+        tab = 'lifecycle'
+    roadmap_tabs = {'patching', 'schedules', 'compliance'}
+    if tab not in {'overview', 'profiles', 'connections', 'inventory', 'lifecycle', 'executions'} | roadmap_tabs:
         abort(404)
     can_jobs = bool(current_user.has_permission('jobs.view'))
     can_inventory = bool(current_user.has_permission('inventory.view'))
     try:
-        if tab in {'overview', 'profiles'}:
+        if tab in roadmap_tabs:
+            context = {'total_connections': automation_connection_count(), 'selected_connection_id': None, 'details': None}
+        elif tab in {'overview', 'profiles'}:
             context = build_automation_overview(can_jobs=can_jobs, can_inventory=can_inventory)
         else:
             context = build_automation_workspace(

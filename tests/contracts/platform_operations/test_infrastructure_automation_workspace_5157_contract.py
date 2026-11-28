@@ -148,7 +148,7 @@ def test_filtered_connections_are_not_initial_setup():
 
 
 def test_lifecycle_workspace_uses_shared_hero_and_separate_operational_sections():
-    hero = (ROOT / 'app/templates/infrastructure_automation/index.html').read_text()
+    hero = (ROOT / 'app/templates/infrastructure_automation/_hero.html').read_text()
     workspace = (ROOT / 'app/templates/infrastructure_automation/_lifecycle_workspace.html').read_text()
     assert 'page_hero.context_header(' in hero
     assert 'data-kaori-automation-connection-registry' in workspace
@@ -214,8 +214,8 @@ def test_selected_source_only_connection_renders_lifecycle_only():
 
 
 def test_automation_hero_uses_compact_description_and_three_metadata_items():
-    hero = (ROOT / 'app/templates/infrastructure_automation/index.html').read_text()
-    assert 'Orchestrate infrastructure lifecycle and governed automation.' in hero
+    hero = (ROOT / 'app/templates/infrastructure_automation/_hero.html').read_text()
+    assert 'Manage governed infrastructure automation.' in hero
     assert hero.count('page_hero.meta_label(') == 3
     assert "page_hero.meta_label('layers-3', '1 Available Profile')" in hero
     assert 'page_hero.metadata_row_classes()' in hero
@@ -238,7 +238,7 @@ def test_overview_has_no_connection_selector_or_scoped_details():
     assert 'data-kaori-automation-selected-scope' not in rendered
     assert 'data-kaori-canonical-registry-filter' not in rendered
     assert 'data-kaori-automation-lifecycle-posture' not in rendered
-    assert 'data-kaori-tab-variant="content-tabs-server"' in rendered
+    assert 'data-kaori-tab-variant="integrated-workspace-server"' in rendered
 
 
 def test_tabs_preserve_scope_and_isolate_inventory_from_execution_history():
@@ -281,7 +281,7 @@ def test_profile_catalog_distinguishes_available_and_planned_workspaces():
     for label in ('Kubernetes Lifecycle', 'Linux Hosts', 'Middleware &amp; Database', 'Network Automation'):
         assert label in rendered
     assert rendered.count('Open Workspace') == 1
-    assert rendered.count('Operational workspace unavailable.') == 3
+    assert rendered.count('>Unavailable</span>') == 3
     assert 'data-kaori-automation-selected-scope' not in rendered
     assert 'data-kaori-canonical-registry-filter' not in rendered
 
@@ -293,3 +293,28 @@ def test_automation_overview_reuses_tenant_estate_components():
     assert 'Operational Attention & Activity' in template
     assert 'operational_metric_card' not in template
     assert 'workspace_summary_card' not in template
+
+
+def test_primary_navigation_precedes_hero_and_covers_foundation_surfaces():
+    workspace = (ROOT / 'app/templates/infrastructure_automation/_lifecycle_workspace.html').read_text()
+    assert workspace.index('workspace_tabs.render_navigation(') < workspace.index('infrastructure_automation/_hero.html')
+    for label in ('Overview', 'Hosts & Inventories', 'Profiles', 'Patching', 'Plans',
+                  'Runs & Evidence', 'Schedules', 'Compliance'):
+        assert label in workspace
+    overview = (ROOT / 'app/templates/infrastructure_automation/_overview.html').read_text()
+    assert '_profiles.html' not in overview
+
+
+def test_planned_capabilities_are_read_only_and_do_not_require_a_connection():
+    app = create_app('testing')
+    with app.test_request_context('/platform-operations/infrastructure-automation/'):
+        for tab, label in (('patching', 'Patch Discovery'), ('schedules', 'Scheduled Discovery'),
+                           ('compliance', 'Baseline Evaluation')):
+            rendered = render_template(PARTIAL, active_tab=tab, total_connections=0,
+                                       selected_connection_id=None, details=None)
+            assert f'data-kaori-automation-planned="{tab}"' in rendered
+            assert label in rendered
+            assert 'Planned' in rendered
+            assert 'data-kaori-automation-selected-scope' not in rendered
+            assert '<form' not in rendered
+            assert 'Run Kubespray' not in rendered

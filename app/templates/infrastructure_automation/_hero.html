@@ -1,0 +1,30 @@
+{% import "components/page_hero.html" as page_hero %}
+<section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">
+            {% call page_hero.intro('workflow', 'Operations Center', 'server-cog') %}
+                <h1 class="{{ page_hero.title_classes() }}">Infrastructure Automation</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Manage governed infrastructure automation.</p>
+                <div class="{{ page_hero.metadata_row_classes() }}">
+                    {{ page_hero.meta_label('boxes', total_connections ~ (' Connection' if total_connections == 1 else ' Connections')) }}
+                    {{ page_hero.meta_label('plug', '1 Supported Provider') }}
+                    {{ page_hero.meta_label('layers-3', '1 Available Profile') }}
+                </div>
+            {% endcall %}
+        </div>
+        <aside class="{{ page_hero.aside_classes() }}" aria-label="Infrastructure automation context">
+            <div class="{{ page_hero.context_panel_classes() }}">
+                {{ page_hero.context_header('Automation Control Plane', 'Execution Boundary', 'shield-check') }}
+                <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                    {{ page_hero.context_metric('plug', 'Source Setup', 'Required' if total_connections == 0 else 'Registered', 'Source qualification is separate') }}
+                    {{ page_hero.context_metric('shield-check', 'Execution', 'Not Admitted', 'Independent approval required') }}
+                </div>
+                <a href="{{ url_for('integrations.ansible_new_connection') if total_connections == 0 else url_for('integrations.ansible') }}"
+                   class="{{ page_hero.context_single_action_classes() }}">
+                    <i data-lucide="plug" class="h-4 w-4" aria-hidden="true"></i>
+                    {{ 'Register Connection' if total_connections == 0 else 'Manage Integrations' }}
+                </a>
+            </div>
+        </aside>
+    </div>
+</section>
