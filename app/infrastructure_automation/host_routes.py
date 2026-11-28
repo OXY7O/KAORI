@@ -119,7 +119,7 @@ def edit(connection_id: int, host_id) -> ResponseReturnValue:
         require_ansible_connection(connection, environment=environment)
     except AutomationInventoryDenied:
         abort(404)
-    assignment = _scoped_assignment(connection_id, str(host_id), lock=request.method == 'POST')
+    assignment = _scoped_assignment(connection_id, str(host_id), lock=False)
     host = assignment.host
     revision = host_revision(assignment)
     form = (
@@ -196,7 +196,7 @@ def retire(connection_id: int, host_id) -> ResponseReturnValue:
         require_ansible_connection(connection, environment=environment)
     except AutomationInventoryDenied:
         abort(404)
-    assignment = _scoped_assignment(connection_id, str(host_id), lock=True)
+    assignment = _scoped_assignment(connection_id, str(host_id), lock=False)
     form = AutomationHostRetirementForm()
     if not form.validate_on_submit():
         abort(400)
