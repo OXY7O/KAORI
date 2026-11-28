@@ -12,15 +12,15 @@ def test_long_identity_context_uses_shared_responsive_summary_variant() -> None:
     shared = read('app/templates/components/details/_detail_content.html')
     modal = read('app/static/js/detail_rows.js')
 
-    assert "layout='unified', pinned=false" in detail
+    assert "layout='target-wide', pinned=false" in detail
     assert "('Target', item.target_name, item.target_type)" in detail
     assert "('Recorded', item.created_at|user_datetime, item.created_label)" in detail
     assert "('Evidence', 'Activity Register', 'Notification-backed')" in detail
     assert "layout='default', pinned=true" in shared
     assert 'data-kaori-summary-layout="unified"' in shared
-    assert 'mt-3 grid min-w-0 gap-x-6 gap-y-3 border-t border-outline-subtle pt-3' in shared
-    assert "'lg:col-span-2' if unified and loop.index0 == 1" in shared
-    assert "'min-w-0' if unified else" in shared
+    assert 'grid min-w-0 gap-px overflow-hidden rounded-lg border border-outline-subtle' in shared
+    assert "'xl:col-span-2' if target_wide and loop.index0 == 1" in shared
+    assert 'min-w-0 bg-surface-card px-4 py-3 sm:px-5 sm:py-3.5' in shared
     assert 'data-kaori-summary-layout="target-wide"' in shared
     assert '{% if pinned %}data-resource-detail-summary{% endif %}' in shared
     assert '[overflow-wrap:anywhere]' in shared
@@ -28,12 +28,17 @@ def test_long_identity_context_uses_shared_responsive_summary_variant() -> None:
     assert 'elements.content.replaceChildren(...cloneChildren(shell))' in modal
 
 
-def test_failure_summary_uses_labelled_rows_without_nested_card() -> None:
+def test_failure_summary_uses_wrapped_evidence_text_and_labelled_rows() -> None:
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
     start = detail.index('data-activity-outcome="recorded"')
     end = detail.index('{% if item.detail and item.detail != item.message', start)
     outcome = detail[start:end]
     assert 'Recorded Outcome' in outcome
+    assert 'data-activity-recorded-outcome-text' in outcome
+    assert 'rounded-lg bg-surface-elevated' in outcome
+    assert 'whitespace-pre-wrap break-words' in outcome
+    assert '[overflow-wrap:anywhere]">{{ item.failure_summary }}</p>' in outcome
+    assert 'truncate' not in outcome and 'line-clamp' not in outcome
     assert 'Recorded Impact' in outcome
     assert 'border-t border-outline-subtle pt-3' in outcome
     assert 'rounded-lg border border-outline-subtle bg-surface-elevated px-4 py-3.5' not in outcome
@@ -91,3 +96,15 @@ def test_read_only_security_and_committed_links_remain_unchanged() -> None:
     assert "'View Technical Evidence'" in detail
     for forbidden in ('hx-post=', 'onclick=', 'style=', '<form'):
         assert forbidden not in detail
+
+
+def test_long_activity_and_technical_values_remain_wrapped_and_unclipped() -> None:
+    detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
+    for expression in ('item.failure_summary', 'item.message', 'item.detail', 'evidence.value'):
+        assert f'[overflow-wrap:anywhere]">{{{{ {expression} }}}}</p>' in detail
+    assert '[overflow-wrap:anywhere]">{{ source.label }}</p>' in detail
+    assert '[overflow-wrap:anywhere]">{{ source.note }}</p>' in detail
+    assert '[overflow-wrap:anywhere]">{{ field.label }}</p>' in detail
+    assert 'whitespace-nowrap' not in detail
+    assert '|truncate' not in detail
+    assert '|safe' not in detail

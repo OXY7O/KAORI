@@ -10,15 +10,15 @@ def read(relative: str) -> str:
 def test_unified_summary_renders_one_surface_and_preserves_all_four_facts() -> None:
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
     shared = read('app/templates/components/details/_detail_content.html')
-    assert "layout='unified', pinned=false" in detail
+    assert "layout='target-wide', pinned=false" in detail
     assert "('Actor', item.user_label, item.user_role)" in detail
     assert "('Target', item.target_name, item.target_type)" in detail
     assert "('Recorded', item.created_at|user_datetime, item.created_label)" in detail
     assert "('Evidence', 'Activity Register', 'Notification-backed')" in detail
-    assert 'data-kaori-summary-layout="unified"' in shared
-    assert 'mt-3 grid min-w-0 gap-x-6 gap-y-3 border-t border-outline-subtle pt-3' in shared
-    assert "'min-w-0' if unified else" in shared
-    assert "'lg:col-span-2' if unified and loop.index0 == 1" in shared
+    assert 'data-kaori-summary-layout="target-wide"' in shared
+    assert 'grid min-w-0 gap-px overflow-hidden rounded-lg border border-outline-subtle' in shared
+    assert 'min-w-0 bg-surface-card px-4 py-3 sm:px-5 sm:py-3.5' in shared
+    assert "'xl:col-span-2' if target_wide and loop.index0 == 1" in shared
     assert '[overflow-wrap:anywhere]' in shared
     assert 'target_wide = layout == ' in shared
     assert "layout='default', pinned=true" in shared

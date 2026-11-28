@@ -18,18 +18,18 @@ def test_context_strip_is_inside_extracted_modal_header_not_separate_card() -> N
     body_start = detail.index('<div class="space-y-4 p-5">', header_close)
     assert header_start < summary < header_close < body_start
     assert detail.count('detail_ui.summary_strip([') == 1
-    assert "layout='unified', pinned=false" in detail
+    assert "layout='target-wide', pinned=false" in detail
     assert "('Actor', item.user_label, item.user_role)" in detail
     assert "('Target', item.target_name, item.target_type)" in detail
     assert "('Recorded', item.created_at|user_datetime, item.created_label)" in detail
     assert "('Evidence', 'Activity Register', 'Notification-backed')" in detail
-    assert 'mt-3 grid min-w-0 gap-x-6 gap-y-3 border-t border-outline-subtle pt-3' in shared
+    assert 'grid min-w-0 gap-px overflow-hidden rounded-lg border border-outline-subtle' in shared
     assert 'gap-y-4 rounded-xl border border-outline-subtle bg-surface-card' not in shared
-    assert 'data-kaori-summary-layout="unified"' in shared
+    assert 'data-kaori-summary-layout="target-wide"' in shared
     assert "shell.querySelector(':scope > [data-resource-detail-header]')" in host_js
     assert 'header.remove()' in host_js
     assert 'elements.header.replaceChildren(...cloneChildren(header))' in host_js
-    assert "'lg:col-span-2' if unified and loop.index0 == 1" in shared
+    assert "'xl:col-span-2' if target_wide and loop.index0 == 1" in shared
 
 
 def test_audit_context_avoids_narrow_three_way_role_and_email_columns() -> None:

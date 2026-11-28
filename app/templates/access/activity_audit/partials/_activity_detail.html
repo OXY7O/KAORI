@@ -21,13 +21,13 @@
                     </div>
                 </div>
             </div>
-            {# Keep identity, provenance and time in the same modal header, not a second card. #}
+            {# Keep identity, provenance and time in the extracted header using the shared bounded summary strip. #}
             {{ detail_ui.summary_strip([
-                        ('Actor', item.user_label, item.user_role) ,
+                        ('Actor', item.user_label, item.user_role),
             ('Target', item.target_name, item.target_type),
             ('Recorded', item.created_at|user_datetime, item.created_label),
             ('Evidence', 'Activity Register', 'Notification-backed')
-            ], compact=true, layout='unified', pinned=false) }}
+            ], compact=true, layout='target-wide', pinned=false) }}
         </header>
         <div class="space-y-4 p-5">
             {% if item.failure_summary %}
@@ -52,12 +52,13 @@
                     <div class="space-y-4 p-4">
                         <div class="min-w-0">
                             <p class="text-xs font-semibold text-content-secondary">Recorded Outcome</p>
-                            <p class="mt-1 break-words text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.failure_summary }}</p>
+                            <p data-activity-recorded-outcome-text
+                               class="mt-2 min-w-0 rounded-lg bg-surface-elevated px-3 py-2.5 whitespace-pre-wrap break-words text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.failure_summary }}</p>
                         </div>
                         {% if item.message and item.message != item.failure_summary %}
                             <div class="min-w-0 border-t border-outline-subtle pt-3">
                                 <p class="text-xs font-semibold text-content-secondary">Recorded Impact</p>
-                                <p class="mt-1 break-words text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.message }}</p>
+                                <p class="mt-1 min-w-0 whitespace-pre-wrap break-words text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.message }}</p>
                             </div>
                         {% endif %}
                         {% if item.failure_context %}
@@ -94,9 +95,9 @@
                     <div class="flex min-w-0 items-start gap-3">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                               aria-hidden="true"><i data-lucide="message-square-text" class="h-4 w-4"></i></span>
-                        <div class="min-w-0">
+                        <div class="min-w-0 flex-1">
                             <p class="text-xs font-semibold text-content-secondary">Activity Detail</p>
-                            <p class="mt-1 break-words text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.detail }}</p>
+                            <p class="mt-1 min-w-0 whitespace-pre-wrap break-words text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.detail }}</p>
                         </div>
                     </div>
                 </section>
@@ -132,8 +133,8 @@
                     </header>
                     <div class="grid gap-3 p-4 lg:grid-cols-2">
                         {% for field in item.changed_fields %}
-                            <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                                <p class="text-xs font-semibold text-content-secondary">{{ field.label }}</p>
+                            <article class="min-w-0 rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                <p class="break-words text-xs font-semibold text-content-secondary [overflow-wrap:anywhere]">{{ field.label }}</p>
                                 <div class="mt-2 flex items-stretch gap-2">
                                     <div class="min-w-0 flex-1 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2">
                                         <p class="text-xs text-content-muted">Before</p>
@@ -167,12 +168,12 @@
                     <ul class="divide-y divide-outline-subtle">
                         {% for source in item.related_sources %}
                             <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-content-primary">{{ source.label }}</p>
-                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ source.note }}</p>
+                                <div class="min-w-0 flex-1">
+                                    <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ source.label }}</p>
+                                    <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ source.note }}</p>
                                 </div>
                                 <a href="{{ source.url }}"
-                                   class="inline-flex items-center gap-2 rounded-md border border-outline-default px-3 py-2 text-xs font-semibold text-kaori-primary transition hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                   class="inline-flex shrink-0 items-center gap-2 rounded-md border border-outline-default px-3 py-2 text-xs font-semibold text-kaori-primary transition hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                     Open Source <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
                                 </a>
                             </li>
@@ -300,9 +301,9 @@
                     ) %}
                     <div class="space-y-3">
                         {% for evidence in item.technical_evidence %}
-                            <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                                <p class="text-xs font-semibold text-content-secondary">{{ evidence.label }}</p>
-                                <p class="mt-1 break-words text-xs leading-5 text-content-primary [overflow-wrap:anywhere]">{{ evidence.value }}</p>
+                            <article class="min-w-0 rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                <p class="break-words text-xs font-semibold text-content-secondary [overflow-wrap:anywhere]">{{ evidence.label }}</p>
+                                <p class="mt-1 whitespace-pre-wrap break-words text-xs leading-5 text-content-primary [overflow-wrap:anywhere]">{{ evidence.value }}</p>
                             </article>
                         {% endfor %}
                     </div>

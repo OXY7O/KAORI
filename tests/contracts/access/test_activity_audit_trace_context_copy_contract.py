@@ -64,7 +64,7 @@ def test_read_only_committed_source_and_disclosure_remain() -> None:
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
     assert 'data-activity-related-sources="committed-only"' in detail
     assert 'item.trace_references' in detail
-    assert "layout='unified', pinned=false" in detail
+    assert "layout='target-wide', pinned=false" in detail
     assert 'data-activity-metadata-layout="responsive-pairs"' in detail
     for forbidden in ('hx-post=', '<form', 'onclick=', 'style='):
         assert forbidden not in detail
