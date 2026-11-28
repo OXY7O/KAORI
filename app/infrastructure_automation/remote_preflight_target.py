@@ -43,11 +43,18 @@ class RemoteTargetReview:
 def review_remote_preflight_target(
     *, actor_id: int, connection_id: int, now: datetime
 ) -> RemoteTargetReview | None:
-    """Require current exact access evidence for all three canonical members.
+    """Return only qualified exact target evidence to existing review callers."""
+    _, target = diagnose_remote_preflight_target(actor_id=actor_id, connection_id=connection_id, now=now)
+    return target
 
-    The internal caller owns the transaction and authenticated operation.
-    The provider inventory receipt is historical, not a native currentness
-    proof. A separate authorized worker must recheck before material access.
+
+def diagnose_remote_preflight_target(
+    *, actor_id: int, connection_id: int, now: datetime
+) -> tuple[str, RemoteTargetReview | None]:
+    """Evaluate the existing gates in order; return a bounded first blocker.
+
+    Internal caller owns the transaction and authenticated operation. This
+    review of committed records is not runtime/source/target admission.
     """
     if (
         type(actor_id) is not int
@@ -57,16 +64,22 @@ def review_remote_preflight_target(
         or not isinstance(now, datetime)
         or now.utcoffset() is None
     ):
-        return None
+        return 'invalid_scope', None
     connection = db.session.get(IntegrationInstance, connection_id, populate_existing=True, with_for_update=True)
-    if connection is None or not connection.enabled:
-        return None
+    if (
+        connection is None
+        or not connection.enabled
+        or connection.integration_type != 'configuration_automation'
+        or connection.provider_key != 'ansible'
+        or connection.lifecycle_status != 'active'
+    ):
+        return 'connection_unqualified', None
     metadata = connection.metadata_json
     if not isinstance(metadata, dict) or committed_source_state(metadata) != 'checked':
-        return None
+        return 'source_not_checked', None
     source_sha, ee_digest = metadata.get('source_sha'), metadata.get('execution_environment_digest')
     if not isinstance(source_sha, str) or not isinstance(ee_digest, str) or _EE.fullmatch(ee_digest) is None:
-        return None
+        return 'ee_digest_unqualified', None
     assignments = list(db.session.execute(
         select(AutomationInventoryAssignment)
         .where(
@@ -78,25 +91,21 @@ def review_remote_preflight_target(
         .with_for_update(of=AutomationInventoryAssignment)
         .execution_options(populate_existing=True)
     ).scalars().all())
-    if len(assignments) != 3:
-        return None
+    if len(assignments) != 3 or any(assignment.host is None for assignment in assignments):
+        return 'topology_unqualified', None
     for assignment in assignments:
         db.session.refresh(assignment.host, with_for_update=True)
     roles = [assignment.role for assignment in assignments]
     if roles.count('control_plane') != 1 or roles.count('worker') != 2:
-        return None
+        return 'topology_unqualified', None
     if len({assignment.host.address for assignment in assignments}) != 3:
-        return None
+        return 'topology_unqualified', None
     preview = preview_inventory_intent(connection, assignments)
+    if preview.inventory_fingerprint is None or preview.host_count != 3:
+        return 'host_registry_unqualified', None
     receipt = committed_inventory_receipt_review(connection)
-    if (
-        preview.inventory_fingerprint is None
-        or preview.host_count != 3
-        or receipt.state != 'historical_aligned'
-        or not receipt.parser_verified
-        or receipt.fingerprint is None
-    ):
-        return None
+    if receipt.state != 'historical_aligned' or not receipt.parser_verified or receipt.fingerprint is None:
+        return 'inventory_receipt_unqualified', None
     members = []
     targets = []
     expiries = [now + timedelta(minutes=15)]
@@ -104,8 +113,8 @@ def review_remote_preflight_target(
         access = review_remote_access_evidence(
             actor_user_id=actor_id, connection_id=connection_id, assignment_id=assignment.id, now=now
         )
-        if access is None or access.expires_at <= now:
-            return None
+        if access is None or access.execution_authorized is not False or access.expires_at <= now:
+            return 'access_review_unqualified', None
         members.append({'assignment_id': assignment.id, 'fingerprint': access.fingerprint})
         targets.append(RemoteFactsTarget(f'kaori-{assignment.id}', assignment.host_id, assignment.role))
         expiries.append(access.expires_at)
@@ -119,7 +128,7 @@ def review_remote_preflight_target(
         'host_registry_fingerprint': preview.inventory_fingerprint,
         'members': members,
     })).hexdigest()
-    return RemoteTargetReview(
+    return 'historical_target_qualified', RemoteTargetReview(
         connection_id=connection_id,
         actor_id=actor_id,
         source_sha=source_sha,

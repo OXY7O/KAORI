@@ -449,3 +449,17 @@ Review, never Ready or current authorization. Source and EE alignment are
 not proof of present credential, host trust or worker currentness.
 No raw receipt data, fingerprints or secret material are projected. No
 remote dispatch, material read, SSH or mutation is enabled by this UI.
+
+
+### Local review diagnostics (#5186)
+
+The local-only `automation-remote-review-check` command evaluates explicit
+actor permissions and the same committed target qualification as the review
+dispatcher. It reports a bounded first blocker and rolls back the local
+security review transaction. Optional configured-worker inspection reads
+the exact disabled source and existing signed receipt after releasing DB
+locks; it is not runtime measurement or dispatch. No actor impersonation,
+grant activation, signature generation, provider calls, job creation or
+evidence writes are introduced. See
+`docs/operations/kubernetes-lifecycle-devcontainer-review.md` for the
+exploratory review sequence and the outstanding native admission boundary.
