@@ -111,3 +111,32 @@ fresh signed source/EE, operation-specific credentials, native preflight and
 actual target mutation authorization. The last two preflight governance gates
 remain blocked; do not mark either ready from this candidate acknowledgement.
 Native PostgreSQL concurrency, independent Access review and UAT remain open.
+
+
+### Independent pilot Kubernetes API readback candidate (#4801)
+
+The independent native readback adapter accepts an internally selected
+canonical KubernetesConnection with strict TLS, exact registered HTTPS
+server, a separately established kube-system namespace UID and expected
+three node identities derived from immutable Plan/inventory. Runner success
+or a Runner-supplied kubeconfig/identity is not sufficient. It reuses the
+existing container-orchestrator Integration Kernel client, makes bounded
+GET-only observations of version, API /readyz and /readyz/etcd, the exact
+unpaginated three-node set (names, internal IPv4, role, unique native UID,
+Ready/no pressure/no cordon), fixed control-plane mirror pods and fully
+available CoreDNS deployment. It rechecks namespace identity, nodes and
+API/etcd endpoint health before returning only sanitized correlation
+fingerprints and observation time. No raw endpoint, node addresses or
+provider credentials are returned in the committed summary.
+
+The expected namespace UID must come from independent target/cluster
+authority, not from the same observation or Runner result. The fixed
+component names and CoreDNS deployment are candidate postconditions to
+qualify against the actual admitted Kubespray source. API etcd readiness
+is not direct etcd quorum/backup/restore evidence; CNI/CRI and full
+provisioning remain unverified. The adapter does not register a Cluster,
+persist NodeInventory, create IntegrationBinding, dispatch a verification
+job, mutate infrastructure or mark a Run successful. These downstream
+steps require admitted Run provenance, separately authorized readback,
+canonical cluster registration/inventory synchronization and binding,
+and controlled native UAT. Synthetic SDK regressions are not native UAT.
