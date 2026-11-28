@@ -8,6 +8,7 @@ No API calls during GET; committed KAORI state is the only read source.
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from urllib.parse import urlencode
 
 from flask import Blueprint, Response, abort, make_response, redirect, render_template, request, url_for
@@ -17,6 +18,7 @@ from flask_wtf import FlaskForm
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
+from app.common.presentation import present_user_datetime
 from app.integrations.capability_registry import CapabilityStatusFlags, build_capability_registry_view
 from app.integrations.deletion import provider_deletion_guard
 from app.integrations.source_control.repository_inventory import read_installation_inventory_for_current_session
@@ -59,13 +61,17 @@ from app.integrations.source_control.source_control.providers.github.registratio
 from app.integrations.source_control.source_control.providers.github.transport import GitHubProviderError
 from app.integrations.source_control.sync_jobs import (
     NoEligibleSourceControlTargets,
+    OPERATION as REPOSITORY_SYNC_OPERATION,
     enqueue_source_repository_sync,
 )
 from app.integrations.source_control.uat_access import require_uat_access
 from app.integrations.validation.state import build_validation_snapshot
 from app.integrations.validation.web import validate_snapshot_access, validation_poll_response
 from app.models.integration import IntegrationInstance
+from app.models.job import JobExecution
 from app.models.source_control import SourceInstallation
+from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES
+from app.platform_operations.jobs.service import job_snapshot
 from app.platform_operations.notifications.service import record_operational_activity
 from app.security.credentials import CredentialEncryptionError
 
@@ -101,15 +107,15 @@ def _installation_or_404(installation_id: int) -> SourceInstallation:
 
 
 def _inventory_context(installation: SourceInstallation) -> dict:
-    page = max(request.args.get('page', 1, type=int) or 1, 1)
-    per_page = request.args.get('per_page', 5, type=int) or 5
+    page = max(request.values.get('page', 1, type=int) or 1, 1)
+    per_page = request.values.get('per_page', 5, type=int) or 5
     if per_page not in (5, 10, 25, 50):
         per_page = 5
-    inventory_search = request.args.get('inventory_search', '').strip()[:80]
-    inventory_visibility = request.args.get('inventory_visibility', '').strip().lower()
+    inventory_search = request.values.get('inventory_search', '').strip()[:80]
+    inventory_visibility = request.values.get('inventory_visibility', '').strip().lower()
     if inventory_visibility not in {'public', 'private', 'internal', 'unknown'}:
         inventory_visibility = ''
-    inventory_archived = request.args.get('inventory_archived', '').strip().lower()
+    inventory_archived = request.values.get('inventory_archived', '').strip().lower()
     if inventory_archived not in {'active', 'archived', 'unknown'}:
         inventory_archived = ''
     inventory = read_installation_inventory_for_current_session(
@@ -122,11 +128,63 @@ def _inventory_context(installation: SourceInstallation) -> dict:
     )
     return {
         'inventory': inventory,
+        'inventory_datetime': present_user_datetime,
         'installation': installation,
         'inventory_search': inventory_search,
         'inventory_visibility': inventory_visibility,
         'inventory_archived': inventory_archived,
     }
+
+
+def _repository_sync_job(installation: SourceInstallation, *, job_id: int | None = None) -> JobExecution | None:
+    query = JobExecution.query.filter_by(
+        integration_type='source_control',
+        job_type='source_control_repository_inventory',
+        operation=REPOSITORY_SYNC_OPERATION,
+        scope_type='source_control_installation',
+        scope_key=f'installation:{installation.id}',
+    )
+    if job_id is not None:
+        return query.filter_by(id=job_id).first()
+    return query.filter(JobExecution.status.in_(ACTIVE_JOB_STATUSES)).order_by(JobExecution.id.desc()).first()
+
+
+def _repository_sync_snapshot(job: JobExecution | None) -> dict | None:
+    if job is None:
+        return None
+    started_at = job.started_at or job.created_at
+    if started_at.tzinfo is None:
+        started_at = started_at.replace(tzinfo=UTC)
+    return {
+        **job_snapshot(job),
+        'task_id': job.celery_task_id or '',
+        'title': 'Repository synchronization',
+        'state_label': job.status.replace('_', ' '),
+        'elapsed_seconds': max(0, int((datetime.now(UTC) - started_at).total_seconds())),
+    }
+
+
+def _render_inventory_content(
+    installation: SourceInstallation,
+    *,
+    sync_job: JobExecution | None = None,
+    refresh_registry: bool = False,
+    sync_blocked: bool = False,
+) -> Response:
+    canonical = installation.integration_instance
+    if canonical is None:
+        abort(409)
+    return _response(
+        'integrations/source_control/github/partials/_detail_inventory.html',
+        canonical=canonical,
+        readiness=canonical.readiness_status or 'validation_required',
+        action_form=FlaskForm(),
+        inventory_sync_job=_repository_sync_snapshot(sync_job),
+        inventory_sync_partial=True,
+        inventory_registry_oob=refresh_registry,
+        inventory_sync_blocked=sync_blocked,
+        **_inventory_context(installation),
+    )
 
 
 def _render_validation_content(installation: SourceInstallation, *, validation_job=None) -> Response:
@@ -203,6 +261,7 @@ def detail(installation_id: int) -> ResponseReturnValue:
     return _response(
         'integrations/source_control/github/uat_detail.html',
         **_inventory_context(installation),
+        inventory_sync_job=_repository_sync_snapshot(_repository_sync_job(installation)),
         canonical=canonical,
         **_capability_context(canonical),
         validation_job=_validation_job_for(canonical),
@@ -635,8 +694,9 @@ def synchronize(installation_id: int) -> ResponseReturnValue:
     feedback_message = (
         'Repository synchronization was requested. Review committed inventory after the worker completes.'
     )
+    sync_job = None
     try:
-        enqueue_source_repository_sync(
+        sync_job, _created = enqueue_source_repository_sync(
             requested_by_user_id=int(current_user.id),
             trigger_type='uat',
             installation_record_id=installation_id,
@@ -659,7 +719,42 @@ def synchronize(installation_id: int) -> ResponseReturnValue:
         },
         queue_feedback=True,
     )
+    if request.headers.get('HX-Request') == 'true':
+        response = _render_inventory_content(
+            installation,
+            sync_job=sync_job,
+            refresh_registry=bool(sync_job and sync_job.is_terminal),
+            sync_blocked=feedback_status == 'warning',
+        )
+        response.headers['HX-Trigger'] = '{"kaori:notifications-changed":{}}'
+        return response
     return redirect(detail_url)
+
+
+@github_uat_bp.get('/installations/<int:installation_id>/inventory/refresh')
+@permission_required('integrations.manage')
+def inventory_refresh(installation_id: int) -> ResponseReturnValue:
+    installation = _installation_or_404(installation_id)
+    if request.headers.get('HX-Request') != 'true':
+        return redirect(_detail_url(installation_id, tab='inventory'))
+    return _render_inventory_content(
+        installation,
+        sync_job=_repository_sync_job(installation),
+        refresh_registry=True,
+    )
+
+
+@github_uat_bp.get('/installations/<int:installation_id>/sync/status/<int:job_id>')
+@permission_required('integrations.manage')
+def synchronize_status(installation_id: int, job_id: int) -> ResponseReturnValue:
+    installation = _installation_or_404(installation_id)
+    job = _repository_sync_job(installation, job_id=job_id)
+    if job is None:
+        abort(404)
+    if request.headers.get('HX-Request') != 'true':
+        return redirect(_detail_url(installation_id, tab='inventory'))
+    response = _render_inventory_content(installation, sync_job=job, refresh_registry=job.is_terminal)
+    return validation_poll_response(response.get_data(as_text=True), snapshot=job_snapshot(job))
 
 
 @github_uat_bp.post('/installations/<int:installation_id>/delete')

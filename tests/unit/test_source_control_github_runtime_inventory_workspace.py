@@ -106,7 +106,8 @@ def test_inventory_follows_kubernetes_decision_and_committed_scope():
     assert 'components/table.html' in registry
     assert 'components/pagination.html' in registry
     assert '[5, 10, 25, 50]' in registry
-    assert 'hx-trigger="every 15s"' in registry
+    assert 'hx-trigger="every 15s"' not in registry
+    assert 'Refresh Registry' in registry
     assert 'read_installation_inventory_for_current_session(' in routes
     assert 'authorized_installation_id=installation.id' in routes
     assert 'committed_generation == 0' in projection
@@ -195,7 +196,7 @@ def test_github_committed_repository_registry_is_full_width_sibling():
     table = _read(ROOT / 'app/templates/components/table.html')
 
     assert 'github-inventory-lifecycle-guide' in decision
-    assert decision.index('</section>\n{% include "integrations/source_control/github/_inventory_table.html" %}') > 0
+    assert decision.index('</section>\n{% if not inventory_sync_partial|default(false)') > 0
     assert '<section id="source-control-inventory"' in registry
     assert 'table_ui.block_classes(allow_overflow=true)' in registry
     assert "table_ui.table_classes('min-w-[800px] table-fixed xl:min-w-0')" in registry
@@ -343,7 +344,7 @@ def test_committed_repository_filters_preserve_installation_authority():
     projection = _read(ROOT / 'app/integrations/source_control/repository_inventory.py')
     registry = _read(GITHUB / '_inventory_table.html')
 
-    assert "request.args.get('inventory_search', '').strip()[:80]" in routes
+    assert "request.values.get('inventory_search', '').strip()[:80]" in routes
     assert "inventory_visibility not in {'public', 'private', 'internal', 'unknown'}" in routes
     assert "inventory_archived not in {'active', 'archived', 'unknown'}" in routes
     assert 'authorized_installation_id=installation.id' in routes
@@ -419,6 +420,7 @@ def test_github_detail_tab_badges_follow_runtime_and_unfiltered_committed_invent
     assert count in detail
     assert count in registry
     assert "request.endpoint == 'github_source_uat.inventory_table'" in registry
+    assert 'inventory_registry_oob|default(false)' in registry
     assert "framed_tabs.badge_oob('github', 'inventory'," in registry
 
 
@@ -625,3 +627,47 @@ def test_github_nested_runtime_tabs_preserve_outer_navigation_and_oob_target():
     assert 'runtime_history_oob=runtime_history_oob|default(false)' in runtime
     assert 'runtime_history_embedded|default(false)' in history
     assert 'hx-swap-oob="outerHTML"' in history
+
+
+def test_github_repository_sync_uses_scoped_canonical_job_poll_and_oob_inventory():
+    routes = _read(ROUTES)
+    inventory = _read(GITHUB / 'partials/_detail_inventory.html')
+    registry = _read(GITHUB / '_inventory_table.html')
+    assert "sync_job, _created = enqueue_source_repository_sync(" in routes
+    assert "def synchronize_status(installation_id: int, job_id: int)" in routes
+    assert "job = _repository_sync_job(installation, job_id=job_id)" in routes
+    assert "job_type='source_control_repository_inventory'" in routes
+    assert "operation=REPOSITORY_SYNC_OPERATION" in routes
+    assert "scope_key=f'installation:{installation.id}'" in routes
+    assert "scope_type='source_control_installation'" in routes
+    assert "refresh_registry=job.is_terminal" in routes
+    assert 'validation_poll_response(response.get_data(as_text=True), snapshot=job_snapshot(job))' in routes
+    assert 'hx-post="{{ url_for(\'github_source_uat.synchronize\'' in inventory
+    assert 'validation_poller.render(sync_active,' in inventory
+    assert 'hx-target="#github-inventory-decision"' in inventory
+    assert 'data-kaori-inventory-query-state' in registry and 'data-kaori-inventory-query-state' in inventory
+    assert 'hx-swap-oob="outerHTML"' in registry
+    assert 'github-posture-capabilities' in registry
+
+
+def test_github_repository_detail_uses_committed_fields_and_shared_dialog():
+    registry = _read(GITHUB / '_inventory_table.html')
+    projection = _read(ROOT / 'app/integrations/source_control/repository_inventory.py')
+    assert 'record_actions.view_more(detail_id, role=\'repository\')' in registry
+    assert 'record_detail_modal.render(' in registry
+    assert 'row.native_id' in registry and 'row.repository_id' in registry
+    assert 'row.exact_default_branch_sha' in registry
+    assert 'row.grant_valid_from' in registry and 'row.grant_observed_at' in registry
+    assert 'SourceRepositoryGrant.valid_from' in projection
+    assert 'SourceRepositoryGrant.last_observed_at' in projection
+    assert 'SourceRepositoryGrant.installation_id == authorized_installation_id' in projection
+    assert 'inventory_datetime(' in registry
+
+
+def test_asset_owner_delete_confirmation_remains_shared_and_semantic():
+    modal = _read(ROOT / 'app/templates/integrations/components/_asset_owner_delete_modal.html')
+    assert 'role="dialog"' in modal and 'aria-modal="true"' in modal
+    assert 'bg-surface-subtle' in modal
+    assert 'This action cannot be undone.' in modal
+    assert 'x-bind:action="deleteUrl"' in modal and 'csrf_token()' in modal
+    assert '{{ scope_label }}' in modal and '{{ consequence }}' in modal
