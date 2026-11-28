@@ -1,21 +1,24 @@
 """Real database reference recording, exact scope and mandatory audit (#5162)."""
 
+import base64
 import os
 from contextlib import contextmanager
-from dataclasses import replace
+from dataclasses import asdict, replace
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from uuid import uuid4
 
 import pytest
 from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from flask import Flask, current_app
 from sqlalchemy import create_engine, text
 from sqlalchemy.schema import CreateSchema, DropSchema
 
 from app.access import scoped_grants
 from app.extensions.db import db
-from app.infrastructure_automation import credential_grants, security_review, ssh_trust_lifecycle
+from app.infrastructure_automation import credential_grants, security_review, ssh_trust_authority, ssh_trust_lifecycle
 from app.infrastructure_automation import host_access_binding as service
 from app.infrastructure_automation.credential_evidence import resolve_current_credential_evidence
 from app.infrastructure_automation.credential_scope_target import (
@@ -33,6 +36,7 @@ from app.infrastructure_automation.kubernetes.source_policy import (
     REPOSITORY,
     SOURCE_CANDIDATE_SHA,
 )
+from app.integrations.secrets_management.secrets_pki.providers.credential_version_proof import canonical_statement
 from app.models.automation import (
     AutomationHostAccessBinding,
     AutomationHostAsset,
@@ -877,3 +881,61 @@ def test_credential_activation_audit_failure_rolls_back(activation_store, monkey
     assert policy.current_revision == 1
     assert len(policy.revisions) == 1
     assert Notification.query.filter_by(event_type='access_scope_grant_approved').count() == 0
+
+
+def test_signed_console_activation_and_revocation(activation_store, monkeypatch):
+    actor, maker, intent = activation_store
+    key = Ed25519PrivateKey.generate().public_key()
+    public_key = key.public_bytes(serialization.Encoding.OpenSSH, serialization.PublicFormat.OpenSSH).decode('ascii')
+    digest = 'sha256:' + sha256(base64.b64decode(public_key.split(' ')[1])).hexdigest()
+    actor, maker, checker, policy_id, _ = _activation_draft((actor, maker, replace(intent, host_key_digest=digest)))
+    target = db.session.get(AutomationCredentialScopeTarget, policy_id)
+    assignment = db.session.get(AutomationInventoryAssignment, target.assignment_id)
+    binding = db.session.get(AutomationHostAccessBinding, assignment.id)
+    selected = ssh_trust_authority.console_target(
+        assignment, binding, revision_number=1, requester_id=maker, verifier_id=checker
+    )
+    assert selected is not None
+    root = Ed25519PrivateKey.generate()
+    now = datetime.now(UTC)
+    payload = {
+        'schema': 'kaori.automation.ssh_console_evidence.v1',
+        'state': 'active',
+        'target': asdict(selected),
+        'source_kind': 'independent_console',
+        'console_asset_ref': 'c' * 64,
+        'public_key': public_key,
+        'verified_at': now.isoformat(),
+        'expires_at': (now + timedelta(minutes=10)).isoformat(),
+    }
+    files = {
+        'root.pub': root.public_key().public_bytes_raw().hex().encode('ascii'),
+        ssh_trust_authority.console_evidence_name(selected): canonical_statement(
+            {'payload': payload, 'signature': root.sign(canonical_statement(payload)).hex()}
+        ),
+    }
+    monkeypatch.setattr(ssh_trust_authority, '_read_console_file', files.get)
+    db.session.remove()
+    with pytest.raises(ssh_trust_lifecycle.SSHTrustTransitionDenied):
+        ssh_trust_lifecycle.activate_host_console_trust(
+            policy_id=policy_id, requester_id=maker, verifier_id=actor, expected_revision=0
+        )
+    assert ssh_trust_lifecycle.activate_host_console_trust(
+        policy_id=policy_id, requester_id=maker, verifier_id=checker, expected_revision=0
+    ) == 1
+    policy = db.session.get(ScopeAccessPolicy, policy_id)
+    target = db.session.get(AutomationCredentialScopeTarget, policy_id)
+    assert ssh_trust_lifecycle.review_current_console_trust(policy, target, now=datetime.now(UTC)) is not None
+    db.session.rollback()
+    with pytest.raises(ssh_trust_lifecycle.SSHTrustTransitionDenied):
+        ssh_trust_lifecycle.activate_host_console_trust(
+            policy_id=policy_id, requester_id=maker, verifier_id=checker, expected_revision=0
+        )
+    assert ssh_trust_lifecycle.revoke_host_trust(
+        actor_id=checker, connection_id=selected.connection_id,
+        assignment_id=selected.assignment_id, expected_revision=1
+    ) == 2
+    policy = db.session.get(ScopeAccessPolicy, policy_id)
+    target = db.session.get(AutomationCredentialScopeTarget, policy_id)
+    assert ssh_trust_lifecycle.review_current_console_trust(policy, target, now=datetime.now(UTC)) is None
+    assert Notification.query.filter_by(event_type='automation_host_trust_activated').count() == 1
