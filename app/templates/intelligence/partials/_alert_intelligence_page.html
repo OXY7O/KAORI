@@ -67,4 +67,7 @@
     </section>
     {% include 'intelligence/partials/_alert_intelligence_summary.html' %}
     {% include 'intelligence/partials/_alert_intelligence_workspace.html' %}
+    {% if payload.tab == 'overview' %}
+        {% include 'intelligence/partials/_alert_provider_coverage.html' %}
+    {% endif %}
 </div>

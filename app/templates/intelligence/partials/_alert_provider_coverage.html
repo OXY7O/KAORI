@@ -1,38 +1,57 @@
 {% import "components/table_label.html" as table_label %}
-{% import "components/table_primitives.html" as table_ui %}
-<section data-alert-provider-coverage class="{{ table_ui.block_classes() }}">
-    <header class="{{ table_ui.block_header_classes() }}">
-        <div class="min-w-0">
-            <h3 class="{{ table_ui.block_title_classes() }}">Cross-Domain Alert Coverage</h3>
-            <p class="{{ table_ui.block_description_classes() }}">Implemented case paths and reserved provider contracts. This matrix does not represent live provider health, connected instances, permission or UAT acceptance.</p>
-        </div>
-        {{ table_label.metadata_label('Source contract review', 'shield-check') }}
-    </header>
-    <div class="overflow-x-auto">
-        <table class="w-full min-w-[44rem] text-left text-sm">
-            <caption class="sr-only">Central Alert Intelligence implementation coverage by domain and provider</caption>
-            <thead class="border-b border-outline-subtle bg-surface-elevated text-xs font-semibold uppercase tracking-wide text-content-muted">
-                <tr>
-                    <th scope="col" class="px-5 py-3">Domain / Provider</th>
-                    <th scope="col" class="px-5 py-3">AlertCase origin</th>
-                    <th scope="col" class="px-5 py-3">Implementation</th>
-                    <th scope="col" class="px-5 py-3">Evidence boundary</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-outline-subtle">
+<dialog id="alert-provider-coverage-dialog"
+        data-kaori-native-dialog
+        data-alert-provider-coverage
+        aria-labelledby="alert-provider-coverage-title"
+        aria-describedby="alert-provider-coverage-description"
+        class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-3xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
+    <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden"
+             role="document">
+        <header class="flex shrink-0 items-start justify-between gap-4 border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="shield-check" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold text-kaori-primary">Alert Intelligence</p>
+                    <h2 id="alert-provider-coverage-title"
+                        class="mt-1 text-lg font-semibold leading-7 text-content-primary">Cross-Domain Alert Coverage</h2>
+                    <p id="alert-provider-coverage-description"
+                       class="mt-1 text-xs leading-5 text-content-muted">Implemented case paths and reserved provider contracts, not live health, instance access or UAT acceptance.</p>
+                </div>
+            </div>
+            <button type="button"
+                    data-kaori-dialog-close
+                    aria-label="Close Alert Coverage"
+                    class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+            </button>
+        </header>
+        <div class="min-h-0 overflow-y-auto bg-surface-card px-5 sm:px-6">
+            <dl class="divide-y divide-outline-subtle">
                 {% for item in payload.provider_coverage %}
-                    <tr>
-                        <th scope="row" class="px-5 py-3 align-top">
-                            <span class="block font-semibold text-content-primary">{{ item.domain }}</span>
-                            <span class="mt-0.5 block text-xs font-normal text-content-muted">{{ item.provider }}</span>
-                        </th>
-                        <td class="px-5 py-3 align-top text-content-secondary">{{ item.origin }}</td>
-                        <td class="px-5 py-3 align-top">{{ table_label.status_label(item.status, item.tone, size='compact') }}</td>
-                        <td class="px-5 py-3 align-top text-xs leading-5 text-content-muted">{{ item.limitation }}</td>
-                    </tr>
+                    <div class="grid gap-1 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] sm:gap-4">
+                        <dt class="min-w-0">
+                            <span class="block text-sm font-semibold text-content-primary">{{ item.domain }}</span>
+                            <span class="block text-xs text-content-muted">{{ item.provider }}</span>
+                        </dt>
+                        <dd class="min-w-0 space-y-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                {{ table_label.status_label(item.status, item.tone, size='compact') }}
+                                <span class="text-xs text-content-secondary">{{ item.origin }}</span>
+                            </div>
+                            <p class="text-xs leading-5 text-content-muted">{{ item.limitation }}</p>
+                        </dd>
+                    </div>
                 {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    <p class="border-t border-outline-subtle px-5 py-3 text-xs leading-5 text-content-muted">Provider-origin admission, recovery and delivery are independent capabilities. Unqualified sources cannot be selected or treated as zero-alert evidence.</p>
-</section>
+            </dl>
+        </div>
+        <footer class="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-outline-subtle bg-surface-card px-5 py-3 sm:px-6">
+            <p class="min-w-0 flex-1 text-xs leading-5 text-content-muted">Admission, recovery and delivery are independently qualified. Unqualified sources never establish zero-alert evidence.</p>
+            <button type="button"
+                    data-kaori-dialog-close
+                    class="ml-auto inline-flex min-h-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-xs font-semibold text-content-secondary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">Close</button>
+        </footer>
+    </section>
+</dialog>
