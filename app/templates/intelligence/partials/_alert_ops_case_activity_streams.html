@@ -97,7 +97,7 @@
             {% else %}
             <div class="divide-y divide-outline-subtle px-4">
                 {% for delivery in case.deliveries_recent %}
-                    {% set delivery_tone = 'normal' if delivery.status == 'sent' else ('critical' if delivery.status == 'failed' else ('warning' if delivery.status == 'suppressed' else 'info')) %}
+                    {% set delivery_tone = 'normal' if delivery.status == 'sent' else ('critical' if delivery.status == 'failed' else ('warning' if delivery.status in ('suppressed', 'review required') else 'info')) %}
                     {% set delivery_icon_classes = 'bg-status-critical-soft text-status-critical-text' if delivery_tone == 'critical' else ('bg-status-warning-soft text-status-warning-text' if delivery_tone == 'warning' else ('bg-status-normal-soft text-status-normal-text' if delivery_tone == 'normal' else 'bg-kaori-soft text-kaori-primary')) %}
                     <article class="grid gap-3 py-3 sm:grid-cols-[2rem_minmax(0,1fr)_9rem] sm:items-start">
                         <span class="flex h-7 w-7 items-center justify-center rounded-lg {{ delivery_icon_classes }}"

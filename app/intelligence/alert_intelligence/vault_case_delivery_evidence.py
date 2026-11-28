@@ -9,7 +9,12 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from app.intelligence.alert_intelligence.vault_delivery_journal import audited_claim, audited_outcome, firing_journal
+from app.intelligence.alert_intelligence.vault_delivery_journal import (
+    REJECTION_KEY,
+    audited_claim,
+    audited_outcome,
+    firing_journal,
+)
 from app.intelligence.alert_signals.vault_source import _persisted_utc
 from app.models.alert_ops import AlertCase
 from app.models.notification_channel import NotificationDelivery
@@ -30,9 +35,9 @@ def read_case_delivery_evidence(case: AlertCase) -> dict[str, Any]:
     if not _qualified(case, row, claim):
         return _unavailable()
     outcome = audited_outcome(case, row)
-    if (row.status == 'sent') != (outcome == 'sent'):
+    status = _qualified_delivery_status(row, outcome)
+    if status is None:
         return _unavailable()
-    status = {'sent': 'sent', 'rejected': 'failed', 'unconfirmed': 'failed'}.get(outcome or '', 'queued')
     projected = {
         'channel': 'Approved scoped destination',
         'provider': 'Governed channel',
@@ -48,6 +53,28 @@ def read_case_delivery_evidence(case: AlertCase) -> dict[str, Any]:
         'deliveries_recent': [projected],
         'deliveries_older': [],
     }
+
+
+def _qualified_delivery_status(row: NotificationDelivery, outcome: str | None) -> str | None:
+    """An unconfirmed durable claim is never presented as queued/confirmed delivery.
+
+    The canonical journal and committed outcome audit must agree. Failed
+    or skipped claims without a matching outcome require manual review:
+    the provider may have accepted an attempt before a crash.
+    """
+    payload = row.payload_json
+    if not isinstance(payload, dict):
+        return None
+    rejected = payload.get(REJECTION_KEY)
+    if outcome == 'sent':
+        return 'sent' if row.status == 'sent' and rejected is False else None
+    if outcome == 'rejected':
+        return 'failed' if row.status == 'failed' and rejected is True else None
+    if outcome == 'unconfirmed':
+        return 'review required' if row.status == 'failed' and rejected is False else None
+    if outcome is None and row.status in ('queued', 'failed', 'skipped'):
+        return 'review required'
+    return None
 
 
 def _qualified(case: AlertCase, row: NotificationDelivery, claim: object) -> bool:
