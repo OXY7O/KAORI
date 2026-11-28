@@ -17,25 +17,25 @@
             </header>
             <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4"
                  data-alert-triage-metrics>
-                    {% for icon, label, value, helper, tone in [
-                        ('siren', 'Active Queue', payload.summary.active, 'Open cases in this scope', 'warning' if payload.summary.active else 'normal'),
-                        ('triangle-alert', 'Critical Now', payload.summary.critical, 'Critical cases currently firing', 'critical' if payload.summary.critical else 'normal'),
-                        ('circle-help', 'Source Unknown', payload.summary.source_unknown, 'Waiting for fresh source evidence', 'warning' if payload.summary.source_unknown else 'normal'),
-                        ('user-check', 'Acknowledged', payload.summary.acknowledged, 'Cases already owned by an operator', 'info' if payload.summary.acknowledged else 'normal')
-                        ] %}
-                        <article class="min-w-0 bg-surface-card p-4 sm:px-5">
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                      aria-hidden="true">
-                                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                                </span>
-                                {{ table_label.status_indicator_label(('Owned' if value else 'None') if label == 'Acknowledged' else ('Attention' if value else 'Clear'), tone, size='compact') }}
-                            </div>
-                            <p class="mt-3 text-2xl font-semibold leading-none text-content-primary">{{ value }}</p>
-                            <p class="mt-2 text-xs font-semibold leading-5 text-content-secondary">{{ label }}</p>
-                            <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ helper }}</p>
-                        </article>
-                    {% endfor %}
+                {% for icon, label, value, helper, tone in [
+                    ('siren', 'Active Queue', payload.summary.active, 'Open cases in this scope', 'warning' if payload.summary.active else 'normal'),
+                    ('triangle-alert', 'Critical Now', payload.summary.critical, 'Critical cases currently firing', 'critical' if payload.summary.critical else 'normal'),
+                    ('circle-help', 'Source Unknown', payload.summary.source_unknown, 'Waiting for fresh source evidence', 'warning' if payload.summary.source_unknown else 'normal'),
+                    ('user-check', 'Acknowledged', payload.summary.acknowledged, 'Cases already owned by an operator', 'info' if payload.summary.acknowledged else 'normal')
+                    ] %}
+                    <article class="min-w-0 bg-surface-card p-4 sm:px-5">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                            </span>
+                            {{ table_label.status_indicator_label(('Owned' if value else 'None') if label == 'Acknowledged' else ('Attention' if value else 'Clear'), tone, size='compact') }}
+                        </div>
+                        <p class="mt-3 text-2xl font-semibold leading-none text-content-primary">{{ value }}</p>
+                        <p class="mt-2 text-xs font-semibold leading-5 text-content-secondary">{{ label }}</p>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                    </article>
+                {% endfor %}
             </div>
         </section>
     {% endif %}
@@ -110,7 +110,9 @@
                         ('Source Unknown', 'circle-help', {'source_state': 'unknown'}, payload.filters.source_state == 'unknown' and payload.filters.severity == 'all' and payload.filters.workflow == 'all')
                         ] %}
                         {% set selected = selected and not payload.filters.q and payload.filters.source == 'all' %}
-                        {% set quick_url = url_for('alert_intelligence.index', **quick_context, **query) %}
+                        {% set quick_params = dict(quick_context) %}
+                        {% set _ = quick_params.update(query) %}
+                        {% set quick_url = url_for('alert_intelligence.index', **quick_params) %}
                         <a href="{{ quick_url }}"
                            hx-get="{{ quick_url }}"
                            hx-target="#alert-operations-active-registry"
