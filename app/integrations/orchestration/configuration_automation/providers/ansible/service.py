@@ -11,6 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.infrastructure_automation.kubernetes.source_policy import committed_source_state
+from app.infrastructure_automation.target_claims import connection_resource, has_active_target_claim
 from app.integrations.orchestration.configuration_automation.providers.ansible.contract import (
     AnsibleConnectionInput,
     require_registration_policy,
@@ -95,22 +96,40 @@ def save_source_connection(values: AnsibleConnectionInput, *, evidence: dict[str
     return instance
 
 
+class SourceRevalidationDenied(ValueError):
+    """Safe rejection of a conflicting or stale source revalidation."""
+
+
 def commit_source_revalidation(connection: IntegrationInstance, *, evidence: dict[str, Any]) -> None:
-    """Persist Git-only source evidence without granting operation authority."""
-    if connection.integration_type != INTEGRATION_TYPE or connection.provider_key != PROVIDER_KEY:
-        raise ValueError('Source revalidation requires an Ansible connection.')
-    metadata = connection.metadata_json if isinstance(connection.metadata_json, dict) else {}
-    connection.metadata_json = {
-        **metadata,
-        'source_validation': evidence,
-        'execution_enabled': False,
-        'mutation_authorized': False,
-    }
-    connection.readiness_status = 'validation_required'
-    connection.health_status = None
+    """Serialize positive source evidence against reservations; never suppress invalidation."""
     try:
+        previous = dict(connection.metadata_json or {})
+        locked = db.session.get(IntegrationInstance, connection.id, with_for_update=True, populate_existing=True)
+        if locked is None or locked.integration_type != INTEGRATION_TYPE or locked.provider_key != PROVIDER_KEY:
+            raise SourceRevalidationDenied('Source revalidation requires an Ansible connection.')
+        metadata = locked.metadata_json if isinstance(locked.metadata_json, dict) else {}
+        if any(metadata.get(key) != previous.get(key) for key in ('source_repository', 'source_sha')):
+            raise SourceRevalidationDenied('Source identity changed during validation. Revalidate the current source.')
+        reserved = has_active_target_claim(connection_resource(locked.id))
+        invalidation = evidence == {'status': 'blocked', 'operation_authorized': False, 'checked_files': 0}
+        if not invalidation:
+            if reserved:
+                raise SourceRevalidationDenied('Source refresh is blocked by an active pilot target reservation.')
+            if (
+                metadata.get('source_validation') != previous.get('source_validation')
+                or committed_source_state({**metadata, 'source_validation': evidence}) != 'checked'
+            ):
+                raise SourceRevalidationDenied('Source evidence changed or is no longer qualified. Revalidate the current source.')
+        locked.metadata_json = {
+            **metadata,
+            'source_validation': evidence,
+            'execution_enabled': False,
+            'mutation_authorized': False,
+        }
+        locked.readiness_status = 'validation_required'
+        locked.health_status = None
         db.session.commit()
-    except SQLAlchemyError:
+    except (SQLAlchemyError, SourceRevalidationDenied):
         db.session.rollback()
         raise
 
