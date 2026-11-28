@@ -18,7 +18,13 @@ from sqlalchemy.schema import CreateSchema, DropSchema
 
 from app.access import scoped_grants
 from app.extensions.db import db
-from app.infrastructure_automation import credential_grants, security_review, ssh_trust_authority, ssh_trust_lifecycle
+from app.infrastructure_automation import (
+    credential_grants,
+    remote_preflight_target,
+    security_review,
+    ssh_trust_authority,
+    ssh_trust_lifecycle,
+)
 from app.infrastructure_automation import host_access_binding as service
 from app.infrastructure_automation.credential_evidence import resolve_current_credential_evidence
 from app.infrastructure_automation.credential_scope_target import (
@@ -28,7 +34,7 @@ from app.infrastructure_automation.credential_scope_target import (
 )
 from app.infrastructure_automation.host_enrollment import host_revision
 from app.infrastructure_automation.kubernetes.committed_host_access import committed_pilot_access_fingerprint
-from app.infrastructure_automation.remote_access_evidence import review_remote_access_evidence
+from app.infrastructure_automation.kubernetes.inventory_receipt import InventoryReceiptReview
 from app.infrastructure_automation.kubernetes.kubespray_preflight import KUBESPRAY_RELEASE
 from app.infrastructure_automation.kubernetes.source_policy import (
     ANSIBLE_CORE_VERSION,
@@ -37,6 +43,7 @@ from app.infrastructure_automation.kubernetes.source_policy import (
     REPOSITORY,
     SOURCE_CANDIDATE_SHA,
 )
+from app.infrastructure_automation.remote_access_evidence import RemoteAccessEvidence, review_remote_access_evidence
 from app.integrations.secrets_management.secrets_pki.providers.credential_version_proof import canonical_statement
 from app.models.automation import (
     AutomationHostAccessBinding,
@@ -973,3 +980,54 @@ def test_signed_console_activation_and_revocation(activation_store, monkeypatch)
     assert ssh_trust_lifecycle.review_current_console_trust(policy, target, now=datetime.now(UTC)) is None
     assert review_remote_access_evidence(**access_args, now=datetime.now(UTC)) is None
     assert Notification.query.filter_by(event_type='automation_host_trust_activated').count() == 1
+
+
+def test_remote_target_review_requires_all_three_current_member_evidence(binding_store, monkeypatch):
+    actor, _, _ = binding_store
+    connection, assignments = _record_pilot(binding_store)
+    now = datetime.now(UTC)
+    # The inventory readback and individual grants are synthetic here; the
+    # canonical inventory membership, role and endpoint checks are real DB reads.
+    receipt = InventoryReceiptReview(
+        'historical_aligned',
+        'Fixture historical evidence',
+        fingerprint='a' * 64,
+        parser_verified=True,
+    )
+    monkeypatch.setattr(remote_preflight_target, 'committed_inventory_receipt_review', lambda connection: receipt)
+    proofs = {
+        assignment.id: RemoteAccessEvidence(f'{assignment.id:064x}', now + timedelta(minutes=5))
+        for assignment in assignments
+    }
+
+    def access(*, actor_user_id, connection_id, assignment_id, now):
+        assert actor_user_id == actor
+        assert connection_id == connection.id
+        return proofs.get(assignment_id)
+
+    monkeypatch.setattr(remote_preflight_target, 'review_remote_access_evidence', access)
+
+    def review():
+        return remote_preflight_target.review_remote_preflight_target(
+            actor_id=actor, connection_id=connection.id, now=now
+        )
+
+    result = review()
+    assert result is not None
+    assert len(result.targets) == 3
+    assert result.expires_at == now + timedelta(minutes=5)
+    assert result.execution_authorized is False
+    member = assignments[0].id
+    original = proofs[member]
+    del proofs[member]
+    assert review() is None
+    proofs[member] = replace(original, fingerprint='c' * 64)
+    changed = review()
+    assert changed is not None
+    assert changed.access_fingerprint != result.access_fingerprint
+    proofs[member] = replace(original, expires_at=now)
+    assert review() is None
+    proofs[member] = original
+    assignments[0].role = 'worker' if assignments[0].role == 'control_plane' else 'control_plane'
+    db.session.commit()
+    assert review() is None
