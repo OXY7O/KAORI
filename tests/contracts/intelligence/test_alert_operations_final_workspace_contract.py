@@ -411,14 +411,14 @@ def test_case_evidence_facts_and_activity_streams_use_content_aware_layout() -> 
 
 
 def test_activity_streams_share_intrinsic_rows_only_when_recent_counts_match() -> None:
-    from datetime import datetime, timezone
+    from datetime import UTC, datetime
 
     from jinja2 import Environment, FileSystemLoader
 
     env = Environment(loader=FileSystemLoader(ROOT / 'app/templates'), autoescape=True)
     env.filters['user_datetime'] = lambda value: value.isoformat()
     template = env.get_template('intelligence/partials/_alert_ops_case_activity_streams.html')
-    timestamp = datetime(2026, 11, 28, tzinfo=timezone.utc)
+    timestamp = datetime(2026, 11, 28, tzinfo=UTC)
     event = {
         'icon': 'activity', 'tone': 'info', 'label': 'Firing Notified',
         'actor': 'KAORI Worker', 'summary': 'Event details', 'created_at': timestamp,
