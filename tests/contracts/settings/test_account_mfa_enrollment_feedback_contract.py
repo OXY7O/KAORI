@@ -53,3 +53,17 @@ def test_existing_route_distinguishes_expired_form_and_service_errors() -> None:
     assert 'queue_operational_feedback(mfa_toast)' in routes
     assert 'mfa_feedback' not in routes
     assert "response.headers['Cache-Control'] = 'no-store'" in routes
+
+
+def test_required_mfa_enrollment_and_recovery_responses_are_sensitive() -> None:
+    routes = (Path(__file__).resolve().parents[3] / 'app/access/authentication/routes.py').read_text(encoding='utf-8')
+    challenge = routes.split('def mfa_challenge():', 1)[1].split('def _session_lifecycle_payload', 1)[0]
+    assert "expected_generation=pending['version']" in challenge
+    assert "'access/authentication/mfa_enrollment.html'" in challenge
+    assert "'access/authentication/mfa_recovery_codes.html'" in challenge
+    for header in (
+        "response.headers['Cache-Control'] = 'no-store'",
+        "response.headers['Pragma'] = 'no-cache'",
+        "response.headers['Referrer-Policy'] = 'no-referrer'",
+    ):
+        assert challenge.count(header) == 2
