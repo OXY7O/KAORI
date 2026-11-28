@@ -47,6 +47,43 @@
                 <p class="mt-1 max-w-4xl break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ identity_context.credential_detail }}</p>
             </div>
         {% endcall %}
+        {% if user_lockout_views is defined and user.id in user_lockout_views %}
+            {% set lockout = user_lockout_views[user.id] %}
+            {% call detail_ui.inventory_section(
+                'Login Protection', 'shield-alert',
+                description='Local sign-in protection; account lifecycle is independent.',
+                compact_layout=true
+                ) %}
+                <div class="grid min-w-0 gap-x-8 gap-y-3 sm:grid-cols-2">
+                    <div class="min-w-0">
+                        <p class="text-xs font-medium leading-5 text-content-muted">Protection State</p>
+                        <div class="mt-1">{{ table_label.status_label(lockout.label, 'warning' if lockout.label in ['Locked', 'Cooldown', 'Would Lock', 'Would Throttle'] else 'unknown', 'shield-check') }}</div>
+                    </div>
+                    {{ detail_ui.stacked_detail_row('Protection Until', lockout.deadline|user_datetime("-")) }}
+                </div>
+                {% if lockout.can_unlock %}
+                    <details class="mt-3 rounded-lg border border-outline-default bg-surface-card p-3">
+                        <summary class="cursor-pointer text-sm font-semibold text-kaori-primary">Unlock Account</summary>
+                        <form method="post"
+                              action="{{ url_for('users.unlock', user_id=user.id) }}"
+                              class="mt-3 space-y-3"
+                              hx-history="false">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="lockout_revision" value="{{ lockout.revision }}">
+                            <input type="hidden" name="locked_until" value="{{ lockout.deadline_token }}">
+                            {% include "access/authentication_security/partials/_lockout_assurance_fields.html" %}
+                            <label class="flex items-start gap-2 text-xs text-content-secondary">
+                                <input type="checkbox" name="acknowledge_unlock" value="yes" required>
+                                Clear this lock only; password, MFA and lifecycle remain unchanged.
+                            </label>
+                            <button type="submit" class="{{ table_ui.action_classes() }}">
+                                <i data-lucide="unlock" class="h-3.5 w-3.5" aria-hidden="true"></i>Confirm Unlock
+                            </button>
+                        </form>
+                    </details>
+                {% endif %}
+            {% endcall %}
+        {% endif %}
         {% call detail_ui.inventory_section(
             'Authorization', 'shield-check',
             description='Effective local role and access state',

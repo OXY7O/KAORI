@@ -194,6 +194,22 @@ def require_personal_factor_assurance(
         raise MfaVerificationError('Recent sign-in required before changing MFA.')
 
 
+def stage_admin_totp_assurance(user: User, submitted: str) -> None:
+    """Consume fresh TOTP under the already-locked actor and caller transaction."""
+    factor = _locked_factor(user.id)
+    if factor is None or not factor.enabled:
+        raise MfaVerificationError('An enrolled authenticator is required.')
+    accepted = _accepted_step(
+        factor.totp_secret, submitted, last_accepted_step=factor.last_accepted_step, now=datetime.now(UTC)
+    )
+    if accepted is None:
+        raise MfaVerificationError('Verification code was not accepted.')
+    factor.last_accepted_step = accepted
+    db.session.add(stage_authentication_security_event(
+        user, action='mfa_challenge_verified', authenticated=True, success=True
+    ))
+
+
 def _locked_factor(user_id: int) -> AuthenticationMfaFactor | None:
     """Refresh the factor after locking, rather than using an earlier ORM snapshot."""
     return AuthenticationMfaFactor.query.filter_by(user_id=user_id).with_for_update().populate_existing().first()

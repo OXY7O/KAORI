@@ -308,6 +308,7 @@ def build_users_payload(filters: dict[str, Any], actor: User | None = None) -> d
         'identity_source_count': identity_source_count,
     }
 
+    from app.access.authentication.lockout_governance import lockout_views
     from app.access.users.service import build_user_action_policies
 
     return {
@@ -320,6 +321,7 @@ def build_users_payload(filters: dict[str, Any], actor: User | None = None) -> d
         'status_options': USER_STATUS_OPTIONS,
         'auth_source_options': USER_AUTH_SOURCE_OPTIONS,
         'user_actions': build_user_action_policies(actor, users),
+        'user_lockout_views': lockout_views(actor, users),
         'user_presentations': user_presentations,
         'user_identity_contexts': identity_contexts,
         'can_manage_users': can_manage_users,

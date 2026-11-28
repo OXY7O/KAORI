@@ -126,8 +126,15 @@ def _event(
         'failure_count': count,
         'password_outcome': 'verified' if password_valid is True else 'invalid' if password_valid is False else None,
     }
-    event.deck_visible = False
-    event.read_at = now
+    # Notify the resolved target once per actual enforced lock transition.
+    # The same row is the committed Activity Audit; no second write or delivery.
+    threshold = action == 'lockout_threshold_reached' and context.decision.mode == LockoutMode.ENFORCED
+    if threshold:
+        event.status = 'warning'
+        event.title = 'Temporary Sign-in Lock'
+        event.message = 'Repeated invalid credentials temporarily locked new local sign-ins.'
+    event.deck_visible = threshold
+    event.read_at = None if threshold else now
     event.created_at = now
     return event
 

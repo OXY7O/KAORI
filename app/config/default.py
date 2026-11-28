@@ -487,6 +487,10 @@ class Config:
         'memory://',
     )
 
+    # Explicit environment authorization; never activate lockout on deployment.
+    AUTH_LOCKOUT_MONITOR_ALLOWED = _env_bool('AUTH_LOCKOUT_MONITOR_ALLOWED', False)
+    AUTH_LOCKOUT_ENFORCEMENT_ALLOWED = _env_bool('AUTH_LOCKOUT_ENFORCEMENT_ALLOWED', False)
+
     AUTH_LOGIN_RATE_LIMIT = _env_str(
         'AUTH_LOGIN_RATE_LIMIT',
         '5 per minute',
