@@ -79,6 +79,38 @@ def get_alert_overview_payload() -> dict[str, Any]:
     }
 
 
+def get_alert_scope_draft(args: MultiDict[str, str]) -> dict[str, Any]:
+    """Resolve selector metadata only; do not read cases or apply the draft."""
+    from app.intelligence.alert_intelligence import provider_case_scope
+
+    tab = _choice(args.get('tab'), _VALID_TABS - {'overview'}, 'active')
+    if tab == 'history':
+        tab = 'resolved'
+    domain = str(args.get('domain') or '')
+    if provider_case_scope.is_provider_case_domain(domain):
+        return {
+            'tab': tab,
+            'domain': domain,
+            'domain_options': provider_case_scope.DOMAIN_OPTIONS,
+            'provider_case_mode': True,
+            **provider_case_scope.provider_scope_context(args),
+        }
+    clusters = Cluster.query.order_by(Cluster.name.asc()).all()
+    systems = ObjectStorageSystem.query.order_by(ObjectStorageSystem.name.asc()).all()
+    domain = _selected_domain(args, clusters=clusters, systems=systems)
+    assets = _asset_options(domain, clusters=clusters, systems=systems)
+    requested = str(args.get('asset') or '')
+    selected = requested if any(option['value'] == requested for option in assets) else ''
+    return {
+        'tab': tab,
+        'domain': domain,
+        'domain_options': provider_case_scope.DOMAIN_OPTIONS,
+        'provider_case_mode': False,
+        'assets': assets,
+        'selected_asset_key': selected,
+    }
+
+
 def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     from app.intelligence.alert_intelligence import provider_case_scope
     from app.intelligence.alert_intelligence.provider_coverage import provider_coverage_rows

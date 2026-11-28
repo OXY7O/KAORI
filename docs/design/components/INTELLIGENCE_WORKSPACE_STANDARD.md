@@ -279,11 +279,16 @@ are excluded rather than represented as zero or live provider health. Overview
 navigation does not carry an asset filter; operational tabs establish their own
 scope. Keep Alert Coverage accessible.
 
-Active Alerts, Silences and Resolved retain editable domain and asset scope
-inside the workspace below its header. Recommendation routing retains domain
-selection and a read-only current alert scope, except Registry routing retains
-its editable asset selector. Recommendation templates are shared provider/event
-resources; retain read-only alert summary scope. Change Scope links to Active
-Alerts, not the selector-free Overview. Provider-origin and invalid Registry
-scopes retain all required editable selectors. Keep the existing page HTMX
-boundary and do not change mutation authority or scoped read admission.
+Operational tabs show only compact committed scope metadata and a shared
+Change Scope action immediately below the workspace header. Use the shared
+native dialog for Domain, Provider (when applicable), and Asset Scope or
+Authorized Instance, with explicit Apply Scope and Cancel. Domain/provider
+changes refresh only draft selector metadata through the existing HTMX route;
+do not read provider cases, mutate state, or push browser history on draft
+changes. Reopening reloads the committed selection. Recheck current exact
+option membership before Apply, reject stale/inconsistent draft selections,
+and update the Hero, Summary, and workspace together using a canonical URL.
+Keep template ownership global and routing policy filters independent; asset
+selection there controls the alert summary and editor context only. Provider
+case reads continue to enforce independently audited exact-instance admission.
+Overview remains selector-free, including no hidden scope dialog.
