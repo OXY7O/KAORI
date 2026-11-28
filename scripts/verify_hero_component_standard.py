@@ -1370,6 +1370,8 @@ def _verify_hero_context_semantics() -> None:
         'vault.index': 'Open Vault Integrations',
         'integrations.ansible': 'Open Ansible Integrations',
         'integrations.observability': 'Open Observability Integrations',
+        'integrations.metrics_sources': 'Open Metrics Source Integrations',
+        'integrations.alertmanager': 'Open Alertmanager Integrations',
         'notification_channels.index': 'Open Notification Channels',
     }
     start = hero.index('{% macro integration_navigation_label(endpoint)')
