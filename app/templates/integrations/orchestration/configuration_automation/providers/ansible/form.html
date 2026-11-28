@@ -1,5 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "integrations/components/_provider_registration_hero.html" as registration_hero %}
+{% import "integrations/components/_provider_edit_hero.html" as edit_hero %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "integrations/components/_provider_registration_context.html" as registration_context %}
 {% import "integrations/components/_provider_registration_actions.html" as registration_actions %}
@@ -8,10 +9,20 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/action_button.html" as action_button %}
-{% block title %}Add Ansible Kubernetes Connection · KAORI{% endblock title %}
+{% block title %}{{ 'Configure Ansible Connection' if configure_mode|default(false) else 'Add Ansible Kubernetes Connection' }} · KAORI{% endblock title %}
 {% block dashboard_content %}
+    {% set configure_mode = configure_mode|default(false) %}
     <div class="kaori-integration-semantic space-y-6"
          data-kaori-ansible-connection-form>
+        {% if configure_mode %}
+            {{ edit_hero.render("workflow", "Configuration Automation", "boxes",
+                "Configure Connection", "Review the registered Ansible source and compatibility references.",
+                "git-commit", "Pinned Public Git Source", "Connection", connection.name,
+                connection.environment|replace("_", " ")|title, connection.readiness_status,
+                url_for("integrations.ansible_connection_detail", instance_id=connection.id),
+                "Ansible configuration posture", immutable_source=true) }}
+            <div class="{{ form_context.layout_classes() }}" data-kaori-ansible-immutable-configuration>
+        {% else %}
         {{ registration_hero.render("workflow",
                 "Configuration Automation",
                 "boxes",
@@ -39,10 +50,11 @@
                    type="hidden"
                    name="source_test_proof"
                    value="{{ source_test_proof or '' }}">
+        {% endif %}
             <section class="{{ integration_ui.section_shell_classes() }} {{ form_context.main_classes() }}">
                 {{ integration_ui.section_header("settings-2",
                                 "Connection Configuration",
-                                "Define connection identity, pinned Git source and compatibility policy. No credentials are requested.") }}
+                                "Review registered identity and immutable source. Changes require replacement registration." if configure_mode else "Define connection identity, pinned Git source and compatibility policy. No credentials are requested.") }}
                 <div class="space-y-6 p-5 sm:p-6">
                     <section aria-labelledby="ansible-identity-heading">
                         <div class="mb-4 flex min-w-0 items-start gap-3">
@@ -69,7 +81,7 @@
                             {% for field in [form.name, form.environment] %}
                                 <div class="min-w-0">
                                     <label for="{{ field.id }}" class="block">{{ form_field.label_row(field.label.text) }}</label>
-                                    {{ field(class=form_field.select_classes() if field.name == 'environment' else form_field.input_classes(), aria_invalid="true" if field.errors else "false") }}
+                                    {{ field(class=form_field.select_classes() if field.name == 'environment' else form_field.input_classes(), disabled=configure_mode, aria_invalid="true" if field.errors else "false") }}
                                     {% for error in field.errors %}
                                         <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                                     {% endfor %}
@@ -77,7 +89,7 @@
                             {% endfor %}
                             <div class="min-w-0 md:col-span-2">
                                 <label for="{{ form.description.id }}" class="block">{{ form_field.label_row(form.description.label.text) }}</label>
-                                {{ form.description(class=form_field.input_classes() ~ ' min-h-24 py-2.5', placeholder="Operational purpose and ownership context", aria_invalid="true" if form.description.errors else "false") }}
+                                {{ form.description(class=form_field.input_classes() ~ ' min-h-24 py-2.5', placeholder="Operational purpose and ownership context", disabled=configure_mode, aria_invalid="true" if form.description.errors else "false") }}
                                 {% for error in form.description.errors %}
                                     <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                                 {% endfor %}
@@ -88,7 +100,7 @@
                              aria-label="Git Source and Validation">
                         {% call connection_validation_header.render(
                             "Git Source & Validation",
-                            "Verify the reviewed Git source before registration.",
+                            "Review the committed Git source; the existing pin cannot be edited." if configure_mode else "Verify the reviewed Git source before registration.",
                             icon="git-commit",
                             title_extra=info_tip.render(
                             "ansible-git-source-validation-guide",
@@ -103,6 +115,7 @@
                             placement="right",
                             variant="guide")
                             ) %}
+                            {% if not configure_mode %}
                             <button type="submit"
                                     name="action"
                                     value="test"
@@ -110,13 +123,16 @@
                                 <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
                                 Validate Source
                             </button>
+                            {% else %}
+                                <span class="text-xs font-semibold text-content-muted">Immutable Source</span>
+                            {% endif %}
                         {% endcall %}
                         <div class="space-y-4 p-4 sm:p-5">
                             <div class="grid gap-4 md:grid-cols-2">
                                 {% for field in [form.profile_key, form.repository] %}
                                     <div class="min-w-0">
                                         <label for="{{ field.id }}" class="block">{{ form_field.label_row(field.label.text) }}</label>
-                                        {{ field(class=form_field.select_classes() if field.name == 'profile_key' else form_field.input_classes(), aria_invalid="true" if field.errors else "false") }}
+                                        {{ field(class=form_field.select_classes() if field.name == 'profile_key' else form_field.input_classes(), disabled=configure_mode, aria_invalid="true" if field.errors else "false") }}
                                         {% for error in field.errors %}
                                             <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                                         {% endfor %}
@@ -124,7 +140,7 @@
                                 {% endfor %}
                                 <div class="min-w-0 md:col-span-2">
                                     <label for="{{ form.revision.id }}" class="block">{{ form_field.label_row(form.revision.label.text) }}</label>
-                                    {{ form.revision(class=form_field.input_classes() ~ ' font-mono', aria_invalid="true" if form.revision.errors else "false") }}
+                                    {{ form.revision(class=form_field.input_classes() ~ ' font-mono', disabled=configure_mode, aria_invalid="true" if form.revision.errors else "false") }}
                                     {% for error in form.revision.errors %}
                                         <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                                     {% endfor %}
@@ -158,7 +174,7 @@
                             {% for field in [form.ansible_core_version, form.ansible_runner_version, form.kubespray_release] %}
                                 <div class="min-w-0">
                                     <label for="{{ field.id }}" class="block">{{ form_field.label_row(field.label.text) }}</label>
-                                    {{ field(class=form_field.select_classes() , aria_invalid="true" if field.errors else "false") }}
+                                    {{ field(class=form_field.select_classes() , disabled=configure_mode, aria_invalid="true" if field.errors else "false") }}
                                     {% for error in field.errors %}
                                         <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                                     {% endfor %}
@@ -167,13 +183,27 @@
                         </div>
                         <div class="mt-4 min-w-0">
                             <label for="{{ form.execution_environment_digest.id }}" class="block">{{ form_field.label_row(form.execution_environment_digest.label.text) }}</label>
-                            {{ form.execution_environment_digest(class=form_field.input_classes() ~ ' font-mono', placeholder="sha256:... (optional; not proof of image admission)", aria_invalid="true" if form.execution_environment_digest.errors else "false") }}
+                            {{ form.execution_environment_digest(class=form_field.input_classes() ~ ' font-mono', placeholder="sha256:... (optional; not proof of image admission)", disabled=configure_mode, aria_invalid="true" if form.execution_environment_digest.errors else "false") }}
                             {% for error in form.execution_environment_digest.errors %}
                                 <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                             {% endfor %}
                         </div>
                     </section>
                 </div>
+                {% if configure_mode %}
+                    <footer class="border-t border-outline-subtle bg-surface-subtle px-5 py-4 sm:px-6" aria-label="Ansible Configuration Actions">
+                        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                            <p class="text-xs leading-5 text-content-muted">Existing source, bindings and evidence are preserved. A different source requires a separately validated connection.</p>
+                            <div class="flex shrink-0 flex-wrap gap-2">
+                                <a href="{{ url_for('integrations.ansible_connection_detail', instance_id=connection.id) }}" class="{{ action_button.classes('secondary') }}">Cancel</a>
+                                <a href="{{ url_for('integrations.ansible_new_connection') }}" class="{{ action_button.classes('primary') }}">
+                                    <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                                    Register Replacement Connection
+                                </a>
+                            </div>
+                        </div>
+                    </footer>
+                {% else %}
                 {{ registration_actions.render(url_for('integrations.ansible') ,
                 aria_label="Ansible Connection Actions",
                 register_label="Save Connection",
@@ -186,12 +216,16 @@
                 verified_description="The exact submitted source is eligible for registration.",
                 disabled_title="Validate Source before saving",
                 enabled_title="Save this source-validated connection") }}
+                {% endif %}
             </section>
             <aside class="{{ form_context.rail_classes() }}"
-                   aria-label="Ansible registration guidance">
+                   aria-label="{{ 'Ansible configuration guidance' if configure_mode else 'Ansible registration guidance' }}">
                 {% set registration_steps = [('Define Connection Identity', 'Name this source and choose a non-production environment.'), ('Configure Pinned Git Source', 'Select Kubernetes Lifecycle, approved repository and immutable commit.'), ('Validate Source', 'Verify the Git revision, Kubespray files and version policy before Save is enabled.'), ('Save Connection', 'Register the source; runtime and inventory admission remain separate.')] %}
-                {{ registration_context.render("Kubernetes Source Registration Flow",
-                                "Register a reusable, source-validated Ansible connection.",
+                {% if configure_mode %}
+                    {% set registration_steps = [('Review Current Configuration', 'Inspect the registered identity and immutable source.'), ('Register Replacement', 'Use the currently approved source and candidate version policy.'), ('Validate Source', 'Obtain fresh signed proof for the new connection.'), ('Qualify Runtime Separately', 'Re-enroll inventory and access references; old evidence is not transferred.')] %}
+                {% endif %}
+                {{ registration_context.render("Connection Replacement Flow" if configure_mode else "Kubernetes Source Registration Flow",
+                                "Keep historical evidence unchanged while registering a replacement." if configure_mode else "Register a reusable, source-validated Ansible connection.",
                                 registration_steps,
                                 "Orchestration Integrations",
                                 "Source registration is not runtime readiness.",
@@ -203,6 +237,6 @@
                 related_icon="waypoints",
                 authority_boundary="Git defines the source; Ansible executes when separately authorized. KAORI governs registration, correlation and evidence.") }}
             </aside>
-        </form>
+        {% if configure_mode %}</div>{% else %}</form>{% endif %}
     </div>
 {% endblock dashboard_content %}
