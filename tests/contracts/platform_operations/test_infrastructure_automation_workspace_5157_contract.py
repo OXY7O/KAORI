@@ -393,7 +393,7 @@ def test_automation_hero_keeps_registration_and_execution_admission_independent(
         registered = render_template('infrastructure_automation/_hero.html', total_connections=1)
         empty = render_template('infrastructure_automation/_hero.html', total_connections=0)
     assert 'Not Admitted' in registered
-    assert registered.count('Not Admitted') == 1
+    assert registered.count('>Not Admitted</span>') == 1
     assert 'Open Ansible Integrations' in registered
     assert 'data-kaori-hero-header-accessory="status"' in registered
     assert 'Not Admitted' in empty
