@@ -262,6 +262,42 @@ Exactly three top-right header accessory variants are approved:
 
 Do not invent a fourth header-accessory geometry.
 
+### Accessory decision rule (#5394 / #5398)
+
+Choose by meaning, not by domain or visual preference.
+
+| Context meaning | Required accessory |
+|---|---|
+| Qualified health, readiness, lifecycle, evidence or execution authorization | Status Badge Box, backed by the owning committed evidence or policy |
+| Blocked or degraded prerequisite | Status Badge Box with truthful label/tone |
+| Identity, scope or authority only, with no qualified overall state | Context Icon Box |
+| Distinct immediate action not duplicated by the footer | Action Icon Box with accessible label |
+
+Do not infer Ready from registration, record counts, or the presence of a connection. Avoid repeating the same status in the badge and metric; use the metric for explanatory evidence or a separate prerequisite. Preserve the normal operational-dashboard scope-only icon and existing blocked setup ownership. The three accessory renderers expose `data-kaori-hero-header-accessory` values `status`, `context`, and `action` for contract and browser inspection.
+
+### Integration navigation CTA contract
+
+Navigation to an Integration landing/registry uses **Open**, not Manage, Review, or Configure. Use one label per exact destination. Register, Manage Connection, Configure, Validate, Review Evidence and Back to Registry remain distinct workflow actions. A link to inventory is not an Integration link.
+
+The shared `page_hero.integration_navigation_label(endpoint)` and `page_hero.integration_navigation_icon()` resolve the canonical label and plug-zap icon; `page_hero.integration_navigation(endpoint, permitted)` renders the existing full-width CTA only for a known destination and explicit permission. Unknown destinations and denied permissions render no navigation. Route decorators remain the security authority; callers must pass the owning destination's permission decision. Do not change a route just to shorten its label.
+
+| Existing destination | Canonical CTA |
+|---|---|
+| integrations.kubernetes | Open Cluster Integrations |
+| integrations.storage | Open Storage Integrations |
+| integrations.registry | Open Registry Integrations |
+| integrations.source_control | Open Source Control Integrations |
+| integrations.secrets_management | Open Secrets & PKI Integrations |
+| vault.index | Open Vault Integrations |
+| integrations.ansible | Open Ansible Integrations |
+| integrations.observability | Open Observability Integrations |
+| notification_channels.index | Open Notification Channels |
+
+A capability-neutral Automation or Secrets CTA may only be used if its destination actually covers that capability. Existing provider-specific registry routes remain explicitly named. Additional destinations require source/permission qualification before registry extension.
+
+When a below-Hero prerequisite blocker owns registration/setup, the Hero explains the state and omits the duplicate navigation or registration action. A separate read-only review workflow remains accessible where authorized. The Infrastructure Automation pilot uses policy-backed Not Admitted with separate Source Setup and Approval metrics; it does not claim that source registration proves execution readiness. Compatibility callers migrate in issue-scoped batches; no global parity claim until the active consumer census and visual qualification are complete.
+
+
 `context_card(...)`, `context_card_body(...)`, and `blocked_context_body(...)` enforce **exactly two compact metrics** through `metrics[:2]`.
 
 ## Content density

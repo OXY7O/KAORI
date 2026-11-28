@@ -182,3 +182,15 @@ operational registries or execution admission. Profile catalog remains
 separate from Overview, with current Kubespray review and planned Linux
 Hosts, Middleware & Database and Network profiles. Source registration
 remains in Integrations. No new operation, provider or mutation authority.
+
+
+### Shared Hero semantic pilot (#5398)
+
+Infrastructure Automation uses the canonical execution-boundary status badge
+`Not Admitted` with separate source-registration and independent approval
+metrics. A registered source never grants execution authority. With an existing
+connection, the Hero opens the exact Ansible registry using the shared
+`Open Ansible Integrations` navigation action. Without a registered source,
+the Overview/Connections setup state owns registration; the Hero explains the
+prerequisite. Check both states, keyboard focus, light/dark and phone layout
+in DevContainer before protected admission.

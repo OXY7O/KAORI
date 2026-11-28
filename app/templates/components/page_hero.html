@@ -18,6 +18,7 @@
     {% set status_icon = 'circle-check' if tone == 'normal' else ('triangle-alert' if tone == 'warning' else ('circle-x' if tone == 'critical' else ('circle-help' if tone == 'unknown' else 'circle-dot'))) %}
     {% set tone_classes = 'kaori-hero-status-normal' if tone == 'normal' else ('kaori-hero-status-warning' if tone == 'warning' else ('kaori-hero-status-critical' if tone == 'critical' else ('kaori-hero-status-unknown' if tone == 'unknown' else 'kaori-hero-status-info'))) %}
     <span class="kaori-hero-status-badge inline-flex min-h-7 max-w-full shrink-0 items-center gap-1.5 rounded-md border bg-white/95 px-2.5 py-1 text-xs font-semibold leading-5 shadow-sm {{ table_label.tone_border_classes(tone) }} {{ tone_classes }}"
+          data-kaori-hero-header-accessory="status"
           title="{{ label }}">
         <i data-lucide="{{ status_icon }}"
            class="h-3.5 w-3.5 shrink-0"
@@ -154,13 +155,14 @@
     kaori-hero-tile flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-brand-foreground
 {%- endmacro %}
 {% macro context_icon_box(icon) -%}
-    <span class="{{ context_icon_classes() }}" aria-hidden="true">
+    <span class="{{ context_icon_classes() }}" data-kaori-hero-header-accessory="context" aria-hidden="true">
         <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
     </span>
 {%- endmacro %}
 {% macro context_action_icon_box(icon, href, aria_label, title=None) -%}
     <a href="{{ href }}"
        class="{{ context_icon_classes() }} transition hover:border-white/50 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-kaori-primary"
+       data-kaori-hero-header-accessory="action"
        aria-label="{{ aria_label }}"
        title="{{ title or aria_label }}">
         <i data-lucide="{{ icon }}" class="h-5 w-5" aria-hidden="true"></i>
@@ -183,6 +185,33 @@
 {%- endmacro %}
 {% macro context_single_action_classes() -%}
     mt-auto {{ context_action_classes() }}
+{%- endmacro %}
+{# Canonical navigation intent: exact destination, not provider mutation. #}
+{% macro integration_navigation_label(endpoint) -%}
+    {{ {
+        'integrations.kubernetes': 'Open Cluster Integrations',
+        'integrations.storage': 'Open Storage Integrations',
+        'integrations.registry': 'Open Registry Integrations',
+        'integrations.source_control': 'Open Source Control Integrations',
+        'integrations.secrets_management': 'Open Secrets & PKI Integrations',
+        'vault.index': 'Open Vault Integrations',
+        'integrations.ansible': 'Open Ansible Integrations',
+        'integrations.observability': 'Open Observability Integrations',
+        'notification_channels.index': 'Open Notification Channels'
+    }.get(endpoint, '') }}
+{%- endmacro %}
+{% macro integration_navigation_icon() -%}plug-zap{%- endmacro %}
+{% macro integration_navigation(endpoint, permitted) -%}
+    {% set label = integration_navigation_label(endpoint)|trim %}
+    {% if permitted and label %}
+        <a href="{{ url_for(endpoint) }}"
+           class="{{ context_single_action_classes() }}"
+           data-kaori-hero-cta="integration-navigation"
+           data-kaori-hero-cta-endpoint="{{ endpoint }}">
+            <i data-lucide="{{ integration_navigation_icon() }}" class="h-4 w-4" aria-hidden="true"></i>
+            {{ label }}
+        </a>
+    {% endif %}
 {%- endmacro %}
 {% macro context_header(eyebrow_label, title, icon) -%}
     <div class="flex items-start justify-between gap-4">

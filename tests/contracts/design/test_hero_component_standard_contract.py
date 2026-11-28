@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from jinja2 import Environment, FileSystemLoader
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -538,3 +539,36 @@ def test_secrets_pki_missing_source_blocked_hero_and_prerequisite_contract(
     monkeypatch.setitem(check.__globals__, '_read', false_ready_metrics)
     with pytest.raises(AssertionError, match='shared blocked prerequisite component'):
         check()
+
+
+def test_hero_integration_navigation_is_destination_specific_and_permission_scoped() -> None:
+    environment = Environment(
+        loader=FileSystemLoader(ROOT / 'app/templates'),
+        autoescape=True,
+    )
+    environment.globals['url_for'] = lambda endpoint: '/navigation/' + endpoint
+    hero = environment.get_template('components/page_hero.html').module
+    rendered = str(hero.integration_navigation('integrations.ansible', True))
+    assert 'Open Ansible Integrations' in rendered
+    assert 'href="/navigation/integrations.ansible"' in rendered
+    assert 'data-kaori-hero-cta="integration-navigation"' in rendered
+    assert 'data-lucide="plug-zap"' in rendered
+    assert not str(hero.integration_navigation('integrations.ansible', False)).strip()
+    assert not str(hero.integration_navigation('unknown.endpoint', True)).strip()
+
+
+def test_hero_accessory_renderers_have_distinct_semantics() -> None:
+    environment = Environment(
+        loader=FileSystemLoader(ROOT / 'app/templates'),
+        autoescape=True,
+    )
+    hero = environment.get_template('components/page_hero.html').module
+    status = str(hero.context_header_status('Execution', 'Boundary', 'Not Admitted', 'warning'))
+    context = str(hero.context_header('Scope', 'Inventory', 'server'))
+    action = str(hero.context_header_action('Scope', 'Inventory', 'settings', '/settings', 'Open Settings'))
+    assert 'data-kaori-hero-header-accessory="status"' in status
+    assert 'Not Admitted' in status
+    assert 'data-kaori-hero-header-accessory="context"' in context
+    assert 'aria-hidden="true"' in context
+    assert 'data-kaori-hero-header-accessory="action"' in action
+    assert 'aria-label="Open Settings"' in action

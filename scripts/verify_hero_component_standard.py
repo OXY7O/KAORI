@@ -228,6 +228,9 @@ REQUIRED_MACROS = (
     'context_header',
     'context_header_action',
     'context_header_status',
+    'integration_navigation_label',
+    'integration_navigation_icon',
+    'integration_navigation',
     'context_actions_classes',
     'context_info',
     'context_panel_metrics_classes',
@@ -1348,6 +1351,64 @@ def _verify_secrets_pki_lifecycle_compact_hero() -> None:
         raise AssertionError(f'{owner}: compact note must preserve evidence and delivery limitations')
 
 
+def _verify_hero_context_semantics() -> None:
+    """Lock shared accessory and known destination semantics during scoped migration."""
+    hero = _read(HERO)
+    standard = _read(STANDARD)
+    for accessory in ('status', 'context', 'action'):
+        _require_tokens(
+            hero,
+            (f'data-kaori-hero-header-accessory="{accessory}"',),
+            'Hero accessory registry',
+        )
+    expected = {
+        'integrations.kubernetes': 'Open Cluster Integrations',
+        'integrations.storage': 'Open Storage Integrations',
+        'integrations.registry': 'Open Registry Integrations',
+        'integrations.source_control': 'Open Source Control Integrations',
+        'integrations.secrets_management': 'Open Secrets & PKI Integrations',
+        'vault.index': 'Open Vault Integrations',
+        'integrations.ansible': 'Open Ansible Integrations',
+        'integrations.observability': 'Open Observability Integrations',
+        'notification_channels.index': 'Open Notification Channels',
+    }
+    start = hero.index('{% macro integration_navigation_label(endpoint)')
+    end = hero.index('{% macro context_header(', start)
+    registry = hero[start:end]
+    actual = dict(re.findall(r"'([a-z_.]+)':\s*'([^']+)'", registry))
+    if actual != expected:
+        raise AssertionError('Hero Integration CTA registry does not match approved exact destinations')
+    for endpoint, label in expected.items():
+        _require_tokens(standard, (f'| {endpoint} | {label} |',), 'Hero CTA documentation')
+    _require_tokens(
+        registry,
+        (
+            "{% if permitted and label %}",
+            'url_for(endpoint)',
+            'data-kaori-hero-cta="integration-navigation"',
+            'data-kaori-hero-cta-endpoint="{{ endpoint }}"',
+            'plug-zap',
+            'context_single_action_classes()',
+        ),
+        'Hero Integration CTA renderer',
+    )
+    automation = _read(TEMPLATES / 'infrastructure_automation' / '_hero.html')
+    _require_tokens(
+        automation,
+        (
+            "context_header_status('Automation Control Plane', 'Execution Boundary', 'Not Admitted', 'warning')",
+            "context_metric('shield-check', 'Approval', 'Required'",
+            "integration_navigation('integrations.ansible', permitted=true)",
+            "{% if total_connections == 0 %}",
+            "context_info('info', 'Register a source connection to begin.')",
+        ),
+        'Infrastructure Automation Hero semantic pilot',
+    )
+    for retired in ('Manage Integrations', 'ansible_new_connection'):
+        if retired in automation:
+            raise AssertionError(f'Infrastructure Automation Hero repeats or mislabels setup CTA: {retired}')
+
+
 def verify() -> None:
     hero = _read(HERO)
     standard = _read(STANDARD)
@@ -1500,6 +1561,7 @@ def verify() -> None:
     identity_pairs = _verify_non_redundant_hero_identity()
     _verify_dynamic_hero_identity_authorities()
     _verify_dashboard_profile()
+    _verify_hero_context_semantics()
     _verify_blocked_context_ownership()
     _verify_registry_blocked_hero_actions()
     _verify_analytics_metadata_ownership()
