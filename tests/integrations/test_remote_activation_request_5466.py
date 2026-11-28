@@ -111,3 +111,13 @@ def test_expiry_access_drift_and_permission_loss_block_readback(store):
     store.intent = original
     store.permitted = False
     assert _review() is None
+
+
+def test_audit_commit_error_rolls_back(store, monkeypatch):
+    def fail():
+        raise RuntimeError('fixture database failure')
+
+    monkeypatch.setattr(service.db.session, 'commit', fail)
+    with pytest.raises(RuntimeError, match='fixture database failure'):
+        _request()
+    assert store.events == ['begin', 'add', 'rollback']

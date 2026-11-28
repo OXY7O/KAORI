@@ -14,12 +14,12 @@ from app.access.scope_policy import lock_explicit_permissions
 from app.extensions.db import db
 from app.infrastructure_automation.credential_scope_target import CREDENTIAL_USE_PERMISSION
 from app.infrastructure_automation.kubernetes.source_policy import SOURCE_CANDIDATE_SHA
+from app.infrastructure_automation.remote_job_review import review_enabled
 from app.infrastructure_automation.remote_preflight_source import REMOTE_CANDIDATE_SHA
 from app.infrastructure_automation.remote_preflight_target import (
     SourceOnlyActivationIntent,
     review_source_only_activation_intent,
 )
-from app.infrastructure_automation.remote_job_review import review_enabled
 from app.infrastructure_automation.security_review import begin_security_review_transaction
 from app.models.audit import AuditEvent
 from app.platform_operations.jobs.fingerprint import payload_fingerprint
@@ -116,11 +116,14 @@ def _record(
 def _current_intent(*, connection_id: int, actor_id: int, now: datetime) -> SourceOnlyActivationIntent:
     intent = review_source_only_activation_intent(connection_id=connection_id, actor_id=actor_id, now=now)
     if (
-        intent is None or intent.connection_id != connection_id
-        or intent.actor_id != actor_id or intent.expires_at <= now
+        type(intent) is not SourceOnlyActivationIntent
+        or intent.connection_id != connection_id
+        or intent.actor_id != actor_id
     ):
         raise _deny()
     _selector(intent)
+    if intent.expires_at <= now:
+        raise _deny()
     return intent
 
 
@@ -146,6 +149,14 @@ def request_remote_runtime_activation(*, connection_id: int, actor_id: int) -> d
                 previous.action != _ACTION
                 or not isinstance(existing, dict)
                 or existing.get('status') != _STATUS
+                or existing.get('connection_id') != connection_id
+                or existing.get('requested_by') != previous.actor_user_id
+                or existing.get('runtime_activation_authorized') is not False
+                or existing.get('execution_authorized') is not False
+                or existing.get('mutation_authorized') is not False
+                or existing.get('request_fingerprint') != payload_fingerprint({
+                    key: value for key, value in existing.items() if key != 'request_fingerprint'
+                })
             ):
                 raise _deny()
             previous_expiry = _time(existing.get('expires_at'))
