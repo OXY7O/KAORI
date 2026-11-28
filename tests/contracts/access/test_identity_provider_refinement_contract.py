@@ -171,6 +171,35 @@ def test_identity_provider_form_family_reuses_shared_surface_and_semantic_author
         assert hook in selector
 
 
+def test_provider_form_headers_and_choices_share_theme_card_surface() -> None:
+    import re
+
+    from jinja2 import Environment
+
+    prefix = 'app/templates/access/identity_providers/'
+    for path, count in (
+        ('form.html', 1),
+        ('partials/_provider_selector.html', 1),
+        ('partials/_ldap_configuration.html', 2),
+        ('partials/_sso_configuration.html', 2),
+        ('partials/_provider_guidance.html', 2),
+    ):
+        source = read(prefix + path)
+        Environment().parse(source)
+        headers = re.findall(r'<header class="([^"]+)"', source)
+        assert len(headers) == count, path
+        assert all('bg-surface-card' in classes.split() for classes in headers), path
+        assert all('bg-surface-hover' not in classes.split() for classes in headers), path
+
+    selector = read(prefix + 'partials/_provider_selector.html')
+    assert '{% for definition in provider_options %}' in selector
+    assert 'flex h-full cursor-pointer flex-col' in selector
+    assert 'peer-checked:border-kaori-primary' in selector
+    assert 'peer-checked:bg-' not in selector
+    assert 'peer-focus-visible:ring-2' in selector
+    assert 'mt-auto pt-3 text-xs font-semibold text-content-secondary' in selector
+
+
 def test_uat_review2_idp_guidance_preserves_provider_authority_with_concise_copy() -> None:
     from jinja2 import Environment
 
