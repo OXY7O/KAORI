@@ -1,5 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/action_button.html" as action_button %}
 {% block title %}{{ row.name }} · OpenBao · KAORI{% endblock title %}
@@ -10,10 +11,17 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro("key-round", "Secrets & PKI · OpenBao", "shield-check") %}
                         <h1 class="{{ page_hero.title_classes() }}">{{ row.name }}</h1>
-                        <p class="{{ page_hero.description_classes() }}">Local connection evidence · {{ row.ownership|title }} ownership</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review local OpenBao connections and independent credential authority.</p>
+                        {{ page_hero.persistent_metadata([('key-round', 'OpenBao HTTP API'), ('server', row.ownership|title ~ ' Ownership'), ('database-zap', 'Committed Evidence')]) }}
                     {% endcall %}
                 </div>
-                <a href="{{ url_for('openbao.index') }}" class="{{ action_button.classes('secondary') }}">Back to Registry</a>
+                {% set readiness = row.integration_instance.readiness_status or 'validation_required' %}
+                {{ page_hero.context_card('OpenBao connection posture',
+                    'Connection Readiness', 'Local Provider Evidence',
+                    readiness|replace('_', ' ')|title, table_label.semantic_tone(readiness)|trim,
+                    [('package', 'Version', row.detected_version or 'Unknown', 'Committed provider observation'),
+                    ('key-round', 'Credential Authority', 'Pending', 'Independent qualification required')],
+                    'Back to Registry', url_for('openbao.index'), 'arrow-left') }}
             </div>
         </section>
         <section class="{{ table_ui.block_classes() }}" id="validation">

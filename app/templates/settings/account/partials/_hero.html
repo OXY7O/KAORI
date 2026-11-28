@@ -18,7 +18,7 @@
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label(identity_context.icon, identity_context.provider_name) }}
                     {{ page_hero.meta_label('shield', user_role) }}
-                    {{ page_hero.meta_label('circle-check' if current_user.account_is_active else 'circle-pause', 'Active Account' if current_user.account_is_active else 'Inactive Account') }}
+                    {{ page_hero.meta_label('user-round', 'Personal Account') }}
                 </div>
             {% endcall %}
         </div>
@@ -43,7 +43,7 @@
                         {{ page_hero.context_info('lock-keyhole', 'Recovery stays with the provider; KAORI retains access controls.') }}
                     {% endif %}
                 {% else %}
-                    {{ page_hero.context_header('Account Posture', current_user.display_label, 'badge-check') }}
+                    {{ page_hero.context_header_status('Account Posture', current_user.display_label, 'Active Account' if current_user.account_is_active else 'Inactive Account', 'normal' if current_user.account_is_active else 'warning') }}
                     <div class="{{ page_hero.context_panel_metrics_classes() }}">
                         {{ page_hero.context_metric(identity_context.icon, 'Identity Source', identity_context.type_label, identity_context.provider_name, 'text-sm font-semibold leading-6') }}
                         {{ page_hero.context_metric('shield', 'Access Role', user_role, 'KAORI authorization role', 'text-sm font-semibold leading-6') }}
