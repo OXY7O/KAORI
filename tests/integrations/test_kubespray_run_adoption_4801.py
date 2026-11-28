@@ -113,3 +113,62 @@ def test_stage_adoption_requires_exact_child_and_flushes_audit_without_commit(mo
     assert isinstance(staged[1], AuditEvent)
     assert staged[1].metadata_json['execution_authorized'] is False
     assert events == ['flush']
+
+
+@pytest.mark.parametrize('failure', [None, 'missing_claim', 'released', 'wrong_plan', 'wrong_actor', 'adopted', 'stale'])
+def test_lock_reserved_plan_requalifies_exact_seven_active_claims(monkeypatch, failure):
+    reservation_id = str(uuid4())
+    plan = SimpleNamespace(id=1)
+    keys = tuple(f'fixture:{i}' for i in range(7))
+    rows = [
+        SimpleNamespace(
+            plan_job_id=1, resource_key=key, active_resource_key=key,
+            plan_fingerprint='a' * 64, reserved_by_user_id=7, released_at=None,
+        )
+        for key in keys
+    ]
+    if failure == 'missing_claim':
+        rows.pop()
+    elif failure == 'released':
+        rows[0].released_at = datetime.now(UTC)
+    elif failure == 'wrong_plan':
+        rows[0].plan_job_id = 99
+    elif failure == 'wrong_actor':
+        rows[0].reserved_by_user_id = 99
+    acknowledgements = iter([{'requested_by': 7}, None if failure == 'stale' else {'requested_by': 7}])
+    monkeypatch.setattr(service, 'review_current_plan_acknowledgement', lambda **kwargs: next(acknowledgements))
+    monkeypatch.setattr(service, '_plan_targets', lambda *args: (plan, keys))
+    monkeypatch.setattr(service, '_reservation_rows', lambda identity: rows)
+    monkeypatch.setattr(service, '_existing_adoption', lambda *args: failure == 'adopted')
+    kwargs = dict(reservation_id=reservation_id, connection_id=31, plan_fingerprint='a' * 64, actor_id=7)
+    if failure is None:
+        assert service.lock_reserved_plan(**kwargs) is plan
+    else:
+        with pytest.raises(service.TargetReservationDenied):
+            service.lock_reserved_plan(**kwargs)
+
+
+def test_review_release_refuses_adoption_without_consulting_child_status(monkeypatch):
+    reservation_id = str(uuid4())
+    plan = SimpleNamespace(id=1, operation=service.PLAN_OPERATION, requested_by_user_id=7)
+    rows = [
+        SimpleNamespace(
+            plan_job_id=1, plan_fingerprint='a' * 64, reserved_by_user_id=7,
+            released_at=None, active_resource_key=f'fixture:{i}', resource_key=f'fixture:{i}',
+        )
+        for i in range(7)
+    ]
+    events = []
+    monkeypatch.setattr(service, 'begin_security_review_transaction', lambda: None)
+    monkeypatch.setattr(service, 'lock_explicit_permissions', lambda *args: True)
+    monkeypatch.setattr(service, '_reservation_rows', lambda identity: rows)
+    monkeypatch.setattr(service, '_existing_adoption', lambda *args: True)
+    monkeypatch.setattr(service, 'db', SimpleNamespace(session=SimpleNamespace(
+        execute=lambda statement: SimpleNamespace(scalars=lambda: SimpleNamespace(all=lambda: [1])),
+        get=lambda *args, **kwargs: plan,
+        rollback=lambda: events.append('rollback'),
+    )))
+    with pytest.raises(service.TargetReservationDenied):
+        service.release_review_targets(reservation_id=reservation_id, actor_id=7)
+    assert all(row.released_at is None and row.active_resource_key == row.resource_key for row in rows)
+    assert events == ['rollback']
