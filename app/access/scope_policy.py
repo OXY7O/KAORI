@@ -17,14 +17,14 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
+from app.integrations.secrets_management.secrets_pki.providers.openbao.inventory_scope import (
+    current_local_inventory_source,
+)
 from app.models.integration import IntegrationInstance
 from app.models.rbac import Permission, Role, RolePermission
 from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.user import User
 from app.models.vault import VaultInstance
-from app.integrations.secrets_management.secrets_pki.providers.openbao.inventory_scope import (
-    current_local_inventory_source,
-)
 
 _SENSITIVE_PERMISSION = 'secrets_pki.view'
 VAULT_CASE_OPERATOR_PERMISSION = 'intelligence.decisions.create'
@@ -183,7 +183,7 @@ def _evaluate_exact_metadata_scope(
             if vault is None or (vault.namespace or '') != provider_namespace or mount not in (vault.kv2_mounts or ()):
                 return ScopeAdmission('deny', 'source_unqualified')
         elif current_local_inventory_source(
-            source, namespace=provider_namespace, mount=mount, lock=lock_for_read
+            source, namespace=provider_namespace, mount=mount, lock=False
         ) is None:
             return ScopeAdmission('deny', 'source_unqualified')
 
@@ -221,6 +221,12 @@ def _evaluate_exact_metadata_scope(
             if len(approved_matches) > 1:
                 return ScopeAdmission('deny', 'ambiguous_scope')
         if len(approved_matches) == 1:
+            if scope_level == 'openbao_mount' and lock_for_read:
+                source = db.session.get(IntegrationInstance, instance_id, populate_existing=True, with_for_update=True)
+                if current_local_inventory_source(
+                    source, namespace=provider_namespace, mount=mount, lock=True
+                ) is None:
+                    return ScopeAdmission('deny', 'source_unqualified')
             policy, current, ends = approved_matches[0]
             return ScopeAdmission(
                 'allow',
