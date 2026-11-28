@@ -27,6 +27,7 @@ def _active_access_child(endpoint: str, monkeypatch: pytest.MonkeyPatch) -> tupl
     'endpoint',
     (
         'access.authentication_security.index',
+        'access.authentication_security.save_session_policy',
         'access.authentication_security.save_mfa_policy',
         'access.authentication_security.save_bot_policy',
         'access.authentication_security.test_bot_provider',

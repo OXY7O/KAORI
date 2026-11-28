@@ -1,0 +1,145 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/action_button.html" as action_button %}
+<div class="grid items-stretch gap-4 p-4 lg:p-5 xl:grid-cols-5"
+     data-auth-session-layout="policy-enforcement">
+    <section class="flex h-full min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-5 xl:col-span-3"
+             aria-labelledby="session-policy-config-heading">
+        <div class="flex items-center gap-3 border-b border-outline-subtle pb-4">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true"><i data-lucide="sliders-horizontal" class="h-4 w-4"></i></span>
+            <div class="min-w-0">
+                <h3 id="session-policy-config-heading"
+                    class="text-sm font-semibold text-content-primary">Policy Configuration</h3>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Apply bounded timeouts to privileged and regular human accounts.</p>
+            </div>
+        </div>
+        {% if can_manage_authentication_security %}
+            <form method="post"
+                  action="{{ url_for('access.authentication_security.save_session_policy') }}"
+                  class="mt-5 space-y-5"
+                  data-auth-session-policy-form>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% for title, fields in [
+                    ('Privileged Accounts', [('session_privileged_idle_minutes', 'Idle Timeout (Minutes)', session_policy.privileged_idle_minutes, 5, 60), ('session_privileged_absolute_hours', 'Absolute Timeout (Hours)', session_policy.privileged_absolute_hours, 1, 24)]),
+                    ('Regular Accounts', [('session_regular_idle_minutes', 'Idle Timeout (Minutes)', session_policy.regular_idle_minutes, 5, 60), ('session_regular_absolute_hours', 'Absolute Timeout (Hours)', session_policy.regular_absolute_hours, 1, 24)])
+                    ] %}
+                    <fieldset class="space-y-3">
+                        <legend class="text-sm font-semibold text-content-primary">{{ title }}</legend>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            {% for name, label, value, minimum, maximum in fields %}
+                                <label class="block min-w-0">
+                                    <span class="text-xs font-semibold text-content-primary">{{ label }}</span>
+                                    <input type="number"
+                                           name="{{ name }}"
+                                           value="{{ value }}"
+                                           min="{{ minimum }}"
+                                           max="{{ maximum }}"
+                                           step="1"
+                                           required
+                                           class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="block min-w-0">
+                        <span class="text-xs font-semibold text-content-primary">Expiry Warning (Minutes)</span>
+                        <input type="number"
+                               name="session_warning_minutes"
+                               value="{{ session_policy.warning_minutes }}"
+                               min="1"
+                               max="5"
+                               step="1"
+                               required
+                               class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                    </label>
+                    <label class="block min-w-0">
+                        <span class="text-xs font-semibold text-content-primary">Regular Account Remember Me</span>
+                        <select name="session_regular_remember"
+                                class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                            <option value="enabled" {% if session_policy.regular_remember %}selected{% endif %}>Enabled</option>
+                            <option value="disabled" {% if not session_policy.regular_remember %}selected{% endif %}>Disabled</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="flex items-start gap-3 rounded-xl border {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft p-4">
+                    <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-status-warning-text" aria-hidden="true"></i>
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-status-warning-text">Change Impact</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Changed policies revoke existing sessions. Privileged limits must not exceed regular limits.</p>
+                    </div>
+                </div>
+                <label class="flex items-start gap-3 text-sm leading-6 text-content-secondary">
+                    <input type="checkbox"
+                           name="acknowledge_session_policy_impact"
+                           value="yes"
+                           required
+                           class="mt-1 h-4 w-4 shrink-0 accent-kaori-primary">
+                    <span>I confirm independent administrator recovery and understand session revocation.</span>
+                </label>
+                <button type="submit" class="{{ action_button.classes('primary') }}">
+                    <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>Save Session Policy
+                </button>
+            </form>
+        {% else %}
+            <div class="mt-5 space-y-4">
+                <p class="text-sm leading-6 text-content-secondary">Policy configuration is read-only for your permission scope.</p>
+                <dl class="divide-y divide-outline-subtle rounded-lg border border-outline-default bg-surface-card">
+                    {% for title, value in [
+                        ('Privileged Idle / Absolute', session_policy.privileged_idle_minutes ~ 'm / ' ~ session_policy.privileged_absolute_hours ~ 'h'),
+                        ('Regular Idle / Absolute', session_policy.regular_idle_minutes ~ 'm / ' ~ session_policy.regular_absolute_hours ~ 'h'),
+                        ('Expiry Warning', session_policy.warning_minutes ~ ' minutes'),
+                        ('Regular Remember Me', 'Enabled' if session_policy.regular_remember else 'Disabled')
+                        ] %}
+                        <div class="flex flex-wrap items-baseline justify-between gap-2 px-4 py-3">
+                            <dt class="text-xs text-content-muted">{{ title }}</dt>
+                            <dd class="text-sm font-semibold text-content-primary">{{ value }}</dd>
+                        </div>
+                    {% endfor %}
+                </dl>
+            </div>
+        {% endif %}
+    </section>
+    <section class="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card xl:col-span-2"
+             aria-labelledby="session-enforcement-heading">
+        <header class="flex items-start gap-3 border-b border-outline-subtle p-4">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
+            <div class="min-w-0">
+                <h3 id="session-enforcement-heading" class="text-sm font-semibold text-content-primary">Enforcement &amp; Recovery</h3>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Committed admission, expiry and revocation.</p>
+            </div>
+        </header>
+        <div class="flex flex-1 flex-col divide-y divide-outline-subtle px-4" data-auth-session-control-group="governed">
+            {% for icon, title, description in [
+                ('shield-check', 'Admission Gate', 'Protected requests validate generation and deadlines.'),
+                ('clock', 'Idle Timeout', 'Deliberate activity extends idle only; polling never does.'),
+                ('timer', 'Absolute Timeout', 'Reauthentication is required at maximum session age.'),
+                ('log-out', 'Session Revocation', 'Sign-out, new login and provider disablement revoke prior generations.'),
+                ('key-round', 'Remember Me', 'Privileged accounts cannot use Remember Me. Regular sessions remain bounded.'),
+                ('monitor-check', 'Browser Close', 'Closing or restoring a browser does not guarantee logout.')
+                ] %}
+                <div class="flex flex-1 items-start gap-3 py-3">
+                    <i data-lucide="{{ icon }}" class="mt-1 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <footer class="border-t border-outline-subtle bg-surface-hover p-4">
+            <div class="flex items-start gap-2">
+                <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <p class="text-xs font-semibold text-content-primary">Outside Current Scope</p>
+                        {{ table_label.status_indicator_label('Not Qualified', 'unknown') }}
+                    </div>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">No active-device inventory or remote session registry is claimed.</p>
+                </div>
+            </div>
+        </footer>
+    </section>
+</div>

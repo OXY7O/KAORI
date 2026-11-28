@@ -106,74 +106,66 @@ def test_control_header_statuses_come_from_committed_security_state() -> None:
     assert "'Controls Enabled' if mfa_active or bot_active else 'Optional Controls Disabled'" in overview
     assert "'Policy Active' if mfa_policy_mode != 'disabled' else 'Disabled'" in mfa
     assert "'Enforced' if bot_mode == 'always' else 'Disabled'" in bot
-    assert "'Generation Active'" in session
+    assert "'Policy Configured'" in session
     assert "'info'" in session
     assert "'monitor-check'" in session
 
 
-def test_session_detail_hub_describes_only_confirmed_read_only_boundaries() -> None:
+def test_session_detail_hub_uses_committed_policy_and_preserves_inventory_boundary() -> None:
     session = tabs()['sessions']
+    partial = read(AUTH.parent / '_session_policy_controls.html')
+    Environment().parse(partial)
     assert 'Session Security Controls' in session
+    assert 'Session Policy & Enforcement' in session
     assert 'data-auth-security-session-stack="true"' in session
-    assert 'data-auth-session-boundaries="read-only"' in session
-    assert 'Governed in Access' in session
-    assert 'Outside Current Scope' in session
-    assert 'Protected requests validate the committed login generation.' in session
-    assert 'New logins and provider disablement revoke affected prior sessions.' in session
-    assert 'Idle and absolute session timeouts are not qualified as enforced controls.' in session
-    assert 'No active-device inventory or remote session registry is claimed.' in session
-    assert '<form' not in session
-    assert 'hx-post=' not in session
-    assert 'Active device count' not in session
+    assert 'session_policy.privileged_idle_minutes' in session
+    assert 'session_policy.regular_absolute_hours' in session
+    assert 'session_policy.regular_remember' in session
+    assert 'data-auth-session-layout="policy-enforcement"' in partial
+    assert 'grid items-stretch gap-4 p-4 lg:p-5 xl:grid-cols-5' in partial
+    assert 'xl:col-span-3' in partial and 'xl:col-span-2' in partial
+    assert 'Outside Current Scope' in partial
+    assert "table_label.status_indicator_label('Not Qualified', 'unknown')" in partial
+    assert 'No active-device inventory or remote session registry is claimed.' in partial
+    assert 'Active device count' not in session + partial
+    assert 'Idle and absolute session timeouts are not qualified' not in session + partial
+
+
+def test_session_configuration_is_server_owned_and_permission_scoped() -> None:
+    partial = read(AUTH.parent / '_session_policy_controls.html')
+    assert '{% if can_manage_authentication_security %}' in partial
+    manager, viewer = partial.split('{% if can_manage_authentication_security %}', 1)[1].split('{% else %}', 1)
+    assert "url_for('access.authentication_security.save_session_policy')" in manager
+    assert 'name="csrf_token"' in manager
+    assert 'name="acknowledge_session_policy_impact"' in manager
+    for field in (
+        'session_privileged_idle_minutes',
+        'session_privileged_absolute_hours',
+        'session_regular_idle_minutes',
+        'session_regular_absolute_hours',
+        'session_regular_remember',
+        'session_warning_minutes',
+    ):
+        assert field in manager
+    assert 'Policy configuration is read-only for your permission scope.' in viewer
+    assert '<form' not in viewer
+    assert 'hx-post=' not in partial
+    assert 'whitespace-nowrap' not in partial
 
 
 def test_session_assurance_descriptions_fit_desktop_without_forced_truncation() -> None:
     session = tabs()['sessions']
     for detail in (
         'Provider disablement revokes sessions.',
-        'Timeout enforcement is not qualified.',
-        'Requests check committed generation.',
+        'Requests check committed deadlines.',
+        'Never bypasses server deadlines.',
     ):
         assert detail in session
         assert len(detail) <= 40
-    for outdated in (
-        'Linked session generations are revoked on disable.',
-        'Requires separate qualification; no enforced timeout claim.',
-        'Protected requests check the committed login generation.',
-    ):
-        assert outdated not in session
     summary = read(SUMMARY)
     assert '{{ detail }}' in summary
     assert 'whitespace-nowrap' not in summary
     assert 'text-ellipsis' not in summary
-
-
-def test_session_controls_visually_distinguish_enforced_from_unqualified() -> None:
-    session = tabs()['sessions']
-    assert 'data-auth-session-layout="functional-posture"' in session
-    assert 'grid gap-4 p-4 lg:grid-cols-2 lg:p-5' in session
-    assert session.count('data-auth-session-control-group=') == 2
-    assert 'data-auth-session-control-group="enforced"' in session
-    assert 'data-auth-session-control-group="unqualified"' in session
-    assert "table_label.status_indicator_label('Enforced', 'normal')" in session
-    assert "table_label.status_indicator_label('Not Qualified', 'unknown')" in session
-    assert 'aria-labelledby="auth-session-governed-heading"' in session
-    assert 'aria-labelledby="auth-session-scope-heading"' in session
-    for title in (
-        'Admission Gate',
-        'Session Revocation',
-        'Remember Me',
-        'Idle Timeout',
-        'Absolute Timeout',
-        'Device / Remote Sessions',
-    ):
-        assert title in session
-    assert session.count('data-lucide="check-circle-2"') == 3
-    assert session.count('data-lucide="circle-help"') == 3
-    assert 'No active-device inventory or remote session registry is claimed.' in session
-    assert '<form' not in session
-    assert 'hx-post=' not in session
-    assert 'name="csrf_token"' not in session
 
 
 def test_mfa_and_bot_policy_forms_remain_server_owned_and_permission_scoped() -> None:
@@ -204,7 +196,7 @@ def test_posture_values_are_factual_without_fake_inventory_or_provider_health() 
     assert "'Recorded' if bot_tested_at else 'Not Recorded'" in bot
     assert "'Configured' if bot_has_secret and bot_site_key and bot_hostname" in bot
     assert "'Disabled'" in bot and "'Always'" in bot
-    assert "'Not Qualified'" in session
+    assert "'Policy Configured'" in session
     assert "'No Inventory'" in session
     assert 'Single active login generation per human account.' in session
     assert 'Provider Setup' in overview

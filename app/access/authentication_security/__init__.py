@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 from typing import cast
 
@@ -23,6 +24,7 @@ from app.access.authentication.mfa.audit import stage_authentication_security_ev
 from app.access.authentication.mfa.policy import MfaPolicyMode
 from app.access.authentication.mfa.service import mfa_enrolled, mfa_policy_mode
 from app.access.authentication.session import clear_authenticated_session
+from app.access.authentication.session_lifecycle import SessionPolicy
 from app.access.rbac.decorators import permission_required
 from app.extensions.db import db
 from app.models import User
@@ -71,6 +73,7 @@ def index():
         'submenu_tabs': submenu_tabs,
         'mfa_modes': tuple(mode.value for mode in MfaPolicyMode),
         'mfa_policy_mode': mfa_policy_mode(),
+        'session_policy': SessionPolicy.from_record(row),
         'can_manage_authentication_security': current_user.has_permission('identity_providers.manage'),
         'bot_providers': bot_provider_definitions(),
     }
@@ -96,6 +99,92 @@ def queue_committed_mfa_policy_feedback(*, status: str, title: str, message: str
             )
         )
     )
+
+
+@bp.post('/session/policy')
+@permission_required('identity_providers.manage')
+def save_session_policy():
+    """Persist policy and invalidate generations atomically; no-op is audit-only."""
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+        remember = request.form.get('session_regular_remember')
+        if remember not in ('enabled', 'disabled'):
+            raise ValueError('Invalid Remember Me policy.')
+        requested = SessionPolicy(
+            privileged_idle_minutes=int(request.form.get('session_privileged_idle_minutes', '')),
+            privileged_absolute_hours=int(request.form.get('session_privileged_absolute_hours', '')),
+            regular_idle_minutes=int(request.form.get('session_regular_idle_minutes', '')),
+            regular_absolute_hours=int(request.form.get('session_regular_absolute_hours', '')),
+            warning_minutes=int(request.form.get('session_warning_minutes', '')),
+            regular_remember=remember == 'enabled',
+        )
+    except (ValidationError, TypeError, ValueError):
+        abort(400)
+    if request.form.get('acknowledge_session_policy_impact') != 'yes':
+        abort(400)
+
+    actor = cast(User, current_user._get_current_object())
+    try:
+        policy = db.session.get(AuthenticationSecurityPolicy, 1, with_for_update=True)
+        previous = SessionPolicy.from_record(policy)
+        changed = previous != requested
+        if changed:
+            if policy is None:
+                policy = AuthenticationSecurityPolicy(id=1)
+                db.session.add(policy)
+            policy.session_privileged_idle_minutes = requested.privileged_idle_minutes
+            policy.session_privileged_absolute_hours = requested.privileged_absolute_hours
+            policy.session_regular_idle_minutes = requested.regular_idle_minutes
+            policy.session_regular_absolute_hours = requested.regular_absolute_hours
+            policy.session_warning_minutes = requested.warning_minutes
+            policy.session_regular_remember = requested.regular_remember
+            # Revoke all existing human generations, including inactive users.
+            # A subsequent enablement must not resurrect a cookie governed by
+            # a previous policy. Worker identities are not User sessions.
+            db.session.execute(
+                update(User).values(
+                    auth_session_version=func.coalesce(User.auth_session_version, 1) + 1,
+                    auth_session_issued_at=None,
+                    auth_session_activity_at=None,
+                    updated_at=User.updated_at,
+                )
+            )
+        db.session.add(
+            stage_authentication_security_event(
+                actor,
+                action='session_policy_changed' if changed else 'session_policy_unchanged',
+                authenticated=True,
+                success=True,
+                previous_policy=asdict(previous),
+                next_policy=asdict(requested),
+            )
+        )
+        db.session.commit()
+    except (SQLAlchemyError, ValueError):
+        db.session.rollback()
+        current_app.logger.warning('Session policy change was not committed.', exc_info=True)
+        queue_transient_feedback(
+            status='error',
+            title='Session policy not saved',
+            message='The policy could not be committed; no session changes were applied.',
+        )
+        abort(503)
+
+    if changed:
+        logout_user()
+        clear_authenticated_session()
+        queue_committed_mfa_policy_feedback(
+            status='success',
+            title='Session policy updated',
+            message='Session policy saved and existing sessions revoked; sign in again to continue.',
+        )
+        return redirect(url_for('auth.login'))
+    queue_committed_mfa_policy_feedback(
+        status='info',
+        title='Session policy unchanged',
+        message='The selected session policy is already active; no sessions were revoked.',
+    )
+    return redirect(url_for('access.authentication_security.index', tab='sessions'))
 
 
 @bp.post('/mfa/policy')
