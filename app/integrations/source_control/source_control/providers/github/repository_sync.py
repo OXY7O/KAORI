@@ -70,7 +70,9 @@ def _revision_targets(session: Session, *, installation_id: int, generation: int
     )
     eligible_count = int(session.scalar(select(func.count()).select_from(authorized.subquery())) or 0)
     offset = _revision_batch_offset(eligible_count, generation)
-    target_ids = list(session.scalars(authorized.order_by(SourceRepository.id).offset(offset).limit(REVISION_BATCH_SIZE)))
+    target_ids = list(
+        session.scalars(authorized.order_by(SourceRepository.id).offset(offset).limit(REVISION_BATCH_SIZE))
+    )
     return eligible_count, target_ids
 
 

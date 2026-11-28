@@ -225,6 +225,8 @@ def test_branch_change_does_not_fabricate_latest_sha_for_unobserved_ref(read_db)
     page = read_installation_inventory(session, authorized_installation_id=installations[0])
     assert page.rows[0].default_branch == 'main'
     assert page.rows[0].exact_default_branch_sha is None
+    assert page.revision_observed_count == 0
+    assert page.revision_missing_count == 1
 
 
 def test_committed_repository_filters_use_matching_counts_and_authorized_scope(read_db):
@@ -290,7 +292,7 @@ def test_revision_targets_rotate_actual_scoped_grants_and_exclude_access_lost(re
     now = datetime.now(UTC)
     first_id = session.execute(select(SourceRepository.id)).scalar_one()
     eligible_ids = [first_id]
-    for index in range(1, 47):
+    for index in range(1, 48):
         repository = SourceRepository(
             provider_key='github', host_key='github.com', native_repository_id=str(100 + index),
             full_name=f'org/repo-{index}', default_branch=None if index == 46 else 'main',
@@ -303,6 +305,7 @@ def test_revision_targets_rotate_actual_scoped_grants_and_exclude_access_lost(re
         session.add(SourceRepositoryGrant(
             installation_id=installation_id, repository_id=repository.id,
             access_status=status, valid_from=now, last_observed_at=now,
+            valid_until=now if index == 47 else None,
         ))
         if index < 44:
             eligible_ids.append(repository.id)
@@ -317,3 +320,19 @@ def test_revision_targets_rotate_actual_scoped_grants_and_exclude_access_lost(re
     assert page.revision_eligible_count == 44
     assert page.revision_missing_count == 44
     assert page.revision_observed_count == 0
+
+
+def test_complete_empty_collection_has_zero_revision_coverage(read_db):
+    session, installations = read_db
+    session.add(SourceRepositoryCollectionState(
+        installation_id=installations[1], next_generation=1, committed_generation=1,
+        status='committed', repository_scope='all', coverage='exhaustive_installation_grants',
+        observed_count=0, last_committed_at=datetime.now(UTC),
+    ))
+    session.commit()
+    page = read_installation_inventory(session, authorized_installation_id=installations[1])
+    assert page.selection_scope == 'all'
+    assert page.current_granted_count == 0
+    assert page.revision_eligible_count == 0
+    assert page.revision_observed_count == 0
+    assert page.revision_missing_count == 0

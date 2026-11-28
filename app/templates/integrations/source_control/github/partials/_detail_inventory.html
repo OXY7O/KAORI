@@ -94,14 +94,14 @@
                         <p class="mt-1 text-xs leading-5 text-content-secondary">Retained exact default-branch evidence for current granted repositories; not live freshness.</p>
                     </div>
                 </div>
-                {{ integration_status('not_observed' if not committed else ('degraded' if inventory.revision_missing_count else 'ready'),
+                {{ integration_status('not_observed' if not committed or not inventory.revision_eligible_count else ('degraded' if inventory.revision_missing_count else 'ready'),
                     'Not Observed' if not committed else ('Evidence Gaps' if inventory.revision_missing_count else ('No Eligible Branches' if not inventory.revision_eligible_count else 'Evidence Retained')), display='text') }}
             </header>
             <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
                 {% for label, value, helper in [
                     ('Committed Selection', ('All Repositories' if inventory.selection_scope == 'all' else ('Selected Repositories' if inventory.selection_scope == 'selected' else 'Unknown')), 'GitHub App installation scope'),
                     ('Current Granted', inventory.current_granted_count if committed else 'Unknown', 'Excludes access-lost relationships'),
-                    ('Exact SHA Observed', (inventory.revision_observed_count|string ~ ' / ' ~ inventory.revision_eligible_count|string) if committed else 'Unknown', 'Granted repositories with a default branch'),
+                    ('Exact SHA Observed', (inventory.revision_observed_count|string ~ ' / ' ~ inventory.revision_eligible_count|string) if committed else 'Unknown', 'Current granted repositories with a known default branch'),
                     ('Missing Exact SHA', inventory.revision_missing_count if committed else 'Unknown', 'Rotating collection, up to 20 checks per sync')
                 ] %}
                     <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
