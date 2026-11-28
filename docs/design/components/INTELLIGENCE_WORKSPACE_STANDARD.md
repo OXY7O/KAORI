@@ -326,6 +326,11 @@ the initial-scope eligible count. Filter existing rows with Alpine x-show;
 never remove or disable selections because of search. Provide a no-match
 state. Do not submit the search query or change routing eligibility. Small
 inventories retain natural height.
-Use a shared section header for optional exact label matchers, concise plain
-helper text beside the input, and a collapsed native Policy Checklist below.
-Retain existing form fields, CSRF, permission checks and save validation.
+Use a shared section header for optional exact label matchers with the
+shared Optional metadata label. Use two aligned, bordered panels on desktop,
+stacked on smaller screens: the native matcher textarea with a One per line
+label and non-interactive example labels, and a neutral guidance panel with
+three concise matching rules. Examples are illustrative, not prefilled or
+submitted values. Keep the existing exact-match serialization, accessible
+helper association and collapsed native Policy Checklist below. Retain
+existing form fields, CSRF, permission checks and save validation.

@@ -258,22 +258,50 @@
                             <div class="flex min-w-0 items-start gap-3">
                                 <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="tags" class="h-4 w-4"></i></span>
                                 <div class="min-w-0">
-                                    <h3 class="{{ table_ui.block_title_classes() }}">Label Matchers <span class="ml-1 text-xs font-normal text-content-muted">(Optional)</span></h3>
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <h3 class="{{ table_ui.block_title_classes() }}">Label Matchers</h3>
+                                        {{ table_label.metadata_label('Optional') }}
+                                    </div>
                                     <p class="{{ table_ui.block_description_classes() }}">Narrow the route using exact alert labels.</p>
                                 </div>
                             </div>
                         </header>
-                        <div class="grid items-start gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.55fr)] lg:gap-5">
-                            <div class="min-w-0">
-                                <label for="routing-policy-matchers" class="{{ table_ui.filter_label_classes() }}">Match expressions</label>
-                                <textarea id="routing-policy-matchers" name="matchers" rows="3" aria-describedby="routing-matcher-help"
-                                          class="w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 font-mono text-xs leading-5 text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft" placeholder="environment=production&#10;namespace=billing">{% if selected_policy %}{% for key, value in selected_policy.matchers.items() %}{{ key }}={{ value }}{% if not loop.last %}
+                        <div class="grid items-stretch gap-3 p-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+                            <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card p-3" data-routing-matcher-input>
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <label for="routing-policy-matchers" class="{{ table_ui.filter_label_classes() }}">Match expressions</label>
+                                    {{ table_label.metadata_label('One per line', 'list') }}
+                                </div>
+                                <textarea id="routing-policy-matchers" name="matchers" rows="5" aria-describedby="routing-matcher-help"
+                                          class="block mt-2 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 font-mono text-xs leading-5 text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft" placeholder="environment=production&#10;namespace=billing">{% if selected_policy %}{% for key, value in selected_policy.matchers.items() %}{{ key }}={{ value }}{% if not loop.last %}
 {% endif %}{% endfor %}{% endif %}</textarea>
+                                <div class="mt-3 flex flex-wrap items-center gap-1.5" data-routing-matcher-examples>
+                                    <span class="text-xs font-medium text-content-muted">Examples:</span>
+                                    {{ table_label.metadata_label('environment=production', 'tag', wrap=true) }}
+                                    {{ table_label.metadata_label('namespace=billing', 'tag', wrap=true) }}
+                                </div>
                             </div>
-                            <div id="routing-matcher-help" class="min-w-0 space-y-2 text-xs leading-5 text-content-muted">
-                                <p class="font-semibold text-content-secondary">How to match</p>
-                                <p>Use one exact <code class="font-mono text-content-primary">key=value</code> per line. All expressions must match.</p>
-                                <p>Leave empty to use only the selected domains and severities.</p>
+                            <div id="routing-matcher-help"
+                                 class="min-w-0 rounded-lg border border-outline-subtle bg-surface-hover p-3"
+                                 data-routing-matcher-guidance>
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="info" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                    <p class="text-sm font-semibold text-content-primary">How matching works</p>
+                                </div>
+                                <ul class="mt-3 space-y-2.5 text-xs leading-5 text-content-muted">
+                                    <li class="flex items-start gap-2">
+                                        <i data-lucide="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                        <span>Use one exact <code class="font-mono text-content-primary">key=value</code> expression per line.</span>
+                                    </li>
+                                    <li class="flex items-start gap-2">
+                                        <i data-lucide="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                        <span>All expressions must match for the route to apply.</span>
+                                    </li>
+                                    <li class="flex items-start gap-2">
+                                        <i data-lucide="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                        <span>Leave empty to use only the selected domains and severities.</span>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                         <details class="group border-t border-outline-subtle">
