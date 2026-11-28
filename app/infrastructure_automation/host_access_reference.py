@@ -90,7 +90,7 @@ def _qualified_secret_representation(
         and representation.secret_identity_id == secret_identity.id
         and type(representation.integration_instance_id) is int
         and representation.integration_instance_id > 0
-        and representation.provider_key == 'vault'
+        and representation.provider_key in ('vault', 'openbao')
         and representation.representation_role == 'material_authority'
         and representation.observation_status == 'observed'
         and type(representation.current_version) is int
@@ -107,6 +107,7 @@ def assess_host_access_references(
     secret_identity: SecretIdentity | None,
     secret_representation: SecretProviderRepresentation | None,
     host_key_digest: str | None,
+    provider_deployment_ref: str | None = None,
 ) -> HostAccessReferenceReview:
     """Interpret canonical committed references without reading secrets or probing SSH.
 
@@ -138,7 +139,7 @@ def assess_host_access_references(
     if type(host_key_digest) is not str or _EE_DIGEST.fullmatch(host_key_digest) is None:
         return _blocked('HOST_KEY_REFERENCE_UNQUALIFIED')
 
-    material = {
+    material: dict[str, Any] = {
         'schema_version': 1,
         'ansible_connection_id': connection.id,
         'environment': connection.environment,
@@ -152,6 +153,25 @@ def assess_host_access_references(
         'source_sha': metadata.get('source_sha'),
         'execution_environment_digest': ee_digest,
     }
+    if representation.provider_key == 'openbao':
+        if (
+            not isinstance(provider_deployment_ref, str)
+            or _HEX_DIGEST.fullmatch(provider_deployment_ref) is None
+            or representation.provider_namespace != ''
+            or not isinstance(representation.mount, str)
+            or not representation.mount
+            or any(char in representation.mount for char in ('*', '+'))
+        ):
+            return _blocked('SECRET_SOURCE_SCOPE_UNQUALIFIED')
+        material.update(
+            schema_version=2,
+            provider_key='openbao',
+            provider_namespace=representation.provider_namespace,
+            mount=representation.mount,
+            deployment_ref=provider_deployment_ref,
+        )
+    elif provider_deployment_ref is not None:
+        return _blocked('SECRET_SOURCE_SCOPE_UNQUALIFIED')
     fingerprint = hashlib.sha256(
         json.dumps(material, sort_keys=True, separators=(',', ':')).encode('utf-8')
     ).hexdigest()
@@ -177,13 +197,14 @@ def _current_membership(connection: IntegrationInstance, assignment: AutomationI
     )
 
 
-def _matching_vault_source(
+def _matching_provider_source(
     connection: IntegrationInstance, provider: IntegrationInstance, representation: SecretProviderRepresentation
 ) -> bool:
     return (
         provider.id == representation.integration_instance_id
         and provider.integration_type == 'secrets_pki'
-        and provider.provider_key == 'vault'
+        and provider.provider_key == representation.provider_key
+        and provider.provider_key in ('vault', 'openbao')
         and provider.enabled is True
         and provider.lifecycle_status == 'active'
         and provider.readiness_status == 'ready'
@@ -239,6 +260,7 @@ def assess_scoped_host_access_references(
     version: SecretVersionObservation,
     host_key_digest: str | None,
     now: datetime,
+    provider_deployment_ref: str | None = None,
 ) -> HostAccessReferenceReview:
     """Qualify reference metadata only, after caller-enforced exact resource policy.
 
@@ -248,7 +270,7 @@ def assess_scoped_host_access_references(
     """
     if not _current_membership(connection, assignment):
         return _blocked('HOST_MEMBERSHIP_UNQUALIFIED')
-    if not _matching_vault_source(connection, provider, representation):
+    if not _matching_provider_source(connection, provider, representation):
         return _blocked('SECRET_SOURCE_SCOPE_UNQUALIFIED')
     if not _current_collection(representation, collection, now):
         return _blocked('SECRET_COLLECTION_UNQUALIFIED')
@@ -260,6 +282,7 @@ def assess_scoped_host_access_references(
         secret_identity=representation.secret_identity,
         secret_representation=representation,
         host_key_digest=host_key_digest,
+        provider_deployment_ref=provider_deployment_ref,
     )
 
 
@@ -273,6 +296,7 @@ def assess_bound_host_access_references(
     collection: SecretInventoryCollectionState,
     version: SecretVersionObservation,
     now: datetime,
+    provider_deployment_ref: str | None = None,
 ) -> HostAccessReferenceReview:
     """Requalify a persisted candidate; never infer credential use or SSH trust.
 
@@ -298,6 +322,7 @@ def assess_bound_host_access_references(
         version=version,
         host_key_digest=binding.host_key_digest,
         now=now,
+        provider_deployment_ref=provider_deployment_ref,
     )
     if review.state != 'references_recorded':
         return review
