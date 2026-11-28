@@ -56,6 +56,14 @@ def test_coverage_is_on_demand_in_shared_overview_not_inline_panels():
     assert 'readiness_ui.coverage_button()' in provider
     assert 'readiness_ui.coverage_button()' in workspace
     assert actions.count("table_ui.action_classes(size='header')") == 3
+    assert 'Quick Actions' in actions
+    assert 'grid grid-cols-1 gap-2' in actions
+    assert 'flex-wrap' not in actions
+    assert 'flex w-full min-w-0 items-center gap-2 text-left' in actions
+    assert actions.count("action_classes(size='header') }} w-full") == 2
+    assert 'coverage_button(full_width=true)' in actions
+    assert 'aria-labelledby="alert-readiness-actions-label"' in actions
+    assert 'space-y-2 border-t border-outline-subtle px-4 py-3 sm:px-5' in overview
     assert 'data-dialog-target="alert-provider-coverage-dialog"' in actions
     assert "url_for('notification_channels.index')" in actions
     assert "url_for('platform_operations.data_lifecycle.index', domain='alert_incident')" in actions
