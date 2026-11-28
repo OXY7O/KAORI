@@ -572,3 +572,49 @@ def test_hero_accessory_renderers_have_distinct_semantics() -> None:
     assert 'aria-hidden="true"' in context
     assert 'data-kaori-hero-header-accessory="action"' in action
     assert 'aria-label="Open Settings"' in action
+
+
+@pytest.mark.parametrize(
+    ('endpoint', 'label'),
+    (
+        ('integrations.storage', 'Open Storage Integrations'),
+        ('integrations.source_control', 'Open Source Control Integrations'),
+        ('integrations.alertmanager', 'Open Alertmanager Integrations'),
+        ('integrations.metrics_sources', 'Open Metrics Source Integrations'),
+    ),
+)
+def test_profile_integration_navigation_keeps_blocked_and_denied_states_link_free(
+    endpoint: str, label: str
+) -> None:
+    environment = Environment(
+        loader=FileSystemLoader(ROOT / 'app/templates'),
+        autoescape=True,
+    )
+    environment.globals['url_for'] = lambda name: '/navigation/' + name
+    hero = environment.get_template('components/page_hero.html').module
+    args = ('Test', 'server', 'Workspace', 'Review committed evidence for authorized operational scope.',
+            [], 'All', None, None)
+    dashboard = str(hero.operational_dashboard(
+        *args, integration_endpoint=endpoint, integration_permitted=True,
+    ))
+    denied = str(hero.operational_dashboard(
+        *args, integration_endpoint=endpoint, integration_permitted=False,
+    ))
+    blocked = str(hero.operational_dashboard(
+        *args, state='blocked', integration_endpoint=endpoint, integration_permitted=True,
+    ))
+    card = str(hero.context_card(
+        'Test context', 'Readiness', 'Evidence', 'Ready', 'normal', [], None, None,
+        integration_endpoint=endpoint, integration_permitted=True,
+    ))
+    blocked_card = str(hero.context_card(
+        'Test context', 'Readiness', 'Evidence', 'Ready', 'normal', [], None, None,
+        blocked=True, integration_endpoint=endpoint, integration_permitted=True,
+    ))
+    for rendered in (dashboard, card):
+        assert label in rendered
+        assert f'href="/navigation/{endpoint}"' in rendered
+        assert rendered.count('data-kaori-hero-cta="integration-navigation"') == 1
+    for rendered in (denied, blocked, blocked_card):
+        assert 'data-kaori-hero-cta="integration-navigation"' not in rendered
+        assert f'href="/navigation/{endpoint}"' not in rendered
