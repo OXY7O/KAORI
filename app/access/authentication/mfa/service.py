@@ -402,6 +402,8 @@ def complete_pending_mfa_login(
             commit=False,
             issued_session_reference=reference,
         )
+        if not _pending_deadline_valid(expires_at):
+            raise MfaVerificationError('Pending authentication expired.')
         db.session.commit()
     except (SQLAlchemyError, CredentialEncryptionError, MfaVerificationError, AuthSessionError, MfaPolicyError):
         db.session.rollback()

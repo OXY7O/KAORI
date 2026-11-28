@@ -53,16 +53,20 @@ def test_pending_proof_and_generation_share_commit(
     monkeypatch.setattr(service, 'stage_successful_authentication', issue)
     monkeypatch.setattr(service, 'record_authentication_activity', audit)
     monkeypatch.setattr(service, 'read_session_policy', lambda: SessionPolicy())
-    kwargs = {
-        'source': 'database',
-        'expected_generation': 7,
-        'expires_at': (now + timedelta(seconds=-1 if failure == 'expired' else 60)).timestamp(),
-        'enrollment': enrollment,
-        'remember_requested': True,
-        'client_ip': None,
-    }
+    def complete() -> service.PendingMfaAdmission:
+        return service.complete_pending_mfa_login(
+            user,
+            '123456',
+            source='database',
+            expected_generation=7,
+            expires_at=(now + timedelta(seconds=-1 if failure == 'expired' else 60)).timestamp(),
+            enrollment=enrollment,
+            remember_requested=True,
+            client_ip=None,
+        )
+
     if failure == 'none':
-        result = service.complete_pending_mfa_login(user, '123456', **kwargs)
+        result = complete()
         assert result.generation == 8
         assert not result.remember_requested
         assert result.recovery_codes == (['one-time-test-code'] if enrollment else None)
@@ -73,7 +77,7 @@ def test_pending_proof_and_generation_share_commit(
         assert [call[0] for call in events.mock_calls] == ['proof', 'issue', 'audit', 'commit']
     else:
         with pytest.raises((service.MfaVerificationError, AuthSessionError, SQLAlchemyError)):
-            service.complete_pending_mfa_login(user, '123456', **kwargs)
+            complete()
         store.rollback.assert_called_once()
         if failure != 'commit':
             store.commit.assert_not_called()

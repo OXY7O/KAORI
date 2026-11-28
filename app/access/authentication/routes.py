@@ -575,7 +575,12 @@ def mfa_challenge():
     ):
         session.pop(MFA_PENDING_SESSION_KEY, None)
         return redirect(url_for('auth.login'))
-    decision = mfa_decision(user)
+    try:
+        decision = mfa_decision(user)
+    except (SQLAlchemyError, CredentialEncryptionError, MfaPolicyError):
+        db.session.rollback()
+        session.pop(MFA_PENDING_SESSION_KEY, None)
+        return redirect(url_for('auth.login'))
     if decision.gate not in (MfaGate.CHALLENGE, MfaGate.ENROLLMENT_REQUIRED):
         session.pop(MFA_PENDING_SESSION_KEY, None)
         return redirect(url_for('auth.login'))

@@ -109,6 +109,7 @@ def stage_successful_authentication(
         raise AuthSessionError('KAORI session admission was revoked before issuance.')
     return int(issued_version)
 
+
 def record_successful_authentication(
     user: User,
     *,
