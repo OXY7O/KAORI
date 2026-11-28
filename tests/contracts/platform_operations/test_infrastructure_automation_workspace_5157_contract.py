@@ -232,7 +232,9 @@ def test_overview_has_no_connection_selector_or_scoped_details():
             details=None,
             overview={'host_assignments': 6, 'cluster_bindings': 0, 'executions': None},
         )
-    assert 'Automation Overview' in rendered
+    assert 'Automation Overview' not in rendered
+    assert 'Automation Estate' in rendered
+    assert 'Execution Activity Restricted' in rendered
     assert 'Host Assignments' in rendered
     assert 'Restricted' in rendered
     assert 'data-kaori-automation-selected-scope' not in rendered
@@ -290,7 +292,13 @@ def test_automation_overview_reuses_tenant_estate_components():
     template = (ROOT / 'app/templates/infrastructure_automation/_overview.html').read_text()
     assert 'resource_posture_grid.render(estate_metrics, columns=5)' in template
     assert 'operational_section_card.render(' in template
-    assert 'Operational Attention & Activity' in template
+    assert 'Operational Attention & Activity' not in template
+    assert 'data-kaori-automation-oversight' in template
+    assert 'xl:grid-cols-2' in template
+    assert 'Needs Attention' in template
+    assert 'Recent Execution Activity' in template
+    assert 'components/states/_empty_state.html' in template
+    assert 'bg-surface-hover' not in template
     assert 'operational_metric_card' not in template
     assert 'workspace_summary_card' not in template
 
@@ -298,6 +306,13 @@ def test_automation_overview_reuses_tenant_estate_components():
 def test_primary_navigation_precedes_hero_and_covers_foundation_surfaces():
     workspace = (ROOT / 'app/templates/infrastructure_automation/_lifecycle_workspace.html').read_text()
     assert workspace.index('workspace_tabs.render_navigation(') < workspace.index('infrastructure_automation/_hero.html')
+    assert 'class="min-w-0 space-y-6"' in workspace
+    assert 'data-kaori-automation-navigation' in workspace
+    assert 'class="pointer-events-none absolute inset-x-0 top-full"' in workspace
+    navigation_index = workspace.index('data-kaori-automation-navigation')
+    loading_index = workspace.index("loading_bar.render('infrastructure-automation-loading'")
+    hero_index = workspace.index('infrastructure_automation/_hero.html')
+    assert navigation_index < loading_index < hero_index
     for label in ('Overview', 'Hosts & Inventories', 'Profiles', 'Patching', 'Plans',
                   'Runs & Evidence', 'Schedules', 'Compliance'):
         assert label in workspace
@@ -318,3 +333,55 @@ def test_planned_capabilities_are_read_only_and_do_not_require_a_connection():
             assert 'data-kaori-automation-selected-scope' not in rendered
             assert '<form' not in rendered
             assert 'Run Kubespray' not in rendered
+
+
+def test_overview_attention_and_empty_execution_use_independent_cards():
+    app = create_app('testing')
+    with app.test_request_context('/platform-operations/infrastructure-automation/'):
+        rendered = render_template(
+            'infrastructure_automation/_overview.html',
+            total_connections=1,
+            overview={
+                'host_assignments': 0,
+                'cluster_bindings': 0,
+                'executions': 0,
+                'attention': [SimpleNamespace(id=11, name='Kubespray Fixture')],
+                'connections_reviewed': 1,
+                'recent_jobs': [],
+            },
+        )
+    for label in (
+        'Automation Estate',
+        'Needs Attention',
+        'Kubespray Fixture',
+        'Validation Required',
+        'Review Lifecycle',
+        'Recent Execution Activity',
+        'No Automation Executions',
+        'Runs &amp; Evidence',
+        'not a full readiness assessment',
+    ):
+        assert label in rendered
+    assert 'connection_id=11' in rendered
+    assert 'tab=runs-evidence' in rendered
+    assert 'data-kaori-empty-state' in rendered
+    assert 'Automation Overview' not in rendered
+    assert 'Operational Attention &amp; Activity' not in rendered
+
+
+def test_overview_restricted_activity_does_not_expose_job_navigation():
+    app = create_app('testing')
+    with app.test_request_context('/platform-operations/infrastructure-automation/'):
+        rendered = render_template(
+            'infrastructure_automation/_overview.html',
+            total_connections=1,
+            overview={
+                'host_assignments': None,
+                'cluster_bindings': None,
+                'executions': None,
+                'recent_jobs': [SimpleNamespace(operation='hidden_operation')],
+            },
+        )
+    assert 'Jobs view permission is required.' in rendered
+    assert 'Hidden Operation' not in rendered
+    assert 'tab=runs-evidence' not in rendered

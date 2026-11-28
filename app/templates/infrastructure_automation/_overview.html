@@ -11,15 +11,12 @@
     ('list-checks', 'Executions', overview.executions if overview.executions is not none else 'Restricted', 'Canonical JobExecution records', 'info' if overview.executions is not none else 'unknown')
 ] %}
 <div class="space-y-6" data-kaori-automation-overview>
-    <section class="space-y-4" aria-labelledby="automation-estate-heading">
-        {{ section_intro.render('Automation Overview', 'Committed inventory and execution posture.', 'automation-estate-heading') }}
-        {% call operational_section_card.render(
-            'Automation Estate', 'Registered connections, inventory and execution evidence.', 'layout-grid',
-            header_badge=table_label.metadata_label((estate_metrics|length) ~ ' Indicators', icon='layout-grid'),
-            body_classes='p-0', aria_label='Automation estate summary') %}
-            {{ resource_posture_grid.render(estate_metrics, columns=5) }}
-        {% endcall %}
-    </section>
+    {% call operational_section_card.render(
+        'Automation Estate', 'Registered connections, inventory and execution evidence.', 'layout-grid',
+        header_badge=table_label.metadata_label((estate_metrics|length) ~ ' Indicators', icon='layout-grid'),
+        body_classes='p-0', aria_label='Automation estate summary') %}
+        {{ resource_posture_grid.render(estate_metrics, columns=5) }}
+    {% endcall %}
     {% if total_connections == 0 %}
         {% with blocked_state_icon='plug', blocked_state_label='Setup Required',
             blocked_state_title='No Ansible Connections',
@@ -32,66 +29,87 @@
     {% endif %}
 
     <section class="space-y-4" aria-labelledby="automation-oversight-heading">
-        {{ section_intro.render('Operational Oversight', 'Source review conditions and recent committed execution activity.', 'automation-oversight-heading') }}
-        {% call operational_section_card.render(
-            'Operational Attention & Activity', 'Review bounded previews; execution authorization is evaluated separately.', 'triangle-alert',
-            body_classes='p-0', aria_label='Automation operational attention and activity') %}
-            <div class="grid min-w-0 xl:grid-cols-12">
-                <section class="min-w-0 xl:col-span-7" aria-labelledby="automation-attention-title">
-                    <header class="border-b border-outline-subtle px-5 py-3">
-                        <h3 id="automation-attention-title" class="text-sm font-semibold text-content-primary">Needs Attention</h3>
-                        <p class="mt-1 text-xs text-content-muted">Source qualification among the latest five registered connections.</p>
-                    </header>
+        {{ section_intro.render('Operational Oversight', 'Source review and committed execution activity; authorization is evaluated separately.', 'automation-oversight-heading') }}
+        <div class="grid min-w-0 gap-4 xl:grid-cols-2" data-kaori-automation-oversight>
+            {% call operational_section_card.render(
+                'Needs Attention', 'Source qualification among the latest five connections.', 'triangle-alert',
+                id='automation-attention', body_classes='p-0', extra_classes='min-w-0',
+                aria_label='Automation source attention') %}
+                {% if overview.attention|default([]) %}
                     <div class="divide-y divide-outline-subtle">
-                        {% for item in overview.attention|default([]) %}
-                            <article class="flex min-w-0 items-start gap-3 px-5 py-3">
-                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                        {% for item in overview.attention %}
+                            <article class="flex min-w-0 flex-wrap items-start gap-3 px-5 py-4">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
                                     <i data-lucide="git-branch" class="h-4 w-4"></i>
                                 </span>
                                 <div class="min-w-0 flex-1">
-                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <div class="flex flex-wrap items-center gap-2">
                                         <p class="break-words text-sm font-semibold text-content-primary">{{ item.name }}</p>
                                         {{ table_label.status_label('Validation Required', 'warning') }}
                                     </div>
-                                    <p class="mt-1 text-xs text-content-secondary">Committed Git source does not match the current qualification contract.</p>
-                                    {{ section_link_button.render(url_for('platform_operations.infrastructure_automation.index', tab='lifecycle', connection_id=item.id), 'Review Lifecycle', icon='arrow-right') }}
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Committed Git source does not match the current qualification contract.</p>
+                                    <div class="mt-3 flex justify-end">
+                                        {{ section_link_button.render(url_for('platform_operations.infrastructure_automation.index', tab='lifecycle', connection_id=item.id), 'Review Lifecycle', icon='arrow-right') }}
+                                    </div>
                                 </div>
                             </article>
-                        {% else %}
-                            <p class="px-5 py-5 text-sm text-content-secondary">{{ 'No source exceptions in this preview.' if overview.connections_reviewed|default(0) else 'No registered connections to review.' }}</p>
                         {% endfor %}
                     </div>
-                    <footer class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs text-content-muted">Reviewed {{ overview.connections_reviewed|default(0) }} latest connection records; not a full readiness assessment.</footer>
-                </section>
-                <section class="min-w-0 border-t border-outline-subtle xl:col-span-5 xl:border-l xl:border-t-0" aria-labelledby="automation-activity-title">
-                    <header class="border-b border-outline-subtle px-5 py-3">
-                        <h3 id="automation-activity-title" class="text-sm font-semibold text-content-primary">Recent Execution Activity</h3>
-                        <p class="mt-1 text-xs text-content-muted">Latest canonical JobExecution records.</p>
-                    </header>
-                    {% if overview.executions is none %}
-                        <p class="px-5 py-5 text-sm text-content-secondary">Jobs view permission is required.</p>
-                    {% elif overview.recent_jobs|default([]) %}
-                        <ol class="divide-y divide-outline-subtle">
-                            {% for job in overview.recent_jobs %}
-                                <li class="flex min-w-0 items-start gap-3 px-5 py-3">
-                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
-                                    <div class="min-w-0 flex-1">
-                                        <p class="break-words text-sm font-semibold text-content-primary">{{ job.operation|replace('_', ' ')|title }}</p>
-                                        <p class="mt-1 text-xs text-content-secondary">{{ job.status|replace('_', ' ')|title }} · {{ job.created_at|user_datetime }}</p>
-                                    </div>
-                                </li>
-                            {% endfor %}
-                        </ol>
-                    {% else %}
-                        <p class="px-5 py-5 text-sm text-content-secondary">No committed automation executions.</p>
-                    {% endif %}
-                    {% if overview.executions is not none %}
-                        <footer class="border-t border-outline-subtle bg-surface-hover px-5 py-3">
-                            {{ section_link_button.render(url_for('platform_operations.infrastructure_automation.index', tab='runs-evidence'), 'Runs & Evidence', icon='arrow-right') }}
-                        </footer>
-                    {% endif %}
-                </section>
-            </div>
-        {% endcall %}
+                {% else %}
+                    {% with empty_state_icon='git-branch',
+                        empty_state_label='',
+                        empty_state_title='No Source Exceptions in Preview' if overview.connections_reviewed|default(0) else 'No Registered Connections to Review',
+                        empty_state_description='The bounded source qualification preview is not a full readiness assessment.',
+                        empty_state_min_height='min-h-0' %}
+                        {% include "components/states/_empty_state.html" %}
+                    {% endwith %}
+                {% endif %}
+                <footer class="border-t border-outline-subtle px-5 py-3 text-xs text-content-muted">
+                    Reviewed {{ overview.connections_reviewed|default(0) }} latest connection records; not a full readiness assessment.
+                </footer>
+            {% endcall %}
+            {% set has_recent_jobs = overview.executions is not none and overview.recent_jobs|default([]) %}
+            {% call operational_section_card.render(
+                'Recent Execution Activity', 'Latest canonical JobExecution records.', 'history',
+                id='automation-activity',
+                action_href=url_for('platform_operations.infrastructure_automation.index', tab='runs-evidence') if has_recent_jobs else none,
+                action_label='Runs & Evidence' if has_recent_jobs else none,
+                action_icon='arrow-right', body_classes='p-0', extra_classes='min-w-0',
+                aria_label='Automation recent execution activity') %}
+                {% if overview.executions is none %}
+                    {% with empty_state_icon='shield', empty_state_label='',
+                        empty_state_title='Execution Activity Restricted',
+                        empty_state_description='Jobs view permission is required.', empty_state_min_height='min-h-0' %}
+                        {% include "components/states/_empty_state.html" %}
+                    {% endwith %}
+                {% elif has_recent_jobs %}
+                    <ol class="divide-y divide-outline-subtle">
+                        {% for job in overview.recent_jobs %}
+                            <li class="flex min-w-0 items-start gap-3 px-5 py-4">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="list-checks" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0 flex-1">
+                                    <p class="break-words text-sm font-semibold text-content-primary">{{ job.operation|replace('_', ' ')|title }}</p>
+                                    <p class="mt-1 text-xs text-content-secondary">{{ job.status|replace('_', ' ')|title }} · {{ job.created_at|user_datetime }}</p>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ol>
+                {% else %}
+                    {% with empty_state_icon='list-checks', empty_state_label='',
+                        empty_state_title='No Automation Executions',
+                        empty_state_description='No committed automation executions.',
+                        empty_state_min_height='min-h-0',
+                        empty_state_secondary_action_url=url_for('platform_operations.infrastructure_automation.index', tab='runs-evidence'),
+                        empty_state_secondary_action_label='Runs & Evidence',
+                        empty_state_secondary_action_icon='arrow-right', empty_state_permission_granted=true %}
+                        {% include "components/states/_empty_state.html" %}
+                    {% endwith %}
+                {% endif %}
+            {% endcall %}
+        </div>
     </section>
 </div>
