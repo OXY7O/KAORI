@@ -223,3 +223,47 @@ creates known_hosts, probes SSH, dispatches a worker or authorizes a Plan.
 The proposed console authority, artifact custody, verifier permission
 combination and actual independent operator inspection require review and
 real UAT before the activation writer is enabled.
+
+
+### Local candidate activation and combined evidence (#5184/#5185)
+
+The review-lane candidate implements internal `approve_automation_credential_grant`
+and `activate_host_console_trust` writers. They are disabled by default.
+The local deployment must explicitly opt in with
+`KAORI_LOCAL_AUTOMATION_SECURITY_REVIEW=1` and both environment and Flask
+`APP_ENV=development`. Do not enable the flag until independent Access/security
+review of the preceding typed proof and console custody contracts. PostgreSQL
+READ COMMITTED and a clean transaction are required; the local writer lock
+serializes activation, and canonical policy/assignment locks coordinate
+revocation. No HTTP route, CLI command, role grant, fixture authority or
+production enablement is added. The flag must never be interpreted as worker,
+provider material or infrastructure-mutation authority.
+
+Credential approval requires an independent checker distinct from requester
+and principal, current exact target and typed provider proof covering the
+grant window, and no overlapping active grant for the same principal/assignment.
+The canonical active policy revision stores the exact proof digest, not secret
+material. The nullable migration preserves legacy history and refuses downgrade
+if approved evidence would be lost. The independent trust writer appends the
+next revision only after initial or explicitly revoked state, verifies the
+exact signed console evidence and rechecks the latest committed-shape record.
+Both writers stage Activity Audit and requalify evidence before commit;
+denial or audit failure rolls back the entire transition. Existing canonical
+revocation remains available independently of evidence availability or opt-in.
+
+`review_current_credential_grant` resolves a unique latest active exact policy
+and rechecks actor, maker/checker, binding, issuer and pinned proof digest.
+`review_remote_access_evidence` requires both this grant and current independent
+SSH console trust, and returns only a bounded correlation digest and expiry
+with execution_authorized=false. It cannot be used as a transferable permit.
+The future remote worker must independently qualify signed EE/source,
+actual operation/target approval, native credential material delivery,
+strict host-key validation, and job/audit admission immediately before use.
+The frozen source profile is still non-executable; no worker or provisioning
+has been enabled by this slice.
+
+Tests include isolated CI PostgreSQL candidate lifecycle cases with synthetic
+provider proof, signed synthetic console artifacts, revocation, rollback and
+combined readback. Native provider schema inspection, real independent console
+custody, migration execution, quality gates and operator acceptance remain
+pending on the exact review head.
