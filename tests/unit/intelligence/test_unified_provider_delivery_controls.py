@@ -46,3 +46,21 @@ def test_rejected_claim_needs_due_time_and_attempt_budget(monkeypatch):
     assert result['provider_retry_due'] is True
     monkeypatch.setattr(evidence, 'notification_delivery_max_attempts', lambda: 2)
     assert evidence.read_case_delivery_evidence(case)['provider_retry_due'] is False
+
+
+@pytest.mark.parametrize(('actor_id', 'expected'), [(7, (11, 23)), (8, None), (None, None)])
+def test_only_original_maker_receives_private_retry_candidate(monkeypatch, actor_id, expected):
+    now = datetime.now(UTC)
+    case = SimpleNamespace(public_id='CA-01')
+    row = SimpleNamespace(attempt_count=1, next_retry_at=now, created_at=now, sent_at=None)
+    claim = {'policy_id': 11, 'channel_id': 23, 'maker_id': 7}
+    monkeypatch.setattr(evidence, 'firing_journal', lambda _case: [row])
+    monkeypatch.setattr(evidence, 'audited_claim', lambda *_args: claim)
+    monkeypatch.setattr(evidence, '_qualified', lambda *_args: True)
+    monkeypatch.setattr(evidence, 'audited_outcome', lambda *_args: 'rejected')
+    monkeypatch.setattr(evidence, '_qualified_delivery_status', lambda *_args: 'failed')
+    result = evidence.read_case_delivery_evidence(case, retry_actor_id=actor_id)
+    assert result.pop('_retry_candidate') == expected
+    assert 'maker_id' not in repr(result)
+    assert 'policy_id' not in repr(result)
+    assert 'channel_id' not in repr(result)

@@ -57,7 +57,12 @@ def read_case_delivery_evidence(
     # before rendering. Only the original maker can see the exact retry pair.
     retry_candidate = (
         (claim['policy_id'], claim['channel_id'])
-        if status == 'failed' and type(retry_actor_id) is int and claim['maker_id'] == retry_actor_id
+        if (
+            status == 'failed'
+            and isinstance(claim, dict)
+            and type(retry_actor_id) is int
+            and claim['maker_id'] == retry_actor_id
+        )
         else None
     )
     projected = {
