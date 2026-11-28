@@ -61,8 +61,7 @@ def identity_bucket(username: str, secret: str | bytes) -> str:
     return f'kaori:login-identity:v1:{namespace}:{bucket:05x}'
 
 
-def shared_identity_budget(username: str) -> bool:
-    """Return whether this request exceeds its finite shared identity budget."""
+def _shared_storage_configuration() -> tuple[str, str | bytes]:
     config = current_app.config
     uri = config.get('RATELIMIT_STORAGE_URI')
     secret = config.get('SECRET_KEY')
@@ -79,11 +78,33 @@ def shared_identity_budget(username: str) -> bool:
             or secret in ('change-me', b'change-me')
         ):
             raise LoginProtectionUnavailable('Shared login protection is unavailable.')
+        return uri, secret
+    except (ValueError, TypeError) as exc:
+        raise LoginProtectionUnavailable('Shared login protection is unavailable.') from exc
+
+
+def shared_identity_budget(username: str) -> bool:
+    """Return whether this request exceeds its finite shared identity budget."""
+    uri, secret = _shared_storage_configuration()
+    try:
         with Redis.from_url(uri, socket_connect_timeout=2, socket_timeout=2) as client:
             count = client.eval(_INCREMENT, 1, identity_bucket(username, secret), WINDOW_SECONDS, REQUEST_LIMIT)
         if type(count) is not int or not 1 <= count <= REQUEST_LIMIT + 1:
             raise LoginProtectionUnavailable('Shared login protection returned an invalid result.')
         return count > REQUEST_LIMIT
+    except (RedisError, ValueError, TypeError, OSError) as exc:
+        raise LoginProtectionUnavailable('Shared login protection is unavailable.') from exc
+
+
+def probe_shared_login_protection() -> None:
+    """Exercise the exact Redis script in a separate expiring deployment probe bucket."""
+    uri, secret = _shared_storage_configuration()
+    probe_key = identity_bucket('', secret).rsplit(':', 1)[0] + ':qualification-probe'
+    try:
+        with Redis.from_url(uri, socket_connect_timeout=2, socket_timeout=2) as client:
+            count = client.eval(_INCREMENT, 1, probe_key, WINDOW_SECONDS, REQUEST_LIMIT)
+        if type(count) is not int or not 1 <= count <= REQUEST_LIMIT + 1:
+            raise LoginProtectionUnavailable('Shared login protection returned an invalid result.')
     except (RedisError, ValueError, TypeError, OSError) as exc:
         raise LoginProtectionUnavailable('Shared login protection is unavailable.') from exc
 
