@@ -59,6 +59,8 @@ class AuthenticationMfaFactor(db.Model):
     recovery_hashes: Mapped[list[str]] = mapped_column(db.JSON, nullable=False, default=list)
     last_accepted_step: Mapped[int | None] = mapped_column(db.BigInteger, nullable=True)
     enrollment_expires_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True))
+    enrollment_generation: Mapped[int | None] = mapped_column(db.BigInteger, nullable=True)
+    enrollment_authenticated: Mapped[bool | None] = mapped_column(db.Boolean, nullable=True)
     enrolled_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow

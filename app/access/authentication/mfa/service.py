@@ -76,14 +76,38 @@ def _accepted_step(secret: str, code: str, *, last_accepted_step: int | None, no
     return None
 
 
+def _owns_pending_setup(factor: AuthenticationMfaFactor, generation: int, *, authenticated: bool) -> bool:
+    return (
+        not factor.enabled
+        and type(generation) is int
+        and generation > 0
+        and factor.enrollment_generation == generation
+        and factor.enrollment_authenticated is authenticated
+    )
+
+
+def has_owned_pending_setup(user_id: int, generation: int, *, authenticated: bool) -> bool:
+    """Read only setup ownership, not the encrypted seed or recovery hashes."""
+    return db.session.execute(
+        select(AuthenticationMfaFactor.id).where(
+            AuthenticationMfaFactor.user_id == user_id,
+            AuthenticationMfaFactor.enabled.is_(False),
+            AuthenticationMfaFactor.enrollment_generation == generation,
+            AuthenticationMfaFactor.enrollment_authenticated.is_(authenticated),
+        )
+    ).scalar_one_or_none() is not None
+
+
 def mfa_enrollment_state(
-    factor: AuthenticationMfaFactor | None, *, now: datetime
+    factor: AuthenticationMfaFactor | None, *, now: datetime, expected_generation: int, authenticated: bool
 ) -> Literal['enrolled', 'pending', 'expired', 'not_enrolled']:
     """Project effective enrollment state, never infer a valid pending seed from a row alone."""
     if factor is None:
         return 'not_enrolled'
     if factor.enabled:
         return 'enrolled'
+    if not _owns_pending_setup(factor, expected_generation, authenticated=authenticated):
+        return 'expired'
     expires = factor.enrollment_expires_at
     if expires is None:
         return 'expired'
@@ -143,6 +167,8 @@ def begin_mfa_enrollment(user: User, *, expected_generation: int, authenticated:
         factor.last_accepted_step = None
         factor.recovery_hashes = []
         factor.enrollment_expires_at = datetime.now(UTC) + ENROLLMENT_TTL
+        factor.enrollment_generation = expected_generation
+        factor.enrollment_authenticated = authenticated
         if existing is None:
             db.session.add(factor)
         db.session.add(
@@ -167,7 +193,11 @@ def confirm_mfa_enrollment(
         now = datetime.now(UTC)
         if factor is None or factor.enabled or factor.enrollment_expires_at is None:
             raise MfaVerificationError('Start MFA enrollment again.')
-        if mfa_enrollment_state(factor, now=now) != 'pending':
+        if not _owns_pending_setup(factor, expected_generation, authenticated=authenticated):
+            raise MfaVerificationError('Start MFA enrollment again.')
+        if mfa_enrollment_state(
+            factor, now=now, expected_generation=expected_generation, authenticated=authenticated
+        ) != 'pending':
             raise MfaVerificationError('MFA enrollment expired; start again.')
         accepted = _accepted_step(factor.totp_secret, code, last_accepted_step=None, now=now)
         if accepted is None:
@@ -178,6 +208,8 @@ def confirm_mfa_enrollment(
         factor.enabled = True
         factor.enrolled_at = now
         factor.enrollment_expires_at = None
+        factor.enrollment_generation = None
+        factor.enrollment_authenticated = None
         db.session.add(
             stage_authentication_security_event(
                 user, action='mfa_enrollment_confirmed', authenticated=authenticated, success=True
@@ -188,6 +220,25 @@ def confirm_mfa_enrollment(
         db.session.rollback()
         raise
     return recovery
+
+
+def cancel_mfa_enrollment(user: User, *, expected_generation: int, authenticated: bool = True) -> None:
+    """Delete only an inactive setup owned by the presented context, with its audit."""
+    try:
+        user = _lock_mfa_user(user, expected_generation, authenticated=authenticated)
+        factor = _locked_factor(user.id)
+        if factor is None or not _owns_pending_setup(factor, expected_generation, authenticated=authenticated):
+            raise MfaVerificationError('Start MFA enrollment again.')
+        db.session.delete(factor)
+        db.session.add(
+            stage_authentication_security_event(
+                user, action='mfa_enrollment_cancelled', authenticated=authenticated, success=True
+            )
+        )
+        db.session.commit()
+    except (SQLAlchemyError, CredentialEncryptionError, MfaVerificationError):
+        db.session.rollback()
+        raise
 
 
 def _consume_factor_proof(user: User, factor: AuthenticationMfaFactor, submitted: str, *, authenticated: bool) -> str:

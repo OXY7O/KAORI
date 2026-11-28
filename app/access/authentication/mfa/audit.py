@@ -15,6 +15,7 @@ from app.platform_operations.notifications.event_catalog import event_category_k
 MfaSecurityAction = Literal[
     'mfa_enrollment_started',
     'mfa_enrollment_confirmed',
+    'mfa_enrollment_cancelled',
     'mfa_challenge_verified',
     'mfa_challenge_rejected',
     'mfa_recovery_regenerated',

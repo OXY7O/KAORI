@@ -25,6 +25,7 @@ from app.access.authentication.mfa.qr import build_totp_qr_data_uri
 from app.access.authentication.mfa.service import (
     MfaVerificationError,
     begin_mfa_enrollment,
+    cancel_mfa_enrollment,
     confirm_mfa_enrollment,
     mfa_enrollment_state,
     mfa_policy_mode,
@@ -264,6 +265,10 @@ def _process_account_mfa_action(
             mfa_setup_qr_src = build_totp_qr_data_uri(mfa_setup_secret, account_label=user.username)
             title = 'Authenticator setup started'
             message = 'Scan the QR code or enter the setup key, then verify one code.'
+        elif action == 'cancel':
+            cancel_mfa_enrollment(user, expected_generation=generation)
+            title = 'Authenticator setup cancelled'
+            message = 'The pending setup key is no longer valid. Generate a new key when ready.'
         elif action == 'confirm':
             mfa_recovery_codes = confirm_mfa_enrollment(
                 user, str(request.form.get('verification_code') or ''), expected_generation=generation
@@ -352,7 +357,9 @@ def account():
         )
 
     mfa_factor = account_mfa_factor(user.id)
-    enrollment_state = mfa_enrollment_state(mfa_factor, now=datetime.now(UTC))
+    enrollment_state = mfa_enrollment_state(
+        mfa_factor, now=datetime.now(UTC), expected_generation=user.auth_session_version, authenticated=True
+    )
     mfa_state = {
         'enrolled': enrollment_state == 'enrolled',
         'enrollment_pending': enrollment_state == 'pending',
