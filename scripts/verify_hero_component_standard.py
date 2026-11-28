@@ -1551,6 +1551,29 @@ def _verify_integration_hero_accessories() -> None:
                               'page_hero.context_status_badge(label,'), 'Integration Hero status adapter')
 
 
+def _verify_remaining_context_exceptions() -> None:
+    admin = _read(TEMPLATES / 'platform_operations/kubernetes/index.html')
+    oob = _read(TEMPLATES / 'platform_operations/kubernetes/_summary_oob.html')
+    for source in (admin, oob):
+        _require_tokens(
+            source,
+            ('id="kubernetes-admin-context-status"',
+             'page_hero.context_status_badge(administration_status_label, administration_status_tone)'),
+            'Kubernetes Administration Hero status',
+        )
+    _require_tokens(
+        _read(TEMPLATES / 'settings/account/partials/_hero.html'),
+        ("context_header_status('Account Posture'", "current_user.account_is_active", "'Personal Account'"),
+        'Account Hero lifecycle status',
+    )
+    _require_tokens(
+        _read(TEMPLATES / 'integrations/secrets_management/openbao/detail.html'),
+        ('page_hero.context_card(', 'row.integration_instance.readiness_status',
+         "'Credential Authority', 'Pending'", "url_for('openbao.index')"),
+        'OpenBao committed connection context',
+    )
+
+
 def verify() -> None:
     hero = _read(HERO)
     standard = _read(STANDARD)
@@ -1708,6 +1731,7 @@ def verify() -> None:
     _verify_kubernetes_hero_navigation()
     _verify_registry_and_secrets_hero_semantics()
     _verify_integration_hero_accessories()
+    _verify_remaining_context_exceptions()
     _verify_blocked_context_ownership()
     _verify_registry_blocked_hero_actions()
     _verify_analytics_metadata_ownership()
