@@ -87,7 +87,7 @@ def test_authentication_security_workspace_does_not_wrap_its_standard_cards() ->
     assert '<div class="space-y-4">' in page
     assert 'aria-label="Authentication Security Workspace">' not in page
     assert 'class="space-y-4 p-5 lg:p-6"' not in page
-    assert page.count('assurance.render(') == 4
+    assert page.count('assurance.render(') == 5
     assert page.index('page_hero.shell_classes()') < page.index('data-auth-security-workspace="flat"')
     assert 'workspace_tabs.render_navigation(' in page
     assert 'workspace_tabs.render_query_tabs(' not in page
@@ -146,7 +146,7 @@ def test_overview_control_areas_and_operational_boundaries_share_one_section() -
     assert overview.count('Review Session Security') == 1
     assert 'data-auth-security-workspace="flat"' in page
     assert 'workspace_tabs.render_navigation(' in page
-    assert page.count('assurance.render(') == 4
+    assert page.count('assurance.render(') == 5
 
 
 def test_overview_heading_is_text_only_and_still_above_its_control_card() -> None:
@@ -167,5 +167,5 @@ def test_overview_heading_is_text_only_and_still_above_its_control_card() -> Non
 def test_selected_tab_is_allowlisted_to_prevent_untrusted_template_selection() -> None:
     routes = source('app/access/authentication_security/__init__.py')
     assert "return requested if requested in supported else 'overview'" in routes
-    for key in ('overview', 'mfa', 'bot', 'sessions'):
+    for key in ('overview', 'mfa', 'bot', 'login-protection', 'sessions'):
         assert f"('{key}'," in routes
