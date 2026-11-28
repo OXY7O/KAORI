@@ -31,6 +31,7 @@ from app.infrastructure_automation.credential_scope_target import (
     CREDENTIAL_USE_PERMISSION,
     READ_ONLY_FACTS_OPERATION,
     exact_credential_target_current,
+    exact_remote_credential_draft_current,
 )
 from app.infrastructure_automation.host_enrollment import host_revision
 from app.infrastructure_automation.kubernetes.committed_host_access import committed_pilot_access_fingerprint
@@ -44,6 +45,7 @@ from app.infrastructure_automation.kubernetes.source_policy import (
     SOURCE_CANDIDATE_SHA,
 )
 from app.infrastructure_automation.remote_access_evidence import RemoteAccessEvidence, review_remote_access_evidence
+from app.infrastructure_automation.remote_preflight_source import REMOTE_CANDIDATE_SHA, REMOTE_PLAYBOOK
 from app.integrations.secrets_management.secrets_pki.providers.credential_version_proof import canonical_statement
 from app.models.automation import (
     AutomationHostAccessBinding,
@@ -1031,3 +1033,57 @@ def test_remote_target_review_requires_all_three_current_member_evidence(binding
     assignments[0].role = 'worker' if assignments[0].role == 'control_plane' else 'control_plane'
     db.session.commit()
     assert review() is None
+
+
+def test_remote_credential_draft_is_distinct_and_never_active(binding_store, monkeypatch):
+    actor, checker, request, validity = _credential_request(binding_store)
+    kwargs = {
+        'actor_user_id': checker,
+        'principal_user_id': actor,
+        'intent': request,
+        'validity': validity,
+        'reason_code': 'operational_access',
+    }
+    with pytest.raises(scoped_grants.ScopedGrantRejected):
+        credential_grants.request_remote_credential_grant_draft(**kwargs)
+    monkeypatch.setattr(credential_grants, 'local_security_review_enabled', lambda: True)
+    policy = credential_grants.request_remote_credential_grant_draft(**kwargs)
+    target = db.session.get(AutomationCredentialScopeTarget, policy.id)
+    assert target is not None
+    assert target.source_revision == REMOTE_CANDIDATE_SHA
+    assert target.operation_key == REMOTE_PLAYBOOK
+    assert policy.revisions[0].lifecycle_status == 'draft'
+    assert exact_remote_credential_draft_current(policy, target, now=datetime.now(UTC))
+    assert not exact_credential_target_current(policy, target, now=datetime.now(UTC))
+    assert resolve_current_credential_evidence(policy, target, now=datetime.now(UTC)) is None
+    assert credential_grants.review_current_credential_grant(
+        actor_user_id=actor, connection_id=target.ansible_connection_id,
+        assignment_id=target.assignment_id, now=datetime.now(UTC),
+    ) is None
+
+
+def test_remote_draft_cannot_be_activated_by_existing_approval_writer(activation_store, monkeypatch):
+    actor, maker, request, validity = _credential_request(activation_store)
+    role = db.session.get(User, actor).role_record
+    checker = User(username='remote-checker', email='remote-checker@test.invalid', role_id=role.id)
+    db.session.add(checker)
+    db.session.flush()
+    checker_id = checker.id
+    db.session.commit()
+    policy = credential_grants.request_remote_credential_grant_draft(
+        actor_user_id=maker, principal_user_id=actor, intent=request,
+        validity=validity, reason_code='operational_access',
+    )
+    policy_id = policy.id
+    db.session.remove()
+    monkeypatch.setattr(
+        credential_grants, 'resolve_current_credential_evidence',
+        lambda *args, **kwargs: pytest.fail('Remote candidate must not reach typed approval'),
+    )
+    with pytest.raises(scoped_grants.ScopedGrantRejected):
+        credential_grants.approve_automation_credential_grant(
+            policy_id=policy_id, approver_user_id=checker_id, expected_revision=1,
+        )
+    persisted = db.session.get(ScopeAccessPolicy, policy_id)
+    assert persisted.current_revision == 1
+    assert persisted.revisions[0].lifecycle_status == 'draft'
