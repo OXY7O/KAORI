@@ -29,9 +29,10 @@
             ('database-backup', 'Inventoried', inventory.inventoried_systems, 'Systems with committed inventory'),
             ('triangle-alert', 'Attention', inventory.attention_systems, 'Systems needing review')
             ],
-            'Manage Storage',
-            url_for('integrations.storage'),
-            'database-zap'
+            none,
+            none,
+            integration_endpoint='integrations.storage',
+            integration_permitted=current_user.is_authenticated and current_user.has_permission('integrations.manage')
             ) }}
         {% endif %}
     </div>
