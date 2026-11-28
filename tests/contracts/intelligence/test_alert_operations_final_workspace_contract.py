@@ -46,7 +46,10 @@ def test_routing_workspace_is_table_led_and_crud_uses_modal() -> None:
     routes = read('app/intelligence/alert_intelligence/routes.py')
     application = read('app/intelligence/alert_intelligence/application.py')
 
-    assert 'Routing Guidance' in routing
+    workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
+    assert 'Routing Guidance' not in routing
+    assert "payload.tab == 'routing' and not payload.provider_case_mode" in workspace
+    assert 'Routing Guidance: keep policy scope narrow' in workspace
     assert 'Policy Registry' in routing
     assert "table_ui.table_classes('w-full table-fixed')" in routing
     assert 'overflow-x-auto' not in routing
