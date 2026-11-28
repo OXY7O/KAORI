@@ -326,3 +326,8 @@ available. Actual destructive Delete is always `critical` and gated by
 existing confirmation and server-side dependency checks. Do not apply
 these drawer variants to dense table row utilities: those remain owned
 by `table_ui.action_classes()`.
+
+
+### Notification Channels header label order (#5308)
+
+For Notification Channels, use the shared `inventory_block_header(..., result_count=..., guide=...)` slot to render the title, optional ordinary metadata, filtered Results, then the contextual Guide. The optional trailing `guide` slot preserves the original `title_extra` slot and other existing callers. Header actions remain separate. The Recent Delivery preview uses the actual preview count, not the journal total. Overview and evidence-boundary titles use ordinary metadata, not duplicate Guides.

@@ -256,3 +256,8 @@ Apply the Guide variant to **title-level** Inventory and registry help (Kubernet
 ## Dense registry boundary
 
 Do not place a multi-line Info Tip **inside a table row or its overflow-x container**. A shared glossary belongs in the block header. Genuinely row-specific operational evidence may use the existing native-dialog detail pattern when that evidence cannot be summarized by the shared vocabulary.
+
+
+### Notification Channels — metadata before Guide (#5308)
+
+Use ordinary metadata on Delivery Overview, Channel Registry and Delivery Evidence Boundary; their guidance belongs to the corresponding Recent Delivery, Channel Inventory/Archived Channels and Delivery Records content headers. Where a result count exists, render it before the Guide using the shared `inventory_block_header` optional trailing `guide` slot. The preview uses its actual visible record count. Provider-specific setup Guide buttons and all existing help interactions remain unchanged.

@@ -448,7 +448,7 @@ def test_notification_delivery_journal_filters_use_committed_sql_and_canonical_t
     assert channels.index(intro) < channels.index('id="notification-channel-registry"')
     assert channels.index('id="notification-channel-registry"') < channels.index('table_block.inventory_block_header(')
     assert 'header_actions=channel_clear_action' in channels
-    assert 'title_extra=info_tip.render(' in channels
+    assert 'guide=info_tip.render(' in channels
     assert page.count("('Events', payload.delivery_contract.events") == 1
     assert "section_intro.render('Delivery Contract & Ownership'" in page
     assert "'Delivery Ownership'," not in page
@@ -520,7 +520,7 @@ def test_notification_registry_headers_follow_kubernetes_inventory_clear_filter_
         )
         assert 'table_block.inventory_filter_bar_classes()' in source
         assert 'classes=table_ui.inventory_filter_bar_classes()' not in source
-    assert channels.index('title_extra=info_tip.render(') < channels.index(
+    assert channels.index('guide=info_tip.render(') < channels.index(
         "table_registry.filter_form('notification_channels.index'"
     )
     assert '{% set channel_clear_action = none %}' in channels
@@ -1310,3 +1310,38 @@ def test_notification_snapshot_verifier_accepts_shared_recent_delivery_title_cel
     assert 'title="{{ delivery.event_label }}"' not in verifier
     assert 'title="{{ delivery.channel_name }}"' not in verifier
     assert "'unified notification snapshot outside-card section intro'" in verifier
+
+
+def test_notification_workspaces_use_posture_metadata_and_results_before_guides() -> None:
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    channels = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split(
+        "{% elif active_tab == 'channels' %}",
+        1,
+    )[0]
+    delivery = page.split("{% elif active_tab == 'delivery' %}", 1)[1]
+
+    for source in (page, channels):
+        Environment().parse(source)
+
+    assert "table_label.count_text(payload.summary.total, 'Active Channel')" in overview
+    assert "table_label.count_text(payload.providers|length, 'Provider')" in channels
+    assert "table_label.metadata_label('Committed Evidence', icon='database')" in delivery
+    assert 'notification-delivery-overview-guide' not in overview
+    assert 'notification-channel-registry-guide' not in channels
+    assert 'notification-delivery-evidence-boundary-guide' not in delivery
+    assert 'notification-recent-delivery-guide' in overview
+    assert "table_label.count_text(payload.overview.recent|length, 'Record')" in overview
+    assert overview.index("table_label.count_text(payload.overview.recent|length") < overview.index(
+        '{{ recent_delivery_guide }}'
+    )
+    assert 'guide=info_tip.render(' in channels
+    assert 'result_count=payload.channel_pagination.total_items' in channels
+    assert "'Archived Channels' if payload.channel_lifecycle == 'retired' else 'Channel Inventory'" in channels
+    assert 'guide=info_tip.render(' in delivery
+    assert 'result_count=payload.delivery_pagination.total_items' in delivery
+    assert 'notification-delivery-records-guide' in delivery
+    assert 'notification-channel-guide-dialog' in channels
+    assert overview.count("variant='guide'") == 1
+    assert channels.count("variant='guide'") == 1
+    assert delivery.count("variant='guide'") == 1
