@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from jinja2 import Environment, FileSystemLoader
+
 ROOT = Path(__file__).resolve().parents[3]
 KUBERNETES = (
     ROOT
@@ -71,8 +73,6 @@ def test_github_capability_modal_uses_compact_shared_presentation():
 
 
 def test_github_capability_modal_renders_decision_fields_and_remediation():
-    from jinja2 import Environment, FileSystemLoader
-
     environment = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
     render = environment.get_template('integrations/components/_provider_capability_detail.html').module.content
     for available, required, status_key, status_label in (
@@ -101,7 +101,7 @@ def test_github_capability_modal_renders_decision_fields_and_remediation():
         for field in ('evidence', 'success_criteria', 'impact', 'next_action'):
             assert html.count(row[field]) == 1
         assert status_label in html
-        assert ('Controlled remediation step' in html) is not available
+        assert ('Controlled remediation step' in html) == (not available)
         assert 'Recommended Action</h3>' not in html
         assert 'Provider boundary' in html
         standard = str(render(row, 'Provider', 'Owner', 'Assessment', 'Provider boundary'))
