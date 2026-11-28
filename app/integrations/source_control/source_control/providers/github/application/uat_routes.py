@@ -71,8 +71,8 @@ from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
 from app.models.source_control import SourceInstallation
 from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES
-from app.platform_operations.jobs.service import job_snapshot
-from app.platform_operations.notifications.service import record_operational_activity
+from app.platform_operations.jobs.service import job_snapshot, subscriber_user_ids
+from app.platform_operations.notifications.service import create_transient_feedback, record_operational_activity
 from app.security.credentials import CredentialEncryptionError
 
 github_uat_bp = Blueprint(
@@ -164,12 +164,40 @@ def _repository_sync_snapshot(job: JobExecution | None) -> dict | None:
     }
 
 
+def _repository_sync_feedback(job: JobExecution | None) -> dict | None:
+    """Project committed terminal job feedback only for its requesting/subscribed actor."""
+    if job is None or not job.is_terminal:
+        return None
+    user_id = int(current_user.id)
+    if user_id != job.requested_by_user_id and user_id not in subscriber_user_ids(job):
+        return None
+    outcomes = {
+        'succeeded': ('success', 'Repository Sync Completed',
+                      'Repository synchronization completed. Review the committed inventory.'),
+        'partially_succeeded': ('warning', 'Repository Sync Partially Completed',
+                                'Review committed inventory and revision evidence gaps in Jobs.'),
+        'failed': ('error', 'Repository Sync Failed',
+                   'Repository synchronization did not complete. Review the committed inventory and Jobs.'),
+        'canceled': ('warning', 'Repository Sync Canceled',
+                     'Synchronization was canceled. The registry shows committed evidence only.'),
+        'expired': ('warning', 'Repository Sync Expired',
+                    'Synchronization expired. Review job status before retrying.'),
+    }
+    outcome = outcomes.get(job.status)
+    if outcome is None:
+        return None
+    status, title, message = outcome
+    feedback = create_transient_feedback(status=status, title=title, message=message)
+    feedback['feedback_id'] = f'repository-sync-{job.id}-{job.status}'
+    return feedback
+
+
 def _render_inventory_content(
     installation: SourceInstallation,
     *,
     sync_job: JobExecution | None = None,
     refresh_registry: bool = False,
-    sync_blocked: bool = False,
+    operation_feedback: dict | None = None,
 ) -> Response:
     canonical = installation.integration_instance
     if canonical is None:
@@ -182,7 +210,7 @@ def _render_inventory_content(
         inventory_sync_job=_repository_sync_snapshot(sync_job),
         inventory_sync_partial=True,
         inventory_registry_oob=refresh_registry,
-        inventory_sync_blocked=sync_blocked,
+        operation_feedback=operation_feedback,
         **_inventory_context(installation),
     )
 
@@ -689,6 +717,7 @@ def synchronize(installation_id: int) -> ResponseReturnValue:
     if not FlaskForm().validate_on_submit():
         abort(400)
     detail_url = url_for('github_source_uat.detail', installation_id=installation_id, tab='inventory')
+    is_htmx = request.headers.get('HX-Request') == 'true'
     feedback_status = 'info'
     feedback_title = 'Repository Sync Queued'
     feedback_message = (
@@ -705,7 +734,7 @@ def synchronize(installation_id: int) -> ResponseReturnValue:
         feedback_status = 'warning'
         feedback_title = 'Repository Sync Blocked'
         feedback_message = 'Repository synchronization could not start. Review Full Validation and worker readiness.'
-    record_operational_activity(
+    feedback = record_operational_activity(
         user_id=int(current_user.id),
         event_type='source_control_repository_sync_' + ('queued' if feedback_status == 'info' else 'blocked'),
         status=feedback_status,
@@ -715,16 +744,17 @@ def synchronize(installation_id: int) -> ResponseReturnValue:
         metadata={
             'source_installation_id': installation.id,
             'integration_instance_id': installation.integration_instance_id,
-            'feedback_delivery': 'toast',
+            'feedback_delivery': 'toast' if feedback_status == 'warning' else 'activity_center',
         },
-        queue_feedback=True,
+        delivery_policy='deck_on_failure',
+        queue_feedback=feedback_status == 'warning' and not is_htmx,
     )
-    if request.headers.get('HX-Request') == 'true':
+    if is_htmx:
         response = _render_inventory_content(
             installation,
             sync_job=sync_job,
             refresh_registry=bool(sync_job and sync_job.is_terminal),
-            sync_blocked=feedback_status == 'warning',
+            operation_feedback=feedback if feedback_status == 'warning' else _repository_sync_feedback(sync_job),
         )
         response.headers['HX-Trigger'] = '{"kaori:notifications-changed":{}}'
         return response
@@ -740,7 +770,10 @@ def synchronize_status(installation_id: int, job_id: int) -> ResponseReturnValue
         abort(404)
     if request.headers.get('HX-Request') != 'true':
         return redirect(_detail_url(installation_id, tab='inventory'))
-    response = _render_inventory_content(installation, sync_job=job, refresh_registry=job.is_terminal)
+    response = _render_inventory_content(
+        installation, sync_job=job, refresh_registry=job.is_terminal,
+        operation_feedback=_repository_sync_feedback(job),
+    )
     return validation_poll_response(response.get_data(as_text=True), snapshot=job_snapshot(job))
 
 
