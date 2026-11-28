@@ -39,7 +39,9 @@
                                         governance_context_metrics,
                                         'Open Cluster Integrations',
                                         url_for('integrations.kubernetes') ,
-                    'server-cog'
+                    'server-cog',
+            integration_endpoint='integrations.kubernetes',
+            integration_permitted=current_user.is_authenticated and current_user.has_permission('integrations.manage')
                     ) }}
                 {% endif %}
             </div>
