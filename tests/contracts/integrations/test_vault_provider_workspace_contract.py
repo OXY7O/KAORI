@@ -460,9 +460,20 @@ def test_vault_policy_guide_and_capability_explorer_reuse_shared_kaori_contracts
     routes = ROUTES.read_text(encoding='utf-8')
 
     assert 'partials/_minimum_validation_policy.html' in configuration
-    assert 'Minimum Vault Permission &amp; Policy Example' in policy
+    assert 'setup_reference_template=' in configuration
+    assert '{% include' not in configuration
+    assert 'Minimum Vault Permission & Policy Example' in policy
     assert 'integrations/components/_record_detail_modal.html' in policy
-    assert 'integrations/components/_record_actions.html' in policy
+    assert 'integrations/components/_provider_setup_reference.html' in policy
+    assert 'setup_reference.summary(' in policy
+    assert 'components/workspace_tabs.html' in policy
+    assert 'navigation_html=policy_navigation' in policy
+    assert policy.count('capability_detail.verification_panel(') == 3
+    for tab in ('baseline', 'mounts', 'metadata'):
+        assert f'id="vault-policy-panel-{tab}"' in policy
+        assert f'aria-labelledby="vault-policy-tab-{tab}"' in policy
+        assert f"activeTab === '{tab}'" in policy
+    assert policy.count('x-cloak') == 2
     for endpoint in ('auth/token/lookup-self', 'sys/mounts', 'approved-kv-mount/metadata'):
         assert endpoint in policy
     assert 'capabilities = ["read", "list"]' in policy
@@ -500,7 +511,7 @@ def test_vault_policy_guide_and_capability_explorer_reuse_shared_kaori_contracts
     assert "@permission_required('integrations.manage')\ndef capability_registry(" in routes
     assert 'instance = _instance_or_404(instance_id)' in routes
 
-    for template in (policy, registry, validation):
+    for template in (configuration, policy, registry, validation):
         Environment().parse(template)
 
 

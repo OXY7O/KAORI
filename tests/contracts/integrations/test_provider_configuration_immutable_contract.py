@@ -90,3 +90,24 @@ def test_existing_editable_providers_retain_canonical_configure_route(provider_t
     assert 'provider_configuration_contract.render(' in template
     assert 'url_for(' in template
     assert 'configure_url=none' not in template
+
+
+@pytest.mark.parametrize(
+    'provider_template',
+    [
+        'integrations/storage/object_storage/providers/minio/partials/_detail_configuration.html',
+        'integrations/secrets_management/vault/partials/_detail_configuration.html',
+        'integrations/registry/providers/harbor/partials/_detail_configuration.html',
+        'integrations/observability/metrics_source/partials/_detail_configuration.html',
+        'integrations/orchestration/configuration_automation/providers/ansible/_detail_configuration.html',
+    ],
+)
+def test_setup_references_use_contract_slot_before_footer(provider_template: str) -> None:
+    source = (ROOT / 'app/templates' / provider_template).read_text()
+    contract = (
+        ROOT / 'app/templates/integrations/components/_provider_configuration_contract.html'
+    ).read_text()
+    assert 'setup_reference_template=' in source
+    assert contract.index('operational_context.render(') < contract.index('{% include setup_reference_template %}')
+    assert contract.index('{% include setup_reference_template %}') < contract.index('<footer')
+    assert '{% include "' not in source or '_minimum_validation' not in source.split('{% include "')[-1]
