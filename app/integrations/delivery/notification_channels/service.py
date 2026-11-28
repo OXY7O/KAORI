@@ -5,8 +5,9 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from flask import url_for
-from sqlalchemy import and_, func, or_
+from sqlalchemy import and_, case, func, or_
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Query
 
 from app.common.pagination import paginate_query
 from app.extensions.db import db
@@ -251,6 +252,7 @@ def get_notification_channels_payload(
     channel_filters: ChannelRegistryFilters = ChannelRegistryFilters(),
     delivery_filters: DeliveryRegistryFilters = DeliveryRegistryFilters(),
     include_overview: bool = False,
+    include_delivery_statistics: bool = False,
     can_view_reports: bool = False,
 ) -> dict[str, Any]:
     normalized_channel_search = str(channel_filters.search or '').strip()[:160]
@@ -296,6 +298,20 @@ def get_notification_channels_payload(
         status=normalized_delivery_status,
         can_view_reports=can_view_reports,
     )
+    delivery_statistics = (
+        _delivery_statistics(
+            _filter_delivery_query(
+                NotificationDelivery.query,
+                event_key=normalized_delivery_key,
+                provider=normalized_delivery_provider,
+                domain=normalized_delivery_domain,
+                severity=normalized_delivery_severity,
+                status=normalized_delivery_status,
+            )
+        )
+        if include_delivery_statistics
+        else None
+    )
     summary = notification_channel_summary()
     provider_counts = {
         str(provider_key): int(count)
@@ -328,6 +344,7 @@ def get_notification_channels_payload(
         },
         'deliveries': delivery_rows,
         'delivery_pagination': delivery_window,
+        'delivery_statistics': delivery_statistics,
         'delivery_filter': normalized_delivery_key,
         'delivery_filters': {
             'provider': normalized_delivery_provider,
@@ -393,6 +410,61 @@ def _channel_registry_page(
     return [_channel_view(channel, usage=usage_map.get(channel.id)) for channel in rows], pagination
 
 
+def _filter_delivery_query(
+    query: Query[NotificationDelivery],
+    *,
+    event_key: str = '',
+    provider: str = '',
+    domain: str = '',
+    severity: str = '',
+    status: str = '',
+) -> Query[NotificationDelivery]:
+    """Share the exact journal scope between pagination and delivery statistics."""
+    if event_key:
+        query = query.filter(NotificationDelivery.event_key == event_key)
+    if provider:
+        query = query.filter(NotificationDelivery.channel.has(NotificationChannel.provider_key == provider))
+    if domain:
+        query = query.filter(NotificationDelivery.domain == domain)
+    if severity:
+        query = query.filter(NotificationDelivery.severity == severity)
+    if status:
+        query = query.filter(NotificationDelivery.status == status)
+    return query
+
+
+def _delivery_statistics(query: Query[NotificationDelivery]) -> dict[str, Any]:
+    """Aggregate retained committed records, without loading rows or provider credentials."""
+    total, sent, failed, queued, skipped, retried, active_providers = (
+        query.join(NotificationDelivery.channel)
+        .with_entities(
+            func.count(NotificationDelivery.id),
+            func.count(case((NotificationDelivery.status == 'sent', 1))),
+            func.count(case((NotificationDelivery.status == 'failed', 1))),
+            func.count(case((NotificationDelivery.status == 'queued', 1))),
+            func.count(case((NotificationDelivery.status == 'skipped', 1))),
+            func.count(case((NotificationDelivery.attempt_count > 1, 1))),
+            func.count(
+                func.distinct(
+                    case((NotificationChannel.lifecycle_state == 'active', NotificationChannel.provider_key))
+                )
+            ),
+        )
+        .one()
+    )
+    resolved = sent + failed
+    return {
+        'total': total,
+        'sent': sent,
+        'failed': failed,
+        'queued': queued,
+        'skipped': skipped,
+        'retried': retried,
+        'active_providers': active_providers,
+        'success_rate': round(sent * 100 / resolved, 1) if resolved else None,
+    }
+
+
 def _delivery_registry_page(
     *,
     page: int,
@@ -405,16 +477,9 @@ def _delivery_registry_page(
     can_view_reports: bool = False,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     query = NotificationDelivery.query
-    if event_key:
-        query = query.filter(NotificationDelivery.event_key == event_key)
-    if provider:
-        query = query.filter(NotificationDelivery.channel.has(NotificationChannel.provider_key == provider))
-    if domain:
-        query = query.filter(NotificationDelivery.domain == domain)
-    if severity:
-        query = query.filter(NotificationDelivery.severity == severity)
-    if status:
-        query = query.filter(NotificationDelivery.status == status)
+    query = _filter_delivery_query(
+        query, event_key=event_key, provider=provider, domain=domain, severity=severity, status=status
+    )
     query = query.order_by(NotificationDelivery.created_at.desc(), NotificationDelivery.id.desc())
     rows, pagination = paginate_query(query, page=page, per_page=per_page)
     # An exact, permissioned page-local read: no per-delivery report query.
