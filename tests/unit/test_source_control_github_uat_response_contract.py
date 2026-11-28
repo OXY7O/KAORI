@@ -93,3 +93,66 @@ def test_inline_connection_proof_still_emits_hx_trigger(app: Flask, monkeypatch:
     assert json.loads(response.headers['HX-Trigger']) == {
         'github-connection-tested': {'connected': True, 'proof': 'bounded-proof'}
     }
+
+
+@pytest.mark.parametrize('active', [True, False])
+def test_sync_post_returns_partial_without_redirect(app: Flask, monkeypatch: pytest.MonkeyPatch, active: bool) -> None:
+    installation = SimpleNamespace(id=17, integration_instance_id=21)
+    job = SimpleNamespace(is_terminal=not active)
+    monkeypatch.setattr(uat_routes, '_installation_or_404', lambda _identity: installation)
+    monkeypatch.setattr(uat_routes, 'current_user', SimpleNamespace(id=1))
+    monkeypatch.setattr(uat_routes, 'FlaskForm', lambda: SimpleNamespace(validate_on_submit=lambda: True))
+    monkeypatch.setattr(uat_routes, 'enqueue_source_repository_sync', lambda **_kwargs: (job, True))
+    monkeypatch.setattr(uat_routes, 'record_operational_activity', lambda **_kwargs: None)
+
+    def render(record, **kwargs):
+        assert record is installation
+        assert kwargs['sync_job'] is job
+        assert kwargs['refresh_registry'] is not active
+        assert kwargs['sync_blocked'] is False
+        return Response('inventory partial')
+
+    monkeypatch.setattr(uat_routes, '_render_inventory_content', render)
+    with app.test_request_context('/', method='POST', headers={'HX-Request': 'true'}):
+        result = uat_routes.synchronize.__wrapped__(17)
+    assert result.status_code == 200
+    assert result.get_data(as_text=True) == 'inventory partial'
+    assert 'Location' not in result.headers
+    assert 'kaori:notifications-changed' in result.headers['HX-Trigger']
+
+
+def test_inventory_post_context_preserves_current_registry_selection(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
+    def read(**kwargs):
+        assert kwargs == {
+            'authorized_installation_id': 17,
+            'page': 3,
+            'per_page': 10,
+            'search': 'team',
+            'visibility': 'private',
+            'archived': 'active',
+        }
+        return object()
+
+    monkeypatch.setattr(uat_routes, 'read_installation_inventory_for_current_session', read)
+    with app.test_request_context('/', method='POST', data={
+        'page': '3', 'per_page': '10', 'inventory_search': 'team',
+        'inventory_visibility': 'private', 'inventory_archived': 'active',
+    }):
+        context = uat_routes._inventory_context(SimpleNamespace(id=17))
+    assert context['inventory_search'] == 'team'
+    assert context['inventory_visibility'] == 'private'
+
+
+def test_sync_poll_rejects_missing_or_foreign_job(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
+    from werkzeug.exceptions import NotFound
+
+    installation = SimpleNamespace(id=17)
+    monkeypatch.setattr(uat_routes, '_installation_or_404', lambda _identity: installation)
+
+    def scoped_job(record, *, job_id):
+        assert record is installation and job_id == 81
+        return None
+
+    monkeypatch.setattr(uat_routes, '_repository_sync_job', scoped_job)
+    with app.test_request_context('/', headers={'HX-Request': 'true'}), pytest.raises(NotFound):
+        uat_routes.synchronize_status.__wrapped__(17, 81)

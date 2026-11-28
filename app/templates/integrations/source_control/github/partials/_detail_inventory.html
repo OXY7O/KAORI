@@ -3,16 +3,28 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/info_tip.html" as info_tip %}
+{% import "integrations/components/_validation_poller.html" as validation_poller %}
+{% import "integrations/components/_provider_job_status.html" as provider_job_status %}
+{% import "components/operational_callout.html" as operational_callout %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
+{% set sync = inventory_sync_job|default(none) %}
+{% set sync_active = sync and sync.is_active %}
 {% set committed = inventory.total is not none %}
 {% set can_sync = readiness == 'ready' and canonical.enabled and canonical.lifecycle_status == 'active' %}
-<section class="{{ ui.section_shell_classes() }} font-sans"
+<section id="github-inventory-decision" class="{{ ui.section_shell_classes() }} font-sans"
+         hx-sync="this:drop"
          data-kaori-github-inventory-lifecycle
          data-kaori-inventory-lifecycle-decision>
+    {{ validation_poller.render(sync_active,
+        url_for('github_source_uat.synchronize_status', installation_id=installation.id, job_id=sync.job_execution_id) if sync_active else '',
+        '#github-inventory-decision', include='#source-control-inventory [data-kaori-inventory-query-state]') }}
     {% call connection_validation_header.render(
         'Repository Inventory & Lifecycle',
         'Review committed repository grants, revision freshness, provider authority, and lifecycle guardrails.',
         icon='database',
+        loading_id='github-inventory-sync-loading',
+        loading_active=sync_active,
+        loading_label='Synchronizing repository evidence',
         title_extra=info_tip.render('github-inventory-lifecycle-guide',
         'GitHub Repository Inventory & Lifecycle',
         'KAORI displays committed installation-scoped repository grants, exact revisions, and lifecycle boundaries.',
@@ -24,16 +36,33 @@
         placement='right', variant='guide')
         ) %}
         <form method="post"
-              action="{{ url_for('github_source_uat.synchronize', installation_id=installation.id) }}">
+              action="{{ url_for('github_source_uat.synchronize', installation_id=installation.id) }}"
+              hx-post="{{ url_for('github_source_uat.synchronize', installation_id=installation.id) }}"
+              hx-target="#github-inventory-decision"
+              hx-include="#source-control-inventory [data-kaori-inventory-query-state]"
+              hx-swap="outerHTML"
+              hx-sync="#github-inventory-decision:drop"
+              hx-disabled-elt="button"
+              hx-indicator="#github-inventory-sync-loading">
             {{ action_form.hidden_tag() }}
             <button type="submit"
                     class="{{ action_button.classes('primary') }}"
-                    {% if not can_sync %}disabled{% endif %}>
-                <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
-                Sync Repositories
+                    {% if not can_sync or sync_active %}disabled{% endif %}>
+                <i data-lucide="{{ 'loader-circle' if sync_active else 'refresh-cw' }}"
+                   class="h-4 w-4{% if sync_active %} animate-spin{% endif %}" aria-hidden="true"></i>
+                {{ 'Sync Running' if sync_active else 'Sync Repositories' }}
             </button>
         </form>
     {% endcall %}
+    {{ provider_job_status.render(sync, 'Repository synchronization running', 'GitHub') }}
+    {% if inventory_sync_blocked|default(false) %}
+        {{ operational_callout.render('Repository Sync Blocked',
+            'Review Full Validation and worker readiness before retrying.', icon='shield-alert', tone='warning', variant='semantic') }}
+    {% elif sync and sync.is_complete %}
+        {{ operational_callout.render('Repository Sync · ' ~ sync.state_label|title,
+            'The registry shows the latest committed collection, independently of this job outcome.',
+            icon='database', tone='info' if sync.status == 'succeeded' else 'warning', variant='semantic') }}
+    {% endif %}
     <div class="border-b border-outline-subtle bg-surface-subtle">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3.5 sm:px-5">
             <div class="flex items-start gap-3">
@@ -50,7 +79,7 @@
             {% for label, value, helper, icon, tone in [
                 ('Committed Grants', inventory.total if committed else 'Unknown', 'Grant relationships; unknown is not zero', 'git-branch', 'normal' if committed else 'unknown'),
                 ('Coverage', inventory.coverage|replace('_', ' ')|title, 'Latest committed collection scope' if committed else 'Not yet committed', 'scan-search', 'normal' if committed else 'unknown'),
-                ('Snapshot Freshness', inventory.collected_at or 'Not Observed', 'Last successful committed collection', 'clock', 'info'),
+                ('Snapshot Freshness', inventory_datetime(inventory.collected_at, empty='Not Observed', include_seconds=true), 'Last successful committed collection', 'clock', 'info'),
                 ('Connection Lifecycle', 'Active' if canonical.enabled and canonical.lifecycle_status == 'active' else 'Inactive', 'Registration state; synchronization needs Full Validation', 'shield-check', 'normal' if canonical.enabled and canonical.lifecycle_status == 'active' else 'warning')
                 ] %}
                 <article class="min-w-0 bg-surface-card p-4 sm:p-5">
@@ -109,4 +138,6 @@
         </div>
     </div>
 </section>
-{% include "integrations/source_control/github/_inventory_table.html" %}
+{% if not inventory_sync_partial|default(false) or inventory_registry_oob|default(false) %}
+    {% include "integrations/source_control/github/_inventory_table.html" %}
+{% endif %}

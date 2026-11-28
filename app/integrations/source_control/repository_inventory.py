@@ -38,6 +38,8 @@ class InventoryRow:
     observed_at: datetime | None
     exact_default_branch_sha: str | None
     revision_observed_at: datetime | None
+    grant_valid_from: datetime | None = None
+    grant_observed_at: datetime | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,6 +107,8 @@ def read_installation_inventory(
         select(
             SourceRepository,
             SourceRepositoryGrant.access_status,
+            SourceRepositoryGrant.valid_from,
+            SourceRepositoryGrant.last_observed_at,
             SourceRevision.commit_sha,
             SourceReference.last_observed_at,
         )
@@ -197,8 +201,10 @@ def read_installation_inventory(
                 observed_at=repository.last_observed_at,
                 exact_default_branch_sha=sha,
                 revision_observed_at=tip_observed_at,
+                grant_valid_from=grant_valid_from,
+                grant_observed_at=grant_observed_at,
             )
-            for repository, status, sha, tip_observed_at in data
+            for repository, status, grant_valid_from, grant_observed_at, sha, tip_observed_at in data
         ),
         page=effective_page,
         per_page=per_page,
