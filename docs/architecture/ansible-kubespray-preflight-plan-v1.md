@@ -279,3 +279,23 @@ because they modify the fingerprinted payload. The local review helper is
 not a worker start permit, terminal writer, public route, release service
 or substitute for independent provider reconciliation. No broker or
 provider is invoked.
+
+
+### Independent runtime and DNS endpoint API evidence (#4801)
+
+The existing canonical Kubernetes client now exposes DiscoveryV1 for the
+read-only pilot observer. The observer requires Linux kubelet-reported
+versions matching the pinned Kubernetes minor, a bounded nonempty
+container-runtime version and the exact observed node set. It correlates
+the candidate CoreDNS deployment with the `kube-dns` ClusterIP Service,
+TCP/UDP DNS ports, bounded unpaginated IPv4 EndpointSlices owned by that
+Service, unique Ready nonterminating CoreDNS Pod targets and exact expected
+node placement. Endpoint count must match the fully available deployment.
+Node runtime, DNS endpoint identity and core component health are reread
+before returning v2 redacted fingerprints. No node addresses, runtime
+strings or endpoint addresses are persisted in the summary. These are API
+reported observations, not native CRI/CNI functionality, DNS query
+success, direct etcd quorum, admitted source compatibility or provisioning
+acceptance. The fixed DNS service/deployment assumptions remain subject to
+the admitted source and native UAT; no cluster registration, Run terminal
+transition or reservation release follows from this adapter.

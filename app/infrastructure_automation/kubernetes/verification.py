@@ -53,6 +53,8 @@ class PilotReadback:
     node_identity_fingerprint: str
     plan_fingerprint: str
     observed_at: datetime
+    node_runtime_fingerprint: str
+    dns_endpoint_fingerprint: str
     node_count: int = 3
     control_plane_count: int = 1
     worker_count: int = 2
@@ -66,7 +68,7 @@ class PilotReadback:
 
     def committed_summary(self) -> dict[str, Any]:
         return {
-            'schema_version': 1,
+            'schema_version': 2,
             'status': 'independent_api_readback_observed',
             'cluster_identity_fingerprint': self.cluster_identity_fingerprint,
             'node_identity_fingerprint': self.node_identity_fingerprint,
@@ -79,6 +81,11 @@ class PilotReadback:
             'api_etcd_ready': self.api_etcd_ready,
             'core_components_ready': self.core_components_ready,
             'dns_deployment_ready': self.dns_deployment_ready,
+            'node_runtime_fingerprint': self.node_runtime_fingerprint,
+            'dns_endpoint_fingerprint': self.dns_endpoint_fingerprint,
+            'node_kubelet_minor_verified': True,
+            'node_runtime_reported': True,
+            'dns_service_endpoints_ready': True,
             'etcd_quorum_verified': False,
             'cni_cri_verified': False,
             'provisioning_verified': False,
@@ -196,6 +203,26 @@ def _node_identity(nodes: Any, expected: dict[str, ExpectedPilotNode]) -> str:
     })
 
 
+def _node_runtime(nodes: Any, expected: dict[str, ExpectedPilotNode]) -> str:
+    """Read kubelet-reported runtime identity, not native CRI functionality."""
+    material = []
+    minor_pattern = re.escape(KUBESPRAY_KUBERNETES_MINOR)
+    for node in nodes.items:
+        target = expected[node.metadata.name]
+        info = node.status.node_info
+        kubelet, runtime = info.kubelet_version, info.container_runtime_version
+        if (
+            info.operating_system != 'linux'
+            or not isinstance(kubelet, str)
+            or re.fullmatch(r'v' + minor_pattern + r'\.[0-9]+(?:[-+][A-Za-z0-9.+-]{1,64})?', kubelet) is None
+            or not isinstance(runtime, str)
+            or re.fullmatch(r'[a-z][a-z0-9-]{0,31}://[A-Za-z0-9][A-Za-z0-9.+_-]{0,95}', runtime) is None
+        ):
+            raise _deny()
+        material.append({'asset_id': target.asset_id, 'kubelet': kubelet, 'runtime': runtime})
+    return digest({'schema': 'kaori.kubespray.node_runtime.v1', 'nodes': sorted(material, key=lambda row: row['asset_id'])})
+
+
 def _namespace_uid(core: Any) -> str:
     namespace = core.read_namespace('kube-system', _request_timeout=_TIMEOUT)
     if namespace.metadata.name != 'kube-system' or namespace.metadata.deletion_timestamp is not None:
@@ -234,7 +261,7 @@ def _core_component(core: Any, component: str, node_name: str) -> None:
         raise _deny()
 
 
-def _dns_ready(apps: Any) -> None:
+def _dns_ready(apps: Any) -> int:
     deployment = apps.read_namespaced_deployment('coredns', 'kube-system', _request_timeout=_TIMEOUT)
     metadata, spec, status = deployment.metadata, deployment.spec, deployment.status
     desired = spec.replicas
@@ -253,6 +280,109 @@ def _dns_ready(apps: Any) -> None:
         )
     ):
         raise _deny()
+    return desired
+
+
+def _dns_ports(ports: Any) -> bool:
+    if not isinstance(ports, list) or not 2 <= len(ports) <= 16:
+        return False
+    values = {(port.protocol, port.port) for port in ports}
+    return {('TCP', 53), ('UDP', 53)}.issubset(values)
+
+
+def _dns_service_identity(core: Any) -> str:
+    service = core.read_namespaced_service('kube-dns', 'kube-system', _request_timeout=_TIMEOUT)
+    meta, spec = service.metadata, service.spec
+    if (
+        meta.name != 'kube-dns'
+        or meta.namespace != 'kube-system'
+        or meta.deletion_timestamp is not None
+        or not _uuid(meta.uid)
+        or spec.type != 'ClusterIP'
+        or not _dns_ports(spec.ports)
+    ):
+        raise _deny()
+    if not isinstance(spec.cluster_ip, str):
+        raise _deny()
+    address = IPv4Address(spec.cluster_ip)
+    if str(address) != spec.cluster_ip or not any(address in network for network in _PRIVATE):
+        raise _deny()
+    return meta.uid
+
+
+def _dns_slice_endpoints(item: Any, service_uid: str, expected: dict[str, ExpectedPilotNode]) -> list[dict[str, str]]:
+    meta = item.metadata
+    if (
+        meta.namespace != 'kube-system'
+        or meta.deletion_timestamp is not None
+        or not _uuid(meta.uid)
+        or not isinstance(meta.labels, dict)
+        or meta.labels.get('kubernetes.io/service-name') != 'kube-dns'
+        or not isinstance(meta.owner_references, list)
+        or len(meta.owner_references) != 1
+        or item.address_type != 'IPv4'
+        or not _dns_ports(item.ports)
+        or not isinstance(item.endpoints, list)
+        or not 1 <= len(item.endpoints) <= 32
+    ):
+        raise _deny()
+    owner = meta.owner_references[0]
+    if owner.kind != 'Service' or owner.name != 'kube-dns' or owner.uid != service_uid:
+        raise _deny()
+    records = []
+    for endpoint in item.endpoints:
+        conditions, target = endpoint.conditions, endpoint.target_ref
+        if (
+            conditions is None
+            or conditions.ready is not True
+            or conditions.terminating is True
+            or conditions.serving is False
+            or target is None
+            or target.kind != 'Pod'
+            or target.namespace != 'kube-system'
+            or not isinstance(target.name, str)
+            or not target.name.startswith('coredns-')
+            or not _uuid(target.uid)
+            or endpoint.node_name not in expected
+            or not isinstance(endpoint.addresses, list)
+            or len(endpoint.addresses) != 1
+            or not isinstance(endpoint.addresses[0], str)
+        ):
+            raise _deny()
+        address = IPv4Address(endpoint.addresses[0])
+        if str(address) != endpoint.addresses[0] or not any(address in network for network in _PRIVATE):
+            raise _deny()
+        records.append({'pod_uid': target.uid, 'address': str(address), 'node_asset_id': expected[endpoint.node_name].asset_id})
+    return records
+
+
+def _dns_endpoint_identity(
+    core: Any, discovery: Any, expected: dict[str, ExpectedPilotNode], desired: int
+) -> str:
+    service_uid = _dns_service_identity(core)
+    slices = discovery.list_namespaced_endpoint_slice(
+        'kube-system', label_selector='kubernetes.io/service-name=kube-dns',
+        limit=9, _request_timeout=_TIMEOUT,
+    )
+    if (
+        getattr(getattr(slices, 'metadata', None), '_continue', None)
+        or not isinstance(slices.items, list)
+        or not 1 <= len(slices.items) <= 8
+        or len({item.metadata.uid for item in slices.items}) != len(slices.items)
+    ):
+        raise _deny()
+    endpoints = [record for item in slices.items for record in _dns_slice_endpoints(item, service_uid, expected)]
+    if (
+        len(endpoints) != desired
+        or len({record['pod_uid'] for record in endpoints}) != desired
+        or len({record['address'] for record in endpoints}) != desired
+    ):
+        raise _deny()
+    return digest({
+        'schema': 'kaori.kubespray.dns_endpoints.v1',
+        'service_uid': service_uid,
+        'endpoints': sorted(endpoints, key=lambda record: record['pod_uid']),
+    })
 
 
 def observe_independent_pilot_api(
@@ -285,7 +415,9 @@ def observe_independent_pilot_api(
         clients.append(apps.api_client)
         version = client.version_api()
         clients.append(version.api_client)
-        for api in (core, apps, version):
+        discovery = client.discovery_api()
+        clients.append(discovery.api_client)
+        for api in (core, apps, version, discovery):
             config = api.api_client.configuration
             if config.verify_ssl is not True or config.host != connection.server:
                 raise _deny()
@@ -297,15 +429,24 @@ def observe_independent_pilot_api(
             raise _deny()
         _require_ready_endpoint(core.api_client, '/readyz')
         _require_ready_endpoint(core.api_client, '/readyz/etcd')
-        nodes = _node_identity(core.list_node(limit=4, _request_timeout=_TIMEOUT), expected)
+        observed_nodes = core.list_node(limit=4, _request_timeout=_TIMEOUT)
+        nodes = _node_identity(observed_nodes, expected)
+        runtime = _node_runtime(observed_nodes, expected)
         cp = next(node.name for node in expected.values() if node.role == 'control_plane')
         for component in _CORE_COMPONENTS:
             _core_component(core, component, cp)
-        _dns_ready(apps)
-        # Re-observe identity and exact Ready node set, not stale Runner facts.
-        if _namespace_uid(core) != uid or _node_identity(
-            core.list_node(limit=4, _request_timeout=_TIMEOUT), expected
-        ) != nodes:
+        desired_dns = _dns_ready(apps)
+        dns_endpoints = _dns_endpoint_identity(core, discovery, expected, desired_dns)
+        # Re-observe exact identity and runtime, component health and DNS
+        # service endpoints, not stale Runner facts or deployment counts alone.
+        if _namespace_uid(core) != uid:
+            raise _deny()
+        observed_nodes = core.list_node(limit=4, _request_timeout=_TIMEOUT)
+        if _node_identity(observed_nodes, expected) != nodes or _node_runtime(observed_nodes, expected) != runtime:
+            raise _deny()
+        for component in _CORE_COMPONENTS:
+            _core_component(core, component, cp)
+        if _dns_ready(apps) != desired_dns or _dns_endpoint_identity(core, discovery, expected, desired_dns) != dns_endpoints:
             raise _deny()
         _require_ready_endpoint(core.api_client, '/readyz')
         _require_ready_endpoint(core.api_client, '/readyz/etcd')
@@ -314,7 +455,9 @@ def observe_independent_pilot_api(
             'cluster_id': connection.cluster_id,
             'namespace_uid': uid,
         })
-        return PilotReadback(cluster_fingerprint, nodes, intent.plan_fingerprint, datetime.now(UTC))
+        return PilotReadback(
+            cluster_fingerprint, nodes, intent.plan_fingerprint, datetime.now(UTC), runtime, dns_endpoints
+        )
     except Exception:
         # Provider exceptions may include sensitive endpoint, body or credentials.
         raise _deny() from None

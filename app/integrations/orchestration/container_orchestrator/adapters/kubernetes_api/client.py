@@ -10,6 +10,7 @@ from kubernetes.client import (
     AuthorizationV1Api,
     CoreV1Api,
     CustomObjectsApi,
+    DiscoveryV1Api,
     NetworkingV1Api,
     RbacAuthorizationV1Api,
     StorageV1Api,
@@ -93,6 +94,9 @@ class KubernetesClient:
         return AppsV1Api(
             self._api_client(),
         )
+
+    def discovery_api(self) -> DiscoveryV1Api:
+        return DiscoveryV1Api(self._api_client())
 
     def networking_api(
         self,
