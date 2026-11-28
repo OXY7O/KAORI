@@ -26,9 +26,9 @@
                 <p class="mt-1 text-xs leading-5 text-content-muted">Move to a new authenticator without disabling the active factor.</p>
             </div>
         </div>
-        {{ table_label.status_indicator_label('Replacement Pending' if mfa_state.replacement_pending else ('Setup Expired' if mfa_state.replacement_expired else ('Available' if can_change_password else 'Unavailable')), 'warning' if mfa_state.replacement_pending or mfa_state.replacement_expired else ('normal' if can_change_password else 'unknown')) }}
+        {{ table_label.status_indicator_label('Replacement Pending' if mfa_state.replacement_pending else ('Setup Expired' if mfa_state.replacement_expired else ('Available' if mfa_state.can_replace_authenticator else 'Unavailable')), 'warning' if mfa_state.replacement_pending or mfa_state.replacement_expired else ('normal' if mfa_state.can_replace_authenticator else 'unknown')) }}
     </header>
-    {% if can_change_password %}
+    {% if mfa_state.can_replace_authenticator %}
         {% if mfa_state.replacement_expired %}
             <p class="mt-4 text-sm text-content-secondary">The previous replacement is no longer valid. Start a new setup.</p>
         {% endif %}
@@ -39,7 +39,7 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="mfa_action" value="replace_begin">
                     <div>
-                        <label for="mfa-replace-password" class="mb-1 block text-sm font-semibold text-content-primary">Current Password</label>
+                        <label for="mfa-replace-password" class="mb-1 block text-sm font-semibold text-content-primary">{{ mfa_state.replacement_password_label }}</label>
                         <input id="mfa-replace-password"
                                name="replacement_password"
                                type="password"
@@ -108,6 +108,6 @@
             </section>
         </div>
     {% else %}
-        <p class="mt-4 text-sm leading-6 text-content-secondary">Self-service replacement requires verified provider reauthentication, which is not available for this identity. Contact an authorized administrator for governed recovery.</p>
+        <p class="mt-4 text-sm leading-6 text-content-secondary">Self-service replacement requires verified provider reauthentication, which is not available for this identity or its current directory configuration. Contact an authorized administrator for governed recovery.</p>
     {% endif %}
 </section>

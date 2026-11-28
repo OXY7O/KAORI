@@ -12,7 +12,8 @@ def test_replacement_is_an_enrolled_sibling_with_one_time_provisioning() -> None
     Environment().parse(html)
     parent = (ROOT / 'app/templates/settings/account/partials/_mfa.html').read_text(encoding='utf-8')
     assert '{% include "settings/account/partials/_mfa_replacement.html" %}' in parent
-    assert '{% if can_change_password %}' in html
+    assert '{% if mfa_state.can_replace_authenticator %}' in html
+    assert 'mfa_state.replacement_password_label' in html
     assert '{% if mfa_state.replacement_pending %}' in html
     assert '{% if mfa_setup_secret %}' in html
     assert 'name="replacement_totp_secret"' not in html

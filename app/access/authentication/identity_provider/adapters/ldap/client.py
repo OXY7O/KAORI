@@ -8,7 +8,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from flask import current_app, has_app_context
-from ldap3 import ALL, SUBTREE, Connection, Server, Tls
+from ldap3 import ALL, BASE, SUBTREE, Connection, Server, Tls
 from ldap3.core.exceptions import LDAPException
 from ldap3.utils.conv import escape_filter_chars
 
@@ -239,5 +239,36 @@ class LdapDirectoryClient:
             raise ExternalProviderError('LDAP user bind failed because the provider is unavailable.')
         except LDAPException as exc:
             raise ExternalProviderError('LDAP connection or bind failed.') from exc
+        finally:
+            connection.unbind()
+
+
+    def reauthenticate_linked_identity(self, distinguished_name: str, password: str, subject: str) -> bool:
+        """Strict user bind and stable identity readback on the same secured connection."""
+        if not (self.transport.use_ssl or self.transport.start_tls):
+            raise ExternalProviderError('Strict LDAP reauthentication requires verified TLS.')
+        if not distinguished_name or not password or not subject:
+            return False
+        attribute = self._text('stable_id_attribute', 'objectGUID') or 'objectGUID'
+        connection = self._new_connection(user=distinguished_name, password=password)
+        # Never follow an LDAP referral to a different credential authority.
+        connection.auto_referrals = False
+        try:
+            self._open_and_secure(connection)
+            if not connection.bind():
+                if connection.result.get('description') == 'invalidCredentials':
+                    return False
+                raise ExternalProviderError('LDAP reauthentication is unavailable.')
+            if not connection.search(
+                search_base=distinguished_name,
+                search_filter='(objectClass=*)',
+                search_scope=BASE,
+                attributes=[attribute],
+                size_limit=1,
+            ) or len(connection.entries) != 1:
+                raise ExternalProviderError('LDAP stable identity readback is unavailable.')
+            return _stable_subject(_attribute_value(connection.entries[0], attribute)) == subject
+        except LDAPException as exc:
+            raise ExternalProviderError('LDAP reauthentication is unavailable.') from exc
         finally:
             connection.unbind()
