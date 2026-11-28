@@ -17,7 +17,7 @@ from app.intelligence.alert_signals.vault_jobs import run_vault_alert_observatio
 def refresh_alert_signals() -> dict[str, object]:
     """Refresh compact operational signals used by fast Alert Intelligence rules."""
 
-    result = {'kubernetes_runtime_health': refresh_all_kubernetes_runtime_signals()}
+    result: dict[str, object] = {'kubernetes_runtime_health': refresh_all_kubernetes_runtime_signals()}
     if current_app.config.get('AUTH_ABUSE_SIGNAL_ENABLED'):
         result['authentication_abuse'] = refresh_authentication_abuse_signal()
     return result

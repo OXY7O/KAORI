@@ -190,12 +190,16 @@ def refresh_authentication_abuse_signal() -> dict[str, Any]:
         ).tuples().all()
         payload = summarize_abuse(rows)
         payload.update({
+            'audit_schema': 'authentication.security.v1',
             'access_action': 'lockout_abuse_observation',
             'window_start': start.isoformat(),
             'window_end': end.isoformat(),
             'missed_prior_window': previous is not None and previous < start,
             'source_authority': 'committed_activity_audit',
         })
+        if payload['missed_prior_window']:
+            payload['coverage'] = 'partial'
+            payload['indicators'].append('observation_window_gap')
         if payload['indicators']:
             recipient_rows = db.session.execute(
                 select(User.id).where(current_recovery).order_by(User.id).limit(MAX_RECIPIENTS + 1)
@@ -215,3 +219,29 @@ def refresh_authentication_abuse_signal() -> dict[str, Any]:
     except Exception:
         db.session.rollback()
         raise
+
+
+def read_authentication_abuse_signal() -> dict[str, Any]:
+    """Committed-only read contract for a future qualified recommendation rule."""
+    if not current_app.config.get('AUTH_ABUSE_SIGNAL_ENABLED'):
+        return {'state': 'disabled', 'payload': None}
+    snapshot = db.session.execute(
+        select(AlertSignalSnapshot).where(
+            AlertSignalSnapshot.domain == DOMAIN,
+            AlertSignalSnapshot.asset_key == ASSET_KEY,
+            AlertSignalSnapshot.signal_key == SIGNAL_KEY,
+        )
+    ).scalar_one_or_none()
+    if snapshot is None:
+        return {'state': 'missing', 'payload': None}
+    if snapshot.status != 'ready' or snapshot.payload_json is None or snapshot.expires_at is None:
+        return {'state': 'unavailable', 'payload': None}
+    expires = snapshot.expires_at
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=UTC)
+    if datetime.now(UTC) >= expires:
+        return {'state': 'stale', 'payload': None}
+    payload = dict(snapshot.payload_json)
+    if payload.get('schema_version') != 1 or payload.get('coverage') not in ('bounded_window', 'partial'):
+        return {'state': 'unavailable', 'payload': None}
+    return {'state': 'partial' if payload['coverage'] == 'partial' else 'fresh', 'payload': payload}
