@@ -189,3 +189,37 @@ proposed grant window. The return is redacted evidence only. No active grant,
 new route, credential material, provider call, SSH, worker dispatch or runtime
 authorization is created by this review-only slice. PostgreSQL locking and
 independent Access review remain required before adding an approval writer.
+
+
+### Independent signed console evidence review (#5185)
+
+The proposed console authority uses a distinct, operator-owned read-only
+`/run/kaori/ssh-trust-authority` mount and independently pinned Ed25519
+`root.pub` (lowercase raw public-key hex). The shared hardened authority file
+reader rejects writable mounts, symlinks, non-root ownership and oversized
+artifacts. The console authority must be independent of the managed host and
+Secrets issuer. No private key is provisioned into KAORI.
+
+The fixed artifact name `console-<sha256>.json` derives from canonical JSON
+`{"target": asdict(target)}`. Schema
+`kaori.automation.ssh_console_evidence.v1` is a signed canonical envelope
+binding exact Ansible connection, assignment, canonical host and revision,
+reference fingerprint, address/port, host-key digest, intended trust revision,
+requester and distinct verifier. It carries the canonical public key,
+independent console asset evidence digest, verification UTC and expiry
+(maximum 24 hours), not a raw console transcript. The signature attests
+independent console inspection, not mere possession of an opaque digest.
+The native host key itself cannot act as the signing root.
+
+`review_console_trust_activation` requalifies the locked exact committed
+credential target, including provider/source/current version metadata, then
+checks explicit requester/verifier permissions and the proposed next trust
+revision. Initial or explicitly revoked prior state only; no active-row
+overwrite. `review_current_console_trust` also re-resolves the latest active
+revision and matches its public key, verification/expiry and evidence digest
+against the current signed artifact; removed/revoked/changed evidence fails
+closed. Neither service writes a trust revision or grants credential use,
+creates known_hosts, probes SSH, dispatches a worker or authorizes a Plan.
+The proposed console authority, artifact custody, verifier permission
+combination and actual independent operator inspection require review and
+real UAT before the activation writer is enabled.

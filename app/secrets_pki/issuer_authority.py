@@ -9,9 +9,7 @@ No private key, credential material, generic signing or provider write.
 from __future__ import annotations
 
 import json
-import os
 import re
-import stat
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from hashlib import sha256
@@ -33,6 +31,7 @@ from app.integrations.secrets_management.secrets_pki.providers.issuer_transit im
     valid_transit_binding,
 )
 from app.secrets_pki.credential_issuer_resolution import IssuerPossessionChallenge
+from app.security.authority_files import read_authority_file
 
 _AUTHORITY_DIR = Path('/run/kaori/issuer-authority')
 _DIGEST = re.compile(r'[a-f0-9]{64}')
@@ -73,38 +72,11 @@ def _actor(value: object) -> bool:
     return type(value) is int and value > 0
 
 
-def _safe_file(info: os.stat_result, *, directory: bool = False) -> bool:
-    expected_type = stat.S_ISDIR if directory else stat.S_ISREG
-    return expected_type(info.st_mode) and info.st_uid == 0 and not info.st_mode & 0o022
-
-
 def _read_authority_file(name: str) -> bytes | None:
-    """Fixed names only, refuse writable mount, symlinks, non-root owner and oversized files."""
+    """Fixed issuer artifact names only; shared hardened read-only file reader."""
     if name != 'root.pub' and re.fullmatch(r'(deployment|custody|credential)-[a-f0-9]{64}\.json', name) is None:
         return None
-    directory_fd = None
-    file_fd = None
-    try:
-        directory_fd = os.open(_AUTHORITY_DIR, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
-        if not _safe_file(os.fstat(directory_fd), directory=True):
-            return None
-        if not os.fstatvfs(directory_fd).f_flag & os.ST_RDONLY:
-            return None
-        file_fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory_fd)
-        info = os.fstat(file_fd)
-        if not _safe_file(info) or not 0 < info.st_size <= _MAX_BYTES:
-            return None
-        with os.fdopen(file_fd, 'rb') as stream:
-            file_fd = None
-            content = stream.read(_MAX_BYTES + 1)
-        return content if 0 < len(content) <= _MAX_BYTES else None
-    except (OSError, AttributeError, ValueError):
-        return None
-    finally:
-        if file_fd is not None:
-            os.close(file_fd)
-        if directory_fd is not None:
-            os.close(directory_fd)
+    return read_authority_file(_AUTHORITY_DIR, name, max_bytes=_MAX_BYTES)
 
 
 def _utc_time(value: object) -> datetime | None:
