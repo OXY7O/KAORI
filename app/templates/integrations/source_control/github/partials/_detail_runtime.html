@@ -8,10 +8,9 @@
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/framed_workspace_tabs.html" as framed_tabs %}
 {% import "components/info_tip.html" as info_tip %}
-{% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set health = runtime_health %}
 {% set gate = 'ready' if runtime_observed and health == 'healthy' else ('blocked' if runtime_observed and health == 'unhealthy' else ('degraded' if runtime_observed else 'not_observed')) %}
-{% set finding = 'GitHub runtime observation is not available.' if not runtime_observed else ('GitHub App installation health is ' ~ health|replace('_', ' ') ~ '.') %}
+{% set finding = 'GitHub runtime observation is not available.' if not runtime_observed else ('GitHub committed runtime posture is ' ~ health|replace('_', ' ') ~ '.') %}
 {% set next_action = 'Run Runtime Refresh to collect persisted health evidence.' if not runtime_observed else ('Review installation access and refresh runtime health.' if health != 'healthy' else 'Continue controlled Runtime Refresh after installation changes.') %}
 {% set observation_rows = [
     ('Last Observation', runtime_state.observed_at_display),
@@ -81,7 +80,7 @@
         finding,
         runtime_state.attention_factors|length if runtime_observed else 0,
         next_action,
-        'Jobs and signed webhook receipts are committed transport evidence, not repository synchronization or provider-side runtime history.'
+        'Review Recent Runtime Observations for immutable diagnostics. Jobs and signed webhook receipts are committed transport evidence, not repository synchronization or provider-side runtime history.'
         ) }}
         {% set provider_facts = [
             ('GitHub Host', installation.host_key, 'Configured provider host'),

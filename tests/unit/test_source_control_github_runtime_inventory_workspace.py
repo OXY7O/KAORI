@@ -444,6 +444,7 @@ def test_github_detail_tab_badges_follow_runtime_and_unfiltered_committed_invent
     assert 'Jobs & Deliveries' not in detail
     assert "'runtime_observed': latest is not None" in projection
     assert "capability_snapshot['operation'].as_string() == 'runtime_refresh'" in projection
+    assert 'github_runtime_invalidated_at' in projection
     assert 'runtime_observation_state_view(' in projection
     assert "'runtime_health_label': state['health_status_label']" in projection
     assert '{% set health = runtime_health %}' in runtime
@@ -486,3 +487,94 @@ def test_github_runtime_uses_canonical_history_and_shared_evidence():
     assert "runtime_history_view(rows, pagination=pagination)" in projection
     assert "runtime_view = 'jobs' if request.args.get('runtime_view') == 'jobs' else 'deliveries'" in runtime
     assert 'runtime_state.diagnostics' in runtime
+
+
+def test_github_runtime_observations_are_exact_scope_and_never_inferred_from_jobs():
+    from datetime import UTC, datetime, timedelta
+    from types import SimpleNamespace
+
+    from flask import Flask
+    from sqlalchemy import insert
+
+    from app.extensions.db import db
+    from app.integrations.source_control.source_control.providers.github.application.runtime_presentation import (
+        _runtime_observation_context,
+    )
+    from app.models.integration import IntegrationInstance
+    from app.models.runtime import IntegrationRuntimeObservation
+
+    app = Flask(__name__)
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite+pysqlite:///:memory:'
+    db.init_app(app)
+    now = datetime.now(UTC)
+    with app.test_request_context('/?per_page=5'):
+        IntegrationInstance.metadata.create_all(
+            bind=db.engine, tables=[IntegrationInstance.__table__, IntegrationRuntimeObservation.__table__]
+        )
+        for identity in (21, 22):
+            db.session.execute(insert(IntegrationInstance.__table__).values(
+                id=identity, name=f'GitHub {identity}', integration_type='source_control',
+                provider_key='github', adapter_key='github_rest_v3', enabled=True,
+                lifecycle_status='active', readiness_status='ready',
+            ))
+
+        def observation(identity, instance_id, offset, operation=None, health='healthy', provider='github'):
+            snapshot = {'capabilities': [], 'metadata': {}}
+            if operation:
+                snapshot.update(operation=operation, job_execution_id=11)
+            return IntegrationRuntimeObservation(
+                integration_instance_id=identity, integration_type='source_control',
+                provider_key=provider, adapter_key='github_rest_v3', instance_id=str(instance_id),
+                instance_name='GitHub', trigger_type='scheduled', readiness='ready',
+                health_status=health, health_score=100 if health == 'healthy' else 0,
+                capability_snapshot=snapshot, diagnostics=[], observed_at=now + timedelta(minutes=offset),
+            )
+
+        db.session.add_all([
+            observation(21, 7, -4),
+            observation(21, 7, -3, 'full_validation'),
+            observation(22, 7, -1, 'runtime_refresh'),
+            observation(21, 8, -1, 'runtime_refresh'),
+            observation(21, 7, -1, 'runtime_refresh', provider='other'),
+        ])
+        db.session.commit()
+        canonical = SimpleNamespace(readiness_status='ready', metadata_json={}, last_checked_at=now)
+        installation = SimpleNamespace(id=7, integration_instance_id=21, integration_instance=canonical)
+        state = _runtime_observation_context(installation)
+        assert state['runtime_health_label'] == 'Not Observed'
+        assert state['runtime_history']['pagination']['total_items'] == 2
+        assert {row['operation_label'] for row in state['runtime_history']['rows']} == {
+            'Full Validation', 'Unclassified',
+        }
+
+        db.session.add(observation(21, 7, -2, 'runtime_refresh', health='unhealthy'))
+        db.session.add(observation(21, 7, 0, 'full_validation'))
+        db.session.commit()
+        state = _runtime_observation_context(installation)
+        assert state['runtime_health_label'] == 'Unhealthy'
+        assert state['runtime_observation_job_id'] == 11
+        assert state['runtime_history']['pagination']['total_items'] == 4
+
+        canonical.metadata_json = {'github_runtime_invalidated_at': now.isoformat()}
+        assert _runtime_observation_context(installation)['runtime_health_label'] == 'Not Observed'
+        db.session.add(observation(21, 7, 1, 'runtime_refresh'))
+        db.session.commit()
+        assert _runtime_observation_context(installation)['runtime_health_label'] == 'Healthy'
+        canonical.metadata_json = {'github_runtime_invalidated_at': 'invalid'}
+        assert _runtime_observation_context(installation)['runtime_health_label'] == 'Not Observed'
+        db.session.remove()
+        db.engine.dispose()
+
+
+def test_github_worker_observation_provenance_is_opt_in_and_not_backfilled():
+    repository = _read(ROOT / 'app/integrations/runtime/repository.py')
+    refresh = _read(ROOT / 'app/integrations/runtime/refresh.py')
+    tasks = _read(ROOT / 'app/integrations/validation/tasks.py')
+    assert "state.provider_key == 'github'" in repository
+    assert "'operation': operation" in repository
+    assert "'job_execution_id': job_execution_id" in repository
+    assert 'operation=operation' in refresh
+    assert 'job_execution_id=job_execution_id' in refresh
+    assert "operation='runtime_refresh'" in tasks
+    assert 'operation=operation' in tasks
+    assert 'job_execution_id=job_execution_id' in tasks

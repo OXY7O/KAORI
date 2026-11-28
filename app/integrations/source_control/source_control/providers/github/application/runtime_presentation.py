@@ -6,6 +6,9 @@ ordered. HTTP routes retain their own RBAC/UAT privilege checks.
 
 from __future__ import annotations
 
+from datetime import datetime
+from typing import TypedDict
+
 from flask import request
 from sqlalchemy import and_, or_
 from sqlalchemy.sql.elements import ColumnElement
@@ -175,21 +178,40 @@ def _runtime_context(installation: SourceInstallation) -> dict:
     }
 
 
+class _RuntimeScope(TypedDict):
+    integration_instance_id: int
+    provider_key: str
+    adapter_key: str
+
+
 def _runtime_observation_context(installation: SourceInstallation) -> dict:
     """Read only exact-installation, immutable provider observations from KAORI."""
     canonical = installation.integration_instance
-    scope = {
+    scope: _RuntimeScope = {
         'integration_instance_id': installation.integration_instance_id,
         'provider_key': 'github',
         'adapter_key': 'github_rest_v3',
     }
     # The operation is not present on historical observations. Never derive it
     # from job timestamps or reuse Full Validation as a runtime health check.
+    current = runtime_history_query('source_control', str(installation.id), **scope).filter(
+        IntegrationRuntimeObservation.capability_snapshot['operation'].as_string() == 'runtime_refresh'
+    )
+    invalidated_at = (canonical.metadata_json or {}).get('github_runtime_invalidated_at')
+    cutoff_valid = True
+    if invalidated_at is not None:
+        try:
+            cutoff = datetime.fromisoformat(str(invalidated_at))
+            if cutoff.tzinfo is None:
+                raise ValueError('Runtime invalidation timestamp must include timezone.')
+            current = current.filter(IntegrationRuntimeObservation.observed_at >= cutoff)
+        except (TypeError, ValueError):
+            cutoff_valid = False
     latest = (
-        runtime_history_query('source_control', str(installation.id), **scope)
-        .filter(IntegrationRuntimeObservation.capability_snapshot['operation'].as_string() == 'runtime_refresh')
-        .order_by(IntegrationRuntimeObservation.observed_at.desc(), IntegrationRuntimeObservation.id.desc())
+        current.order_by(IntegrationRuntimeObservation.observed_at.desc(), IntegrationRuntimeObservation.id.desc())
         .first()
+        if cutoff_valid and canonical.last_checked_at is not None
+        else None
     )
     state = runtime_observation_state_view(
         latest,

@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from typing import cast
 
 from app.extensions.db import db
@@ -247,6 +248,7 @@ def _reset_github_validation(canonical: IntegrationInstance) -> None:
     canonical.last_error = None
     metadata = dict(canonical.metadata_json or {})
     metadata.pop('github_validation', None)
+    metadata['github_runtime_invalidated_at'] = datetime.now(UTC).isoformat()
     canonical.metadata_json = metadata
 
 
