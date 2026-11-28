@@ -148,6 +148,10 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
     access_reference = read(
         'app/templates/integrations/registry/providers/harbor/partials/_minimum_validation_access.html'
     )
+    assert 'setup_reference.summary(' in access_reference
+    shared_reference = read('app/templates/integrations/components/_provider_setup_reference.html')
+    assert 'bg-surface-hover px-4 py-3' in shared_reference
+    assert 'grid gap-px bg-outline-subtle sm:grid-cols-2' in shared_reference
     assert 'Minimum Harbor API Access Example' in access_reference
     assert 'Open Access Examples' in access_reference
     assert 'setTab(tab) { this.activeTab = tab; }' in access_reference

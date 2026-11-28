@@ -1,0 +1,29 @@
+{# Compact setup-reference summary from the existing provider reference pattern. #}
+{% macro summary(icon, title, description, action_label, summaries, dialog_id=none, open_expression=none) -%}
+    <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary dark:text-kaori-accent"
+                  aria-hidden="true">
+                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0">
+                <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p>
+            </div>
+        </div>
+        <button type="button"
+                {% if dialog_id %}data-kaori-dialog-open data-dialog-target="{{ dialog_id }}"{% else %}@click="{{ open_expression }}"{% endif %}
+                class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+            <i data-lucide="panel-top-open" class="h-3.5 w-3.5" aria-hidden="true"></i>
+            {{ action_label }}
+        </button>
+    </header>
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2">
+        {% for label, helper in summaries %}
+            <div class="bg-surface-card px-4 py-3">
+                <p class="text-xs font-semibold text-content-primary">{{ label }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
+            </div>
+        {% endfor %}
+    </div>
+{%- endmacro %}
