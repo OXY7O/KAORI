@@ -152,7 +152,7 @@ def request_automation_credential_grant(
 def review_credential_grant_approval(
     *, policy_id: str, approver_user_id: int, expected_revision: int, now: datetime
 ) -> TypedCredentialEvidence | None:
-    """Locked maker/checker precondition for a future audited approval writer.
+    """Locked maker/checker precondition for the audited approval writer.
 
     Does not append an active revision or establish runtime permission. The
     authenticated caller owns the transaction and must roll back on denial.
@@ -205,6 +205,40 @@ def review_credential_grant_approval(
     evidence = resolve_current_credential_evidence(policy, target, now=now)
     if evidence is None or current.effective_until > evidence.expires_at:
         return None
+    # The activation writer serializes local approval transactions. Refuse
+    # any overlapping active grant for this principal and assignment, even
+    # when another grant has stale metadata or an unqualified proof.
+    candidates = db.session.execute(
+        select(ScopeAccessPolicy)
+        .join(AutomationCredentialScopeTarget, AutomationCredentialScopeTarget.policy_id == ScopeAccessPolicy.id)
+        .where(
+            ScopeAccessPolicy.id != policy.id,
+            ScopeAccessPolicy.principal_user_id == policy.principal_user_id,
+            ScopeAccessPolicy.permission_key == CREDENTIAL_USE_PERMISSION,
+            ScopeAccessPolicy.scope_level == 'automation_credential',
+            AutomationCredentialScopeTarget.ansible_connection_id == target.ansible_connection_id,
+            AutomationCredentialScopeTarget.assignment_id == target.assignment_id,
+        )
+        .order_by(ScopeAccessPolicy.id)
+        .limit(33)
+        .with_for_update(of=ScopeAccessPolicy)
+        .execution_options(populate_existing=True)
+    ).scalars().all()
+    if len(candidates) > 32:
+        return None
+    for candidate in candidates:
+        latest = _latest_revision(candidate.id)
+        if latest is None or latest.revision_number != candidate.current_revision:
+            return None
+        if latest.lifecycle_status == 'active' and (
+            latest.effective_from.utcoffset() is None
+            or latest.effective_until.utcoffset() is None
+            or (
+                latest.effective_from < current.effective_until
+                and current.effective_from < latest.effective_until
+            )
+        ):
+            return None
     return evidence
 
 
