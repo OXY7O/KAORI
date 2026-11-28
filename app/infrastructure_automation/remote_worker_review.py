@@ -15,7 +15,11 @@ from pathlib import Path
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
-from app.infrastructure_automation.kubernetes.source_policy import ANSIBLE_CORE_VERSION, ANSIBLE_RUNNER_VERSION
+from app.infrastructure_automation.kubernetes.source_policy import (
+    ANSIBLE_CORE_VERSION,
+    ANSIBLE_RUNNER_VERSION,
+    SOURCE_CANDIDATE_SHA,
+)
 from app.infrastructure_automation.remote_preflight_source import REMOTE_CANDIDATE_SHA, RemoteSourceReview
 from app.infrastructure_automation.remote_preflight_target import RemoteTargetReview
 from app.integrations.secrets_management.secrets_pki.providers.credential_version_proof import (
@@ -97,6 +101,7 @@ def resolve_remote_worker_review(
         or not isinstance(worker_identity, str)
         or _WORKER.fullmatch(worker_identity) is None
         or source.revision != REMOTE_CANDIDATE_SHA
+        or target.source_sha != SOURCE_CANDIDATE_SHA
         or source.execution_authorized is not False
         or target.execution_authorized is not False
         or target.expires_at.utcoffset() is None
