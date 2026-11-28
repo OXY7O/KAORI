@@ -201,3 +201,6 @@ The first two controls do not change committed policy by themselves or attest UA
 
 
 `AUTH_ABUSE_SIGNAL_ENABLED=false` is an opt-in observe-only control for the existing fast signal worker (#5420), documented in both canonical application examples. The minimal RC example inherits the safe default. It is independent of Login Protection activation flags and does not change authentication enforcement; do not enable before hosted capacity, privacy and notification qualification.
+
+
+`AUTH_LOGIN_ORIGIN_BUDGET_ENABLED=false` (#5442) is an optional uniform short-lived origin/identity request budget (candidate 3/60s) within existing Login Protection modes. Both canonical application examples define false; minimal RC inherits false. This is not a secret and does not activate Login Protection. Set consistently across web instances only while the committed policy is Disabled; qualify effective trusted proxy origin, shared Redis topology, candidate threshold, observation volume and recovery in Monitor Only before approving Enforced. No automatic runtime activation.

@@ -147,10 +147,11 @@ def test_login_page_omits_sso_region_when_no_browser_provider_is_enabled(app) ->
 
 
 @pytest.mark.parametrize('mode', (LockoutMode.MONITOR_ONLY, LockoutMode.ENFORCED))
+@pytest.mark.parametrize('origin', (False, True))
 def test_identity_budget_preserves_generic_response_and_monitor_semantics(
-    app, monkeypatch: pytest.MonkeyPatch, mode: LockoutMode
+    app, monkeypatch: pytest.MonkeyPatch, mode: LockoutMode, origin: bool
 ) -> None:
-    protection = LoginRequestProtection(mode, 2, over_budget=True)
+    protection = LoginRequestProtection(mode, 2, over_budget=True, origin_over_budget=origin)
     monkeypatch.setattr(auth_routes, 'check_login_request', lambda _username: protection)
     evidence = Mock()
     monkeypatch.setattr(auth_routes, 'record_identity_budget_observation', evidence)
@@ -161,7 +162,10 @@ def test_identity_budget_preserves_generic_response_and_monitor_semantics(
     monkeypatch.setattr(auth_routes, 'queue_transient_feedback', feedback)
     response = app.test_client().post('/auth/login', data={'username': 'fixture', 'password': 'wrong-password'})
     assert response.status_code == 200
-    evidence.assert_called_once_with(enforced=mode == LockoutMode.ENFORCED)
+    expected = {'enforced': mode == LockoutMode.ENFORCED}
+    if origin:
+        expected['origin'] = True
+    evidence.assert_called_once_with(**expected)
     assert authenticate.call_count == int(mode == LockoutMode.MONITOR_ONLY)
     assert feedback.call_args.kwargs['message'] == 'Invalid username or password.'
 

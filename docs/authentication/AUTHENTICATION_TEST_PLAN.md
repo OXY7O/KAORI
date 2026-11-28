@@ -160,3 +160,12 @@ After applying migration `20261128_auth_session_expiry` to the Dev Container dat
 - [ ] Verify candidate validation rejects missing, disabled, stale, partial, malformed, previous-window and inconsistent indicators/counts; allowlist aggregate values only, no individual identifiers. Quiet evidence is not verified recovery.
 - [ ] Verify current local Super Admin and Intelligence permission, no worker/no-request/unauthorized source access, no direct promotion or override activation, no direct case mutation/read or firing/resolved delivery for the unadmitted domain.
 - [ ] Qualify AL-05 committed worker evidence, query load, late commits, privacy and actual source freshness; security owner approves rule before Available. Separate scoped case authorization, lifecycle, routing and external delivery qualification before case admission.
+
+
+## AL-05C protected recovery-account uniform origin budget (#5442)
+
+- [ ] Default-off and Disabled no additional origin Redis access; Monitor Only observes, Enforced generic rejection; exact existing global identity/per-IP/account/MFA/provider semantics preserved.
+- [ ] Verify canonical effective IPv4/IPv6 origin, mapped addresses, invalid origin, trusted proxy configuration/no forwarded-header spoofing and no user lookup or role-dependent public behavior.
+- [ ] Actual Redis atomic threshold, TTL/no extending denial, namespace bounds, collision/NAT and cross-instance shared state, storage failure, qualification probe, matching ENV across all instances.
+- [ ] Verify protected recovery principal cannot be durably locked by guesses; ordinary and unknown identity behavior is uniform; independently restricted management recovery remains usable after public budget saturation.
+- [ ] Validate source audit load, bounded AL-05 observation/notifications, generic timing/messages and security-owner threshold approval before Enforced; no claim of complete distributed DoS mitigation.

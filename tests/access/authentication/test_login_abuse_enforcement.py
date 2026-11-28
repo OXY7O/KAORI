@@ -33,7 +33,9 @@ def test_request_policy_and_monitor_budget(monkeypatch: pytest.MonkeyPatch, mode
     monkeypatch.setattr(login_protection, 'read_login_policy', lambda: (mode, 2))
     budget = Mock(return_value=True)
     monkeypatch.setattr(login_protection, 'shared_identity_budget', budget)
-    result = login_protection.check_login_request('fixture')
+    app = Flask(__name__)
+    with app.app_context():
+        result = login_protection.check_login_request('fixture')
     assert result.revision == 2
     assert result.over_budget == (mode != LockoutMode.DISABLED)
     assert result.blocked == (mode == LockoutMode.ENFORCED)
