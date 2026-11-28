@@ -66,6 +66,9 @@
                         pagination.per_page,
                         aria_label='Filter Ansible automation connections') %}
                         <input type="hidden" name="tab" value="connections">
+                        {% if selected_connection_id %}
+                            <input type="hidden" name="connection_id" value="{{ selected_connection_id }}">
+                        {% endif %}
                         <div class="min-w-0 flex-1">
                             <label for="automation-connection-search"
                                    class="{{ table_ui.filter_label_classes() }}">Search Connections</label>
@@ -82,7 +85,7 @@
                                             'infrastructure-automation-results',
                                             'infrastructure-automation-loading',
                                             pagination.per_page,
-                                            action_button.classes('secondary'), query_params={'tab': 'connections'}) }}
+                                            action_button.classes('secondary'), query_params={'tab': 'connections', 'connection_id': selected_connection_id}) }}
                         {% endif %}
                     {% endcall %}
                 </div>
@@ -128,7 +131,6 @@
                                                hx-swap="outerHTML"
                                                hx-push-url="true"
                                                hx-indicator="#infrastructure-automation-loading"
-                                               {% if selected_connection_id == connection.id %}aria-current="page"{% endif %}
                                                class="{{ action_button.classes('soft') }}">
                                                 <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
                                                 Review
@@ -154,7 +156,7 @@
                     'infrastructure-automation-results',
                     'infrastructure-automation-loading',
                     pagination,
-                    {'tab': 'connections', 'q': selected_query},
+                    {'tab': 'connections', 'q': selected_query, 'connection_id': selected_connection_id},
                     pagination.allowed_per_page,
                     resource_label='Ansible Connections',
                     control_name='infrastructure-automation') }}

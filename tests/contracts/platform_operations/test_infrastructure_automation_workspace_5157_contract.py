@@ -160,7 +160,7 @@ def test_lifecycle_workspace_uses_shared_hero_and_separate_operational_sections(
     assert 'Run Kubespray' not in workspace
 
 
-def test_selected_source_only_connection_renders_lifecycle_and_host_onboarding():
+def test_selected_source_only_connection_renders_lifecycle_only():
     app = create_app('testing')
     connection = SimpleNamespace(id=11, name='Kubespray Fixture', environment='development')
     details = {
@@ -205,7 +205,7 @@ def test_selected_source_only_connection_renders_lifecycle_and_host_onboarding()
         '0/2',
         'Not Generated',
         'Cluster Mutation Not Admitted',
-     ):
+    ):
         assert label in rendered
     assert 'No Ansible Connections' not in rendered
     assert 'Run Kubespray' not in rendered

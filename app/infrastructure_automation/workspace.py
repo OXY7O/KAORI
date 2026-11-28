@@ -247,21 +247,24 @@ def build_automation_overview(*, can_jobs: bool, can_inventory: bool) -> dict[st
             AutomationInventoryAssignment.integration_instance_id.in_(connection_ids),
             AutomationInventoryAssignment.enabled.is_(True),
         ).count()
-        if can_inventory else None
+        if can_inventory
+        else None
     )
     cluster_bindings = (
         IntegrationBinding.query.filter(
             IntegrationBinding.integration_instance_id.in_(connection_ids),
             IntegrationBinding.asset_type == 'kubernetes_cluster',
         ).count()
-        if can_inventory else None
+        if can_inventory
+        else None
     )
     executions = (
         JobExecution.query.filter(
             JobExecution.integration_instance_id.in_(connection_ids),
             JobExecution.integration_type == INTEGRATION_TYPE,
         ).count()
-        if can_jobs else None
+        if can_jobs
+        else None
     )
     return {
         'total_connections': automation_connection_count(),

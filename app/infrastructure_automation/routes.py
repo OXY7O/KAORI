@@ -20,9 +20,14 @@ def index() -> ResponseReturnValue:
     tab = request.args.get('tab')
     if tab is None:
         # Preserve old inventory pagination and connection deep links.
-        tab = 'inventory' if 'asset_page' in request.args or 'asset_per_page' in request.args else (
-            'lifecycle' if 'connection_id' in request.args else 'connections' if 'q' in request.args or 'page' in request.args else 'overview'
-        )
+        if 'asset_page' in request.args or 'asset_per_page' in request.args:
+            tab = 'inventory'
+        elif 'connection_id' in request.args:
+            tab = 'lifecycle'
+        elif 'q' in request.args or 'page' in request.args:
+            tab = 'connections'
+        else:
+            tab = 'overview'
     if tab not in {'overview', 'connections', 'inventory', 'lifecycle', 'executions'}:
         abort(404)
     can_jobs = bool(current_user.has_permission('jobs.view'))

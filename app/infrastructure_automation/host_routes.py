@@ -89,7 +89,9 @@ def new(connection_id: int) -> ResponseReturnValue:
                     },
                 )
                 return redirect(
-                    url_for('platform_operations.infrastructure_automation.index', tab='inventory', connection_id=connection.id)
+                    url_for(
+                        'platform_operations.infrastructure_automation.index', tab='inventory', connection_id=connection.id
+                    )
                 )
         else:
             error = 'Review the required host fields and submit the form again.'
@@ -170,7 +172,9 @@ def edit(connection_id: int, host_id) -> ResponseReturnValue:
                     metadata={'connection_id': connection_id, 'host_id': host.id, 'feedback_delivery': 'toast'},
                 )
                 return redirect(
-                    url_for('platform_operations.infrastructure_automation.index', tab='inventory', connection_id=connection_id)
+                    url_for(
+                        'platform_operations.infrastructure_automation.index', tab='inventory', connection_id=connection_id
+                    )
                 )
         else:
             error = 'Review the required fields and submit the form again.'
@@ -223,4 +227,6 @@ def retire(connection_id: int, host_id) -> ResponseReturnValue:
         action_url=url_for('platform_operations.infrastructure_automation.index', tab='inventory', connection_id=connection_id),
         metadata={'connection_id': connection_id, 'host_id': host.id, 'feedback_delivery': 'toast'},
     )
-    return redirect(url_for('platform_operations.infrastructure_automation.index', tab='inventory', connection_id=connection_id))
+    return redirect(
+        url_for('platform_operations.infrastructure_automation.index', tab='inventory', connection_id=connection_id)
+    )
