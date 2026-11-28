@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from sqlalchemy import func, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.authentication.admission import enforce_login_admission
@@ -14,10 +14,11 @@ from app.access.authentication.results import (
     USER_INACTIVE_MESSAGE,
     AuthReason,
     AuthResult,
+    LocalCredentialProof,
 )
 from app.access.authentication.session import AuthSessionError
 from app.extensions.db import db
-from app.models import User
+from app.models import Role, User
 
 
 def _finalize_result(result: AuthResult) -> AuthResult:
@@ -54,6 +55,8 @@ def record_successful_authentication(
     *,
     source: str,
     client_ip: str | None,
+    local_credential_proof: LocalCredentialProof | None = None,
+    pending_generation: int | None = None,
 ) -> int:
     """Atomically issue the one current login generation for this KAORI user.
 
@@ -64,14 +67,34 @@ def record_successful_authentication(
     issued_at = datetime.now(UTC)
     normalized_source = source.strip().lower()
     try:
+        if pending_generation is None and normalized_source == 'database':
+            if local_credential_proof is None or not local_credential_proof.password_hash:
+                raise AuthSessionError('Verified local credential proof is missing.')
+            # Compare under the user-row lock. The password hash never appears
+            # in SQL bind parameters, a pending cookie or audit metadata.
+            current_hash = db.session.execute(
+                select(User.password_hash).where(User.id == user.id).with_for_update()
+            ).scalar_one_or_none()
+            if current_hash != local_credential_proof.password_hash:
+                raise AuthSessionError('Verified local credential proof is stale.')
+
+        conditions = [
+            User.id == user.id,
+            User.account_is_active.is_(True),
+            User.deleted_at.is_(None),
+            func.lower(User.auth_source) == normalized_source,
+            or_(
+                User.is_super_admin.is_(True) & (User.auth_source == 'database'),
+                User.role_record.has(Role.is_active.is_(True)),
+            ),
+        ]
+        if pending_generation is not None:
+            if type(pending_generation) is not int or pending_generation < 1:
+                raise AuthSessionError('Pending authentication generation is invalid.')
+            conditions.append(User.auth_session_version == pending_generation)
         issued_version = db.session.execute(
             update(User)
-            .where(
-                User.id == user.id,
-                User.account_is_active.is_(True),
-                User.deleted_at.is_(None),
-                func.lower(User.auth_source) == normalized_source,
-            )
+            .where(*conditions)
             .values(
                 auth_session_version=func.coalesce(User.auth_session_version, 1) + 1,
                 auth_session_issued_at=issued_at,
@@ -84,10 +107,9 @@ def record_successful_authentication(
         ).scalar_one_or_none()
         if issued_version is None:
             # The account can have changed since primary authentication.
-            db.session.rollback()
             raise AuthSessionError('KAORI session admission was revoked before issuance.')
         db.session.commit()
-    except SQLAlchemyError:
+    except (SQLAlchemyError, AuthSessionError):
         db.session.rollback()
         raise
     return int(issued_version)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
@@ -24,12 +24,21 @@ AuthReason = Literal[
 
 
 @dataclass(frozen=True)
+class LocalCredentialProof:
+    """Request-local snapshot of the exact verified Local Database credential."""
+
+    password_hash: str = field(repr=False)
+    generation: int
+
+
+@dataclass(frozen=True)
 class AuthResult:
     success: bool
     reason: AuthReason
     source: str = 'database'
     user: User | None = None
     message: str | None = None
+    local_credential_proof: LocalCredentialProof | None = field(default=None, repr=False, compare=False)
 
 
 INVALID_LOGIN_MESSAGE = 'Invalid username or password.'

@@ -634,16 +634,39 @@ Feature: Local password and session security
       | an incorrect current password   | current_password_mismatch  |
       | a new password equal to current | current_password_reuse     |
 
-  Scenario: Rotate a valid local password and revoke other browser sessions
-    Given the same disposable Local Database UAT user has sessions A and B
-    And both sessions can access a protected KAORI workspace
-    When the user successfully changes the local password in session A
-    Then session A remains authenticated
-    And session B is rejected on its next protected request
+  Scenario: Rotate a valid local password and revoke the previous generation
+    Given a disposable Local Database UAT user has one admitted login generation
+    And a second isolated client holds an old or copied credential-bound session identifier
+    When the user successfully changes the local password in the admitted session
+    Then that browser remains bound to the committed replacement generation
+    And the previous generation is rejected on its next protected request
     And the old password can no longer authenticate
     And the new password can authenticate
     And a successful password-change audit event and user feedback are recorded
     And remembered sign-ins are subject to the same revocation boundary
+    And the absolute session deadline is not reset
+
+  Scenario: Reject stale verified primary credential proof at session issuance
+    Given a Local Database password has been verified in an isolated sign-in request
+    And a concurrent authorized request commits a replacement password
+    When the first request attempts final session issuance
+    Then no new generation is issued from the stale proof
+    And the replacement password remains authoritative
+    And no credential value is written to audit or session state
+
+  Scenario: Reject stale pending MFA proof at final issuance
+    Given a pending MFA flow is bound to generation G
+    And a concurrent authorized request advances the account generation
+    When the original pending flow attempts final session issuance after factor verification
+    Then the original generation is denied
+    And the newer generation is not overwritten
+    And no authenticated cookie is issued for the stale pending flow
+
+  Scenario: Allow independent sign-ins verified against the unchanged current password
+    Given two independent Local Database sign-in requests verified the same current credential
+    When both complete final issuance with no intervening credential change
+    Then each receives only the generation minted by its own transaction
+    And only the latest committed generation remains admitted
 ```
 
 **Evidence:** Human PASS for both rejection messages and the successful
@@ -651,6 +674,7 @@ two-browser rotation/revocation flow; isolated pytest checks no commit/session
 mutation on rejection and session-generation implementation. A **second distinct
 rejection audit-detail capture** (for reuse) and a standalone **CSRF browser
 negative trace** were not supplied. Do not claim those independent checks PASS.
+The October historical acceptance predates the single-active-generation and server-side expiry work. The revised generation/replay scenarios above require new exact-candidate evidence; do not interpret the historical two-browser result as concurrent independently admitted sessions.
 
 ### SET-VIS-01 — Deterministic responsive/theme/three-tab visual contract
 
@@ -716,7 +740,7 @@ session and independent browser-failure trace were not archived.
 | SET-ACC-01 | `tests/contracts/settings/test_account_settings_redesign_contract.py` (profile/layout); `tests/ui/test_representative_interactions.py::test_settings_account_profile_activity_credentials_visual_qa` | Local/LDAP read-only profile screenshots: Human PASS; no live-provider health check |
 | SET-ACC-02 | `tests/contracts/settings/test_account_settings_redesign_contract.py` (activity/layout); same Playwright browser test (mocked empty state) | Latest-five and Viewer deny/authorized audit: Human PASS; separate HTTP 403 header pending |
 | SET-ACC-03 | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_external_credentials_are_rejected_before_validation_or_password_access`; `tests/contracts/settings/test_account_credential_security_contract.py` | Local/LDAP credential ownership: Human PASS; contract-level external mutation rejection |
-| SET-ACC-04 | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_password_rejections_preserve_credential_and_session_state`; `tests/contracts/settings/test_account_credential_security_contract.py` | Rejection and two-browser session rotation: Human PASS; separate reuse audit detail and CSRF browser trace pending |
+| SET-ACC-04 | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_password_rejections_preserve_credential_and_session_state`; `tests/contracts/settings/test_account_credential_security_contract.py`; `tests/access/authentication/test_single_session_generation.py::test_stale_local_proof_cannot_issue_a_generation`, `::test_pending_mfa_issuance_guards_original_generation`, `::test_login_generation_is_atomic_database_update_with_exact_returning` | Historical password rejection and rotation accepted; revised proof/replay/concurrency scenarios (#5333) source-mapped, NOT RUN; real PostgreSQL/browser evidence and independent CSRF trace pending |
 | SET-VIS-01 | `tests/ui/test_representative_interactions.py::test_settings_account_profile_activity_credentials_visual_qa`; `tests/ui/test_visual_audit_contract.py` | 6/6 browser parameterizations PASS; exact same-run SHA not recorded |
 | SET-OPS-01 | Shared HTMX tab contract in `tests/contracts/settings/test_account_settings_redesign_contract.py`; read-only browser navigation in the visual QA test | Account history, keyboard, HTMX and offline recovery: Human PASS; full AT audit not claimed |
 

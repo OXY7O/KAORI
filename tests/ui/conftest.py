@@ -13,7 +13,7 @@ from app import create_app
 from app.access.authentication.bot_protection.service import BotPolicyMode, BotPolicyState
 from app.access.authentication.mfa.policy import MfaGate, MfaPolicyDecision, MfaPolicyMode
 from app.access.authentication.readiness import AuthenticationDatabaseReadiness
-from app.access.authentication.results import AuthResult
+from app.access.authentication.results import AuthResult, LocalCredentialProof
 from app.common.pagination import build_pagination_window, pagination_payload
 from app.extensions import login_manager
 from app.models import User
@@ -276,7 +276,10 @@ def kaori_authenticated_base_url() -> Iterator[str]:
     )
     app = create_app('testing')
     app.config['AUTH_LOGIN_RATE_LIMIT'] = '1000 per minute'
-    auth_result = AuthResult(True, 'success', source='database', user=user)
+    auth_result = AuthResult(
+        True, 'success', source='database', user=user,
+        local_credential_proof=LocalCredentialProof('browser-fixture-only', 1),
+    )
     # This browser-only fixture has no MFA persistence tables. Account GET still
     # runs its real view and templates against deterministic unenrolled state.
 
