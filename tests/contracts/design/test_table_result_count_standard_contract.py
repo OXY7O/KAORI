@@ -36,8 +36,8 @@ def test_shared_block_header_accepts_count_without_replacing_info_tip_or_actions
     assert 'data-kaori-table-header-actions' in content
     assert "result_count=none, guide=''" in content
     assert content.index('table_label.result_count(result_count)') < content.index(
-        '{% if guide %}{{ guide }}{% endif %}'
-    )
+        '{% if title_extra %}{{ title_extra }}{% endif %}'
+    ) < content.index('{% if guide %}{{ guide }}{% endif %}')
 
 
 def test_inventory_and_tenant_results_use_filtered_total_not_visible_rows() -> None:
@@ -204,7 +204,48 @@ def test_inventory_header_renders_metadata_results_guide_and_actions_in_order() 
             header_actions='Clear Filters',
         )
     )
-    assert html.index('Channel Inventory') < html.index('Scope Metadata') < html.index('1 Result')
-    assert html.index('1 Result') < html.index('Contextual Guide') < html.index('Clear Filters')
+    assert html.index('Channel Inventory') < html.index('1 Result') < html.index('Scope Metadata')
+    assert html.index('Scope Metadata') < html.index('Contextual Guide') < html.index('Clear Filters')
     legacy = str(render('send', 'Registry', 'Description', 'loading', 'Loading', None, result_count=0))
     assert '0 Results' in legacy and 'Contextual Guide' not in legacy
+    for count, label in ((0, '0 Results'), (1, '1 Result'), (3, '3 Results')):
+        legacy_guide = str(
+            render('send', 'Registry', 'Description', 'loading', 'Loading', None,
+                   title_extra='Legacy Guide', result_count=count)
+        )
+        assert legacy_guide.index(label) < legacy_guide.index('Legacy Guide')
+    without_count = str(
+        render('send', 'Registry', 'Description', 'loading', 'Loading', None, guide='Contextual Guide')
+    )
+    assert 'Contextual Guide' in without_count and 'Results' not in without_count
+
+
+def test_provider_registry_header_renders_results_before_guide() -> None:
+    environment = Environment(loader=FileSystemLoader(str(TEMPLATES)), autoescape=True)
+    environment.filters['environment_name'] = lambda value, **_kwargs: value
+    render = environment.get_template('integrations/components/_provider_registry.html').module.registry_header
+    for count, label in ((0, '0 Results'), (1, '1 Result'), (3, '3 Results')):
+        html = str(render('Repository Coverage', 'Committed evidence.', 'route', 'coverage', result_count=count))
+        assert html.index('Repository Coverage') < html.index(label) < html.index('data-kaori-info-tip-trigger')
+        assert html.count('data-kaori-info-tip-trigger') == 1
+    missing = str(render('Repository Coverage', 'Committed evidence.', 'route', 'coverage'))
+    assert 'data-kaori-info-tip-trigger' in missing and 'Results' not in missing
+
+
+def test_direct_bucket_record_headers_render_results_before_guide() -> None:
+    paths = {
+        'storage/object_storage/analytics/partials/_bucket_table.html': 'bucket_table',
+        'storage/object_storage/analytics/partials/_bucket_forecast_table.html': 'forecast_table',
+    }
+    for path, payload in paths.items():
+        source = _template(path)
+        assert source.index(f'table_label.result_count({payload}.pagination.total_items)') < source.index(
+            'info_tip.render('
+        )
+
+
+def test_github_registration_related_workspace_copy_is_compact() -> None:
+    source = _template('integrations/source_control/github/form.html')
+    assert 'GitHub executes; KAORI governs.' in source
+    assert 'GitHub App installation grants remain authoritative.' in source
+    assert 'GitHub OAuth SSO uses separate credentials.' in source

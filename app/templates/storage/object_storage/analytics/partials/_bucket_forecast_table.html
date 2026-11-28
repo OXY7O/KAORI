@@ -21,6 +21,7 @@
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h3 class="text-base font-semibold leading-6 text-content-primary">Bucket Forecast Records</h3>
+                        {% if forecast_table %}{{ table_label.result_count(forecast_table.pagination.total_items) }}{% endif %}
                         {{ info_tip.render('object-storage-bucket-forecast-records-guide',
                                                 'Bucket Forecast Records Guide',
                                                 'Bucket records show committed history, planning forecasts, and quota watch states; they are not active alerts.',
@@ -30,7 +31,6 @@
                                                 'Filters apply only to these records and preserve the selected system and history window.',
                                                 ],
                                                 placement='right', variant='guide') }}
-                        {% if forecast_table %}{{ table_label.result_count(forecast_table.pagination.total_items) }}{% endif %}
                     </div>
                     <p class="mt-1 text-sm leading-6 text-content-muted xl:whitespace-nowrap">
                         Review forecast-ready and evidence-gap buckets; filters retain the selected system and history window.
