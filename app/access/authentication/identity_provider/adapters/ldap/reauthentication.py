@@ -73,7 +73,7 @@ def _linked_directory(user_id: int) -> tuple[ExternalIdentityLink, IdentityProvi
     rows = db.session.execute(
         select(ExternalIdentityLink, IdentityProvider)
         .join(IdentityProvider, IdentityProvider.id == ExternalIdentityLink.provider_id)
-        .where(ExternalIdentityLink.user_id == user_id, IdentityProvider.provider_key == 'ldap')
+        .where(ExternalIdentityLink.user_id == user_id, IdentityProvider.provider_key == 'ldap_directory')
         .limit(2)
         .execution_options(populate_existing=True)
     ).all()
@@ -128,7 +128,7 @@ def reauthenticate_ldap_account(
 def lock_ldap_reauthentication_proof(user_id: int, proof: LdapReauthenticationProof) -> None:
     """Lock the same provider/link before account/factor mutation."""
     credential = proof.credential
-    provider = lock_provider_revision(credential.provider_id, credential.revision, source='ldap')
+    provider = lock_provider_revision(credential.provider_id, credential.revision, source='ldap_directory')
     if provider.adapter_key != 'ldap':
         raise LdapReauthenticationError('Directory provider binding changed.')
     link = db.session.execute(

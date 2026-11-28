@@ -30,17 +30,21 @@ def test_replacement_is_an_enrolled_sibling_with_one_time_provisioning() -> None
 def test_sso_replacement_renders_guidance_without_any_mutation_form() -> None:
     html = (ROOT / 'app/templates/settings/account/partials/_mfa_replacement.html').read_text(encoding='utf-8')
     # Use the real workspace markup with lightweight component macro stubs.
-    env = Environment(loader=DictLoader({
-        'replacement.html': html,
-        'components/info_tip.html': '{% macro render(id, title, text, items, placement, variant) %}{% endmacro %}',
-        'components/table_label.html': '{% macro status_indicator_label(text, tone) %}{{ text }}{% endmacro %}',
-    }))
-    rendered = env.get_template('replacement.html').render(mfa_state={
-        'can_replace_authenticator': False,
-        'replacement_browser_sso': True,
-        'replacement_pending': False,
-        'replacement_expired': False,
-    })
+    env = Environment(
+        loader=DictLoader({
+            'replacement.html': html,
+            'components/info_tip.html': '{% macro render(id, title, text, items, placement, variant) %}{% endmacro %}',
+            'components/table_label.html': '{% macro status_indicator_label(text, tone) %}{{ text }}{% endmacro %}',
+        })
+    )
+    rendered = env.get_template('replacement.html').render(
+        mfa_state={
+            'can_replace_authenticator': False,
+            'replacement_browser_sso': True,
+            'replacement_pending': False,
+            'replacement_expired': False,
+        }
+    )
     assert 'Unavailable' in rendered
     assert 'does not have a qualified strict reauthentication flow' in rendered
     assert 'governed MFA recovery' in rendered

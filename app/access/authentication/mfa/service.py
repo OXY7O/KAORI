@@ -466,7 +466,7 @@ def mfa_replacement_supports_source(source: str) -> bool:
     do not establish upstream reauthentication. New sources require explicit
     qualification, not a fallback to the ordinary browser sign-in adapter.
     """
-    return source in {'database', 'ldap'}
+    return source in {'database', 'ldap_directory'}
 
 
 def _require_replacement_source(source: str) -> None:
@@ -480,7 +480,7 @@ def begin_mfa_replacement(user: User, submitted: str, *, expected_generation: in
         source = user.auth_source
         _require_replacement_source(source)
         provider_proof = None
-        if source == 'ldap':
+        if source == 'ldap_directory':
             # No remote bind while holding database row locks.
             if user.auth_session_version != expected_generation:
                 raise MfaVerificationError('Sign in again before changing MFA.')
@@ -491,7 +491,7 @@ def begin_mfa_replacement(user: User, submitted: str, *, expected_generation: in
         user = _lock_mfa_user(user, expected_generation, authenticated=True)
         if user.auth_source != source:
             raise MfaVerificationError('Sign in again before changing MFA.')
-        if source == 'ldap' and provider_proof is not None:
+        if source == 'ldap_directory' and provider_proof is not None:
             if user.external_id != provider_proof.subject:
                 raise MfaVerificationError('Verified provider reauthentication is required.')
             assurance_expires_at = provider_proof.verified_at + MFA_RECENT_ADMISSION_TTL
@@ -540,7 +540,7 @@ def confirm_mfa_replacement(user: User, code: str, *, expected_generation: int) 
         source = user.auth_source
         _require_replacement_source(source)
         provider_proof = None
-        if source == 'ldap':
+        if source == 'ldap_directory':
             record = db.session.execute(
                 select(AuthenticationMfaFactor.replacement_provider_proof).where(
                     AuthenticationMfaFactor.user_id == user.id,
