@@ -422,3 +422,42 @@ operation/source pair and cannot activate or resolve the remote draft,
 even when typed credential evidence exists. The candidate source remains
 disabled and requires independent acceptance plus an approved remote
 grant activation/use contract before any material access.
+
+
+### Native exact-version SSH transport candidate (#5204/#5186)
+
+The private native credential reader is implemented but intentionally has
+no application/worker caller until independently admitted remote operation
+authority exists. It reuses provider-specific HTTPS/CA/approved origins,
+canonical signed deployment scope and native cluster health. It derives
+one bounded exact path from the canonical representation and verifies its
+SHA-256 against the typed selector. No generic user path or provider fallback.
+The shared transport accepts only an explicit positive KV v2 version on
+a GET to a qualified data path, keeping arbitrary query strings disabled.
+
+The proposed dedicated provider policy identity is
+`kaori-ssh-read-<sha256>`, derived from provider, deployment, namespace,
+mount, path digest and exact version. The candidate reader requires a
+non-renewable token with only this policy, no inherited identity policy,
+TTL at most 300 seconds and no longer than the operation deadline.
+Native lookup-self and capabilities-self must report read-only access for
+the exact metadata/data paths. This does not prove global least privilege
+or parameter constraints: provider policy content and token issuance,
+revocation and custody still require independent qualification. See
+https://developer.hashicorp.com/vault/api-docs/system/capabilities-self
+and https://developer.hashicorp.com/vault/api-docs/secret/kv/kv-v2.
+The candidate policy naming/TTL and native response shapes require actual
+OpenBao/Vault review and UAT before enablement.
+
+Metadata is checked before data access; explicit version GET is followed
+by metadata, health, token and independent deployment rechecks, then
+native data schema validation. Deleted/destroyed/stale/mismatched version,
+root/broad/expired token, wrong provider/cluster, signature/deployment drift
+or response failure never yields credential material. The result is memory
+only, with sanitized errors and redacted repr. No real provider token,
+material retrieval, AppRole login, policy apply or SSH occurred in this
+source slice. Do not use the integration's metadata AppRole or any
+review-only job/grant as material authority. Canonical admitted worker
+operation, actual signed EE/runtime identity, independently approved
+disposable target, job/operation-specific grant and mandatory pre-use audit
+are still required before wiring this private transport to the worker.
