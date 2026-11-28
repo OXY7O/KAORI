@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
@@ -9,7 +10,12 @@
 <section id="alert-channel-readiness-registry" class="{{ table_ui.block_classes() }}">
     <header class="{{ table_ui.block_header_classes() }}">
         <div class="min-w-0">
-            <h3 class="{{ table_ui.block_title_classes() }}">Notification Channels</h3>
+            <div class="flex min-h-6 flex-wrap items-center gap-1.5">
+                <h3 class="{{ table_ui.block_title_classes() }}">Notification Channels</h3>
+                {{ table_label.result_count(readiness.pagination.total_items) }}
+                {{ info_tip.render('alert-channel-readiness-guide', 'Notification Channels',
+                    'Review channel eligibility for the current domain.', items=['Status describes the channel lifecycle; readiness describes routing eligibility.', 'Eligible does not prove successful delivery or permission to send. Manage configuration in Integrations.'], variant='guide') }}
+            </div>
             <p class="{{ table_ui.block_description_classes() }}">Review channel status and routing eligibility.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2" data-kaori-table-header-actions>
@@ -22,7 +28,6 @@
                     indicator='#alert-channel-readiness-loading', select='#alert-channel-readiness-registry',
                     push_url='false', sync='closest section:replace') }}
             {% endif %}
-            {{ table_label.metadata_label(table_label.count_text(readiness.pagination.total_items, 'Channel'), 'send') }}
         </div>
     </header>
     {{ loading_bar.render('alert-channel-readiness-loading', label='Refreshing Channel Readiness') }}

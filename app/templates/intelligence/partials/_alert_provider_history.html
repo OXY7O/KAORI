@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/table_registry.html" as table_registry %}
 {% import "components/loading_bar.html" as loading_bar %}
@@ -7,7 +8,12 @@
 <section id="alert-operations-provider-history" class="{{ table_ui.block_classes() }}">
     <header class="{{ table_ui.block_header_classes() }}">
         <div class="min-w-0">
-            <h3 class="{{ table_ui.block_title_classes() }}">Committed Provider Recovery & Closure</h3>
+            <div class="flex min-h-6 flex-wrap items-center gap-1.5">
+                <h3 class="{{ table_ui.block_title_classes() }}">Committed Provider Recovery & Closure</h3>
+                {{ table_label.result_count(payload.active_pagination.total_items) }}
+                {{ info_tip.render('alert-provider-history-guide', 'Committed Provider Recovery & Closure',
+                    'Review committed provider recovery evidence.', items=['Missing source alerts do not establish recovery.', 'Verification and closure require independently qualified evidence within the authorized instance.'], variant='guide') }}
+            </div>
             <p class="{{ table_ui.block_description_classes() }}">Review positive recovery, independent verification and source conflicts. Missing alerts never prove recovery.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
@@ -17,7 +23,6 @@
                     indicator='#alert-operations-provider-history-loading', select='#alert-operations-provider-history',
                     push_url='true', sync='closest section:replace') }}
             {% endif %}
-            {{ table_label.metadata_label(payload.active_pagination.total_items ~ ' Cases', 'history') }}
         </div>
     </header>
     {{ loading_bar.render('alert-operations-provider-history-loading', label='Refreshing Recovery History') }}

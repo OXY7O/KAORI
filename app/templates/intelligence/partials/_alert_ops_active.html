@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
@@ -56,7 +57,12 @@
                         <i data-lucide="list-filter" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0">
-                        <h3 class="{{ table_ui.block_title_classes() }}">Active Alert Queue</h3>
+                        <div class="flex min-h-6 flex-wrap items-center gap-1.5">
+                            <h3 class="{{ table_ui.block_title_classes() }}">Active Alert Queue</h3>
+                            {{ table_label.result_count(payload.active_pagination.total_items) }}
+                            {{ info_tip.render('alert-active-queue-guide', 'Active Alert Queue',
+                                'Filter open cases within the selected scope.', items=['Severity describes the admitted alert finding; Source State describes the latest qualified source evidence.', 'Workflow and Owner describe KAORI operator handling, not source recovery.', 'Review opens committed case details and qualified actions.'], variant='guide') }}
+                        </div>
                         <p class="{{ table_ui.block_description_classes() }}">{{ 'Review committed provider cases in the authorized instance. Fresh source evidence is checked independently of the last admitted case. Unknown does not establish recovery.' if payload.provider_case_mode else 'Filter and review open cases in the selected scope.' }}</p>
                     </div>
                 </div>
@@ -90,7 +96,6 @@
                             Clear Filters
                         </a>
                     {% endif %}
-                    {{ table_label.metadata_label(payload.active_pagination.total_items ~ ' Alert Cases', 'list-filter') }}
                 </div>
             </div>
             {{ loading_bar.render('alert-operations-active-loading', label='Refreshing Active Alert Queue') }}
