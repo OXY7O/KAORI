@@ -8,8 +8,7 @@
 {% import "components/framed_workspace_tabs.html" as framed_tabs %}
 {% import "components/info_tip.html" as info_tip %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-{% set runtime_observed = last_runtime_refresh is not none and last_runtime_refresh.status == 'succeeded' and canonical.last_checked_at is not none %}
-{% set health = canonical.health_status or 'not_observed' if runtime_observed else 'not_observed' %}
+{% set health = runtime_health %}
 {% set gate = 'ready' if runtime_observed and health == 'healthy' else ('blocked' if runtime_observed and health == 'unhealthy' else ('degraded' if runtime_observed else 'not_observed')) %}
 {% set finding = 'GitHub runtime observation is not available.' if not runtime_observed else ('GitHub App installation health is ' ~ health|replace('_', ' ') ~ '.') %}
 {% set next_action = 'Run Runtime Refresh to collect persisted health evidence.' if not runtime_observed else ('Review installation access and refresh runtime health.' if health != 'healthy' else 'Continue controlled Runtime Refresh after installation changes.') %}
@@ -69,8 +68,8 @@
     {% endif %}
     <div class="space-y-4 p-4 sm:p-5" data-kaori-github-runtime-layout>
         {{ runtime_decision.render(gate,
-                (health|replace('_', ' ') |title) if runtime_observed else 'Not Observed',
-        (health|replace('_', ' ')|title) if runtime_observed else 'Not Observed',
+                runtime_health_label,
+        runtime_health_label,
         'Persisted Runtime Refresh evidence',
         'Runtime Observed' if runtime_observed else 'Observation Required',
         'Runtime health is independent from Full Validation readiness.',
@@ -98,7 +97,7 @@
                 {% for label, value, helper in [
                     ('GitHub Host', installation.host_key, 'GitHub remains authoritative'),
                     ('Installation ID', installation.native_installation_id, 'Bound installation identity'),
-                    ('Runtime Health', health|replace('_', ' ')|title if runtime_observed else 'Not Observed', 'Runtime Refresh only'),
+                    ('Runtime Health', runtime_health_label, 'Runtime Refresh only'),
                     ('Full Validation', (canonical.readiness_status or 'validation_required')|replace('_', ' ')|title, 'Separate permission evidence')
                     ] %}
                     <article class="min-w-0 bg-surface-card p-4">
@@ -138,3 +137,6 @@
         {% endif %}
     </div>
 </section>
+{% if request.headers.get('HX-Request') == 'true' %}
+    {{ framed_tabs.badge_oob('github', 'runtime', runtime_health_label) }}
+{% endif %}

@@ -1224,6 +1224,8 @@ Metrics is presented to operators through the canonical **Metrics Source** categ
 
 Loading feedback is operation-scoped. Full/Core Validation may animate only its validation loader; Runtime Refresh may animate only its runtime loader; capability registry filters/pagination may animate only the capability-registry loader; binding validation may animate only the binding loader. A parent validation job MUST NOT automatically activate nested registry loading bars.
 
+**GitHub detail tab badge parity (#5396).** Runtime & History uses the existing GitHub Runtime Decision health projection (not a static job/delivery label or readiness status); full-page and Runtime Refresh HTMX responses use the same health label. Inventory & Lifecycle shows the unfiltered committed repository grant count as `1 Repository` / `N Repositories`, including known zero, and `Unknown` until a complete committed collection exists. Scoped inventory HTMX responses update the same framed badge; filtered matching totals never replace the committed count.
+
 Validation and Runtime HTMX responses MUST refresh their framed-tab status badge out-of-band so newly persisted readiness/health labels are visible without a full page refresh. Provider-level labels remain derived from provider evidence; consumer-binding labels remain derived from binding evidence.
 
 ### Provider empty-state and registration consistency
