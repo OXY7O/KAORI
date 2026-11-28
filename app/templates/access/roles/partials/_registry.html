@@ -1,9 +1,10 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
-<section id="role-registry" class="{{ table_ui.block_classes() }}">
+<section id="role-registry" class="{{ table_ui.block_classes(allow_overflow=true) }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
@@ -12,6 +13,17 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="{{ table_ui.block_title_classes() }}">Role Registry</h2>
                         {{ table_label.result_count(summary.matching) }}
+                        {{ info_tip.render('role-registry-guide',
+                                                'Role Registry',
+                                                'Review protected role defaults, effective authorization, and controlled delegation.',
+                                                items=[
+                                                'System roles are code-owned protected defaults; custom roles support governed administrator changes.',
+                                                'Assigned roles grant access only when role, user, and provider admission gates permit; inactive roles fail closed.',
+                                                'Delegation cannot exceed the actor\'s effective access; Local Database Super Admin remains a separate break-glass authority.',
+                                                'Permission dependencies derive from the code-owned catalog; baseline drift requires explicit review.'
+                                                ],
+                                                placement='right',
+                                                variant='guide') }}
                     </div>
                     <p class="{{ table_ui.block_description_classes() }}">Review role type, lifecycle state, baseline integrity, assignments, permission coverage, and governed actions.</p>
                 </div>

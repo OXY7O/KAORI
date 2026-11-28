@@ -2,6 +2,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -11,6 +12,17 @@
                 <div class="flex flex-wrap items-center gap-2">
                     <h2 class="{{ table_ui.block_title_classes() }}">Permission Registry</h2>
                     {{ table_label.result_count(matching_count) }}
+                    {{ info_tip.render('permission-registry-guide',
+                                            'Permission Registry',
+                                            'Understand code-owned permission contracts, registry alignment, dependencies, and role consumption.',
+                                            items=[
+                                            'Application code defines permission contracts and dependency closure; registry metadata is checked against this source.',
+                                            'Role coverage shows committed mappings; unassigned contracts are not automatically errors.',
+                                            'Drift requires review and a governed seed-rbac deployment, never a mutation during HTTP GET.',
+                                            'Access Administration delegation requires Local Database Super Admin; server checks enforce effective permission bounds.'
+                                            ],
+                                            placement='right',
+                                            variant='guide') }}
                 </div>
                 <p class="{{ table_ui.block_description_classes() }}">Inspect code-owned contracts, dependencies, role coverage, and registry alignment.</p>
             </div>

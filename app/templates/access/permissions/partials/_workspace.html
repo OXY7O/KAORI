@@ -1,6 +1,6 @@
 {% import "components/framed_workspace_tabs.html" as framed_tabs %}
 <section id="permission-workspace"
-         class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+         class="overflow-visible rounded-2xl border border-outline-default bg-surface-card shadow-sm">
     {% set workspace_tabs = [
             ('registry', 'Permission Registry', 'list-tree', url_for('access.permissions.index', view='registry')),
             ('coverage', 'Role Coverage', 'table-properties', url_for('access.permissions.index', view='coverage'))

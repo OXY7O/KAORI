@@ -420,20 +420,30 @@ def test_permission_detail_section_badges_derive_from_authoritative_contracts() 
     Environment().parse(detail)
 
 
-def test_permission_registry_overview_uses_one_title_level_guide() -> None:
-    source = read('app/templates/access/permissions/index.html')
-    Environment().parse(source)
-    assert '{% import "components/info_tip.html" as info_tip %}' in source
-    assert source.count("info_tip.render('permission-registry-overview-guide'") == 1
-    assert "variant='guide'" in source
-    assert source.index('>Permission Registry Overview</h2>') < source.index(
-        "info_tip.render('permission-registry-overview-guide'"
-    )
-    for meaning in (
-        'code-owned permission contracts',
-        'Role coverage shows committed mappings',
-        'governed seed-rbac deployment',
-        'Local Database Super Admin',
+def test_permission_workspace_owns_guides_and_overview_has_contract_metadata() -> None:
+    overview = read('app/templates/access/permissions/index.html')
+    registry = read('app/templates/access/permissions/partials/_registry.html')
+    coverage = read('app/templates/access/permissions/partials/_coverage.html')
+    workspace = read('app/templates/access/permissions/partials/_workspace.html')
+    for source in (overview, registry, coverage, workspace):
+        Environment().parse(source)
+    assert 'info_tip.render(' not in overview
+    assert "table_label.count_text(summary.canonical_permissions, 'Permission')" in overview
+    assert 'overflow-visible rounded-2xl' in workspace
+    for source, title, guide in (
+        (registry, 'Permission Registry', 'permission-registry-guide'),
+        (coverage, 'Role Coverage', 'permission-role-coverage-guide'),
     ):
-        assert meaning in source
-    assert 'whitespace-nowrap' not in source
+        assert source.count('info_tip.render(') == 1
+        heading = source.index(f'>{title}</h2>')
+        count = source.index('table_label.result_count(matching_count)')
+        assert heading < count < source.index(f"info_tip.render('{guide}'")
+        assert "variant='guide'" in source
+        for meaning in (
+            'code-owned permission contracts',
+            'Role coverage shows committed mappings',
+            'governed seed-rbac deployment',
+            'Local Database Super Admin',
+        ):
+            assert meaning in source
+    assert 'whitespace-nowrap' not in overview
