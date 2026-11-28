@@ -15,6 +15,9 @@ from app.extensions.db import db
 from app.infrastructure_automation.host_access_reference import assess_bound_host_access_references
 from app.infrastructure_automation.host_enrollment import get_scoped_host_assignment
 from app.infrastructure_automation.kubernetes.source_policy import PROFILE_KEY, SOURCE_CANDIDATE_SHA
+from app.integrations.secrets_management.secrets_pki.providers.openbao.inventory_scope import (
+    local_inventory_deployment_ref,
+)
 from app.models.automation import AutomationHostAccessBinding
 from app.models.integration import IntegrationInstance
 from app.models.scope_access import AutomationCredentialScopeTarget, ScopeAccessPolicy
@@ -35,6 +38,7 @@ def _current_representation(
     policy: ScopeAccessPolicy,
     target: AutomationCredentialScopeTarget,
     collection: SecretInventoryCollectionState | None,
+    provider_key: str,
 ) -> SecretProviderRepresentation | None:
     """Lock a complete bounded generation and select one exact identity."""
     if (
@@ -64,7 +68,7 @@ def _current_representation(
             integration_instance_id=policy.integration_instance_id,
             provider_namespace=policy.provider_namespace,
             mount=policy.mount,
-            provider_key='vault',
+            provider_key=provider_key,
             representation_role='material_authority',
             observation_status='observed',
         )
@@ -122,18 +126,29 @@ def exact_credential_target_current(
     provider = db.session.get(
         IntegrationInstance, policy.integration_instance_id, populate_existing=True, with_for_update=True
     )
-    vault = (
-        VaultInstance.query.filter_by(integration_instance_id=policy.integration_instance_id)
-        .populate_existing()
-        .with_for_update()
-        .one_or_none()
-    )
-    if (
-        provider is None
-        or vault is None
-        or (vault.namespace or '') != policy.provider_namespace
-        or policy.mount not in (vault.kv2_mounts or [])
-    ):
+    if provider is None or policy.provider_namespace is None or policy.mount is None:
+        return False
+    deployment_ref = None
+    if provider.provider_key == 'vault':
+        vault = (
+            VaultInstance.query.filter_by(integration_instance_id=policy.integration_instance_id)
+            .populate_existing()
+            .with_for_update()
+            .one_or_none()
+        )
+        if (
+            vault is None
+            or (vault.namespace or '') != policy.provider_namespace
+            or policy.mount not in (vault.kv2_mounts or [])
+        ):
+            return False
+    elif provider.provider_key == 'openbao':
+        deployment_ref = local_inventory_deployment_ref(
+            provider, namespace=policy.provider_namespace, mount=policy.mount, lock=True
+        )
+        if deployment_ref is None:
+            return False
+    else:
         return False
     collection = (
         SecretInventoryCollectionState.query.filter_by(
@@ -145,7 +160,7 @@ def exact_credential_target_current(
         .with_for_update()
         .one_or_none()
     )
-    representation = _current_representation(policy, target, collection)
+    representation = _current_representation(policy, target, collection, provider.provider_key)
     if representation is None or collection is None:
         return False
     version = (
@@ -170,5 +185,6 @@ def exact_credential_target_current(
         collection=collection,
         version=version,
         now=now,
+        provider_deployment_ref=deployment_ref,
     )
     return review.state == 'references_recorded' and review.fingerprint == target.reference_fingerprint
