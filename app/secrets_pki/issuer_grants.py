@@ -23,7 +23,7 @@ from app.extensions.db import db
 from app.models.integration import IntegrationInstance
 from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.secrets_pki.issuer_authority import resolve_deployment_authority
-from app.secrets_pki.issuer_lifecycle import begin_issuer_transaction
+from app.secrets_pki.issuer_lifecycle import begin_issuer_transaction, require_issuer_source
 
 _REQUEST = 'secrets_pki.request_credential_issuer'
 _APPROVE = 'secrets_pki.approve_credential_issuer'
@@ -57,9 +57,12 @@ def _require_principal(principal: int, permission: str, scope: CredentialIssuerS
         or source.provider_key != scope.provider_key
         or not source.enabled
         or source.lifecycle_status != 'active'
-        or source.readiness_status != 'ready'
         or evidence is None
     ):
+        raise _deny()
+    if source.provider_key == 'openbao':
+        require_issuer_source(scope, evidence)
+    elif source.readiness_status != 'ready':
         raise _deny()
     if permission == _REQUEST and principal != evidence.source_owner_id:
         raise _deny()
