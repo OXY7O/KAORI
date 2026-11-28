@@ -71,6 +71,10 @@ def test_channel_modal_renders_only_page_and_keeps_parent_history() -> None:
     assert 'Channel 00' in html and 'Channel 08' in html
     assert 'Channel 10' not in html and 'Channel 01' not in html
     assert 'must-not-be-rendered' not in html
+    assert '<table' not in html
+    assert 'data-channel-readiness-list' in html
+    assert html.count('data-channel-readiness-item') == 5
+    assert html.count('data-channel-readiness-status') == 5
     assert 'channel_page=2' in html
     assert 'name="asset" value="cluster-1"' in html
     assert 'name="channel_per_page"' in html
@@ -122,3 +126,34 @@ def test_channel_readiness_registry_renders_zero_one_and_many_channels() -> None
             assert 'No Notification Channels Configured' in html
         elif count == 12:
             assert 'channel_page=2' in html
+
+
+def test_channel_directory_preserves_lifecycle_and_readiness_labels() -> None:
+    app = Flask(__name__, template_folder=str(ROOT / 'app/templates'))
+    app.add_url_rule('/intelligence/alert-intelligence', 'alert_intelligence.index', lambda: '')
+    options = channel_options(2)
+    options[0]['name'] = 'A <long> channel name'
+    readiness = build_channel_readiness(options, MultiDict(), domain='kubernetes')
+    payload = {
+        'channel_readiness': readiness,
+        'domain': 'kubernetes',
+        'selected_asset_key': 'cluster-1',
+    }
+    with app.test_request_context('/intelligence/alert-intelligence?tab=routing'):
+        template = app.jinja_env.get_template('intelligence/partials/_alert_channel_readiness_registry.html')
+        html = template.render(payload=payload)
+        assert '<table' not in html
+        assert 'data-channel-readiness-directory' in html
+        assert html.count('data-channel-readiness-item') == 2
+        assert 'title="A &lt;long&gt; channel name"' in html
+        assert 'Ready' in html and 'Retired' in html
+        assert 'Eligible' in html and 'Unavailable' in html
+        assert 'must-not-be-rendered' not in html
+
+        payload['channel_readiness'] = build_channel_readiness(
+            options, MultiDict({'channel_q': 'not-found'}), domain='kubernetes'
+        )
+        html = template.render(payload=payload)
+        assert 'No Notification Channels Match' in html
+        assert 'data-channel-readiness-item' not in html
+        assert 'Clear Filters' in html
