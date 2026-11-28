@@ -1462,6 +1462,52 @@ def _verify_migrated_integration_navigation() -> None:
         raise AssertionError('Storage Analytics Hero must distinguish Inventory and Integration navigation')
 
 
+def _verify_kubernetes_hero_navigation() -> None:
+    """Protect the migrated Kubernetes Hero families from local CTA drift."""
+    consumers = (
+        'dashboard/partials/_hero.html',
+        'inventory/overview/partials/_hero.html',
+        'inventory/nodes/partials/_hero.html',
+        'inventory/pods/partials/_hero.html',
+        'inventory/workloads/partials/_hero.html',
+        'inventory/namespaces/partials/_hero.html',
+        'inventory/services/partials/_hero.html',
+        'inventory/ingresses/partials/_hero.html',
+        'inventory/configuration/partials/_hero.html',
+        'inventory/storage/partials/_hero.html',
+        'operations/configmaps/index.html',
+        'operations/secrets/index.html',
+        'operations/overview.html',
+        'governance/overview/index.html',
+        'governance/tls_certificates/partials/_hero.html',
+        'tenant/base.html',
+        'analytics/overview/partials/_hero_posture.html',
+        'analytics/alerts/partials/_hero.html',
+        'analytics/capacity/partials/_hero.html',
+        'analytics/forecast/partials/_hero.html',
+        'analytics/storage/partials/_hero.html',
+        'analytics/top_consumers/partials/_hero.html',
+        'analytics/utilization/partials/_hero.html',
+        'analytics/workload/partials/_hero.html',
+        'governance/internal_certificates/index.html',
+    )
+    for relative in consumers:
+        source = _read(TEMPLATES / 'kubernetes' / relative)
+        _require_tokens(
+            source,
+            (
+                "integration_endpoint='integrations.kubernetes'",
+                "current_user.has_permission('integrations.manage')",
+            ),
+            relative,
+        )
+    topology = _read(TEMPLATES / 'kubernetes/inventory/topology/partials/_hero.html')
+    _require_tokens(topology, ("page_hero.integration_navigation('integrations.kubernetes'",), 'Topology Hero')
+    tenant = _read(TEMPLATES / 'kubernetes/tenant/base.html')
+    if 'Review Cluster Integrations' in tenant:
+        raise AssertionError('Tenant Hero must use the canonical cluster Integration navigation label')
+
+
 def verify() -> None:
     hero = _read(HERO)
     standard = _read(STANDARD)
@@ -1616,6 +1662,7 @@ def verify() -> None:
     _verify_dashboard_profile()
     _verify_hero_context_semantics()
     _verify_migrated_integration_navigation()
+    _verify_kubernetes_hero_navigation()
     _verify_blocked_context_ownership()
     _verify_registry_blocked_hero_actions()
     _verify_analytics_metadata_ownership()
