@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
 {% set can_manage = current_user.has_permission('integrations.manage') %}
@@ -47,7 +48,13 @@
     </section>
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
         <header class="border-b border-outline-subtle bg-surface-elevated px-4 py-3.5 sm:px-5">
-            <h3 class="{{ table_ui.block_title_classes() }}">Template Registry</h3>
+            <div class="flex min-h-6 flex-wrap items-center gap-1.5">
+                <h3 class="{{ table_ui.block_title_classes() }}">Template Registry</h3>
+                {{ table_label.result_count(payload.templates|length) }}
+                {{ info_tip.render('alert-template-registry-guide', 'Template Registry',
+                    'Review the available provider and event variants.',
+                    items=['Built-in means the system template is in use.', 'Override means a saved custom provider/event variant is in use.', 'Rendered Preview shows the message content for review.'], variant='guide') }}
+            </div>
             <p class="{{ table_ui.block_description_classes() }}">Expand only the provider/event pair you need. Built-ins remain active until a governed override is saved and can always be restored.</p>
         </header>
         <div class="divide-y divide-outline-subtle">

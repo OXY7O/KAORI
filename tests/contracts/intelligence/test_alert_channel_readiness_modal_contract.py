@@ -106,7 +106,7 @@ def test_channel_readiness_registry_renders_zero_one_and_many_channels() -> None
     app.add_url_rule('/intelligence/alert-intelligence', 'alert_intelligence.index', lambda: '')
     template = app.jinja_env.get_template('intelligence/partials/_alert_channel_readiness_registry.html')
 
-    for count, expected_label in ((0, '0 Channels'), (1, '1 Channel'), (12, '12 Channels')):
+    for count, expected_label in ((0, '0 Results'), (1, '1 Result'), (12, '12 Results')):
         readiness = build_channel_readiness(channel_options(count), MultiDict(), domain='kubernetes')
         payload = {
             'channel_readiness': readiness,
