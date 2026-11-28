@@ -12,6 +12,7 @@
 {% set committed = inventory.total is not none %}
 {% set can_sync = readiness == 'ready' and canonical.enabled and canonical.lifecycle_status == 'active' %}
 <section id="github-inventory-decision" class="{{ ui.section_shell_classes() }} font-sans"
+         hx-sync="this:drop"
          data-kaori-github-inventory-lifecycle
          data-kaori-inventory-lifecycle-decision>
     {{ validation_poller.render(sync_active,

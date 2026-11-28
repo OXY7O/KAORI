@@ -113,6 +113,9 @@ def test_projection_uses_only_authorized_installation(read_db):
     assert one.total == 1
     assert len(one.rows) == 1
     assert one.rows[0].full_name == 'org/private-repo'
+    grant = session.execute(select(SourceRepositoryGrant)).scalar_one()
+    assert one.rows[0].grant_valid_from == grant.valid_from
+    assert one.rows[0].grant_observed_at == grant.last_observed_at
     other = read_installation_inventory(session, authorized_installation_id=installations[1])
     assert other.total is None
     assert other.rows == ()
