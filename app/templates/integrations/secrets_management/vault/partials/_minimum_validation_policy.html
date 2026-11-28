@@ -1,31 +1,47 @@
-{% import "integrations/components/_workspace.html" as integration_ui %}
-{% import "components/table.html" as table_ui %}
-{% import "integrations/components/_record_actions.html" as record_actions %}
+{% import "integrations/components/_provider_setup_reference.html" as setup_reference %}
 {% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
-<section class="{{ integration_ui.section_shell_classes() }}"
-         data-kaori-vault-minimum-policy
-         aria-labelledby="vault-minimum-policy-title">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
-        <div class="flex min-w-0 items-start gap-3">
-            {{ integration_ui.palette_icon('shield-check', 'brand', size='md') }}
-            <div class="min-w-0">
-                <h3 id="vault-minimum-policy-title"
-                    class="text-sm font-semibold text-content-primary">Minimum Vault Permission &amp; Policy Example</h3>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">A minimal AppRole validation policy; optional mount and KV v2 metadata permissions require separate approval.</p>
-            </div>
-        </div>
-        {{ record_actions.view_more('vault-policy-examples-modal', label='Open Policy Examples', role='policy') }}
-    </header>
-    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2">
-        <article class="bg-surface-card px-4 py-3">
-            <p class="text-xs font-semibold text-content-primary">Baseline Validation AppRole</p>
-            <p class="mt-1 text-xs leading-5 text-content-secondary">Authenticate with AppRole and read only the current token identity; provider health needs no elevated ACL.</p>
-        </article>
-        <article class="bg-surface-card px-4 py-3">
-            <p class="text-xs font-semibold text-content-primary">Optional Metadata Readers</p>
-            <p class="mt-1 text-xs leading-5 text-content-secondary">Approve system mount discovery or named KV v2 metadata scope independently; Secret values remain excluded.</p>
-        </article>
-    </div>
+{% import "integrations/components/_provider_capability_detail.html" as capability_detail %}
+{% import "components/workspace_tabs.html" as workspace_tabs %}
+{% set policy_tabs = [
+    ('baseline', 'Baseline Validation', 'shield-check'),
+    ('mounts', 'Mount Discovery', 'database'),
+    ('metadata', 'KV v2 Metadata', 'key-round')
+] %}
+<div x-data="{ activeTab: 'baseline', setTab(tab) { this.activeTab = tab; }, moveTab(currentTab, direction, prefix) { const tabs = ['baseline', 'mounts', 'metadata']; const currentIndex = tabs.indexOf(currentTab); const nextIndex = direction === 'home' ? 0 : (direction === 'end' ? tabs.length - 1 : (currentIndex + direction + tabs.length) % tabs.length); this.activeTab = tabs[nextIndex]; this.$nextTick(() => document.getElementById(prefix + '-tab-' + tabs[nextIndex])?.focus()); } }">
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
+             data-kaori-vault-minimum-policy
+             data-kaori-provider-setup-reference="vault">
+        {{ setup_reference.summary('shield-check', 'Minimum Vault Permission & Policy Example',
+            'A minimal AppRole validation policy; optional mount and KV v2 metadata permissions require separate approval.',
+            'Open Policy Examples', [
+                ('Baseline Validation AppRole', 'Authenticate with AppRole and read only the current token identity; provider health needs no elevated ACL.'),
+                ('Optional Metadata Readers', 'Approve system mount discovery or named KV v2 metadata scope independently; Secret values remain excluded.')
+            ], dialog_id='vault-policy-examples-modal') }}
+    </section>
+    {% set policy_navigation %}{{ workspace_tabs.render(policy_tabs, prefix='vault-policy', aria_label='Vault Policy Example Sections') }}{% endset %}
+    {% set baseline_hcl -%}
+# Attach to the approved KAORI AppRole.
+# Vault health and auth/approle/login require no token ACL grant.
+path "auth/token/lookup-self" {
+  capabilities = ["read"]
+}
+    {%- endset %}
+    {% set mounts_hcl -%}
+# Separate optional policy: mount names may reveal topology.
+path "sys/mounts" {
+  capabilities = ["read"]
+}
+    {%- endset %}
+    {% set metadata_hcl -%}
+# Replace approved-kv-mount with a reviewed KV v2 mount name.
+# List names at the root, read/list metadata at approved paths.
+path "approved-kv-mount/metadata" {
+  capabilities = ["list"]
+}
+path "approved-kv-mount/metadata/*" {
+  capabilities = ["read", "list"]
+}
+    {%- endset %}
     {% call record_detail_modal.render(
         'vault-policy-examples-modal',
         'vault-policy',
@@ -34,73 +50,44 @@
         'Illustrative Vault HCL for an administrator to review; no policy is applied by KAORI.',
         icon='shield-check',
         footer_text='Examples are read-only guidance. Vault ACLs and AppRole assignment remain provider-owned.',
-        size='standard'
+        size='standard',
+        navigation_html=policy_navigation
         ) %}
         <div class="space-y-4" data-kaori-vault-policy-example-list>
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
-                     x-data="{ copied: false }"
+            <section id="vault-policy-panel-baseline"
+                     role="tabpanel"
+                     aria-labelledby="vault-policy-tab-baseline"
+                     x-show="activeTab === 'baseline'"
                      data-kaori-vault-baseline-policy>
-                <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3">
-                    <div class="min-w-0">
-                        <h3 class="text-sm font-semibold text-content-primary">Baseline · Full Validation</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">AppRole login is the authentication step. A self-lookup read is the required authenticated token check.</p>
-                    </div>
-                    <button type="button"
-                            class="{{ table_ui.action_classes() }}"
-                            @click="navigator.clipboard.writeText($refs.vaultBaselinePolicy.textContent.trim()).then(() => copied = true)">
-                        <i data-lucide="copy" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                        <span x-text="copied ? 'Copied' : 'Copy HCL'">Copy HCL</span>
-                    </button>
-                </header>
-                <pre class="max-h-52 overflow-auto bg-kaori-primary-dark p-4 text-xs leading-5 text-brand-foreground"><code x-ref="vaultBaselinePolicy"># Attach to the approved KAORI AppRole.
-# Vault health and auth/approle/login require no token ACL grant.
-path "auth/token/lookup-self" {
-  capabilities = ["read"]
-}</code></pre>
+                {{ capability_detail.verification_panel(
+                    'Baseline · Full Validation',
+                    'AppRole login is the authentication step. A self-lookup read is the required authenticated token check.',
+                    value=baseline_hcl, copy_label='Copy HCL',
+                    metadata=['Required · Full Validation', 'Access · Token self-lookup']) }}
             </section>
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
-                     x-data="{ copied: false }"
+            <section id="vault-policy-panel-mounts"
+                     role="tabpanel"
+                     aria-labelledby="vault-policy-tab-mounts"
+                     x-show="activeTab === 'mounts'"
+                     x-cloak
                      data-kaori-vault-mount-policy>
-                <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3">
-                    <div class="min-w-0">
-                        <h3 class="text-sm font-semibold text-content-primary">Optional · Mount Discovery</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Only if approved for `GET /v1/sys/mounts`. A denied optional check is Limited, not a required validation failure.</p>
-                    </div>
-                    <button type="button"
-                            class="{{ table_ui.action_classes() }}"
-                            @click="navigator.clipboard.writeText($refs.vaultMountPolicy.textContent.trim()).then(() => copied = true)">
-                        <i data-lucide="copy" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                        <span x-text="copied ? 'Copied' : 'Copy HCL'">Copy HCL</span>
-                    </button>
-                </header>
-                <pre class="max-h-44 overflow-auto bg-kaori-primary-dark p-4 text-xs leading-5 text-brand-foreground"><code x-ref="vaultMountPolicy"># Separate optional policy: mount names may reveal topology.
-path "sys/mounts" {
-  capabilities = ["read"]
-}</code></pre>
+                {{ capability_detail.verification_panel(
+                    'Optional · Mount Discovery',
+                    'Only if approved for GET /v1/sys/mounts. A denied optional check is Limited, not a required validation failure.',
+                    value=mounts_hcl, copy_label='Copy HCL',
+                    metadata=['Optional · Mount discovery', 'Access · Read only']) }}
             </section>
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
-                     x-data="{ copied: false }"
+            <section id="vault-policy-panel-metadata"
+                     role="tabpanel"
+                     aria-labelledby="vault-policy-tab-metadata"
+                     x-show="activeTab === 'metadata'"
+                     x-cloak
                      data-kaori-vault-kv-metadata-policy>
-                <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3">
-                    <div class="min-w-0">
-                        <h3 class="text-sm font-semibold text-content-primary">Optional · Approved KV v2 Metadata</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Replace the mount placeholder with a narrowly approved KV v2 mount; this is separate inventory authorization, not Full Validation.</p>
-                    </div>
-                    <button type="button"
-                            class="{{ table_ui.action_classes() }}"
-                            @click="navigator.clipboard.writeText($refs.vaultKvMetadataPolicy.textContent.trim()).then(() => copied = true)">
-                        <i data-lucide="copy" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                        <span x-text="copied ? 'Copied' : 'Copy HCL'">Copy HCL</span>
-                    </button>
-                </header>
-                <pre class="max-h-52 overflow-auto bg-kaori-primary-dark p-4 text-xs leading-5 text-brand-foreground"><code x-ref="vaultKvMetadataPolicy"># Replace approved-kv-mount with a reviewed KV v2 mount name.
-# List names at the root, read/list metadata at approved paths.
-path "approved-kv-mount/metadata" {
-  capabilities = ["list"]
-}
-path "approved-kv-mount/metadata/*" {
-  capabilities = ["read", "list"]
-}</code></pre>
+                {{ capability_detail.verification_panel(
+                    'Optional · Approved KV v2 Metadata',
+                    'Replace the mount placeholder with a narrowly approved KV v2 mount; this is separate inventory authorization, not Full Validation.',
+                    value=metadata_hcl, copy_label='Copy HCL',
+                    metadata=['Optional · Approved mount', 'Access · Metadata only']) }}
             </section>
             <div class="rounded-lg border border-outline-subtle bg-surface-subtle px-4 py-3"
                  data-kaori-vault-policy-boundary>
@@ -109,4 +96,4 @@ path "approved-kv-mount/metadata/*" {
             </div>
         </div>
     {% endcall %}
-</section>
+</div>

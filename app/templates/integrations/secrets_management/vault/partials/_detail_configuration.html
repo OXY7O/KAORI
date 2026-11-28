@@ -26,5 +26,6 @@ operational_metadata=[
 'Namespace · ' ~ (instance.namespace or 'Root'),
 'Connection · ' ~ ('Enabled' if instance.enabled else 'Disabled'),
 'KV v2 · Metadata Only'
-]) }}
-{% include "integrations/secrets_management/vault/partials/_minimum_validation_policy.html" %}
+],
+setup_reference_template="integrations/secrets_management/vault/partials/_minimum_validation_policy.html"
+) }}

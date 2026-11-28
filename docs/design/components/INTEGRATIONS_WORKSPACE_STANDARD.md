@@ -63,10 +63,12 @@ validation is blocked or not observed, do not display stale prior
 capability records as newly Ready.
 
 **Vault permission guidance and capability explorer (Human UAT #4849):**
-Vault Configuration retains the shared provider Connection Contract and adds a
-bounded **Minimum Vault Permission & Policy Example** below it, matching the
-Kubernetes explanatory RBAC reference without introducing provider-managed
-policy writes. It shows one AppRole Full Validation baseline requiring only
+Vault Configuration retains the shared provider Connection Contract and places the
+bounded **Minimum Vault Permission & Policy Example** in its shared setup-reference
+slot after Operational Context and before the Configure Connection footer (#5455).
+The summary, native dialog, integrated tabs and technical verification panels reuse
+existing components. Baseline Validation, Mount Discovery and KV v2 Metadata are
+separate tabs with independent copy actions; no provider-managed policy writes. It shows one AppRole Full Validation baseline requiring only
 `auth/token/lookup-self` read; `sys/health` and AppRole login do not imply
 elevated client token ACL. Optional `sys/mounts` read and approved, named
 KV v2 `metadata` LIST/read examples are independent, never automatically
