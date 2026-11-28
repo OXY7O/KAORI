@@ -1,6 +1,6 @@
 {% import "components/page_hero.html" as page_hero %}
 {% from "integrations/components/_semantic_status.html" import integration_hero_status %}
-{% macro render(eyebrow_icon, eyebrow_label, leading_icon, title, description, api_icon, api_label, identity_label, identity_value, environment_label, readiness, back_url, aria_label) -%}
+{% macro render(eyebrow_icon, eyebrow_label, leading_icon, title, description, api_icon, api_label, identity_label, identity_value, environment_label, readiness, back_url, aria_label, immutable_source=false) -%}
     <section class="{{ page_hero.shell_classes() }}" data-kaori-provider-edit-hero>
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
@@ -12,8 +12,8 @@
                     <p class="mt-2 {{ page_hero.description_classes() }}">{{ description }}</p>
                     <div class="{{ page_hero.metadata_row_classes() }}">
                         {{ page_hero.meta_label(api_icon, api_label) }}
-                        {{ page_hero.meta_label('shield-check', 'Revalidate After Change') }}
-                        {{ page_hero.meta_label('link-2', 'Bindings Preserved') }}
+                        {{ page_hero.meta_label('shield-check', 'Immutable Source' if immutable_source else 'Revalidate After Change') }}
+                        {{ page_hero.meta_label('link-2', 'Evidence Preserved' if immutable_source else 'Bindings Preserved') }}
                     </div>
                 {% endcall %}
             </div>
@@ -22,18 +22,18 @@
                     <div class="flex items-start justify-between gap-4">
                         <div class="min-w-0">
                             <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Configuration Posture</p>
-                            <h2 class="{{ page_hero.context_panel_title_classes() }}">Preserve Identity, Revalidate Changes</h2>
+                            <h2 class="{{ page_hero.context_panel_title_classes() }}">{{ 'Preserve Registered Source' if immutable_source else 'Preserve Identity, Revalidate Changes' }}</h2>
                         </div>
                         {{ integration_hero_status(readiness or 'validation_required', (readiness or 'validation_required')|replace('_', ' ')|title) }}
                     </div>
                     <div class="{{ page_hero.context_panel_metrics_classes() }}">
                         {{ page_hero.context_metric('fingerprint', identity_label, identity_value, 'Environment · ' ~ environment_label, value_classes='truncate text-sm font-semibold leading-5') }}
-                        {{ page_hero.context_metric('scan-search', 'After Save', 'Full Validation', 'Refresh provider evidence', value_classes='text-sm font-semibold leading-5') }}
+                        {{ page_hero.context_metric('scan-search', 'Source Change' if immutable_source else 'After Save', 'New Connection' if immutable_source else 'Full Validation', 'Requires fresh validation' if immutable_source else 'Refresh provider evidence', value_classes='text-sm font-semibold leading-5') }}
                     </div>
                     <a href="{{ back_url }}"
                        class="{{ page_hero.context_single_action_classes() }}">
                         <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
-                        Back to Registry
+                        {{ 'Back to Connection' if immutable_source else 'Back to Registry' }}
                     </a>
                 </div>
             </aside>

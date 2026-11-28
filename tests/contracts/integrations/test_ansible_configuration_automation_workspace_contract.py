@@ -139,9 +139,9 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
                 is_authenticated=True, has_permission=lambda permission: permission == 'integrations.manage'
             ),
         )
-    assert 'data-dialog-target="ansible-configure-connection-dialog"' in allowed_configuration
-    assert 'id="ansible-configure-connection-dialog"' in allowed_configuration
-    assert 'Register Replacement Connection' in allowed_configuration
+    assert 'href="/integrations/ansible/connections/1/configure"' in allowed_configuration
+    assert 'Configure Connection' in allowed_configuration
+    assert 'ansible-configure-connection-dialog' not in allowed_configuration
     assert 'data-dialog-target="ansible-minimum-validation-setup-dialog"' in allowed_configuration
     assert 'id="ansible-minimum-validation-setup-dialog"' in allowed_configuration
     assert allowed_configuration.count('data-kaori-compact-evidence-value') == 3
@@ -255,7 +255,7 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
     ):
         assert name in detail
     # Configuration reuses the same canonical Connection Contract as the
-    # other integration providers, without fabricating an Ansible Edit route.
+    # other integration providers; unauthorized users see no configure link.
     configuration = detail.split('id="ansible-panel-configuration"', 1)[1].split('id="ansible-panel-validation"', 1)[0]
     assert configuration.count('data-kaori-provider-configuration-contract') == 1
     assert configuration.count('data-kaori-provider-operational-context') == 1
@@ -285,6 +285,7 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
     assert 'data-kaori-provider-immutable-connection' in configuration
     assert 'data-dialog-target="ansible-configure-connection-dialog"' not in configuration
     assert 'id="ansible-configure-connection-dialog"' not in configuration
+    assert 'href="/integrations/ansible/connections/1/configure"' not in configuration
     assert 'data-kaori-ansible-minimum-validation-setup' in configuration
     assert 'Open Setup Guide' in configuration
     assert configuration.index('data-kaori-provider-operational-context') < configuration.index(

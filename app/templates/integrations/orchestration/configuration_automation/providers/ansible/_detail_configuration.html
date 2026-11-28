@@ -1,7 +1,4 @@
 {% import "integrations/components/_provider_configuration_contract.html" as provider_configuration_contract %}
-{% import "integrations/components/_record_detail_modal.html" as record_modal %}
-{% import "components/action_button.html" as action_button %}
-{% import "integrations/components/_workspace.html" as integration_ui %}
 {% set can_configure = current_user.is_authenticated and current_user.has_permission("integrations.manage") %}
 {% set readiness = connection.readiness_status or "validation_required" %}
 {% set summary_items = [
@@ -31,10 +28,9 @@ evidence_items,
 "Git defines; Ansible executes; KAORI governs evidence. Source validation does not authorize SSH or Kubernetes mutation.",
 flow_items,
 "Source changes need profile review; execution environment qualification is independent. Host and Kubernetes operations are not admitted.",
-none,
+url_for("integrations.ansible_connection_configure", instance_id=connection.id) if can_configure else none,
 operational_metadata=operational_metadata,
 setup_reference_template="integrations/orchestration/configuration_automation/providers/ansible/_minimum_validation_setup.html",
-configure_dialog_id="ansible-configure-connection-dialog" if can_configure else none,
 contract_description="Review immutable identity and toolchain pins. No credentials or raw inventory stored.",
 evidence_description="Committed Git proof and image reference; no live provider request.",
 guide_description="Inspect registered source and execution boundaries without inferring runtime readiness.",
@@ -48,43 +44,3 @@ compact_evidence_labels=("Git Commit SHA", "Git Tree SHA", "Execution Environmen
 monospace_evidence_labels=("Git Commit SHA", "Git Tree SHA", "Execution Environment") 
 ) }}
 
-
-{% if can_configure %}
-    {% call record_modal.render('ansible-configure-connection-dialog', 'ansible-configure-connection', 'Ansible Integration', 'Configure Connection', 'Review the registered configuration and the governed replacement path.', icon='settings-2', footer_text='The current connection and historical evidence remain unchanged.', size='standard') %}
-        <div class="space-y-4">
-            <section class="{{ integration_ui.section_shell_classes() }}">
-                {{ integration_ui.section_header('lock-keyhole', 'Current Configuration', 'Immutable source and candidate compatibility references.') }}
-                <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2">
-                    {% for label, value, helper in summary_items %}
-                        <div class="min-w-0 bg-surface-card p-4">
-                            <dt class="text-xs font-semibold text-content-muted">{{ label }}</dt>
-                            <dd class="mt-1 break-words text-sm font-semibold text-content-primary">{{ value }}</dd>
-                        </div>
-                    {% endfor %}
-                    {% for icon, tone, label, value, helper in evidence_items %}
-                        <div class="min-w-0 bg-surface-card p-4">
-                            <dt class="text-xs font-semibold text-content-muted">{{ label }}</dt>
-                            <dd class="mt-1 break-all font-mono text-xs font-semibold text-content-primary">{{ value }}</dd>
-                        </div>
-                    {% endfor %}
-                </dl>
-            </section>
-            <section class="{{ integration_ui.section_shell_classes() }}">
-                {{ integration_ui.section_header('git-branch', 'Replacement Connection', 'Changes to the reviewed source or version require a separately validated connection.') }}
-                <div class="space-y-3 p-4 sm:p-5">
-                    <ol class="list-decimal space-y-2 pl-5 text-sm text-content-secondary">
-                        <li>Register a new connection using the currently approved source and version policy shown in the registration form.</li>
-                        <li>Run Validate Source and save only after the server accepts the current form proof.</li>
-                        <li>Independently enroll and requalify target inventory, access references and execution prerequisites. Existing evidence is not transferred.</li>
-                    </ol>
-                    <div class="flex justify-end">
-                        <a href="{{ url_for('integrations.ansible_new_connection') }}" class="{{ action_button.classes('primary') }}">
-                            <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
-                            Register Replacement Connection
-                        </a>
-                    </div>
-                </div>
-            </section>
-        </div>
-    {% endcall %}
-{% endif %}

@@ -190,6 +190,29 @@ def test_choose_validate_save_manage_with_canonical_database(app):
         b'No committed execution history',
     ):
         assert expected in detail.data
+    configure_url = f'/integrations/ansible/connections/{identity}/configure'
+    assert configure_url.encode() in detail.data
+    assert b'ansible-configure-connection-dialog' not in detail.data
+    configuration = client.get(configure_url)
+    assert configuration.status_code == 200
+    assert b'data-kaori-provider-edit-hero' in configuration.data
+    assert b'data-kaori-ansible-immutable-configuration' in configuration.data
+    assert b'Register Replacement Connection' in configuration.data
+    assert b'id="ansible-source-registration-form"' not in configuration.data
+    assert b'id="ansible-proof-field"' not in configuration.data
+    assert b'name="action" value="save"' not in configuration.data
+    revision_field = re.search(rb'<input\b[^>]*\bid="revision"[^>]*>', configuration.data)
+    assert revision_field is not None
+    assert b'value="' + SOURCE_CANDIDATE_SHA.encode() + b'"' in revision_field.group()
+    assert b'readonly' in revision_field.group()
+    assert client.post(configure_url, data={'revision': 'f' * 40}).status_code == 405
+    assert client.get('/integrations/ansible/connections/0/configure').status_code == 404
+    with app.app_context():
+        current = db.session.get(IntegrationInstance, identity)
+        assert current.metadata_json['source_sha'] == SOURCE_CANDIDATE_SHA
+        assert current.metadata_json['execution_enabled'] is False
+        assert current.metadata_json['mutation_authorized'] is False
+        assert IntegrationInstance.query.filter_by(integration_type='configuration_automation').count() == 1
     registry = client.get('/integrations/ansible')
     assert b'Kubespray Lab' in registry.data
     assert b'Validation Required' in registry.data
@@ -255,4 +278,38 @@ def test_route_permission_denial_preserves_registration_boundary(app, monkeypatc
     client = app.test_client()
     for route in ('/integrations/ansible', '/integrations/ansible/profiles', '/integrations/ansible/connections/new'):
         assert client.get(route).status_code == 403
+    assert client.get('/integrations/ansible/connections/1/configure').status_code == 403
     assert client.post('/integrations/ansible/connections/new', data={**_input(), 'action': 'save'}).status_code == 403
+
+
+def test_configure_preserves_superseded_version_choices(app):
+    with app.app_context():
+        row = IntegrationInstance(
+            integration_type='configuration_automation',
+            provider_key='ansible',
+            adapter_key='ansible_runner',
+            name='Historical connection',
+            environment='laboratory',
+            enabled=False,
+            lifecycle_status='active',
+            readiness_status='validation_required',
+            metadata_json={
+                'profile_key': PROFILE_KEY,
+                'source_repository': REPOSITORY,
+                'source_sha': 'a' * 40,
+                'ansible_core_version': '2.19.3',
+                'ansible_runner_version': '2.4.3',
+                'kubespray_release': 'v2.32.0',
+            },
+        )
+        db.session.add(row)
+        db.session.commit()
+        identity = row.id
+    result = app.test_client().get(f'/integrations/ansible/connections/{identity}/configure')
+    assert result.status_code == 200
+    assert re.search(rb'<option\b[^>]*\bselected\b[^>]*\bvalue="2\.19\.3"[^>]*>2\.19\.3</option>', result.data)
+    assert b'a' * 40 in result.data
+    with app.app_context():
+        row = db.session.get(IntegrationInstance, identity)
+        assert row.metadata_json['ansible_core_version'] == '2.19.3'
+        assert row.metadata_json['source_sha'] == 'a' * 40
