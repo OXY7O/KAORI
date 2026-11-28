@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from time import perf_counter
 from typing import Any
 
@@ -54,10 +55,21 @@ class KV2HTTPTransport:
         self.timeout = max(1, min(int(timeout), 30))
 
     def _request(
-        self, path: str, *, method: str = 'GET', token: str | None = None, payload: dict[str, Any] | None = None
+        self, path: str, *, method: str = 'GET', token: str | None = None, payload: dict[str, Any] | None = None,
+        kv2_version: int | None = None,
     ) -> tuple[int, dict[str, Any]]:
         if not path.startswith('/v1/') or '//' in path or '?' in path:
             raise SecretProviderError(f'Unsupported {self.provider_label} API request.')
+        options: dict[str, Any] = {}
+        if kv2_version is not None:
+            if (
+                method != 'GET' or payload is not None or token is None
+                or type(kv2_version) is not int or not 1 <= kv2_version <= 2_147_483_647
+                or re.fullmatch(r'/v1/[A-Za-z0-9_-]+/data/[A-Za-z0-9._/-]+', path) is None
+                or any(part in ('.', '..') for part in path.split('/'))
+            ):
+                raise SecretProviderError('Unsupported exact KV v2 version request.')
+            options['params'] = {'version': kv2_version}
         headers = {'Accept': 'application/json'}
         if self.namespace:
             headers['X-Vault-Namespace'] = self.namespace
@@ -75,6 +87,7 @@ class KV2HTTPTransport:
                     timeout=self.timeout,
                     verify=os.getenv(self.ca_bundle_env, '').strip() or True,
                     allow_redirects=False,
+                    **options,
                 )
         except requests.RequestException as exc:
             raise SecretProviderError(
