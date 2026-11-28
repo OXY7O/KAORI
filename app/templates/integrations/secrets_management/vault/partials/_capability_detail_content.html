@@ -1,7 +1,4 @@
-{% import "components/table_label.html" as table_label %}
-{% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "integrations/components/_provider_capability_detail.html" as capability_detail %}
-{% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set status_tone = result.status_key %}
 {% set decision_title = 'Capability Available' if result.observed else ('Optional Discovery Limited' if result.limited else ('Required Capability Gap' if result.gap else 'Capability Not Observed')) %}
 {% if result.observed %}
@@ -97,49 +94,18 @@
         {% call capability_detail.field('Next Action', 'data-kaori-provider-capability-action') %}{{ next_action }}{% endcall %}
     {% endcall %}
     {% if verification_command %}
-        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
-                 data-kaori-capability-verification-command
-                 x-data="{ copied: false }">
-            <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-                <div class="flex min-w-0 items-start gap-3">
-                    {{ integration_ui.palette_icon('terminal-square', 'info', size='md') }}
-                    <div class="min-w-0">
-                        <h3 class="text-sm font-semibold text-content-primary">Verification Command</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary lg:line-clamp-1">Read-only CLI check; not proof of the KAORI AppRole.</p>
-                    </div>
-                </div>
-                <button type="button"
-                        @click="navigator.clipboard.writeText($refs.script.textContent.trim()).then(() => { copied = true; setTimeout(() => copied = false, 1600) })"
-                        class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-surface-subtle hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                    <i data-lucide="copy" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                    <span x-text="copied ? 'Copied' : 'Copy Script'">Copy Script</span>
-                </button>
-            </header>
-            <div class="border-b border-outline-subtle bg-surface-subtle px-5 py-3">
-                <div class="flex flex-wrap gap-2">
-                    {{ table_label.metadata_label("Scope · Approved operator CLI context") }}
-                    {{ table_label.metadata_label("Identity · Operator-managed, not KAORI AppRole") }}
-                </div>
-            </div>
-            <pre class="max-h-64 overflow-auto whitespace-pre-wrap break-words bg-surface-card px-5 py-4 text-xs leading-5 text-content-secondary"><code x-ref="script">{{ verification_command }}</code></pre>
-        </section>
+        {{ capability_detail.verification_panel('Verification Command',
+                    'Read-only CLI check; not proof of the KAORI AppRole.',
+                    value=verification_command,
+                    copy_label='Copy Script',
+                    metadata=['Scope · Approved operator CLI context', 'Identity · Operator-managed, not KAORI AppRole'],
+                    legacy_marker='data-kaori-capability-verification-command') }}
     {% else %}
-        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
-                 data-kaori-capability-verification-command
-                 data-kaori-capability-verification-unavailable>
-            <header class="border-b border-outline-subtle px-5 py-4">
-                <div class="flex items-start gap-3">
-                    {{ integration_ui.palette_icon('terminal-square', 'neutral', size='md') }}
-                    <div class="min-w-0">
-                        <h3 class="text-sm font-semibold text-content-primary">Verification Command</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary lg:line-clamp-1">AppRole login is verified securely by the KAORI worker.</p>
-                    </div>
-                </div>
-            </header>
-            <div class="bg-surface-subtle px-5 py-4">
-                <p class="text-xs leading-5 text-content-secondary">Use Run Full Validation with the approved managed AppRole identity. No copyable login command or SecretID is provided.</p>
-            </div>
-        </section>
+        {{ capability_detail.verification_panel('Verification Command',
+                    'AppRole login is verified securely by the KAORI worker.',
+                    unavailable='Use Run Full Validation with the approved managed AppRole identity. No copyable login command or SecretID is provided.',
+                    legacy_marker='data-kaori-capability-verification-command',
+                    unavailable_marker='data-kaori-capability-verification-unavailable') }}
     {% endif %}
     {{ capability_detail.boundary('Vault owns API authorization, tokens, Secret values, leases and PKI operations. KAORI displays committed Full Validation API evidence only; Runtime Refresh, KV v2/PKI inventory and per-Secret access are separate.',
                 legacy_marker='data-kaori-capability-governance-boundary') }}
