@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import create_engine, select
@@ -305,7 +305,7 @@ def test_revision_targets_rotate_actual_scoped_grants_and_exclude_access_lost(re
         session.add(SourceRepositoryGrant(
             installation_id=installation_id, repository_id=repository.id,
             access_status=status, valid_from=now, last_observed_at=now,
-            valid_until=now if index == 47 else None,
+            valid_until=now + timedelta(seconds=1) if index == 47 else None,
         ))
         if index < 44:
             eligible_ids.append(repository.id)
