@@ -23,6 +23,9 @@ def test_environment_templates_cover_current_operational_contract() -> None:
         source = read(relative)
         for token in (
             'KAORI_PUBLIC_BASE_URL=',
+            'AUTH_LOCKOUT_MONITOR_ALLOWED=false',
+            'AUTH_LOCKOUT_ENFORCEMENT_ALLOWED=false',
+            'AUTH_BREAK_GLASS_RECOVERY_ALLOWED=false',
             'TLS_CERTIFICATE_RENEWAL_WINDOW_DAYS=30',
             'TLS_CERTIFICATE_CRITICAL_WINDOW_DAYS=7',
             'INTEGRATION_RUNTIME_MONITORING_ENABLED=true',

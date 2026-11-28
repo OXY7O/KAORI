@@ -185,3 +185,16 @@ python scripts/validate_production_env.py
 ```
 
 `verify_environment_contract.py` protects the one-owner split production contract, development contract, local standalone Compose queue/port boundaries, sensitive-key placement, deployment-adapter ownership, generated release identity, and the requirement that `.env.production.example` remain deprecated and inactive. `validate_production_env.py` validates security-sensitive and operational production values such as URLs, credentials, queue names, worker limits, notification delivery controls, and TLS governance windows.
+
+
+## Authentication protection authorization (#5326 / #4014)
+
+The portable non-secret application controls below are documented in root `.env.example` and `deploy/env/app.env.example`, all default false. The intentionally minimal standalone RC example inherits these safe application defaults; the deprecated monolithic example remains inactive.
+
+| Variable | Default | Authority / meaning |
+| --- | --- | --- |
+| `AUTH_LOCKOUT_MONITOR_ALLOWED` | `false` | Explicit environment authorization for a qualified Monitor Only transition. |
+| `AUTH_LOCKOUT_ENFORCEMENT_ALLOWED` | `false` | Separate authorization for a qualified Enforced transition from Monitor Only. |
+| `AUTH_BREAK_GLASS_RECOVERY_ALLOWED` | `false` | Authorization for a single isolated interactive management CLI invocation; never enable in persistent runtime configuration. |
+
+The first two controls do not change committed policy by themselves or attest UAT. The third is not a login bypass or secret and is not a persistent deployment option. Production environment validation rejects a true persistent recovery flag; the approved operator supplies it only to a single already authorized management CLI process. See the [Break-Glass runbook](../authentication/BREAK_GLASS_RUNBOOK.md). No new runtime secret or environment credentials are introduced.
