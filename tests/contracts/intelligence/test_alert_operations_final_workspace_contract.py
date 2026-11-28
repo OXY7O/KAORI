@@ -19,7 +19,7 @@ def test_active_queue_owns_loading_filter_actions_and_modal_review() -> None:
     assert active.index("loading_bar.render('alert-operations-active-loading'") < active.index(
         'id="alert-operations-filter-form"'
     )
-    assert "metadata_label(payload.active_pagination.total_items ~ ' Alert Cases'" in active
+    assert "table_label.result_count(payload.active_pagination.total_items)" in active
     assert 'Clear Filters' in active
     assert 'data-resource-detail-toggle' in table
     assert 'data-alert-case-expanded-row=' not in table
@@ -510,3 +510,26 @@ def test_activity_streams_share_intrinsic_rows_only_when_recent_counts_match() -
     assert html.count('data-alert-evidence-row') == count + 1
     assert 'data-alert-evidence-history="delivery"' not in html
     assert 'data-alert-history-placement="independent"' not in html
+
+
+def test_alert_registry_header_labels_follow_canonical_order() -> None:
+    registries = (
+        ('_alert_ops_active.html', 'Active Alert Queue', 'payload.active_pagination.total_items'),
+        ('_alert_ops_routing.html', 'Policy Registry', 'payload.routing_pagination.total_items'),
+        ('_alert_ops_silences.html', 'Active Delivery Silences', 'payload.silence_pagination.total_items'),
+        ('_alert_ops_history.html', 'Resolved Alerts', 'payload.history_pagination.total_items'),
+        ('_alert_provider_history.html', 'Committed Provider Recovery & Closure', 'payload.active_pagination.total_items'),
+        ('_vault_provider_routing.html', 'Scoped Firing Policies', 'routing.pagination.total_items'),
+        ('_alert_channel_readiness_registry.html', 'Notification Channels', 'readiness.pagination.total_items'),
+        ('_alert_ops_templates.html', 'Template Registry', 'payload.templates|length'),
+    )
+    for filename, title, count in registries:
+        source = read(f'app/templates/intelligence/partials/{filename}')
+        heading = f'<h3 class="{{{{ table_ui.block_title_classes() }}}}">{title}</h3>'
+        start = source.index(heading)
+        title_row = source[start:source.index('</div>', start)]
+        result = f'table_label.result_count({count})'
+        assert title_row.count(result) == 1
+        assert title_row.count("variant='guide'") == 1
+        assert title_row.index(result) < title_row.index('info_tip.render(')
+        assert source.count(result) == 1

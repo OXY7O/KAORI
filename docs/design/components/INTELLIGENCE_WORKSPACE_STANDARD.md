@@ -294,3 +294,13 @@ values preserved in native title attributes and the existing Review details.
 Keep the case ID, asset, namespace and source evidence available; do not
 truncate the underlying data or detail modal. Each identity metadata line
 remains independently readable and does not increase row height when long.
+
+
+### Alert registry title metadata
+
+Apply the existing table header authority in TABLE_AND_LABEL.md (#5345) to
+Alert Intelligence registries: Title → actual Results → contextual Guide.
+Use shared result_count and info_tip components. Keep the right-hand action
+area for controls, not metadata. Counts use the filtered registry total (or
+the actual number of available template variants); never count only the
+current paginated rows. Preserve the existing scope and evidence boundaries.

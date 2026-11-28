@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
@@ -24,7 +25,12 @@
                 <div class="flex min-w-0 items-start gap-3">
                     <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="bell-off" class="h-4 w-4"></i></span>
                     <div class="min-w-0">
-                        <h3 class="{{ table_ui.block_title_classes() }}">Active Delivery Silences</h3>
+                        <div class="flex min-h-6 flex-wrap items-center gap-1.5">
+                            <h3 class="{{ table_ui.block_title_classes() }}">Active Delivery Silences</h3>
+                            {{ table_label.result_count(payload.silence_pagination.total_items) }}
+                            {{ info_tip.render('alert-silence-registry-guide', 'Active Delivery Silences',
+                                'Review time-bounded delivery suppression.', items=['A silence suppresses KAORI delivery within its scope; it does not resolve the source alert.', 'Review the reason, owner and expiry before changing suppression.'], variant='guide') }}
+                        </div>
                         <p class="{{ table_ui.block_description_classes() }}">Review time-bounded notification suppression in the current operational scope. The underlying AlertCase remains active until its source state changes.</p>
                     </div>
                 </div>
@@ -41,7 +47,6 @@
                         sync='closest section:replace'
                         ) }}
                     {% endif %}
-                    {{ table_label.metadata_label(payload.silence_pagination.total_items ~ ' Silences', 'bell-off') }}
                 </div>
             </div>
             {{ loading_bar.render('alert-operations-silence-loading', label='Refreshing Active Delivery Silences') }}

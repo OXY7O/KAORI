@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as table_registry %}
@@ -6,10 +7,14 @@
 <section id="alert-operations-vault-routing-registry" class="{{ table_ui.block_classes() }}">
     <header class="{{ table_ui.block_header_classes() }}">
         <div>
-            <h3 class="{{ table_ui.block_title_classes() }}">Scoped Firing Policies</h3>
+            <div class="flex min-h-6 flex-wrap items-center gap-1.5">
+                <h3 class="{{ table_ui.block_title_classes() }}">Scoped Firing Policies</h3>
+                {{ table_label.result_count(routing.pagination.total_items) }}
+                {{ info_tip.render('alert-scoped-routing-guide', 'Scoped Firing Policies',
+                    'Review exact-source local routing candidates.', items=['Candidate status is not destination approval.', 'Validated channel readiness alone does not authorize sending. Automatic routing remains disabled.'], variant='guide') }}
+            </div>
             <p class="{{ table_ui.block_description_classes() }}">Local review only. A candidate is not an approved destination; automatic routing remains disabled.</p>
         </div>
-        {{ table_label.metadata_label(routing.pagination.total_items ~ ' Policies', 'route') }}
     </header>
     <div class="space-y-3 px-5 py-4">
         <form method="post"

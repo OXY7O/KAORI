@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
@@ -115,7 +116,12 @@
                         <i data-lucide="list-tree" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0">
-                        <h3 class="{{ table_ui.block_title_classes() }}">Policy Registry</h3>
+                        <div class="flex min-h-6 flex-wrap items-center gap-1.5">
+                            <h3 class="{{ table_ui.block_title_classes() }}">Policy Registry</h3>
+                            {{ table_label.result_count(payload.routing_pagination.total_items) }}
+                            {{ info_tip.render('alert-policy-registry-guide', 'Policy Registry',
+                                'Review governed routing policies.', items=['Scope and channel bindings determine which cases may use a policy.', 'Cadence describes notification repetition, not source evaluation.', 'Channel configuration and validation remain in Integrations.'], variant='guide') }}
+                        </div>
                         <p class="{{ table_ui.block_description_classes() }}">Review routing ownership at a glance. Expand a policy only when you need matcher, channel, and delivery-behavior detail.</p>
                     </div>
                 </div>
@@ -132,7 +138,6 @@
                         sync='closest section:replace'
                         ) }}
                     {% endif %}
-                    {{ table_label.metadata_label(payload.routing_pagination.total_items ~ ' Policies', 'route') }}
                 </div>
             </div>
             {{ loading_bar.render('alert-operations-routing-loading', label='Refreshing Routing Policies') }}
