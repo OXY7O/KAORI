@@ -155,3 +155,37 @@ legacy Vault fingerprints retain schema v1. Changes to the selected source or
 environment invalidate currentness. No key retrieval, issuer proof, SSH admission,
 credential activation, execution or new HTTP action is enabled by this slice.
 Migration and independent review are required before broader admission.
+
+
+### Exact typed credential evidence and approval precondition (#5184/#5204)
+
+The internal `resolve_current_credential_evidence` requalifies the canonical
+automation credential target under the caller's policy/target transaction.
+It resolves the latest issuer revision without filtering to active rows,
+requires the current independently signed deployment receipt and matching
+canonical source, and reconstructs the existing provider-qualified statement
+from the exact committed representation/version/creation timestamp. No caller
+can choose a verification key, provider path, proof, issuer revision or type.
+
+Proposed independent evidence format for review: on the existing operator-owned
+read-only `/run/kaori/issuer-authority` mount, `credential-<sha256>.json` is
+named by SHA-256 of canonical JSON `{"selector": asdict(selector)}`. The
+canonical signed envelope uses schema `kaori.secrets.typed_credential_evidence.v1`
+and binds current deployment evidence digest, committed issuer evidence digest,
+issuer public-key digest, exact statement SHA-256, 64-byte issuer signature
+encoded as lowercase hex, independent source owner/checker IDs and UTC
+issuance/expiry. The independent root signature attests that the provider owner
+actually inspected the exact credential schema and that custody remains current;
+the provider issuer signs the existing exact-version statement. Both signatures
+and the independent deployment receipt must be current. This is a candidate
+evidence contract, not a new general signing or secret-inspection API; the
+provider-owned producer and actual native schema inspection require review/UAT.
+Removal, expiry, identity/version/issuer drift deny. No raw secret is read.
+
+`review_credential_grant_approval` additionally locks the current policy,
+latest draft revision, maker/checker/principal explicit permissions and target.
+The approver is distinct from both maker and principal; proof must cover the
+proposed grant window. The return is redacted evidence only. No active grant,
+new route, credential material, provider call, SSH, worker dispatch or runtime
+authorization is created by this review-only slice. PostgreSQL locking and
+independent Access review remain required before adding an approval writer.
