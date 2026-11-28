@@ -564,7 +564,7 @@ def test_routing_editor_cadence_alignment_and_non_destructive_channel_search() -
     toggles = editor.split('data-routing-cadence-toggles', 1)[1].split('</div>', 1)[0]
     assert toggles.count('flex h-10 min-w-0 items-center') == 2
     assert 'pt-6' not in editor
-    assert 'payload.channel_options|length > 3' in editor
+    assert 'payload.channel_options|length > 3' not in editor
     assert 'type="search" x-model="query"' in editor
     assert 'aria-label="Search notification channels"' in editor
     assert 'data-routing-channel-row' in editor
@@ -573,3 +573,21 @@ def test_routing_editor_cadence_alignment_and_non_destructive_channel_search() -
     assert 'x-if=' not in editor
     assert 'name="channel_ids"' in editor
     assert 'if not channel_available' in editor
+
+
+def test_routing_editor_segmented_scope_and_channel_picker() -> None:
+    editor = read('app/templates/intelligence/partials/_alert_ops_routing_editor_modal.html')
+    assert 'data-routing-segmented-layout' in editor
+    assert 'lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]' in editor
+    assert 'data-routing-scope-panel' in editor
+    assert 'sm:grid-cols-2 lg:grid-cols-1' in editor
+    assert '<legend class="sr-only">Domains</legend>' in editor
+    assert '<legend class="sr-only">Severities</legend>' in editor
+    assert '<legend class="sr-only">Notification Channels</legend>' in editor
+    assert 'data-routing-channel-panel' in editor
+    assert 'available.selected = available.selected + 1' in editor
+    assert "input[name=channel_ids]:checked:not(:disabled)" in editor
+    assert 'x-text="selectedCount + \' selected\'"' in editor
+    assert '{{ available.count }} eligible' in editor
+    assert 'aria-live="polite"' in editor
+    assert 'Based on initial policy scope' in editor
