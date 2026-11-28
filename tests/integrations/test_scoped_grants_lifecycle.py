@@ -11,6 +11,7 @@ from app.extensions.db import db
 from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationInstance
 from app.models.notification import Notification
+from app.models.openbao import OpenBaoInstance
 from app.models.rbac import Permission, Role, RolePermission
 from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.user import User
@@ -36,6 +37,7 @@ def scope_store():
         ExternalIdentityLink.__table__,
         IntegrationInstance.__table__,
         VaultInstance.__table__,
+        OpenBaoInstance.__table__,
         ScopeAccessPolicy.__table__,
         ScopeAccessPolicyRevision.__table__,
         Notification.__table__,
@@ -616,3 +618,41 @@ def test_operator_grant_approval_requires_independence_and_atomic_audit(scope_st
         _approve_instance(ids, operator)
     assert db.session.get(ScopeAccessPolicy, operator.id).current_revision == 1
     assert ScopeAccessPolicyRevision.query.filter_by(policy_id=operator.id).count() == 1
+
+
+def test_local_openbao_scope_is_independent_of_vault_and_material_use(scope_store, monkeypatch):
+    from flask import current_app
+
+    ids = scope_store
+    monkeypatch.setenv('APP_ENV', 'development')
+    monkeypatch.setitem(current_app.config, 'APP_ENV', 'development')
+    source = IntegrationInstance(
+        integration_type='secrets_pki', provider_key='openbao', adapter_key='openbao_http_v1',
+        name='Scope Test OpenBao', enabled=True, lifecycle_status='active',
+        health_status='connected', readiness_status='degraded',
+    )
+    db.session.add(source)
+    db.session.flush()
+    db.session.add(OpenBaoInstance(
+        integration_instance_id=source.id, ownership='external',
+        endpoint='https://bao.invalid', cluster_id='4f6db34e-2042-4f0c-a385-a0d39582acb8',
+        auth_mount='approle', role_id='fixture', secret_id='test-only',
+    ))
+    db.session.commit()
+    monkeypatch.setenv('KAORI_LOCAL_OPENBAO_INVENTORY_PROVIDER_ID', str(source.id))
+    monkeypatch.setenv('KAORI_LOCAL_OPENBAO_INVENTORY_MOUNT', 'kv')
+    now = datetime.now(UTC)
+    policy = scoped_grants.request_scope_grant(
+        actor_user_id=ids['requester'], principal_user_id=ids['viewer'],
+        integration_instance_id=source.id, scope_level='openbao_mount', provider_namespace='', mount='kv',
+        validity=scoped_grants.ScopeGrantValidity(now - timedelta(minutes=1), now + timedelta(hours=1)),
+        reason_code='operational_access',
+    )
+    selector = dict(actor_user_id=ids['viewer'], instance_id=source.id, provider_namespace='', mount='kv')
+    assert not scope_policy.evaluate_exact_openbao_scope(**selector).allowed
+    scoped_grants.approve_scope_grant(policy_id=policy.id, approver_user_id=ids['approver'], expected_revision=1)
+    assert scope_policy.evaluate_exact_openbao_scope(**selector).allowed
+    assert not scope_policy.evaluate_exact_vault_scope(**selector).allowed
+    assert not scope_policy.evaluate_exact_openbao_scope(**{**selector, 'mount': 'other'}).allowed
+    monkeypatch.setenv('KAORI_LOCAL_OPENBAO_INVENTORY_MOUNT', 'other')
+    assert not scope_policy.evaluate_exact_openbao_scope(**selector).allowed
