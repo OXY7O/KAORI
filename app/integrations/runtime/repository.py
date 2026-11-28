@@ -20,6 +20,8 @@ def persist_runtime_state(
     *,
     trigger_type: str,
     integration_instance_id: int | None = None,
+    operation: str | None = None,
+    job_execution_id: int | None = None,
 ) -> IntegrationRuntimeObservation:
     prior = (
         IntegrationRuntimeObservation.query.filter_by(integration_instance_id=integration_instance_id)
@@ -46,6 +48,18 @@ def persist_runtime_state(
         'capabilities': list(state.snapshot.capabilities),
         'metadata': state.snapshot.metadata,
     }
+    # Operation provenance is deliberately opt-in for the GitHub observation contract.
+    # Existing immutable snapshots remain unchanged and unclassified.
+    if (
+        state.integration_type == 'source_control'
+        and state.provider_key == 'github'
+        and operation in {'full_validation', 'runtime_refresh'}
+    ):
+        row.capability_snapshot = {
+            **row.capability_snapshot,
+            'operation': operation,
+            'job_execution_id': job_execution_id,
+        }
     row.diagnostics = [
         {
             'key': diagnostic.key,
@@ -100,6 +114,28 @@ def list_runtime_history(
     )
 
 
+def runtime_history_query(
+    integration_type: str,
+    instance_id: str,
+    *,
+    integration_instance_id: int | None = None,
+    provider_key: str | None = None,
+    adapter_key: str | None = None,
+):
+    """Scope committed history; optional canonical and implementation identity narrow it."""
+    query = IntegrationRuntimeObservation.query.filter_by(
+        integration_type=integration_type,
+        instance_id=str(instance_id),
+    )
+    if integration_instance_id is not None:
+        query = query.filter_by(integration_instance_id=integration_instance_id)
+    if provider_key is not None:
+        query = query.filter_by(provider_key=provider_key)
+    if adapter_key is not None:
+        query = query.filter_by(adapter_key=adapter_key)
+    return query
+
+
 def paginate_runtime_history(
     integration_type: str,
     instance_id: str,
@@ -109,6 +145,9 @@ def paginate_runtime_history(
     trigger_type: str = '',
     health_status: str = '',
     readiness: str = '',
+    integration_instance_id: int | None = None,
+    provider_key: str | None = None,
+    adapter_key: str | None = None,
 ) -> tuple[list[IntegrationRuntimeObservation], dict[str, object]]:
     trigger_filter = _normalized_filter(trigger_type, {'manual', 'scheduled', 'recovery'})
     health_filter = _normalized_filter(health_status, {'healthy', 'degraded', 'unhealthy'})
@@ -117,9 +156,12 @@ def paginate_runtime_history(
         {'ready', 'degraded', 'validation_required', 'blocked'},
     )
 
-    query = IntegrationRuntimeObservation.query.filter_by(
-        integration_type=integration_type,
-        instance_id=str(instance_id),
+    query = runtime_history_query(
+        integration_type,
+        instance_id,
+        integration_instance_id=integration_instance_id,
+        provider_key=provider_key,
+        adapter_key=adapter_key,
     )
     if trigger_filter:
         query = query.filter(IntegrationRuntimeObservation.trigger_type == trigger_filter)

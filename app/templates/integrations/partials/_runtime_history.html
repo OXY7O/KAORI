@@ -193,7 +193,7 @@
                                     <div class="min-w-0">
                                         <p class="truncate text-sm font-semibold text-content-primary"
                                            title="{{ row.observed_at_display }}">{{ row.observed_at_display }}</p>
-                                        <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ row.trigger_type_label }} observation</p>
+                                        <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{% if row.operation_label|default(none) %}{{ row.operation_label }} · {{ row.trigger_type_label }}{% else %}{{ row.trigger_type_label }} observation{% endif %}</p>
                                     </div>
                                 </div>
                             </td>

@@ -219,6 +219,12 @@ def runtime_history_view(
                 'observed_at_display': present_user_datetime(row.observed_at, empty='Unknown', include_seconds=True),
                 'trigger_type': row.trigger_type,
                 'trigger_type_label': present_key_label(row.trigger_type),
+                'operation_label': (
+                    present_key_label(snapshot.get('operation') or 'unclassified')
+                    if row.integration_type == 'source_control' and row.provider_key == 'github'
+                    else None
+                ),
+                'job_execution_id': snapshot.get('job_execution_id'),
                 'readiness': row.readiness,
                 'readiness_label': present_key_label(row.readiness),
                 'health_status': row.health_status,

@@ -145,6 +145,8 @@ def _persist_failure_observation(
     integration_instance_id: int,
     trigger_type: str,
     error: Exception,
+    operation: str,
+    job_execution_id: int | None = None,
 ) -> None:
     """Best-effort persistence for failed runtime or validation attempts."""
     try:
@@ -156,6 +158,8 @@ def _persist_failure_observation(
             state,
             trigger_type=trigger_type,
             integration_instance_id=integration_instance_id,
+            operation=operation,
+            job_execution_id=job_execution_id,
         )
     except Exception:
         db.session.rollback()
@@ -275,6 +279,8 @@ def validate_integration_instance(
             module.implementation_for_record(instance).adapter,
             instance,
             trigger_type=trigger_type,
+            operation=operation,
+            job_execution_id=job_execution_id,
         )
         result_payload = _as_result_payload(validation_result)
 
@@ -338,6 +344,8 @@ def validate_integration_instance(
             integration_instance_id=integration_instance_id,
             trigger_type=trigger_type,
             error=exc,
+            operation=operation,
+            job_execution_id=job_execution_id,
         )
         logger.exception('%s validation task failed for instance %s.', integration_type, integration_instance_id)
         detail = str(exc) or 'Review runtime-worker logs, provider reachability, credentials, and Redis connectivity.'
@@ -616,6 +624,8 @@ def refresh_integration_runtime_instance(
             state,
             trigger_type=trigger_type,
             integration_instance_id=instance.integration_instance_id,
+            operation='runtime_refresh',
+            job_execution_id=job_execution_id,
         )
         recovery_result = None
         if is_runtime_recovery(previous_health, state.health.status):
@@ -673,6 +683,8 @@ def refresh_integration_runtime_instance(
             integration_instance_id=integration_instance_id,
             trigger_type=trigger_type,
             error=exc,
+            operation='runtime_refresh',
+            job_execution_id=job_execution_id,
         )
         logger.exception('Runtime refresh failed for %s instance %s.', integration_type, integration_instance_id)
         detail = str(exc) or 'Review runtime-worker logs, provider reachability, credentials, and Redis connectivity.'

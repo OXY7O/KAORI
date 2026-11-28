@@ -182,7 +182,7 @@ def test_github_runtime_history_is_one_accessible_two_tab_registry():
     assert "hx_target='#github-runtime-evidence-registry'" in runtime
     assert "hx_select='#github-runtime-evidence-registry'" in runtime
     assert "hx_push_url='true'" in runtime
-    assert "('jobs', 'Recent Jobs', 'history'" in runtime
+    assert "('jobs', 'Execution References', 'history'" in runtime
     assert "('deliveries', 'Signed Webhook Deliveries', 'webhook'" in runtime
     for page, kind in ((jobs, 'jobs'), (deliveries, 'deliveries')):
         assert f'data-kaori-runtime-registry-view="{kind}"' in page
@@ -442,10 +442,11 @@ def test_github_detail_tab_badges_follow_runtime_and_unfiltered_committed_invent
 
     assert "('runtime', 'Runtime & History', 'activity', runtime_health_label)" in detail
     assert 'Jobs & Deliveries' not in detail
-    assert "'runtime_observed': runtime_observed" in projection
-    assert "last_refresh.status == 'succeeded'" in projection
-    assert 'canonical.last_checked_at is not None' in projection
-    assert "'runtime_health_label': runtime_health.replace('_', ' ').title()" in projection
+    assert "'runtime_observed': latest is not None" in projection
+    assert "capability_snapshot['operation'].as_string() == 'runtime_refresh'" in projection
+    assert 'github_runtime_invalidated_at' in projection
+    assert 'runtime_observation_state_view(' in projection
+    assert "'runtime_health_label': state['health_status_label']" in projection
     assert '{% set health = runtime_health %}' in runtime
     assert "framed_tabs.badge_oob('github', 'runtime', runtime_health_label)" in runtime
     count = "table_label.count_text(inventory.total, 'Repository', 'Repositories') if inventory.total is not none else 'Unknown'"
@@ -465,3 +466,122 @@ def test_github_inventory_tab_count_preserves_zero_singular_plural_and_unknown()
     )
     for total, label in ((None, 'Unknown'), (0, '0 Repositories'), (1, '1 Repository'), (2, '2 Repositories')):
         assert template.render(total=total) == label
+
+
+def test_github_runtime_uses_canonical_history_and_shared_evidence():
+    runtime = _read(GITHUB / 'partials/_detail_runtime.html')
+    routes = _read(ROUTES)
+    projection = _read(RUNTIME_PRESENTATION)
+    harbor = _read(ROOT / 'app/templates/integrations/registry/providers/harbor/partials/_detail_runtime.html')
+    for source in (runtime, harbor):
+        assert 'runtime_evidence.render(' in source
+        assert 'integrations/partials/_runtime_history.html' in source
+    assert "def runtime_history(installation_id: int)" in routes
+    assert "runtime_history_oob=True" in routes
+    assert "runtime_refresh_partial=True" in routes
+    assert "runtime_history_query('source_control', str(installation.id), **scope)" in projection
+    assert "'integration_instance_id': installation.integration_instance_id" in projection
+    assert "'provider_key': 'github'" in projection
+    assert "'adapter_key': 'github_rest_v3'" in projection
+    assert "paginate_runtime_history(" in projection
+    assert "runtime_history_view(rows, pagination=pagination)" in projection
+    assert "runtime_view = 'jobs' if request.args.get('runtime_view') == 'jobs' else 'deliveries'" in runtime
+    assert 'runtime_state.diagnostics' in runtime
+    assert 'hx-include="#github-runtime-history [data-kaori-runtime-history-filters] form"' in runtime
+    history = _read(ROOT / 'app/templates/integrations/partials/_runtime_history.html')
+    assert 'row.operation_label' in history
+
+
+def test_github_runtime_observations_are_exact_scope_and_never_inferred_from_jobs():
+    from datetime import UTC, datetime, timedelta
+    from types import SimpleNamespace
+
+    from flask import Flask
+    from flask_login import LoginManager
+    from sqlalchemy import insert
+
+    from app.extensions.db import db
+    from app.integrations.source_control.source_control.providers.github.application.runtime_presentation import (
+        _runtime_observation_context,
+    )
+    from app.models.integration import IntegrationInstance
+    from app.models.runtime import IntegrationRuntimeObservation
+
+    app = Flask(__name__)
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite+pysqlite:///:memory:'
+    app.config['SECRET_KEY'] = 'runtime-observation-test'
+    login_manager = LoginManager(app)
+    login_manager.user_loader(lambda _user_id: None)
+    db.init_app(app)
+    now = datetime.now(UTC)
+    with app.test_request_context('/?per_page=5'):
+        IntegrationInstance.metadata.create_all(
+            bind=db.engine, tables=[IntegrationInstance.__table__, IntegrationRuntimeObservation.__table__]
+        )
+        for identity in (21, 22):
+            db.session.execute(insert(IntegrationInstance.__table__).values(
+                id=identity, name=f'GitHub {identity}', integration_type='source_control',
+                provider_key='github', adapter_key='github_rest_v3', enabled=True,
+                lifecycle_status='active', readiness_status='ready',
+            ))
+
+        def observation(identity, instance_id, offset, operation=None, health='healthy', provider='github'):
+            snapshot = {'capabilities': [], 'metadata': {}}
+            if operation:
+                snapshot.update(operation=operation, job_execution_id=11)
+            return IntegrationRuntimeObservation(
+                integration_instance_id=identity, integration_type='source_control',
+                provider_key=provider, adapter_key='github_rest_v3', instance_id=str(instance_id),
+                instance_name='GitHub', trigger_type='scheduled', readiness='ready',
+                health_status=health, health_score=100 if health == 'healthy' else 0,
+                capability_snapshot=snapshot, diagnostics=[], observed_at=now + timedelta(minutes=offset),
+            )
+
+        db.session.add_all([
+            observation(21, 7, -4),
+            observation(21, 7, -3, 'full_validation'),
+            observation(22, 7, -1, 'runtime_refresh'),
+            observation(21, 8, -1, 'runtime_refresh'),
+            observation(21, 7, -1, 'runtime_refresh', provider='other'),
+        ])
+        db.session.commit()
+        canonical = SimpleNamespace(readiness_status='ready', metadata_json={}, last_checked_at=now)
+        installation = SimpleNamespace(id=7, integration_instance_id=21, integration_instance=canonical)
+        state = _runtime_observation_context(installation)
+        assert state['runtime_health_label'] == 'Not Observed'
+        assert state['runtime_history']['pagination']['total_items'] == 2
+        assert {row['operation_label'] for row in state['runtime_history']['rows']} == {
+            'Full Validation', 'Unclassified',
+        }
+
+        db.session.add(observation(21, 7, -2, 'runtime_refresh', health='unhealthy'))
+        db.session.add(observation(21, 7, 0, 'full_validation'))
+        db.session.commit()
+        state = _runtime_observation_context(installation)
+        assert state['runtime_health_label'] == 'Unhealthy'
+        assert state['runtime_observation_job_id'] == 11
+        assert state['runtime_history']['pagination']['total_items'] == 4
+
+        canonical.metadata_json = {'github_runtime_invalidated_at': now.isoformat()}
+        assert _runtime_observation_context(installation)['runtime_health_label'] == 'Not Observed'
+        db.session.add(observation(21, 7, 1, 'runtime_refresh'))
+        db.session.commit()
+        assert _runtime_observation_context(installation)['runtime_health_label'] == 'Healthy'
+        canonical.metadata_json = {'github_runtime_invalidated_at': 'invalid'}
+        assert _runtime_observation_context(installation)['runtime_health_label'] == 'Not Observed'
+        db.session.remove()
+        db.engine.dispose()
+
+
+def test_github_worker_observation_provenance_is_opt_in_and_not_backfilled():
+    repository = _read(ROOT / 'app/integrations/runtime/repository.py')
+    refresh = _read(ROOT / 'app/integrations/runtime/refresh.py')
+    tasks = _read(ROOT / 'app/integrations/validation/tasks.py')
+    assert "state.provider_key == 'github'" in repository
+    assert "'operation': operation" in repository
+    assert "'job_execution_id': job_execution_id" in repository
+    assert 'operation=operation' in refresh
+    assert 'job_execution_id=job_execution_id' in refresh
+    assert "operation='runtime_refresh'" in tasks
+    assert 'operation=operation' in tasks
+    assert 'job_execution_id=job_execution_id' in tasks

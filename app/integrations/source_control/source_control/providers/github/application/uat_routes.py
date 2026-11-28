@@ -40,6 +40,7 @@ from app.integrations.source_control.source_control.providers.github.application
 )
 from app.integrations.source_control.source_control.providers.github.application.runtime_presentation import (
     _runtime_context,
+    _runtime_observation_context,
     _validation_job_for,
 )
 from app.integrations.source_control.source_control.providers.github.application.runtime_presentation import (
@@ -175,6 +176,9 @@ def _render_runtime_content(
         canonical=canonical,
         action_form=FlaskForm(),
         runtime_feedback=runtime_feedback,
+        runtime_history_oob=True,
+        runtime_refresh_partial=True,
+        **_runtime_observation_context(installation),
         **context,
     )
 
@@ -204,6 +208,7 @@ def detail(installation_id: int) -> ResponseReturnValue:
         **_capability_context(canonical),
         validation_job=_validation_job_for(canonical),
         **_runtime_context(installation),
+        **_runtime_observation_context(installation),
         action_form=FlaskForm(),
         feedback=request.args.get('feedback', ''),
     )
@@ -501,6 +506,30 @@ def inventory_table(installation_id: int) -> ResponseReturnValue:
     if request.headers.get('HX-Request') != 'true':
         return redirect(_detail_url(installation_id))
     return _response('integrations/source_control/github/_inventory_table.html', **context)
+
+
+@github_uat_bp.get('/installations/<int:installation_id>/runtime/history')
+@permission_required('integrations.manage')
+def runtime_history(installation_id: int) -> ResponseReturnValue:
+    installation = _installation_or_404(installation_id)
+    if installation.integration_instance is None:
+        abort(409)
+    if request.headers.get('HX-Request') != 'true':
+        return redirect(_detail_url(installation_id, tab='runtime'))
+    return _response(
+        'integrations/partials/_runtime_history.html',
+        runtime_history_id='github-runtime-history',
+        runtime_history_loading_id='github-history-loading',
+        runtime_history_url=url_for('github_source_uat.runtime_history', installation_id=installation.id),
+        runtime_history_endpoint='github_source_uat.runtime_history',
+        runtime_history_route_args={'installation_id': installation.id},
+        runtime_history_detail_url=url_for('github_source_uat.detail', installation_id=installation.id),
+        runtime_history_detail_endpoint='github_source_uat.detail',
+        runtime_history_tab='runtime',
+        runtime_history_filters_enabled=True,
+        provider_label='GitHub',
+        **_runtime_observation_context(installation),
+    )
 
 
 @github_uat_bp.get('/installations/<int:installation_id>/runtime/jobs')

@@ -570,6 +570,7 @@ def test_github_credential_rotation_clears_shared_installation_validation(monkey
         assert canonical.readiness_status == 'validation_required'
         assert canonical.health_status is None
         assert 'github_validation' not in canonical.metadata_json
+        assert canonical.metadata_json['github_runtime_invalidated_at']
         assert canonical.metadata_json['provider_label'] == 'GitHub'
 
 

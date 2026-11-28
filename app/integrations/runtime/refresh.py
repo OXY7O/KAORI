@@ -33,6 +33,8 @@ def refresh_and_record(
     instance: Any,
     *,
     trigger_type: str = 'manual',
+    operation: str | None = None,
+    job_execution_id: int | None = None,
 ) -> tuple[Any, RuntimeState, IntegrationRuntimeObservation]:
     """Refresh one provider and persist its canonical runtime observation."""
     validation_result, state = refresh_runtime(adapter, instance)
@@ -40,5 +42,7 @@ def refresh_and_record(
         state,
         trigger_type=trigger_type,
         integration_instance_id=_canonical_instance_id(instance),
+        operation=operation,
+        job_execution_id=job_execution_id,
     )
     return validation_result, state, observation
