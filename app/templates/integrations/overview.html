@@ -36,7 +36,8 @@
                                                                 'Ready for Use requires canonical active/enabled lifecycle and validated ready state.',
                                                                 'Readiness Review counts configured targets that are disabled, degraded, blocked, or still awaiting validation.',
                                                                 'Not Configured means usable connection setup is missing; readiness validation cannot start until configuration is complete.',
-                                                                'External providers remain authoritative for native runtime data; KAORI correlates committed records, bindings, and validation evidence.'
+                                                                'Register provider endpoints once and use explicit asset bindings where applicable.',
+                                                                'External providers remain authoritative for native runtime data and control planes; KAORI correlates committed records, bindings, and validation evidence.'
                                                                 ],
                                                                 placement='right',
                                                                 variant='guide') }}
@@ -58,15 +59,6 @@
                 {{ integration_ui.metric_card('Ready for Use', stats.ready, 'Validated targets eligible for governed use.', 'badge-check', 'brand') }}
                 {{ integration_ui.metric_card('Readiness Review', stats.readiness_review, 'Disabled, degraded, blocked, or unvalidated.', 'scan-search', 'brand') }}
                 {{ integration_ui.metric_card('Not Configured', stats.not_configured, 'Connection setup incomplete or unusable.', 'circle-dashed', 'brand') }}
-            </div>
-            <div class="border-t border-outline-subtle px-5 py-4 sm:px-6">
-                <div class="flex items-start gap-3">
-                    {{ integration_ui.palette_icon('waypoints', 'brand') }}
-                    <div class="min-w-0">
-                        <p class="text-sm font-semibold text-content-primary">Connection and Authority Boundary</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Register provider endpoints once, consume them through explicit asset bindings, and keep each external provider authoritative for its native runtime data and control plane.</p>
-                    </div>
-                </div>
             </div>
         </section>
         <section id="integration-workspace"
@@ -163,8 +155,16 @@
                                     <div class="flex min-w-0 items-start gap-3">
                                         {{ integration_ui.palette_icon('layout-grid', 'brand', size='lg') }}
                                         <div class="min-w-0">
-                                            <h2 id="coverage-summary-title"
-                                                class="text-base font-semibold text-content-primary">Integration Domain Coverage</h2>
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <h2 id="coverage-summary-title"
+                                                    class="text-base font-semibold text-content-primary">Integration Domain Coverage</h2>
+                                                {{ info_tip.render('integration-domain-coverage-guide',
+                                                                   'Integration Domain Coverage',
+                                                                   'KAORI reports provider ownership and persisted readiness evidence only.',
+                                                                   items=['External provider systems remain authoritative for configuration, runtime state, and lifecycle decisions.'],
+                                                                   placement='right',
+                                                                   variant='guide') }}
+                                            </div>
                                             <p class="mt-1 text-sm leading-6 text-content-secondary">Map available provider workspaces, target readiness, and planned integration boundaries by operational domain.</p>
                                         </div>
                                     </div>
@@ -277,13 +277,6 @@
                                             </div>
                                         </article>
                                     {% endfor %}
-                                </div>
-                                <div class="mt-5 flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3">
-                                    {{ integration_ui.palette_icon('shield-check', 'brand', size='sm') }}
-                                    <div class="min-w-0">
-                                        <p class="text-xs font-semibold text-content-primary">Coverage Boundary</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI reports provider ownership and persisted readiness evidence only. External provider systems remain authoritative for configuration, runtime state, and lifecycle decisions.</p>
-                                    </div>
                                 </div>
                             </div>
                         </section>

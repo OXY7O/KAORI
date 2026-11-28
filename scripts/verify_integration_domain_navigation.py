@@ -122,6 +122,9 @@ def main() -> int:
         if forbidden in domain_service:
             errors.append(f'domain page contains provider-specific query: {forbidden}')
 
+    if 'data-kaori-domain-operating-boundary' in domain_template:
+        errors.append('domain workspace must not render a redundant operating boundary footer')
+
     for marker in (
         'Capability Registry',
         'Provider Registry',

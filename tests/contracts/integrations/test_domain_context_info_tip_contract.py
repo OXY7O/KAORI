@@ -16,6 +16,8 @@ def test_all_operational_integration_domains_define_contextual_info_tip_copy() -
         ('observability', 'Observability Routing'),
         ('storage', 'Storage Authority Boundary'),
         ('registry', 'Registry Authority and Evidence'),
+        ('secrets_management', 'Secrets Management Authority'),
+        ('source_control', 'Source Control Provider and Evidence Authority'),
     )
     for domain_key, title in expected:
         assert f"domain.key == '{domain_key}'" in workspace
@@ -64,11 +66,25 @@ def test_domain_guidance_is_available_before_both_workspace_tabs() -> None:
     assert tip_index < tab_row < registry_branch
 
 
-def test_integrations_overview_remains_outside_domain_info_tip_refinement() -> None:
+def test_integrations_overview_owns_authority_guidance_without_duplicate_panels() -> None:
     overview = read('app/templates/integrations/overview.html')
 
     assert 'components/info_tip.html' in overview
     assert "info_tip.render('integration-portfolio-snapshot-guide'," in overview
     assert "info_tip.render('integration-domain-guidance'" not in overview
     assert 'Integration Portfolio Snapshot' in overview
-    assert 'Connection and Authority Boundary' in overview
+    assert 'Connection and Authority Boundary' not in overview
+    assert 'Coverage Boundary' not in overview
+    assert "info_tip.render('integration-domain-coverage-guide'," in overview
+    assert 'Register provider endpoints once and use explicit asset bindings where applicable.' in overview
+    assert 'External provider systems remain authoritative for configuration, runtime state, and lifecycle decisions.' in overview
+
+
+def test_shared_domain_template_has_no_duplicate_boundary_footer() -> None:
+    domain = read('app/templates/integrations/domain.html')
+    workspace = read('app/templates/integrations/partials/_domain_workspace.html')
+    assert 'data-kaori-domain-operating-boundary' not in domain
+    assert 'Domain Operating Boundary' not in domain
+    assert 'compatibility and Core Validation' in workspace
+    assert 'binding-specific consumer evidence, and consumer eligibility' in workspace
+    assert "variant='guide'" in workspace

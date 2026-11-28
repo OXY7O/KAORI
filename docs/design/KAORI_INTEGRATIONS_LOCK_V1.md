@@ -18,6 +18,23 @@ This lock applies to the Integration workspaces that have completed final visual
 
 This lock freezes presentation and interaction architecture. Provider-specific factual evidence, compatibility profiles, capability definitions, runtime values, and operational status may continue to evolve without reopening the design contract.
 
+## Guide-owned operating boundaries — Visual UAT (#5335, 2026-11-28)
+
+Across all Integrations sidebar entries, standalone generic operating
+boundary prose is redundant when the owning title Guide explains the
+same authority. The six shared domain pages (Orchestration, Observability,
+Storage, Registry, Secrets Management and Source Control) omit the Domain
+Operating Boundary footer and retain domain-specific guidance in the shared
+workspace header; Secrets Management also uses that Guide. Overview omits
+the Connection and Authority Boundary and Coverage Boundary panels, with
+their content retained in Portfolio Snapshot and Domain Coverage Guides.
+Notification Channels retains its existing Delivery Records Guide per
+#5314 and the accepted footer removal. Provider landing pages retain their
+existing compact overview and registry Guidance. This does not retire
+action-specific safety warnings, capability gates, readiness, validation,
+configuration decisions or source-owned evidence. External providers
+remain authoritative; KAORI governance and binding semantics are unchanged.
+
 ## Frozen Workspace Architecture
 
 ### Capability and Validation

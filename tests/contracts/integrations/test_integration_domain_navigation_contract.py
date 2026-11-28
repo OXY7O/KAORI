@@ -119,7 +119,7 @@ def test_domain_template_uses_shared_capability_registry_provider_registry_and_b
     assert 'data-kaori-domain-binding-registry' in workspace
     assert 'No {{ domain.label }} Provider Registered' in workspace
     assert 'No {{ domain.label }} Consumer Bindings Yet' in workspace
-    assert 'Core Validation' in template
+    assert 'Core Validation' in workspace
     assert 'Consumer Contract' in workspace
     assert 'url_for(row.workspace_endpoint)' in workspace
     assert 'Open {{ item.runtime_label }}' in workspace
@@ -128,7 +128,8 @@ def test_domain_template_uses_shared_capability_registry_provider_registry_and_b
     assert 'hx_indicator="#integration-domain-workspace-loading"' in workspace
     assert 'hx_indicator=none' in content_tabs
     assert 'hx-indicator="{{ hx_indicator }}"' in content_tabs
-    assert 'Domain Operating Boundary' in template
+    assert 'Domain Operating Boundary' not in template
+    assert 'data-kaori-domain-operating-boundary' not in template
     assert 'data-kaori-integration-domain-workspace' in template
     assert 'provider_registry_pagination.allowed_per_page' in workspace
     assert 'binding_registry_pagination.allowed_per_page' in workspace

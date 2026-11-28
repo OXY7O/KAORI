@@ -80,12 +80,24 @@
         "Harbor is the first qualified Registry provider under shared contracts.",
         "Future providers extend those contracts without provider-specific domain navigation."
     ] %}
+{% elif domain.key == 'secrets_management' %}
+    {% set domain_guidance_title = "Secrets Management Authority" %}
+    {% set domain_guidance_text = "Secrets providers remain authoritative for native credentials, policies, and runtime. KAORI governs registered connections and committed validation and inventory evidence." %}
+    {% set domain_guidance_items = [
+        "Provider API readiness, committed inventory, Metrics Source and Alert Source are independent evidence dimensions.",
+        "Connection registration does not grant access to Secret values or provider policy administration."
+    ] %}
 {% elif domain.key == 'source_control' %}
     {% set domain_guidance_title = "Source Control Provider and Evidence Authority" %}
     {% set domain_guidance_text = "GitHub remains authoritative for repositories, source revisions, pull requests, workflow runs and releases. KAORI governs committed evidence, correlation and access to registered connections." %}
     {% set domain_guidance_items = [
         "GitHub App connections require verified installation scope, isolated credentials and Full Validation before operational use.",
         "Repository IDs, immutable revisions and application ownership remain distinct; consumer bindings must not be inferred from names."
+    ] %}
+{% endif %}
+{% if domain_guidance_title %}
+    {% set domain_guidance_items = domain_guidance_items + [
+        "KAORI governs provider registration, compatibility and Core Validation, explicit asset bindings where applicable, binding-specific consumer evidence, and consumer eligibility."
     ] %}
 {% endif %}
 <section class="{{ integration_ui.section_shell_classes() }}"
@@ -97,7 +109,7 @@
                 {{ integration_ui.palette_icon("waypoints", "brand", size="lg") }}
                 <div class="min-w-0">
                     <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">{{ domain.label }} Workspace</p>
-                    <div class="mt-0.5 flex items-center gap-1.5">
+                    <div class="mt-0.5 flex flex-wrap items-center gap-1.5">
                         <h2 id="domain-workspace-title"
                             class="text-base font-semibold text-content-primary">
                             {{ 'Source Control Connections' if domain.key == 'source_control' else 'Registry and Consumer Bindings' }}
