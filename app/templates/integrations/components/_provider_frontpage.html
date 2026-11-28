@@ -26,7 +26,7 @@
                             <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Integration Posture</p>
                             <p class="{{ page_hero.context_panel_title_classes() }}">Connection Readiness and Bindings</p>
                         </div>
-                        {{ integration_status("healthy" if posture_status == "Healthy" else ("degraded" if posture_status == "Attention" else "not_configured") , posture_status, display="text") }}
+                        {{ page_hero.context_status_badge(posture_status, 'normal' if posture_status == 'Healthy' else ('warning' if posture_status == 'Attention' else 'unknown')) }}
                     </div>
                     <div class="{{ page_hero.context_panel_metrics_classes() }}">
                         {{ page_hero.context_metric("badge-check", "Ready", ready_count ~ " / " ~ denominator, "Validated connections available") }}

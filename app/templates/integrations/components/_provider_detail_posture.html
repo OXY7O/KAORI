@@ -1,5 +1,4 @@
 {% import "components/page_hero.html" as page_hero %}
-{% from "integrations/components/_semantic_status.html" import integration_status %}
 {% macro render(aria_label,
     title,
     source_posture,
@@ -24,7 +23,7 @@
                     <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
                     <h2 class="{{ page_hero.context_panel_title_classes() }}">{{ title }}</h2>
                 </div>
-                <span {% if posture_key %}id="{{ posture_key }}-posture-status"{% endif %}>{{ integration_status("ready" if source_posture == "Ready" else ("degraded" if source_posture == "Attention" else "validation_required") , source_posture, display="text") }}</span>
+                <span {% if posture_key %}id="{{ posture_key }}-posture-status"{% endif %}>{{ page_hero.context_status_badge(source_posture, 'normal' if source_posture == 'Ready' else ('warning' if source_posture == 'Attention' else 'info')) }}</span>
             </div>
             <div class="{{ page_hero.context_panel_metrics_classes() }}">
                 {{ page_hero.context_metric(metric_one_icon, metric_one_label, metric_one_value, metric_one_description, value_classes="truncate text-sm font-semibold leading-5", value_id=(posture_key ~ '-posture-readiness') if posture_key else none) }}
@@ -64,7 +63,7 @@
               class="hidden">{{ capability_count }} Validated Capabilities</span>
         <span id="{{ posture_key }}-posture-status"
               hx-swap-oob="innerHTML"
-              class="hidden">{{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required') , source_posture, display='text') }}</span>
+              class="hidden">{{ page_hero.context_status_badge(source_posture, 'normal' if source_posture == 'Ready' else ('warning' if source_posture == 'Attention' else 'info')) }}</span>
         <span id="{{ posture_key }}-posture-readiness"
               hx-swap-oob="innerHTML"
               class="hidden">{{ readiness_value|replace('_', ' ') |title }}</span>

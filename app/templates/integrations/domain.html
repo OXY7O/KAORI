@@ -31,7 +31,7 @@
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Domain Posture</p>
                                 <p class="{{ page_hero.context_panel_title_classes() }}">Provider Readiness</p>
                             </div>
-                            {{ integration_status(posture_status, posture_label, display="text") }}
+                            {{ page_hero.context_status_badge(posture_label, 'normal' if posture_status == 'ready' else ('warning' if posture_status == 'attention' else 'unknown')) }}
                         </div>
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
                             {{ page_hero.context_metric("server-cog", "Registered", stats.registered_targets, "Configured provider targets") }}
