@@ -1,0 +1,61 @@
+{% import "integrations/components/_record_detail_modal.html" as record_modal %}
+{% import "integrations/components/_provider_capability_detail.html" as capability_detail %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/action_button.html" as action_button %}
+{% set reference_action %}
+    <button type="button"
+            data-kaori-dialog-open
+            data-dialog-target="ansible-minimum-validation-setup-dialog"
+            class="{{ action_button.classes('secondary') }}">
+        <i data-lucide="panel-top-open" class="h-4 w-4" aria-hidden="true"></i>
+        Open Setup Guide
+    </button>
+{% endset %}
+<section class="{{ integration_ui.section_shell_classes() }}" data-kaori-ansible-minimum-validation-setup>
+    {{ integration_ui.section_header('shield-check', 'Minimum Validation & Execution Prerequisites', 'Source validation and runtime admission are separate contracts.', action_html=reference_action) }}
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2">
+        <div class="bg-surface-card p-4">
+            <p class="text-sm font-semibold text-content-primary">Source Validation</p>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">Public Git read-only checks; reviewed revision and version pins.</p>
+        </div>
+        <div class="bg-surface-card p-4">
+            <p class="text-sm font-semibold text-content-primary">Execution Admission</p>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">Independent worker, inventory, SSH trust and approval gates.</p>
+        </div>
+    </div>
+</section>
+{% call record_modal.render('ansible-minimum-validation-setup-dialog', 'ansible-minimum-validation-setup', 'Ansible Integration', 'Minimum Validation & Execution Prerequisites', 'Review source registration and independent runtime requirements.', icon='shield-check', footer_text='Guidance only. No credentials, access grants or execution admission are created.', size='standard') %}
+    <div class="space-y-4">
+        <section class="{{ integration_ui.section_shell_classes() }}">
+            {{ integration_ui.section_header('git-commit', 'Source Validation', 'Read-only public Git verification; no GitHub token or Kubernetes RBAC is required for this source check.') }}
+            <ol class="list-decimal space-y-2 p-5 pl-9 text-sm text-content-secondary">
+                <li>Use the currently approved repository, exact Git revision, and Ansible Core, Runner and Kubespray pins from the registration form.</li>
+                <li>Validate Source checks reviewed Git objects and immutable version policy. Save requires a current signed form proof.</li>
+                <li>Revalidate Source checks the existing immutable pin only. If superseded, register a separately validated replacement.</li>
+            </ol>
+        </section>
+        {% for icon, tone, label, value, helper in evidence_items %}
+            {% if label in compact_evidence_labels and value|string|length > 16 %}
+                {{ capability_detail.verification_panel(label, 'Committed value for this connection; not a current admission assertion.', value=value|string, copy_label='Copy') }}
+            {% endif %}
+        {% endfor %}
+        <section class="{{ integration_ui.section_shell_classes() }}">
+            {{ integration_ui.section_header('lock-keyhole', 'Independent Execution Requirements', 'These prerequisites remain separately governed; source validation grants none of them.') }}
+            <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2">
+                {% for label, helper in [
+                    ('Execution Environment', 'Qualify immutable image digest and signed provenance. A registered digest is reference only.'),
+                    ('Automation Worker', 'Verify isolated worker identity and admitted runtime.'),
+                    ('Target Inventory', 'Enroll approved non-production host identities and exact inventory scope.'),
+                    ('SSH & Credential Authority', 'Qualify provider-owned credential references, host-key trust and least privilege; no blanket sudo or material disclosure.'),
+                    ('Plan & Approval', 'Review immutable Plan, target locks, independent approval and change window.'),
+                    ('Kubernetes Evidence', 'Use separately authorized Kubernetes Integration API evidence for cluster verification.')
+                ] %}
+                    <div class="bg-surface-card p-4">
+                        <dt class="text-sm font-semibold text-content-primary">{{ label }}</dt>
+                        <dd class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</dd>
+                    </div>
+                {% endfor %}
+            </dl>
+        </section>
+    </div>
+{% endcall %}
