@@ -564,7 +564,7 @@ def test_routing_editor_cadence_alignment_and_non_destructive_channel_search() -
     toggles = editor.split('data-routing-cadence-toggles', 1)[1].split('</div>', 1)[0]
     assert toggles.count('flex h-10 min-w-0 items-center') == 2
     assert 'pt-6' not in editor
-    assert 'payload.channel_options|length > 3' in editor
+    assert 'payload.channel_options|length > 3' not in editor
     assert 'type="search" x-model="query"' in editor
     assert 'aria-label="Search notification channels"' in editor
     assert 'data-routing-channel-row' in editor
@@ -573,3 +573,74 @@ def test_routing_editor_cadence_alignment_and_non_destructive_channel_search() -
     assert 'x-if=' not in editor
     assert 'name="channel_ids"' in editor
     assert 'if not channel_available' in editor
+
+
+def test_routing_editor_segmented_scope_and_channel_picker() -> None:
+    editor = read('app/templates/intelligence/partials/_alert_ops_routing_editor_modal.html')
+    assert 'data-routing-segmented-layout' in editor
+    assert 'lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]' in editor
+    assert 'data-routing-scope-panel' in editor
+    assert 'sm:grid-cols-2 lg:grid-cols-1' in editor
+    assert '<legend class="sr-only">Domains</legend>' in editor
+    assert '<legend class="sr-only">Severities</legend>' in editor
+    assert '<legend class="sr-only">Notification Channels</legend>' in editor
+    assert 'data-routing-channel-panel' in editor
+    assert 'available.selected = available.selected + 1' in editor
+    assert "input[name=channel_ids]:checked:not(:disabled)" in editor
+    assert 'x-text="selectedCount + \' selected\'"' in editor
+    assert '{{ available.count }} eligible' in editor
+    assert 'aria-live="polite"' in editor
+    assert 'Based on initial policy scope' in editor
+
+
+def test_routing_editor_segmented_picker_counts_only_eligible_checked_channels() -> None:
+    from types import SimpleNamespace
+
+    from jinja2 import Environment, FileSystemLoader, StrictUndefined
+
+    env = Environment(
+        loader=FileSystemLoader(ROOT / 'app/templates'),
+        undefined=StrictUndefined,
+        autoescape=True,
+    )
+    env.globals.update(
+        current_user=SimpleNamespace(has_permission=lambda _permission: True),
+        url_for=lambda endpoint, **_kwargs: '/' + endpoint,
+        csrf_token=lambda: 'test-token',
+    )
+    template = env.get_template('intelligence/partials/_alert_ops_routing_editor_modal.html')
+    channels = [
+        dict(id=1, name='Ready', provider='Telegram', destination='target-1',
+             status='Operational', eligible=True, registry_eligible=True),
+        dict(id=2, name='Retired', provider='Telegram', destination='target-2',
+             status='Retired', eligible=False, registry_eligible=False),
+        dict(id=3, name='General', provider='Slack', destination='target-3',
+             status='Operational', eligible=True, registry_eligible=False),
+    ]
+    payload = dict(
+        domain='kubernetes', domain_label='Kubernetes', selected_asset_name='All Managed Assets',
+        selected_asset_key='all', channel_options=channels,
+    )
+    html = template.render(payload=payload, selected_policy=None)
+    assert "selectedCount: 0" in html
+    assert '0 selected</span>' in html
+    assert '2 eligible</span>' in html
+    assert 'Search channels' in html
+
+    policy = SimpleNamespace(
+        id=1, name='Registry policy', domains=['registry'], severities=['critical'],
+        channels=[channels[0], channels[1], channels[2]], matchers={},
+        repeat_interval_minutes=60, acknowledgement_timeout_minutes=60,
+        enabled=True, send_resolved=True,
+    )
+    html = template.render(payload=payload, selected_policy=policy)
+    assert "selectedCount: 1" in html
+    assert '1 selected</span>' in html
+    assert '1 eligible</span>' in html
+    assert 'Scope mismatch' in html
+
+    payload['channel_options'] = []
+    html = template.render(payload=payload, selected_policy=None)
+    assert '0 selected</span>' in html
+    assert '0 eligible</span>' in html
+    assert 'Configure and validate a Notification Channel first.' in html
