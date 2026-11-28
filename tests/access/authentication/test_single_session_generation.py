@@ -86,7 +86,9 @@ def test_database_failure_rolls_back_generation_issuance(
 
     with pytest.raises(SQLAlchemyError):
         services.record_successful_authentication(
-            User(id=43, auth_source='database'), source='database', client_ip=None,
+            User(id=43, auth_source='database'),
+            source='database',
+            client_ip=None,
             local_credential_proof=LocalCredentialProof('test-hash', 7),
         )
     assert store.commits == 0
