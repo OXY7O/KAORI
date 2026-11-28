@@ -36,6 +36,7 @@ _VALID_ROUTING_STATUSES = {'all', 'enabled', 'disabled'}
 
 def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     from app.intelligence.alert_intelligence import provider_case_scope
+    from app.intelligence.alert_intelligence.provider_coverage import provider_coverage_rows
 
     if provider_case_scope.is_provider_case_domain(str(args.get('domain') or '')):
         return provider_case_scope.build_provider_case_payload(args, domain_options=provider_case_scope.DOMAIN_OPTIONS)
@@ -186,6 +187,7 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
         'domain_label': _DOMAIN_LABELS[domain],
         'scope_invalid': scope_invalid,
         'domain_options': provider_case_scope.DOMAIN_OPTIONS,
+        'provider_coverage': provider_coverage_rows(),
         'assets': assets,
         'selected_asset_key': selected_asset_key,
         'selected_asset_name': selected_asset_name,

@@ -60,6 +60,11 @@ def is_provider_case_domain(domain: str) -> bool:
     return domain in _ADAPTERS
 
 
+def registered_provider_case_adapters() -> frozenset[tuple[str, str]]:
+    """Implementation registry only; does not establish source/runtime qualification."""
+    return frozenset((domain, provider) for domain, adapters in _ADAPTERS.items() for provider in adapters)
+
+
 def _authorized_instances(domain: str) -> list[dict[str, str]]:
     """Only enumerate the actor's exact grants, never the provider fleet."""
     actor_id = getattr(current_user, 'id', None)
@@ -178,6 +183,8 @@ def _case_record(row: dict[str, Any], scope: dict[str, Any]) -> dict[str, Any]:
 
 
 def build_provider_case_payload(args: MultiDict[str, str], *, domain_options: list[dict[str, str]]) -> dict[str, Any]:
+    from app.intelligence.alert_intelligence.provider_coverage import provider_coverage_rows
+
     domain = str(args.get('domain') or '')
     scope = provider_scope_context(args)
     filters = _read_filters(args)
@@ -226,6 +233,7 @@ def build_provider_case_payload(args: MultiDict[str, str], *, domain_options: li
         'domain': domain,
         'domain_label': next(option['label'] for option in domain_options if option['value'] == domain),
         'domain_options': domain_options,
+        'provider_coverage': provider_coverage_rows(),
         'provider_case_mode': True,
         'provider_case_status': status,
         'scope_invalid': status != 'ready',
