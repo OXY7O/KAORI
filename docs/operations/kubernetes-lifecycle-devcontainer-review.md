@@ -121,8 +121,10 @@ source-only record with explicit false execution/mutation flags may prepare
 non-executable inventory through the existing local KV v2 CLI. Provider TLS,
 independent cluster/mount/token scope, exact topology and immutable CAS/readback
 remain mandatory. No enable flag changes or execution are authorized. The
-normal inventory builder, `diagnose_remote_preflight_target` and
+normal inventory builder, default runtime target review and
 `dispatch_kubespray_plan_review` continue to require an enabled connection.
+Only the explicit non-authorizing `--source-only` diagnostic below may
+inspect disabled-record prerequisites; it cannot return a runtime target.
 The runtime activation contract remains outstanding under #4799/#5172.
 Do not manually set `enabled`, insert evidence, or use local review flags
 as execution authority.
@@ -203,7 +205,8 @@ to be development and PostgreSQL READ COMMITTED, and rolls back its transaction.
 
 On an independently prepared local automation worker with the reviewed
 candidate checkout and signed review authority files already mounted,
-the same command with `--worker-check` additionally reads the configured
+the original enabled-target command (omit `--source-only`) with
+`--worker-check` additionally reads the configured
 `KAORI_LOCAL_REMOTE_REVIEW_WORKER` and
 `KAORI_LOCAL_REMOTE_REVIEW_SOURCE` and checks the exact disabled source
 and externally signed receipt. It does not measure the worker image,
