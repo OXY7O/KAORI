@@ -718,6 +718,7 @@ Feature: Personal and required MFA enrollment safety
     Then the action is rejected under the account lock before changing the factor
     And a fresh session flag alone cannot authorize the action
 
+  Scenario: Reject old external admission without claiming upstream reauthentication
     Given an external-owned account has a KAORI admission timestamp at least five minutes old
     When it attempts personal begin or recovery rotation
     Then the request requires a new KAORI sign-in
