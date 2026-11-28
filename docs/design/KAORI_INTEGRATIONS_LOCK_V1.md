@@ -239,6 +239,8 @@ global table layout override is permitted.
 
 ## Notification Channels Title Guide & Evidence Panel Refinement (#2685, 2026-10-22)
 
+**Superseding title-label Visual UAT (#5308, 2026-11-28):** all three Notification Channels tabs follow the Access metadata/Guide separation. Delivery Overview shows the committed active-channel count; Channel Registry shows the supported-adapter count, not saved instances; Delivery Evidence Boundary shows Committed Evidence. Move contextual guidance into Recent Delivery (actual preview record count), Channel Inventory/Archived Channels and Delivery Records (filtered Results), always ordinary label before Guide. Retain provider-specific setup Guide buttons and existing evidence, lifecycle and permission semantics. Use the existing viewport-aware Info Tip and the shared inventory header optional trailing `guide` slot; do not change legacy `title_extra` ordering for other domains.
+
 The **Channel Inventory** title-level contextual hover is the shared
 `info_tip.render(..., variant='guide')`, not the icon-only field-level
 variant. The canonical guide trigger remains keyboard-focusable, touch-
