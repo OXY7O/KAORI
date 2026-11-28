@@ -20,14 +20,24 @@ from app.intelligence.alert_intelligence.vault_provider_delivery import prefligh
 from app.platform_operations.notifications.service import create_transient_feedback
 
 
-def _positive(key: str) -> int:
-    value = request.form.get(key, '')
+def _positive_value(value: str) -> int:
     if not value.isascii() or not value.isdecimal() or value.startswith('0') or len(value) > 10:
         abort(400)
     number = int(value)
     if not 0 < number <= 2_147_483_647:
         abort(400)
     return number
+
+
+def _positive(key: str) -> int:
+    return _positive_value(request.form.get(key, ''))
+
+
+def _candidate_pair(value: str) -> tuple[int, int]:
+    parts = value.split(':')
+    if len(parts) != 2:
+        abort(400)
+    return _positive_value(parts[0]), _positive_value(parts[1])
 
 
 def _validate(fields: set[str]) -> tuple[int, int, int]:
@@ -84,8 +94,9 @@ def local_policy_response() -> ResponseReturnValue:
 
 
 def local_delivery_response(public_id: str) -> ResponseReturnValue:
-    actor, instance, binding = _validate({'csrf_token', 'instance_id', 'policy_id', 'channel_id', 'action'})
-    intent = DeliveryIntent(instance, binding, actor, public_id, _positive('policy_id'), _positive('channel_id'))
+    actor, instance, binding = _validate({'csrf_token', 'instance_id', 'candidate', 'action'})
+    policy_id, channel_id = _candidate_pair(request.form.get('candidate', ''))
+    intent = DeliveryIntent(instance, binding, actor, public_id, policy_id, channel_id)
     action = request.form.get('action')
     if action == 'review':
         status = preflight_vault_provider_firing(

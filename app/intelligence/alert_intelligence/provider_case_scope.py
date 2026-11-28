@@ -144,16 +144,23 @@ def provider_scope_context(args: MultiDict[str, str]) -> dict[str, Any]:
     }
 
 
-def _read_filters(args: MultiDict[str, str]) -> dict[str, str]:
+def _read_filters(args: MultiDict[str, str], *, tab: str) -> dict[str, str]:
+    """Normalize tab-local filters without inheriting incompatible lifecycle states."""
+    states = {'resolved', 'conflict'} if tab == 'resolved' else {'firing', 'unknown'}
+    workflows = (
+        {'verification_pending', 'closed'} if tab == 'resolved' else {'open', 'acknowledged', 'mitigating'}
+    )
+
+    def choice(key: str, options: set[str]) -> str:
+        value = str(args.get(key) or 'all')
+        return value if value in options else 'all'
+
     return {
-        key: str(args.get(key) or default)
-        for key, default in (
-            ('severity', 'all'),
-            ('workflow', 'all'),
-            ('source', 'all'),
-            ('source_state', 'all'),
-            ('q', ''),
-        )
+        'severity': choice('severity', {'critical', 'warning', 'info', 'unknown'}),
+        'workflow': choice('workflow', workflows),
+        'source': 'provider_alert',
+        'source_state': choice('source_state', states),
+        'q': str(args.get('q') or '').strip()[:200],
     }
 
 
@@ -187,12 +194,12 @@ def build_provider_case_payload(args: MultiDict[str, str], *, domain_options: li
 
     domain = str(args.get('domain') or '')
     scope = provider_scope_context(args)
-    filters = _read_filters(args)
     tab = str(args.get('tab') or 'overview')
     if tab == 'history':
         tab = 'resolved'
     if tab not in {'overview', 'active', 'routing', 'templates', 'silences', 'resolved'}:
         tab = 'overview'
+    filters = _read_filters(args, tab=tab)
     if tab == 'resolved':
         filters['history'] = '1'
     status = 'scope_required'

@@ -399,7 +399,7 @@ def _policy_projection(policy: AlertRoutingPolicy) -> dict[str, Any]:
 
 
 def read_local_vault_policies(
-    *, instance_id: int, binding_id: int, actor_id: int, page: str, per_page: str
+    *, instance_id: int, binding_id: int, actor_id: int, page: str, per_page: str, include_options: bool = False
 ) -> dict[str, Any] | None:
     """Audited exact-instance candidate registry; never destination approval."""
     if not local_reconcile_enabled():
@@ -421,6 +421,11 @@ def read_local_vault_policies(
             'binding_revision': revision.binding_revision.isoformat(),
             'source_revision': revision.source_revision.isoformat(),
         }
+        if include_options:
+            projected = [_policy_projection(row) for row in rows if row.enabled]
+            result['options'] = [
+                {'id': row['id'], 'channel_id': row['channel_id']} for row in projected if row['channel_ready']
+            ]
         db.session.add(AuditEvent(
             actor_user_id=actor_id, target_type='integration_instance', target_id=str(instance_id),
             action='vault_provider_routing_candidates_read', summary='Scoped routing candidates reviewed.',

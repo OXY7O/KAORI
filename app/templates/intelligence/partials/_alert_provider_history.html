@@ -1,0 +1,78 @@
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_registry.html" as table_registry %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table_label.html" as table_label %}
+{% set history_query = {'tab': 'resolved', 'domain': payload.domain, 'provider': payload.selected_provider, 'asset': payload.selected_asset_key} %}
+{% set history_url = url_for('alert_intelligence.index', **history_query) %}
+<section id="alert-operations-provider-history" class="{{ table_ui.block_classes() }}">
+    <header class="{{ table_ui.block_header_classes() }}">
+        <div class="min-w-0">
+            <h3 class="{{ table_ui.block_title_classes() }}">Committed Provider Recovery & Closure</h3>
+            <p class="{{ table_ui.block_description_classes() }}">Review positive recovery, independent verification and source conflicts. Missing alerts never prove recovery.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            {% if payload.filters.q or payload.filters.severity != 'all' or payload.filters.workflow != 'all' or payload.filters.source_state != 'all' %}
+                {{ table_registry.clear_filters_action(history_url, table_ui.action_classes(),
+                    hx_get=history_url, target='#alert-operations-provider-history',
+                    indicator='#alert-operations-provider-history-loading', select='#alert-operations-provider-history',
+                    push_url='true', sync='closest section:replace') }}
+            {% endif %}
+            {{ table_label.metadata_label(payload.active_pagination.total_items ~ ' Cases', 'history') }}
+        </div>
+    </header>
+    {{ loading_bar.render('alert-operations-provider-history-loading', label='Refreshing Recovery History') }}
+    <div class="border-b border-outline-subtle px-5 py-4">
+        <form method="get"
+              action="{{ url_for('alert_intelligence.index') }}"
+              hx-get="{{ url_for('alert_intelligence.index') }}"
+              hx-target="#alert-operations-provider-history"
+              hx-select="#alert-operations-provider-history"
+              hx-swap="outerHTML"
+              hx-push-url="true"
+              hx-indicator="#alert-operations-provider-history-loading"
+              hx-trigger="change, input changed delay:350ms"
+              hx-sync="#alert-operations-provider-history:replace"
+              class="{{ table_ui.filter_layout_classes() }}">
+            {% for key, value in history_query.items() %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endfor %}
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="per_page" value="{{ payload.active_pagination.per_page }}">
+            <label>
+                <span class="{{ table_ui.filter_label_classes() }}">Search</span>
+                {{ table_ui.search_field('q', payload.filters.q, 'Alert or case') }}
+            </label>
+            <label>
+                <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
+                <select name="severity" class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in [('all','All Severities'),('critical','Critical'),('warning','Warning'),('info','Info'),('unknown','Unknown')] %}
+                        <option value="{{ value }}"
+                                {% if payload.filters.severity == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                <span class="{{ table_ui.filter_label_classes() }}">Workflow</span>
+                <select name="workflow" class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in [('all','All Recovery States'),('verification_pending','Verification Pending'),('closed','Closed')] %}
+                        <option value="{{ value }}"
+                                {% if payload.filters.workflow == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                <span class="{{ table_ui.filter_label_classes() }}">Source Evidence</span>
+                <select name="source_state" class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in [('all','All Source States'),('resolved','Committed Recovery'),('conflict','Source Conflict')] %}
+                        <option value="{{ value }}"
+                                {% if payload.filters.source_state == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <noscript>
+                <button type="submit" class="{{ table_ui.action_classes() }}">Filter Cases</button>
+            </noscript>
+        </form>
+    </div>
+    {% include 'intelligence/partials/_alert_ops_active_table.html' %}
+</section>

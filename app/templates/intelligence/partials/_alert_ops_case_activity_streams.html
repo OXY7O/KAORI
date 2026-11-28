@@ -87,13 +87,13 @@
                     </div>
                 </div>
                 {% if case.provider_delivery_qualified is sameas false %}
-                    {{ table_label.status_label('Not Qualified', 'unknown', size='compact') }}
+                    {{ table_label.status_label('No Claim Recorded' if case.provider_delivery_state == 'no_claim' else 'Not Qualified', 'unknown', size='compact') }}
                 {% else %}
-                    {{ table_label.metadata_label(case.deliveries|length ~ ' Attempts', 'send') }}
+                    {{ table_label.metadata_label((case.deliveries[0].attempt_count if case.provider_delivery_qualified is sameas true else case.deliveries|length) ~ ' Attempts', 'send') }}
                 {% endif %}
             </header>
             {% if case.provider_delivery_qualified is sameas false %}
-                <p class="px-4 py-5 text-sm text-content-muted">No qualified committed provider delivery record is available. This is not a zero-attempt claim.</p>
+                <p class="px-4 py-5 text-sm text-content-muted">{{ 'No local scoped claim is recorded in the available journal and audit. This does not establish destination approval.' if case.provider_delivery_state == 'no_claim' else 'No qualified committed provider delivery record is available. This is not a zero-attempt claim.' }}</p>
             {% else %}
             <div class="divide-y divide-outline-subtle px-4">
                 {% for delivery in case.deliveries_recent %}

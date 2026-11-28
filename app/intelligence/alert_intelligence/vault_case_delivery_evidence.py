@@ -7,12 +7,15 @@ names, destination, provider response, encrypted replay envelope or actor IDs.
 from __future__ import annotations
 
 import re
+from datetime import UTC, datetime
 from typing import Any
 
+from app.integrations.delivery.notification_channels.config import notification_delivery_max_attempts
 from app.intelligence.alert_intelligence.vault_delivery_journal import (
     REJECTION_KEY,
     audited_claim,
     audited_outcome,
+    claim_exists,
     firing_journal,
 )
 from app.intelligence.alert_signals.vault_source import _persisted_utc
@@ -22,12 +25,21 @@ from app.models.notification_channel import NotificationDelivery
 _DIGEST = re.compile(r'[a-f0-9]{64}')
 
 
-def _unavailable() -> dict[str, Any]:
-    return {'provider_delivery_qualified': False, 'deliveries': [], 'deliveries_recent': [], 'deliveries_older': []}
+def _unavailable(*, state: str = 'unavailable') -> dict[str, Any]:
+    return {
+        'provider_delivery_qualified': False,
+        'provider_delivery_state': state,
+        'provider_retry_due': False,
+        'deliveries': [],
+        'deliveries_recent': [],
+        'deliveries_older': [],
+    }
 
 
 def read_case_delivery_evidence(case: AlertCase) -> dict[str, Any]:
     rows = firing_journal(case)
+    if not rows:
+        return _unavailable(state='unavailable' if claim_exists(case) else 'no_claim')
     if len(rows) != 1:
         return _unavailable()
     row = rows[0]
@@ -38,6 +50,7 @@ def read_case_delivery_evidence(case: AlertCase) -> dict[str, Any]:
     status = _qualified_delivery_status(row, outcome)
     if status is None:
         return _unavailable()
+    due = _persisted_utc(row.next_retry_at) if status == 'failed' else None
     projected = {
         'channel': 'Approved scoped destination',
         'provider': 'Governed channel',
@@ -49,6 +62,13 @@ def read_case_delivery_evidence(case: AlertCase) -> dict[str, Any]:
     }
     return {
         'provider_delivery_qualified': True,
+        'provider_delivery_state': {
+            'sent': 'sent', 'failed': 'rejected', 'review required': 'review_required',
+        }[status],
+        'provider_retry_due': bool(
+            due is not None and due <= datetime.now(UTC)
+            and row.attempt_count < notification_delivery_max_attempts()
+        ),
         'deliveries': [projected],
         'deliveries_recent': [projected],
         'deliveries_older': [],
@@ -69,7 +89,7 @@ def _qualified_delivery_status(row: NotificationDelivery, outcome: str | None) -
     if outcome == 'sent':
         return 'sent' if row.status == 'sent' and rejected is False else None
     if outcome == 'rejected':
-        return 'failed' if row.status == 'failed' and rejected is True else None
+        return 'failed' if row.status in ('failed', 'skipped') and rejected is True else None
     if outcome == 'unconfirmed':
         return 'review required' if row.status == 'failed' and rejected is False else None
     if outcome is None and row.status in ('queued', 'failed', 'skipped'):

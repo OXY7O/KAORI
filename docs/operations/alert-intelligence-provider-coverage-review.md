@@ -59,3 +59,19 @@ Record the tested commit SHA and browser/role evidence. The actual Vault
 exporter, independent signed resolution/destination authority, disposable
 notification channel, PostgreSQL concurrency UAT and human acceptance
 are still pending under #5252/#5253. This display is not a workaround.
+
+
+## Operator workflow
+
+Keep one central workspace. Select an authorized scope, review its committed
+summary, triage Active Alerts, and use Resolved for positive recovery,
+independent verification and closure. The implementation matrix is visible
+even without an authorized instance but never exposes cases from another
+scope. Provider templates, provider-native silences and automatic routing
+remain Reserved Plan unless separately qualified. Local Vault delivery
+uses an exact scoped routing candidate and independent signed approval;
+generic replay does not mutate or resend its manual-only delivery journal.
+
+Review-only code is not production availability. The external recovery
+producer, independent destination authority, actual provider test and
+PostgreSQL concurrency UAT remain prerequisites.

@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from flask import url_for
-from sqlalchemy import func, or_
+from sqlalchemy import and_, func, or_
 from sqlalchemy.exc import IntegrityError
 
 from app.common.pagination import paginate_query
@@ -873,6 +873,17 @@ def _record_delivery_outcome(
     db.session.commit()
 
 
+def _generic_recovery_eligible():
+    """Keep the manual-only scoped Vault journal outside generic replay ownership."""
+    return ~and_(
+        NotificationDelivery.domain == 'secrets_pki',
+        NotificationDelivery.asset_type == 'vault_instance',
+        NotificationDelivery.event_type == 'alert_ops.firing',
+        NotificationDelivery.event_key.startswith('alert-case:', autoescape=True),
+        NotificationDelivery.event_key.endswith(':firing:scoped-v1', autoescape=True),
+    )
+
+
 def recover_notification_deliveries(*, limit: int = 25) -> dict[str, int]:
     """Retry due committed attempts with one PostgreSQL skip-locked claim at a time.
 
@@ -886,6 +897,7 @@ def recover_notification_deliveries(*, limit: int = 25) -> dict[str, int]:
         delivery = (
             NotificationDelivery.query.filter(
                 NotificationDelivery.status.in_(('failed', 'queued')),
+                _generic_recovery_eligible(),
                 NotificationDelivery.updated_at <= cutoff,
                 or_(
                     NotificationDelivery.next_retry_at.is_(None),
