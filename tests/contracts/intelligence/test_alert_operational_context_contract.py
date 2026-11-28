@@ -7,17 +7,20 @@ from jinja2 import StrictUndefined
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATES = ROOT / 'app/templates'
 PARTIALS = TEMPLATES / 'intelligence/partials'
-TABS = ('overview', 'active', 'routing', 'templates', 'silences', 'resolved')
+TABS = ('active', 'routing', 'templates', 'silences', 'resolved')
 
 
-def test_page_owns_one_context_before_hero_and_workspace() -> None:
+def test_context_is_only_in_operational_workspace_after_hero_and_summary() -> None:
     page = (PARTIALS / '_alert_intelligence_page.html').read_text()
     workspace = (PARTIALS / '_alert_intelligence_workspace.html').read_text()
     include = "{% include 'intelligence/partials/_alert_intelligence_context.html' %}"
-    assert page.count(include) == 1
-    assert page.index('workspace_tabs.render_navigation(') < page.index(include)
-    assert page.index(include) < page.index('page_hero.shell_classes()')
-    assert page.index(include) < page.index('_alert_intelligence_summary.html')
+    assert include not in page
+    assert page.index('workspace_tabs.render_navigation(') < page.index('page_hero.shell_classes()')
+    assert page.index('page_hero.shell_classes()') < page.index('_alert_intelligence_summary.html')
+    assert page.index('_alert_intelligence_summary.html') < page.index('_alert_intelligence_workspace.html')
+    assert workspace.count(include) == 1
+    assert "{% if payload.tab != 'overview' %}" in workspace
+    assert workspace.index("{% if payload.tab != 'overview' %}") < workspace.index(include)
     assert 'id="alert-intelligence-context-form"' not in workspace
 
 
@@ -48,7 +51,7 @@ def test_context_render_adapts_without_widening_or_losing_scope() -> None:
                 assert html.count('id="alert-intelligence-context-form"') == 1
                 assert 'name="domain"' in html
                 assert f'name="tab"\n                   value="{tab}"' in html
-                editable = provider_mode or tab in ('overview', 'active', 'silences', 'resolved') or (
+                editable = provider_mode or tab in ('active', 'silences', 'resolved') or (
                     domain == 'registry' and tab == 'routing'
                 )
                 assert ('id="alert-intelligence-asset-select"' in html) == editable
@@ -61,6 +64,7 @@ def test_context_render_adapts_without_widening_or_losing_scope() -> None:
                     assert 'data-alert-retained-scope' in html
                     assert 'Change Scope' in html
                     assert f'asset={key}' in html
+                    assert 'tab=active' in html
                 assert ('Global notification templates' in html) == (tab == 'templates' and not provider_mode)
 
         payload.update({

@@ -9,6 +9,8 @@
 ] %}
 {% if payload.provider_case_mode %}
     {% set guide_items = guide_items + ['Provider-origin cases require an exact independently approved instance grant. Fresh matching committed observations are distinct from admitted case history; source absence never establishes recovery. Operator controls require separate opt-in and exact decision scope; local firing delivery additionally requires independent destination approval.'] %}
+{% elif payload.global_overview %}
+    {% set guide_items = guide_items + ['Overview totals cover committed recommendation cases across Kubernetes, Object Storage and Artifact Registry. Provider-origin cases require exact-instance access in Active Alerts or Resolved and are excluded, not counted as zero.'] %}
 {% elif not payload.snapshot.available %}
     {% set guide_items = guide_items + ['Committed Evidence Review Required: One or more managed assets have no committed inventory observation within 24 hours.'] %}
 {% endif %}
@@ -47,6 +49,9 @@
     'warning' if payload.provider_case_mode or payload.summary.active else 'normal',
     title_extra=workspace_guide
     ) %}
+    {% if payload.tab != 'overview' %}
+        {% include 'intelligence/partials/_alert_intelligence_context.html' %}
+    {% endif %}
     <div data-alert-intelligence-active-section="{{ payload.tab }}"
          class="bg-surface-card">
         {% if payload.provider_case_mode and payload.provider_case_status != 'ready' %}

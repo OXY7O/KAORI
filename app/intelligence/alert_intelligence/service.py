@@ -34,6 +34,51 @@ _VALID_ROUTING_DOMAINS = {'all', 'kubernetes', 'object_storage', 'registry'}
 _VALID_ROUTING_STATUSES = {'all', 'enabled', 'disabled'}
 
 
+def get_alert_overview_payload() -> dict[str, Any]:
+    """Selector-free committed recommendation overview under intelligence.view.
+
+    Provider-origin cases have separate exact-instance grants and audited reads;
+    they must not be queried or counted by this fleet projection.
+    """
+    from app.intelligence.alert_intelligence.provider_coverage import provider_coverage_rows
+
+    domains = ('kubernetes', 'object_storage', 'registry')
+    cases = AlertCase.query.filter(
+        AlertCase.domain.in_(domains), AlertCase.source_type == 'recommendation'
+    )
+    now = datetime.now(UTC)
+    silenced = AlertSilence.query.join(AlertCase, AlertCase.id == AlertSilence.case_id).filter(
+        AlertCase.domain.in_(domains),
+        AlertCase.source_type == 'recommendation',
+        AlertSilence.starts_at <= now,
+        AlertSilence.ends_at > now,
+        AlertSilence.revoked_at.is_(None),
+    ).count()
+    channels = notification_channel_summary()
+    return {
+        'tab': 'overview',
+        'global_overview': True,
+        'provider_case_mode': False,
+        'scope_invalid': False,
+        'domain_label': 'Cross-Domain Overview',
+        'selected_asset_name': 'Recommendation Cases',
+        'provider_coverage': provider_coverage_rows(),
+        'snapshot': {
+            'label': 'Committed Cases · 3 Domains',
+            'tone': 'info',
+            'available': False,
+            'serving_last_good': False,
+        },
+        'summary': {
+            **_case_counts_from_query(cases),
+            'silenced': int(silenced),
+            'delivery_failures': sum(_delivery_failure_count(domain=domain, asset_key='all') for domain in domains),
+            'routing_policies': len(routing_policy_rows()),
+            'channels': channels.get('eligible', 0),
+        },
+    }
+
+
 def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     from app.intelligence.alert_intelligence import provider_case_scope
     from app.intelligence.alert_intelligence.provider_coverage import provider_coverage_rows

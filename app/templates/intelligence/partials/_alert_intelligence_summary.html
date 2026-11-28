@@ -5,17 +5,17 @@
 {% endset %}
 {% call intelligence_ui.posture_panel(
     'Alert Operations Summary',
-    'Operational posture for the selected domain and asset scope. Use the lifecycle tabs to investigate and manage cases.',
+    'Committed recommendation cases across Kubernetes, Object Storage and Artifact Registry.' if payload.get('global_overview', false) else 'Operational posture for the selected domain and asset scope. Use the lifecycle tabs to investigate and manage cases.',
     'activity',
     payload.snapshot.label,
     payload.snapshot.tone,
-    'Counts describe committed cases, not provider health. Recovery and delivery require independent evidence; operator actions are evaluated per case.' if payload.provider_case_mode else 'Committed AlertCase evidence remains available even when live providers are temporarily unavailable.',
+    'Counts describe committed cases, not provider health. Recovery and delivery require independent evidence; operator actions are evaluated per case.' if payload.provider_case_mode else 'Provider-origin cases require exact-instance access in the operational tabs and are not included in these totals.' if payload.get('global_overview', false) else 'Committed AlertCase evidence remains available even when live providers are temporarily unavailable.',
     actions=[
     ('list-filter', 'Active Alerts', url_for('alert_intelligence.index', tab='active', domain=payload.domain, provider=payload.selected_provider, asset=payload.selected_asset_key)),
     ('badge-check', 'Resolved Alerts', url_for('alert_intelligence.index', tab='resolved', domain=payload.domain, provider=payload.selected_provider, asset=payload.selected_asset_key))
     ] if payload.provider_case_mode and payload.provider_case_status == 'ready' else [] if payload.provider_case_mode else [
     ('send', 'Notification Channels', url_for('notification_channels.index')),
-    ('badge-check', 'Resolved Alerts', url_for('alert_intelligence.index', tab='resolved', domain=payload.domain, asset=payload.selected_asset_key))
+    ('badge-check', 'Resolved Alerts', url_for('alert_intelligence.index', tab='resolved') if payload.get('global_overview', false) else url_for('alert_intelligence.index', tab='resolved', domain=payload.domain, asset=payload.selected_asset_key))
     ],
     title_extra=summary_title_label
     ) %}
