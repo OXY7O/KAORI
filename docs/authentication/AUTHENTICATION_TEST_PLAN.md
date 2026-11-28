@@ -56,7 +56,7 @@ The canonical suite is `tests/access/authentication/`.
 - A successful Local, LDAP or SSO login atomically increments its own user's session generation; old signed browser and remember cookies are denied on the next request while unrelated accounts remain authenticated.
 - Concurrent login transactions for the same user serialize generation increments. The response must bind to **its own** UPDATE RETURNING generation rather than an ORM refresh that could observe the newer login's generation.
 - Failed credentials, account disabled/deleted before issuance, source mismatch or SQL error must not commit a replacement generation or permit a new authenticated session.
-- The non-secret login-specific `auth_session_ref` is safe in success/login and logout Activity Audit only. A failed login may name a target user but cannot inherit authenticated actor or active-session correlation from other sessions.
+- The non-secret login-specific `auth_session_ref` is safe in successful login, logout and system-owned session-expiry Activity Audit. A failed login may name a target user but cannot inherit authenticated actor or active-session correlation from other sessions.
 - Multiple browser tabs sharing the same copied signed cookie are out of scope for the one-login-generation guarantee; test that distinction rather than describing the feature as one physical device.
 - Guided two-browser UAT verifies Browser A login then Browser B login as the same user, A rejected, B allowed, optional remember-me old cookie rejected, independent user unaffected and clean audit correlation; also exercise two parallel login requests and provider-disable/password-change regressions.
 - Privileged Admin/Super Admin Remember Me is denied; ordinary Remember Me may only restore the still-valid generation within both server deadlines. Legacy cookies without issuance/activity timestamps must sign in again.
@@ -108,3 +108,15 @@ Test Local Database, LDAP, Google OIDC, and GitHub OAuth with:
 - Trusted proxy hop counts match the deployed ingress path.
 - Authentication Activity retention/archive lifecycle preserves required evidence.
 - Local super-admin recovery is rehearsed under change control.
+
+### Session lifecycle qualification (#5284)
+
+After applying migration `20261128_auth_session_expiry` to the Dev Container database and restarting the application, verify the following against the committed defaults. Existing cookies without trusted timestamps must sign in again.
+
+- Privileged and ordinary sessions: idle expiry, absolute expiry despite interaction, warning and Continue Session (idle only).
+- Passive polling and background refresh cannot extend idle; trusted foreground activity may extend idle without resetting absolute age.
+- Close and restore the browser, with and without Remember Me; verify no restored session bypasses either deadline. Browser closure alone is not a revocation signal.
+- Replay a revoked generation after explicit logout, new sign-in, policy change and provider disablement; verify an older request cannot revoke the newer generation.
+- Save an unchanged policy and confirm existing sessions remain valid; save a changed policy and verify fresh authentication is required. Verify read-only roles cannot modify the policy and CSRF is enforced.
+- Confirm Session Security Activity Audit entries are system-owned for expiry, classified as security-control evidence and contain no cookies or credentials.
+- Exercise Local, LDAP and browser SSO, PostgreSQL concurrency, multiple app instances, desktop/mobile warning and HTMX expiry. Record actual results, timestamps and evidence before marking qualified.
