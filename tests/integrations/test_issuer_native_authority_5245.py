@@ -11,7 +11,12 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from app.access.scope_policy import CredentialIssuerScope
-from app.integrations.secrets_management.secrets_pki.providers.credential_version_proof import canonical_statement
+from app.integrations.secrets_management.secrets_pki.providers.credential_version_proof import (
+    CredentialVersionSelector,
+    ProviderCredentialVersionSelector,
+    canonical_statement,
+    provider_credential_version_statement,
+)
 from app.integrations.secrets_management.secrets_pki.providers.issuer_transit import (
     TransitIssuerBinding,
     TransitIssuerObservation,
@@ -236,3 +241,98 @@ def test_boolean_source_identity_cannot_match_integer_scope(authority_files):
     altered_scope = dict(deployment['scope'], instance_id=True)
     files[deployment_file] = _envelope(deployment | {'scope': altered_scope})
     assert issuer_authority.resolve_deployment_authority(scope, now=_NOW) is None
+
+
+@pytest.fixture
+def typed_evidence(authority_files):
+    files, scope = authority_files[:2]
+    deployment = issuer_authority.resolve_deployment_authority(scope, now=_NOW)
+    assert deployment is not None
+    selector = ProviderCredentialVersionSelector(
+        'openbao',
+        scope.deployment_ref,
+        2,
+        '11111111-2222-4333-8444-555555555555',
+        7,
+        CredentialVersionSelector(1, '', 'kv', 'a' * 64, 2, (_NOW - timedelta(days=1)).isoformat()),
+    )
+    issued, expires = _NOW, _NOW + timedelta(minutes=3)
+    statement = provider_credential_version_statement(selector, issued_at=issued, expires_at=expires)
+    assert statement is not None
+    payload = {
+        'schema': 'kaori.secrets.typed_credential_evidence.v1',
+        'state': 'active',
+        'deployment_evidence_ref': deployment.evidence_ref,
+        'issuer_evidence_ref': 'e' * 64,
+        'key_sha256': _KEY_DIGEST,
+        'statement_sha256': sha256(statement).hexdigest(),
+        'issuer_signature': _ISSUER.sign(statement).hex(),
+        'source_owner_id': 1,
+        'checker_id': 2,
+        'issued_at': issued.isoformat(),
+        'expires_at': expires.isoformat(),
+    }
+    name = issuer_authority.credential_evidence_name(selector)
+    files[name] = _envelope(payload)
+    return files, selector, deployment, name, payload
+
+
+def _resolve_typed(fixture, *, selector=None, now=_NOW, issuer_ref='e' * 64):
+    _, original, deployment, _, _ = fixture
+    return issuer_authority.resolve_typed_credential_evidence(
+        selector or original,
+        deployment=deployment,
+        issuer_evidence_ref=issuer_ref,
+        verification_key=_ISSUER.public_key(),
+        now=now,
+    )
+
+
+def test_exact_typed_evidence_requires_both_signatures_and_current_files(typed_evidence):
+    files, _, _, name, payload = typed_evidence
+    result = _resolve_typed(typed_evidence)
+    assert result is not None
+    assert result.evidence_ref == sha256(files[name]).hexdigest()
+    files[name] = _envelope(payload, _ISSUER)
+    assert _resolve_typed(typed_evidence) is None
+    files[name] = _envelope(payload | {'issuer_signature': '0' * 128})
+    assert _resolve_typed(typed_evidence) is None
+    del files[name]
+    assert _resolve_typed(typed_evidence) is None
+
+
+@pytest.mark.parametrize(
+    'changes',
+    [
+        {'state': 'revoked'},
+        {'deployment_evidence_ref': '0' * 64},
+        {'issuer_evidence_ref': '0' * 64},
+        {'key_sha256': '0' * 64},
+        {'statement_sha256': '0' * 64},
+        {'source_owner_id': True},
+        {'checker_id': 1},
+        {'expires_at': _NOW.isoformat()},
+        {'extra': 'not-in-schema'},
+    ],
+)
+def test_wrong_independent_typed_receipt_denies_even_with_valid_root_signature(typed_evidence, changes):
+    files, _, _, name, payload = typed_evidence
+    files[name] = _envelope(payload | changes)
+    assert _resolve_typed(typed_evidence) is None
+
+
+def test_version_issuer_and_deployment_rotation_invalidate_typed_evidence(typed_evidence):
+    files, selector, deployment, name, _ = typed_evidence
+    for changed in (
+        replace(selector, issuer_revision=3),
+        replace(selector, representation_id=8),
+        replace(selector, credential=replace(selector.credential, version=3)),
+    ):
+        # Even copying a valid receipt under the new selector's name cannot
+        # transfer the provider signature to another version or issuer.
+        files[issuer_authority.credential_evidence_name(changed)] = files[name]
+        assert _resolve_typed(typed_evidence, selector=changed) is None
+    assert _resolve_typed(typed_evidence, issuer_ref='f' * 64) is None
+    assert _resolve_typed(typed_evidence, now=_NOW + timedelta(minutes=3)) is None
+    del files[f'deployment-{deployment.scope.deployment_ref}.json']
+    assert _resolve_typed(typed_evidence) is None

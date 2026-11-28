@@ -131,9 +131,10 @@ def exact_credential_target_current(
     deployment_ref = None
     if provider.provider_key == 'vault':
         vault = (
-            VaultInstance.query.filter_by(integration_instance_id=policy.integration_instance_id)
+            VaultInstance.query.options(load_only(VaultInstance.namespace, VaultInstance.kv2_mounts))
+            .filter_by(integration_instance_id=policy.integration_instance_id)
             .populate_existing()
-            .with_for_update()
+            .with_for_update(of=VaultInstance)
             .one_or_none()
         )
         if (

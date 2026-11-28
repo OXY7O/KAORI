@@ -21,7 +21,10 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from app.access.scope_policy import CredentialIssuerScope
 from app.integrations.secrets_management.secrets_pki.providers.credential_version_proof import (
+    ProviderCredentialVersionSelector,
     canonical_statement,
+    provider_credential_version_statement,
+    verify_provider_credential_version_statement,
     verify_statement,
 )
 from app.integrations.secrets_management.secrets_pki.providers.issuer_transit import (
@@ -77,7 +80,7 @@ def _safe_file(info: os.stat_result, *, directory: bool = False) -> bool:
 
 def _read_authority_file(name: str) -> bytes | None:
     """Fixed names only, refuse writable mount, symlinks, non-root owner and oversized files."""
-    if name != 'root.pub' and re.fullmatch(r'(deployment|custody)-[a-f0-9]{64}\.json', name) is None:
+    if name != 'root.pub' and re.fullmatch(r'(deployment|custody|credential)-[a-f0-9]{64}\.json', name) is None:
         return None
     directory_fd = None
     file_fd = None
@@ -323,3 +326,103 @@ def resolve_custody_authority(
     return CustodyAuthority(
         deployment, target.revision_number, expected.challenge_sha256, issued, expires, evidence_ref
     )
+
+
+@dataclass(frozen=True, slots=True, repr=False)
+class TypedCredentialEvidence:
+    """Redacted proof correlation, not a material-use permit."""
+
+    evidence_ref: str
+    issued_at: datetime
+    expires_at: datetime
+
+
+def credential_evidence_name(selector: ProviderCredentialVersionSelector) -> str:
+    """Fixed artifact name derived from canonical persisted selector only."""
+    digest = sha256(canonical_statement({'selector': asdict(selector)})).hexdigest()
+    return f'credential-{digest}.json'
+
+
+def resolve_typed_credential_evidence(
+    selector: ProviderCredentialVersionSelector,
+    *,
+    deployment: DeploymentAuthority,
+    issuer_evidence_ref: str,
+    verification_key: Ed25519PublicKey,
+    now: datetime,
+) -> TypedCredentialEvidence | None:
+    """Independently attested exact-version schema plus provider issuer signature.
+
+    The operator-managed root attests the provider-owner schema inspection and
+    current custody. The issuer signs the existing exact-version statement.
+    This cannot by itself establish live provider health or credential use.
+    """
+    if (
+        not isinstance(selector, ProviderCredentialVersionSelector)
+        or not isinstance(verification_key, Ed25519PublicKey)
+        or not _digest(issuer_evidence_ref)
+        or not isinstance(deployment, DeploymentAuthority)
+        or not isinstance(now, datetime)
+        or now.utcoffset() is None
+    ):
+        return None
+    scope = deployment.scope
+    credential = selector.credential
+    if (
+        not deployment.issued_at <= now < deployment.expires_at
+        or (
+            selector.provider_key,
+            selector.deployment_ref,
+            credential.integration_instance_id,
+            credential.provider_namespace,
+            credential.mount,
+        ) != (scope.provider_key, scope.deployment_ref, scope.instance_id, scope.provider_namespace, scope.mount)
+        or sha256(verification_key.public_bytes_raw()).hexdigest() != deployment.transit.key_sha256
+        or resolve_deployment_authority(scope, now=now) != deployment
+    ):
+        return None
+    result = _signed_payload(
+        credential_evidence_name(selector), 'kaori.secrets.typed_credential_evidence.v1', now
+    )
+    if result is None:
+        return None
+    payload, issued, expires, evidence_ref = result
+    statement = provider_credential_version_statement(selector, issued_at=issued, expires_at=expires)
+    signature = payload.get('issuer_signature')
+    if (
+        statement is None
+        or set(payload) != {
+            'schema',
+            'state',
+            'deployment_evidence_ref',
+            'issuer_evidence_ref',
+            'key_sha256',
+            'statement_sha256',
+            'issuer_signature',
+            'source_owner_id',
+            'checker_id',
+            'issued_at',
+            'expires_at',
+        }
+        or payload['deployment_evidence_ref'] != deployment.evidence_ref
+        or payload['issuer_evidence_ref'] != issuer_evidence_ref
+        or payload['key_sha256'] != deployment.transit.key_sha256
+        or payload['statement_sha256'] != sha256(statement).hexdigest()
+        or not isinstance(signature, str)
+        or _SIGNATURE.fullmatch(signature) is None
+        or type(payload['source_owner_id']) is not int
+        or payload['source_owner_id'] != deployment.source_owner_id
+        or type(payload['checker_id']) is not int
+        or payload['checker_id'] != deployment.checker_id
+        or not deployment.issued_at <= issued <= now < expires <= deployment.expires_at
+        or not verify_provider_credential_version_statement(
+            selector,
+            issued_at=issued,
+            expires_at=expires,
+            signature=bytes.fromhex(signature),
+            verification_key=verification_key,
+            now=now,
+        )
+    ):
+        return None
+    return TypedCredentialEvidence(evidence_ref, issued, expires)

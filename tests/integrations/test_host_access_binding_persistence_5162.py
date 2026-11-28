@@ -13,6 +13,7 @@ from app.access import scoped_grants
 from app.extensions.db import db
 from app.infrastructure_automation import credential_grants, ssh_trust_lifecycle
 from app.infrastructure_automation import host_access_binding as service
+from app.infrastructure_automation.credential_evidence import resolve_current_credential_evidence
 from app.infrastructure_automation.credential_scope_target import (
     CREDENTIAL_USE_PERMISSION,
     READ_ONLY_FACTS_OPERATION,
@@ -41,6 +42,7 @@ from app.models.openbao import OpenBaoInstance
 from app.models.rbac import Permission, Role, RolePermission
 from app.models.scope_access import AutomationCredentialScopeTarget, ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.secrets_pki import (
+    SecretCredentialIssuerRevision,
     SecretIdentity,
     SecretInventoryCollectionState,
     SecretProviderRepresentation,
@@ -192,6 +194,7 @@ def binding_store():
         SecretIdentity.__table__,
         SecretProviderRepresentation.__table__,
         SecretVersionObservation.__table__,
+        SecretCredentialIssuerRevision.__table__,
         SecretInventoryCollectionState.__table__,
         AutomationHostAccessBinding.__table__,
         AutomationHostTrustRevision.__table__,
@@ -715,3 +718,25 @@ def test_local_openbao_binding_uses_exact_scope_and_deployment(binding_store, mo
     assert review.ssh_trust_verified is False
     assert binding.reference_fingerprint == review.fingerprint
     assert Notification.query.count() == 1
+
+
+def test_credential_evidence_requires_current_issuer_and_provider_created_time(binding_store):
+    actor, checker, request, validity = _credential_request(binding_store)
+    policy = credential_grants.request_automation_credential_grant(
+        actor_user_id=checker,
+        principal_user_id=actor,
+        intent=request,
+        validity=validity,
+        reason_code='operational_access',
+    )
+    target = db.session.get(AutomationCredentialScopeTarget, policy.id)
+    assert target is not None
+    assert exact_credential_target_current(policy, target, now=datetime.now(UTC))
+    assert resolve_current_credential_evidence(policy, target, now=datetime.now(UTC)) is None
+    version = SecretVersionObservation.query.one()
+    version.provider_created_time = (datetime.now(UTC) - timedelta(days=1)).isoformat()
+    db.session.commit()
+    assert resolve_current_credential_evidence(policy, target, now=datetime.now(UTC)) is None
+    assert policy.current_revision == 1
+    assert policy.revisions[0].lifecycle_status == 'draft'
+    assert SecretCredentialIssuerRevision.query.count() == 0
