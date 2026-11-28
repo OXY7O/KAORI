@@ -187,3 +187,18 @@ eligible; no partial snapshot is committed. OpenBao Detail shows counts and
 timestamps only. Credential type, signed version proof, independent host
 trust and worker use remain separate; metadata does not mark the integration
 ready. No global Secret Detail exposure or provider access from GET.
+
+
+### Exact issuer administration in local review (#5204)
+
+OpenBao connection validation intentionally remains degraded until credential authority
+is separately qualified. The existing issuer administration service can now qualify
+a connected local OpenBao source on the independently configured inventory mount
+without falsely promoting overall provider readiness. It requires the canonical
+provider record, exact signed deployment receipt (including endpoint and cluster
+identity), explicit current Access issuer scope and provider-native Transit inspection.
+The canonical source is checked before native inspection and again in the locked
+write transaction. Revocation remains available even when the source is disabled.
+This does not qualify a credential type, activate automation credential-use grants,
+or allow SSH/worker execution. Independent Access review, PostgreSQL and native
+provider UAT remain required.
