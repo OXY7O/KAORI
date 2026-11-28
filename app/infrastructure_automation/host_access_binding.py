@@ -21,6 +21,9 @@ from app.infrastructure_automation.host_access_reference import (
     assess_scoped_host_access_references,
 )
 from app.infrastructure_automation.host_enrollment import get_scoped_host_assignment, host_revision
+from app.integrations.secrets_management.secrets_pki.providers.openbao.inventory_scope import (
+    local_inventory_deployment_ref,
+)
 from app.models.automation import AutomationHostAccessBinding
 from app.models.integration import IntegrationInstance
 from app.models.scope_access import ScopeAccessPolicy
@@ -229,6 +232,13 @@ def record_host_access_reference(*, actor_id: int, intent: HostAccessBindingInte
         identity = db.session.get(SecretIdentity, representation.secret_identity_id, with_for_update=True)
         if identity is None:
             raise _deny()
+        deployment_ref = None
+        if policy.scope_level == 'openbao_mount':
+            deployment_ref = local_inventory_deployment_ref(
+                provider, namespace=representation.provider_namespace, mount=representation.mount, lock=True
+            )
+            if deployment_ref is None:
+                raise _deny()
         review = assess_scoped_host_access_references(
             connection=connection,
             assignment=assignment,
@@ -238,6 +248,7 @@ def record_host_access_reference(*, actor_id: int, intent: HostAccessBindingInte
             version=version,
             host_key_digest=intent.host_key_digest,
             now=instant,
+            provider_deployment_ref=deployment_ref,
         )
         if review.state != 'references_recorded' or review.fingerprint is None:
             raise _deny()
