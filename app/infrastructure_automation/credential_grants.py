@@ -24,7 +24,6 @@ from app.access.scoped_grants import (
     require_scope_grant_principal,
 )
 from app.extensions.db import db
-from app.platform_operations.notifications.service import stage_operational_activity
 from app.infrastructure_automation.credential_evidence import resolve_current_credential_evidence
 from app.infrastructure_automation.credential_scope_target import (
     CREDENTIAL_USE_PERMISSION,
@@ -40,6 +39,7 @@ from app.infrastructure_automation.security_review import (
 from app.models.automation import AutomationHostAccessBinding
 from app.models.scope_access import AutomationCredentialScopeTarget, ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.secrets_pki import SecretProviderRepresentation
+from app.platform_operations.notifications.service import stage_operational_activity
 from app.secrets_pki.issuer_authority import TypedCredentialEvidence
 
 
@@ -181,14 +181,7 @@ def review_credential_grant_approval(
         or approver_user_id == policy.principal_user_id
     ):
         return None
-    current = db.session.execute(
-        select(ScopeAccessPolicyRevision)
-        .where(ScopeAccessPolicyRevision.policy_id == policy.id)
-        .order_by(ScopeAccessPolicyRevision.revision_number.desc())
-        .limit(1)
-        .with_for_update(of=ScopeAccessPolicyRevision)
-        .execution_options(populate_existing=True)
-    ).scalar_one_or_none()
+    current = _latest_revision(policy.id)
     if (
         current is None
         or current.revision_number != expected_revision
@@ -256,6 +249,7 @@ def approve_automation_credential_grant(
         current = _latest_revision(policy_id)
         if policy is None or current is None:
             raise ScopedGrantRejected('Credential grant approval is unavailable.')
+        approved_at = datetime.now(UTC)
         revision = ScopeAccessPolicyRevision(
             policy_id=policy.id,
             revision_number=expected_revision + 1,
@@ -264,11 +258,11 @@ def approve_automation_credential_grant(
             effective_until=current.effective_until,
             requested_by_user_id=current.requested_by_user_id,
             approved_by_user_id=approver_user_id,
-            approved_at=datetime.now(UTC),
+            approved_at=approved_at,
             change_reason=current.change_reason,
             credential_evidence_ref=evidence.evidence_ref,
         )
-        if revision.approved_at >= current.effective_until or revision.approved_at >= evidence.expires_at:
+        if approved_at >= current.effective_until or approved_at >= evidence.expires_at:
             raise ScopedGrantRejected('Credential grant approval is unavailable.')
         db.session.add(revision)
         policy.current_revision = revision.revision_number
