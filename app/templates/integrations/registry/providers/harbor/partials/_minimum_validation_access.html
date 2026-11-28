@@ -1,35 +1,14 @@
 {% import "components/workspace_tabs.html" as workspace_tabs %}
+{% import "integrations/components/_provider_setup_reference.html" as setup_reference %}
 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
          x-data="{ accessOpen: false, activeTab: 'baseline', copied: '', setTab(tab) { this.activeTab = tab; }, moveTab(currentTab, direction, prefix) { const tabs = ['baseline', 'optional']; const currentIndex = tabs.indexOf(currentTab); let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = tabs.length - 1; else nextIndex = (currentIndex + direction + tabs.length) % tabs.length; this.activeTab = tabs[nextIndex]; this.$nextTick(() => document.getElementById(`${prefix}-tab-${tabs[nextIndex]}`)?.focus()); }, copyText(target, label) { const node = this.$refs[target]; if (!node) return; navigator.clipboard?.writeText(node.textContent.trim()).then(() => { this.copied = label; window.setTimeout(() => { if (this.copied === label) this.copied = ''; }, 1800); }); } }"
          data-kaori-provider-setup-reference="harbor">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
-        <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary dark:text-kaori-accent"
-                  aria-hidden="true">
-                <i data-lucide="shield-check" class="h-4 w-4"></i>
-            </span>
-            <div class="min-w-0">
-                <p class="text-sm font-semibold text-content-primary">Minimum Harbor API Access Example</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Use a dedicated read-oriented identity for provider validation; add optional metadata reads only for enabled follow-on workstreams.</p>
-            </div>
-        </div>
-        <button type="button"
-                @click="accessOpen = true"
-                class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-            <i data-lucide="panel-top-open" class="h-3.5 w-3.5" aria-hidden="true"></i>
-            Open Access Examples
-        </button>
-    </header>
-    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2">
-        <div class="bg-surface-card px-4 py-3">
-            <p class="text-xs font-semibold text-content-primary">Baseline Validation Reader</p>
-            <p class="mt-1 text-xs leading-5 text-content-secondary">System identity, provider health, project visibility, and repository list/read for intended Registry scope.</p>
-        </div>
-        <div class="bg-surface-card px-4 py-3">
-            <p class="text-xs font-semibold text-content-primary">Optional Metadata Reader</p>
-            <p class="mt-1 text-xs leading-5 text-content-secondary">Artifact, vulnerability, SBOM, and governance metadata reads only when those capabilities are enabled.</p>
-        </div>
-    </div>
+    {{ setup_reference.summary('shield-check', 'Minimum Harbor API Access Example',
+        'Use a dedicated read-oriented identity for provider validation; add optional metadata reads only for enabled follow-on workstreams.',
+        'Open Access Examples', [
+            ('Baseline Validation Reader', 'System identity, provider health, project visibility, and repository list/read for intended Registry scope.'),
+            ('Optional Metadata Reader', 'Artifact, vulnerability, SBOM, and governance metadata reads only when those capabilities are enabled.')
+        ], open_expression='accessOpen = true') }}
     <template x-teleport="body">
         <div x-show="accessOpen"
              x-cloak
