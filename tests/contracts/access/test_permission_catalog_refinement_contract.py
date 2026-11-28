@@ -56,6 +56,8 @@ def test_permission_catalog_uses_kaori_hero_overview_tabs_tables_loading_and_pag
         assert 'components/loading_bar.html' in template
         assert 'components/table.html' in template
         assert 'components/table_registry.html' in template
+        assert 'placeholder="Search permissions..."' in template
+        assert 'Search Permission' in template
         assert 'registry_ui.filter_form(' in template
         assert 'registry_ui.clear_filters_link(' in template
         assert 'registry_ui.footer(' in template
