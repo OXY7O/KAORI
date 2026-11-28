@@ -237,7 +237,7 @@ def automation_connection_count() -> int:
 
 
 def build_automation_overview(*, can_jobs: bool, can_inventory: bool) -> dict[str, Any]:
-    """Global committed counts only; never choose or hydrate a connection."""
+    """Global committed counts and bounded review previews; never choose a connection."""
     connection_ids = select(IntegrationInstance.id).where(
         IntegrationInstance.integration_type == INTEGRATION_TYPE,
         IntegrationInstance.provider_key == PROVIDER_KEY,
@@ -266,6 +266,32 @@ def build_automation_overview(*, can_jobs: bool, can_inventory: bool) -> dict[st
         if can_jobs
         else None
     )
+    # A bounded preview of the latest registered connections, not an estate-wide
+    # readiness count. Reuse the exact committed source evaluator.
+    recent_connections = (
+        IntegrationInstance.query.filter_by(integration_type=INTEGRATION_TYPE, provider_key=PROVIDER_KEY)
+        .with_entities(IntegrationInstance.id, IntegrationInstance.name, IntegrationInstance.metadata_json)
+        .order_by(IntegrationInstance.id.desc())
+        .limit(5)
+        .all()
+    )
+    attention = [
+        {'id': row.id, 'name': row.name, 'state': committed_source_state(row.metadata_json)}
+        for row in recent_connections
+        if committed_source_state(row.metadata_json) != 'checked'
+    ]
+    recent_jobs = (
+        JobExecution.query.filter(
+            JobExecution.integration_instance_id.in_(connection_ids),
+            JobExecution.integration_type == INTEGRATION_TYPE,
+        )
+        .with_entities(JobExecution.operation, JobExecution.status, JobExecution.created_at)
+        .order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
+        .limit(_HISTORY_LIMIT)
+        .all()
+        if can_jobs
+        else []
+    )
     return {
         'total_connections': automation_connection_count(),
         'selected_connection_id': None,
@@ -274,6 +300,9 @@ def build_automation_overview(*, can_jobs: bool, can_inventory: bool) -> dict[st
             'host_assignments': host_assignments,
             'cluster_bindings': cluster_bindings,
             'executions': executions,
+            'attention': attention,
+            'connections_reviewed': len(recent_connections),
+            'recent_jobs': recent_jobs,
         },
         'execution_authorized': False,
     }

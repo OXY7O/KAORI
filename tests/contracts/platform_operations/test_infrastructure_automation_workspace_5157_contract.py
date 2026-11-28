@@ -215,9 +215,9 @@ def test_selected_source_only_connection_renders_lifecycle_only():
 
 def test_automation_hero_uses_compact_description_and_three_metadata_items():
     hero = (ROOT / 'app/templates/infrastructure_automation/index.html').read_text()
-    assert 'Review infrastructure lifecycle and execution evidence.' in hero
+    assert 'Orchestrate infrastructure lifecycle and governed automation.' in hero
     assert hero.count('page_hero.meta_label(') == 3
-    assert "page_hero.meta_label('shield-check', 'Approval Required')" in hero
+    assert "page_hero.meta_label('layers-3', '1 Available Profile')" in hero
     assert 'page_hero.metadata_row_classes()' in hero
 
 
@@ -238,7 +238,7 @@ def test_overview_has_no_connection_selector_or_scoped_details():
     assert 'data-kaori-automation-selected-scope' not in rendered
     assert 'data-kaori-canonical-registry-filter' not in rendered
     assert 'data-kaori-automation-lifecycle-posture' not in rendered
-    assert 'data-kaori-tab-variant="framed-workspace-v2-server"' in rendered
+    assert 'data-kaori-tab-variant="content-tabs-server"' in rendered
 
 
 def test_tabs_preserve_scope_and_isolate_inventory_from_execution_history():
@@ -266,3 +266,30 @@ def test_tabs_preserve_scope_and_isolate_inventory_from_execution_history():
     assert 'connection_id=11' in inventory
     assert 'connection_id=11' in executions
     assert 'Change Connection' in inventory
+
+
+def test_profile_catalog_distinguishes_available_and_planned_workspaces():
+    app = create_app('testing')
+    with app.test_request_context('/platform-operations/infrastructure-automation/?tab=profiles'):
+        rendered = render_template(
+            PARTIAL,
+            active_tab='profiles',
+            total_connections=0,
+            selected_connection_id=None,
+            details=None,
+        )
+    for label in ('Kubernetes Lifecycle', 'Linux Hosts', 'Middleware &amp; Database', 'Network Automation'):
+        assert label in rendered
+    assert rendered.count('Open Workspace') == 1
+    assert rendered.count('Operational workspace unavailable.') == 3
+    assert 'data-kaori-automation-selected-scope' not in rendered
+    assert 'data-kaori-canonical-registry-filter' not in rendered
+
+
+def test_automation_overview_reuses_tenant_estate_components():
+    template = (ROOT / 'app/templates/infrastructure_automation/_overview.html').read_text()
+    assert 'resource_posture_grid.render(estate_metrics, columns=5)' in template
+    assert 'operational_section_card.render(' in template
+    assert 'Operational Attention & Activity' in template
+    assert 'operational_metric_card' not in template
+    assert 'workspace_summary_card' not in template
