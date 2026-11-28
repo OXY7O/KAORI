@@ -267,18 +267,23 @@ Manage Channels as the link to Integrations, and keep Policy Registry visible.
 Provider-origin routing retains its separately authorized candidate registry.
 
 
-### Global Alert Intelligence operational context
+### Alert Intelligence Overview and operational context
 
-Render one compact, page-level Operational Context bar between lifecycle tab
-navigation and the Hero, inside the existing full-page HTMX boundary. Do not
-repeat selectors inside the tab workspace. Overview, Active Alerts, Silences
-and Resolved retain editable domain and asset scope. Recommendation routing
-retains domain selection and a read-only current alert scope; Registry routing
-retains its editable asset selector. Recommendation templates are global
-provider/event resources, not per-asset templates; show this distinction and
-retain the current alert summary scope as read-only context. The read-only
-scope carries the exact existing asset parameter and links to Overview for
-scope changes. Provider-origin tabs and invalid Registry scope always retain
-all applicable editable selectors for recovery and authorization. Domain
-selection remains available on every tab. Do not change backend scope
-admission, tab navigation, mutation authority or evidence counts.
+Overview is selector-free and read-only. Render lifecycle navigation, Hero,
+Summary, then the section heading and workspace, without a context bar before
+the Hero. Aggregate committed recommendation AlertCases across Kubernetes,
+Object Storage and Artifact Registry using the existing SQL read model and
+metric definitions under intelligence.view. Label the limited coverage:
+provider-origin cases require exact-instance grants and audited reads, and
+are excluded rather than represented as zero or live provider health. Overview
+navigation does not carry an asset filter; operational tabs establish their own
+scope. Keep Alert Coverage accessible.
+
+Active Alerts, Silences and Resolved retain editable domain and asset scope
+inside the workspace below its header. Recommendation routing retains domain
+selection and a read-only current alert scope, except Registry routing retains
+its editable asset selector. Recommendation templates are shared provider/event
+resources; retain read-only alert summary scope. Change Scope links to Active
+Alerts, not the selector-free Overview. Provider-origin and invalid Registry
+scopes retain all required editable selectors. Keep the existing page HTMX
+boundary and do not change mutation authority or scoped read admission.

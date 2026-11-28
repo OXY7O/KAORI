@@ -11,7 +11,8 @@ from app.intelligence.alert_intelligence.service import get_alert_intelligence_p
 
 def index_response() -> ResponseReturnValue:
     target = str(request.headers.get('HX-Target') or '').strip()
-    is_overview = request.args.get('tab', 'overview') == 'overview' and target in (
+    operational_tabs = {'active', 'routing', 'templates', 'silences', 'resolved', 'history'}
+    is_overview = request.args.get('tab') not in operational_tabs and target in (
         '', 'alert-intelligence-page-content'
     )
     payload = get_alert_overview_payload() if is_overview else get_alert_intelligence_payload(request.args)

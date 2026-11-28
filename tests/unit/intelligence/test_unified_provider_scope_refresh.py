@@ -49,7 +49,23 @@ def test_whole_workspace_request_renders_blocked_payload_without_redirect(monkey
     monkeypatch.setattr(route_utils, 'get_alert_intelligence_payload', lambda _args: payload)
     monkeypatch.setattr(route_utils, 'render_template', lambda name, **_kwargs: name)
     with app.test_request_context(
-        '/alerts',
+        '/alerts?tab=active',
         headers={'HX-Request': 'true', 'HX-Target': 'alert-intelligence-page-content'},
     ):
         assert route_utils.index_response() == 'intelligence/partials/_alert_intelligence_page.html'
+
+
+@pytest.mark.parametrize('query', ['', '?tab=overview&domain=secrets_pki&asset=42', '?tab=invalid'])
+@pytest.mark.parametrize('headers', [{}, {'HX-Request': 'true', 'HX-Target': 'alert-intelligence-page-content'}])
+def test_overview_ignores_scope_and_uses_read_only_aggregate(monkeypatch, query, headers):
+    app = Flask(__name__)
+    payload = {'tab': 'overview', 'global_overview': True}
+    monkeypatch.setattr(route_utils, 'get_alert_overview_payload', lambda: payload)
+
+    def reject_scoped_read(_args):
+        pytest.fail('Overview must not perform a scoped provider read')
+
+    monkeypatch.setattr(route_utils, 'get_alert_intelligence_payload', reject_scoped_read)
+    monkeypatch.setattr(route_utils, 'render_template', lambda _name, **kwargs: kwargs['payload'])
+    with app.test_request_context('/alerts' + query, headers=headers):
+        assert route_utils.index_response() == payload

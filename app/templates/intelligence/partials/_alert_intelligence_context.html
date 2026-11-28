@@ -1,7 +1,7 @@
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% set global_templates = payload.tab == 'templates' and not payload.provider_case_mode %}
-{% set show_asset = payload.provider_case_mode or payload.scope_invalid or payload.tab in ['overview', 'active', 'silences', 'resolved'] or (payload.tab == 'routing' and payload.domain == 'registry') %}
+{% set show_asset = payload.provider_case_mode or payload.scope_invalid or payload.tab in ['active', 'silences', 'resolved'] or (payload.tab == 'routing' and payload.domain == 'registry') %}
 <section class="border-b border-outline-subtle bg-surface-card"
          aria-labelledby="alert-operational-context-title"
          data-alert-operational-context>
