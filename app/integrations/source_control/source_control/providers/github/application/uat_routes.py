@@ -731,19 +731,6 @@ def synchronize(installation_id: int) -> ResponseReturnValue:
     return redirect(detail_url)
 
 
-@github_uat_bp.get('/installations/<int:installation_id>/inventory/refresh')
-@permission_required('integrations.manage')
-def inventory_refresh(installation_id: int) -> ResponseReturnValue:
-    installation = _installation_or_404(installation_id)
-    if request.headers.get('HX-Request') != 'true':
-        return redirect(_detail_url(installation_id, tab='inventory'))
-    return _render_inventory_content(
-        installation,
-        sync_job=_repository_sync_job(installation),
-        refresh_registry=True,
-    )
-
-
 @github_uat_bp.get('/installations/<int:installation_id>/sync/status/<int:job_id>')
 @permission_required('integrations.manage')
 def synchronize_status(installation_id: int, job_id: int) -> ResponseReturnValue:

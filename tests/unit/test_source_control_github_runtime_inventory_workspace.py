@@ -107,7 +107,9 @@ def test_inventory_follows_kubernetes_decision_and_committed_scope():
     assert 'components/pagination.html' in registry
     assert '[5, 10, 25, 50]' in registry
     assert 'hx-trigger="every 15s"' not in registry
-    assert 'Refresh Registry' in registry
+    assert 'Refresh Registry' not in registry
+    assert 'github_source_uat.inventory_refresh' not in registry
+    assert 'def inventory_refresh(' not in routes
     assert 'read_installation_inventory_for_current_session(' in routes
     assert 'authorized_installation_id=installation.id' in routes
     assert 'committed_generation == 0' in projection
@@ -662,6 +664,11 @@ def test_github_repository_detail_uses_committed_fields_and_shared_dialog():
     assert 'SourceRepositoryGrant.last_observed_at' in projection
     assert 'SourceRepositoryGrant.installation_id == authorized_installation_id' in projection
     assert 'inventory_datetime(' in registry
+    assert 'data-kaori-repository-evidence-compact' in registry
+    assert 'sm:grid-cols-3' in registry
+    assert 'data-kaori-repository-evidence-section="revision"' in registry
+    assert 'data-kaori-repository-copy-sha' in registry
+    assert 'row.exact_default_branch_sha }}</code>' in registry
 
 
 def test_asset_owner_delete_confirmation_remains_shared_and_semantic():

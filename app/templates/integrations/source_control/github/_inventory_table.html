@@ -29,17 +29,6 @@
         <input type="hidden" name="inventory_archived" value="{{ inventory_archived }}">
     </div>
     {% set header_actions %}
-        <a href="{{ url_for(inventory_href_endpoint, installation_id=installation.id, tab='inventory', page=inventory.page, per_page=inventory.per_page, inventory_search=inventory_search, inventory_visibility=inventory_visibility, inventory_archived=inventory_archived) }}"
-           hx-get="{{ url_for('github_source_uat.inventory_refresh', installation_id=installation.id) }}"
-           hx-target="#github-inventory-decision"
-           hx-include="#source-control-inventory [data-kaori-inventory-query-state]"
-           hx-swap="outerHTML"
-           hx-sync="#github-inventory-decision:drop"
-           hx-indicator="#github-inventory-loading"
-           class="{{ table_ui.action_classes() }}">
-            <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
-            Refresh Registry
-        </a>
         {% if filters_active %}
             {{ registry_ui.clear_filters_action(url_for(inventory_href_endpoint, installation_id=installation.id, tab='inventory', page=1, per_page=inventory.per_page) ,
             table_ui.action_classes(),
@@ -274,48 +263,92 @@
     {% for row in inventory.rows %}
         {% set detail_id = 'github-repository-detail-' ~ installation.id ~ '-' ~ row.repository_id %}
         {% call record_detail_modal.render(detail_id, detail_id, 'GitHub Repository Evidence', row.full_name or 'Unknown repository',
-            'Committed installation grant and exact default-branch revision.', icon='folder-git-2',
+            'Repository identity, installation access and committed revision.', icon='folder-git-2',
             footer_text='GitHub owns repository state and permissions. This detail uses committed KAORI evidence only.', size='standard') %}
-            <div class="space-y-4" data-kaori-github-repository-detail>
-                {% for title, icon, facts in [
-                    ('Repository Identity', 'folder-git-2', [
-                        ('Repository', row.full_name or 'Unknown'),
+            {% set access_tone = 'ready' if row.access_status == 'granted' else row.access_status %}
+            {% set visibility_label = row.visibility|title if row.visibility else 'Visibility Unknown' %}
+            {% set state_label = 'Archived' if row.archived else ('Active' if row.archived is not none else 'State Unknown') %}
+            <div class="space-y-3" data-kaori-github-repository-detail data-kaori-repository-evidence-compact>
+                {% for section_title, section_icon, labels, facts in [
+                    ('Repository Identity', 'folder-git-2', 'identity', [
                         ('GitHub Repository ID', row.native_id),
                         ('KAORI Repository ID', '#' ~ row.repository_id),
-                        ('Visibility', row.visibility|title if row.visibility else 'Unknown'),
-                        ('Repository State', 'Archived' if row.archived else ('Active' if row.archived is not none else 'Unknown')),
                         ('Repository Observed', inventory_datetime(row.observed_at, empty='Not Observed', include_seconds=true))
                     ]),
-                    ('Installation Grant', 'shield-check', [
+                    ('Installation Grant', 'shield-check', 'grant', [
                         ('Installation ID', installation.native_installation_id),
-                        ('Access Status', row.access_status|replace('_', ' ')|title),
                         ('Effective From', inventory_datetime(row.grant_valid_from, empty='Not Observed', include_seconds=true)),
                         ('Grant Observed', inventory_datetime(row.grant_observed_at, empty='Not Observed', include_seconds=true))
-                    ]),
-                    ('Revision Evidence', 'git-commit-horizontal', [
-                        ('Default Branch', row.default_branch or 'Unknown'),
-                        ('Exact Commit SHA', row.exact_default_branch_sha or 'Not Observed'),
-                        ('Revision Observed', inventory_datetime(row.revision_observed_at, empty='Not Observed', include_seconds=true))
                     ])
                 ] %}
-                    <section class="{{ integration_ui.section_shell_classes() }}">
-                        {{ integration_ui.section_header(icon, title, '') }}
-                        <dl class="divide-y divide-outline-subtle px-4 sm:px-5">
+                    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
+                             data-kaori-repository-evidence-section="{{ labels }}">
+                        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
+                            <div class="flex min-w-0 items-center gap-3">
+                                {{ integration_ui.palette_icon(section_icon, 'brand', size='sm') }}
+                                <h3 class="text-sm font-semibold text-content-primary">{{ section_title }}</h3>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                {% if labels == 'identity' %}
+                                    {{ table_label.metadata_label(visibility_label) }}
+                                    {{ integration_status('disabled' if row.archived else ('ready' if row.archived is not none else 'not_observed'), state_label, display='indicator') }}
+                                {% else %}
+                                    {{ integration_status(access_tone, row.access_status|replace('_', ' ')|title, display='indicator') }}
+                                {% endif %}
+                            </div>
+                        </header>
+                        <dl class="grid gap-px bg-outline-subtle sm:grid-cols-3">
                             {% for label, value in facts %}
-                                <div class="flex min-w-0 flex-col gap-1 py-3 sm:flex-row sm:gap-4">
-                                    <dt class="text-xs font-semibold leading-6 text-content-muted sm:w-36 sm:shrink-0">{{ label }}</dt>
-                                    <dd class="min-w-0 flex-1 break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">
-                                        {% if label == 'Exact Commit SHA' and row.exact_default_branch_sha %}
-                                            <code class="font-mono text-xs">{{ value }}</code>
-                                        {% else %}
-                                            {{ value }}
-                                        {% endif %}
-                                    </dd>
+                                <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
+                                    <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
+                                    <dd class="mt-1.5 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value }}</dd>
                                 </div>
                             {% endfor %}
                         </dl>
                     </section>
                 {% endfor %}
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
+                         data-kaori-repository-evidence-section="revision">
+                    <header class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
+                        <div class="flex min-w-0 items-center gap-3">
+                            {{ integration_ui.palette_icon('git-commit-horizontal', 'brand', size='sm') }}
+                            <h3 class="text-sm font-semibold text-content-primary">Revision Evidence</h3>
+                        </div>
+                        {{ integration_status('ready' if row.exact_default_branch_sha else 'not_observed', 'Observed' if row.exact_default_branch_sha else 'Not Observed', display='indicator') }}
+                    </header>
+                    <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2">
+                        {% for label, value in [
+                            ('Default Branch', row.default_branch or 'Unknown'),
+                            ('Revision Observed', inventory_datetime(row.revision_observed_at, empty='Not Observed', include_seconds=true))
+                        ] %}
+                            <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
+                                <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
+                                <dd class="mt-1.5 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value }}</dd>
+                            </div>
+                        {% endfor %}
+                    </dl>
+                    <div class="border-t border-outline-subtle px-4 py-3.5 sm:px-5" {% if row.exact_default_branch_sha %}x-data="{ copied: false }"{% endif %}>
+                        <div class="flex items-center justify-between gap-3">
+                            <p class="text-xs font-semibold text-content-muted">Exact Commit SHA</p>
+                            {% if row.exact_default_branch_sha %}
+                                <button type="button"
+                                        @click="navigator.clipboard.writeText($refs.sha.textContent.trim()).then(() => { copied = true; setTimeout(() => copied = false, 1600) })"
+                                        class="{{ table_ui.action_classes() }}"
+                                        data-kaori-repository-copy-sha>
+                                    <i data-lucide="copy" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                    <span x-text="copied ? 'Copied' : 'Copy SHA'">Copy SHA</span>
+                                </button>
+                            {% endif %}
+                        </div>
+                        {% if row.exact_default_branch_sha %}
+                            <div class="mt-2 rounded-lg border border-outline-subtle bg-surface-subtle px-3 py-2.5">
+                                <code x-ref="sha" class="block break-all font-mono text-xs leading-5 text-content-primary">{{ row.exact_default_branch_sha }}</code>
+                            </div>
+                        {% else %}
+                            <p class="mt-1 text-sm text-content-muted">Not Observed</p>
+                        {% endif %}
+                    </div>
+                </section>
             </div>
         {% endcall %}
     {% endfor %}
