@@ -408,3 +408,50 @@ def test_case_evidence_facts_and_activity_streams_use_content_aware_layout() -> 
     assert "case.deliveries[0].attempt_count ~ ' Attempts'" in streams
     assert 'truncate' not in streams.replace('timeline_truncated', '')
     assert 'max-h-72' in streams
+
+
+def test_activity_streams_share_intrinsic_rows_only_when_recent_counts_match() -> None:
+    from datetime import UTC, datetime
+
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(ROOT / 'app/templates'), autoescape=True)
+    env.filters['user_datetime'] = lambda value: value.isoformat()
+    template = env.get_template('intelligence/partials/_alert_ops_case_activity_streams.html')
+    timestamp = datetime(2026, 11, 28, tzinfo=UTC)
+    event = {
+        'icon': 'activity', 'tone': 'info', 'label': 'Firing Notified',
+        'actor': 'KAORI Worker', 'summary': 'Event details', 'created_at': timestamp,
+    }
+    delivery = {
+        'channel': 'KAORI Telegram', 'status': 'sent', 'event_label': 'Firing',
+        'provider': 'Telegram', 'attempt_count': 1, 'created_at': timestamp,
+        'sent_at': timestamp,
+    }
+    for count in range(1, 6):
+        case = {
+            'timeline_recent': [event] * count, 'timeline': [event] * count,
+            'timeline_older': [], 'deliveries_recent': [delivery] * count,
+            'deliveries': [delivery] * count, 'deliveries_older': [],
+        }
+        html = template.render(case=case)
+        assert 'data-alert-evidence-aligned="true"' in html
+        assert html.count('xl:grid-rows-subgrid') == 4
+        assert html.count(f'xl:row-span-{count + 2}') == 2
+        assert html.count(f'xl:row-span-{count}"') == 2
+        assert html.count('data-alert-evidence-row') == count * 2
+        assert html.count('min-h-6 min-w-0 flex-wrap items-center') == count * 2
+
+        case['deliveries_recent'] = [delivery] * (count - 1)
+        html = template.render(case=case)
+        assert 'data-alert-evidence-aligned="false"' in html
+        assert 'xl:grid-rows-subgrid' not in html
+        assert html.count('data-alert-evidence-row') == count * 2 - 1
+
+    case['deliveries_recent'] = [delivery] * count
+    case['provider_delivery_qualified'] = False
+    case['provider_delivery_state'] = 'no_claim'
+    html = template.render(case=case)
+    assert 'data-alert-evidence-aligned="false"' in html
+    assert 'No Claim Recorded' in html
+    assert html.count('data-alert-evidence-row') == count

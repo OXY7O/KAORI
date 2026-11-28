@@ -3,11 +3,11 @@
     {% set icon_classes = 'bg-status-critical-soft text-status-critical-text' if tone == 'critical' else ('bg-status-warning-soft text-status-warning-text' if tone == 'warning' else ('bg-status-normal-soft text-status-normal-text' if tone == 'normal' else 'bg-kaori-soft text-kaori-primary')) %}
     <article class="grid min-w-0 grid-cols-[1.75rem_minmax(0,1fr)] items-start gap-x-3 gap-y-1 px-4 py-3 xl:grid-cols-[1.75rem_minmax(0,1fr)_9rem]"
              data-alert-evidence-row>
-        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg {{ icon_classes }}"
+        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg xl:col-start-1 xl:row-start-1 {{ icon_classes }}"
               aria-hidden="true">
             <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
         </span>
-        <div class="min-w-0">
+        <div class="min-w-0 xl:col-start-2 xl:row-start-1">
             {{ caller() }}
         </div>
         <time class="col-start-2 text-xs leading-5 text-content-muted tabular-nums xl:col-start-3 xl:row-start-1 xl:text-right">{{ timestamp|user_datetime }}</time>
@@ -15,7 +15,7 @@
 {%- endmacro %}
 {% macro timeline_row(event) -%}
     {% call stream_row(event.icon, event.tone, event.created_at) %}
-        <div class="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <div class="flex min-h-6 min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <p class="min-w-0 break-words text-xs font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ event.label }}</p>
             <span class="min-w-0 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ event.actor }}</span>
         </div>
@@ -25,7 +25,7 @@
 {% macro delivery_row(delivery) -%}
     {% set tone = 'normal' if delivery.status == 'sent' else ('critical' if delivery.status == 'failed' else ('warning' if delivery.status in ('suppressed', 'review required') else 'info')) %}
     {% call stream_row('send-horizontal', tone, delivery.sent_at or delivery.created_at) %}
-        <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+        <div class="flex min-h-6 min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <p class="min-w-0 break-words text-xs font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ delivery.channel }}</p>
             {{ table_label.status_label(delivery.status|title, tone, size='compact') }}
         </div>
@@ -74,8 +74,20 @@
             <p class="mt-0.5 text-xs leading-5 text-content-muted">Review recent lifecycle events and delivery outcomes. Expand earlier records when needed.</p>
         </div>
     </div>
-    <div class="mt-4 grid items-stretch gap-4 xl:grid-cols-2" data-alert-evidence-streams>
-        <article class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+    {# The recent lists contain at most five records. Share intrinsic row
+       tracks only for equal nonempty lists, without creating fake events or
+       implying correspondence between the two independent streams. #}
+    {% set recent_count = case.timeline_recent|length %}
+    {% set aligned = not case.timeline_unavailable and case.provider_delivery_qualified is not sameas false and recent_count in [1, 2, 3, 4, 5] and recent_count == case.deliveries_recent|length %}
+    {% set panel_spans = {1: 'xl:row-span-3', 2: 'xl:row-span-4', 3: 'xl:row-span-5', 4: 'xl:row-span-6', 5: 'xl:row-span-7'} %}
+    {% set recent_spans = {1: 'xl:row-span-1', 2: 'xl:row-span-2', 3: 'xl:row-span-3', 4: 'xl:row-span-4', 5: 'xl:row-span-5'} %}
+    {% set panel_tracks = ('xl:grid xl:grid-rows-subgrid xl:gap-y-0 ' ~ panel_spans[recent_count]) if aligned else '' %}
+    {% set recent_tracks = ('xl:grid xl:grid-rows-subgrid xl:gap-y-0 ' ~ recent_spans[recent_count]) if aligned else '' %}
+    <div class="mt-4 grid gap-4 xl:grid-cols-2 {{ 'xl:gap-y-0' if aligned else 'xl:items-start' }}"
+         data-alert-evidence-streams
+         data-alert-evidence-aligned="{{ 'true' if aligned else 'false' }}">
+        <article class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-card {{ panel_tracks }}"
+                 data-alert-evidence-panel="timeline">
             {% call stream_header('history', 'Incident Timeline', 'Recent events · newest first.') %}
                 {% if case.timeline_unavailable %}
                     {{ table_label.status_label('Evidence Unavailable', 'unknown', size='compact') }}
@@ -83,25 +95,29 @@
                     {{ table_label.metadata_label(case.timeline|length ~ (' Latest Events' if case.timeline_truncated else ' Events'), 'history') }}
                 {% endif %}
             {% endcall %}
-            <div class="divide-y divide-outline-subtle">
+            <div class="divide-y divide-outline-subtle {{ recent_tracks }}"
+                 data-alert-recent-rows>
                 {% for event in case.timeline_recent|sort(reverse=true, attribute='created_at') %}
                     {{ timeline_row(event) }}
                 {% else %}
                     <p class="px-4 py-5 text-sm text-content-muted">{{ 'Unable to qualify the bounded event history.' if case.timeline_unavailable else 'No timeline evidence recorded yet.' }}</p>
                 {% endfor %}
             </div>
-            {% if case.timeline_older %}
-                {% call earlier_history('Earlier Timeline Events', case.timeline_older|length) %}
-                    {% for event in case.timeline_older|sort(reverse=true, attribute='created_at') %}
-                        {{ timeline_row(event) }}
-                    {% endfor %}
-                {% endcall %}
-            {% endif %}
-            {% if case.timeline_truncated %}
-                <p class="border-t border-outline-subtle px-4 py-3 text-xs text-content-muted">Showing the latest bounded event history, not a complete audit export.</p>
-            {% endif %}
+            <div data-alert-evidence-history>
+                {% if case.timeline_older %}
+                    {% call earlier_history('Earlier Timeline Events', case.timeline_older|length) %}
+                        {% for event in case.timeline_older|sort(reverse=true, attribute='created_at') %}
+                            {{ timeline_row(event) }}
+                        {% endfor %}
+                    {% endcall %}
+                {% endif %}
+                {% if case.timeline_truncated %}
+                    <p class="border-t border-outline-subtle px-4 py-3 text-xs text-content-muted">Showing the latest bounded event history, not a complete audit export.</p>
+                {% endif %}
+            </div>
         </article>
-        <article class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+        <article class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-card {{ panel_tracks }}"
+                 data-alert-evidence-panel="delivery">
             {% call stream_header('send-horizontal', 'Notification Delivery Ledger', 'Recent delivery records and outcomes.') %}
                 {% if case.provider_delivery_qualified is sameas false %}
                     {{ table_label.status_label('No Claim Recorded' if case.provider_delivery_state == 'no_claim' else 'Not Qualified', 'unknown', size='compact') }}
@@ -114,21 +130,24 @@
             {% if case.provider_delivery_qualified is sameas false %}
                 <p class="px-4 py-5 text-sm text-content-muted">{{ 'No local scoped claim is recorded in the available journal and audit. This does not establish destination approval.' if case.provider_delivery_state == 'no_claim' else 'No qualified committed provider delivery record is available. This is not a zero-attempt claim.' }}</p>
             {% else %}
-                <div class="divide-y divide-outline-subtle">
+                <div class="divide-y divide-outline-subtle {{ recent_tracks }}"
+                     data-alert-recent-rows>
                     {% for delivery in case.deliveries_recent %}
                         {{ delivery_row(delivery) }}
                     {% else %}
                         <p class="px-4 py-5 text-sm text-content-muted">No notification delivery evidence recorded yet.</p>
                     {% endfor %}
                 </div>
-                {% if case.deliveries_older %}
+            {% endif %}
+            <div data-alert-evidence-history>
+                {% if case.provider_delivery_qualified is not sameas false and case.deliveries_older %}
                     {% call earlier_history('Earlier Delivery Attempts', case.deliveries_older|length) %}
                         {% for delivery in case.deliveries_older %}
                             {{ delivery_row(delivery) }}
                         {% endfor %}
                     {% endcall %}
                 {% endif %}
-            {% endif %}
+            </div>
         </article>
     </div>
 </section>
