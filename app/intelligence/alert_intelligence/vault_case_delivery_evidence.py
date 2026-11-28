@@ -9,9 +9,9 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from app.intelligence.alert_intelligence.vault_delivery_journal import audited_claim, audited_outcome, firing_journal
 from app.intelligence.alert_signals.vault_source import _persisted_utc
 from app.models.alert_ops import AlertCase
-from app.models.audit import AuditEvent
 from app.models.notification_channel import NotificationDelivery
 
 _DIGEST = re.compile(r'[a-f0-9]{64}')
@@ -22,35 +22,22 @@ def _unavailable() -> dict[str, Any]:
 
 
 def read_case_delivery_evidence(case: AlertCase) -> dict[str, Any]:
-    rows = (
-        NotificationDelivery.query.filter(
-            NotificationDelivery.event_type == 'alert_ops.firing',
-            NotificationDelivery.event_key.startswith(f'alert-case:{case.public_id}:firing:', autoescape=True),
-        )
-        .limit(2)
-        .all()
-    )
+    rows = firing_journal(case)
     if len(rows) != 1:
         return _unavailable()
     row = rows[0]
-    claim = (row.payload_json or {}).get('vault_scoped_claim')
+    claim = audited_claim(case, row)
     if not _qualified(case, row, claim):
         return _unavailable()
-    audits = (
-        AuditEvent.query.filter_by(
-            target_type='alert_case', target_id=case.public_id, action='vault_provider_delivery_claimed'
-        )
-        .order_by(AuditEvent.id.desc())
-        .limit(1)
-        .all()
-    )
-    if not audits or audits[0].metadata_json != {**claim, 'attempt': row.attempt_count, 'domain': 'secrets_pki'}:
+    outcome = audited_outcome(case, row)
+    if row.status == 'sent' and outcome != 'sent':
         return _unavailable()
+    status = {'sent': 'sent', 'rejected': 'failed', 'unconfirmed': 'failed'}.get(outcome or '', 'queued')
     projected = {
         'channel': 'Approved scoped destination',
         'provider': 'Governed channel',
         'event_label': 'Firing',
-        'status': row.status,
+        'status': status,
         'attempt_count': row.attempt_count,
         'created_at': row.created_at,
         'sent_at': row.sent_at,

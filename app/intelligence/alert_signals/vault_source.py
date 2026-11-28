@@ -107,9 +107,9 @@ def _validated_binding(
     if vault_id is None:
         return None
     vault = db.session.get(IntegrationInstance, vault_id, populate_existing=True)
-    source = db.session.get(
-        IntegrationInstance, binding.integration_instance_id, populate_existing=True, with_for_update=lock
-    )
+    # Binding invalidation serializes provider configuration changes. Avoid a
+    # reverse source-row lock against configuration writers (source -> binding).
+    source = db.session.get(IntegrationInstance, binding.integration_instance_id, populate_existing=True)
     if (
         vault is None
         or vault.integration_type != 'secrets_pki'

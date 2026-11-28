@@ -10,11 +10,12 @@ from datetime import UTC, datetime
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.access.scope_policy import evaluate_exact_vault_instance_operator_scope
+from app.access.scope_policy import evaluate_exact_vault_instance_operator_scope, lock_explicit_permissions
 from app.extensions.db import db
 from app.integrations.delivery.notification_channels.catalog import domain_event_allowed
 from app.integrations.delivery.notification_channels.providers import get_notification_provider
 from app.intelligence.alert_intelligence.vault_delivery_authority import qualify_destination_receipt
+from app.intelligence.alert_intelligence.vault_delivery_journal import claim_exists, firing_journal
 from app.intelligence.alert_intelligence.vault_provider_operator import _current_firing_case
 from app.intelligence.alert_signals.vault_source import (
     _locked_observation_snapshot,
@@ -25,8 +26,7 @@ from app.intelligence.alert_signals.vault_source import (
 )
 from app.models.alert_ops import AlertCase, AlertRoutingPolicy
 from app.models.audit import AuditEvent
-from app.models.notification_channel import NotificationChannel, NotificationDelivery
-from app.models.user import User
+from app.models.notification_channel import NotificationChannel
 from app.security.credentials import CredentialEncryptionError
 
 _SEVERITY_RANK = {'info': 1, 'warning': 2, 'critical': 3}
@@ -95,21 +95,16 @@ def preflight_vault_provider_firing(
     ):
         return 'blocked'
     try:
-        actor = db.session.get(User, actor_user_id)
-        if (
-            actor is None
-            or not actor.is_active
-            or actor.role_record is None
-            or not actor.role_record.is_active
-            or 'integrations.manage' not in actor.role_record.permission_keys()
-        ):
-            return 'forbidden'
         eligible = _validated_binding(binding_id, now=instant, lock=True)
         if eligible is None:
             return 'source_unavailable'
         binding, source = eligible
         if binding.asset_key != str(instance_id):
             return 'source_unavailable'
+        if not lock_explicit_permissions(
+            actor_user_id, {'integrations.manage', 'intelligence.view', 'intelligence.decisions.create', 'secrets_pki.view'}
+        ):
+            return 'forbidden'
         scope = evaluate_exact_vault_instance_operator_scope(
             actor_user_id=actor_user_id, instance_id=instance_id, now=instant
         )
@@ -174,22 +169,17 @@ def _candidate_blocker(
     # No repeat/reminder semantics have been admitted for this provider.
     if case.workflow_state != 'open' or case.acknowledged_at is not None:
         return 'workflow_suppressed'
-    policy = db.session.get(AlertRoutingPolicy, policy_id, populate_existing=True)
+    policy = db.session.get(AlertRoutingPolicy, policy_id, populate_existing=True, with_for_update=True)
     if policy is None or not _policy_matches_exact_source(
         policy, case=case, binding_id=binding_id, channel_id=channel_id
     ):
         return 'policy_unqualified'
-    channel = db.session.get(NotificationChannel, channel_id, populate_existing=True)
+    channel = db.session.get(NotificationChannel, channel_id, populate_existing=True, with_for_update=True)
     if channel is None or not _channel_matches_candidate(channel, severity=case.severity, now=now):
         return 'channel_unqualified'
     # Journal lookup is independent of policy and repeat bucket. Any existing
     # firing attempt blocks this first-delivery-only qualification slice.
-    prior = NotificationDelivery.query.filter(
-        NotificationDelivery.channel_id == channel_id,
-        NotificationDelivery.event_type == 'alert_ops.firing',
-        NotificationDelivery.event_key.startswith(f'alert-case:{case.public_id}:firing:', autoescape=True),
-    ).first()
-    if prior is not None:
+    if firing_journal(case) or claim_exists(case):
         return 'prior_delivery_review_required'
     if not domain_event_allowed('secrets_pki', 'alert_ops.firing'):
         return 'catalog_unqualified'

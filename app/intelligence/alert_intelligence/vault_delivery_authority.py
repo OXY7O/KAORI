@@ -53,6 +53,13 @@ def qualify_destination_receipt(
     if any(type(payload[k]) is not int or payload[k] != v for k, v in identifiers.items()):
         return None
     checker = payload['checker_id']
+    revisions = (
+        _persisted_utc(binding.updated_at), _persisted_utc(source.updated_at),
+        _persisted_utc(policy.updated_at), _persisted_utc(channel.updated_at),
+        _persisted_utc(channel.last_tested_at),
+    )
+    if any(value is None for value in revisions):
+        return None
     if (
         payload['case_id'] != case.public_id
         or payload['event_type'] != 'alert_ops.firing'

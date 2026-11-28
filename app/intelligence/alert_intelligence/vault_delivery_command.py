@@ -23,6 +23,9 @@ from app.integrations.delivery.notification_channels.service import (
     _replay_message,
 )
 from app.intelligence.alert_intelligence.vault_delivery_authority import qualify_destination_receipt
+from app.intelligence.alert_intelligence.vault_delivery_journal import (
+    CLAIM_ACTION, CLAIM_KEY, OUTCOME_ACTION, REJECTION_KEY, audited_claim, audited_outcome, claim_exists, firing_journal,
+)
 from app.intelligence.alert_intelligence.vault_provider_admission import local_reconcile_enabled
 from app.intelligence.alert_intelligence.vault_provider_delivery import (
     _channel_matches_candidate,
@@ -41,8 +44,6 @@ from app.models.notification_channel import NotificationChannel, NotificationDel
 from app.security.credentials import CredentialEncryptionError
 
 _PERMISSIONS = {'integrations.manage', 'intelligence.view', 'intelligence.decisions.create', 'secrets_pki.view'}
-_CLAIM_KEY = 'vault_scoped_claim'
-_REJECTION_KEY = 'definitive_rejection'
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,19 +145,6 @@ def _message(case: AlertCase) -> NotificationMessage:
     )
 
 
-def _journal(case: AlertCase) -> list[NotificationDelivery]:
-    return (
-        NotificationDelivery.query.filter(
-            NotificationDelivery.event_type == 'alert_ops.firing',
-            NotificationDelivery.event_key.startswith(f'alert-case:{case.public_id}:firing:', autoescape=True),
-        )
-        .order_by(NotificationDelivery.id.asc())
-        .limit(2)
-        .with_for_update()
-        .all()
-    )
-
-
 def _claim_metadata(intent: DeliveryIntent, target: _Target) -> dict[str, object]:
     return {
         'case_id': intent.case_id,
@@ -169,7 +157,7 @@ def _claim_metadata(intent: DeliveryIntent, target: _Target) -> dict[str, object
 
 
 def _matching_claim(row: NotificationDelivery, intent: DeliveryIntent) -> bool:
-    claim = (row.payload_json or {}).get(_CLAIM_KEY)
+    claim = (row.payload_json or {}).get(CLAIM_KEY)
     return bool(
         isinstance(claim, dict)
         and row.domain == 'secrets_pki'
@@ -188,11 +176,12 @@ def _matching_claim(row: NotificationDelivery, intent: DeliveryIntent) -> bool:
 def _retry_allowed(row: NotificationDelivery, *, intent: DeliveryIntent, target: _Target, now: datetime) -> bool:
     payload = row.payload_json or {}
     due = _persisted_utc(row.next_retry_at)
-    claim = payload.get(_CLAIM_KEY)
+    claim = payload.get(CLAIM_KEY)
     return bool(
         _matching_claim(row, intent)
         and row.status in ('failed', 'skipped')
-        and payload.get(_REJECTION_KEY) is True
+        and payload.get(REJECTION_KEY) is True
+        and audited_outcome(target.case, row) == 'rejected'
         and isinstance(claim, dict)
         and claim.get('receipt_ref') != target.receipt_ref
         and due is not None
@@ -208,7 +197,7 @@ def _stage_claim_audit(intent: DeliveryIntent, target: _Target, *, attempt: int)
             actor_user_id=intent.actor_id,
             target_type='alert_case',
             target_id=intent.case_id,
-            action='vault_provider_delivery_claimed',
+            action=CLAIM_ACTION,
             summary='An independently approved local firing attempt was reserved.',
             metadata_json={**_claim_metadata(intent, target), 'attempt': attempt, 'domain': 'secrets_pki'},
         )
@@ -233,16 +222,16 @@ def _new_journal(intent: DeliveryIntent, target: _Target) -> NotificationDeliver
 
 
 def _reserve(intent: DeliveryIntent, target: _Target, *, retry: bool, now: datetime) -> tuple[int, int, str] | None:
-    rows = _journal(target.case)
+    rows = firing_journal(target.case, lock=True)
     if retry:
         if len(rows) != 1 or not _retry_allowed(rows[0], intent=intent, target=target, now=now):
             return None
         row = rows[0]
     else:
-        if rows:
+        if rows or claim_exists(target.case):
             return None
         row = _new_journal(intent, target)
-    row.payload_json = {**(row.payload_json or {}), _CLAIM_KEY: _claim_metadata(intent, target), _REJECTION_KEY: False}
+    row.payload_json = {**(row.payload_json or {}), CLAIM_KEY: _claim_metadata(intent, target), REJECTION_KEY: False}
     attempt = row.attempt_count + 1
     row_id = row.id
     _stage_claim_audit(intent, target, attempt=attempt)
@@ -258,7 +247,7 @@ def _send_claimed(intent: DeliveryIntent, *, claim: tuple[int, int, str]) -> str
     row = db.session.get(NotificationDelivery, row_id, populate_existing=True, with_for_update=True)
     if row is None or not _matching_claim(row, intent) or row.status != 'queued' or row.attempt_count != attempt:
         return 'claimed_review_required'
-    if (row.payload_json or {}).get(_CLAIM_KEY) != _claim_metadata(intent, target):
+    if audited_claim(target.case, row) != _claim_metadata(intent, target):
         return 'claimed_review_required'
     message = _replay_message(row, target.channel)
     if message is None or message != _message(target.case):
@@ -266,11 +255,21 @@ def _send_claimed(intent: DeliveryIntent, *, claim: tuple[int, int, str]) -> str
     # Requalified locks remain held during the bounded existing provider call.
     result = _deliver(target.channel, message)
     definitive = not result.success and result.definitively_rejected and result.retry_after_seconds is not None
-    row.payload_json = {**(row.payload_json or {}), _REJECTION_KEY: definitive}
+    row.payload_json = {**(row.payload_json or {}), REJECTION_KEY: definitive}
     sanitized = DeliveryResult(
         result.success,
         'Provider accepted the approved alert.' if result.success else 'Provider did not confirm delivery.',
         retry_after_seconds=result.retry_after_seconds if definitive else None,
+    )
+    outcome = 'sent' if result.success else ('rejected' if definitive else 'unconfirmed')
+    db.session.add(
+        AuditEvent(
+            actor_user_id=intent.actor_id, target_type='alert_case', target_id=intent.case_id,
+            action=OUTCOME_ACTION, summary='Scoped provider delivery outcome recorded.',
+            metadata_json={
+                **_claim_metadata(intent, target), 'attempt': attempt, 'domain': 'secrets_pki', 'result': outcome
+            },
+        )
     )
     _record_delivery_outcome(row, target.channel, sanitized)
     return 'sent' if result.success else ('retry_review_required' if definitive else 'outcome_review_required')
