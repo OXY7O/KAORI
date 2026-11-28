@@ -6,8 +6,8 @@ from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 from typing import cast
 
-from flask import Blueprint, abort, current_app, redirect, render_template, request, url_for
-from flask_login import current_user, logout_user
+from flask import Blueprint, abort, current_app, redirect, render_template, request, session, url_for
+from flask_login import current_user, login_fresh, logout_user
 from flask_wtf.csrf import validate_csrf
 from sqlalchemy import func, update
 from sqlalchemy.exc import SQLAlchemyError
@@ -20,13 +20,17 @@ from app.access.authentication.bot_protection.turnstile import (
     _configuration_ready,
     verify_turnstile,
 )
+from app.access.authentication.lockout_governance import GovernanceEvidence, stage_policy_change
+from app.access.authentication.lockout_policy import LockoutMode
+from app.access.authentication.login_protection import LoginProtectionUnavailable
 from app.access.authentication.mfa.audit import stage_authentication_security_event
 from app.access.authentication.mfa.policy import MfaPolicyMode
 from app.access.authentication.mfa.service import mfa_enrolled, mfa_policy_mode
-from app.access.authentication.session import clear_authenticated_session
+from app.access.authentication.session import clear_authenticated_session, parse_authenticated_user_identifier
 from app.access.authentication.session_lifecycle import SessionPolicy
 from app.access.rbac.decorators import permission_required
 from app.extensions.db import db
+from app.extensions.limiter import limiter
 from app.models import User
 from app.models.authentication_security import AuthenticationSecurityPolicy
 from app.platform_operations.notifications.feedback import (
@@ -36,6 +40,7 @@ from app.platform_operations.notifications.feedback import (
     queue_operational_feedback,
 )
 from app.platform_operations.notifications.service import queue_transient_feedback
+from app.security.credentials import CredentialEncryptionError
 
 bp = Blueprint('authentication_security', __name__)
 
@@ -62,6 +67,14 @@ def index():
     submenu_tabs = tuple((key, label, icon, None, href) for key, label, icon, href in tabs)
     row = db.session.get(AuthenticationSecurityPolicy, 1)
     context = {
+        'lockout_mode': row.lockout_mode if row is not None else 'disabled',
+        'lockout_revision': row.lockout_revision if row is not None else 1,
+        'lockout_initialized': row is not None,
+        'lockout_monitor_allowed': bool(current_app.config.get('AUTH_LOCKOUT_MONITOR_ALLOWED')),
+        'lockout_enforcement_allowed': bool(current_app.config.get('AUTH_LOCKOUT_ENFORCEMENT_ALLOWED')),
+        'can_manage_lockout': bool(
+            current_user.has_permission('identity_providers.manage') and current_user.auth_source == 'database'
+        ),
         'bot_mode': row.bot_mode if row is not None else 'disabled',
         'bot_provider_key': row.bot_provider_key if row is not None else 'cloudflare_turnstile',
         'bot_site_key': row.bot_site_key if row is not None else '',
@@ -429,3 +442,49 @@ def test_bot_provider():
         current_app.logger.warning('Bot provider verification evidence could not be saved.', exc_info=True)
         abort(503)
     return redirect(url_for('access.authentication_security.index', tab='bot'))
+
+
+@bp.post('/login-protection/policy')
+@permission_required('identity_providers.manage')
+@limiter.limit(lambda: current_app.config.get('AUTH_LOGIN_RATE_LIMIT', '5 per minute'))
+def save_lockout_policy():
+    destination = url_for('access.authentication_security.index', tab='overview', _anchor='login-protection-control')
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+        if request.form.get('acknowledge_lockout_impact') != 'yes':
+            raise ValueError('Acknowledgement required.')
+        requested = LockoutMode(request.form.get('lockout_mode', ''))
+        revision = int(request.form.get('lockout_revision', ''))
+        evidence = GovernanceEvidence.parse(request.form.get('ticket', ''), request.form.get('reason', ''))
+        actor_id, generation = parse_authenticated_user_identifier(session.get('_user_id'))
+        if not login_fresh() or actor_id != current_user.id or generation is None:
+            abort(403)
+    except (ValidationError, ValueError, TypeError):
+        abort(400)
+    try:
+        changed = stage_policy_change(
+            actor_id=actor_id, generation=generation, requested=requested, expected_revision=revision,
+            evidence=evidence, password=request.form.get('current_password', ''),
+            code=request.form.get('verification_code', ''),
+        )
+        db.session.commit()
+    except (ValueError, LoginProtectionUnavailable):
+        db.session.rollback()
+        queue_transient_feedback(
+            status='warning', title='Login protection not saved',
+            message='Verify administrator assurance, current policy revision and activation prerequisites.',
+        )
+        return redirect(destination)
+    except (SQLAlchemyError, CredentialEncryptionError):
+        db.session.rollback()
+        queue_transient_feedback(
+            status='error', title='Login protection not saved', message='The security change could not be committed.',
+        )
+        return redirect(destination)
+    queue_operational_feedback(build_operational_feedback(OperationalFeedbackSpec(
+        status='success' if changed else 'info', title='Login protection updated' if changed else 'Policy unchanged',
+        message='Committed policy recorded. Existing authenticated sessions are unchanged.',
+        activity_audit_saved=True, notification_deck_visible=changed,
+        delivery_policy=OperationalDeliveryPolicy.PERSISTENT if changed else OperationalDeliveryPolicy.AUDIT_ONLY,
+    )))
+    return redirect(destination)

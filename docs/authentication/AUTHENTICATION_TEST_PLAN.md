@@ -121,3 +121,14 @@ After applying migration `20261128_auth_session_expiry` to the Dev Container dat
 - Save an unchanged policy and confirm existing sessions remain valid; save a changed policy and verify fresh authentication is required. Verify read-only roles cannot modify the policy and CSRF is enforced.
 - Confirm Session Security Activity Audit entries are system-owned for expiry, classified as security-control evidence and contain no cookies or credentials.
 - Exercise Local, LDAP and browser SSO, PostgreSQL concurrency, multiple app instances, desktop/mobile warning and HTMX expiry. Record actual results, timestamps and evidence before marking qualified.
+
+
+## Account lockout administrative qualification (AL-03, #5326)
+
+- [ ] Singleton migration preserves existing MFA, bot and session configuration; existing mode remains Disabled.
+- [ ] Viewer, unauthorized direct POST, external administrator, stale generation, remembered/non-fresh session, missing CSRF, invalid reason/reference and replayed TOTP cannot mutate policy or account state.
+- [ ] Default authorization switches reject active modes; Enforced requires Monitor Only plus separate authorization, working Redis script probe and enrolled local recovery administrator.
+- [ ] Policy revision increments exactly once on change; stale forms and concurrent policy/credential/admission operations fail closed. No-op does not change revision or revoke sessions.
+- [ ] User lockout visibility is permission-scoped; self, external, inactive, deleted, Super Admin and unauthorized privileged-target unlock attempts are rejected. Exact active deadline and revision required.
+- [ ] State, factor replay consumption and audit/Notification Deck evidence roll back together on write/commit failure; successful unlock preserves lifecycle, credentials and existing sessions.
+- [ ] Verify actual hosted Redis/DB concurrency, policy writer lock order, role revocation, UI/light/dark/responsive/accessibility, notification projection, and independent all-sessions-expired recovery with Turnstile/Redis unavailable (#4014). Production activation remains HOLD until acceptance.

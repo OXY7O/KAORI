@@ -4,15 +4,22 @@ from typing import Any, cast
 
 from flask import (
     Blueprint,
+    abort,
     current_app,
     redirect,
     render_template,
     request,
+    session,
     url_for,
 )
-from flask_login import current_user
+from flask_login import current_user, login_fresh
+from flask_wtf.csrf import validate_csrf
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from wtforms.validators import ValidationError
 
+from app.access.authentication.lockout_governance import GovernanceEvidence, stage_manual_unlock
+from app.access.authentication.login_protection import LoginProtectionUnavailable
+from app.access.authentication.session import parse_authenticated_user_identifier
 from app.access.rbac.decorators import permission_required
 from app.access.users.directory import (
     build_user_identity_context,
@@ -45,7 +52,17 @@ from app.access.users.service import (
     user_version_matches,
     user_version_token,
 )
+from app.extensions.db import db
+from app.extensions.limiter import limiter
 from app.models import User
+from app.platform_operations.notifications.feedback import (
+    OperationalDeliveryPolicy,
+    OperationalFeedbackSpec,
+    build_operational_feedback,
+    queue_operational_feedback,
+)
+from app.platform_operations.notifications.service import queue_transient_feedback
+from app.security.credentials import CredentialEncryptionError
 
 bp = Blueprint('users', __name__, url_prefix='/users')
 
@@ -421,3 +438,49 @@ def delete(user_id: int):
             target=user,
         )
     )
+
+
+@bp.post('/<int:user_id>/unlock')
+@permission_required('users.reset_password')
+@limiter.limit(lambda: current_app.config.get('AUTH_LOGIN_RATE_LIMIT', '5 per minute'))
+def unlock(user_id: int):
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+        if request.form.get('acknowledge_unlock') != 'yes':
+            raise ValueError('Acknowledgement required.')
+        revision = int(request.form.get('lockout_revision', ''))
+        deadline = request.form.get('locked_until', '')
+        if not 1 <= len(deadline) <= 64:
+            raise ValueError('Invalid lock reference.')
+        evidence = GovernanceEvidence.parse(request.form.get('ticket', ''), request.form.get('reason', ''))
+        actor_id, generation = parse_authenticated_user_identifier(session.get('_user_id'))
+        if not login_fresh() or actor_id != current_user.id or generation is None:
+            abort(403)
+    except (ValidationError, ValueError, TypeError):
+        abort(400)
+    try:
+        stage_manual_unlock(
+            actor_id=actor_id, generation=generation, target_id=user_id, expected_revision=revision,
+            expected_deadline=deadline, evidence=evidence, password=request.form.get('current_password', ''),
+            code=request.form.get('verification_code', ''),
+        )
+        db.session.commit()
+    except (ValueError, LoginProtectionUnavailable):
+        db.session.rollback()
+        queue_transient_feedback(
+            status='warning', title='Account not unlocked',
+            message='Verify administrator assurance, permission and the current committed lock.',
+        )
+        return redirect(url_for('users.index'))
+    except (SQLAlchemyError, CredentialEncryptionError):
+        db.session.rollback()
+        queue_transient_feedback(
+            status='error', title='Account not unlocked', message='The security change could not be committed.',
+        )
+        return redirect(url_for('users.index'))
+    queue_operational_feedback(build_operational_feedback(OperationalFeedbackSpec(
+        status='success', title='Account unlocked',
+        message='The local sign-in lock was cleared. Password, MFA and account lifecycle are unchanged.',
+        activity_audit_saved=True, notification_deck_visible=False, delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY,
+    )))
+    return redirect(url_for('users.index'))

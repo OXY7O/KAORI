@@ -33,3 +33,14 @@ At a controlled interval, validate that the account exists, is active, remains l
 ## Current implementation note
 
 The schema currently distinguishes `is_super_admin` but not `is_break_glass`. Until the dedicated marker and safeguards are implemented, local super-admin accounts receive the stricter persistent-session policy. The dedicated migration should be performed together with RBAC/role-mapping safeguards.
+
+
+## Login Protection recovery (#4015 / #5326)
+
+Local Super Admin is excluded from durable password lockout, not from CAPTCHA, MFA, shared identity budget or existing per-IP limits. Preserve an independent management-plane recovery capability; the public login is not an emergency bypass.
+
+For an existing authorized, fresh Local Database administrator session with enrolled authenticator, use Access → Authentication Security → Overview → Login Protection. Select Disabled, provide incident/change reference, non-sensitive reason, current password, unused TOTP and acknowledgement. Verify committed mode/revision and Activity Audit; confirm normal login and unchanged MFA/session/lifecycle policy. To unlock one ordinary local account, use User Management → Details → Login Protection → Unlock Account; verify the target and active deadline. Unlock does not reset the password or upstream directory state. Preserve incident evidence and investigate ongoing password spray.
+
+Do not set either activation authorization switch until the relevant approved hosted qualification, recovery drill, and operational acceptance are recorded. Monitor Only precedes Enforced. Re-enable only after Redis script, shared topology, proxy trust, capacity, provider/normal login, protected recovery, and concurrent state/audit checks are validated against the deployed candidate. The environment switch alone does not change the committed mode and must never be treated as emergency rollback.
+
+**Unresolved recovery dependency:** #4014 remains open for an isolated operator operation when all administrator sessions have expired and Turnstile is unavailable. An equivalent Redis outage and targeted-login-spray scenario must also be qualified. No independently executable management operation, public bypass or default direct database-edit procedure is claimed here. Keep activation HOLD until that dependency is resolved.

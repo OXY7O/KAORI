@@ -1,0 +1,23 @@
+<div class="grid gap-3 sm:grid-cols-2">
+    <label class="block min-w-0">
+        <span class="text-xs font-semibold text-content-primary">Incident / Change Reference</span>
+        <input type="text" name="ticket" required minlength="3" maxlength="80"
+               class="mt-1 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+    </label>
+    <label class="block min-w-0">
+        <span class="text-xs font-semibold text-content-primary">Reason (No Sensitive Data)</span>
+        <input type="text" name="reason" required minlength="10" maxlength="300"
+               class="mt-1 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+    </label>
+    <label class="block min-w-0">
+        <span class="text-xs font-semibold text-content-primary">Your Current Password</span>
+        <input type="password" name="current_password" autocomplete="current-password" required maxlength="1024"
+               class="mt-1 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+    </label>
+    <label class="block min-w-0">
+        <span class="text-xs font-semibold text-content-primary">Fresh Authenticator Code</span>
+        <input type="text" name="verification_code" autocomplete="one-time-code" inputmode="numeric"
+               pattern="[0-9]{6}" required maxlength="6"
+               class="mt-1 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+    </label>
+</div>
