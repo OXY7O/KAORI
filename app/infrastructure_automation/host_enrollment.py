@@ -16,8 +16,10 @@ from app.infrastructure_automation.host_registry import (
     AutomationHostIntent,
     AutomationInventoryDenied,
     require_ansible_connection,
+    require_unreserved_inventory,
     validate_host_intent,
 )
+from app.infrastructure_automation.target_claims import connection_resource, endpoint_resource, host_resource
 from app.models.automation import AutomationHostAsset, AutomationInventoryAssignment
 from app.models.integration import IntegrationInstance
 
@@ -38,7 +40,7 @@ def get_scoped_host_assignment(
         integration_instance_id=connection_id, host_id=host_id, enabled=True
     )
     if lock:
-        query = query.with_for_update()
+        query = query.populate_existing().with_for_update()
     assignment = query.first()
     if assignment is not None and lock:
         db.session.refresh(assignment.host, with_for_update=True)
@@ -58,6 +60,10 @@ def enroll_host_for_connection(
         raise AutomationInventoryDenied('The selected Ansible connection is invalid.')
     if role not in _INVENTORY_ROLES:
         raise AutomationInventoryDenied('Choose an approved Kubernetes host role.')
+
+    db.session.refresh(connection, with_for_update=True)
+    require_ansible_connection(connection, environment=intent.environment)
+    require_unreserved_inventory(connection_resource(connection.id), endpoint_resource(intent.address))
 
     # Never register a 257th member, even though the paginated read model
     # would show only the first five. An execution-bound snapshot is separate.
@@ -131,6 +137,14 @@ def _require_editable(
         or host.lifecycle_status != 'registered'
     ):
         raise AutomationInventoryDenied('This host is not an active member of the selected connection.')
+    # Serialize with Plan reservation and other canonical inventory writers.
+    db.session.refresh(connection, with_for_update=True)
+    locked = get_scoped_host_assignment(connection.id, host.id, lock=True)
+    if locked is None or locked.id != assignment.id:
+        raise AutomationInventoryDenied('This host is not an active member of the selected connection.')
+    require_ansible_connection(connection, environment=host.environment)
+    if host.lifecycle_status != 'registered':
+        raise AutomationInventoryDenied('This host is not an active member of the selected connection.')
     # A shared host must not be silently changed for a second integration.
     if AutomationInventoryAssignment.query.filter_by(host_id=host.id, enabled=True).count() != 1:
         raise AutomationInventoryDenied('Shared host identities require independent ownership review.')
@@ -152,6 +166,10 @@ def update_host_for_connection(
     intent = validate_host_intent(values)
     if intent.environment != connection.environment or role not in _INVENTORY_ROLES:
         raise AutomationInventoryDenied('Host environment or Kubernetes role is not approved.')
+    require_unreserved_inventory(
+        connection_resource(connection.id), host_resource(host.id),
+        endpoint_resource(host.address), endpoint_resource(intent.address),
+    )
     other_name = AutomationHostAsset.query.filter_by(environment=intent.environment, name=intent.name).first()
     other_address = AutomationHostAsset.query.filter_by(environment=intent.environment, address=intent.address).first()
     if (other_name is not None and other_name.id != host.id) or (
@@ -184,6 +202,9 @@ def retire_host_for_connection(
     host = _require_editable(connection, assignment, expected_revision)
     if confirmation != host.name:
         raise AutomationInventoryDenied('Type the exact host name to confirm retirement.')
+    require_unreserved_inventory(
+        connection_resource(connection.id), host_resource(host.id), endpoint_resource(host.address)
+    )
     assignment.enabled = False
     host.lifecycle_status = 'retired'
     try:
