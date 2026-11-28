@@ -205,3 +205,12 @@ outcome in the canonical result summary plus Activity Audit without
 changing lifecycle status, heartbeat or active slot. This does not
 establish worker cessation or release authority; independently admitted
 domain start and terminal writers are still required.
+
+
+The fixed Apply operation is also excluded from generic create-or-attach
+and enqueue entry points before worker inspection, persistence or broker
+dispatch. The caller-owned transactional staging primitive remains
+available for a future separately admitted domain writer, not an
+execution permit or task registration. The transaction regression uses an
+isolated SQLite schema and cannot drop the configured application database;
+PostgreSQL concurrency remains separately required.

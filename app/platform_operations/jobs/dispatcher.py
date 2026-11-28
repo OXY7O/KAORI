@@ -10,7 +10,7 @@ from kombu.exceptions import OperationalError as KombuOperationalError
 
 from app.models.job import JobExecution
 from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchResult
-from app.platform_operations.jobs.service import create_or_attach_job, mark_job_failed
+from app.platform_operations.jobs.service import create_or_attach_job, mark_job_failed, require_generic_job_creation
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,6 +118,8 @@ def enqueue_canonical_job(
     analytics and forecasting jobs. Integration validation retains its additional
     provider lock because it has cross-operation conflict rules.
     """
+    # Reject before worker inspection, persistence or broker side effects.
+    require_generic_job_creation(operation)
     options = dispatch_options or JobDispatchOptions()
     require_registered_worker = options.require_registered_worker
     if require_registered_worker:

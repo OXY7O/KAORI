@@ -7,7 +7,7 @@ import pytest
 from flask import Flask
 
 from app.common.job_execution_contract import KUBESPRAY_APPLY_OPERATION
-from app.platform_operations.jobs import service
+from app.platform_operations.jobs import dispatcher, service
 
 
 def _candidate(status='queued', operation=KUBESPRAY_APPLY_OPERATION):
@@ -79,3 +79,36 @@ def test_stale_recovery_preserves_mutation_and_recovers_normal_job(monkeypatch, 
     assert normal.active_deduplication_key is None
     assert calls == [('normal-task', False)]
     assert commits == [True]
+
+
+def test_generic_creation_rejects_apply_before_staging(monkeypatch):
+    monkeypatch.setattr(service, 'stage_job_execution', lambda *args: pytest.fail('Unexpected staged job'))
+    with pytest.raises(service.JobDomainReconciliationRequired):
+        service.create_or_attach_job(
+            job_type='infrastructure_automation',
+            operation=KUBESPRAY_APPLY_OPERATION,
+            queue_name='automation',
+            workload_class='validation',
+            requested_by_user_id=7,
+        )
+
+
+def test_generic_dispatch_rejects_apply_before_worker_or_job_creation(monkeypatch):
+    monkeypatch.setattr(
+        dispatcher, 'ensure_task_registered_for_queue', lambda **kwargs: pytest.fail('Unexpected worker inspection')
+    )
+    monkeypatch.setattr(dispatcher, 'create_or_attach_job', lambda **kwargs: pytest.fail('Unexpected job creation'))
+    task = SimpleNamespace(apply_async=lambda **kwargs: pytest.fail('Unexpected broker dispatch'))
+    with pytest.raises(service.JobDomainReconciliationRequired):
+        dispatcher.enqueue_canonical_job(
+            task=task,
+            task_kwargs={},
+            job_type='infrastructure_automation',
+            operation=KUBESPRAY_APPLY_OPERATION,
+            queue_name='automation',
+            workload_class='validation',
+            requested_by_user_id=7,
+            resource_group='fixture',
+            parameters={},
+            dispatch_options=dispatcher.JobDispatchOptions(require_registered_worker=True),
+        )
