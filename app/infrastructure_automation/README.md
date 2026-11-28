@@ -403,3 +403,22 @@ The current job has no HTTP/CLI action or schedule and no provider read or
 SSH. Native worker/OCI, operation/target approval and actual facts remain
 separate admissions. Existing worker topology verification allowlists this
 additional review-only task; no default worker activation.
+
+
+### Remote-specific credential draft scope (#5184/#5186)
+
+The remote candidate now has a distinct canonical draft writer
+`request_remote_credential_grant_draft`, limited to the existing explicit
+local security review gate. It reuses the existing Access policy/revision
+and exact host binding storage and mandatory Activity Audit. It pins the
+fixed remote playbook and remote candidate Git SHA, not the localhost
+playbook or a caller-supplied operation/source. There is no schema change,
+route, permission seed or implicit migration of existing grants.
+
+The remote draft validator shares only the host/provider/version
+currentness checks with the existing selector. The existing credential
+approval and active-grant evaluator explicitly require the original
+operation/source pair and cannot activate or resolve the remote draft,
+even when typed credential evidence exists. The candidate source remains
+disabled and requires independent acceptance plus an approved remote
+grant activation/use contract before any material access.
