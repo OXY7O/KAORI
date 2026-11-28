@@ -980,3 +980,37 @@ posting passwords or session cookies in GitHub evidence.
 registry pagination and the previously approved no-visible-loading-bar design
 remain authoritative. Exact-head Full Admission is a separate future
 human-authorized step.
+
+
+## 2026-11-28 — consolidated Account security candidate (#5323)
+
+Prior 2026-10-23–25 evidence remains historical only; new password, session, MFA, Login Protection and personal posture changes require exact-candidate requalification. **Do not mark the following PASS before execution.** Use a disposable Dev Container database, a known working local Super Admin recovery path and dedicated ordinary test users. Review migrations and snapshot/backup before upgrade; never run destructive migration or recovery drills on production. Restart the app/worker after dependency/schema changes and sign in again (legacy sessions intentionally invalidated).
+
+| ID | New candidate scenario | Status |
+| --- | --- | --- |
+| SET-ACC-01 | Profile source/role and effective MFA, idle/absolute, Remember Me; regular/privileged and external ownership | NOT RUN |
+| SET-ACC-02 | Exact-user combined five-row history, security actions separate from login, unknown evidence, direct unauthorized audit access | NOT RUN |
+| SET-ACC-03/04 | Local password negative/blocklist and atomic change, exact generation/current session age, old cookie replay, external owner denial | NOT RUN |
+| SET-ACC-05 | MFA setup/cancel/confirm/expiry, recovery regeneration/replay, replacement/cancel, one-time secret response/history, provider boundary | NOT RUN |
+| SET-VIS-01 | Four Account tabs in six viewports and both themes, HTMX/back/focus/no page overflow | NOT RUN |
+| SET-OPS-01 | Session idle and absolute expiry; passive polling not activity; DB failure and browser history | NOT RUN |
+
+Use the existing authentication full-cycle UAT for AL-01–05, isolated recovery, actual provider and concurrency drills. Default-false optional controls remain disabled until separately authorized; test policies in an isolated environment only. Native authentication AlertCase is Reserved Plan.
+
+```bash
+git status --short
+git fetch origin
+git switch kaori/review/staging-uat
+git pull --ff-only origin kaori/review/staging-uat
+git rev-parse HEAD
+flask --app run:app db heads
+flask --app run:app db current
+# Review migration plan and backup disposable UAT data before any upgrade.
+python scripts/verify_settings_final_lock.py
+python scripts/verify_environment_contract.py
+python -m pytest -q tests/contracts/settings tests/access/authentication
+python -m pytest -q tests/contracts/intelligence/test_authentication_intelligence_contract.py
+python -m pytest -q -s tests/ui/test_representative_interactions.py -k settings_account_profile_activity_credentials_visual_qa
+```
+
+The existing test name is retained for compatibility, now covering all four tabs; synthetic browser fixtures do not prove real session admission. Executable checks and Human Acceptance remain NOT RUN in the source authoring session. No baseline hash update or official admission.
