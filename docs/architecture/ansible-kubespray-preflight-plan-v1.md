@@ -225,13 +225,18 @@ and restrictive foreign keys preserve both JobExecution records. Adoption
 does not release or replace any of the seven claims. The internal locking
 helper resolves the exact current acknowledgement and seven active claims
 under the existing canonical Plan/resource locks. The staging helper
-requires the exact queued, one-attempt canonical child and fingerprinted
-reservation/Plan payload, denies competing children or a prior adoption,
-and flushes the association and mandatory AuditEvent without a commit.
-The fixed candidate Run operation is `automation_kubespray_apply`.
-The future domain writer must independently authorize the actual operation,
-lock the reservation before staging a new child, and commit the child,
-subscriber, adoption and audit atomically before any broker dispatch.
+accepts a qualified JobCreationSpec, not an existing child identity.
+It locks the reservation, rejects competing children before staging,
+requires a newly created one-attempt canonical child and fingerprinted
+reservation/Plan payload, and flushes the child, subscriber, association
+and mandatory AuditEvent without a commit. Caller-supplied task IDs and
+mismatched payloads are denied. The fixed candidate Run operation is
+`automation_kubespray_apply`. The future domain writer must independently
+authorize the actual operation, call this combined staging boundary, and
+commit or roll back all records atomically before any broker dispatch.
+The isolated SQLite persistence regression exercises commit and rollback
+with synthetic Plan qualification; PostgreSQL lock behavior remains
+unverified.
 Review acknowledgement remains non-authorizing; no caller, task, broker
 or operation permission is enabled by this change.
 
