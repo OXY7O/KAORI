@@ -57,6 +57,7 @@ def test_login_generation_is_atomic_database_update_with_exact_returning(
     assert 'returning users.auth_session_version' in statement
     assert 'users.is_active' in statement and 'users.deleted_at' in statement
     assert 'lower(users.auth_source)' in statement
+    assert 'auth_session_issued_at' in statement and 'auth_session_activity_at' in statement
 
 
 def test_failed_or_stale_login_admission_never_commits_generation(

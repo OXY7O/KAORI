@@ -57,7 +57,8 @@ def test_authentication_security_and_compact_login_contract_remain_locked() -> N
     assert "@auth_bp.route('/login', methods=['GET', 'POST'])" in routes
     assert "@auth_bp.route('/logout', methods=['POST'])" in routes
     assert 'def safe_next_url(' in session_source
-    assert "current_app.config.get('AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME', False)" in session_source
+    assert 'remember_requested and not user.is_admin_level' in session_source
+    assert "session['_remember'] = 'clear'" in session_source
     assert 'form.hidden_tag()' in login
     assert 'width: min(1060px, 100%);' in css
     assert 'height: 44px;' in css

@@ -695,6 +695,10 @@ def session_activity():
 @auth_bp.route('/logout', methods=['POST'])
 @login_required
 def logout():
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError:
+        abort(400)
     user = cast(User, current_user._get_current_object())
     source = str(session.get('auth_source') or user.last_auth_source or user.auth_source or 'database')
     try:
