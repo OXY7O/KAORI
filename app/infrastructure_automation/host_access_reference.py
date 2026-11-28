@@ -207,8 +207,17 @@ def _matching_provider_source(
         and provider.provider_key in ('vault', 'openbao')
         and provider.enabled is True
         and provider.lifecycle_status == 'active'
-        and provider.readiness_status == 'ready'
-        and provider.environment == connection.environment
+        and (
+            (provider.provider_key == 'vault'
+             and provider.readiness_status == 'ready'
+             and provider.environment == connection.environment)
+            or (
+                provider.provider_key == 'openbao'
+                and provider.health_status == 'connected'
+                and provider.readiness_status in ('degraded', 'ready')
+                and provider.environment in (None, connection.environment)
+            )
+        )
     )
 
 
