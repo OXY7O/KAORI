@@ -118,9 +118,9 @@
             <table class="{{ table_ui.table_classes('min-w-[1100px]') }}">
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
-                        <th class="{{ table_ui.header_cell_classes() }}">Case</th>
+                        <th class="{{ table_ui.header_cell_classes() }} w-[30%]">Case</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Severity</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Scope</th>
+                        <th class="{{ table_ui.header_cell_classes() }} w-[18%]">Scope</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Duration</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Resolved / Closed</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Owner</th>
@@ -131,16 +131,16 @@
                 <tbody class="{{ table_ui.body_classes() }}">
                     {% for case in payload.history_cases %}
                         <tr class="{{ table_ui.row_classes() }}">
-                            <td class="{{ table_ui.cell_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }} w-[30%] max-w-0">
                                 {{ table_ui.title_cell(case.alert_name, (case.closure_label ~ ' · ' if case.closure_label else '') ~ case.public_id, 'archive') }}
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 {{ table_label.status_label(case.severity_label, case.severity_tone, size='compact') }}
                             </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-sm font-medium leading-5 text-content-primary">{{ case.asset_name }}</p>
+                            <td class="{{ table_ui.cell_classes() }} w-[18%] max-w-0">
+                                <p class="truncate text-sm font-medium leading-5 text-content-primary" title="{{ case.asset_name }}">{{ case.asset_name }}</p>
                                 {% if case.namespace != '-' %}
-                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ case.namespace }}</p>
+                                    <p class="mt-0.5 truncate text-xs leading-5 text-content-muted" title="{{ case.namespace }}">{{ case.namespace }}</p>
                                 {% endif %}
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">{{ case.duration }}</td>

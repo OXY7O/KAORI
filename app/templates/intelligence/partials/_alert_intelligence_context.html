@@ -1,61 +1,79 @@
 {% import "components/table_primitives.html" as table_ui %}
-{% import "components/table_label.html" as table_label %}
-{% set scope_query = {'tab': payload.tab, 'domain': payload.domain, 'asset': payload.selected_asset_key} %}
-{% if payload.provider_case_mode %}
-    {% set _ = scope_query.update({'provider': payload.selected_provider}) %}
-{% endif %}
-<div class="flex flex-wrap items-center justify-between gap-2 border-b border-outline-subtle px-4 py-2 sm:px-5"
-     data-alert-operational-context>
-    <div class="flex min-w-0 flex-wrap items-center gap-2" aria-label="Current operational scope">
-        {{ table_label.metadata_label(payload.domain_label, 'boxes', wrap=true) }}
-        {% if payload.provider_case_mode %}
-            {{ table_label.metadata_label(payload.provider_label, 'shield', wrap=true) }}
-        {% endif %}
-        {{ table_label.metadata_label(payload.selected_asset_name, 'box', wrap=true) }}
-        {% if payload.tab == 'templates' and not payload.provider_case_mode %}
-            <span class="text-xs text-content-muted">Global notification templates</span>
-        {% endif %}
-    </div>
-    <button type="button"
-            data-kaori-dialog-open
-            data-dialog-target="alert-scope-dialog"
-            aria-haspopup="dialog"
-            aria-controls="alert-scope-dialog"
-            hx-get="{{ url_for('alert_intelligence.index', **scope_query) }}"
-            hx-target="#alert-intelligence-context-form"
-            hx-swap="outerHTML"
-            hx-push-url="false"
-            hx-sync="#alert-intelligence-context-form:replace"
-            hx-indicator="#alert-intelligence-context-loading"
-            hx-disabled-elt="#alert-intelligence-context-form fieldset"
-            class="{{ table_ui.action_classes(size='header') }}">
-        <i data-lucide="sliders-horizontal" class="h-3.5 w-3.5" aria-hidden="true"></i>
-        Change Scope
-    </button>
-</div>
-<dialog id="alert-scope-dialog"
-        data-kaori-native-dialog
-        aria-labelledby="alert-scope-title"
-        aria-describedby="alert-scope-description"
-        class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-lg overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
-    <div class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden">
-        <header class="flex shrink-0 items-start justify-between gap-4 border-b border-outline-subtle px-5 py-4 sm:px-6">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
-                    <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
-                </span>
-                <div class="min-w-0">
-                    <p class="text-xs font-semibold text-kaori-primary">Alert Intelligence</p>
-                    <h2 id="alert-scope-title" class="mt-1 text-lg font-semibold text-content-primary">Change Operational Scope</h2>
-                    <p id="alert-scope-description" class="mt-1 text-xs leading-5 text-content-muted">Select the domain and authorized asset or instance. Apply to refresh the workspace.</p>
-                </div>
-            </div>
-            <button type="button" data-kaori-dialog-close aria-label="Close Change Scope"
-                    class="{{ table_ui.action_classes(size='header') }}">
-                <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
-            </button>
-        </header>
-        {% set scope = payload %}
-        {% include 'intelligence/partials/_alert_scope_form.html' %}
-    </div>
-</dialog>
+{% import "components/loading_bar.html" as loading_bar %}
+<section class="border-b border-outline-subtle bg-surface-hover"
+         aria-label="Operational scope filters"
+         data-alert-operational-context>
+    <form id="alert-intelligence-context-form"
+          action="{{ url_for('alert_intelligence.index') }}"
+          method="get"
+          hx-get="{{ url_for('alert_intelligence.index') }}"
+          hx-trigger="submit"
+          hx-target="#alert-intelligence-page-content"
+          hx-select="#alert-intelligence-page-content"
+          hx-swap="outerHTML show:none focus-scroll:false"
+          hx-push-url="true"
+          hx-indicator="#alert-intelligence-context-loading"
+          hx-sync="this:replace"
+          hx-disabled-elt="#alert-intelligence-context-form fieldset"
+          class="px-4 py-3 sm:px-5">
+        <fieldset class="flex min-w-0 flex-wrap items-end gap-x-3 gap-y-2">
+            <input type="hidden" name="tab" value="{{ payload.tab }}">
+            <input type="hidden" name="apply_scope" value="1">
+            <input type="hidden" name="draft_domain" value="{{ payload.domain }}">
+            {% if payload.provider_case_mode %}
+                <input type="hidden" name="draft_provider" value="{{ payload.selected_provider }}">
+            {% endif %}
+            <label class="block min-w-0 w-full sm:w-52">
+                <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
+                <select id="alert-intelligence-domain-select" name="domain"
+                        class="{{ table_ui.filter_select_classes() }}"
+                        hx-get="{{ url_for('alert_intelligence.index') }}"
+                        hx-trigger="change"
+                        hx-include="closest form"
+                        hx-params="tab,domain">
+                    {% for option in payload.domain_options %}
+                        <option value="{{ option.value }}" {% if payload.domain == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            {% if payload.provider_case_mode %}
+                <label class="block min-w-0 w-full sm:w-48">
+                    <span class="{{ table_ui.filter_label_classes() }}">Provider</span>
+                    <select name="provider"
+                            class="{{ table_ui.filter_select_classes() }}"
+                            hx-get="{{ url_for('alert_intelligence.index') }}"
+                            hx-trigger="change"
+                            hx-include="closest form"
+                            hx-params="tab,domain,provider">
+                        <option value="">Select Qualified Provider</option>
+                        {% for option in payload.provider_options %}
+                            <option value="{{ option.value }}" {% if payload.selected_provider == option.value %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            {% endif %}
+            <label class="block min-w-0 w-full sm:w-72">
+                <span class="{{ table_ui.filter_label_classes() }}">{{ 'Authorized Instance' if payload.provider_case_mode else 'Asset Scope' }}</span>
+                <select id="alert-intelligence-asset-select" name="asset"
+                        class="{{ table_ui.filter_select_classes() }}"
+                        hx-get="{{ url_for('alert_intelligence.index') }}"
+                        hx-trigger="change"
+                        hx-include="closest form">
+                    {% if not payload.selected_asset_key or payload.selected_asset_key == '__invalid_registry_scope__' %}
+                        <option value="" selected disabled>{{ 'Select Authorized Instance' if payload.provider_case_mode else 'Select Active Asset' }}</option>
+                    {% endif %}
+                    {% for option in payload.assets if option.value and option.value != '__invalid_registry_scope__' %}
+                        <option value="{{ option.value }}" {% if payload.selected_asset_key == option.value %}selected{% endif %}>
+                            {{ option.label }}{% if option.environment not in ['Fleet scope', '-'] %} · {{ option.environment }}{% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+            {% if payload.tab == 'templates' and not payload.provider_case_mode %}
+                <span class="pb-2 text-xs text-content-muted">Global notification templates</span>
+            {% endif %}
+            <noscript><p class="text-xs text-content-muted">Enable JavaScript to change the operational scope.</p></noscript>
+        </fieldset>
+    </form>
+    {{ loading_bar.render('alert-intelligence-context-loading', label='Refreshing Operational Scope') }}
+</section>
