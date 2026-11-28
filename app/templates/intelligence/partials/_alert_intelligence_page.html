@@ -21,6 +21,7 @@
                 aria_label='Alert Operations Sections',
                 hx_target='#alert-intelligence-page-content') }}
     </div>
+    {% include 'intelligence/partials/_alert_intelligence_context.html' %}
     {% set hero_metrics = [
             ('bell-ring', 'Active Cases', payload.summary.active, 'Operator-managed alert cases'),
             ('shield-check', 'Verification Pending', payload.summary.verification_pending, 'Resolved source awaiting closure evidence')
