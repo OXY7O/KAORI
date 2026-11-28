@@ -11,8 +11,10 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import uuid4
 
+from sqlalchemy import select
 from sqlalchemy.orm import load_only
 
+from app.access.scope_policy import lock_explicit_permissions
 from app.access.scoped_grants import (
     ScopedGrantRejected,
     ScopeGrantValidity,
@@ -22,6 +24,7 @@ from app.access.scoped_grants import (
     require_scope_grant_principal,
 )
 from app.extensions.db import db
+from app.infrastructure_automation.credential_evidence import resolve_current_credential_evidence
 from app.infrastructure_automation.credential_scope_target import (
     CREDENTIAL_USE_PERMISSION,
     READ_ONLY_FACTS_OPERATION,
@@ -32,6 +35,7 @@ from app.infrastructure_automation.kubernetes.source_policy import PROFILE_KEY, 
 from app.models.automation import AutomationHostAccessBinding
 from app.models.scope_access import AutomationCredentialScopeTarget, ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.secrets_pki import SecretProviderRepresentation
+from app.secrets_pki.issuer_authority import TypedCredentialEvidence
 
 
 @dataclass(frozen=True, slots=True, repr=False)
@@ -138,3 +142,67 @@ def request_automation_credential_grant(
         if not committed:
             db.session.rollback()
     return policy
+
+
+def review_credential_grant_approval(
+    *, policy_id: str, approver_user_id: int, expected_revision: int, now: datetime
+) -> TypedCredentialEvidence | None:
+    """Locked maker/checker precondition for a future audited approval writer.
+
+    Does not append an active revision or establish runtime permission. The
+    authenticated caller owns the transaction and must roll back on denial.
+    """
+    if (
+        not isinstance(now, datetime)
+        or now.utcoffset() is None
+        or type(approver_user_id) is not int
+        or approver_user_id <= 0
+        or type(expected_revision) is not int
+        or expected_revision <= 0
+        or not lock_explicit_permissions(approver_user_id, {'roles.manage', 'users.manage'})
+    ):
+        return None
+    policy = db.session.execute(
+        select(ScopeAccessPolicy)
+        .where(ScopeAccessPolicy.id == policy_id)
+        .with_for_update(of=ScopeAccessPolicy)
+        .execution_options(populate_existing=True)
+    ).scalar_one_or_none()
+    if (
+        policy is None
+        or policy.scope_level != 'automation_credential'
+        or policy.permission_key != CREDENTIAL_USE_PERMISSION
+        or policy.current_revision != expected_revision
+        or approver_user_id == policy.principal_user_id
+    ):
+        return None
+    current = db.session.execute(
+        select(ScopeAccessPolicyRevision)
+        .where(ScopeAccessPolicyRevision.policy_id == policy.id)
+        .order_by(ScopeAccessPolicyRevision.revision_number.desc())
+        .limit(1)
+        .with_for_update(of=ScopeAccessPolicyRevision)
+        .execution_options(populate_existing=True)
+    ).scalar_one_or_none()
+    if (
+        current is None
+        or current.revision_number != expected_revision
+        or current.lifecycle_status != 'draft'
+        or current.requested_by_user_id == approver_user_id
+        or current.effective_from.utcoffset() is None
+        or current.effective_until.utcoffset() is None
+        or current.effective_until <= now
+    ):
+        return None
+    if not lock_explicit_permissions(
+        policy.principal_user_id,
+        {CREDENTIAL_USE_PERMISSION, 'secrets_pki.view', 'inventory.view', 'jobs.execute'},
+    ):
+        return None
+    target = db.session.get(AutomationCredentialScopeTarget, policy.id, populate_existing=True, with_for_update=True)
+    if target is None:
+        return None
+    evidence = resolve_current_credential_evidence(policy, target, now=now)
+    if evidence is None or current.effective_until > evidence.expires_at:
+        return None
+    return evidence
