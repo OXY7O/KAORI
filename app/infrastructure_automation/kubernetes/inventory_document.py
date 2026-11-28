@@ -35,6 +35,22 @@ def _network(value: str) -> IPv4Network:
     return network
 
 
+def is_source_only_inventory_preparation(connection: IntegrationInstance) -> bool:
+    """Identify the bounded, non-authorizing source-only preparation scope."""
+    metadata = connection.metadata_json
+    return (
+        connection.enabled is False
+        and connection.integration_type == 'configuration_automation'
+        and connection.provider_key == 'ansible'
+        and connection.environment in ('development', 'testing', 'laboratory', 'sandbox')
+        and connection.lifecycle_status == 'active'
+        and connection.readiness_status == 'validation_required'
+        and isinstance(metadata, dict)
+        and metadata.get('execution_enabled') is False
+        and metadata.get('mutation_authorized') is False
+    )
+
+
 def build_inventory_document(
     connection: IntegrationInstance,
     assignments: list[AutomationInventoryAssignment],
@@ -44,16 +60,7 @@ def build_inventory_document(
     allow_source_only_preparation: bool = False,
 ) -> dict[str, Any]:
     """Build non-executable inventory; only local preparation may opt in before runtime admission."""
-    metadata = connection.metadata_json
-    source_only = (
-        allow_source_only_preparation is True
-        and connection.enabled is False
-        and connection.lifecycle_status == 'active'
-        and connection.readiness_status == 'validation_required'
-        and isinstance(metadata, dict)
-        and metadata.get('execution_enabled') is False
-        and metadata.get('mutation_authorized') is False
-    )
+    source_only = allow_source_only_preparation is True and is_source_only_inventory_preparation(connection)
     if (
         connection.environment not in ('development', 'testing', 'laboratory', 'sandbox')
         or (connection.enabled is not True and not source_only)

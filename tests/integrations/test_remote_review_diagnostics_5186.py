@@ -97,7 +97,11 @@ def target_records(monkeypatch):
     now = datetime.now(UTC)
     connection = SimpleNamespace(
         enabled=True, integration_type='configuration_automation', provider_key='ansible', lifecycle_status='active',
-        metadata_json={'source_sha': SOURCE_CANDIDATE_SHA, 'execution_environment_digest': 'sha256:' + 'a' * 64},
+        environment='development', readiness_status='validation_required',
+        metadata_json={
+            'source_sha': SOURCE_CANDIDATE_SHA, 'execution_environment_digest': 'sha256:' + 'a' * 64,
+            'execution_enabled': False, 'mutation_authorized': False,
+        },
     )
     assignments = [
         SimpleNamespace(id=index, host_id=f'fixture-{index}', role='control_plane' if index == 1 else 'worker',
@@ -149,3 +153,74 @@ def test_diagnostics_reuse_actual_target_gate(target_records, failure, state):
         assert target is not None and target.execution_authorized is False
     else:
         assert target is None
+
+
+def test_source_only_diagnostic_never_returns_runtime_target(target_records):
+    connection, _assignments, _preview, _receipt, _access, now = target_records
+    connection.enabled = False
+    kwargs = {'actor_id': 7, 'connection_id': 31, 'now': now}
+    assert target_service.review_remote_preflight_target(**kwargs) is None
+    assert target_service.diagnose_remote_preflight_target(**kwargs) == ('connection_unqualified', None)
+    assert target_service.diagnose_remote_preflight_target(
+        **kwargs, allow_source_only_diagnostics=True
+    ) == ('runtime_activation_required', None)
+    assert connection.enabled is False
+
+
+@pytest.mark.parametrize('failure,state', [
+    ('production', 'connection_unqualified'),
+    ('enabled', 'connection_unqualified'),
+    ('execution_enabled', 'connection_unqualified'),
+    ('mutation_authorized', 'connection_unqualified'),
+    ('missing_flag', 'connection_unqualified'),
+    ('ready', 'connection_unqualified'),
+    ('retired', 'connection_unqualified'),
+    ('inventory', 'inventory_receipt_unqualified'),
+    ('access', 'access_review_unqualified'),
+])
+def test_source_only_diagnostic_fails_closed(target_records, failure, state):
+    connection, _assignments, _preview, receipt, access, now = target_records
+    connection.enabled = False
+    if failure == 'production':
+        connection.environment = 'production'
+    elif failure == 'enabled':
+        connection.enabled = True
+    elif failure in ('execution_enabled', 'mutation_authorized'):
+        connection.metadata_json[failure] = True
+    elif failure == 'missing_flag':
+        del connection.metadata_json['execution_enabled']
+    elif failure == 'ready':
+        connection.readiness_status = 'ready'
+    elif failure == 'retired':
+        connection.lifecycle_status = 'retired'
+    elif failure == 'inventory':
+        receipt.parser_verified = False
+    elif failure == 'access':
+        access.expires_at = now
+    assert target_service.diagnose_remote_preflight_target(
+        actor_id=7, connection_id=31, now=now, allow_source_only_diagnostics=True
+    ) == (state, None)
+
+
+def test_source_only_cli_reports_activation_block_and_rolls_back(diagnostic, monkeypatch):
+    runner, events = diagnostic
+
+    def diagnose(**kwargs):
+        assert kwargs['allow_source_only_diagnostics'] is True
+        return 'runtime_activation_required', None
+
+    monkeypatch.setattr(command, 'diagnose_remote_preflight_target', diagnose)
+    result = _invoke(runner, '--source-only')
+    assert result.exit_code != 0
+    assert 'target_status=runtime_activation_required' in result.output
+    assert 'execution_authorized=false' in result.output
+    assert events == ['begin', 'rollback']
+
+
+def test_source_only_cli_cannot_request_worker_check(diagnostic):
+    runner, events = diagnostic
+    result = _invoke(runner, '--source-only', '--worker-check')
+    assert result.exit_code != 0
+    assert 'source_only_worker_check_not_allowed' in result.output
+    assert 'execution_authorized=false' in result.output
+    assert events == []

@@ -27,10 +27,13 @@ _PERMISSIONS = {
 @click.option('--connection-id', type=click.IntRange(min=1), required=True)
 @click.option('--actor-id', type=click.IntRange(min=1), required=True, help='Existing actor to evaluate, not impersonate.')
 @click.option('--worker-check', is_flag=True, help='Also inspect the configured local source and signed review receipt.')
+@click.option('--source-only', is_flag=True, help='Inspect disabled source-only prerequisites without worker qualification.')
 @with_appcontext
-def automation_remote_review_check(connection_id: int, actor_id: int, worker_check: bool) -> None:
+def automation_remote_review_check(connection_id: int, actor_id: int, worker_check: bool, source_only: bool) -> None:
     """No JobExecution, grant, signature, provider material or broker action."""
     click.echo('execution_authorized=false')
+    if source_only and worker_check:
+        raise click.ClickException('source_only_worker_check_not_allowed')
     if not review_enabled():
         raise click.ClickException('local_review_disabled')
     try:
@@ -38,7 +41,8 @@ def automation_remote_review_check(connection_id: int, actor_id: int, worker_che
         if not lock_explicit_permissions(actor_id, _PERMISSIONS):
             raise click.ClickException('actor_permissions_unqualified')
         state, target = diagnose_remote_preflight_target(
-            actor_id=actor_id, connection_id=connection_id, now=datetime.now(UTC)
+            actor_id=actor_id, connection_id=connection_id, now=datetime.now(UTC),
+            allow_source_only_diagnostics=source_only,
         )
     except click.ClickException:
         raise
@@ -47,7 +51,7 @@ def automation_remote_review_check(connection_id: int, actor_id: int, worker_che
     finally:
         db.session.rollback()
     click.echo(f'target_status={state}')
-    if target is None or target.execution_authorized is not False:
+    if source_only or target is None or target.execution_authorized is not False:
         raise click.ClickException('target_review_blocked')
     if not worker_check:
         click.echo('configured_worker_review=not_checked')

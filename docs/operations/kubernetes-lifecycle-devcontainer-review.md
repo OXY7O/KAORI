@@ -57,6 +57,7 @@ python -m pytest -q \
   tests/integrations/test_kubespray_plan_worker_contract.py \
   tests/integrations/test_kubespray_run_reservation_4801.py \
   tests/integrations/test_kubespray_run_recovery_4801.py \
+  tests/integrations/test_kubespray_reservation_retention_4801.py \
   tests/integrations/test_kubespray_independent_verification_4801.py \
   tests/integrations/test_ansible_cluster_binding_read_model.py
 ```
@@ -81,6 +82,8 @@ python -m pytest -q \
   tests/integrations/test_remote_review_posture_5186.py \
   tests/integrations/test_remote_credential_draft_5184.py \
   tests/integrations/test_native_credential_reader_5204.py \
+  tests/integrations/test_provider_credential_version_proof_5204.py \
+  tests/integrations/test_vault_credential_version_proof_5184.py \
   tests/integrations/test_ephemeral_ssh_material_5204.py \
   tests/integrations/test_kubespray_run_adoption_4801.py \
   tests/platform_operations/jobs/test_job_transactional_persistence.py \
@@ -124,6 +127,39 @@ The runtime activation contract remains outstanding under #4799/#5172.
 Do not manually set `enabled`, insert evidence, or use local review flags
 as execution authority.
 
+### Prepare and verify the exact local inventory (#5257/#5461)
+
+Use only the independently approved disposable provider cluster, its exact
+registered provider ID, explicit local origin/CA trust and approved KV v2
+mount. Inspect the existing command first. Set the variables below to the
+actual approved values (never a shared or production provider). The
+connection's three registered host roles and reviewed, non-overlapping
+networks must already be correct.
+
+```bash
+flask --app run:app automation-inventory-store --help
+export APP_ENV=development
+export KAORI_LOCAL_INVENTORY_PROVIDER_ID="$PROVIDER_ID"
+export KAORI_LOCAL_INVENTORY_KV_MOUNT="$KV_MOUNT"
+flask --app run:app automation-inventory-store \
+  --connection-id "$CONNECTION_ID" --provider-id "$PROVIDER_ID" \
+  --cluster-id "$CLUSTER_ID" --mount "$KV_MOUNT" \
+  --pod-cidr "$POD_CIDR" --service-cidr "$SERVICE_CIDR"
+```
+
+The default operation compares existing version 1 only. If independently
+authorized to create the missing snapshot, repeat with `--publish`; this
+is a create-only CAS operation, not a reset or overwrite. Then repeat
+without `--publish` and with `--check-ansible` in the local qualification
+environment containing the exact pinned Ansible Core version from source
+policy. Never install these dependencies in the web or default workers.
+The short-lived scoped token is entered at the hidden interactive prompt,
+not passed through shell history or chat. Record only redacted version,
+fingerprint and parser status. A provider write or parser result does not
+authorize SSH or cluster execution.
+
+### Inspect source-only prerequisites before activation (#5463)
+
 In the local workspace terminal (replace the IDs with actual canonical
 connection and actor IDs; do not use a production environment):
 
@@ -132,8 +168,17 @@ flask --app run:app automation-remote-review-check --help
 APP_ENV=development KAORI_LOCAL_AUTOMATION_SECURITY_REVIEW=1 \
   KAORI_LOCAL_REMOTE_PREFLIGHT_REVIEW=1 \
   flask --app run:app automation-remote-review-check \
-  --connection-id CONNECTION_ID --actor-id ACTOR_ID
+  --connection-id CONNECTION_ID --actor-id ACTOR_ID --source-only
 ```
+
+Use `--source-only` only for an active disabled source-only record.
+It reuses the existing committed target checks, does not produce a target
+receipt, always exits nonzero, and cannot be combined with `--worker-check`.
+When all historical prerequisites qualify it reports
+`runtime_activation_required`. Without the flag, the original enabled
+runtime target boundary is unchanged. Do not turn on the connection
+manually. After independently governed runtime activation, repeat without
+`--source-only` to use the existing historical target review.
 
 The operator evaluates an existing actor; this does not authenticate or
 impersonate that actor, create approvals, enqueue jobs, or write evidence.
@@ -146,13 +191,14 @@ to be development and PostgreSQL READ COMMITTED, and rolls back its transaction.
 | local_review_disabled | Local review flags and actual APP_ENV |
 | committed_review_unavailable | Local DB/migrations/transaction availability |
 | actor_permissions_unqualified | Explicit persisted role membership and credential-use permission |
-| connection_unqualified | Active enabled Ansible connection |
+| connection_unqualified | Active enabled Ansible connection, or exact disabled non-production source-only scope with the explicit diagnostic flag |
 | source_not_checked | Exact committed source validation |
 | ee_digest_unqualified | Committed immutable EE digest |
 | topology_unqualified | Exactly 1 control-plane and 2 distinct worker/host members |
 | host_registry_unqualified | Canonical non-production host scope |
 | inventory_receipt_unqualified | Historical provider KV v2 readback and pinned Ansible parser |
 | access_review_unqualified | Each member's current local grant, remote draft, typed credential version evidence and independent SSH trust |
+| runtime_activation_required | Source-only prerequisites aligned; independent activation still required, no target returned |
 | historical_target_qualified | Target metadata review only; no native runtime or execution |
 
 On an independently prepared local automation worker with the reviewed
