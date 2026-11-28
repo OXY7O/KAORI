@@ -467,6 +467,12 @@ def _locked_issuer_source(scope: CredentialIssuerScope, permission_key: str) -> 
     if permission_key == 'secrets_pki.revoke_credential_issuer':
         # Revocation must remain possible even when the original source is disabled.
         return True
+    if scope.provider_key == 'openbao':
+        # Local OpenBao is deliberately degraded until credential authority exists.
+        # This admits only issuer administration preconditions, not material use.
+        return current_local_inventory_source(
+            source, namespace=scope.provider_namespace, mount=scope.mount, lock=True
+        ) is not None
     return source.enabled is True and source.lifecycle_status == 'active' and source.readiness_status == 'ready'
 
 
