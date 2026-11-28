@@ -16,5 +16,7 @@ url_for('integrations.registry'),
 'Committed Snapshots',
 dashboard_state,
 'Registry Setup Required',
-'Register and validate a Registry provider to activate committed operational signals.'
+'Register and validate a Registry provider to activate committed operational signals.',
+integration_endpoint='integrations.registry',
+integration_permitted=current_user is defined and current_user.is_authenticated and current_user.has_permission('integrations.manage')
 ) }}

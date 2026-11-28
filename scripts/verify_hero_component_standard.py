@@ -1321,7 +1321,7 @@ def _verify_secrets_pki_lifecycle_compact_hero() -> None:
         if re.search(r'<nav\s+class="flex flex-wrap gap-', source):
             raise AssertionError(f'{owner}: page-local raw peer navigation is forbidden')
 
-    if "context_header('KV v2 Evidence', kv2_hero_label" not in lifecycle:
+    if "context_header_status('KV v2 Evidence', 'Lifecycle Qualification', kv2_hero_label" not in lifecycle:
         raise AssertionError(f'{owner}: KV v2 Hero must not expose unbounded source labels')
     if "pki_hero_label, 'Opted-in public certificates'" not in lifecycle:
         raise AssertionError(f'{owner}: PKI Hero must not expose unbounded source labels')
@@ -1508,6 +1508,31 @@ def _verify_kubernetes_hero_navigation() -> None:
         raise AssertionError('Tenant Hero must use the canonical cluster Integration navigation label')
 
 
+def _verify_registry_and_secrets_hero_semantics() -> None:
+    consumers = (
+        'artifact_registry/partials/_overview_hero.html',
+        'artifact_registry/partials/_inventory_overview.html',
+        'artifact_registry/partials/_inventory_workspace.html',
+        'artifact_registry/partials/_security_workspace.html',
+        'artifact_registry/partials/_governance_workspace.html',
+        'artifact_registry/analytics.html',
+    )
+    for relative in consumers:
+        _require_tokens(
+            _read(TEMPLATES / relative),
+            ("integration_endpoint='integrations.registry'", "current_user.has_permission('integrations.manage')"),
+            relative,
+        )
+    for relative, token in (
+        ('secrets_pki/overview.html', "integration_endpoint='vault.index' if can_manage_integrations else none"),
+        ('secrets_pki/inventory.html', "context_header_status('Inventory Readiness', 'Committed Evidence'"),
+        ('secrets_pki/lifecycle.html', "context_header_status('KV v2 Evidence', 'Lifecycle Qualification'"),
+        ('secrets_pki/analytics/certificates.html', "context_header_status('Evidence Readiness', 'PKI Qualification'"),
+        ('intelligence/partials/_alert_intelligence_page.html', "integration_endpoint='notification_channels.index'"),
+    ):
+        _require_tokens(_read(TEMPLATES / relative), (token,), relative)
+
+
 def verify() -> None:
     hero = _read(HERO)
     standard = _read(STANDARD)
@@ -1663,6 +1688,7 @@ def verify() -> None:
     _verify_hero_context_semantics()
     _verify_migrated_integration_navigation()
     _verify_kubernetes_hero_navigation()
+    _verify_registry_and_secrets_hero_semantics()
     _verify_blocked_context_ownership()
     _verify_registry_blocked_hero_actions()
     _verify_analytics_metadata_ownership()

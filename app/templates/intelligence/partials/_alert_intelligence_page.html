@@ -59,9 +59,10 @@
                                 payload.summary.active,
                                 'critical' if payload.summary.critical else ('warning' if payload.summary.active else 'normal') ,
                 hero_metrics,
-                'Manage Notification Channels',
-                url_for('notification_channels.index'),
-                'shield-alert'
+                none,
+                none,
+                integration_endpoint='notification_channels.index',
+                integration_permitted=current_user is defined and current_user.is_authenticated and current_user.has_permission('integrations.manage')
                 ) }}
             {% endif %}
         </div>

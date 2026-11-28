@@ -72,6 +72,8 @@
                 'Open Registry Integrations',
                 url_for('integrations.registry'),
                 action_icon='blocks',
+            integration_endpoint='integrations.registry',
+            integration_permitted=current_user is defined and current_user.is_authenticated and current_user.has_permission('integrations.manage'),
                 blocked=security.setup_blocked or security.inventory_required,
                 blocked_info='Register a Registry provider to access supply-chain evidence.' if security.setup_blocked else 'Collect committed inventory before reviewing supply-chain evidence.',
                 blocked_label='Setup Required' if security.setup_blocked else 'Inventory Required'
