@@ -399,8 +399,9 @@ def test_case_evidence_facts_and_activity_streams_use_content_aware_layout() -> 
     assert "'xl:grid-cols-3' if fact_count == 3" in active
     assert "'sm:col-span-2 xl:col-span-1' if fact_count == 3 and loop.last" in active
     assert 'data-alert-evidence-streams' in streams
-    assert streams.count('flex min-w-0 flex-col overflow-hidden rounded-xl') == 2
-    assert 'group mt-auto border-t' in streams
+    assert 'flex min-w-0 flex-col overflow-hidden border' in streams
+    assert 'group border-t' in streams
+    assert 'data-alert-history-placement="independent"' in streams
     assert streams.count('timeline_row(event)') == 3
     assert streams.count('delivery_row(delivery)') == 3
     assert streams.count("sort(reverse=true, attribute='created_at')") == 2
@@ -412,8 +413,33 @@ def test_case_evidence_facts_and_activity_streams_use_content_aware_layout() -> 
 
 def test_activity_streams_share_intrinsic_rows_only_when_recent_counts_match() -> None:
     from datetime import UTC, datetime
+    from html.parser import HTMLParser
 
     from jinja2 import Environment, FileSystemLoader
+
+    class HistoryPlacementParser(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.articles = []
+            self.history = {}
+
+        def handle_starttag(self, tag, attrs):
+            attributes = dict(attrs)
+            if tag == 'article':
+                self.articles.append(attributes.get('data-alert-evidence-panel'))
+            if 'data-alert-evidence-history' in attributes:
+                self.history[attributes['data-alert-evidence-history']] = tuple(
+                    kind for kind in self.articles if kind is not None
+                )
+
+        def handle_endtag(self, tag):
+            if tag == 'article':
+                self.articles.pop()
+
+    def history_parents(html):
+        parser = HistoryPlacementParser()
+        parser.feed(html)
+        return parser.history
 
     env = Environment(loader=FileSystemLoader(ROOT / 'app/templates'), autoescape=True)
     env.filters['user_datetime'] = lambda value: value.isoformat()
@@ -431,27 +457,47 @@ def test_activity_streams_share_intrinsic_rows_only_when_recent_counts_match() -
     for count in range(1, 6):
         case = {
             'timeline_recent': [event] * count, 'timeline': [event] * count,
-            'timeline_older': [], 'deliveries_recent': [delivery] * count,
-            'deliveries': [delivery] * count, 'deliveries_older': [],
+            'timeline_older': [event], 'deliveries_recent': [delivery] * count,
+            'deliveries': [delivery] * count, 'deliveries_older': [delivery],
         }
         html = template.render(case=case)
         assert 'data-alert-evidence-aligned="true"' in html
         assert html.count('xl:grid-rows-subgrid') == 4
-        assert html.count(f'xl:row-span-{count + 2}') == 2
+        assert html.count(f'xl:row-span-{count + 1}') == 2
         assert html.count(f'xl:row-span-{count}"') == 2
-        assert html.count('data-alert-evidence-row') == count * 2
-        assert html.count('min-h-6 min-w-0 flex-wrap items-center') == count * 2
+        assert html.count('data-alert-evidence-row') == count * 2 + 2
+        assert html.count('min-h-6 min-w-0 flex-wrap items-center') == count * 2 + 2
+        assert html.count('data-alert-history-placement="independent"') == 2
+        assert history_parents(html) == {'timeline': (), 'delivery': ()}
+        assert html.count(f'xl:row-start-{count + 2}') == 2
+        assert 'xl:auto-rows-max xl:content-start' in html
+        assert html.count('xl:col-start-1 xl:row-start-2') == 2
+        assert html.count('self-start overflow-hidden rounded-b-xl') == 2
+        assert html.index('data-alert-evidence-panel="timeline"') < html.index('data-alert-evidence-history="timeline"')
+        assert html.index('data-alert-evidence-history="timeline"') < html.index('data-alert-evidence-panel="delivery"')
 
         case['deliveries_recent'] = [delivery] * (count - 1)
         html = template.render(case=case)
         assert 'data-alert-evidence-aligned="false"' in html
         assert 'xl:grid-rows-subgrid' not in html
-        assert html.count('data-alert-evidence-row') == count * 2 - 1
+        assert html.count('data-alert-evidence-row') == count * 2 + 1
+        assert html.count('data-alert-history-placement="inline"') == 2
+        assert history_parents(html) == {'timeline': ('timeline',), 'delivery': ('delivery',)}
+        assert 'data-alert-history-placement="independent"' not in html
 
     case['deliveries_recent'] = [delivery] * count
+    case['deliveries_older'] = []
+    html = template.render(case=case)
+    assert 'data-alert-evidence-aligned="true"' in html
+    assert history_parents(html) == {'timeline': ()}
+    assert 'data-alert-evidence-history="delivery"' not in html
+
+    case['deliveries_older'] = [delivery]
     case['provider_delivery_qualified'] = False
     case['provider_delivery_state'] = 'no_claim'
     html = template.render(case=case)
     assert 'data-alert-evidence-aligned="false"' in html
     assert 'No Claim Recorded' in html
-    assert html.count('data-alert-evidence-row') == count
+    assert html.count('data-alert-evidence-row') == count + 1
+    assert 'data-alert-evidence-history="delivery"' not in html
+    assert 'data-alert-history-placement="independent"' not in html
