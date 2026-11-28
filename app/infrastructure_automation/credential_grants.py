@@ -29,9 +29,11 @@ from app.infrastructure_automation.credential_scope_target import (
     CREDENTIAL_USE_PERMISSION,
     READ_ONLY_FACTS_OPERATION,
     exact_credential_target_current,
+    exact_remote_credential_draft_current,
 )
 from app.infrastructure_automation.host_enrollment import get_scoped_host_assignment
 from app.infrastructure_automation.kubernetes.source_policy import PROFILE_KEY, SOURCE_CANDIDATE_SHA
+from app.infrastructure_automation.remote_preflight_source import REMOTE_CANDIDATE_SHA, REMOTE_PLAYBOOK
 from app.infrastructure_automation.security_review import (
     begin_security_review_transaction,
     local_security_review_enabled,
@@ -64,6 +66,50 @@ def request_automation_credential_grant(
     The caller supplies authenticated identities and an opaque host selection,
     not a provider path, material, operation, scope or approval flag.
     """
+    return _request_credential_grant(
+        actor_user_id=actor_user_id,
+        principal_user_id=principal_user_id,
+        intent=intent,
+        validity=validity,
+        reason_code=reason_code,
+        remote_candidate=False,
+    )
+
+
+def request_remote_credential_grant_draft(
+    *,
+    actor_user_id: int,
+    principal_user_id: int,
+    intent: CredentialGrantIntent,
+    validity: ScopeGrantValidity,
+    reason_code: str,
+) -> ScopeAccessPolicy:
+    """Record a distinct, disabled remote-operation candidate draft.
+
+    Only the fixed source candidate is selectable. Existing grant approval
+    and runtime review deliberately reject this operation/revision.
+    """
+    if not local_security_review_enabled():
+        raise ScopedGrantRejected('Remote credential draft is unavailable.')
+    return _request_credential_grant(
+        actor_user_id=actor_user_id,
+        principal_user_id=principal_user_id,
+        intent=intent,
+        validity=validity,
+        reason_code=reason_code,
+        remote_candidate=True,
+    )
+
+
+def _request_credential_grant(
+    *,
+    actor_user_id: int,
+    principal_user_id: int,
+    intent: CredentialGrantIntent,
+    validity: ScopeGrantValidity,
+    reason_code: str,
+    remote_candidate: bool,
+) -> ScopeAccessPolicy:
     committed = False
     try:
         require_scope_grant_administrator(actor_user_id)
@@ -118,10 +164,11 @@ def request_automation_credential_grant(
         target.secret_identity_id = representation.secret_identity_id
         target.secret_representation_id = representation.id
         target.secret_version = binding.secret_version
-        target.source_revision = SOURCE_CANDIDATE_SHA
+        target.source_revision = REMOTE_CANDIDATE_SHA if remote_candidate else SOURCE_CANDIDATE_SHA
         target.profile_key = PROFILE_KEY
-        target.operation_key = READ_ONLY_FACTS_OPERATION
-        if not exact_credential_target_current(policy, target, now=now):
+        target.operation_key = REMOTE_PLAYBOOK if remote_candidate else READ_ONLY_FACTS_OPERATION
+        qualify_target = exact_remote_credential_draft_current if remote_candidate else exact_credential_target_current
+        if not qualify_target(policy, target, now=now):
             raise ScopedGrantRejected('Grant target is unavailable.')
         revision = ScopeAccessPolicyRevision()
         revision.policy = policy
@@ -200,7 +247,7 @@ def review_credential_grant_approval(
     ):
         return None
     target = db.session.get(AutomationCredentialScopeTarget, policy.id, populate_existing=True, with_for_update=True)
-    if target is None:
+    if target is None or not exact_credential_target_current(policy, target, now=now):
         return None
     evidence = resolve_current_credential_evidence(policy, target, now=now)
     if evidence is None or current.effective_until > evidence.expires_at:
