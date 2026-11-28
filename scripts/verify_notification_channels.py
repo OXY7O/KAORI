@@ -57,6 +57,7 @@ def main() -> int:
     intelligence_nav = read('app/templates/components/navigation/intelligence_menu.html')
     report_notifications = read('app/reports/notifications.py')
     report_model = read('app/models/report.py')
+    delivery_scope = service.partition('def _filter_delivery_query(')[2].partition('def _delivery_statistics(')[0]
     delivery_registry = service.partition('def _delivery_registry_page(')[2]
     delivery_registry = delivery_registry.partition('\ndef _report_id_for_delivery(')[0]
     delivery_template = read('app/templates/integrations/delivery/notification_channels/index.html')
@@ -138,10 +139,11 @@ def main() -> int:
         and 'Channel Inventory Guidance' in template
         and 'grid gap-4 lg:grid-cols-3' not in template
         and 'operational_section_card.render(' in delivery_template
-        and delivery_template.count('integration_ui.interpretation_panel(') == 1
+        and "'Delivery Statistics'" in delivery_template
+        and 'integration_ui.interpretation_panel(' not in delivery_template
         and 'header_actions=channel_clear_action' in template
         and 'header_actions=delivery_clear_action' in delivery_template
-        and 'title_extra=info_tip.render(' in template
+        and 'guide=info_tip.render(' in template
         and 'table_block.inventory_block_header(' in template
         and 'table_block.inventory_filter_bar_classes()' in template
         and 'table_block.inventory_filter_bar_classes()' in delivery_template
@@ -153,7 +155,7 @@ def main() -> int:
         and 'table_block.inventory_block_header(' in delivery_template
         and 'lead=false' in delivery_template
         and 'not receipt or readership by a person.' in delivery_template
-        and 'sending a notification does not create an audit event.' in delivery_template,
+        and 'notification delivery alone does not create an audit event.' in delivery_template,
         'confirmed HTMX channel actions': 'data-destructive-modal-open' in channel_details_drawer
         and "side_drawer.section('Channel Actions'" in channel_details_drawer
         and 'data-kaori-dialog-open' in channel_details_drawer
@@ -175,13 +177,23 @@ def main() -> int:
         and 'def _channel_return_query()' in routes
         and 'delete_channel(channel)' in routes,
         'delivery journal surface': 'query = NotificationDelivery.query' in delivery_registry
-        and 'query = query.filter(NotificationDelivery.event_key == event_key)' in delivery_registry
+        and 'query = query.filter(NotificationDelivery.event_key == event_key)' in delivery_scope
+        and '_filter_delivery_query(' in delivery_registry
         and journal_order in delivery_registry
         and 'rows, pagination = paginate_query(query, page=page, per_page=per_page)' in delivery_registry
         and 'delivery_rows, delivery_window = _delivery_registry_page(' in service
         and "'delivery_pagination': delivery_window" in service
         and 'payload.delivery_pagination' in delivery_template
         and 'No Notification Deliveries Recorded' in delivery_template,
+        'filtered delivery statistics': "include_delivery_statistics=active_tab == 'delivery'" in routes
+        and service.count('_filter_delivery_query(') == 3
+        and 'NotificationDelivery.attempt_count > 1' in service
+        and 'round(sent * 100 / resolved, 1) if resolved else None' in service
+        and delivery_template.count('id="notification-delivery-registry"') == 1
+        and delivery_template.index('id="notification-delivery-registry"')
+        < delivery_template.index('operational_section_card.render(')
+        and 'All retained hot records' in delivery_template
+        and 'Filtered hot records' in delivery_template,
         'desktop-fit Channel Inventory and deletion guidance': "table_ui.table_classes('w-full min-w-[860px] table-fixed lg:min-w-0')"
         in channels_template
         and "channel.lifecycle_state == 'active' and can_manage" in channels_template

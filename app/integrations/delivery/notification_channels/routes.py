@@ -56,6 +56,7 @@ def index() -> ResponseReturnValue:
             lifecycle=request.args.get('channel_lifecycle', 'active'),
         ),
         include_overview=active_tab == 'overview',
+        include_delivery_statistics=active_tab == 'delivery',
         delivery_filters=DeliveryRegistryFilters(
             pagination=DeliveryPagination(
                 page=request.args.get('delivery_page', default=1, type=int),
