@@ -50,7 +50,9 @@
               x-on:change.capture="invalidate($event)">
             {{ form.csrf_token }}
             {% if configure_mode %}
-                <input type="hidden" name="configuration_scope" value="{{ configuration_scope }}">
+                <input type="hidden"
+                       name="configuration_scope"
+                       value="{{ configuration_scope }}">
             {% endif %}
             <input id="ansible-proof-field"
                    x-ref="connectionProof"
@@ -114,6 +116,7 @@
                             "Git Source & Validation",
                             "Validate the immutable Git source before Save Connection is permitted.",
                             [
+                            "Approved Git revision: " ~ approved_source_revision|default("See approved source policy"),
                             "This pilot accepts only the reviewed OXY7O/kaori-operations revision; the server enforces the source policy.",
                             "Validate Source checks commit, tree, expected blob hashes, Kubespray files and pinned dependencies.",
                             "The signed proof is bound to the current operator and exact inputs. Editing the form requires revalidation.",

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
-import json
 from typing import Any
 
 from sqlalchemy import select
@@ -19,7 +19,7 @@ from app.integrations.orchestration.configuration_automation.providers.ansible.c
     AnsibleConnectionInput,
     require_registration_policy,
 )
-from app.models.automation import AutomationInventoryAssignment
+from app.models.automation import AutomationInventoryAssignment, AutomationRunTargetClaim
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.job import JobExecution
@@ -101,21 +101,41 @@ def save_source_connection(values: AnsibleConnectionInput, *, evidence: dict[str
 
 
 _SOURCE_FIELDS = frozenset({
-    'profile_key', 'source_provider', 'source_repository', 'source_sha',
-    'ansible_core_version', 'ansible_runner_version', 'kubespray_release',
-    'execution_environment_digest', 'source_validation', 'execution_enabled',
-    'mutation_authorized', 'inventory_status', 'configuration_history',
+    'profile_key',
+    'source_provider',
+    'source_repository',
+    'source_sha',
+    'ansible_core_version',
+    'ansible_runner_version',
+    'kubespray_release',
+    'execution_environment_digest',
+    'source_validation',
+    'execution_enabled',
+    'mutation_authorized',
+    'inventory_status',
+    'configuration_history',
 })
 
 
 def source_update_scope(connection: IntegrationInstance) -> str:
     """Bind update proof to exact current identity and configuration."""
-    payload = json.dumps({
-        'id': connection.id, 'name': connection.name, 'description': connection.description,
-        'environment': connection.environment, 'enabled': connection.enabled,
-        'lifecycle': connection.lifecycle_status, 'readiness': connection.readiness_status,
-        'metadata': connection.metadata_json,
-    }, sort_keys=True, separators=(',', ':'))
+    payload = json.dumps(
+        {
+            'id': connection.id,
+            'name': connection.name,
+            'description': connection.description,
+            'environment': connection.environment,
+            'enabled': connection.enabled,
+            'lifecycle': connection.lifecycle_status,
+            'readiness': connection.readiness_status,
+            'health': connection.health_status,
+            'last_error': connection.last_error,
+            'last_checked_at': connection.last_checked_at.isoformat() if connection.last_checked_at else None,
+            'metadata': connection.metadata_json,
+        },
+        sort_keys=True,
+        separators=(',', ':'),
+    )
     return f'ansible-update:{connection.id}:' + sha256(payload.encode('utf-8')).hexdigest()
 
 
@@ -127,6 +147,8 @@ def source_update_allowed(connection: IntegrationInstance) -> bool:
         or set(metadata) - _SOURCE_FIELDS
         or connection.enabled
         or connection.lifecycle_status != 'active'
+        or connection.readiness_status not in (None, 'validation_required')
+        or connection.health_status is not None
         or metadata.get('execution_enabled', False) is not False
         or metadata.get('mutation_authorized', False) is not False
         or metadata.get('inventory_status', 'not_collected') != 'not_collected'
@@ -138,12 +160,17 @@ def source_update_allowed(connection: IntegrationInstance) -> bool:
         AutomationInventoryAssignment.query.filter_by(integration_instance_id=connection.id).first()
         or IntegrationBinding.query.filter_by(integration_instance_id=connection.id).first()
         or JobExecution.query.filter_by(integration_instance_id=connection.id).first()
+        or AutomationRunTargetClaim.query.filter_by(active_resource_key=connection_resource(connection.id)).first()
     )
 
 
 def update_source_connection(
-    connection_id: int, values: AnsibleConnectionInput, *, evidence: dict[str, Any],
-    expected_scope: str, user_id: int,
+    connection_id: int,
+    values: AnsibleConnectionInput,
+    *,
+    evidence: dict[str, Any],
+    expected_scope: str,
+    user_id: int,
 ) -> IntegrationInstance:
     """Archive previous source and activate a newly validated unused source revision."""
     require_registration_policy(values)
@@ -182,14 +209,19 @@ def update_source_connection(
         }
         if committed_source_state(next_metadata) != 'checked':
             raise ValueError('Updated source does not match reviewed evidence.')
-        history.append({
-            'archived_at': datetime.now(UTC).isoformat(),
-            'archived_by': user_id,
-            'name': connection.name,
-            'description': connection.description,
-            'environment': connection.environment,
-            'configuration': previous,
-        })
+        history.append(
+            {
+                'archived_at': datetime.now(UTC).isoformat(),
+                'archived_by': user_id,
+                'name': connection.name,
+                'description': connection.description,
+                'environment': connection.environment,
+                'readiness': connection.readiness_status,
+                'last_error': connection.last_error,
+                'last_checked_at': connection.last_checked_at.isoformat() if connection.last_checked_at else None,
+                'configuration': previous,
+            }
+        )
         connection.name = values.name
         connection.description = values.description
         connection.environment = values.environment
@@ -197,6 +229,8 @@ def update_source_connection(
         connection.enabled = False
         connection.readiness_status = 'validation_required'
         connection.health_status = None
+        connection.last_error = None
+        connection.last_checked_at = None
         db.session.commit()
     except (SQLAlchemyError, ValueError):
         db.session.rollback()

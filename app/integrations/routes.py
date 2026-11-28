@@ -8,7 +8,6 @@ from sqlalchemy.exc import SQLAlchemyError
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import permission_required
-from app.models.integration import IntegrationInstance
 from app.common.http import htmx_target, is_htmx_request
 from app.infrastructure_automation.kubernetes.execution_compatibility import (
     assess_kubespray_execution_compatibility,
@@ -47,9 +46,9 @@ from app.integrations.orchestration.configuration_automation.providers.ansible.s
     connection_jobs,
     get_connection,
     save_source_connection,
-    source_validation_posture,
     source_update_allowed,
     source_update_scope,
+    source_validation_posture,
     update_source_connection,
 )
 from app.integrations.orchestration.container_orchestrator.routes import (
@@ -104,10 +103,12 @@ from app.integrations.service import (
     build_metrics_source_page,
 )
 from app.integrations.source_control.source_control.providers.github.public_automation_source import (
+    SOURCE_CANDIDATE_SHA,
     AutomationSourceRejected,
     verify_public_kubespray_source,
 )
 from app.integrations.taxonomy import get_domain_definition
+from app.models.integration import IntegrationInstance
 from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable
 from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 from app.platform_operations.notifications.service import (
@@ -245,7 +246,7 @@ def ansible_new_connection() -> ResponseReturnValue:
 
 
 def _ansible_connection_form_values(connection: IntegrationInstance) -> dict[str, Any]:
-    source = connection.metadata_json or {}
+    source = connection.metadata_json if isinstance(connection.metadata_json, dict) else {}
     return {
         'name': connection.name,
         'description': connection.description or '',
@@ -354,8 +355,11 @@ def _ansible_source_form(connection: IntegrationInstance | None = None) -> Respo
                                 connection = save_source_connection(values, evidence=evidence)
                             else:
                                 connection = update_source_connection(
-                                    connection.id, values, evidence=evidence,
-                                    expected_scope=scope, user_id=int(current_user.id),
+                                    connection.id,
+                                    values,
+                                    evidence=evidence,
+                                    expected_scope=scope,
+                                    user_id=int(current_user.id),
                                 )
                         except SQLAlchemyError:
                             current_app.logger.exception('Ansible source connection registration failed.')
@@ -381,7 +385,9 @@ def _ansible_source_form(connection: IntegrationInstance | None = None) -> Respo
                         else:
                             record_operational_activity(
                                 user_id=int(current_user.id),
-                                event_type='ansible_source_connection_updated' if scope else 'ansible_source_connection_registered',
+                                event_type=(
+                                    'ansible_source_connection_updated' if scope else 'ansible_source_connection_registered'
+                                ),
                                 status='success',
                                 title='Ansible Source Connection Updated' if scope else 'Ansible Source Connection Registered',
                                 message='Git source was checked; remote execution and provider readiness are not enabled.',
@@ -401,6 +407,7 @@ def _ansible_source_form(connection: IntegrationInstance | None = None) -> Respo
         configure_mode=connection is not None,
         edit_allowed=editable,
         configuration_scope=scope,
+        approved_source_revision=SOURCE_CANDIDATE_SHA,
         connection=connection,
         notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
     )
