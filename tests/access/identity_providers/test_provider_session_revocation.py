@@ -83,7 +83,7 @@ def _install(
     fail_update: bool = False,
     fail_commit: bool = False,
 ) -> tuple[SimpleNamespace, StubSession, SimpleNamespace]:
-    provider = SimpleNamespace(id=7, enabled=not was_enabled, provider_key='ldap')
+    provider = SimpleNamespace(id=7, enabled=not was_enabled, provider_key='ldap', authentication_revision=4)
     config = SimpleNamespace(enabled=requested_enabled)
     session = StubSession(
         was_enabled=was_enabled,
@@ -110,6 +110,7 @@ def test_enabled_to_disabled_invalidates_each_linked_external_account_once(
 
     assert returned is provider
     assert provider.enabled is False
+    assert provider.authentication_revision == 5
     assert revoked == 3  # Linked accounts, not number of open browser tabs.
     assert session.commits == 1
     assert session.rollbacks == 0
@@ -145,6 +146,7 @@ def test_non_disabling_transition_never_revokes_existing_sessions(
     assert session.query_stub.calls == 0
     assert session.commits == 1
     assert provider.enabled is requested
+    assert provider.authentication_revision == 5
 
 
 @pytest.mark.parametrize('phase', ['update', 'commit'])

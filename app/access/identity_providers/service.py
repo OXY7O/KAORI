@@ -317,6 +317,9 @@ def update_identity_provider(
         db.session.refresh(provider)
         ensure_provider_identity_continuity(provider, configuration)
         apply_identity_provider_configuration(provider, configuration)
+        # Conservatively invalidate every in-flight proof on a registry update,
+        # including disable/re-enable and configuration-only changes.
+        provider.authentication_revision += 1
         if was_enabled and not provider.enabled:
             revoked_identity_count = revoke_disabled_provider_session_generations(provider)
         db.session.commit()
