@@ -249,3 +249,17 @@ def test_github_registration_related_workspace_copy_is_compact() -> None:
     assert 'GitHub executes; KAORI governs.' in source
     assert 'GitHub App installation grants remain authoritative.' in source
     assert 'GitHub OAuth SSO uses separate credentials.' in source
+
+
+def test_kubernetes_alert_record_labels_precede_guides() -> None:
+    cases = {
+        '_alerts_table.html': ('Active Alert Records', 'alerts_pagination'),
+        '_anomalies_table.html': ('Anomaly Candidates', 'anomalies_pagination'),
+    }
+    for name, (title, pagination) in cases.items():
+        source = _template(f'kubernetes/analytics/alerts/partials/{name}')
+        header = source.split('</header>', 1)[0]
+        label = f'table_label.status_label(({pagination}.total_items'
+        assert header.count(label) == 1
+        assert header.index(title) < header.index(label) < header.index('info_tip.render(')
+        assert header.index('info_tip.render(') < header.index('registry_ui.clear_filters_action(')
