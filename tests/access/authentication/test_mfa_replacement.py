@@ -13,8 +13,11 @@ from app.models.authentication_security import AuthenticationMfaFactor
 from app.models.user import User
 
 
+ReplacementFixture = tuple[User, AuthenticationMfaFactor, Mock, Mock]
+
+
 @pytest.fixture
-def replacement_fixture(monkeypatch: pytest.MonkeyPatch):
+def replacement_fixture(monkeypatch: pytest.MonkeyPatch) -> ReplacementFixture:
     now = datetime.now(UTC)
     user = User(
         id=42,
@@ -41,7 +44,7 @@ def replacement_fixture(monkeypatch: pytest.MonkeyPatch):
     return user, factor, store, stage
 
 
-def test_begin_preserves_active_factor_and_confirmation_rotates_generation(replacement_fixture) -> None:
+def test_begin_preserves_active_factor_and_confirmation_rotates_generation(replacement_fixture: ReplacementFixture) -> None:
     user, factor, store, stage = replacement_fixture
     issued_at = user.auth_session_issued_at
     activity_at = user.auth_session_activity_at
@@ -69,7 +72,9 @@ def test_begin_preserves_active_factor_and_confirmation_rotates_generation(repla
 
 
 @pytest.mark.parametrize('failure', ('stale', 'expired', 'invalid', 'external', 'audit', 'commit'))
-def test_confirmation_failures_do_not_commit(failure: str, replacement_fixture, monkeypatch) -> None:
+def test_confirmation_failures_do_not_commit(
+    failure: str, replacement_fixture: ReplacementFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
     user, factor, store, stage = replacement_fixture
     factor.replacement_totp_secret = 'new-test-seed'
     factor.replacement_generation = 8 if failure == 'stale' else 7
@@ -115,3 +120,36 @@ def test_begin_denies_unverified_primary(source, password, replacement_fixture) 
     assert factor.totp_secret == 'existing-test-seed'
     store.commit.assert_not_called()
     store.rollback.assert_called_once()
+
+
+def test_recovery_proof_is_consumed_but_active_seed_stays(
+    replacement_fixture: ReplacementFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    user, factor, store, _ = replacement_fixture
+    factor.recovery_hashes = ['used-test-hash', 'remaining-test-hash']
+    monkeypatch.setattr(service, '_accepted_step', Mock(return_value=None))
+    monkeypatch.setattr(service, 'check_password_hash', lambda stored, _: stored == 'used-test-hash')
+    service.begin_mfa_replacement(user, 'ABCDEF0123456789', expected_generation=7, current_password='fixture-password')
+    assert factor.enabled
+    assert factor.totp_secret == 'existing-test-seed'
+    assert factor.recovery_hashes == ['remaining-test-hash']
+    assert store.commit.call_count == 1
+
+
+def test_recovery_rotation_invalidates_pending_replacement(replacement_fixture: ReplacementFixture) -> None:
+    user, factor, store, stage = replacement_fixture
+    factor.replacement_totp_secret = 'pending-test-seed'
+    factor.replacement_generation = 7
+    factor.replacement_expires_at = datetime.now(UTC) + timedelta(seconds=60)
+    codes = service.regenerate_mfa_recovery_codes(
+        user, '123456', expected_generation=7, current_password='fixture-password'
+    )
+    assert len(codes) == 8
+    assert factor.totp_secret == 'existing-test-seed'
+    assert factor.replacement_totp_secret is None
+    assert [call.kwargs['action'] for call in stage.call_args_list] == [
+        'mfa_challenge_verified',
+        'mfa_replacement_cancelled',
+        'mfa_recovery_regenerated',
+    ]
+    store.commit.assert_called_once()

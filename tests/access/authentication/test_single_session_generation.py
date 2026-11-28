@@ -261,3 +261,15 @@ def test_missing_local_proof_fails_before_database_mutation(monkeypatch: pytest.
     with pytest.raises(auth_session.AuthSessionError):
         services.record_successful_authentication(User(id=42), source='database', client_ip=None)
     assert store.events == ['rollback']
+
+
+def test_security_change_pins_exact_generation_and_clears_remember_cookie() -> None:
+    app = Flask(__name__)
+    app.secret_key = 'test-only-key'
+    with app.test_request_context('/settings/account'):
+        session['_user_id'] = '42:7'
+        session['_remember'] = 'set'
+        auth_session.preserve_current_session_after_security_change(user_id=42, issued_session_version=8)
+        assert session['_user_id'] == '42:8'
+        assert session['_fresh'] is True
+        assert session['_remember'] == 'clear'

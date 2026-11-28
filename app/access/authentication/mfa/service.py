@@ -354,14 +354,20 @@ def begin_mfa_replacement(user: User, submitted: str, *, expected_generation: in
     try:
         user = _lock_mfa_user(user, expected_generation, authenticated=True)
         require_personal_factor_assurance(user, current_password, now=datetime.now(UTC), strict_primary=True)
+        assurance_expires_at = datetime.now(UTC) + MFA_RECENT_ADMISSION_TTL
         factor = _locked_factor(user.id)
         if factor is None or not factor.enabled:
             raise MfaVerificationError('MFA is not enrolled.')
         _consume_factor_proof(user, factor, submitted, authenticated=True)
+        now = datetime.now(UTC)
+        if now >= assurance_expires_at or not isinstance(
+            session_deadlines(user, read_session_policy(), now), SessionDeadlines
+        ):
+            raise MfaVerificationError('Sign in again before changing MFA.')
         secret = base64.b32encode(secrets.token_bytes(20)).decode('ascii')
         factor.replacement_totp_secret = secret
         factor.replacement_generation = expected_generation
-        factor.replacement_expires_at = datetime.now(UTC) + MFA_RECENT_ADMISSION_TTL
+        factor.replacement_expires_at = assurance_expires_at
         db.session.add(
             stage_authentication_security_event(user, action='mfa_replacement_started', authenticated=True, success=True)
         )

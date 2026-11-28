@@ -66,7 +66,7 @@
                 {% if mfa_setup_secret %}
                     <section class="mt-4 rounded-xl border {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft p-4"
                              aria-label="One-time replacement setup">
-                        <p class="text-xs leading-5 text-status-warning-text">Scan or save this one-time setup key. Your old authenticator stays active.</p>
+                        <p class="text-xs leading-5 text-status-warning-text">Add this as a new authenticator entry. Do not remove your old entry until verification succeeds.</p>
                         {% if mfa_setup_qr_src %}
                             <img src="{{ mfa_setup_qr_src }}"
                                  alt="One-time replacement authenticator QR code"

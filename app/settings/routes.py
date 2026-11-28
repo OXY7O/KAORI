@@ -297,7 +297,10 @@ def _process_account_mfa_action(
                 expected_generation=generation,
                 current_password=str(request.form.get('replacement_password') or '') if password is not None else None,
             )
-            mfa_setup_qr_src = build_totp_qr_data_uri(mfa_setup_secret, account_label=user.username)
+            # A distinct account label avoids overwriting the still-active entry
+            # in authenticator applications that identify entries by issuer/label.
+            replacement_label = f'{user.username[:210]} (replacement {generation})'
+            mfa_setup_qr_src = build_totp_qr_data_uri(mfa_setup_secret, account_label=replacement_label)
             title = 'Authenticator replacement started'
             message = 'Scan the new setup key. Your existing authenticator stays active until verification succeeds.'
         elif action == 'replace_confirm':
