@@ -53,6 +53,7 @@ from app.settings.account.actions import process_password_change
 from app.settings.account.queries import (
     account_mfa_factor,
     authentication_activity_summary,
+    authentication_event_kind,
     recent_authentication_events,
 )
 from app.settings.general.actions import (
@@ -366,6 +367,7 @@ def account():
         'identity_context': identity_context,
         'recent_login_events': recent_login_events,
         'activity_summary': activity_summary,
+        'authentication_event_kind': authentication_event_kind,
         'page_title': 'Account & Authentication',
     }
     template_name = 'settings/account/partials/_page_content.html' if is_htmx else 'settings/account/index.html'
