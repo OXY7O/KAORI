@@ -36,6 +36,12 @@ class JobDomainReconciliationRequired(RuntimeError):
     """A mutation operation must use its owning domain's lifecycle writer."""
 
 
+def require_generic_job_creation(operation: str) -> None:
+    """Reject direct generic creation of a domain-owned mutation operation."""
+    if operation == KUBESPRAY_APPLY_OPERATION:
+        raise JobDomainReconciliationRequired('Infrastructure mutation requires domain-owned admission.')
+
+
 def _requires_domain_reconciliation(job: JobExecution) -> bool:
     # Operation identity, not a caller flag or mutable payload, controls the
     # boundary. The protected pilot has no admitted lifecycle writer yet.
@@ -288,6 +294,7 @@ def create_or_attach_job(
     celery_task_id: str | None = None,
     parent_job_id: int | None = None,
 ) -> tuple[JobExecution, bool]:
+    require_generic_job_creation(operation)
     spec = JobCreationSpec(
         job_type=job_type,
         operation=operation,

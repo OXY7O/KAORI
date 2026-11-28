@@ -299,3 +299,12 @@ success, direct etcd quorum, admitted source compatibility or provisioning
 acceptance. The fixed DNS service/deployment assumptions remain subject to
 the admitted source and native UAT; no cluster registration, Run terminal
 transition or reservation release follows from this adapter.
+
+
+Generic canonical job creation/dispatch must not accept the protected
+Apply operation, even if a caller supplies a task or valid queue. Only
+the future admitted domain-specific writer may stage the child with
+reservation adoption and independent authority in one transaction.
+No generic attach, worker inspection or broker side effect is permitted
+for this operation. Transaction persistence tests use a disposable
+in-memory SQLite schema, not the configured testing database.

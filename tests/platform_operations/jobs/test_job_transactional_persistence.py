@@ -6,28 +6,37 @@ from dataclasses import replace
 
 import pytest
 
-from app import create_app
+from flask import Flask
+from sqlalchemy import Column, Integer, MetaData, Table, insert
 from app.extensions.db import db
 from app.models.audit import AuditEvent
 from app.models.job import JobExecution, JobExecutionSubscriber
-from app.models.user import User
 from app.platform_operations.jobs import service
 
 
 @pytest.fixture
 def requester_id():
-    app = create_app('testing')
+    # The transaction contract does not need a configured application database.
+    # Never create/drop the full schema from a test fixture.
+    app = Flask(__name__)
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
+    db.init_app(app)
+    metadata = MetaData()
+    users = Table('users', metadata, Column('id', Integer, primary_key=True))
+    Table('integration_instances', metadata, Column('id', Integer, primary_key=True))
+    for model in (JobExecution, JobExecutionSubscriber, AuditEvent):
+        model.__table__.to_metadata(metadata)
     with app.app_context():
-        db.create_all()
         try:
-            user = User(username='job-stage-fixture', email='job-stage-fixture@example.invalid')
-            db.session.add(user)
-            db.session.commit()
-            yield user.id
+            with db.engine.begin() as connection:
+                connection.exec_driver_sql('PRAGMA foreign_keys=ON')
+                metadata.create_all(connection)
+                connection.execute(insert(users), [{'id': 7}, {'id': 8}])
+            yield 7
         finally:
             db.session.rollback()
             db.session.remove()
-            db.drop_all()
+            db.engine.dispose()
 
 
 def _spec(requester_id, **overrides):
@@ -81,10 +90,7 @@ def test_staging_duplicate_does_not_attach_or_commit(requester_id):
     first, created = service.stage_job_execution(spec)
     assert created
     first_id = first.id
-    other = User(username='other-stage-fixture', email='other-stage-fixture@example.invalid')
-    db.session.add(other)
-    db.session.flush()
-    duplicate, created = service.stage_job_execution(replace(spec, requested_by_user_id=other.id))
+    duplicate, created = service.stage_job_execution(replace(spec, requested_by_user_id=8))
     assert not created
     assert duplicate.id == first_id
     assert JobExecutionSubscriber.query.filter_by(job_execution_id=first_id).count() == 1
