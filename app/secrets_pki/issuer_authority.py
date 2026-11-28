@@ -333,6 +333,7 @@ class TypedCredentialEvidence:
     """Redacted proof correlation, not a material-use permit."""
 
     evidence_ref: str
+    issued_at: datetime
     expires_at: datetime
 
 
@@ -424,4 +425,4 @@ def resolve_typed_credential_evidence(
         )
     ):
         return None
-    return TypedCredentialEvidence(evidence_ref, expires)
+    return TypedCredentialEvidence(evidence_ref, issued, expires)
