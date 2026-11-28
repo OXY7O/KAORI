@@ -260,8 +260,14 @@ Keep the recommendation-origin Routing & Channels workspace table-led. The
 Channel Readiness card shows only total, eligible and unavailable counts from
 the existing channel option projection, respecting the Registry eligibility
 boundary. View Channels opens the shared native read-only dialog with a canonical
-server-backed search/readiness filter and default five-row pagination. Modal
-requests swap only the registry and never push the parent URL. No credentials,
+server-backed search/readiness filter and default five-row pagination.
+Inside the dialog use a compact directory rather than a nested table/card:
+one title row with Results and Guide, visible filters, divided channel
+list items with icon, one-line identity, provider and lifecycle status
+metadata, and a distinct routing readiness label on the right. Allow
+responsive wrapping without table horizontal overflow. Retain the shared
+pagination footer and a bounded scrollable modal body. Modal requests swap
+only the registry and never push the parent URL. No credentials,
 destination values or management mutations are rendered in the modal. Keep
 Manage Channels as the link to Integrations, and keep Policy Registry visible.
 Provider-origin routing retains its separately authorized candidate registry.

@@ -7,8 +7,8 @@
 {% set scope_query = {'tab': 'routing', 'domain': payload.domain, 'asset': payload.selected_asset_key} %}
 {% set query = scope_query.copy() %}
 {% set _ = query.update(readiness.filters) %}
-<section id="alert-channel-readiness-registry" class="{{ table_ui.block_classes() }}">
-    <header class="{{ table_ui.block_header_classes() }}">
+<section id="alert-channel-readiness-registry" class="min-w-0 space-y-3" data-channel-readiness-directory>
+    <header class="flex min-w-0 flex-wrap items-center justify-between gap-2">
         <div class="min-w-0">
             <div class="flex min-h-6 flex-wrap items-center gap-1.5">
                 <h3 class="{{ table_ui.block_title_classes() }}">Notification Channels</h3>
@@ -16,7 +16,6 @@
                 {{ info_tip.render('alert-channel-readiness-guide', 'Notification Channels',
                     'Review channel eligibility for the current domain.', items=['Status describes the channel lifecycle; readiness describes routing eligibility.', 'Eligible does not prove successful delivery or permission to send. Manage configuration in Integrations.'], variant='guide') }}
             </div>
-            <p class="{{ table_ui.block_description_classes() }}">Review channel status and routing eligibility.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2" data-kaori-table-header-actions>
             {% if readiness.filters.channel_q or readiness.filters.channel_readiness != 'all' %}
@@ -31,7 +30,7 @@
         </div>
     </header>
     {{ loading_bar.render('alert-channel-readiness-loading', label='Refreshing Channel Readiness') }}
-    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+    <div class="min-w-0">
         {% call table_registry.filter_form('alert_intelligence.index',
             'alert-channel-readiness-registry', 'alert-channel-readiness-loading',
             readiness.pagination.per_page, page_param='channel_page', per_page_param='channel_per_page',
@@ -53,50 +52,45 @@
             </label>
         {% endcall %}
     </div>
-    <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[28rem]') }}">
-            <caption class="sr-only">Notification channel routing eligibility</caption>
-            <thead class="{{ table_ui.head_classes() }}">
-                <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[50%]">Channel</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Status</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Readiness</th>
-                </tr>
-            </thead>
-            <tbody class="{{ table_ui.body_classes() }}">
+    <div class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
+        {% if readiness.rows %}
+            <ul aria-label="Notification channel routing eligibility"
+                class="divide-y divide-outline-subtle"
+                data-channel-readiness-list>
                 {% for channel in readiness.rows %}
-                    <tr class="{{ table_ui.row_classes() }}">
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <div class="flex min-w-0 items-start gap-2.5">
-                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                                    <i data-lucide="{{ channel.icon }}" class="h-4 w-4"></i>
-                                </span>
-                                <div class="min-w-0">
-                                    <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ channel.name }}</p>
-                                    <p class="mt-0.5 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ channel.provider }}</p>
+                    <li class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 px-3 py-3 sm:flex-nowrap sm:px-4"
+                        data-channel-readiness-item>
+                        <div class="flex min-w-0 flex-1 basis-44 items-center gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                <i data-lucide="{{ channel.icon }}" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <p class="truncate text-sm font-semibold leading-5 text-content-primary" title="{{ channel.name }}">{{ channel.name }}</p>
+                                <div class="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                                    <span class="min-w-0 truncate text-xs leading-5 text-content-muted" title="{{ channel.provider }}">{{ channel.provider }}</span>
+                                    {{ table_label.status_label(channel.status, 'normal' if channel.status in ['Operational', 'Ready'] else 'unknown' if channel.status in ['Retired', 'Disabled'] else 'warning', size='compact') }}
                                 </div>
                             </div>
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(channel.status, 'normal' if channel.status in ['Operational', 'Ready'] else 'unknown' if channel.status in ['Retired', 'Disabled'] else 'warning', size='compact') }}</td>
-                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label('Eligible' if channel.eligible else 'Unavailable', 'normal' if channel.eligible else 'warning', size='compact') }}</td>
-                    </tr>
-                {% else %}
-                    <tr>
-                        <td colspan="3" class="p-0">
-                            {% set empty_state_icon = "send" %}
-                            {% set empty_state_label = "No Channels" %}
-                            {% set empty_state_title = "No Notification Channels Match" if readiness.total else "No Notification Channels Configured" %}
-                            {% set empty_state_description = "Adjust the readiness filter or search." if readiness.total else "Manage notification destinations in Integrations." %}
-                            {% set empty_state_min_height = "min-h-[180px]" %}
-                            {% include 'components/states/_empty_state.html' %}
-                        </td>
-                    </tr>
+                        </div>
+                        <div class="ml-auto shrink-0" data-channel-readiness-status>
+                            {{ table_label.status_indicator_label('Eligible' if channel.eligible else 'Unavailable', 'normal' if channel.eligible else 'warning', size='compact') }}
+                        </div>
+                    </li>
                 {% endfor %}
-            </tbody>
-        </table>
+            </ul>
+        {% else %}
+            {% set empty_state_icon = "send" %}
+            {% set empty_state_label = "No Channels" %}
+            {% set empty_state_title = "No Notification Channels Match" if readiness.total else "No Notification Channels Configured" %}
+            {% set empty_state_description = "Adjust the readiness filter or search." if readiness.total else "Manage notification destinations in Integrations." %}
+            {% set empty_state_min_height = "min-h-[180px]" %}
+            {% include 'components/states/_empty_state.html' %}
+        {% endif %}
     </div>
-    {{ table_registry.footer('alert_intelligence.index', 'alert-channel-readiness-registry',
+    <div class="overflow-hidden rounded-lg border border-outline-subtle">
+        {{ table_registry.footer('alert_intelligence.index', 'alert-channel-readiness-registry',
         'alert-channel-readiness-loading', readiness.pagination, query, readiness.pagination.allowed_per_page,
         resource_label='Channels', rows_aria_label='Channels per page', control_name='alert-channel-readiness',
         page_param='channel_page', per_page_param='channel_per_page', push_url='false') }}
+    </div>
 </section>
