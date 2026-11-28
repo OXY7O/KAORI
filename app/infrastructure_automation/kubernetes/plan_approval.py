@@ -22,6 +22,7 @@ from app.infrastructure_automation.security_review import (
     begin_security_review_transaction,
     local_security_review_enabled,
 )
+from app.infrastructure_automation.target_claims import connection_resource, host_resource
 from app.models.audit import AuditEvent
 from app.models.automation import AutomationInventoryAssignment
 from app.models.integration import IntegrationInstance
@@ -132,12 +133,12 @@ def _current_plan(
     ).scalars().all())
     if len(assignments) != 3:
         raise _deny()
-    acquire_resource_admission_locks(
-        f'kubespray:connection:{connection_id}',
-        *(f'kubespray:host:{assignment.host_id}' for assignment in assignments),
-    )
     for assignment in assignments:
         db.session.refresh(assignment.host, with_for_update=True)
+    acquire_resource_admission_locks(
+        connection_resource(connection_id),
+        *(host_resource(assignment.host_id) for assignment in assignments),
+    )
     registry = preview_inventory_intent(connection, assignments)
     roles = [assignment.role for assignment in assignments]
     if (
