@@ -304,3 +304,17 @@ Use shared result_count and info_tip components. Keep the right-hand action
 area for controls, not metadata. Counts use the filtered registry total (or
 the actual number of available template variants); never count only the
 current paginated rows. Preserve the existing scope and evidence boundaries.
+
+
+### Routing policy editor
+
+Keep the resource-detail summary rail compact: show the starting editor
+context and initial-scope eligible channel count; do not repeat source or
+mode already visible in the header. The selected Domains and Severities
+fields, not the editor context, define the policy. Use a single divided,
+bounded scrollable channel choice list with accessible checkboxes, full
+names/destination tooltips and existing eligibility/disabled rules. Channel
+candidate counts describe initial scope, not a live authorization decision.
+Use a shared section header for optional exact label matchers, concise plain
+helper text beside the input, and a collapsed native Policy Checklist below.
+Retain existing form fields, CSRF, permission checks and save validation.
