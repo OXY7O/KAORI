@@ -675,3 +675,17 @@ python scripts/verify_sidebar_navigation_standard.py
 ```
 
 Official Developer Check/Full Admission, `kaori/staging`, `main`, release remain HOLD pending developer results and explicit UAT acceptance.
+
+
+## BP-03 isolated management-plane recovery qualification (#4014)
+
+Use the exact admitted candidate and existing [Break-Glass runbook](../authentication/BREAK_GLASS_RUNBOOK.md). This is a hosted test plan, not a passed drill.
+
+- Verify default-false process authorization, persistent configuration rejection, no public route, no non-interactive input, and management access/dual-control evidence.
+- Expire every admin browser session; simulate Turnstile failure using authorized UAT controls. Confirm normal Local/LDAP/SSO login is denied. Use the scoped interactive CLI with the existing local Super Admin, current password, unused TOTP and incident evidence.
+- Verify committed mode Disabled, previous provider verification invalidated, existing keys/configuration, lockout, MFA enrollment, RBAC, rate limits and session generation unchanged. Verify actor and declared operator/ticket/reason/correlation in Activity Audit and Notification Deck. Do not capture hidden prompt inputs, tokens or credentials.
+- Reject wrong credentials, external/non-superadmin/inactive/deleted principal, absent/invalid acknowledgement, reused TOTP, and audit/commit failure. Concurrent/repeated operation must not invent a transition; fresh proof is required for each invocation. Verify committed result if the response is lost.
+- Restore actual provider; test that stale verification cannot re-enable Always. Complete fresh real Siteverify and restore via existing UI guard. Validate normal Local/LDAP/SSO admission and invalid challenge rejection.
+- Separately simulate Redis outage; confirm no public fail-open and record any CLI bootstrap dependency. Restore Redis by approved infrastructure procedure, not by disabling rate limits. Qualify independent Login Protection recovery separately before activation.
+
+Run existing focused pytest, Ruff/format, Pyright, `python scripts/verify_environment_contract.py`, access/security verifiers, Developer Check, Full Admission and hosted recovery evidence when authorized. Until then: NOT RUN, activation and promotion HOLD.

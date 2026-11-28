@@ -155,6 +155,9 @@ def main() -> int:
         elif _contains_placeholder(public_base_url):
             errors.append('KAORI_PUBLIC_BASE_URL still contains an example placeholder.')
 
+    if _is_true('AUTH_BREAK_GLASS_RECOVERY_ALLOWED', False):
+        errors.append('AUTH_BREAK_GLASS_RECOVERY_ALLOWED must remain false in persistent production configuration.')
+
     if _is_true('RATELIMIT_ENABLED', True):
         storage_uri = _value('RATELIMIT_STORAGE_URI')
         if not storage_uri:
