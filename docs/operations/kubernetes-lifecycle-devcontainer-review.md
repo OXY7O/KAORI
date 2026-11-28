@@ -150,3 +150,20 @@ gate details and remote review evidence. Mutation is still not admitted.
 No new execution workflow or migration. Validate empty/filtered
 connections, permission-restricted totals, back/forward and direct URL,
 tab selection, host pagination, responsive and dark-mode visual review.
+
+
+## Capability-first estate revision (#5157)
+
+The top-level automation workspace uses the same Content Tabs,
+Operational Section Card and Resource Posture Grid components as Kubernetes
+Tenant. Overview is unscoped estate totals, a profile catalog, bounded
+source attention (latest five connections) and recent canonical job
+activity (jobs.view required). Counts are registered records, not
+readiness. Profiles exposes the current Kubernetes Lifecycle workspace
+and noninteractive planned Linux Hosts, Middleware & Database and
+Network Automation. The existing connection registry and Readiness &
+Plan are nested profile views; old URLs remain valid. Inventory and
+Runs & Evidence keep explicit selected connection scope. No new provider,
+profile admission, mutation or migration is introduced. The current
+read model still supports only the approved Ansible/Kubespray profile;
+future profiles require their own admitted adapters and workstreams.

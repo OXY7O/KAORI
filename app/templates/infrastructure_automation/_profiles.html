@@ -1,0 +1,24 @@
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/section_intro.html" as section_intro %}
+{% import "components/table_label.html" as table_label %}
+<section class="space-y-4" data-kaori-automation-profiles>
+    {{ section_intro.render('Automation Profiles', 'Capability workspaces and their current implementation status.') }}
+    {% call operational_section_card.render(
+        'Profile Catalog', 'Select an available profile to review its operational scope.', 'layers-3',
+        header_badge=table_label.metadata_label('1 Available Profile', icon='layers-3'),
+        aria_label='Automation profiles') %}
+        <div class="grid gap-3 md:grid-cols-2">
+            {{ operational_callout.render('Kubernetes Lifecycle',
+                'Kubespray source, host inventory, preflight and review-only Plan. Execution admission remains restricted.',
+                icon='boxes', action_href=url_for('platform_operations.infrastructure_automation.index', tab='connections'),
+                action_label='Open Workspace', variant='neutral') }}
+            {{ operational_callout.render('Linux Hosts', 'Planned · Linux Host Management. Operational workspace unavailable.',
+                icon='server-cog', tone='unknown', variant='neutral') }}
+            {{ operational_callout.render('Middleware & Database', 'Planned · Service and database automation. Operational workspace unavailable.',
+                icon='database', tone='unknown', variant='neutral') }}
+            {{ operational_callout.render('Network Automation', 'Planned · Network configuration. Operational workspace unavailable.',
+                icon='network', tone='unknown', variant='neutral') }}
+        </div>
+    {% endcall %}
+</section>

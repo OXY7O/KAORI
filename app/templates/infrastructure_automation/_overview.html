@@ -1,27 +1,97 @@
-{% import "components/operational_metric_card.html" as metric %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/resource_posture_grid.html" as resource_posture_grid %}
 {% import "components/section_intro.html" as section_intro %}
-{% import "components/workspace_summary_card.html" as summary_card %}
-<div class="space-y-5" data-kaori-automation-overview>
-    {{ section_intro.render('Automation Overview', 'Committed inventory and execution totals across registered Ansible connections.') }}
-    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {{ metric.render('Connections', total_connections, 'Registered Ansible source connections', 'plug', source_label='Committed', compact=true) }}
-        {{ metric.render('Host Assignments', overview.host_assignments if overview.host_assignments is not none else 'Restricted',
-            'Enabled inventory assignments', 'server', source_label='Committed', compact=true) }}
-        {{ metric.render('Cluster Bindings', overview.cluster_bindings if overview.cluster_bindings is not none else 'Restricted',
-            'Recorded Kubernetes associations', 'boxes', source_label='Committed', compact=true) }}
-        {{ metric.render('Executions', overview.executions if overview.executions is not none else 'Restricted',
-            'Canonical JobExecution records', 'list-checks', source_label='Committed', compact=true) }}
-    </div>
+{% import "components/section_link_button.html" as section_link_button %}
+{% import "components/table_label.html" as table_label %}
+{% set estate_metrics = [
+    ('plug', 'Connections', total_connections, 'Registered source connections', 'info'),
+    ('layers-3', 'Available Profiles', 1, 'Kubernetes Lifecycle', 'info'),
+    ('server', 'Host Assignments', overview.host_assignments if overview.host_assignments is not none else 'Restricted', 'Enabled inventory memberships', 'info' if overview.host_assignments is not none else 'unknown'),
+    ('boxes', 'Cluster Bindings', overview.cluster_bindings if overview.cluster_bindings is not none else 'Restricted', 'Recorded Kubernetes associations', 'info' if overview.cluster_bindings is not none else 'unknown'),
+    ('list-checks', 'Executions', overview.executions if overview.executions is not none else 'Restricted', 'Canonical JobExecution records', 'info' if overview.executions is not none else 'unknown')
+] %}
+<div class="space-y-6" data-kaori-automation-overview>
+    <section class="space-y-4" aria-labelledby="automation-estate-heading">
+        {{ section_intro.render('Automation Overview', 'Committed operational scope across supported automation profiles.', 'automation-estate-heading') }}
+        {% call operational_section_card.render(
+            'Automation Estate', 'Registered connections, inventory and execution evidence.', 'layout-grid',
+            header_badge=table_label.metadata_label((estate_metrics|length) ~ ' Indicators', icon='layout-grid'),
+            body_classes='p-0', aria_label='Automation estate summary') %}
+            {{ resource_posture_grid.render(estate_metrics, columns=5) }}
+        {% endcall %}
+    </section>
     {% if total_connections == 0 %}
-        {% with empty_state_icon='plug', empty_state_label='Setup Required',
-            empty_state_title='No Ansible Connections',
-            empty_state_description='Register an Ansible connection so KAORI can review lifecycle evidence.',
-            empty_state_action_url=url_for('integrations.ansible_new_connection'),
-            empty_state_action_label='Register Connection', empty_state_action_icon='plus',
-            empty_state_permission_granted=true, empty_state_variant='panel' %}
-            {% include "components/states/_empty_state.html" %}
+        {% with blocked_state_icon='plug', blocked_state_label='Setup Required',
+            blocked_state_title='No Ansible Connections',
+            blocked_state_description='Register a source connection before using provider-backed automation workflows.',
+            blocked_state_action_url=url_for('integrations.ansible_new_connection'),
+            blocked_state_action_label='Register Connection', blocked_state_action_icon='plus',
+            blocked_state_permission_granted=true %}
+            {% include "components/states/_blocked_state.html" %}
         {% endwith %}
-    {% else %}
-        {{ summary_card.render('Governed Execution', 'Ansible executes; KAORI orchestrates; Git defines; Evidence proves. Registered inventory and execution counts do not grant mutation authority.', 'shield-check') }}
     {% endif %}
+    {% include "infrastructure_automation/_profiles.html" %}
+    <section class="space-y-4" aria-labelledby="automation-oversight-heading">
+        {{ section_intro.render('Operational Oversight', 'Source review conditions and recent committed execution activity.', 'automation-oversight-heading') }}
+        {% call operational_section_card.render(
+            'Operational Attention & Activity', 'Review bounded previews; execution authorization is evaluated separately.', 'triangle-alert',
+            body_classes='p-0', aria_label='Automation operational attention and activity') %}
+            <div class="grid min-w-0 xl:grid-cols-12">
+                <section class="min-w-0 xl:col-span-7" aria-labelledby="automation-attention-title">
+                    <header class="border-b border-outline-subtle px-5 py-3">
+                        <h3 id="automation-attention-title" class="text-sm font-semibold text-content-primary">Needs Attention</h3>
+                        <p class="mt-1 text-xs text-content-muted">Source qualification among the latest five registered connections.</p>
+                    </header>
+                    <div class="divide-y divide-outline-subtle">
+                        {% for item in overview.attention|default([]) %}
+                            <article class="flex min-w-0 items-start gap-3 px-5 py-3">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                    <i data-lucide="git-branch" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <p class="break-words text-sm font-semibold text-content-primary">{{ item.name }}</p>
+                                        {{ table_label.status_label('Validation Required', 'warning') }}
+                                    </div>
+                                    <p class="mt-1 text-xs text-content-secondary">Committed Git source does not match the current qualification contract.</p>
+                                    {{ section_link_button.render(url_for('platform_operations.infrastructure_automation.index', tab='lifecycle', connection_id=item.id), 'Review Lifecycle', icon='arrow-right') }}
+                                </div>
+                            </article>
+                        {% else %}
+                            <p class="px-5 py-5 text-sm text-content-secondary">{{ 'No source exceptions in this preview.' if overview.connections_reviewed|default(0) else 'No registered connections to review.' }}</p>
+                        {% endfor %}
+                    </div>
+                    <footer class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs text-content-muted">Reviewed {{ overview.connections_reviewed|default(0) }} latest connection records; not a full readiness assessment.</footer>
+                </section>
+                <section class="min-w-0 border-t border-outline-subtle xl:col-span-5 xl:border-l xl:border-t-0" aria-labelledby="automation-activity-title">
+                    <header class="border-b border-outline-subtle px-5 py-3">
+                        <h3 id="automation-activity-title" class="text-sm font-semibold text-content-primary">Recent Execution Activity</h3>
+                        <p class="mt-1 text-xs text-content-muted">Latest canonical JobExecution records.</p>
+                    </header>
+                    {% if overview.executions is none %}
+                        <p class="px-5 py-5 text-sm text-content-secondary">Jobs view permission is required.</p>
+                    {% elif overview.recent_jobs|default([]) %}
+                        <ol class="divide-y divide-outline-subtle">
+                            {% for job in overview.recent_jobs %}
+                                <li class="flex min-w-0 items-start gap-3 px-5 py-3">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="break-words text-sm font-semibold text-content-primary">{{ job.operation|replace('_', ' ')|title }}</p>
+                                        <p class="mt-1 text-xs text-content-secondary">{{ job.status|replace('_', ' ')|title }} · {{ job.created_at|user_datetime }}</p>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ol>
+                    {% else %}
+                        <p class="px-5 py-5 text-sm text-content-secondary">No committed automation executions.</p>
+                    {% endif %}
+                    {% if overview.executions is not none %}
+                        <footer class="border-t border-outline-subtle bg-surface-hover px-5 py-3">
+                            {{ section_link_button.render(url_for('platform_operations.infrastructure_automation.index', tab='runs-evidence'), 'Runs & Evidence', icon='arrow-right') }}
+                        </footer>
+                    {% endif %}
+                </section>
+            </div>
+        {% endcall %}
+    </section>
 </div>

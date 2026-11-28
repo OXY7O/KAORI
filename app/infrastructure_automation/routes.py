@@ -28,12 +28,14 @@ def index() -> ResponseReturnValue:
             tab = 'connections'
         else:
             tab = 'overview'
-    if tab not in {'overview', 'connections', 'inventory', 'lifecycle', 'executions'}:
+    if tab == 'runs-evidence':
+        tab = 'executions'
+    if tab not in {'overview', 'profiles', 'connections', 'inventory', 'lifecycle', 'executions'}:
         abort(404)
     can_jobs = bool(current_user.has_permission('jobs.view'))
     can_inventory = bool(current_user.has_permission('inventory.view'))
     try:
-        if tab == 'overview':
+        if tab in {'overview', 'profiles'}:
             context = build_automation_overview(can_jobs=can_jobs, can_inventory=can_inventory)
         else:
             context = build_automation_workspace(

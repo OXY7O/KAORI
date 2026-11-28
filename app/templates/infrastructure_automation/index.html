@@ -8,19 +8,19 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('workflow', 'Operations Center', 'server-cog') %}
                         <h1 class="{{ page_hero.title_classes() }}">Infrastructure Automation</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Review infrastructure lifecycle and execution evidence.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Orchestrate infrastructure lifecycle and governed automation.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('boxes', total_connections ~ (' Ansible Connection' if total_connections == 1 else ' Ansible Connections')) }}
-                            {{ page_hero.meta_label('workflow', 'Kubernetes Lifecycle') }}
-                            {{ page_hero.meta_label('shield-check', 'Approval Required') }}
+                            {{ page_hero.meta_label('boxes', total_connections ~ (' Connection' if total_connections == 1 else ' Connections')) }}
+                            {{ page_hero.meta_label('plug', '1 Supported Provider') }}
+                            {{ page_hero.meta_label('layers-3', '1 Available Profile') }}
                         </div>
                     {% endcall %}
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}" aria-label="Infrastructure automation context">
                     <div class="{{ page_hero.context_panel_classes() }}">
-                        {{ page_hero.context_header('Automation Control Plane', 'Governed Lifecycle', 'workflow') }}
+                        {{ page_hero.context_header('Automation Control Plane', 'Automation Readiness', 'workflow') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                            {{ page_hero.context_metric('plug', 'Ansible Connections', total_connections, 'Registered source connections') }}
+                            {{ page_hero.context_metric('plug', 'Connections', total_connections, 'Registered source connections') }}
                             {{ page_hero.context_metric('shield-check', 'Execution', 'Not Admitted', 'Independent approval required') }}
                         </div>
                         <a href="{{ url_for('integrations.ansible_new_connection') if total_connections == 0 else url_for('integrations.ansible') }}"
