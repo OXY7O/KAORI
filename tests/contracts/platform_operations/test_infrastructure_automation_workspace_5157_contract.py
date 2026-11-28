@@ -215,7 +215,7 @@ def test_selected_source_only_connection_renders_lifecycle_only():
 
 def test_automation_hero_uses_compact_description_and_three_metadata_items():
     hero = (ROOT / 'app/templates/infrastructure_automation/_hero.html').read_text()
-    assert 'Manage governed infrastructure automation.' in hero
+    assert 'Manage governed automation and review committed execution evidence.' in hero
     assert hero.count('page_hero.meta_label(') == 3
     assert "page_hero.meta_label('layers-3', '1 Available Profile')" in hero
     assert 'page_hero.metadata_row_classes()' in hero
@@ -385,3 +385,18 @@ def test_overview_restricted_activity_does_not_expose_job_navigation():
     assert 'Jobs view permission is required.' in rendered
     assert 'Hidden Operation' not in rendered
     assert 'tab=runs-evidence' not in rendered
+
+
+def test_automation_hero_keeps_registration_and_execution_admission_independent():
+    app = create_app('testing')
+    with app.test_request_context('/platform-operations/infrastructure-automation/'):
+        registered = render_template('infrastructure_automation/_hero.html', total_connections=1)
+        empty = render_template('infrastructure_automation/_hero.html', total_connections=0)
+    assert 'Not Admitted' in registered
+    assert registered.count('Not Admitted') == 1
+    assert 'Open Ansible Integrations' in registered
+    assert 'data-kaori-hero-header-accessory="status"' in registered
+    assert 'Not Admitted' in empty
+    assert 'Register a source connection to begin.' in empty
+    assert 'Open Ansible Integrations' not in empty
+    assert 'data-kaori-hero-cta="integration-navigation"' not in empty
