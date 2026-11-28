@@ -235,7 +235,6 @@ def test_overview_has_no_connection_selector_or_scoped_details():
     assert 'Automation Overview' not in rendered
     assert 'Automation Estate' in rendered
     assert 'Execution Activity Restricted' in rendered
-    assert 'Runs &amp; Evidence</span>' not in rendered
     assert 'Host Assignments' in rendered
     assert 'Restricted' in rendered
     assert 'data-kaori-automation-selected-scope' not in rendered
@@ -361,3 +360,21 @@ def test_overview_attention_and_empty_execution_use_independent_cards():
     assert 'data-kaori-empty-state' in rendered
     assert 'Automation Overview' not in rendered
     assert 'Operational Attention &amp; Activity' not in rendered
+
+
+def test_overview_restricted_activity_does_not_expose_job_navigation():
+    app = create_app('testing')
+    with app.test_request_context('/platform-operations/infrastructure-automation/'):
+        rendered = render_template(
+            'infrastructure_automation/_overview.html',
+            total_connections=1,
+            overview={
+                'host_assignments': None,
+                'cluster_bindings': None,
+                'executions': None,
+                'recent_jobs': [SimpleNamespace(operation='hidden_operation')],
+            },
+        )
+    assert 'Jobs view permission is required.' in rendered
+    assert 'Hidden Operation' not in rendered
+    assert 'tab=runs-evidence' not in rendered
