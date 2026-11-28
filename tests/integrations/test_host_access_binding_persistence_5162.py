@@ -1,17 +1,24 @@
 """Real database reference recording, exact scope and mandatory audit (#5162)."""
 
-from dataclasses import replace
+import base64
+import os
+from contextlib import contextmanager
+from dataclasses import asdict, replace
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from uuid import uuid4
 
 import pytest
 from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from flask import Flask, current_app
+from sqlalchemy import create_engine, text
+from sqlalchemy.schema import CreateSchema, DropSchema
 
 from app.access import scoped_grants
 from app.extensions.db import db
-from app.infrastructure_automation import credential_grants, ssh_trust_lifecycle
+from app.infrastructure_automation import credential_grants, security_review, ssh_trust_authority, ssh_trust_lifecycle
 from app.infrastructure_automation import host_access_binding as service
 from app.infrastructure_automation.credential_evidence import resolve_current_credential_evidence
 from app.infrastructure_automation.credential_scope_target import (
@@ -21,6 +28,7 @@ from app.infrastructure_automation.credential_scope_target import (
 )
 from app.infrastructure_automation.host_enrollment import host_revision
 from app.infrastructure_automation.kubernetes.committed_host_access import committed_pilot_access_fingerprint
+from app.infrastructure_automation.remote_access_evidence import review_remote_access_evidence
 from app.infrastructure_automation.kubernetes.kubespray_preflight import KUBESPRAY_RELEASE
 from app.infrastructure_automation.kubernetes.source_policy import (
     ANSIBLE_CORE_VERSION,
@@ -29,6 +37,7 @@ from app.infrastructure_automation.kubernetes.source_policy import (
     REPOSITORY,
     SOURCE_CANDIDATE_SHA,
 )
+from app.integrations.secrets_management.secrets_pki.providers.credential_version_proof import canonical_statement
 from app.models.automation import (
     AutomationHostAccessBinding,
     AutomationHostAsset,
@@ -49,6 +58,7 @@ from app.models.secrets_pki import (
     SecretVersionObservation,
 )
 from app.models.user import User
+from app.secrets_pki.issuer_authority import TypedCredentialEvidence
 from app.models.vault import VaultInstance
 
 
@@ -166,12 +176,13 @@ def _secret_records(provider, now):
     return identity
 
 
-@pytest.fixture
-def binding_store():
+@contextmanager
+def _binding_fixture(database_url='sqlite://', engine_options=None):
     app = Flask(__name__)
     app.config.update(
         SECRET_KEY='fixture-only',
-        SQLALCHEMY_DATABASE_URI='sqlite://',
+        SQLALCHEMY_DATABASE_URI=database_url,
+        SQLALCHEMY_ENGINE_OPTIONS=engine_options or {},
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         INTEGRATION_CREDENTIAL_KEY=Fernet.generate_key().decode('ascii'),
     )
@@ -251,6 +262,46 @@ def binding_store():
         finally:
             db.session.remove()
             db.Model.metadata.drop_all(bind=db.engine, tables=list(reversed(tables)))
+
+
+@pytest.fixture
+def binding_store():
+    with _binding_fixture() as store:
+        yield store
+
+
+@pytest.fixture
+def activation_store(monkeypatch):
+    # Match the existing isolated CI PostgreSQL fixture contract; never use
+    # arbitrary operator or production DSNs.
+    dsn = 'postgresql://postgres:postgres@postgres:5432/kaori_test'
+    if (
+        os.environ.get('APP_ENV') != 'testing'
+        or os.environ.get('TEST_DATABASE_URL') != dsn
+        or os.environ.get('DATABASE_URL') != dsn
+    ):
+        pytest.skip('Requires the exact isolated KAORI CI PostgreSQL fixture.')
+    schema = f'activation_5184_{uuid4().hex}'
+    admin = create_engine(dsn, connect_args={'connect_timeout': 5})
+    try:
+        with admin.begin() as connection:
+            assert connection.scalar(text('SELECT current_database()')) == 'kaori_test'
+            connection.execute(CreateSchema(schema))
+        try:
+            with _binding_fixture(
+                dsn,
+                {'isolation_level': 'READ COMMITTED',
+                 'connect_args': {'options': f'-c search_path={schema}', 'connect_timeout': 5}},
+            ) as store:
+                monkeypatch.setenv('APP_ENV', 'development')
+                monkeypatch.setenv('KAORI_LOCAL_AUTOMATION_SECURITY_REVIEW', '1')
+                monkeypatch.setitem(current_app.config, 'APP_ENV', 'development')
+                yield store
+        finally:
+            with admin.begin() as connection:
+                connection.execute(DropSchema(schema, cascade=True))
+    finally:
+        admin.dispose()
 
 
 def _assert_no_writes():
@@ -740,3 +791,185 @@ def test_credential_evidence_requires_current_issuer_and_provider_created_time(b
     assert policy.current_revision == 1
     assert policy.revisions[0].lifecycle_status == 'draft'
     assert SecretCredentialIssuerRevision.query.count() == 0
+
+
+def _activation_draft(store):
+    actor, maker, request, validity = _credential_request(store)
+    role = db.session.get(User, actor).role_record
+    checker = User(username='activation-checker', email='activation-checker@test.invalid', role_id=role.id)
+    db.session.add(checker)
+    db.session.flush()
+    checker_id = checker.id
+    db.session.commit()
+    policy = credential_grants.request_automation_credential_grant(
+        actor_user_id=maker, principal_user_id=actor, intent=request,
+        validity=validity, reason_code='operational_access',
+    )
+    policy_id = policy.id
+    db.session.remove()
+    return actor, maker, checker_id, policy_id, validity
+
+
+def test_local_activation_is_disabled_without_postgresql_and_explicit_opt_in(binding_store):
+    with pytest.raises(security_review.AutomationSecurityReviewDenied):
+        credential_grants.approve_automation_credential_grant(
+            policy_id='fixture', approver_user_id=binding_store[1], expected_revision=1
+        )
+    with pytest.raises(security_review.AutomationSecurityReviewDenied):
+        ssh_trust_lifecycle.activate_host_console_trust(
+            policy_id='fixture', requester_id=binding_store[0],
+            verifier_id=binding_store[1], expected_revision=0,
+        )
+
+
+def test_credential_activation_and_revocation_use_canonical_revisions(activation_store, monkeypatch):
+    actor, maker, checker, policy_id, validity = _activation_draft(activation_store)
+    now = datetime.now(UTC)
+    proof = TypedCredentialEvidence('a' * 64, now - timedelta(seconds=1), validity.effective_until)
+    monkeypatch.setattr(credential_grants, 'resolve_current_credential_evidence', lambda *args, **kwargs: proof)
+    for forbidden in (maker, actor):
+        with pytest.raises(scoped_grants.ScopedGrantRejected):
+            credential_grants.approve_automation_credential_grant(
+                policy_id=policy_id, approver_user_id=forbidden, expected_revision=1
+            )
+    assert credential_grants.approve_automation_credential_grant(
+        policy_id=policy_id, approver_user_id=checker, expected_revision=1
+    ) == 2
+    policy = db.session.get(ScopeAccessPolicy, policy_id)
+    assert policy.current_revision == 2
+    assert policy.revisions[-1].credential_evidence_ref == proof.evidence_ref
+    target = db.session.get(AutomationCredentialScopeTarget, policy_id)
+    connection_id, assignment_id = target.ansible_connection_id, target.assignment_id
+    decision = credential_grants.review_current_credential_grant(
+        actor_user_id=actor, connection_id=connection_id, assignment_id=assignment_id, now=datetime.now(UTC)
+    )
+    assert decision is not None
+    assert decision.policy_id == policy_id
+    assert decision.revision == 2
+    db.session.rollback()
+    monkeypatch.setattr(
+        credential_grants, 'resolve_current_credential_evidence',
+        lambda *args, **kwargs: replace(proof, evidence_ref='b' * 64),
+    )
+    assert credential_grants.review_current_credential_grant(
+        actor_user_id=actor, connection_id=connection_id, assignment_id=assignment_id, now=datetime.now(UTC)
+    ) is None
+    db.session.rollback()
+    scoped_grants.revoke_scope_grant(policy_id=policy_id, actor_user_id=checker, expected_revision=2)
+    assert credential_grants.review_current_credential_grant(
+        actor_user_id=actor, connection_id=connection_id, assignment_id=assignment_id, now=datetime.now(UTC)
+    ) is None
+    assert db.session.get(ScopeAccessPolicy, policy_id).current_revision == 3
+
+
+def test_credential_activation_audit_failure_rolls_back(activation_store, monkeypatch):
+    _, _, checker, policy_id, validity = _activation_draft(activation_store)
+    proof = TypedCredentialEvidence('a' * 64, datetime.now(UTC) - timedelta(seconds=1), validity.effective_until)
+    monkeypatch.setattr(credential_grants, 'resolve_current_credential_evidence', lambda *args, **kwargs: proof)
+    original = credential_grants.stage_operational_activity
+
+    def fail_after_stage(**kwargs):
+        original(**kwargs)
+        db.session.flush()
+        raise RuntimeError('injected audit failure')
+
+    monkeypatch.setattr(credential_grants, 'stage_operational_activity', fail_after_stage)
+    with pytest.raises(RuntimeError):
+        credential_grants.approve_automation_credential_grant(
+            policy_id=policy_id, approver_user_id=checker, expected_revision=1
+        )
+    policy = db.session.get(ScopeAccessPolicy, policy_id)
+    assert policy.current_revision == 1
+    assert len(policy.revisions) == 1
+    assert Notification.query.filter_by(event_type='access_scope_grant_approved').count() == 0
+
+
+def test_signed_console_activation_and_revocation(activation_store, monkeypatch):
+    actor, maker, intent = activation_store
+    key = Ed25519PrivateKey.generate().public_key()
+    public_key = key.public_bytes(serialization.Encoding.OpenSSH, serialization.PublicFormat.OpenSSH).decode('ascii')
+    digest = 'sha256:' + sha256(base64.b64decode(public_key.split(' ')[1])).hexdigest()
+    actor, maker, checker, policy_id, validity = _activation_draft(
+        (actor, maker, replace(intent, host_key_digest=digest))
+    )
+    target = db.session.get(AutomationCredentialScopeTarget, policy_id)
+    assignment = db.session.get(AutomationInventoryAssignment, target.assignment_id)
+    binding = db.session.get(AutomationHostAccessBinding, assignment.id)
+    selected = ssh_trust_authority.console_target(
+        assignment, binding, revision_number=1, requester_id=maker, verifier_id=checker
+    )
+    assert selected is not None
+    root = Ed25519PrivateKey.generate()
+    now = datetime.now(UTC)
+    payload = {
+        'schema': 'kaori.automation.ssh_console_evidence.v1',
+        'state': 'active',
+        'target': asdict(selected),
+        'source_kind': 'independent_console',
+        'console_asset_ref': 'c' * 64,
+        'public_key': public_key,
+        'verified_at': now.isoformat(),
+        'expires_at': (now + timedelta(minutes=10)).isoformat(),
+    }
+    files = {
+        'root.pub': root.public_key().public_bytes_raw().hex().encode('ascii'),
+        ssh_trust_authority.console_evidence_name(selected): canonical_statement(
+            {'payload': payload, 'signature': root.sign(canonical_statement(payload)).hex()}
+        ),
+    }
+    monkeypatch.setattr(ssh_trust_authority, '_read_console_file', files.get)
+    db.session.remove()
+    with pytest.raises(ssh_trust_lifecycle.SSHTrustTransitionDenied):
+        ssh_trust_lifecycle.activate_host_console_trust(
+            policy_id=policy_id, requester_id=maker, verifier_id=actor, expected_revision=0
+        )
+    original = ssh_trust_lifecycle.stage_operational_activity
+
+    def fail_after_stage(**kwargs):
+        original(**kwargs)
+        db.session.flush()
+        raise RuntimeError('injected trust audit failure')
+
+    monkeypatch.setattr(ssh_trust_lifecycle, 'stage_operational_activity', fail_after_stage)
+    with pytest.raises(RuntimeError):
+        ssh_trust_lifecycle.activate_host_console_trust(
+            policy_id=policy_id, requester_id=maker, verifier_id=checker, expected_revision=0
+        )
+    assert AutomationHostTrustRevision.query.count() == 0
+    assert Notification.query.filter_by(event_type='automation_host_trust_activated').count() == 0
+    db.session.rollback()
+    monkeypatch.setattr(ssh_trust_lifecycle, 'stage_operational_activity', original)
+    assert ssh_trust_lifecycle.activate_host_console_trust(
+        policy_id=policy_id, requester_id=maker, verifier_id=checker, expected_revision=0
+    ) == 1
+    policy = db.session.get(ScopeAccessPolicy, policy_id)
+    target = db.session.get(AutomationCredentialScopeTarget, policy_id)
+    assert ssh_trust_lifecycle.review_current_console_trust(policy, target, now=datetime.now(UTC)) is not None
+    access_args = {
+        'actor_user_id': actor, 'connection_id': selected.connection_id, 'assignment_id': selected.assignment_id,
+    }
+    assert review_remote_access_evidence(**access_args, now=datetime.now(UTC)) is None
+    db.session.rollback()
+    proof = TypedCredentialEvidence('a' * 64, now - timedelta(seconds=1), validity.effective_until)
+    monkeypatch.setattr(credential_grants, 'resolve_current_credential_evidence', lambda *args, **kwargs: proof)
+    assert credential_grants.approve_automation_credential_grant(
+        policy_id=policy_id, approver_user_id=checker, expected_revision=1
+    ) == 2
+    combined = review_remote_access_evidence(**access_args, now=datetime.now(UTC))
+    assert combined is not None
+    assert combined.execution_authorized is False
+    assert len(combined.fingerprint) == 64
+    db.session.rollback()
+    with pytest.raises(ssh_trust_lifecycle.SSHTrustTransitionDenied):
+        ssh_trust_lifecycle.activate_host_console_trust(
+            policy_id=policy_id, requester_id=maker, verifier_id=checker, expected_revision=0
+        )
+    assert ssh_trust_lifecycle.revoke_host_trust(
+        actor_id=checker, connection_id=selected.connection_id,
+        assignment_id=selected.assignment_id, expected_revision=1
+    ) == 2
+    policy = db.session.get(ScopeAccessPolicy, policy_id)
+    target = db.session.get(AutomationCredentialScopeTarget, policy_id)
+    assert ssh_trust_lifecycle.review_current_console_trust(policy, target, now=datetime.now(UTC)) is None
+    assert review_remote_access_evidence(**access_args, now=datetime.now(UTC)) is None
+    assert Notification.query.filter_by(event_type='automation_host_trust_activated').count() == 1

@@ -146,6 +146,11 @@ class ScopeAccessPolicyRevision(db.Model):
             ' AND approved_by_user_id <> requested_by_user_id)',
             name='ck_access_scope_revision_approved',
         ),
+        CheckConstraint(
+            "credential_evidence_ref IS NULL OR (lifecycle_status = 'active'"
+            ' AND length(credential_evidence_ref) = 64)',
+            name='ck_access_scope_revision_credential_proof',
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -181,6 +186,7 @@ class ScopeAccessPolicyRevision(db.Model):
         DateTime(timezone=True),
         nullable=True,
     )
+    credential_evidence_ref: Mapped[str | None] = mapped_column(String(64), nullable=True)
     change_reason: Mapped[str] = mapped_column(String(160), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

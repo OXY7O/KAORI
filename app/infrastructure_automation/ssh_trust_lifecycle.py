@@ -1,7 +1,7 @@
 """Internal SSH trust revocation and latest-revision resolution (#5185).
 
 Revocation does not require the candidate or console evidence to remain current.
-No trust activation or execution authority is provided by this module.
+Local trust activation is explicitly gated; no execution authority.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from app.access.scope_policy import lock_explicit_permissions
 from app.access.scoped_grants import require_scope_grant_administrator
 from app.extensions.db import db
 from app.infrastructure_automation.credential_scope_target import exact_credential_target_current
+from app.infrastructure_automation.security_review import begin_security_review_transaction
 from app.infrastructure_automation.ssh_trust_authority import ConsoleEvidence, console_target, resolve_console_evidence
 from app.infrastructure_automation.ssh_trust_candidate import trust_revision_candidate_matches
 from app.models.automation import AutomationHostAccessBinding, AutomationHostTrustRevision, AutomationInventoryAssignment
@@ -246,3 +247,76 @@ def review_current_console_trust(
     ):
         return None
     return evidence
+
+
+def activate_host_console_trust(
+    *, policy_id: str, requester_id: int, verifier_id: int, expected_revision: int
+) -> int:
+    """Append local active trust only from exact independently signed console evidence.
+
+    The internal caller supplies authenticated verifier identity. No public
+    writer, material retrieval, known_hosts creation or SSH is enabled.
+    """
+    committed = False
+    try:
+        begin_security_review_transaction()
+        policy = db.session.get(ScopeAccessPolicy, policy_id, populate_existing=True, with_for_update=True)
+        target = db.session.get(
+            AutomationCredentialScopeTarget, policy_id, populate_existing=True, with_for_update=True
+        )
+        if policy is None or target is None:
+            raise SSHTrustTransitionDenied('SSH trust activation is unavailable.')
+        evidence = review_console_trust_activation(
+            policy, target, requester_id=requester_id, verifier_id=verifier_id,
+            expected_revision=expected_revision, now=datetime.now(UTC),
+        )
+        if evidence is None:
+            raise SSHTrustTransitionDenied('SSH trust activation is unavailable.')
+        selected = evidence.target
+        now = datetime.now(UTC)
+        if not evidence.verified_at <= now < evidence.expires_at:
+            raise SSHTrustTransitionDenied('SSH trust activation is unavailable.')
+        record = AutomationHostTrustRevision(
+            assignment_id=selected.assignment_id,
+            revision_number=selected.revision_number,
+            lifecycle_status='active',
+            host_revision=selected.host_revision,
+            reference_fingerprint=selected.reference_fingerprint,
+            address=selected.address,
+            ssh_port=selected.ssh_port,
+            algorithm='ssh-ed25519',
+            public_key=evidence.public_key,
+            host_key_digest=selected.host_key_digest,
+            source_kind='independent_console',
+            evidence_ref=evidence.evidence_ref,
+            requested_by_user_id=selected.requested_by_user_id,
+            verified_by_user_id=selected.verified_by_user_id,
+            verified_at=evidence.verified_at,
+            effective_until=evidence.expires_at,
+            recorded_by_user_id=verifier_id,
+            recorded_at=now,
+        )
+        db.session.add(record)
+        db.session.flush()
+        stage_operational_activity(
+            user_id=verifier_id,
+            event_type='automation_host_trust_activated',
+            status='success',
+            title='SSH Host Trust Recorded',
+            message='Independent console trust was recorded; execution remains blocked.',
+            metadata={
+                'actor_user_id': verifier_id,
+                'integration_instance_id': selected.connection_id,
+                'assignment_id': selected.assignment_id,
+                'trust_revision': selected.revision_number,
+                'execution_authorized': False,
+            },
+        )
+        if review_current_console_trust(policy, target, now=datetime.now(UTC)) != evidence:
+            raise SSHTrustTransitionDenied('SSH trust evidence changed.')
+        db.session.commit()
+        committed = True
+        return selected.revision_number
+    finally:
+        if not committed:
+            db.session.rollback()
