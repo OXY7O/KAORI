@@ -112,13 +112,17 @@ canonical historical review receipt exists. Source-only or synthetic results
 must never display Run readiness; Cluster Mutation Not Admitted remains.
 
 **Activation boundary:** current registration/update deliberately persists
-`enabled=false`, but `inventory_document.build_inventory_document`,
-`diagnose_remote_preflight_target` and `dispatch_kubespray_plan_review`
-require an enabled connection. This is an outstanding functional transition,
-not an operator command to flip a database flag. Do not manually set
-`enabled`, insert evidence, or use local review flags as execution authority.
-The activation contract must be reconciled under #4799/#5172 before the complete
-workflow can be offered as a single UAT.
+`enabled=false`. #5461 separates explicitly scoped local inventory preparation
+and committed historical readback from runtime admission: a checked active
+source-only record with explicit false execution/mutation flags may prepare
+non-executable inventory through the existing local KV v2 CLI. Provider TLS,
+independent cluster/mount/token scope, exact topology and immutable CAS/readback
+remain mandatory. No enable flag changes or execution are authorized. The
+normal inventory builder, `diagnose_remote_preflight_target` and
+`dispatch_kubespray_plan_review` continue to require an enabled connection.
+The runtime activation contract remains outstanding under #4799/#5172.
+Do not manually set `enabled`, insert evidence, or use local review flags
+as execution authority.
 
 In the local workspace terminal (replace the IDs with actual canonical
 connection and actor IDs; do not use a production environment):
@@ -166,7 +170,7 @@ do not repurpose another queue or treat a web shell as worker attestation.
 | Stage | Current review boundary | Required real UAT evidence |
 | --- | --- | --- |
 | Connection | Validated source registration / eligible same-ID edit | Fresh proof and stable canonical identity |
-| Inventory | Registered host roles and local KV v2 review | Authorized active connection, exact 1+2 host scope, parser-qualified receipt |
+| Inventory | Registered host roles and local KV v2 review | Checked source-only preparation or independently enabled connection, exact 1+2 host scope, parser-qualified receipt |
 | Access | Typed credential and SSH trust candidate | Independent provider authority, current version and host-key evidence |
 | Worker | Historical signed review, disabled external source candidate | Independently admitted signed EE/runtime and fixed remote facts result |
 | Preflight and Plan | Review-only committed gates | Current 8+2 gate evidence, immutable Plan, separate maker/checker approval |
