@@ -121,7 +121,8 @@ def test_bot_activation_uses_existing_live_test_and_does_not_invent_readiness() 
     assert '{% if bot_tested_at %}' in tab
     assert 'Re-test if older than one hour' in tab
     assert 'Saved configuration is not proof of provider availability' not in tab
-    assert 'Stored configuration is not proof of provider availability' in tab
+    assert 'Verify provider and independent admin recovery first.' in tab
+    assert 'Stored credentials do not prove provider availability.' in tab
     assert 'whitespace-nowrap' not in tab
     assert 'hx-post=' not in tab
     assert 'data-auth-bot-form="configuration"' in tab
@@ -169,7 +170,8 @@ def test_bot_activation_uses_equal_single_level_steps_without_nested_cards() -> 
     assert 'Repeat the test after any configuration change.' in tab
     assert 'Select Always after successful proof for unchanged settings within one hour.' in tab
     assert 'Confirm independent administrator recovery first.' in tab
-    assert 'Stored configuration is not proof of provider availability.' in tab
+    assert '<p>Verify provider and independent admin recovery first.</p>' in tab
+    assert 'Confirm independent administrator recovery before activation.' not in tab
     assert "url_for('access.authentication_security.test_bot_provider')" in tab
     assert 'data-auth-bot-form="verification-test"' in tab
     assert 'class="cf-turnstile"' in tab
