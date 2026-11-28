@@ -6,7 +6,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = '20261128_auth_session_expiry'
-down_revision = '20261128_openbao_mount_scope'
+down_revision = '20261128_auto_credential_proof'
 branch_labels = None
 depends_on = None
 

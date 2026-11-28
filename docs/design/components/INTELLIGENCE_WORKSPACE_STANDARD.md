@@ -162,3 +162,16 @@ The Rule Catalog Summary title carries the existing `table_label.metadata_label(
 - Alert Operations Workspace uses the existing title-level `info_tip.render(variant='guide')` to explain provider ownership, case recovery versus closure, and conditional committed evidence / last-good snapshot guidance. Remove duplicate bottom callouts; retain visible snapshot and evidence posture, including a last-good warning when applicable. Concise supporting copy must not imply verified closure.
 - Under #5228, replace the generic Vault Provider Cases shortcut with the shared Central Alert Intelligence domain → provider → authorized instance context and shared Active Alerts registry. Preserve the existing scoped read adapter, dual permission / instance-policy / audit contracts (#2817, #2821) and legacy deep links; no provider-specific navigation. Show only authorized exact-instance options, sanitized committed records, last-observed source state, and an explicit read-only status; unsupported lifecycle metrics are unavailable and tabs Reserved Plan. Provider admission remains default-disabled (#2813); #5229 and #5230 own lifecycle and additional-provider qualification. Live integrated HV-12 / HV-09 acceptance remains required.
 - Missing Registry correlation uses a single shared actionable empty state when no recommendation records exist; retain genuine evaluator-unavailable, filter and incomplete-evidence distinctions, and show the source-qualified correlation advisory beside actual findings. The Runtime Usage CTA requires its existing Registry view permission. No evaluator or source semantics change; #5148 owns the separate evaluator-readiness correction.
+
+
+### Alert Intelligence coverage reference
+
+Keep Cross-Domain Alert Coverage on demand in the Overview workspace header as
+**Alert Coverage**, using the shared native-dialog controller and status-detail
+trigger (the informational pattern accepted in #3348). A single responsive
+provider list retains origin, implementation state, and evidence limitations.
+Do not display a permanent coverage matrix below operational readiness, or
+repeat the dialog in provider-specific/blocked scope content. Coverage describes
+implementation paths only, not connected instances, health, permissions or
+runtime acceptance. Preserve the existing Notification Channels and Data
+Lifecycle navigation.
