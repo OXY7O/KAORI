@@ -217,8 +217,14 @@
                 <p class="text-xs text-content-muted">Review the committed delivery ledger. Unconfirmed or contradictory evidence cannot authorize another attempt.</p>
             {% elif case.provider_delivery_state == 'rejected' and not case.provider_retry_due %}
                 <p class="text-xs text-content-muted">A rejection is recorded. Retry is not due or the attempt limit has been reached.</p>
+            {% elif case.provider_delivery_state == 'rejected' and not local_retry_owner %}
+                <p class="text-xs text-content-muted">Only the original authorized maker can retry this rejected claim with a new independent receipt.</p>
             {% elif not local_delivery_options %}
-                <p class="text-xs text-content-muted">No enabled scoped candidate with validated channel evidence is available. Configure a candidate before reviewing independent approval.</p>
+                {% if case.provider_delivery_state == 'rejected' %}
+                    <p class="text-xs text-content-muted">The original routing candidate is no longer eligible. Another destination cannot retry this claim.</p>
+                {% else %}
+                    <p class="text-xs text-content-muted">No enabled scoped candidate with validated channel evidence is available. Configure a candidate before reviewing independent approval.</p>
+                {% endif %}
                 <a href="{{ url_for('alert_intelligence.index', domain='secrets_pki', provider='vault', asset=instance_id, tab='routing') }}"
                    class="{{ table_ui.action_classes() }}">Review Routing Candidates</a>
             {% else %}

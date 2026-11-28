@@ -199,6 +199,9 @@
                         {% endfor %}
                     </select>
                 </label>
+                <noscript>
+                    <button type="submit" class="{{ table_ui.action_classes() }}">Filter Cases</button>
+                </noscript>
             </form>
         </div>
         {% include 'intelligence/partials/_alert_ops_active_table.html' %}

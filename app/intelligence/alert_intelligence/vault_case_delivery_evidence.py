@@ -36,7 +36,9 @@ def _unavailable(*, state: str = 'unavailable') -> dict[str, Any]:
     }
 
 
-def read_case_delivery_evidence(case: AlertCase) -> dict[str, Any]:
+def read_case_delivery_evidence(
+    case: AlertCase, *, retry_actor_id: int | None = None
+) -> dict[str, Any]:
     rows = firing_journal(case)
     if not rows:
         return _unavailable(state='unavailable' if claim_exists(case) else 'no_claim')
@@ -51,6 +53,13 @@ def read_case_delivery_evidence(case: AlertCase) -> dict[str, Any]:
     if status is None:
         return _unavailable()
     due = _persisted_utc(row.next_retry_at) if status == 'failed' else None
+    # This private selection is consumed by the central detail controller
+    # before rendering. Only the original maker can see the exact retry pair.
+    retry_candidate = (
+        (claim['policy_id'], claim['channel_id'])
+        if status == 'failed' and type(retry_actor_id) is int and claim['maker_id'] == retry_actor_id
+        else None
+    )
     projected = {
         'channel': 'Approved scoped destination',
         'provider': 'Governed channel',
@@ -69,6 +78,7 @@ def read_case_delivery_evidence(case: AlertCase) -> dict[str, Any]:
             due is not None and due <= datetime.now(UTC)
             and row.attempt_count < notification_delivery_max_attempts()
         ),
+        '_retry_candidate': retry_candidate,
         'deliveries': [projected],
         'deliveries_recent': [projected],
         'deliveries_older': [],

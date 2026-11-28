@@ -309,7 +309,12 @@ def vault_case_details_response(
         public_case = _safe_case(row, _read_case_observations([row]))
         public_case.update(read_case_timeline(row))
         public_case['runtime_context'] = read_vault_case_runtime_context(instance_id)
-        public_case.update(read_case_delivery_evidence(row))
+        actor_id = getattr(current_user, 'id', None)
+        delivery_evidence = read_case_delivery_evidence(
+            row, retry_actor_id=actor_id if central and type(actor_id) is int else None
+        )
+        retry_candidate = delivery_evidence.pop('_retry_candidate', None)
+        public_case.update(delivery_evidence)
         expected_event_id = _latest_event_id(row) if central else None
         db.session.commit()
         from app.intelligence.alert_intelligence.vault_delivery_command import read_local_vault_policies
@@ -330,8 +335,11 @@ def vault_case_details_response(
             and current_user.has_permission('integrations.manage')
         )
         delivery_options = []
-        if delivery_controls and public_case['provider_delivery_state'] in ('no_claim', 'rejected'):
-            actor_id = getattr(current_user, 'id', None)
+        delivery_state = public_case['provider_delivery_state']
+        candidate_review = delivery_state == 'no_claim' or (
+            delivery_state == 'rejected' and public_case['provider_retry_due'] and retry_candidate is not None
+        )
+        if delivery_controls and candidate_review:
             binding_id = resolve_operator_binding(instance_id)
             if type(actor_id) is int and binding_id is not None:
                 registry = read_local_vault_policies(
@@ -339,6 +347,11 @@ def vault_case_details_response(
                     page='1', per_page='5', include_options=True,
                 )
                 delivery_options = registry.get('options', []) if registry is not None else []
+                if delivery_state == 'rejected':
+                    delivery_options = [
+                        option for option in delivery_options
+                        if (option['id'], option['channel_id']) == retry_candidate
+                    ]
         return render_template(
             'intelligence/vault_provider_case_details.html',
             case=public_case,
@@ -348,6 +361,7 @@ def vault_case_details_response(
             operator_controls=controls,
             local_delivery_available=delivery_controls,
             local_delivery_options=delivery_options,
+            local_retry_owner=retry_candidate is not None,
         )
     except SQLAlchemyError:
         db.session.rollback()

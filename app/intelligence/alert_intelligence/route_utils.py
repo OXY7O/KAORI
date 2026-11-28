@@ -13,6 +13,26 @@ def index_response() -> ResponseReturnValue:
     payload = get_alert_intelligence_payload(request.args)
     if request.headers.get('HX-Request') == 'true':
         target = str(request.headers.get('HX-Target') or '').strip()
+        # Scoped registry fragments may disappear when a grant is revoked or
+        # evidence fails. Replace the whole document rather than leaving old
+        # case rows, summary or action controls in the browser.
+        if (
+            payload.get('provider_case_mode')
+            and (
+                payload.get('provider_case_status') != 'ready'
+                or (payload.get('tab') == 'routing' and payload.get('local_routing') is None)
+            )
+            and target != 'alert-intelligence-page-content'
+        ):
+            response = make_response('', 200)
+            response.headers['HX-Redirect'] = url_for(
+                'alert_intelligence.index',
+                domain=payload['domain'],
+                provider=payload.get('selected_provider') or '',
+                asset=payload.get('selected_asset_key') or '',
+                tab=payload['tab'],
+            )
+            return response
         if target == 'alert-operations-active-records':
             return render_template('intelligence/partials/_alert_ops_active_table.html', payload=payload)
         return render_template('intelligence/partials/_alert_intelligence_page.html', payload=payload)
