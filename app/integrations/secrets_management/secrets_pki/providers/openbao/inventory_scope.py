@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 from dataclasses import dataclass
 
@@ -87,3 +89,21 @@ def current_local_inventory_source(
         return _source_scope(identity, identity.id, mount, lock=lock)
     except ValueError:
         return None
+
+
+def local_inventory_deployment_ref(
+    identity: IntegrationInstance | None, *, namespace: str, mount: str, lock: bool
+) -> str | None:
+    """Stable metadata-only fingerprint; not an issuer or credential authority proof."""
+    scope = current_local_inventory_source(identity, namespace=namespace, mount=mount, lock=lock)
+    if scope is None:
+        return None
+    payload = {
+        'schema': 'kaori.openbao.local_inventory_source.v1',
+        'instance_id': scope.instance_id,
+        'endpoint': scope.endpoint,
+        'cluster_id': scope.cluster_id,
+        'ownership': scope.ownership,
+        'mount': scope.mount,
+    }
+    return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
