@@ -165,7 +165,7 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
     assert 'Source &amp; Versions' not in detail
     assert 'Source & Versions' not in detail
     configuration_tab = detail.split('id="ansible-tab-configuration"', 1)[1].split('</button>', 1)[0]
-    assert 'Development' in configuration_tab
+    assert 'Laboratory' in configuration_tab
     hero = detail.split('data-kaori-ansible-framed-detail', 1)[0]
     assert 'data-kaori-provider-detail-posture' in hero
     assert 'data-kaori-hero-header-accessory="status"' in hero
