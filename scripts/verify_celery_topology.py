@@ -12,6 +12,7 @@ _AUTOMATION_TASKS = frozenset(
     {
         'app.infrastructure_automation.tasks.collect_localhost_facts',
         'app.infrastructure_automation.tasks.materialize_kubespray_plan_review',
+        'app.infrastructure_automation.tasks.materialize_remote_preflight_review',
     }
 )
 

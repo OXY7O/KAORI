@@ -1,4 +1,4 @@
-"""Dedicated automation-queue localhost facts task; no remote or mutation path."""
+"""Dedicated automation-queue localhost facts and review jobs; no remote execution or mutation."""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ from app.infrastructure_automation.kubernetes.plan_review import (
     KubesprayPlanReview,
     build_kubespray_plan_review,
 )
+from app.infrastructure_automation.remote_job_review import run_remote_preflight_review
 from app.infrastructure_automation.source import (
     INVENTORY,
     OPERATION_ID,
@@ -204,3 +205,22 @@ def _qualify_dispatched_plan(
     ):
         raise ValueError('Review-only Plan differs from the committed dispatch request')
     return plan
+
+
+@shared_task(
+    name='app.infrastructure_automation.tasks.materialize_remote_preflight_review',
+    bind=True,
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
+def materialize_remote_preflight_review(
+    self: Any, *, connection_id: int, job_execution_id: int
+) -> dict[str, str]:
+    """Review-only job; no material access, Runner or SSH transport."""
+    task_id = self.request.id
+    worker = self.request.hostname
+    if not isinstance(task_id, str) or not isinstance(worker, str):
+        return {'status': 'blocked'}
+    return run_remote_preflight_review(
+        job_id=job_execution_id, task_id=task_id, connection_id=connection_id, worker_identity=worker
+    )

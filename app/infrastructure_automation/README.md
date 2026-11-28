@@ -368,3 +368,38 @@ provider material read, canonical task registration, new route, or
 execution authorization is introduced. Synthetic regression tests exercise
 schema/metadata drift, strict configuration, file modes and cleanup, not a
 real provider or worker. Native UAT and independent review remain outstanding.
+
+
+### Canonical remote preflight review job (#5186)
+
+The internal `dispatch_remote_preflight_review` uses the canonical dispatcher
+and isolated automation queue, with one attempt and the initiating human in
+the parameter fingerprint. Only opaque connection/job identifiers cross
+Celery. The job is disabled by default; review-lane development requires
+the existing local security review opt-in plus
+`KAORI_LOCAL_REMOTE_PREFLIGHT_REVIEW=1`. The worker independently reads a
+deployment-selected absolute candidate checkout from
+`KAORI_LOCAL_REMOTE_REVIEW_SOURCE` and compares its Celery hostname with
+`KAORI_LOCAL_REMOTE_REVIEW_WORKER`. These settings are local review inputs,
+not runtime identity measurements or execution admission.
+
+The worker locks and claims only its exact queued canonical job (attempt
+zero), rejects replay, foreign queue/actor/scope or expired requests, checks
+the current target/source/signed external worker receipt, and rechecks the
+same evidence before atomic Activity Audit and JobExecution completion.
+The distinct operation/result type `automation_remote_preflight_review` /
+`automation_remote_preflight_review_v1` records only sanitized correlation
+fingerprints and explicit false runtime, full-preflight, material, SSH and
+mutation flags. It cannot satisfy the existing full preflight consumer.
+
+**Important scope separation:** the current canonical credential grants bind
+the accepted localhost facts playbook and the existing non-executable
+Kubernetes profile source. Their combined evidence is review-only for the
+remote candidate. They must never be interpreted as grants to the different
+remote playbook or candidate revision. Source acceptance and an independently
+approved exact remote operation/version scope are required before a future
+worker can access material; no implicit grant migration or reuse.
+The current job has no HTTP/CLI action or schedule and no provider read or
+SSH. Native worker/OCI, operation/target approval and actual facts remain
+separate admissions. Existing worker topology verification allowlists this
+additional review-only task; no default worker activation.
