@@ -1,7 +1,7 @@
 {% import "components/table_label.html" as table_label %}
 {% macro stream_row(icon, tone, timestamp) -%}
     {% set icon_classes = 'bg-status-critical-soft text-status-critical-text' if tone == 'critical' else ('bg-status-warning-soft text-status-warning-text' if tone == 'warning' else ('bg-status-normal-soft text-status-normal-text' if tone == 'normal' else 'bg-kaori-soft text-kaori-primary')) %}
-    <article class="grid min-w-0 grid-cols-[1.75rem_minmax(0,1fr)] items-start gap-3 px-4 py-3"
+    <article class="grid min-w-0 grid-cols-[1.75rem_minmax(0,1fr)] items-start gap-x-3 gap-y-1 px-4 py-3 xl:grid-cols-[1.75rem_minmax(0,1fr)_9rem]"
              data-alert-evidence-row>
         <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg {{ icon_classes }}"
               aria-hidden="true">
@@ -9,8 +9,8 @@
         </span>
         <div class="min-w-0">
             {{ caller() }}
-            <time class="mt-1 block text-xs leading-5 text-content-muted tabular-nums">{{ timestamp|user_datetime }}</time>
         </div>
+        <time class="col-start-2 text-xs leading-5 text-content-muted tabular-nums xl:col-start-3 xl:row-start-1 xl:text-right">{{ timestamp|user_datetime }}</time>
     </article>
 {%- endmacro %}
 {% macro timeline_row(event) -%}
