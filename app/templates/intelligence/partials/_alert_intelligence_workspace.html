@@ -1,5 +1,4 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
-{% import "components/loading_bar.html" as loading_bar %}
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
 {% import "intelligence/components/_alert_readiness_actions.html" as readiness_ui %}
@@ -21,6 +20,9 @@
 {% endif %}
 {% if payload.tab == 'routing' and not payload.provider_case_mode %}
     {% set guide_items = guide_items + ['Routing Guidance: keep policy scope narrow, bind only validated channels owned by the receiving team, and use repeat cadence for urgency while ACK and Silence manage operator control.'] %}
+{% endif %}
+{% if payload.tab == 'templates' and not payload.provider_case_mode %}
+    {% set guide_items = guide_items + ['Notification templates are shared provider/event resources. The retained alert scope applies to the Hero and Summary, not template ownership.'] %}
 {% endif %}
 {% set workspace_guide %}
     {{ info_tip.render('alert-operations-guide', 'Alert Operations Guide',
