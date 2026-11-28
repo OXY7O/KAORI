@@ -21,7 +21,9 @@
         ('layers-3', 'Progressive Source Readiness')
         ],
         'Selected Installation Evidence',
-        'Manage Source Control Integrations', url_for('integrations.source_control'),
+        none, none,
+        integration_endpoint='integrations.source_control',
+        integration_permitted=current_user.is_authenticated and current_user.has_permission('integrations.manage'),
         data_authority='Committed KAORI State',
         state='normal' if collected else 'blocked',
         blocked_title='Inventory Not Collected' if selected_scope else 'Select an Installation',
