@@ -46,7 +46,19 @@ def test_coverage_is_on_demand_in_shared_overview_not_inline_panels():
     workspace = (root / '_alert_intelligence_workspace.html').read_text(encoding='utf-8')
     assert page.count(include) == 1
     assert "payload.tab == 'overview'" in page
-    assert "status_dialog.trigger('alert-provider-coverage-dialog'" in workspace
+    overview = (root / '_alert_ops_overview.html').read_text(encoding='utf-8')
+    provider = (root / '_vault_provider_case_overview.html').read_text(encoding='utf-8')
+    actions = (root.parent / 'components' / '_alert_readiness_actions.html').read_text(encoding='utf-8')
+    guide = workspace.split('{% set workspace_guide %}', 1)[1].split('{% endset %}', 1)[0]
+    assert 'coverage_button' not in guide
+    assert 'data-alert-readiness-actions' in overview
+    assert 'readiness_ui.readiness_actions()' in overview
+    assert 'readiness_ui.coverage_button()' in provider
+    assert 'readiness_ui.coverage_button()' in workspace
+    assert actions.count("table_ui.action_classes(size='header')") == 3
+    assert 'data-dialog-target="alert-provider-coverage-dialog"' in actions
+    assert "url_for('notification_channels.index')" in actions
+    assert "url_for('platform_operations.data_lifecycle.index', domain='alert_incident')" in actions
     for name in ('_alert_ops_overview.html', '_vault_provider_case_overview.html', '_alert_intelligence_workspace.html'):
         assert include not in (root / name).read_text(encoding='utf-8')
     dialog = (root / '_alert_provider_coverage.html').read_text(encoding='utf-8')

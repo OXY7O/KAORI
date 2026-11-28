@@ -166,9 +166,14 @@ The Rule Catalog Summary title carries the existing `table_label.metadata_label(
 
 ### Alert Intelligence coverage reference
 
-Keep Cross-Domain Alert Coverage on demand in the Overview workspace header as
-**Alert Coverage**, using the shared native-dialog controller and status-detail
-trigger (the informational pattern accepted in #3348). A single responsive
+Keep Cross-Domain Alert Coverage on demand in the Overview Operational
+Readiness footer as **Alert Coverage**, alongside Notification Channels and
+Data Lifecycle. All three use shared table action button styling
+(`action_classes(size='header')`) and wrap responsively. Keep the Guide in the
+workspace title. The provider Lifecycle Readiness and blocked Overview
+surfaces retain the same coverage button without adding new navigation links.
+Reuse the shared native-dialog controller (the informational pattern accepted
+in #3348). A single responsive
 provider list retains origin, implementation state, and evidence limitations.
 Do not display a permanent coverage matrix below operational readiness, or
 repeat the dialog in provider-specific/blocked scope content. Coverage describes

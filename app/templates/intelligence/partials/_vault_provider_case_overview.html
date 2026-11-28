@@ -1,6 +1,7 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "intelligence/components/_alert_readiness_actions.html" as readiness_ui %}
 <div data-alert-intelligence-panel="overview" class="space-y-5 p-4 sm:p-5">
     {% set active_url = url_for('alert_intelligence.index', domain=payload.domain, provider=payload.selected_provider, asset=payload.selected_asset_key, tab='active') %}
     {% set history_url = url_for('alert_intelligence.index', domain=payload.domain, provider=payload.selected_provider, asset=payload.selected_asset_key, tab='resolved') %}
@@ -61,5 +62,8 @@
                 </div>
             {% endfor %}
         </dl>
+        <div class="flex flex-wrap items-center gap-2 border-t border-outline-subtle px-5 py-3">
+            {{ readiness_ui.coverage_button() }}
+        </div>
     </section>
 </div>

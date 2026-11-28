@@ -1,0 +1,26 @@
+{% import "components/table_primitives.html" as table_ui %}
+{% macro coverage_button() -%}
+    <button type="button"
+            data-kaori-dialog-open
+            data-dialog-target="alert-provider-coverage-dialog"
+            aria-haspopup="dialog"
+            aria-controls="alert-provider-coverage-dialog"
+            aria-label="View Cross-Domain Alert Coverage"
+            class="{{ table_ui.action_classes(size='header') }}">
+        <i data-lucide="circle-help" class="h-3.5 w-3.5" aria-hidden="true"></i>
+        Alert Coverage
+    </button>
+{%- endmacro %}
+{% macro readiness_actions() -%}
+    <a href="{{ url_for('notification_channels.index') }}"
+       class="{{ table_ui.action_classes(size='header') }}">
+        <i data-lucide="send" class="h-3.5 w-3.5" aria-hidden="true"></i>
+        Notification Channels
+    </a>
+    <a href="{{ url_for('platform_operations.data_lifecycle.index', domain='alert_incident') }}"
+       class="{{ table_ui.action_classes(size='header') }}">
+        <i data-lucide="archive" class="h-3.5 w-3.5" aria-hidden="true"></i>
+        Data Lifecycle
+    </a>
+    {{ coverage_button() }}
+{%- endmacro %}
