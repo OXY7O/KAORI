@@ -76,7 +76,9 @@
         data_authority='Committed KAORI State',
         state='normal' if summary.has_evidence else 'blocked',
         blocked_title=inventory_blocker_title,
-        blocked_info=inventory_blocker_info
+        blocked_info=inventory_blocker_info,
+        integration_endpoint='vault.index' if can_manage_integrations else none,
+        integration_permitted=can_manage_integrations
         ) }}
         {% if not summary.has_evidence %}
             {% set blocked_state_icon = "key-round" %}

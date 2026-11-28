@@ -66,7 +66,8 @@
                                                             'observed_empty': 'Qualified Empty Inventory',
                                                             'incomplete_evidence': 'Incomplete KV v2 Evidence'
                                                         }.get(kv2_version_posture.status, 'KV v2 Evidence Required') %}
-                            {{ page_hero.context_header('KV v2 Evidence', kv2_hero_label, 'database-zap') }}
+                            {% set kv2_hero_status = {'ready': 'Qualified', 'observed_empty': 'Qualified Empty', 'incomplete_evidence': 'Incomplete'}.get(kv2_version_posture.status, 'Not Qualified') %}
+                            {{ page_hero.context_header_status('KV v2 Evidence', 'Lifecycle Qualification', kv2_hero_status, 'normal' if lifecycle_kv2_qualified else 'warning') }}
                             <div class="{{ page_hero.context_panel_metrics_classes() }}">
                                 {{ page_hero.context_metric('layers', 'Version Evidence',
                                                                 kv2_version_posture.observed_versions if kv2_version_posture.observed_versions is not none else 'Not Qualified',

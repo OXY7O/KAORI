@@ -44,7 +44,8 @@
                         'Blocked', 'warning', 'database-zap', 'shield-alert') }}
                     {% else %}
                         <div class="{{ page_hero.context_panel_classes() }}">
-                            {{ page_hero.context_header('Inventory Readiness', summary.label, 'database-zap') }}
+                            {% set inventory_status_label = {'committed': 'Committed', 'partial': 'Partial Coverage', 'stale': 'Stale Evidence'}.get(summary.state, 'Unknown') %}
+                            {{ page_hero.context_header_status('Inventory Readiness', 'Committed Evidence', inventory_status_label, summary.tone|default('unknown')) }}
                             <div class="{{ page_hero.context_panel_metrics_classes() }}">
                                 {{ page_hero.context_metric('server', 'Active Scope', 'Registered Vault Sources', 'Provider-neutral evidence') }}
                                 {{ page_hero.context_metric('clock-3', 'Latest Commit', summary.updated_label, 'Retention and collection state') }}

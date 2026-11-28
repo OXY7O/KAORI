@@ -24,7 +24,8 @@
                 <aside class="{{ page_hero.aside_classes() }}"
                        aria-label="PKI analytics evidence context">
                     <div class="{{ page_hero.context_panel_classes() }}">
-                        {{ page_hero.context_header('Evidence Readiness', pki_validity.label, 'shield-check') }}
+                        {% set pki_hero_status = {'ready': 'Qualified', 'not_configured': 'Not Enabled', 'incomplete': 'Incomplete', 'blocked': 'Blocked', 'unavailable': 'Unavailable'}.get(pki_validity.status, 'Unknown') %}
+                        {{ page_hero.context_header_status('Evidence Readiness', 'PKI Qualification', pki_hero_status, 'normal' if pki_validity.status == 'ready' else ('unknown' if pki_validity.status in ('not_configured', 'unavailable') else 'warning')) }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
                             {{ page_hero.context_metric('clock-3', 'Observed', pki_validity.last_observed_at|user_datetime if pki_validity.last_observed_at else 'Not Qualified', 'Committed generation') }}
                             {{ page_hero.context_metric('calendar-clock', 'Horizon', 'Next 30 Days', 'UTC validity, not forecast') }}
