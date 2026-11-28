@@ -1,9 +1,10 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
 <section id="activity-register-workspace"
-         class="{{ '' if embedded|default(false) else table_ui.block_classes() }}">
+         class="{{ '' if embedded|default(false) else table_ui.block_classes(allow_overflow=true) }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
@@ -12,6 +13,18 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="{{ table_ui.block_title_classes() }}">Activity Register</h2>
                         {{ table_label.result_count(pagination.total) }}
+                        {{ info_tip.render('activity-register-guide',
+                                                'Activity Register',
+                                                'Read committed activity evidence with separate source, actor, and retention boundaries.',
+                                                items=[
+                                                'Activity Register shows hot Notification-backed activity with actor identity snapshotted at commit.',
+                                                'Administrative Source Evidence shows authorized hot AuditEvent records; actor references are foreign keys, not immutable snapshots.',
+                                                'Automatic Jobs and Tenant Inventory Sync remain source-owned; they do not merge with Activity Register counts.',
+                                                'Register filters and totals do not cover administrative sources or archived records.',
+                                                'Older verified evidence belongs to Data Lifecycle; browsing archive bundles does not prove a specific job match.'
+                                                ],
+                                                placement='right',
+                                                variant='guide') }}
                     </div>
                     <p class="{{ table_ui.block_description_classes() }}">Filter system-wide evidence by category, outcome, actor, and hot-record time range.</p>
                 </div>

@@ -1,7 +1,7 @@
 {% import "components/framed_workspace_tabs.html" as framed_tabs %}
 {% import "components/table.html" as table_ui %}
 <section id="activity-audit-records"
-         class="{{ table_ui.block_classes() }}"
+         class="{{ table_ui.block_classes(allow_overflow=true) }}"
          aria-label="Activity Audit Records">
     {% set audit_record_tabs = [
             ('activity', 'Activity Register', 'list-filter', url_for('access.activity_audit.index', view='activity')),
