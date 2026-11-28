@@ -351,3 +351,41 @@ def test_binding_schema_contains_only_reference_metadata():
         'secrets_pki_secret_representations.id',
         'users.id',
     }
+
+
+def test_openbao_reference_is_deployment_bound_and_not_authorizing():
+    evidence = _scoped_evidence()
+    vault = assess_scoped_host_access_references(**evidence)
+    evidence['provider'].provider_key = 'openbao'
+    evidence['provider'].readiness_status = 'degraded'
+    evidence['provider'].health_status = 'connected'
+    evidence['representation'].provider_key = 'openbao'
+    assert assess_scoped_host_access_references(**evidence).fingerprint is None
+    evidence['provider_deployment_ref'] = 'b' * 64
+    result = assess_scoped_host_access_references(**evidence)
+    assert result.state == 'references_recorded'
+    assert result.fingerprint != vault.fingerprint
+    assert result.execution_authorized is False
+    assert result.ssh_trust_verified is False
+    evidence['provider_deployment_ref'] = 'c' * 64
+    assert assess_scoped_host_access_references(**evidence).fingerprint != result.fingerprint
+    evidence['provider'].provider_key = 'vault'
+    assert assess_scoped_host_access_references(**evidence).fingerprint is None
+
+
+def test_openbao_binding_fails_on_deployment_or_health_drift():
+    evidence = _bound_evidence()
+    evidence['provider'].provider_key = 'openbao'
+    evidence['provider'].health_status = 'connected'
+    evidence['provider'].readiness_status = 'degraded'
+    evidence['representation'].provider_key = 'openbao'
+    evidence['provider_deployment_ref'] = 'b' * 64
+    binding = evidence.pop('binding')
+    review = assess_scoped_host_access_references(**evidence, host_key_digest=binding.host_key_digest)
+    binding.reference_fingerprint = review.fingerprint
+    evidence['binding'] = binding
+    assert assess_bound_host_access_references(**evidence).state == 'references_recorded'
+    evidence['provider_deployment_ref'] = 'c' * 64
+    assert assess_bound_host_access_references(**evidence).reason_code == 'HOST_ACCESS_BINDING_STALE'
+    evidence['provider'].health_status = 'disconnected'
+    assert assess_bound_host_access_references(**evidence).reason_code == 'SECRET_SOURCE_SCOPE_UNQUALIFIED'
