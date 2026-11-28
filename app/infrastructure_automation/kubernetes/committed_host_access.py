@@ -71,7 +71,8 @@ def _member_reference(
     deployment_ref = None
     if representation.provider_key == 'openbao':
         deployment_ref = local_inventory_deployment_ref(
-            provider, namespace=representation.provider_namespace, mount=representation.mount, lock=False
+            provider, namespace=representation.provider_namespace, mount=representation.mount,
+                environment=connection.environment, lock=False
         )
         if deployment_ref is None:
             return None
