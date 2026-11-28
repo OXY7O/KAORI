@@ -142,3 +142,30 @@ class AutomationHostTrustRevision(db.Model):
     effective_until: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
     recorded_by_user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='RESTRICT'), nullable=False)
+
+
+class AutomationRunTargetClaim(db.Model):
+    """Durable pilot target reservation, not execution authority (#4801)."""
+
+    __tablename__ = 'automation_run_target_claims'
+    __table_args__ = (
+        UniqueConstraint('plan_job_id', 'resource_key', name='uq_auto_run_plan_resource'),
+        UniqueConstraint('active_resource_key', name='uq_auto_run_active_resource'),
+        Index('ix_auto_run_reservation', 'reservation_id'),
+        CheckConstraint(
+            '(released_at IS NULL AND active_resource_key IS NOT NULL AND active_resource_key = resource_key)'
+            ' OR (released_at IS NOT NULL AND active_resource_key IS NULL AND released_at >= reserved_at)',
+            name='ck_auto_run_claim_lifecycle',
+        ),
+        CheckConstraint('length(plan_fingerprint) = 64', name='ck_auto_run_claim_plan'),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    reservation_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    plan_job_id: Mapped[int] = mapped_column(ForeignKey('job_executions.id', ondelete='RESTRICT'), nullable=False)
+    resource_key: Mapped[str] = mapped_column(String(120), nullable=False)
+    active_resource_key: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    plan_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    reserved_by_user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='RESTRICT'), nullable=False)
+    reserved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    released_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

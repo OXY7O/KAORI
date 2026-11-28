@@ -140,3 +140,37 @@ job, mutate infrastructure or mark a Run successful. These downstream
 steps require admitted Run provenance, separately authorized readback,
 canonical cluster registration/inventory synchronization and binding,
 and controlled native UAT. Synthetic SDK regressions are not native UAT.
+
+
+### Durable pilot target exclusion (#4801)
+
+The local review reservation service extends the existing Plan acknowledgement
+with a database-enforced persistent exclusion. One immutable Plan JobExecution
+owns seven unique active resource claims: one connection, three canonical
+host IDs, and three SHA-256 endpoint-address references. Endpoint exclusions
+are deliberately global and conservative across environments; overlapping
+RFC1918 address spaces require a future independently qualified network
+identity model, not silent bypass. All claims and the reservation AuditEvent
+commit in a single PostgreSQL transaction under canonical resource locks.
+A conflicting active claim or prior reservation of the same Plan denies
+the entire request. The reservation persists across transaction exit,
+worker restart and Plan expiry.
+
+The internal review-only maker release requires exact reservation identity,
+all seven active claims, current explicit permissions, original maker and no
+child JobExecution of the Plan. It retains released records and appends
+mandatory audit. No timer, retry, cancellation or generic stale-job
+recovery removes claims. The migration starts empty and refuses downgrade
+when reservation history exists. Job retention must account for the
+restrictive Plan FK; do not discard referenced Plan history.
+
+This service does not establish Run admission, freeze every inventory edit,
+start a worker or approve a mutation. Future admitted worker integration
+must revalidate inventory/source/access, atomically associate the exact
+claims with a one-attempt canonical Run, guard every competing infrastructure
+operation, and replace the review-release path with independently verified
+terminal/recovery reconciliation. Existing host/inventory writers and
+connection management are not yet integrated with the reservation guard.
+The new reservation is not an execution lease or a third approval channel.
+No default opt-in or route is added. Synthetic schema/uniqueness tests
+are not PostgreSQL concurrency or native host acceptance.

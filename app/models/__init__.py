@@ -19,6 +19,7 @@ from app.models.automation import (
     AutomationHostAsset,
     AutomationHostTrustRevision,
     AutomationInventoryAssignment,
+    AutomationRunTargetClaim,
 )
 from app.models.capsule_handoff_ledger import CapsuleHandoffLedgerEvent as CapsuleHandoffLedgerEvent
 from app.models.capsule_handoff_proof import CapsuleHandoffAuditBatch as CapsuleHandoffAuditBatch
@@ -185,6 +186,7 @@ __all__ = [
     'AutomationHostAsset',
     'AutomationHostTrustRevision',
     'AutomationInventoryAssignment',
+    'AutomationRunTargetClaim',
     'IdentityProvider',
     'HarborInstance',
     'VaultInstance',
