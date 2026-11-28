@@ -23,7 +23,9 @@
         ('shield-check', 'Installation-Scoped Evidence')
         ],
         'Authorized GitHub App Installations',
-        'Manage GitHub Integrations', url_for('integrations.source_control'),
+        none, none,
+        integration_endpoint='integrations.source_control',
+        integration_permitted=current_user.is_authenticated and current_user.has_permission('integrations.manage'),
         data_authority='Committed KAORI State',
         state='normal' if scope.committed_count else 'blocked',
         blocked_title='Source Inventory Not Collected',
