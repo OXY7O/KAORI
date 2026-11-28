@@ -261,3 +261,8 @@ Do not place a multi-line Info Tip **inside a table row or its overflow-x contai
 ### Notification Channels — metadata before Guide (#5308)
 
 Use ordinary metadata on Delivery Overview, Channel Registry and Delivery Evidence Boundary; their guidance belongs to the corresponding Recent Delivery, Channel Inventory/Archived Channels and Delivery Records content headers. Where a result count exists, render it before the Guide using the shared `inventory_block_header` optional trailing `guide` slot. The preview uses its actual visible record count. Provider-specific setup Guide buttons and all existing help interactions remain unchanged.
+
+
+### Table title label order — application-wide (#5345, 2026-11-28)
+
+When a table title has ordinary metadata or filtered Results and a Guide, render every ordinary label before Guide in the actual template order. Shared `inventory_block_header` renders Results before the backward-compatible `title_extra` and trailing `guide` slots. Prefer `guide` for newly authored table help, and keep any ordinary metadata in `title_extra` before it. Integration `provider_registry.registry_header` follows the same rule, and direct table title rows use Results/metadata before `info_tip.render(..., variant='guide')`. This does not move actions into title rows, add counts where evidence is absent, change field-level help, or alter the shared popover behavior.
