@@ -1533,6 +1533,24 @@ def _verify_registry_and_secrets_hero_semantics() -> None:
         _require_tokens(_read(TEMPLATES / relative), (token,), relative)
 
 
+def _verify_integration_hero_accessories() -> None:
+    consumers = {
+        'integrations/components/_provider_frontpage.html': 'page_hero.context_status_badge(posture_status',
+        'integrations/components/_provider_registration_hero.html': "page_hero.context_status_badge('Draft', 'unknown')",
+        'integrations/components/_provider_edit_hero.html': 'integration_hero_status(readiness',
+        'integrations/domain.html': 'page_hero.context_status_badge(posture_label',
+        'integrations/partials/_hero.html': 'page_hero.context_status_badge(portfolio_status',
+    }
+    for relative, token in consumers.items():
+        _require_tokens(_read(TEMPLATES / relative), (token,), relative)
+    detail = _read(TEMPLATES / 'integrations/components/_provider_detail_posture.html')
+    if detail.count('page_hero.context_status_badge(source_posture,') != 2:
+        raise AssertionError('Integration detail initial and OOB Hero posture must share the same badge')
+    adapter = _read(TEMPLATES / 'integrations/components/_semantic_status.html')
+    _require_tokens(adapter, ('macro integration_hero_status(', 'table_label.semantic_tone(value)',
+                              'page_hero.context_status_badge(label,'), 'Integration Hero status adapter')
+
+
 def verify() -> None:
     hero = _read(HERO)
     standard = _read(STANDARD)
@@ -1689,6 +1707,7 @@ def verify() -> None:
     _verify_migrated_integration_navigation()
     _verify_kubernetes_hero_navigation()
     _verify_registry_and_secrets_hero_semantics()
+    _verify_integration_hero_accessories()
     _verify_blocked_context_ownership()
     _verify_registry_blocked_hero_actions()
     _verify_analytics_metadata_ownership()

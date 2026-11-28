@@ -1381,3 +1381,8 @@ For Integration domain registries:
 - do not hide validation failures, readiness blockers, destructive warnings, or required workflow state in an Info Tip;
 - domain-specific guidance remains provider-neutral where the owning boundary is provider-neutral;
 - Integrations Overview is excluded because its portfolio and authority surfaces are first-class overview evidence rather than subordinate helper guidance.
+
+
+### Hero context status ownership (#5410)
+
+Integration provider registry, detail, edit, registration, domain and portfolio Hero status use the canonical `page_hero.context_status_badge` renderer, including provider detail HTMX OOB refresh. The Integration semantic status adapter remains the table/registry status authority; `integration_hero_status` maps its existing tone vocabulary to the Hero badge only. Portfolio status is Ready only when a nonempty committed portfolio is completely ready; configuration alone is not readiness. Keep existing provider-specific registration, validation, configuration and Back to Registry actions, and the existing OOB target IDs. No change to provider readiness or mutation authority.
