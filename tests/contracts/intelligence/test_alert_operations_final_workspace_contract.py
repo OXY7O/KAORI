@@ -68,7 +68,7 @@ def test_routing_workspace_is_table_led_and_crud_uses_modal() -> None:
     assert 'Match Scope & Channels' in editor
     assert 'bg-kaori-soft text-kaori-primary' in editor
     assert 'Matcher tip:' not in editor
-    assert 'How to match' in editor
+    assert 'How matching works' in editor
     assert 'Policy Checklist' in editor
     assert '{% import "components/action_button.html" as action_button %}' in editor
     assert "action_button.classes('critical')" in editor
@@ -552,7 +552,7 @@ def test_routing_editor_compact_summary_and_bounded_channel_choices() -> None:
     assert 'if not channel_available' in editor
     assert 'channel.registry_eligible' in editor
     assert 'aria-describedby="routing-matcher-help"' in editor
-    assert 'name="matchers" rows="3"' in editor
+    assert 'name="matchers" rows="5"' in editor
     assert 'data-routing-matchers' in editor
     assert '<details class="group border-t' in editor
     assert 'Policy Checklist' in editor
@@ -644,3 +644,25 @@ def test_routing_editor_segmented_picker_counts_only_eligible_checked_channels()
     assert '0 selected</span>' in html
     assert '0 eligible</span>' in html
     assert 'Configure and validate a Notification Channel first.' in html
+
+
+def test_routing_editor_matcher_panels_preserve_native_form_and_checklist() -> None:
+    editor = read('app/templates/intelligence/partials/_alert_ops_routing_editor_modal.html')
+    section = editor.split('data-routing-matchers', 1)[1].split('</section>', 1)[0]
+    assert 'grid items-stretch' in section
+    assert 'lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]' in section
+    assert 'data-routing-matcher-input' in section
+    assert 'data-routing-matcher-examples' in section
+    assert 'data-routing-matcher-guidance' in section
+    assert "table_label.metadata_label('Optional')" in section
+    assert "table_label.metadata_label('One per line', 'list')" in section
+    assert "table_label.metadata_label('environment=production', 'tag', wrap=true)" in section
+    assert "table_label.metadata_label('namespace=billing', 'tag', wrap=true)" in section
+    assert section.count('name="matchers"') == 1
+    assert 'for key, value in selected_policy.matchers.items()' in section
+    assert 'aria-describedby="routing-matcher-help"' in section
+    assert 'id="routing-matcher-help"' in section
+    assert 'All expressions must match' in section
+    assert 'Leave empty' in section
+    assert '<details class="group border-t' in section
+    assert 'Policy Checklist' in section
