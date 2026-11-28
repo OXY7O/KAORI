@@ -144,8 +144,11 @@ def exact_credential_target_current(
             return False
     elif provider.provider_key == 'openbao':
         deployment_ref = local_inventory_deployment_ref(
-            provider, namespace=policy.provider_namespace, mount=policy.mount,
-                environment=connection.environment, lock=True
+            provider,
+            namespace=policy.provider_namespace,
+            mount=policy.mount,
+            environment=connection.environment,
+            lock=True,
         )
         if deployment_ref is None:
             return False
