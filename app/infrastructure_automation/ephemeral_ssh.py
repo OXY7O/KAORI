@@ -17,6 +17,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from app.infrastructure_automation.ssh_host_key import qualify_ed25519_host_key
 from app.integrations.secrets_management.secrets_pki.providers.ssh_credential_material import SSHCredentialMaterial
@@ -94,6 +95,7 @@ def _validate_targets(targets: tuple[SSHMaterialTarget, ...]) -> None:
             or type(target.port) is not int
             or not 1 <= target.port <= 65535
             or not isinstance(target.credential, SSHCredentialMaterial)
+            or not isinstance(target.credential.private_key, Ed25519PrivateKey)
             or not isinstance(target.credential.username, str)
             or _USERNAME.fullmatch(target.credential.username) is None
             or target.credential.username == 'root'
@@ -154,6 +156,8 @@ def _prepare(root: Path, targets: tuple[SSHMaterialTarget, ...]) -> EphemeralSSH
             f'    Port {target.port}',
             f'    User {target.credential.username}',
             f'    IdentityFile "{key_path}"',
+            '    ProxyCommand none',
+            '    ProxyJump none',
         ))
     configs.extend((
         'Host *',
@@ -173,7 +177,8 @@ def _prepare(root: Path, targets: tuple[SSHMaterialTarget, ...]) -> EphemeralSSH
         '    KbdInteractiveAuthentication no',
         '    GSSAPIAuthentication no',
         '    HostbasedAuthentication no',
-        '    ProxyCommand none',
+        # Unknown aliases cannot use the candidate SSH config for transport.
+        '    ProxyCommand /bin/false',
         '    ProxyJump none',
         '    ControlMaster no',
         '    ControlPath none',
