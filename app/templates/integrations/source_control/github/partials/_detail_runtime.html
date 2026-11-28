@@ -26,7 +26,7 @@
     '#github-runtime-workspace', include='#github-runtime-history [data-kaori-runtime-history-filters] form') }}
     {% call connection_validation_header.render(
         'Runtime Health & Diagnostics',
-        'Review committed runtime health, installation diagnostics, jobs, and signed webhook transport evidence.',
+        'Review committed runtime health, installation diagnostics, and signed webhook transport evidence.',
         icon='activity',
         loading_id='github-runtime-loading',
         loading_active=runtime_refresh_job and runtime_refresh_job.is_active,
@@ -81,7 +81,7 @@
         finding,
         runtime_state.attention_factors|length if runtime_observed else 0,
         next_action,
-        'Review Recent Runtime Observations for immutable diagnostics. Jobs and signed webhook receipts are committed transport evidence, not repository synchronization or provider-side runtime history.'
+        'Review Recent Runtime Observations for immutable diagnostics. Operations Center owns JobExecution; signed webhook receipts are transport evidence, not repository synchronization or provider-side runtime history.'
         ) }}
         {% set provider_facts = [
             ('GitHub Host', installation.host_key, 'Configured provider host'),
@@ -111,30 +111,7 @@
     {% include 'integrations/partials/_runtime_history.html' %}
 {% endwith %}
 {% if not runtime_refresh_partial|default(false) %}
-{% set runtime_view = 'jobs' if request.args.get('runtime_view') == 'jobs' else 'deliveries' %}
-<section id="github-runtime-evidence-registry"
-         class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
-         data-kaori-github-runtime-registry-tabs>
-    {% set runtime_tabs = [
-            ('deliveries', 'Signed Webhook Deliveries', 'webhook', url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='deliveries')),
-            ('jobs', 'Execution References', 'history', url_for('github_source_uat.detail', installation_id=installation.id, tab='runtime', runtime_view='jobs'))
-        ] %}
-    {{ framed_tabs.render_navigation(runtime_tabs,
-        runtime_view,
-        prefix='github-transport-evidence',
-        aria_label='GitHub Transport and Execution Evidence',
-        hx_target='#github-runtime-evidence-registry',
-        hx_select='#github-runtime-evidence-registry',
-        hx_push_url='true') }}
-    <div id="github-runtime-evidence-registry-content">
-        {% set runtime_table_embedded = true %}
-        {% if runtime_view == 'deliveries' %}
-            {% include "integrations/source_control/github/partials/_runtime_deliveries.html" %}
-        {% else %}
-            {% include "integrations/source_control/github/partials/_runtime_jobs.html" %}
-        {% endif %}
-    </div>
-</section>
+    {% include "integrations/source_control/github/partials/_runtime_deliveries.html" %}
 {% endif %}
 {% if runtime_refresh_partial|default(false) %}
     {{ framed_tabs.badge_oob('github', 'runtime', runtime_health_label) }}

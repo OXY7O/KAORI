@@ -19,7 +19,6 @@ def _read(path: Path) -> str:
 def test_runtime_reuses_standard_decision_and_canonical_refresh():
     detail = _read(GITHUB / 'uat_detail.html')
     runtime = _read(GITHUB / 'partials/_detail_runtime.html')
-    jobs = _read(GITHUB / 'partials/_runtime_jobs.html')
     deliveries = _read(GITHUB / 'partials/_runtime_deliveries.html')
     routes = _read(ROUTES)
 
@@ -35,7 +34,6 @@ def test_runtime_reuses_standard_decision_and_canonical_refresh():
         'Run Runtime Refresh',
         'action_form.hidden_tag()',
         'hx-post=',
-        'partials/_runtime_jobs.html',
         'partials/_runtime_deliveries.html',
     ):
         assert token in runtime
@@ -48,14 +46,12 @@ def test_runtime_reuses_standard_decision_and_canonical_refresh():
     assert 'FlaskForm().validate_on_submit()' in routes
     assert 'provider.refresh(' not in routes
     assert 'requests.get(' not in routes
-    assert 'jobs' in jobs and 'deliveries' in deliveries
     assert 'delivery.dispatched_job_execution_id' in deliveries
     assert 'delivery.payload_sha256' not in deliveries
 
 
 def test_history_registries_are_scoped_server_filtered_paginated():
     runtime_source = _read(RUNTIME_PRESENTATION)
-    jobs = _read(GITHUB / 'partials/_runtime_jobs.html')
     deliveries = _read(GITHUB / 'partials/_runtime_deliveries.html')
 
     assert "JobExecution.integration_type == 'source_control'" in runtime_source
@@ -72,7 +68,7 @@ def test_history_registries_are_scoped_server_filtered_paginated():
     assert "operation='runtime_refresh'" in runtime_source
     assert 'runtime_refresh_job' in runtime_source
     assert 'paginate_query(' in runtime_source
-    for panel, field in ((jobs, 'job_per_page'), (deliveries, 'delivery_per_page')):
+    for panel, field in ((deliveries, 'delivery_per_page'),):
         assert 'data-kaori-server-filtered-registry' in panel
         assert 'components/table.html' in panel
         assert 'components/pagination.html' in panel
@@ -162,38 +158,27 @@ def test_github_header_help_reuses_accessible_kaori_info_tip():
     # KAORI title-level guidance uses the visible Guide trigger, never a bare question-mark icon.
 
 
-def test_github_runtime_history_is_one_accessible_two_tab_registry():
+def test_github_runtime_history_has_one_standalone_transport_registry():
     runtime = _read(GITHUB / 'partials/_detail_runtime.html')
-    jobs = _read(GITHUB / 'partials/_runtime_jobs.html')
     deliveries = _read(GITHUB / 'partials/_runtime_deliveries.html')
     routes = _read(ROUTES)
-    runtime_source = _read(RUNTIME_PRESENTATION)
-    framed_tabs = _read(ROOT / 'app/templates/components/framed_workspace_tabs.html')
+    projection = _read(RUNTIME_PRESENTATION)
 
-    assert 'framed_tabs.render_navigation(' in runtime
-    assert 'data-kaori-github-runtime-registry-tabs' in runtime
-    assert 'id="github-runtime-evidence-registry"' in runtime
-    assert "runtime_view == 'deliveries'" in runtime
-    assert 'runtime_table_embedded = true' in runtime
-    assert runtime.count('partials/_runtime_jobs.html') == 1
+    assert not (GITHUB / 'partials/_runtime_jobs.html').exists()
+    assert 'framed_tabs.render_navigation(' not in runtime
+    assert 'github-runtime-evidence-registry' not in runtime
+    assert 'Execution References' not in runtime
+    assert 'Recent Jobs' not in runtime
     assert runtime.count('partials/_runtime_deliveries.html') == 1
-    assert 'render_navigation(' in framed_tabs
-    assert 'data-kaori-tab-variant="framed-workspace-v2-server"' in framed_tabs
-    assert "hx_target='#github-runtime-evidence-registry'" in runtime
-    assert "hx_select='#github-runtime-evidence-registry'" in runtime
-    assert "hx_push_url='true'" in runtime
-    assert "('jobs', 'Execution References', 'history'" in runtime
-    assert "('deliveries', 'Signed Webhook Deliveries', 'webhook'" in runtime
-    for page, kind in ((jobs, 'jobs'), (deliveries, 'deliveries')):
-        assert f'data-kaori-runtime-registry-view="{kind}"' in page
-        assert f"runtime_view='{kind}'" in page
-        assert 'runtime_table_embedded|default(false)' in page
-        assert 'components/pagination.html' in page
-        assert 'table_ui.inventory_block_header(' in page
-        assert 'data-kaori-auto-submit' in page
-        assert 'registry_ui.clear_filters_action(' in page
-    assert routes.count('runtime_table_embedded=True') == 2
-    assert 'SourceWebhookDelivery.query.filter_by(installation_id=installation.id)' in runtime_source
+    assert 'def runtime_jobs(' not in routes
+    assert '/runtime/jobs' not in routes
+    assert 'runtime_table_embedded' not in deliveries + routes
+    assert 'runtime_view' not in deliveries + runtime
+    assert 'table_ui.block_classes(allow_overflow=true)' in deliveries
+    assert 'SourceWebhookDelivery.query.filter_by(installation_id=installation.id)' in projection
+    for removed in ('jobs_query', 'job_queue_options', 'job_search', 'job_pagination'):
+        assert removed not in projection
+    assert 'job_public_ids=_observation_job_public_ids(installation, rows)' in projection
 
 
 def test_github_committed_repository_registry_is_full_width_sibling():
@@ -230,10 +215,10 @@ def test_runtime_history_uses_full_kaori_table_components():
     runtime = _read(GITHUB / 'partials/_detail_runtime.html')
     shared_table = _read(ROOT / 'app/templates/components/table.html')
     shared_registry = _read(ROOT / 'app/templates/components/table_registry.html')
-    assert 'framed_tabs.render_navigation(' in runtime
+    assert 'framed_tabs.render_navigation(' not in runtime
     assert 'macro inventory_block_header(' in shared_table
     assert 'macro clear_filters_action(' in shared_registry
-    for filename, view in (('_runtime_jobs.html', 'jobs'), ('_runtime_deliveries.html', 'deliveries')):
+    for filename, view in (('_runtime_deliveries.html', 'deliveries'),):
         page = _read(GITHUB / 'partials' / filename)
         assert f'data-kaori-full-table-registry="{view}"' in page
         for token in (
@@ -258,43 +243,27 @@ def test_runtime_history_uses_full_kaori_table_components():
             'integration_status(',
         ):
             assert token in page, (filename, token)
-        assert f"runtime_view='{view}'" in page
+        assert 'runtime_view' not in page
         assert 'payload_sha256' not in page
 
 
-def test_runtime_filter_controls_and_kaori_tab_counters():
-    runtime = _read(GITHUB / 'partials/_detail_runtime.html')
-    jobs = _read(GITHUB / 'partials/_runtime_jobs.html')
-    deliveries = _read(GITHUB / 'partials/_runtime_deliveries.html')
+def test_webhook_filter_controls_and_kaori_result_count():
+    page = _read(GITHUB / 'partials/_runtime_deliveries.html')
     routes = _read(ROUTES)
     runtime_source = _read(RUNTIME_PRESENTATION)
 
-    # The full table owns result counts; tab labels must remain text-only.
-    tabs = runtime.split('{% set runtime_tabs = [', 1)[1].split('] %}', 1)[0]
-    assert "'Recent Jobs'" in tabs
-    assert "'Signed Webhook Deliveries'" in tabs
-    assert 'total_items' not in tabs
-    for page, fields, view in (
-        (jobs, ('job_search', 'job_queue', 'job_status'), 'jobs'),
-        (deliveries, ('delivery_search', 'delivery_event', 'delivery_state'), 'deliveries'),
-    ):
-        assert page.count('type="search"') == 1
-        for field in fields:
-            assert f'name="{field}"' in page
-            assert f"'{field}': {field}" in page
-            assert f'{field}={field}' in page
-            assert f'<input type="hidden" name="{field}"' in page or field == fields[0]
-        assert 'hx-trigger="change, input changed delay:400ms, submit"' in page
-        assert 'registry_ui.clear_filters_action(' in page
-        assert f"runtime_view='{view}'" in page
-
-    assert "JobExecution.integration_type == 'source_control'" in runtime_source
+    assert 'result_count=delivery_pagination.total_items' in page
+    assert page.count('type="search"') == 1
+    for field in ('delivery_search', 'delivery_event', 'delivery_state'):
+        assert f'name="{field}"' in page
+        assert f"'{field}': {field}" in page
+        assert f'{field}={field}' in page
+        assert f'<input type="hidden" name="{field}"' in page
+    assert 'hx-trigger="change, input changed delay:400ms, submit"' in page
+    assert 'registry_ui.clear_filters_action(' in page
     assert 'SourceWebhookDelivery.query.filter_by(installation_id=installation.id)' in runtime_source
-    assert 'JobExecution.queue_name == job_queue' in runtime_source
     assert 'SourceWebhookDelivery.event_type == delivery_event' in runtime_source
-    assert 'JobExecution.operation.ilike(' in runtime_source
     assert 'SourceWebhookDelivery.action.ilike(' in runtime_source
-    assert "request.args.get('job_search', '').strip()[:80]" in runtime_source
     assert "request.args.get('delivery_search', '').strip()[:80]" in runtime_source
     assert '.limit(50)' in runtime_source
     assert "return '%' + value.replace(" in runtime_source
@@ -311,34 +280,23 @@ def test_runtime_search_escapes_sql_like_wildcards():
     assert _runtime_search_pattern('job') == '%job%'
 
 
-def test_runtime_history_filters_are_automatic_and_rows_are_readable():
-    jobs = _read(GITHUB / 'partials/_runtime_jobs.html')
-    deliveries = _read(GITHUB / 'partials/_runtime_deliveries.html')
-
-    for panel in (jobs, deliveries):
-        assert 'hx-trigger="change, input changed delay:400ms, submit"' in panel
-        assert 'data-kaori-canonical-registry-filter=' in panel
-        assert 'registry_ui.clear_filters_action(' in panel
-        assert 'Apply Filters' not in panel
-        assert '<noscript>' in panel
-        assert '<button type="submit"' in panel
-        assert 'Filter Results' in panel
-
-    # Keep server-authoritative JobExecution fields and show a compact date/time pair.
-    assert 'table_ui.title_cell(job.operation' in jobs
-    assert "'Job #' ~ job.id" in jobs
-    assert 'job.created_at.isoformat()' in jobs
-    assert 'job.created_at.strftime("%d %b %Y")' in jobs
-    assert 'job.created_at.strftime("%H:%M:%S")' in jobs
-    assert 'tabular-nums' in jobs
-    assert "job.queue_name or 'Not assigned'" in jobs
-    assert "integration_status(job.status, display='indicator')" in jobs
+def test_webhook_history_filters_are_automatic_and_rows_are_readable():
+    panel = _read(GITHUB / 'partials/_runtime_deliveries.html')
+    assert 'hx-trigger="change, input changed delay:400ms, submit"' in panel
+    assert 'data-kaori-canonical-registry-filter=' in panel
+    assert 'registry_ui.clear_filters_action(' in panel
+    assert 'Apply Filters' not in panel
+    assert '<noscript>' in panel
+    assert '<button type="submit"' in panel
+    assert 'Filter Results' in panel
+    assert 'delivery.received_at' in panel
+    assert 'delivery.dispatched_job_execution_id' in panel
+    assert "integration_status(delivery.processing_state, display='indicator')" in panel
 
 
 def test_committed_repository_registry_uses_kaori_full_table_and_spacing():
     detail = _read(GITHUB / 'uat_detail.html')
     registry = _read(GITHUB / '_inventory_table.html')
-    jobs = _read(GITHUB / 'partials/_runtime_jobs.html')
 
     assert 'id="github-panel-inventory"' in detail
     assert (
@@ -369,7 +327,6 @@ def test_committed_repository_registry_uses_kaori_full_table_and_spacing():
     assert 'matching_total == 0' in registry
     assert 'row.exact_default_branch_sha' in registry
     assert 'observed_at.isoformat()' in registry
-    assert 'job.created_at.strftime("%d %b %Y")' in jobs
 
 
 def test_committed_repository_filters_preserve_installation_authority():
@@ -484,8 +441,9 @@ def test_github_runtime_uses_canonical_history_and_shared_evidence():
     assert "'provider_key': 'github'" in projection
     assert "'adapter_key': 'github_rest_v3'" in projection
     assert "paginate_runtime_history(" in projection
-    assert "runtime_history_view(rows, pagination=pagination)" in projection
-    assert "runtime_view = 'jobs' if request.args.get('runtime_view') == 'jobs' else 'deliveries'" in runtime
+    assert "runtime_history_view(" in projection
+    assert "rows, pagination=pagination, job_public_ids=" in projection
+    assert 'runtime_view' not in runtime
     assert 'runtime_state.diagnostics' in runtime
     assert 'hx-include="#github-runtime-history [data-kaori-runtime-history-filters] form"' in runtime
     history = _read(ROOT / 'app/templates/integrations/partials/_runtime_history.html')
@@ -585,3 +543,60 @@ def test_github_worker_observation_provenance_is_opt_in_and_not_backfilled():
     assert "operation='runtime_refresh'" in tasks
     assert 'operation=operation' in tasks
     assert 'job_execution_id=job_execution_id' in tasks
+
+
+def test_runtime_job_reference_is_permission_gated_and_exact_scope(monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+
+    from app.integrations.source_control.source_control.providers.github.application import runtime_presentation
+
+    installation = SimpleNamespace(id=7, integration_instance_id=21)
+    rows = [
+        SimpleNamespace(capability_snapshot={'job_execution_id': 11, 'operation': 'runtime_refresh'}),
+        SimpleNamespace(capability_snapshot={'job_execution_id': 12, 'operation': 'full_validation'}),
+        SimpleNamespace(capability_snapshot={'job_execution_id': 13, 'operation': 'full_validation'}),
+        SimpleNamespace(capability_snapshot={'job_execution_id': 14}),
+    ]
+    user = SimpleNamespace(is_authenticated=True, has_permission=lambda _permission: False)
+    monkeypatch.setattr(runtime_presentation, 'current_user', user)
+    query = MagicMock()
+    model = runtime_presentation.JobExecution
+    monkeypatch.setattr(
+        runtime_presentation,
+        'JobExecution',
+        SimpleNamespace(
+            query=query,
+            **{
+                name: getattr(model, name)
+                for name in (
+                    'id', 'public_id', 'operation', 'integration_type', 'job_type',
+                    'scope_type', 'scope_key', 'integration_instance_id',
+                )
+            },
+        ),
+    )
+    assert runtime_presentation._observation_job_public_ids(installation, rows) == {}
+    query.with_entities.assert_not_called()
+
+    user.has_permission = lambda permission: permission == 'jobs.view'
+    query.with_entities.return_value.filter.return_value.all.return_value = [
+        (11, 'public-11', 'runtime_refresh'),
+        (12, 'public-12', 'runtime_refresh'),
+    ]
+    assert runtime_presentation._observation_job_public_ids(installation, rows) == {11: 'public-11'}
+    query.with_entities.return_value.filter.assert_called_once()
+
+
+def test_runtime_job_navigation_reuses_canonical_registry():
+    modal = _read(ROOT / 'app/templates/integrations/components/_runtime_observation_modal.html')
+    routes = _read(ROOT / 'app/platform_operations/jobs/routes.py')
+    presentation = _read(ROOT / 'app/platform_operations/jobs/presentation.py')
+    projection = _read(RUNTIME_PRESENTATION)
+    assert "current_user.has_permission('jobs.view')" in projection
+    assert "JobExecution.id.in_(candidates)" in projection
+    assert "candidates.get(job_id) == operation" in projection
+    assert "url_for('jobs.executions', execution_tab='registry', search=row.job_execution_public_id)" in modal
+    assert "row.job_execution_public_id|default(none)" in modal
+    assert "@permission_required('jobs.view')" in routes
+    assert 'JobExecution.public_id.ilike(value)' in presentation

@@ -186,6 +186,7 @@ def runtime_history_view(
     rows: list[IntegrationRuntimeObservation],
     *,
     pagination: dict[str, object],
+    job_public_ids: Mapping[int, str] | None = None,
 ) -> dict[str, object]:
     per_page = _safe_int(pagination.get('per_page'), default=5)
     rendered_source_rows = rows[:per_page]
@@ -225,6 +226,9 @@ def runtime_history_view(
                     else None
                 ),
                 'job_execution_id': snapshot.get('job_execution_id'),
+                'job_execution_public_id': (job_public_ids or {}).get(snapshot.get('job_execution_id'))
+                if isinstance(snapshot.get('job_execution_id'), int) and not isinstance(snapshot.get('job_execution_id'), bool)
+                else None,
                 'readiness': row.readiness,
                 'readiness_label': present_key_label(row.readiness),
                 'health_status': row.health_status,
