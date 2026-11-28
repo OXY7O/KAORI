@@ -17,6 +17,9 @@
 {% if payload.snapshot.serving_last_good %}
     {% set guide_items = guide_items + ['Last Good Snapshot Active: The latest provider refresh is stale or failed. Existing alert cases remain available from committed KAORI evidence while workers retry collection.'] %}
 {% endif %}
+{% if payload.tab == 'active' %}
+    {% set guide_items = guide_items + ['Triage: prioritize critical or source-unknown cases, acknowledge ownership where qualified, then review evidence and mitigation.'] %}
+{% endif %}
 {% set workspace_guide %}
     {{ info_tip.render('alert-operations-guide', 'Alert Operations Guide',
         'Review committed alert evidence within the selected operational scope.',
@@ -29,7 +32,7 @@
     'Alert Operations Workspace',
     {
     'overview': 'Review alert posture, delivery readiness, and operational evidence.',
-    'active': 'Review active cases, ownership, mitigation, and source evidence.',
+    'active': 'Triage and manage alerts in the selected scope.',
     'routing': 'Review routing policies and channel readiness without duplicating channel credentials.',
     'templates': 'Review and manage governed notification templates.',
     'silences': 'Review active delivery silences and their scope.',
@@ -44,7 +47,7 @@
         <div class="space-y-3">
             <div class="min-w-0">
                 <h3 class="{{ table_ui.block_title_classes() }}">Operational Context</h3>
-                <p class="{{ table_ui.block_description_classes() }}">Choose the managed domain, provider and authorized asset scope.</p>
+                <p class="{{ table_ui.block_description_classes() }}">{{ 'Select the domain and asset to review.' if payload.tab == 'active' and not payload.provider_case_mode else 'Choose the managed domain, provider and authorized asset scope.' }}</p>
             </div>
             <form id="alert-intelligence-context-form"
                   action="{{ url_for('alert_intelligence.index') }}"

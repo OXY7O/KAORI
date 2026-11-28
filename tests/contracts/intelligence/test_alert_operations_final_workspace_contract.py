@@ -356,3 +356,28 @@ def test_each_alert_tab_uses_shared_section_intro_between_summary_and_workspace(
         ('resolved', 'Recovery & Closure'),
     ):
         assert f"'{tab}': ('{title}', '" in page
+
+
+def test_active_alert_triage_and_quick_views_follow_registry_hierarchy() -> None:
+    from jinja2 import Environment
+
+    active = read('app/templates/intelligence/partials/_alert_ops_active.html')
+    table = read('app/templates/intelligence/partials/_alert_ops_active_table.html')
+    workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
+    for source in (active, table, workspace):
+        Environment().parse(source)
+    assert 'data-alert-triage-metrics' in active
+    assert 'Triage Guidance' not in active
+    assert 'Triage: prioritize critical or source-unknown cases' in workspace
+    assert active.index('id="alert-operations-active-registry"') < active.index('data-alert-quick-views')
+    assert active.index('data-alert-quick-views') < active.index('id="alert-operations-filter-form"')
+    assert 'aria-current="true"' in active
+    assert 'hx-sync="#alert-operations-active-registry:replace"' in active
+    assert "table_ui.inventory_filter_bar_classes()" in active
+    identity = table.split('data-alert-case-identity', 1)[1].split('</td>', 1)[0]
+    assert 'truncate' not in identity
+    assert 'Case ID' in identity
+    for field in ('alert_name', 'asset_name', 'namespace', 'public_id'):
+        assert f'case.{field}' in identity
+    assert 'case.source_type_label' not in identity
+    assert 'case.source_type_label' in table
