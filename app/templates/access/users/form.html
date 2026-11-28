@@ -126,7 +126,7 @@
                                             {{ info_tip.render('add-user-credential-guide',
                                                                                         'Local Credential Guidance',
                                                                                         'KAORI owns the new Local Database password; external identity passwords remain with their providers.',
-                                                                                        items=['Use at least 12 characters and a unique passphrase.', 'Confirm the initial password exactly before creating the account.'],
+                                                                                        items=['Use at least ' ~ form.password.flags.minlength ~ ' characters and a unique passphrase.', 'Confirm the initial password exactly before creating the account.'],
                                                                                         placement='right',
                                                                                         variant='guide') }}
                                         {% endif %}
@@ -157,7 +157,7 @@
                                     <div>
                                         <label for="{{ form.password.id }}"
                                                class="mb-1.5 block text-sm font-semibold text-content-primary">Initial Password</label>
-                                        {{ form.password(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="new-password", placeholder="Minimum 12 characters") }}
+                                        {{ form.password(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="new-password", placeholder="Minimum " ~ form.password.flags.minlength ~ " characters") }}
                                     </div>
                                     <div>
                                         <label for="{{ form.confirm_password.id }}"
