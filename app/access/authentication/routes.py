@@ -26,6 +26,7 @@ from app.access.authentication.identity_provider.browser import (
 from app.access.authentication.identity_provider.catalog import provider_definition
 from app.access.authentication.identity_provider.registry import get_browser_sso_adapter
 from app.access.authentication.identity_provider.proof import parse_external_credential_proof
+from app.access.authentication.login_protection import LoginProtectionUnavailable, check_login_request
 from app.access.authentication.mfa.policy import MfaGate, MfaPolicyError
 from app.access.authentication.mfa.service import (
     MFA_CHALLENGE_TTL_SECONDS,
@@ -203,7 +204,20 @@ def login():
             return redirect(url_for('auth.login'))
         username = form.username.data or ''
         password = form.password.data or ''
-        result = authenticate(username, password)
+        try:
+            protection = check_login_request(username)
+            if protection.over_budget:
+                record_authentication_activity(
+                    action='login', username='', source='credentials', result='failed',
+                    reason='rate_limited' if protection.blocked else 'identity_budget_observed',
+                )
+            if protection.blocked:
+                result = AuthResult(False, 'rate_limited', source='credentials')
+            else:
+                result = authenticate(username, password, protection=protection)
+        except (SQLAlchemyError, ValueError, TypeError, LoginProtectionUnavailable):
+            db.session.rollback()
+            return DATABASE_UNAVAILABLE_MESSAGE, 503, {'Cache-Control': 'no-store'}
 
         if result.success and result.user:
             try:
@@ -213,6 +227,7 @@ def login():
                     next_url=form.next.data,
                 )
             except SQLAlchemyError:
+                db.session.rollback()
                 result = AuthResult(
                     False,
                     'database_unavailable',
@@ -221,6 +236,7 @@ def login():
                     message=DATABASE_UNAVAILABLE_MESSAGE,
                 )
             except AuthSessionError:
+                db.session.rollback()
                 result = AuthResult(
                     False,
                     'access_not_permitted',
