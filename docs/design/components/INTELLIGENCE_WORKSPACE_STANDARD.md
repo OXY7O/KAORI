@@ -340,3 +340,16 @@ three concise matching rules. Examples are illustrative, not prefilled or
 submitted values. Keep the existing exact-match serialization, accessible
 helper association and collapsed native Policy Checklist below. Retain
 existing form fields, CSRF, permission checks and save validation.
+
+
+### Recommendation routing mode
+
+Routing & Channels exposes the deployment-wide committed recommendation
+routing mode using a shared block header, current status and contextual Guide.
+Render three concise radio choices with an explicit Save action only for an
+operator with management permission. Preserve the selected workspace scope in
+the return URL; it does not narrow the global setting. Use the shared
+notification feedback path and revision-bound form. Show mode-specific
+unfiltered empty states; filtered emptiness must not imply missing policies.
+Channel readiness describes channel eligibility, not transport authorization;
+Registry explicit policy and Vault exact-instance boundaries remain visible.

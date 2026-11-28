@@ -59,6 +59,7 @@
             </div>
         </div>
     </section>
+    {% include 'intelligence/partials/_alert_delivery_mode.html' %}
     {% set readiness = payload.channel_readiness %}
     <section class="{{ table_ui.block_classes() }}" data-alert-channel-readiness-summary>
         <header class="{{ table_ui.block_header_classes() }}">
@@ -280,8 +281,20 @@
                             <td colspan="7" class="p-0">
                                 {% set empty_state_icon = "route-off" %}
                                 {% set empty_state_label = "No Routing Policy" %}
-                                {% set empty_state_title = "Use Channel Defaults or Create a Governed Policy" %}
-                                {% set empty_state_description = "Without an Alert Operations routing policy, KAORI uses validated channels that already allow Alert Intelligence delivery for the selected domain." %}
+                                {% set delivery_mode = payload.get('routing_mode') or {'mode': 'delivery_disabled'} %}
+                                {% if payload.routing_filters.q or payload.routing_filters.domain != 'all' or payload.routing_filters.status != 'all' %}
+                                    {% set empty_state_title = "No Matching Routing Policies" %}
+                                    {% set empty_state_description = "Adjust the registry filters to review configured policies." %}
+                                {% elif delivery_mode.mode == 'delivery_disabled' %}
+                                    {% set empty_state_title = "Recommendation Delivery Disabled" %}
+                                    {% set empty_state_description = "Alert cases remain available. Outbound recommendation alerts are blocked by the current routing mode." %}
+                                {% elif delivery_mode.mode == 'policy_required' or payload.domain == 'registry' %}
+                                    {% set empty_state_title = "Explicit Routing Policy Required" %}
+                                    {% set empty_state_description = "Create an enabled matching policy before this scope can deliver notifications." %}
+                                {% else %}
+                                    {% set empty_state_title = "Channel Defaults Available" %}
+                                    {% set empty_state_description = "Validated channels that allow this alert domain and event may receive notifications without an explicit policy." %}
+                                {% endif %}
                                 {% set empty_state_min_height = "min-h-[180px]" %}
                                 {% include 'components/states/_empty_state.html' %}
                             </td>

@@ -6,6 +6,11 @@ from typing import Any
 from app.extensions.db import db
 from app.integrations.delivery.notification_channels.catalog import domain_event_allowed
 from app.integrations.delivery.notification_channels.providers import get_notification_provider
+from app.intelligence.alert_intelligence.delivery_mode import (
+    CHANNEL_DEFAULTS,
+    DELIVERY_DISABLED,
+    effective_routing_mode,
+)
 from app.models.alert_ops import AlertCase, AlertRoutingPolicy
 from app.models.integration import IntegrationInstance
 from app.models.notification_channel import NotificationChannel
@@ -213,6 +218,9 @@ def firing_routes(case: AlertCase) -> list[FiringRoute]:
         return []
     if case.domain == 'registry' and not registry_case_route_eligible(case):
         return []
+    mode = effective_routing_mode()
+    if mode == DELIVERY_DISABLED:
+        return []
     policies = matching_routing_policies(case)
     if policies:
         routes: list[FiringRoute] = []
@@ -230,8 +238,8 @@ def firing_routes(case: AlertCase) -> list[FiringRoute]:
             )
         return routes
 
-    if case.domain == 'registry':
-        return []  # Registry requires an explicit enabled policy; never default-broadcast.
+    if case.domain == 'registry' or mode != CHANNEL_DEFAULTS:
+        return []  # Explicit-policy-only scopes never default-broadcast.
 
     # Channel defaults apply only when no explicit governed policy owns this
     # domain. A configured rule that does not match severity/matchers must not
@@ -280,8 +288,13 @@ def acknowledgement_timeout_for_case(case: AlertCase) -> int:
 def policy_allows_resolved(case: AlertCase, channel_id: int) -> bool:
     if case.domain == 'authentication' or case.source_type != KAORI_ALERT_SOURCE_TYPE:
         return False
+    if case.domain == 'registry' and not registry_case_route_eligible(case):
+        return False
+    mode = effective_routing_mode()
+    if mode == DELIVERY_DISABLED:
+        return False
     policies = matching_routing_policies(case)
-    if case.domain == 'registry':
+    if case.domain == 'registry' or mode != CHANNEL_DEFAULTS:
         return any(
             policy.send_resolved and channel_id in (policy.channel_ids_json or []) for policy in policies
         )  # No legacy default for Registry.

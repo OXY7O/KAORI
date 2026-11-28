@@ -336,6 +336,7 @@ def test_registry_routing_requires_live_canonical_provider(monkeypatch) -> None:
 
 
 def test_registry_route_never_falls_back_to_broadcast_without_matching_policy(monkeypatch) -> None:
+    monkeypatch.setattr(routing, 'effective_routing_mode', lambda: 'channel_defaults')
     case = _registry_route_case()
     monkeypatch.setattr(routing, 'registry_case_route_eligible', lambda _case: True)
     monkeypatch.setattr(routing, 'matching_routing_policies', lambda _case: [])
@@ -348,6 +349,7 @@ def test_registry_route_never_falls_back_to_broadcast_without_matching_policy(mo
 def test_registry_route_requires_validated_scoped_channel_and_matching_rule(monkeypatch) -> None:
     from app.models.notification_channel import NotificationChannel
 
+    monkeypatch.setattr(routing, 'effective_routing_mode', lambda: 'channel_defaults')
     case = _registry_route_case()
     channel = _registry_notification_stub()
     monkeypatch.setattr(routing, 'registry_case_route_eligible', lambda _case: True)

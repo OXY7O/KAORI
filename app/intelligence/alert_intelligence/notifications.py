@@ -10,6 +10,7 @@ from sqlalchemy import and_, exists, literal, or_
 from app.extensions.db import db
 from app.integrations.delivery.notification_channels.contracts import NotificationEvent, NotificationMessage
 from app.integrations.delivery.notification_channels.service import dispatch_notification_event
+from app.intelligence.alert_intelligence.delivery_mode import DELIVERY_DISABLED, POLICY_REQUIRED, effective_routing_mode
 from app.intelligence.alert_intelligence.lifecycle import (
     acknowledgement_suppresses_delivery,
     active_delivery_silence,
@@ -222,13 +223,17 @@ def _dispatch_resolved(case: AlertCase) -> dict[str, int]:
     if case.domain == 'registry' and not registry_case_route_eligible(case):
         stats['skipped'] += 1
         return stats
+    mode = effective_routing_mode()
+    if mode == DELIVERY_DISABLED:
+        stats['skipped'] += 1
+        return stats
     firing_channels = _successful_firing_channels(case)
     if not firing_channels:
         stats['skipped'] += 1
         return stats
     delivered = _successful_resolved_channels(case)
     pending = _pending_resolved_channel_ids(firing_channels, delivered)
-    if case.domain == 'registry':
+    if case.domain == 'registry' or mode == POLICY_REQUIRED:
         pending = [channel_id for channel_id in pending if policy_allows_resolved(case, channel_id)]
     for channel_id in pending:
         result = _deliver_case_event(

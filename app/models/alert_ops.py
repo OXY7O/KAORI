@@ -212,6 +212,25 @@ class AlertSilence(db.Model):
     revoked_by: Mapped[User | None] = relationship('User', foreign_keys=[revoked_by_user_id])
 
 
+class AlertDeliveryMode(db.Model):
+    """Singleton deployment-wide recommendation delivery governance."""
+
+    __tablename__ = 'alert_delivery_modes'
+    __table_args__ = (
+        CheckConstraint('id = 1', name='ck_alert_delivery_mode_singleton'),
+        CheckConstraint(
+            "mode IN ('channel_defaults', 'policy_required', 'delivery_disabled')",
+            name='ck_alert_delivery_mode_value',
+        ),
+        CheckConstraint('revision >= 1', name='ck_alert_delivery_mode_revision'),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    mode: Mapped[str] = mapped_column(db.String(24), nullable=False)
+    revision: Mapped[int] = mapped_column(db.BigInteger, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False)
+
+
 class AlertRoutingPolicy(db.Model):
     __tablename__ = 'alert_routing_policies'
     __table_args__ = (Index('ix_alert_routing_policies_enabled', 'enabled', 'name'),)

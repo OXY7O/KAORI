@@ -90,15 +90,29 @@ def test_retry_stale_threshold_exceeds_transport_timeout(monkeypatch: pytest.Mon
     assert config.notification_delivery_timeout_seconds() == 60
 
 
-@pytest.mark.parametrize('domain', ['kubernetes', 'secrets_pki'])
-def test_due_recovery_claims_a_row_before_replaying(monkeypatch: pytest.MonkeyPatch, domain: str) -> None:
+@pytest.mark.parametrize(
+    ('domain', 'event_type', 'blocked'),
+    [
+        ('kubernetes', 'report.generated', False),
+        ('secrets_pki', 'alert_ops.firing', True),
+        ('kubernetes', 'alert_ops.firing', True),
+    ],
+)
+def test_due_recovery_claims_a_row_before_replaying(
+    monkeypatch: pytest.MonkeyPatch, domain: str, event_type: str, blocked: bool,
+) -> None:
     calls: list[str] = []
     item = SimpleNamespace(
         attempt_count=1,
         status='failed',
         channel=channel(),
         domain=domain,
-        event_type='report.generated' if domain == 'kubernetes' else 'alert_ops.firing',
+        event_type=event_type,
+        asset_type='cluster',
+        asset_key='cluster-1',
+        event_key='alert-case:CASE-1:firing:route-default:1',
+        channel_id=1,
+        payload_json={},
         severity='info',
         updated_at=None,
     )
@@ -163,15 +177,19 @@ def test_due_recovery_claims_a_row_before_replaying(monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(service, '_begin_delivery_attempt', claim)
     monkeypatch.setattr(service, '_deliver', send)
     monkeypatch.setattr(service, '_record_delivery_outcome', lambda *_: calls.append('result-commit'))
-    if domain == 'secrets_pki':
+    if blocked:
         monkeypatch.setattr(
             service, 'db', SimpleNamespace(session=SimpleNamespace(commit=lambda: calls.append('blocked')))
         )
+        if domain == 'kubernetes':
+            monkeypatch.setattr(service, 'recommendation_event_allowed', lambda **_kwargs: False)
     result = service.recover_notification_deliveries(limit=1)
-    if domain == 'secrets_pki':
+    if blocked:
         assert result == {'claimed': 0, 'sent': 0, 'failed': 0, 'skipped': 1}
         assert item.status == 'skipped'
         assert calls == ['locked', 'blocked']
+        if domain == 'kubernetes':
+            assert item.error_message == 'Replay blocked by current alert routing mode.'
     else:
         assert result == {'claimed': 1, 'sent': 1, 'failed': 0, 'skipped': 0}
         assert calls == ['locked', 'committed-claim', 'provider', 'result-commit']
