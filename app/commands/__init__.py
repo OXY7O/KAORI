@@ -1,6 +1,7 @@
 from flask import Flask
 
 from app.commands.admin import bootstrap_admin, reset_admin_password
+from app.commands.authentication import cleanup_pending_mfa_command
 from app.commands.automation_inventory import automation_inventory_store
 from app.commands.automation_remote_review import automation_remote_review_check
 from app.commands.integrations import refresh_integration_runtime_command
@@ -16,6 +17,7 @@ from app.infrastructure_automation.cli import automation_localhost_probe
 def register_commands(app: Flask) -> None:
     app.cli.add_command(bootstrap_admin)
     app.cli.add_command(reset_admin_password)
+    app.cli.add_command(cleanup_pending_mfa_command)
     app.cli.add_command(seed_rbac)
     app.cli.add_command(run_report_schedules)
     app.cli.add_command(archive_retention)
