@@ -6,11 +6,52 @@ from flask import make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
-from app.intelligence.alert_intelligence.service import get_alert_intelligence_payload, get_alert_overview_payload
+from app.intelligence.alert_intelligence.service import (
+    get_alert_intelligence_payload,
+    get_alert_overview_payload,
+    get_alert_scope_draft,
+)
 
 
 def index_response() -> ResponseReturnValue:
     target = str(request.headers.get('HX-Target') or '').strip()
+    if request.headers.get('HX-Request') == 'true' and target == 'alert-intelligence-context-form':
+        return render_template(
+            'intelligence/partials/_alert_scope_form.html', scope=get_alert_scope_draft(request.args)
+        )
+    # A draft whose dependent choices failed to refresh cannot silently widen
+    # an applied scope. Recheck current option membership before the real read.
+    if request.args.get('apply_scope') == '1':
+        draft = get_alert_scope_draft(request.args)
+        if (
+            request.args.get('domain') != draft['domain']
+            or request.args.get('draft_domain') != draft['domain']
+            or not draft['selected_asset_key']
+            or request.args.get('asset') != draft['selected_asset_key']
+            or (
+                draft['provider_case_mode']
+                and (
+                    request.args.get('provider') != draft['selected_provider']
+                    or request.args.get('draft_provider') != draft['selected_provider']
+                )
+            )
+        ):
+            return ('Select a current authorized scope and try again.', 400)
+        # Keep draft-only fields out of the canonical URL and page filters.
+        values = {
+            'tab': draft['tab'],
+            'domain': draft['domain'],
+            'asset': draft['selected_asset_key'],
+        }
+        if draft['provider_case_mode']:
+            values['provider'] = draft['selected_provider']
+        canonical_url = url_for('alert_intelligence.index', **values)
+        if request.headers.get('HX-Request') != 'true':
+            return redirect(canonical_url)
+        payload = get_alert_intelligence_payload(request.args)
+        response = make_response(render_template('intelligence/partials/_alert_intelligence_page.html', payload=payload))
+        response.headers['HX-Push-Url'] = canonical_url
+        return response
     operational_tabs = {'active', 'routing', 'templates', 'silences', 'resolved', 'history'}
     is_overview = request.args.get('tab') not in operational_tabs and target in (
         '', 'alert-intelligence-page-content'
