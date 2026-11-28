@@ -232,7 +232,10 @@ def test_overview_has_no_connection_selector_or_scoped_details():
             details=None,
             overview={'host_assignments': 6, 'cluster_bindings': 0, 'executions': None},
         )
-    assert 'Automation Overview' in rendered
+    assert 'Automation Overview' not in rendered
+    assert 'Automation Estate' in rendered
+    assert 'Execution Activity Restricted' in rendered
+    assert 'Runs &amp; Evidence</span>' not in rendered
     assert 'Host Assignments' in rendered
     assert 'Restricted' in rendered
     assert 'data-kaori-automation-selected-scope' not in rendered
@@ -290,7 +293,13 @@ def test_automation_overview_reuses_tenant_estate_components():
     template = (ROOT / 'app/templates/infrastructure_automation/_overview.html').read_text()
     assert 'resource_posture_grid.render(estate_metrics, columns=5)' in template
     assert 'operational_section_card.render(' in template
-    assert 'Operational Attention & Activity' in template
+    assert 'Operational Attention & Activity' not in template
+    assert 'data-kaori-automation-oversight' in template
+    assert 'xl:grid-cols-2' in template
+    assert 'Needs Attention' in template
+    assert 'Recent Execution Activity' in template
+    assert 'components/states/_empty_state.html' in template
+    assert 'bg-surface-hover' not in template
     assert 'operational_metric_card' not in template
     assert 'workspace_summary_card' not in template
 
@@ -318,3 +327,37 @@ def test_planned_capabilities_are_read_only_and_do_not_require_a_connection():
             assert 'data-kaori-automation-selected-scope' not in rendered
             assert '<form' not in rendered
             assert 'Run Kubespray' not in rendered
+
+
+def test_overview_attention_and_empty_execution_use_independent_cards():
+    app = create_app('testing')
+    with app.test_request_context('/platform-operations/infrastructure-automation/'):
+        rendered = render_template(
+            'infrastructure_automation/_overview.html',
+            total_connections=1,
+            overview={
+                'host_assignments': 0,
+                'cluster_bindings': 0,
+                'executions': 0,
+                'attention': [SimpleNamespace(id=11, name='Kubespray Fixture')],
+                'connections_reviewed': 1,
+                'recent_jobs': [],
+            },
+        )
+    for label in (
+        'Automation Estate',
+        'Needs Attention',
+        'Kubespray Fixture',
+        'Validation Required',
+        'Review Lifecycle',
+        'Recent Execution Activity',
+        'No Automation Executions',
+        'Runs &amp; Evidence',
+        'not a full readiness assessment',
+    ):
+        assert label in rendered
+    assert 'connection_id=11' in rendered
+    assert 'tab=runs-evidence' in rendered
+    assert 'data-kaori-empty-state' in rendered
+    assert 'Automation Overview' not in rendered
+    assert 'Operational Attention &amp; Activity' not in rendered
