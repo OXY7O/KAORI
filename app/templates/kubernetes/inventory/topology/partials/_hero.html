@@ -60,11 +60,7 @@
                             <p class="{{ page_hero.context_metric_helper_classes() }}">Graph limit omitted</p>
                         </div>
                     </div>
-                    <a href="{{ url_for('integrations.kubernetes') }}"
-                       class="{{ page_hero.context_single_action_classes() }}">
-                        <i data-lucide="server-cog" class="h-4 w-4" aria-hidden="true"></i>
-                        Open Cluster Integrations
-                    </a>
+                    {{ page_hero.integration_navigation('integrations.kubernetes', permitted=current_user.is_authenticated and current_user.has_permission('integrations.manage')) }}
                 </div>
             </aside>
         {% endif %}

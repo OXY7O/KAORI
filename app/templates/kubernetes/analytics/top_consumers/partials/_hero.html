@@ -52,7 +52,9 @@
             ],
             'Open Cluster Integrations',
             manage_clusters_href,
-            'server-cog'
+            'server-cog',
+            integration_endpoint='integrations.kubernetes',
+            integration_permitted=current_user is defined and current_user.is_authenticated and current_user.has_permission('integrations.manage')
             ) }}
         {% endif %}
     </div>
