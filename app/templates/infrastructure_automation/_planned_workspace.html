@@ -1,0 +1,41 @@
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/section_intro.html" as section_intro %}
+{% import "components/table_label.html" as table_label %}
+{% set coverage = {
+    'patching': ('Patching', 'package-check', 'IA-10 / #4802', [
+        ('Patch Discovery', 'Available and security updates, package-manager evidence and reboot indicators.'),
+        ('Patch Plan', 'Check/diff preview, controlled rollout and batching.'),
+        ('Maintenance', 'Approval, maintenance window, reboot policy and post-change verification.')
+    ]),
+    'schedules': ('Schedules', 'calendar-clock', 'IA-11', [
+        ('Scheduled Discovery', 'Periodic host facts and inventory observation.'),
+        ('Compliance Scans', 'Scheduled desired-versus-observed evaluation.'),
+        ('Approved Maintenance', 'Admitted patch and baseline schedules using the existing scheduler.')
+    ]),
+    'compliance': ('Compliance', 'shield-check', 'IA-12', [
+        ('Baseline Evaluation', 'Committed desired-versus-observed configuration evidence.'),
+        ('Drift & Findings', 'Compliant, Drifted, Unknown and Attention posture.'),
+        ('Remediation', 'A new reviewed Plan before any configuration change.')
+    ])
+} %}
+{% set title, icon, authority, capabilities = coverage[active_tab] %}
+<section class="space-y-4" data-kaori-automation-planned="{{ active_tab }}">
+    {{ section_intro.render(title, 'Planned capability · no operational workflow admitted.') }}
+    {% call operational_section_card.render(
+        title ~ ' Scope', 'Approved foundation roadmap · ' ~ authority, icon,
+        header_badge=table_label.status_label('Planned', 'unknown'),
+        body_classes='p-0', aria_label=title ~ ' planned coverage') %}
+        <div class="divide-y divide-outline-subtle">
+            {% for label, description in capabilities %}
+                <div class="flex min-w-0 items-start gap-3 px-5 py-4">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-subtle text-content-muted" aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <h3 class="text-sm font-semibold text-content-primary">{{ label }}</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <footer class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs text-content-muted">Read-only roadmap. No execution, scheduling or remediation action is available.</footer>
+    {% endcall %}
+</section>

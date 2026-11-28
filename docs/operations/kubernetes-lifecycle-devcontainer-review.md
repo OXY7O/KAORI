@@ -167,3 +167,18 @@ Runs & Evidence keep explicit selected connection scope. No new provider,
 profile admission, mutation or migration is introduced. The current
 read model still supports only the approved Ansible/Kubespray profile;
 future profiles require their own admitted adapters and workstreams.
+
+
+## Foundation-aligned navigation (#5157)
+
+The integrated server-owned workspace menu precedes the shared Hero; both
+are inside the same HTMX replacement boundary. Foundation #556 defines
+Overview, Hosts, Inventories, Profiles, Patching, Plans, Runs, Schedules
+and Compliance. Hosts and Inventories are grouped; Runs includes evidence.
+Existing connection registry stays under Profiles; legacy lifecycle and
+executions URLs remain valid. Patching (IA-10/#4802), Schedules (IA-11)
+and Compliance (IA-12) are explicitly read-only roadmap pages, not empty
+operational registries or execution admission. Profile catalog remains
+separate from Overview, with current Kubespray review and planned Linux
+Hosts, Middleware & Database and Network profiles. Source registration
+remains in Integrations. No new operation, provider or mutation authority.

@@ -12,7 +12,7 @@
 ] %}
 <div class="space-y-6" data-kaori-automation-overview>
     <section class="space-y-4" aria-labelledby="automation-estate-heading">
-        {{ section_intro.render('Automation Overview', 'Committed operational scope across supported automation profiles.', 'automation-estate-heading') }}
+        {{ section_intro.render('Automation Overview', 'Committed inventory and execution posture.', 'automation-estate-heading') }}
         {% call operational_section_card.render(
             'Automation Estate', 'Registered connections, inventory and execution evidence.', 'layout-grid',
             header_badge=table_label.metadata_label((estate_metrics|length) ~ ' Indicators', icon='layout-grid'),
@@ -30,7 +30,7 @@
             {% include "components/states/_blocked_state.html" %}
         {% endwith %}
     {% endif %}
-    {% include "infrastructure_automation/_profiles.html" %}
+
     <section class="space-y-4" aria-labelledby="automation-oversight-heading">
         {{ section_intro.render('Operational Oversight', 'Source review conditions and recent committed execution activity.', 'automation-oversight-heading') }}
         {% call operational_section_card.render(
