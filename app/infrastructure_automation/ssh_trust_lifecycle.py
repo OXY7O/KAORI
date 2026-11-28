@@ -178,14 +178,10 @@ def review_console_trust_activation(
     now: datetime,
 ) -> ConsoleEvidence | None:
     """Review proposed next trust revision, without writing or granting trust."""
-    if (
-        type(expected_revision) is not int
-        or expected_revision < 0
-        or not _console_actors_current(requester_id, verifier_id)
-    ):
+    if type(expected_revision) is not int or expected_revision < 0:
         return None
     context = _current_console_context(policy, target, now=now)
-    if context is None:
+    if context is None or not _console_actors_current(requester_id, verifier_id):
         return None
     assignment, binding, latest = context
     if latest is None:
