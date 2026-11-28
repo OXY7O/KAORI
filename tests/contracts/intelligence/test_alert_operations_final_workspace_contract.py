@@ -358,7 +358,7 @@ def test_each_alert_tab_uses_shared_section_intro_between_summary_and_workspace(
         assert f"'{tab}': ('{title}', '" in page
 
 
-def test_active_alert_triage_and_quick_views_follow_registry_hierarchy() -> None:
+def test_active_alert_triage_and_filters_follow_registry_hierarchy() -> None:
     from jinja2 import Environment
 
     active = read('app/templates/intelligence/partials/_alert_ops_active.html')
@@ -369,9 +369,12 @@ def test_active_alert_triage_and_quick_views_follow_registry_hierarchy() -> None
     assert 'data-alert-triage-metrics' in active
     assert 'Triage Guidance' not in active
     assert 'Triage: prioritize critical or source-unknown cases' in workspace
-    assert active.index('id="alert-operations-active-registry"') < active.index('data-alert-quick-views')
-    assert active.index('data-alert-quick-views') < active.index('id="alert-operations-filter-form"')
-    assert 'aria-current="true"' in active
+    assert 'data-alert-quick-views' not in active
+    assert 'Quick Views' not in active
+    assert 'quick_context' not in active
+    assert active.index('id="alert-operations-active-registry"') < active.index('id="alert-operations-filter-form"')
+    for field in ('q', 'severity', 'source_state', 'workflow'):
+        assert f'name="{field}"' in active or f"search_field('{field}'" in active
     assert 'hx-sync="#alert-operations-active-registry:replace"' in active
     assert "table_ui.inventory_filter_bar_classes()" in active
     identity = table.split('data-alert-case-identity', 1)[1].split('</td>', 1)[0]

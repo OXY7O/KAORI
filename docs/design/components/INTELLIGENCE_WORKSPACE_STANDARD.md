@@ -213,9 +213,9 @@ claim to the introduction.
 
 Use a shared block header and single divided metric grid for Active Alert
 Triage. Place static triage guidance in the existing workspace Guide rather
-than a separate colored callout. Quick Views belong directly above the queue
-filters, inside the same HTMX registry boundary, with a selected state only
-when the current filters exactly match the preset. Preserve selected scope,
+than a separate colored callout. The queue header is followed directly by
+the canonical Search, Severity, Source State, and Workflow filter bar.
+Do not duplicate these controls with Quick Views or preset links. Preserve selected scope,
 rows per page, Review actions and existing provider qualification boundaries.
 The Alert identity cell uses wrapped title and asset/namespace context, a
 muted full Case ID, and no duplicate source origin (shown in the Source
