@@ -29,7 +29,6 @@ from app.access.authentication.mfa.service import (
     mfa_enrollment_state,
     mfa_policy_mode,
     regenerate_mfa_recovery_codes,
-    verify_mfa_challenge,
 )
 from app.access.authentication.session import parse_authenticated_user_identifier
 from app.access.users.directory import build_user_identity_context
@@ -248,17 +247,17 @@ def _process_account_mfa_action(
         validate_csrf(request.form.get('csrf_token'))
         if not login_fresh():
             raise MfaVerificationError('Sign in again before changing MFA.')
+        try:
+            session_user_id, generation = parse_authenticated_user_identifier(session.get('_user_id'))
+        except ValueError as exc:
+            raise MfaVerificationError('Sign in again before changing MFA.') from exc
+        if session_user_id != user.id or generation is None:
+            raise MfaVerificationError('Sign in again before changing MFA.')
         if action in {'begin', 'regenerate'} and user.auth_source == 'database':
             password = str(request.form.get('current_password') or '')
             if not password or not user.check_password(password):
                 raise MfaVerificationError('Your current password was not accepted.')
         if action == 'begin':
-            try:
-                session_user_id, generation = parse_authenticated_user_identifier(session.get('_user_id'))
-            except ValueError as exc:
-                raise MfaVerificationError('Sign in again before changing MFA.') from exc
-            if session_user_id != user.id or generation is None:
-                raise MfaVerificationError('Sign in again before changing MFA.')
             mfa_setup_secret = begin_mfa_enrollment(user, expected_generation=generation)
             # QR contains the same one-time setup secret. Never persist it
             # or send it to a third-party QR endpoint.
@@ -266,12 +265,15 @@ def _process_account_mfa_action(
             title = 'Authenticator setup started'
             message = 'Scan the QR code or enter the setup key, then verify one code.'
         elif action == 'confirm':
-            mfa_recovery_codes = confirm_mfa_enrollment(user, str(request.form.get('verification_code') or ''))
+            mfa_recovery_codes = confirm_mfa_enrollment(
+                user, str(request.form.get('verification_code') or ''), expected_generation=generation
+            )
             title = 'MFA enabled'
             message = 'Save the recovery codes now. They will not be shown again.'
         elif action == 'regenerate':
-            verify_mfa_challenge(user, str(request.form.get('verification_code') or ''), authenticated=True)
-            mfa_recovery_codes = regenerate_mfa_recovery_codes(user)
+            mfa_recovery_codes = regenerate_mfa_recovery_codes(
+                user, str(request.form.get('verification_code') or ''), expected_generation=generation
+            )
             title = 'Recovery codes regenerated'
             message = 'Save the new codes now. Previously unused codes are invalid.'
         else:
@@ -289,7 +291,7 @@ def _process_account_mfa_action(
     except (CredentialEncryptionError, SQLAlchemyError):
         title = 'MFA temporarily unavailable'
         message = 'MFA configuration is temporarily unavailable.'
-        current_app.logger.warning('MFA self-service persistence unavailable.', exc_info=True)
+        current_app.logger.warning('MFA self-service persistence unavailable.')
 
     if committed_audit:
         mfa_toast = build_operational_feedback(

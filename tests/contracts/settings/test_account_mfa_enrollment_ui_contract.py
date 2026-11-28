@@ -158,7 +158,9 @@ def test_mfa_routes_preserve_reauth_and_no_store_secrets() -> None:
     assert "if action in {'begin', 'regenerate'} and user.auth_source == 'database':" in routes
     assert 'mfa_setup_secret = begin_mfa_enrollment(user, expected_generation=generation)' in routes
     assert 'mfa_recovery_codes = confirm_mfa_enrollment(' in routes
-    assert 'mfa_recovery_codes = regenerate_mfa_recovery_codes(user)' in routes
+    assert 'mfa_recovery_codes = regenerate_mfa_recovery_codes(' in routes
+    assert 'expected_generation=generation' in routes
+    assert 'verify_mfa_challenge(user,' not in routes
     assert 'if mfa_setup_secret is not None or mfa_recovery_codes is not None:' in routes
     assert "response.headers['Cache-Control'] = 'no-store'" in routes
 

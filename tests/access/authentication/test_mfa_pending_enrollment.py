@@ -37,16 +37,16 @@ def test_no_mfa_factor_is_not_enrolled() -> None:
 def test_stale_or_concurrently_enabled_enrollment_is_rejected(
     admitted: bool, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    user = User(id=42, auth_source='database', auth_session_version=7, account_is_active=True, is_super_admin=True)
     store = Mock()
-    store.execute.return_value.scalar_one_or_none.return_value = 42 if admitted else None
+    store.execute.return_value.scalar_one_or_none.return_value = user if admitted else None
     factor = AuthenticationMfaFactor(enabled=True)
     query = Mock()
     query.filter_by.return_value.with_for_update.return_value.populate_existing.return_value.first.return_value = factor
     monkeypatch.setattr(service, 'db', SimpleNamespace(session=store))
     monkeypatch.setattr(service, 'AuthenticationMfaFactor', SimpleNamespace(query=query))
-    user = User(id=42, auth_source='database', auth_session_version=8)
     with pytest.raises(service.MfaVerificationError):
-        service.begin_mfa_enrollment(user, expected_generation=7)
+        service.begin_mfa_enrollment(user, expected_generation=7, authenticated=False)
     assert factor.enabled
     store.add.assert_not_called()
     store.commit.assert_not_called()
