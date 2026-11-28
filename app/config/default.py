@@ -492,6 +492,8 @@ class Config:
     AUTH_LOCKOUT_ENFORCEMENT_ALLOWED = _env_bool('AUTH_LOCKOUT_ENFORCEMENT_ALLOWED', False)
     # One explicitly authorized interactive management CLI process only.
     AUTH_BREAK_GLASS_RECOVERY_ALLOWED = _env_bool('AUTH_BREAK_GLASS_RECOVERY_ALLOWED', False)
+    # Observe-only authentication abuse correlation; requires hosted qualification.
+    AUTH_ABUSE_SIGNAL_ENABLED = _env_bool('AUTH_ABUSE_SIGNAL_ENABLED', False)
 
     AUTH_LOGIN_RATE_LIMIT = _env_str(
         'AUTH_LOGIN_RATE_LIMIT',

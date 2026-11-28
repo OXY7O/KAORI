@@ -142,3 +142,13 @@ After applying migration `20261128_auth_session_expiry` to the Dev Container dat
 - [ ] Inject audit/commit failure and concurrent policy writer/credential admission/rollback; verify atomic state, no false success, existing session and unrelated controls unchanged, and no Redis changes.
 - [ ] Validate targeted-spray behavior for known/unknown/local Super Admin, collisions, shared NAT/IP and independent infrastructure mitigation; verify no enumeration or remotely induced permanent account lock.
 - [ ] Restore Redis through approved infrastructure path; qualify actual CLI bootstrap during outage, normal admission and controlled Monitor Only → Enforced reactivation. Record exact-SHA evidence and Human Acceptance. Activation HOLD until all relevant qualification passes.
+
+
+## AL-05 authentication abuse signal qualification (#5420)
+
+- [ ] Disabled flag makes no snapshot or notification write; actual existing maintenance worker schedule and runtime environment are qualified before opt-in.
+- [ ] Verify exact closed window, late commit/retention gaps, sample cap and missed-window partial posture, source diversity and known-target count without identity disclosure, and no double counting lock threshold as a credential rejection.
+- [ ] Separate invalid credential outcome, CAPTCHA/endpoint rate limit, identity-budget observation, MFA, provider outage and enforced/monitor threshold; targeted recovery-principal and multi-source/target patterns remain indications, not verified attacks.
+- [ ] Concurrent worker retries produce one snapshot/window and bounded operator notifications atomically; rollback on notification or commit failure, stale/missing evidence cannot be read as healthy.
+- [ ] Verify PostgreSQL query plan/load at abusive event volume, receipt/permission boundaries, no raw identity/credential output, partial/recipient cap evidence, existing Kubernetes signal regression, no public/login-path or external channel mutation.
+- [ ] Review initial observation thresholds with security owner. Native AlertCase recommendation/routing, external delivery and stronger recovery-account throttling are separate scope. Record exact-SHA hosted evidence and Human Acceptance.
