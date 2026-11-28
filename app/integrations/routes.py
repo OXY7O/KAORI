@@ -45,6 +45,9 @@ from app.integrations.orchestration.configuration_automation.providers.ansible.s
     get_connection,
     save_source_connection,
     source_validation_posture,
+    source_update_allowed,
+    source_update_scope,
+    update_source_connection,
 )
 from app.integrations.orchestration.container_orchestrator.routes import (
     _capsule_rbac_feedback_response as _capsule_rbac_feedback_response,
@@ -235,10 +238,52 @@ def _ansible_registration_validation_message(form: AnsibleSourceConnectionForm) 
 @permission_required('integrations.manage')
 def ansible_new_connection() -> ResponseReturnValue:
     """Register only after immutable Git source proof; use shared operational feedback."""
-    form = AnsibleSourceConnectionForm()
+    return _ansible_source_form()
+
+
+def _ansible_connection_form_values(connection: IntegrationInstance) -> dict[str, Any]:
+    source = connection.metadata_json or {}
+    return {
+        'name': connection.name,
+        'description': connection.description or '',
+        'environment': connection.environment,
+        'profile_key': source.get('profile_key') or '',
+        'repository': source.get('source_repository') or '',
+        'revision': source.get('source_sha') or '',
+        'ansible_core_version': source.get('ansible_core_version') or '',
+        'ansible_runner_version': source.get('ansible_runner_version') or '',
+        'kubespray_release': source.get('kubespray_release') or '',
+        'execution_environment_digest': source.get('execution_environment_digest') or '',
+    }
+
+
+@integrations_bp.route('/ansible/connections/<int:instance_id>/configure', methods=['GET', 'POST'])
+@permission_required('integrations.manage')
+def ansible_connection_configure(instance_id: int) -> ResponseReturnValue:
+    connection = get_connection(instance_id)
+    if connection is None:
+        abort(404)
+    return _ansible_source_form(connection)
+
+
+def _ansible_source_form(connection: IntegrationInstance | None = None) -> ResponseReturnValue:
+    scope = source_update_scope(connection) if connection is not None else ''
+    editable = connection is None or source_update_allowed(connection)
+    form = AnsibleSourceConnectionForm(
+        data=_ansible_connection_form_values(connection) if connection is not None else None
+    )
+    if connection is not None:
+        for field in (form.environment, form.profile_key, form.ansible_core_version,
+                      form.ansible_runner_version, form.kubespray_release):
+            # Historical choice is visible, but require_registration_policy still rejects it.
+            old = str(_ansible_connection_form_values(connection).get(field.name) or '')
+            if old and old not in {key for key, _ in field.choices or []}:
+                field.choices = [*field.choices, (old, old + ' (historical)')]
     proof = ''
     if request.method == 'POST':
         action = str(request.form.get('action') or '').strip()
+        if connection is not None and (not editable or request.form.get('configuration_scope') != scope):
+            abort(409)
         if not form.validate_on_submit():
             _ansible_registration_feedback(
                 event_type='ansible_source_registration_input_rejected',
@@ -267,7 +312,7 @@ def ansible_new_connection() -> ResponseReturnValue:
                 if action == 'test':
                     try:
                         evidence = verify_public_kubespray_source(values.repository, values.revision)
-                        proof = issue_source_proof(values, evidence, int(current_user.id))
+                        proof = issue_source_proof(values, evidence, int(current_user.id), scope=scope)
                     except (AutomationSourceRejected, ValueError):
                         _ansible_registration_feedback(
                             event_type='ansible_source_validation_failed',
@@ -285,7 +330,7 @@ def ansible_new_connection() -> ResponseReturnValue:
                         )
                 else:
                     evidence = verified_source_proof(
-                        str(form.source_test_proof.data or ''), values, int(current_user.id)
+                        str(form.source_test_proof.data or ''), values, int(current_user.id), scope=scope
                     )
                     if evidence is None:
                         _ansible_registration_feedback(
@@ -296,7 +341,13 @@ def ansible_new_connection() -> ResponseReturnValue:
                         )
                     else:
                         try:
-                            connection = save_source_connection(values, evidence=evidence)
+                            if connection is None:
+                                connection = save_source_connection(values, evidence=evidence)
+                            else:
+                                connection = update_source_connection(
+                                    connection.id, values, evidence=evidence,
+                                    expected_scope=scope, user_id=int(current_user.id),
+                                )
                         except SQLAlchemyError:
                             current_app.logger.exception('Ansible source connection registration failed.')
                             _ansible_registration_feedback(
@@ -314,16 +365,16 @@ def ansible_new_connection() -> ResponseReturnValue:
                                 message=(
                                     'An automation connection with this name already exists. Choose another name.'
                                     if duplicate
-                                    else 'Registration was rejected by the reviewed source policy. '
-                                    'Run Validate Source again.'
+                                    else 'Configuration changed, has dependent evidence, or failed source policy. '
+                                    'Reload the connection and review before retrying.'
                                 ),
                             )
                         else:
                             record_operational_activity(
                                 user_id=int(current_user.id),
-                                event_type='ansible_source_connection_registered',
+                                event_type='ansible_source_connection_updated' if scope else 'ansible_source_connection_registered',
                                 status='success',
-                                title='Ansible Source Connection Registered',
+                                title='Ansible Source Connection Updated' if scope else 'Ansible Source Connection Registered',
                                 message='Git source was checked; remote execution and provider readiness are not enabled.',
                                 action_url=url_for('integrations.ansible_connection_detail', instance_id=connection.id),
                                 action_label='Open Ansible Connection',
@@ -338,52 +389,10 @@ def ansible_new_connection() -> ResponseReturnValue:
         'integrations/orchestration/configuration_automation/providers/ansible/form.html',
         form=form,
         source_test_proof=proof,
-        notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
-    )
-
-
-@integrations_bp.get('/ansible/connections/<int:instance_id>/configure')
-@permission_required('integrations.manage')
-def ansible_connection_configure(instance_id: int) -> ResponseReturnValue:
-    """Present the persisted immutable connection in the shared form without a write path."""
-    connection = get_connection(instance_id)
-    if connection is None:
-        abort(404)
-    source = connection.metadata_json or {}
-    form = AnsibleSourceConnectionForm(
-        data={
-            'name': connection.name,
-            'description': connection.description or '',
-            'environment': connection.environment,
-            'profile_key': source.get('profile_key') or '',
-            'repository': source.get('source_repository') or '',
-            'revision': source.get('source_sha') or '',
-            'ansible_core_version': source.get('ansible_core_version') or '',
-            'ansible_runner_version': source.get('ansible_runner_version') or '',
-            'kubespray_release': source.get('kubespray_release') or '',
-            'execution_environment_digest': source.get('execution_environment_digest') or '',
-        }
-    )
-    # Current registration choices may no longer include historical pins.
-    # Keep the committed value visible, without widening the Add form policy.
-    for field in (
-        form.environment,
-        form.profile_key,
-        form.ansible_core_version,
-        form.ansible_runner_version,
-        form.kubespray_release,
-    ):
-        value = str(field.data or '')
-        label = next((label for key, label in field.choices or [] if key == value), value or 'Not Recorded')
-        field.choices = [(value, label)]
-    for field in (form.name, form.repository, form.revision):
-        field.render_kw = {'placeholder': 'Not Recorded'}
-    return render_template(
-        'integrations/orchestration/configuration_automation/providers/ansible/form.html',
-        form=form,
-        configure_mode=True,
+        configure_mode=connection is not None,
+        edit_allowed=editable,
+        configuration_scope=scope,
         connection=connection,
-        source_test_proof='',
         notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
     )
 

@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
+from hashlib import sha256
+import json
 from typing import Any
 
 from sqlalchemy import select
@@ -16,6 +19,7 @@ from app.integrations.orchestration.configuration_automation.providers.ansible.c
     AnsibleConnectionInput,
     require_registration_policy,
 )
+from app.models.automation import AutomationInventoryAssignment
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.job import JobExecution
@@ -94,6 +98,110 @@ def save_source_connection(values: AnsibleConnectionInput, *, evidence: dict[str
         db.session.rollback()
         raise
     return instance
+
+
+_SOURCE_FIELDS = frozenset({
+    'profile_key', 'source_provider', 'source_repository', 'source_sha',
+    'ansible_core_version', 'ansible_runner_version', 'kubespray_release',
+    'execution_environment_digest', 'source_validation', 'execution_enabled',
+    'mutation_authorized', 'inventory_status', 'configuration_history',
+})
+
+
+def source_update_scope(connection: IntegrationInstance) -> str:
+    """Bind update proof to exact current identity and configuration."""
+    payload = json.dumps({
+        'id': connection.id, 'name': connection.name, 'description': connection.description,
+        'environment': connection.environment, 'enabled': connection.enabled,
+        'lifecycle': connection.lifecycle_status, 'readiness': connection.readiness_status,
+        'metadata': connection.metadata_json,
+    }, sort_keys=True, separators=(',', ':'))
+    return f'ansible-update:{connection.id}:' + sha256(payload.encode('utf-8')).hexdigest()
+
+
+def source_update_allowed(connection: IntegrationInstance) -> bool:
+    """Only an unused source-only record can activate a new revision in this slice."""
+    metadata = connection.metadata_json or {}
+    if (
+        not isinstance(metadata, dict)
+        or set(metadata) - _SOURCE_FIELDS
+        or connection.enabled
+        or connection.lifecycle_status != 'active'
+        or metadata.get('execution_enabled', False) is not False
+        or metadata.get('mutation_authorized', False) is not False
+        or metadata.get('inventory_status', 'not_collected') != 'not_collected'
+        or not isinstance(metadata.get('configuration_history', []), list)
+        or len(metadata.get('configuration_history', [])) >= 32
+    ):
+        return False
+    return not (
+        AutomationInventoryAssignment.query.filter_by(integration_instance_id=connection.id).first()
+        or IntegrationBinding.query.filter_by(integration_instance_id=connection.id).first()
+        or JobExecution.query.filter_by(integration_instance_id=connection.id).first()
+    )
+
+
+def update_source_connection(
+    connection_id: int, values: AnsibleConnectionInput, *, evidence: dict[str, Any],
+    expected_scope: str, user_id: int,
+) -> IntegrationInstance:
+    """Archive previous source and activate a newly validated unused source revision."""
+    require_registration_policy(values)
+    try:
+        connection = db.session.get(IntegrationInstance, connection_id, with_for_update=True, populate_existing=True)
+        if (
+            connection is None
+            or connection.integration_type != INTEGRATION_TYPE
+            or connection.provider_key != PROVIDER_KEY
+            or source_update_scope(connection) != expected_scope
+            or has_active_target_claim(connection_resource(connection_id))
+            or not source_update_allowed(connection)
+        ):
+            raise ValueError('Connection changed or has dependent operational evidence; update is blocked.')
+        if IntegrationInstance.query.filter(
+            IntegrationInstance.integration_type == INTEGRATION_TYPE,
+            IntegrationInstance.name == values.name,
+            IntegrationInstance.id != connection_id,
+        ).first():
+            raise ValueError('An automation connection with this name already exists.')
+        previous = dict(connection.metadata_json or {})
+        history = list(previous.pop('configuration_history', []))
+        next_metadata = {
+            'profile_key': values.profile_key,
+            'source_provider': 'github',
+            'source_repository': values.repository,
+            'source_sha': values.revision,
+            'ansible_core_version': values.ansible_core_version,
+            'ansible_runner_version': values.ansible_runner_version,
+            'kubespray_release': values.kubespray_release,
+            'execution_environment_digest': values.execution_environment_digest,
+            'source_validation': evidence,
+            'execution_enabled': False,
+            'mutation_authorized': False,
+            'inventory_status': 'not_collected',
+        }
+        if committed_source_state(next_metadata) != 'checked':
+            raise ValueError('Updated source does not match reviewed evidence.')
+        history.append({
+            'archived_at': datetime.now(UTC).isoformat(),
+            'archived_by': user_id,
+            'name': connection.name,
+            'description': connection.description,
+            'environment': connection.environment,
+            'configuration': previous,
+        })
+        connection.name = values.name
+        connection.description = values.description
+        connection.environment = values.environment
+        connection.metadata_json = {**next_metadata, 'configuration_history': history}
+        connection.enabled = False
+        connection.readiness_status = 'validation_required'
+        connection.health_status = None
+        db.session.commit()
+    except (SQLAlchemyError, ValueError):
+        db.session.rollback()
+        raise
+    return connection
 
 
 class SourceRevalidationDenied(ValueError):
@@ -178,7 +286,7 @@ def source_validation_posture(connection: IntegrationInstance) -> dict[str, Any]
         'checked': 'Exact reviewed Git source and version metadata match committed evidence. Execution is still disabled.',
         'blocked': (
             'Source validation failed or its evidence no longer matches the approved revision and version policy. '
-            'Superseded immutable connections require a separately validated replacement connection.'
+            'Update unused connections with fresh source validation; dependent connections require governed migration.'
         ),
         'not_checked': 'There is no qualifying committed Git verification evidence for this connection.',
     }
