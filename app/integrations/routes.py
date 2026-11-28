@@ -38,6 +38,7 @@ from app.integrations.orchestration.configuration_automation.providers.ansible.p
     verified_source_proof,
 )
 from app.integrations.orchestration.configuration_automation.providers.ansible.service import (
+    SourceRevalidationDenied,
     bound_kubernetes_targets,
     commit_source_revalidation,
     connection_jobs,
@@ -471,20 +472,26 @@ def ansible_revalidate_source(instance_id: int) -> ResponseReturnValue:
         source_validation = evidence.as_dict()
         state = 'success'
         message = 'Git source files reverified. Host access and execution remain blocked.'
-    commit_source_revalidation(connection, evidence=source_validation)
+    event_type = 'ansible_source_revalidated'
+    try:
+        commit_source_revalidation(connection, evidence=source_validation)
+    except SourceRevalidationDenied as exc:
+        state = 'warning'
+        message = str(exc)
+        event_type = 'ansible_source_revalidation_blocked'
     record_operational_activity(
         user_id=int(current_user.id),
-        event_type='ansible_source_revalidated',
+        event_type=event_type,
         status=state,
         title='Ansible Source Validation',
         message=message,
-        action_url=url_for('integrations.ansible_connection_detail', instance_id=connection.id) + '#validation',
+        action_url=url_for('integrations.ansible_connection_detail', instance_id=instance_id) + '#validation',
         action_label='Review Validation',
         action_icon='scan-search',
-        metadata={'provider': 'ansible', 'instance_id': connection.id},
+        metadata={'provider': 'ansible', 'instance_id': instance_id},
         queue_feedback=True,
     )
-    return redirect(url_for('integrations.ansible_connection_detail', instance_id=connection.id) + '#validation')
+    return redirect(url_for('integrations.ansible_connection_detail', instance_id=instance_id) + '#validation')
 
 
 @integrations_bp.get('/observability')

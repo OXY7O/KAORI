@@ -53,8 +53,11 @@ def _connection(*, state: str = 'source_checked', **changes):
     return SimpleNamespace(id=12, environment='laboratory', metadata_json=meta)
 
 
-@pytest.mark.parametrize(('state', 'expected'), [('source_checked', 'checked'), ('blocked', 'blocked')])
-def test_provider_service_commits_revalidation_without_enabling_execution(monkeypatch, state, expected):
+@pytest.mark.parametrize(
+    ('state', 'expected', 'reserved'),
+    [('source_checked', 'checked', False), ('blocked', 'blocked', False), ('blocked', 'blocked', True)],
+)
+def test_provider_service_commits_revalidation_without_enabling_execution(monkeypatch, state, expected, reserved):
     connection = _connection()
     connection.integration_type = 'configuration_automation'
     connection.provider_key = 'ansible'
@@ -72,15 +75,19 @@ def test_provider_service_commits_revalidation_without_enabling_execution(monkey
         'db',
         SimpleNamespace(
             session=SimpleNamespace(
+                get=lambda *args, **kwargs: events.append('lock') or connection,
                 commit=lambda: events.append('commit'),
                 rollback=lambda: events.append('rollback'),
             )
         ),
     )
 
+    monkeypatch.setattr(
+        ansible_service, 'has_active_target_claim', lambda key: events.append(key) or reserved
+    )
     ansible_service.commit_source_revalidation(connection, evidence=proof)
 
-    assert events == ['commit']
+    assert events == ['lock', 'kubespray:connection:12', 'commit']
     assert connection.metadata_json['source_validation'] == proof
     assert connection.metadata_json['independent_evidence'] == 'retained'
     assert connection.metadata_json['execution_enabled'] is False
@@ -105,17 +112,46 @@ def test_provider_service_rolls_back_failed_revalidation_commit(monkeypatch):
         'db',
         SimpleNamespace(
             session=SimpleNamespace(
+                get=lambda *args, **kwargs: connection,
                 commit=failed_commit,
                 rollback=lambda: events.append('rollback'),
             )
         ),
     )
 
+    monkeypatch.setattr(ansible_service, 'has_active_target_claim', lambda key: False)
     with pytest.raises(SQLAlchemyError, match='synthetic revalidation commit failure'):
         ansible_service.commit_source_revalidation(
             connection, evidence={'status': 'blocked', 'operation_authorized': False, 'checked_files': 0}
         )
     assert events == ['commit', 'rollback']
+
+
+@pytest.mark.parametrize('reason', ['reserved', 'source_changed', 'evidence_changed', 'invalid_proof'])
+def test_positive_revalidation_denies_conflicts_without_persistence(monkeypatch, reason):
+    connection = _connection()
+    locked = _connection()
+    locked.integration_type = 'configuration_automation'
+    locked.provider_key = 'ansible'
+    proof = dict(connection.metadata_json['source_validation'])
+    if reason == 'source_changed':
+        locked.metadata_json['source_sha'] = '0' * 40
+    elif reason == 'evidence_changed':
+        locked.metadata_json['source_validation'] = {'status': 'blocked'}
+    elif reason == 'invalid_proof':
+        proof['revision'] = '0' * 40
+    original = dict(locked.metadata_json)
+    events = []
+    monkeypatch.setattr(ansible_service, 'db', SimpleNamespace(session=SimpleNamespace(
+        get=lambda *args, **kwargs: events.append('lock') or locked,
+        commit=lambda: events.append('commit'),
+        rollback=lambda: events.append('rollback'),
+    )))
+    monkeypatch.setattr(ansible_service, 'has_active_target_claim', lambda key: reason == 'reserved')
+    with pytest.raises(ansible_service.SourceRevalidationDenied):
+        ansible_service.commit_source_revalidation(connection, evidence=proof)
+    assert events == ['lock', 'rollback']
+    assert locked.metadata_json == original
 
 
 def test_valid_source_only_is_checked_but_all_operations_blocked():

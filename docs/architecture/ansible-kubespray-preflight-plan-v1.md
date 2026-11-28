@@ -177,9 +177,18 @@ claims with a one-attempt canonical Run, guard every competing infrastructure
 operation, and replace the review-release path with independently verified
 terminal/recovery reconciliation. Normal host registry/enrollment/assignment/edit/retirement writers now
 use the same resource keys and reject active claims before persistence.
-Connection management, credential/issuer revocation and future execution
-admission retain their own authorities; connection management is not yet
-integrated with the reservation guard.
+The existing Ansible source revalidation writer now refreshes and locks
+the canonical connection, then acquires its shared reservation resource
+lock before writing. Positive source refresh is denied during an active
+reservation and if the committed source identity or evidence changed.
+A failed Git source revalidation for the same pinned identity may still
+invalidate committed evidence, even during a reservation; it never clears
+the claims or grants execution authority. Security credential/issuer and
+SSH trust revocation remain independently available. The existing source
+route reports a sanitized warning on conflict; no successful refresh is
+reported for a denied write. New immutable source-only connections remain
+separate identities. Future connection edit/enable/delete writers and Run
+admission must use the same resource guard; none is introduced here.
 The new reservation is not an execution lease or a third approval channel.
 No default opt-in or route is added. Synthetic schema/uniqueness tests
 are not PostgreSQL concurrency or native host acceptance.
