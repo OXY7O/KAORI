@@ -40,9 +40,8 @@ def safe_next_url(value: object) -> str | None:
 def parse_authenticated_user_identifier(value: object) -> tuple[int, int | None]:
     """Parse Flask-Login's user identifier and optional credential generation.
 
-    Legacy ``<user_id>`` identifiers are accepted only so sessions issued before
-    the session-generation migration can be upgraded while the user remains on
-    generation 1. New identifiers always use ``<user_id>:<generation>``.
+    Legacy ``<user_id>`` identifiers parse without a generation so admission
+    can reject them explicitly. New identifiers use ``<user_id>:<generation>``.
     """
 
     normalized = str(value or '').strip()

@@ -66,6 +66,12 @@ def register_security_headers(app: Flask) -> None:
         response.headers['Permissions-Policy'] = _PERMISSIONS_POLICY
         response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
 
+        if getattr(g, 'kaori_session_deadlines', None) is not None and response.mimetype in (
+            'text/html',
+            'application/json',
+        ):
+            response.headers['Cache-Control'] = 'no-store, max-age=0'
+
         if response.mimetype == 'text/html':
             nonce = g.csp_nonce
             _protect_inline_scripts(response, nonce)

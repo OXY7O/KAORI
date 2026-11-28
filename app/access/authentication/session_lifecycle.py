@@ -33,6 +33,19 @@ class SessionPolicy:
         if not 1 <= self.warning_minutes <= 5 or self.warning_minutes >= self.privileged_idle_minutes:
             raise ValueError('Invalid session warning policy.')
 
+    @classmethod
+    def from_record(cls, row: AuthenticationSecurityPolicy | None) -> SessionPolicy:
+        if row is None:
+            return cls()
+        return cls(
+            privileged_idle_minutes=row.session_privileged_idle_minutes,
+            privileged_absolute_hours=row.session_privileged_absolute_hours,
+            regular_idle_minutes=row.session_regular_idle_minutes,
+            regular_absolute_hours=row.session_regular_absolute_hours,
+            warning_minutes=row.session_warning_minutes,
+            regular_remember=row.session_regular_remember,
+        )
+
     def limits(self, *, privileged: bool) -> tuple[timedelta, timedelta]:
         if privileged:
             return timedelta(minutes=self.privileged_idle_minutes), timedelta(hours=self.privileged_absolute_hours)
@@ -97,10 +110,12 @@ def revoke_generation(user_id: int, generation: int, *, expected: User | None = 
     if expected is not None:
         # A simultaneous legitimate activity refresh may have won the race.
         # Never revoke a newer or refreshed generation using a stale observation.
-        conditions.extend((
-            User.auth_session_issued_at == expected.auth_session_issued_at,
-            User.auth_session_activity_at == expected.auth_session_activity_at,
-        ))
+        conditions.extend(
+            (
+                User.auth_session_issued_at == expected.auth_session_issued_at,
+                User.auth_session_activity_at == expected.auth_session_activity_at,
+            )
+        )
     result = db.session.execute(
         update(User)
         .where(*conditions)

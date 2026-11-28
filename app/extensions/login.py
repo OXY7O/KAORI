@@ -111,6 +111,8 @@ def handle_unauthorized():
         )
 
     if request.endpoint in ('auth.session_status', 'auth.session_activity'):
+        if getattr(g, 'kaori_session_expired', False):
+            flash_once('Your session expired. Sign in again to continue.', 'warning')
         return jsonify({'status': 'reauthentication_required'}), 401, {'Cache-Control': 'no-store'}
 
     readiness = check_authentication_database_readiness()
@@ -123,8 +125,8 @@ def handle_unauthorized():
 
     if getattr(g, 'kaori_session_expired', False):
         flash_once('Your session expired. Sign in again to continue.', 'warning')
-        if request.headers.get('HX-Request') == 'true':
-            return '', 401, {'HX-Redirect': login_url, 'Cache-Control': 'no-store'}
     else:
         flash_once('Please sign in to continue.', 'warning')
+    if request.headers.get('HX-Request') == 'true':
+        return '', 401, {'HX-Redirect': login_url, 'Cache-Control': 'no-store'}
     return redirect(login_url)
