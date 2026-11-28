@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from jinja2 import Environment, FileSystemLoader
+
 ROOT = Path(__file__).resolve().parents[3]
 KUBERNETES = (
     ROOT
@@ -52,17 +54,56 @@ def test_github_capability_modal_uses_compact_shared_presentation():
     assert "presentation == 'github'" in shared
     assert 'Validation evidence, ownership, impact, and remediation.' in shared
     assert "presentation == 'metrics_source'" in shared
-    panel = shared.split('data-kaori-github-capability-evidence-impact>', 1)[0].rsplit(
-        '{% if compact_github %}', 1
-    )[1]
-    rows = shared.split('data-kaori-github-capability-evidence-impact>', 1)[1].split('{% else %}', 1)[0]
-    assert 'divide-y divide-outline-subtle rounded-xl border border-outline-default bg-surface-card' in panel
-    assert rows.count('sm:grid-cols-[12rem_minmax(0,1fr)]') == 2
+    rows = shared.rsplit('{% if compact_github %}', 1)[1].split('{% else %}', 1)[0]
+    assert rows.count('rounded-xl border border-outline-default bg-surface-card') == 2
+    assert rows.count('sm:w-36 sm:shrink-0') == 4
+    assert rows.count('sm:flex-row sm:gap-4') == 4
     assert rows.count('data-kaori-provider-capability-evidence') == 1
     assert rows.count('data-kaori-provider-capability-impact') == 1
-    assert rows.index('Validation Evidence') < rows.index('Success Criteria:') < rows.index('Operational Impact')
-    for field in ('row.evidence', 'row.success_criteria', 'row.impact'):
+    assert rows.count('data-kaori-provider-capability-action') == 1
+    assert rows.index('Validation Evidence') < rows.index('Observation') < rows.index('Success Criteria')
+    assert rows.index('Operational Decision') < rows.index('Impact') < rows.index('Next Action')
+    for field in ('row.evidence', 'row.success_criteria', 'row.impact', 'row.next_action'):
         assert rows.count(field) == 1
     assert 'bg-status-' not in rows and 'border-status-' not in rows
-    assert 'rounded-lg' not in rows and 'lg:grid-cols-2' not in rows
+    assert 'sm:border-l' not in rows and 'grid-cols-[' not in rows
     assert 'data-kaori-github-capability-success-criteria' in rows
+    assert '{% if not row.available and row.remediation %}' in rows
+    assert '{% for step in row.remediation %}' in rows
+
+
+def test_github_capability_modal_renders_decision_fields_and_remediation():
+    environment = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
+    render = environment.get_template('integrations/components/_provider_capability_detail.html').module.content
+    for available, required, status_key, status_label in (
+        (True, True, 'ready', 'Permission Verified'),
+        (False, True, 'blocked', 'Required Gap'),
+        (False, False, 'optional_gap', 'Optional Gap'),
+        (False, True, 'unverified', 'Not Validated'),
+    ):
+        row = {
+            'available': available,
+            'required': required,
+            'status_key': status_key,
+            'status_label': status_label,
+            'category': 'inventory',
+            'evidence': 'Committed observation text',
+            'success_criteria': 'Expected permission text',
+            'impact': 'Operational effect text',
+            'next_action': 'Operator decision text',
+            'remediation': ['Controlled remediation step'],
+            'technical_checks': [],
+        }
+        html = str(render(row, 'GitHub', 'GitHub App Permissions', 'Assessment', 'Provider boundary', 'github'))
+        assert html.count('data-kaori-provider-capability-evidence>') == 1
+        assert html.count('data-kaori-provider-capability-impact>') == 1
+        assert html.count('data-kaori-provider-capability-action>') == 1
+        for field in ('evidence', 'success_criteria', 'impact', 'next_action'):
+            assert html.count(row[field]) == 1
+        assert status_label in html
+        assert ('Controlled remediation step' in html) == (not available)
+        assert 'Recommended Action</h3>' not in html
+        assert 'Provider boundary' in html
+        standard = str(render(row, 'Provider', 'Owner', 'Assessment', 'Provider boundary'))
+        assert 'data-kaori-github-capability-operational-decision' not in standard
+        assert 'Recommended Action</h3>' in standard
