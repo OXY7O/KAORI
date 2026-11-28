@@ -100,7 +100,7 @@
                 'Runtime Refresh owns installation health; Full Validation owns permission evidence. Job and webhook receipts do not establish synchronized repository inventory.') }}
     </div>
 </section>
-{% if runtime_refresh_partial|default(false) %}
+{% set history_panel %}
     {% with runtime_history_id='github-runtime-history', runtime_history_loading_id='github-history-loading',
         runtime_history_url=url_for('github_source_uat.runtime_history', installation_id=installation.id),
         runtime_history_endpoint='github_source_uat.runtime_history',
@@ -111,6 +111,9 @@
         runtime_history_oob=runtime_history_oob|default(false), runtime_history_embedded=true %}
         {% include 'integrations/partials/_runtime_history.html' %}
     {% endwith %}
+{% endset %}
+{% if runtime_refresh_partial|default(false) %}
+    {{ history_panel }}
 {% else %}
     <section id="github-runtime-evidence-registry"
              class="{{ ui.section_shell_classes() }} overflow-hidden"
@@ -126,16 +129,7 @@
              role="tabpanel"
              aria-labelledby="github-runtime-evidence-tab-history"
              x-show="activeTab === 'history'">
-            {% with runtime_history_id='github-runtime-history', runtime_history_loading_id='github-history-loading',
-                runtime_history_url=url_for('github_source_uat.runtime_history', installation_id=installation.id),
-                runtime_history_endpoint='github_source_uat.runtime_history',
-                runtime_history_route_args={'installation_id': installation.id},
-                runtime_history_detail_url=url_for('github_source_uat.detail', installation_id=installation.id),
-                runtime_history_detail_endpoint='github_source_uat.detail',
-                runtime_history_tab='runtime', runtime_history_filters_enabled=true, provider_label='GitHub',
-                runtime_history_oob=runtime_history_oob|default(false), runtime_history_embedded=true %}
-                {% include 'integrations/partials/_runtime_history.html' %}
-            {% endwith %}
+            {{ history_panel }}
         </div>
         <div id="github-runtime-evidence-panel-deliveries"
              role="tabpanel"

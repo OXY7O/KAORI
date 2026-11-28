@@ -620,7 +620,8 @@ def test_github_nested_runtime_tabs_preserve_outer_navigation_and_oob_target():
     assert 'url.searchParams.get(queryKey)' in helper
     assert 'nextUrl.searchParams.set(queryKey, tab)' in helper
     assert "if (queryKey === 'tab') nextUrl.hash = tab" in helper
-    assert runtime.count("include 'integrations/partials/_runtime_history.html'") == 2
+    assert runtime.count("include 'integrations/partials/_runtime_history.html'") == 1
+    assert runtime.count('{{ history_panel }}') == 2
     assert 'runtime_history_oob=runtime_history_oob|default(false)' in runtime
     assert 'runtime_history_embedded|default(false)' in history
     assert 'hx-swap-oob="outerHTML"' in history
