@@ -42,6 +42,7 @@ def test_recovery_proof_and_rotation_commit_together(failure: str, monkeypatch: 
     monkeypatch.setattr(service, 'db', SimpleNamespace(session=store))
     monkeypatch.setattr(service, 'AuthenticationMfaFactor', SimpleNamespace(query=query))
     monkeypatch.setattr(service, 'read_session_policy', lambda: SessionPolicy())
+    monkeypatch.setattr(User, 'check_password', lambda self, password: password == 'fixture-password')
     monkeypatch.setattr(service, 'stage_authentication_security_event', stage)
     monkeypatch.setattr(service, '_accepted_step', Mock(return_value=None if failure == 'invalid_proof' else 2))
     monkeypatch.setattr(service, 'check_password_hash', Mock(return_value=False))
@@ -50,7 +51,9 @@ def test_recovery_proof_and_rotation_commit_together(failure: str, monkeypatch: 
     timeline.attach_mock(store.add, 'stage')
     timeline.attach_mock(store.commit, 'commit')
     if failure == 'none':
-        codes = service.regenerate_mfa_recovery_codes(user, '123456', expected_generation=8)
+        codes = service.regenerate_mfa_recovery_codes(
+            user, '123456', expected_generation=8, current_password='fixture-password'
+        )
         assert len(codes) == 8
         assert factor.last_accepted_step == 2
         assert factor.recovery_hashes == ['replacement-test-hash'] * 8
@@ -62,7 +65,9 @@ def test_recovery_proof_and_rotation_commit_together(failure: str, monkeypatch: 
         store.rollback.assert_not_called()
     else:
         with pytest.raises((service.MfaVerificationError, SQLAlchemyError)):
-            service.regenerate_mfa_recovery_codes(user, '123456', expected_generation=8)
+            service.regenerate_mfa_recovery_codes(
+                user, '123456', expected_generation=8, current_password='fixture-password'
+            )
         store.rollback.assert_called_once()
         if failure != 'commit':
             store.commit.assert_not_called()

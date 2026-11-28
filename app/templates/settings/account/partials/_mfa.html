@@ -206,7 +206,7 @@
                                 </div>
                             {% else %}
                                 <p class="max-w-lg rounded-lg border border-outline-subtle bg-surface-hover p-3 text-xs leading-5 text-content-secondary">
-                                    Your external identity must have a fresh sign-in session before factor enrollment.
+                                    Sign in to KAORI through your identity provider within the last five minutes before starting setup.
                                 </p>
                             {% endif %}
                             <button type="submit"
@@ -410,7 +410,7 @@
                                class="h-4 w-4 shrink-0 text-kaori-primary"
                                aria-hidden="true"></i>
                             <p class="min-w-0 text-xs leading-5 text-content-secondary">
-                                {{ 'Password and authenticator/recovery code required.' if can_change_password else 'Fresh sign-in and authenticator/recovery code required.' }}
+                                {{ 'Password and authenticator/recovery code required.' if can_change_password else 'KAORI sign-in within five minutes and authenticator/recovery code required.' }}
                             </p>
                         </div>
                         <div class="flex flex-1 items-center gap-3 py-4">

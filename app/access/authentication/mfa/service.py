@@ -22,6 +22,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from app.access.authentication.admission import session_admission_reason
 from app.access.authentication.mfa.audit import stage_authentication_security_event
 from app.access.authentication.mfa.policy import MfaPolicyDecision, evaluate_mfa_policy
+from app.access.authentication.password_policy import LOCAL_PASSWORD_MAX_LENGTH
 from app.access.authentication.session_lifecycle import SessionDeadlines, read_session_policy, session_deadlines
 from app.extensions.db import db
 from app.models.authentication_security import AuthenticationMfaFactor, AuthenticationSecurityPolicy
@@ -30,6 +31,7 @@ from app.security.credentials import CredentialEncryptionError
 
 ENROLLMENT_TTL = timedelta(minutes=10)
 MFA_CHALLENGE_TTL_SECONDS = 300
+MFA_RECENT_ADMISSION_TTL = timedelta(seconds=MFA_CHALLENGE_TTL_SECONDS)
 
 
 class MfaVerificationError(ValueError):
@@ -145,15 +147,57 @@ def _lock_mfa_user(user: User, expected_generation: int, *, authenticated: bool)
     return locked
 
 
+def has_recent_kaori_admission(user: User, *, now: datetime) -> bool:
+    """Bound the age of committed admission, not the upstream credential age."""
+    issued = user.auth_session_issued_at
+    if issued is None:
+        return False
+    if issued.tzinfo is None:
+        issued = issued.replace(tzinfo=UTC)
+    age = now - issued
+    return timedelta(0) <= age < MFA_RECENT_ADMISSION_TTL
+
+
+def require_personal_factor_assurance(
+    user: User, current_password: str | None, *, now: datetime, strict_primary: bool = False
+) -> None:
+    """Called only after locking the originally presented admitted user row.
+
+    KAORI owns Local Database passwords. External sign-in recency does not
+    prove upstream credential reauthentication; never promote it to strict
+    primary assurance for authenticator replacement.
+    """
+    if user.auth_source == 'database':
+        if (
+            not current_password
+            or len(current_password) > LOCAL_PASSWORD_MAX_LENGTH
+            or not user.check_password(current_password)
+        ):
+            raise MfaVerificationError('Your current password was not accepted.')
+        return
+    if strict_primary:
+        raise MfaVerificationError('Verified provider reauthentication is required.')
+    if not has_recent_kaori_admission(user, now=now):
+        raise MfaVerificationError('Recent sign-in required before changing MFA.')
+
+
 def _locked_factor(user_id: int) -> AuthenticationMfaFactor | None:
     """Refresh the factor after locking, rather than using an earlier ORM snapshot."""
     return AuthenticationMfaFactor.query.filter_by(user_id=user_id).with_for_update().populate_existing().first()
 
 
-def begin_mfa_enrollment(user: User, *, expected_generation: int, authenticated: bool = True) -> str:
+def begin_mfa_enrollment(
+    user: User,
+    *,
+    expected_generation: int,
+    authenticated: bool = True,
+    current_password: str | None = None,
+) -> str:
     """Create an expiring encrypted factor under the authoritative account lock."""
     try:
         user = _lock_mfa_user(user, expected_generation, authenticated=authenticated)
+        if authenticated:
+            require_personal_factor_assurance(user, current_password, now=datetime.now(UTC))
         existing = _locked_factor(user.id)
         # A concurrent confirmation may have activated the factor since the caller read posture.
         if existing is not None and existing.enabled:
@@ -285,10 +329,13 @@ def verify_mfa_challenge(
     return kind
 
 
-def regenerate_mfa_recovery_codes(user: User, submitted: str, *, expected_generation: int) -> list[str]:
+def regenerate_mfa_recovery_codes(
+    user: User, submitted: str, *, expected_generation: int, current_password: str | None = None
+) -> list[str]:
     """Atomically consume the factor proof, replace recovery hashes and record both events."""
     try:
         user = _lock_mfa_user(user, expected_generation, authenticated=True)
+        require_personal_factor_assurance(user, current_password, now=datetime.now(UTC))
         factor = _locked_factor(user.id)
         if factor is None or not factor.enabled:
             raise MfaVerificationError('MFA is not enrolled.')
