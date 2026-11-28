@@ -244,3 +244,11 @@ journal ordering, timestamps, qualification states and per-record attempt
 counts. Label generic bounded delivery totals as records, not attempts;
 scoped qualified delivery retains its actual attempt count. No change to
 admission, stored evidence, recovery or delivery authority.
+
+
+### Routing workspace guidance
+
+Keep recommendation-origin Routing Guidance in the existing Alert Operations
+Workspace Guide on the Routing & Channels tab. Do not repeat it as a
+permanent colored callout below routing metrics. Provider-origin guidance
+retains its independently qualified delivery and scope boundaries.

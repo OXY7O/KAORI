@@ -20,6 +20,9 @@
 {% if payload.tab == 'active' %}
     {% set guide_items = guide_items + ['Triage: prioritize critical or source-unknown cases, acknowledge ownership where qualified, then review evidence and mitigation.'] %}
 {% endif %}
+{% if payload.tab == 'routing' and not payload.provider_case_mode %}
+    {% set guide_items = guide_items + ['Routing Guidance: keep policy scope narrow, bind only validated channels owned by the receiving team, and use repeat cadence for urgency while ACK and Silence manage operator control.'] %}
+{% endif %}
 {% set workspace_guide %}
     {{ info_tip.render('alert-operations-guide', 'Alert Operations Guide',
         'Review committed alert evidence within the selected operational scope.',
