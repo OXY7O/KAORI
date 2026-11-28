@@ -267,7 +267,8 @@ four main metrics and four compact secondary metrics. Delivery Overview
 and Channels remain unchanged. The Delivery Records Guide retains the
 provider-acceptance versus recipient-read distinction, the independent
 Activity Audit boundary and the separation between hot and archived
-evidence. A compact persistent footer repeats the receipt limitation.
+evidence, including all-pages scope. The operator-approved follow-up removes
+the standalone statistics footer; the Guide retains these interpretation boundaries.
 
 Statistics are a read-only SQL aggregate over all matching retained hot
 journal records using the same normalized event key, provider, domain,

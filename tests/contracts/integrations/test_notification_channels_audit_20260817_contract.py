@@ -1380,7 +1380,13 @@ def test_delivery_statistics_share_filtered_read_scope_and_htmx_registry() -> No
         assert f"'{label}'" in delivery
         assert f'statistics.{key}' in delivery
     assert "if statistics.success_rate is not none else '—'" in delivery
-    assert 'Filtered hot records' in delivery and 'All retained hot records' in delivery
-    assert 'All pages' in delivery
+    statistics_card = delivery.split('{% call operational_section_card.render(', 1)[1].split('{% endcall %}', 1)[0]
+    assert 'Filtered hot records' not in statistics_card
+    assert 'All retained hot records' not in statistics_card
+    assert 'All pages' not in statistics_card
+    assert 'not receipt or readership by a person.' not in statistics_card
+    guide = delivery.split("info_tip.render('notification-delivery-records-guide'", 1)[1].split("variant='guide'", 1)[0]
+    assert 'not receipt or readership by a person.' in guide
+    assert 'across all pages' in guide
     assert 'result_count=payload.delivery_pagination.total_items' in delivery
     assert delivery.count("'notification-delivery-registry'") == 3
