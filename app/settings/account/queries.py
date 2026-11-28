@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from typing import Literal
 
 from sqlalchemy import and_, or_, select
-
 from sqlalchemy.orm import load_only
 
 from app.access.authentication.mfa.policy import MfaGate, MfaPolicyMode, evaluate_mfa_policy
@@ -37,6 +36,8 @@ AuthenticationEventKind = Literal['success', 'failed', 'sign_out', 'expired', 'u
 
 def authentication_event_kind(event: Notification) -> AuthenticationEventKind:
     """Classify committed authentication evidence without assuming a sign-in."""
+    if event.event_type == 'account_security':
+        return 'unknown'
     metadata = event.metadata_json or {}
     action = metadata.get('access_action')
     if action is None or action == '':
@@ -127,12 +128,15 @@ class PersonalSecurityPosture:
 
 
 def build_personal_security_posture(
-    *, mode: str, enrolled: bool, privileged: bool, session_policy: SessionPolicy,
+    *, mode: str, enrolled: bool, privileged: bool, session_policy: SessionPolicy
 ) -> PersonalSecurityPosture:
     """Read-only effective next-sign-in policy; not proof of current-session MFA."""
     decision = evaluate_mfa_policy(mode, privileged=privileged, enrolled=enrolled)
     if decision.mode == MfaPolicyMode.DISABLED:
-        label, tone, detail = 'Disabled by Policy', 'unknown', 'A stored factor does not require a sign-in challenge.'
+        label, tone, detail = (
+            'Disabled by Policy', 'unknown',
+            'Authenticator enrolled; sign-in challenge disabled.' if enrolled else 'No sign-in challenge is required.',
+        )
     elif decision.gate == MfaGate.ENROLLMENT_REQUIRED:
         label, tone, detail = 'Enrollment Required', 'warning', 'Complete authenticator enrollment at required sign-in.'
     elif decision.gate == MfaGate.CHALLENGE:

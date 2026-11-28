@@ -14,6 +14,8 @@ from app.access.authentication.bot_protection.service import BotPolicyMode, BotP
 from app.access.authentication.mfa.policy import MfaGate, MfaPolicyDecision, MfaPolicyMode
 from app.access.authentication.readiness import AuthenticationDatabaseReadiness
 from app.access.authentication.results import AuthResult, LocalCredentialProof
+from app.access.authentication.session_lifecycle import SessionPolicy
+from app.settings.account.queries import build_personal_security_posture
 from app.common.pagination import build_pagination_window, pagination_payload
 from app.extensions import login_manager
 from app.models import User
@@ -305,6 +307,9 @@ def kaori_authenticated_base_url() -> Iterator[str]:
             recent_authentication_events=Mock(return_value=[]),
             account_mfa_factor=Mock(return_value=None),
             mfa_policy_mode=Mock(return_value='disabled'),
+            read_personal_security_posture=Mock(return_value=build_personal_security_posture(
+                mode='disabled', enrolled=False, privileged=True, session_policy=SessionPolicy(),
+            )),
         ),
         patch.object(login_manager, '_user_callback', lambda _user_id: user),
         patch.multiple(

@@ -13,7 +13,7 @@
                     <h2 class="text-base font-bold text-content-primary">Recent Authentication Activity</h2>
                     {{ info_tip.render('account-recent-authentication-guide',
                                         'Recent authentication evidence',
-                                        'This personal view summarizes up to five latest recorded authentication events, not full history.',
+                                        'This personal view summarizes up to five latest recorded authentication and personal security events, not full history.',
                                         [
                                         'Summary counts describe only the displayed sample.',
                                         'Recorded source and context describe authentication evidence, not active sessions.',
@@ -144,7 +144,7 @@
                                 </p>
                                 <p class="mt-1 inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-content-muted">
                                     <i data-lucide="network" class="h-3.5 w-3.5 text-content-disabled"></i>
-                                    <span>Recorded IP: {{ metadata.get("ip_address") or 'Unavailable' }}</span>
+                                    <span>Recorded IP: {{ (metadata.get("ip_address") or 'Unavailable') if not security_label else 'Not displayed' }}</span>
                                 </p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }} min-w-56">
@@ -169,7 +169,7 @@
                                     <p class="text-sm font-semibold text-content-secondary">Recorded Event</p>
                                     <p class="mt-0.5 text-xs text-content-muted">Outcome not classified as a sign-in</p>
                                 {% endif %}
-                                {% if metadata.get('browser') or metadata.get('device_type') %}
+                                {% if not security_label and (metadata.get('browser') or metadata.get('device_type')) %}
                                     <p class="mt-1 inline-flex items-center gap-1.5 text-xs text-content-muted">
                                         <i data-lucide="monitor-smartphone"
                                            class="h-3.5 w-3.5 shrink-0 text-content-disabled"
