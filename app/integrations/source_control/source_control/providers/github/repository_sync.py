@@ -35,6 +35,9 @@ from app.models.source_control import (
 )
 
 
+REVISION_BATCH_SIZE = 20
+
+
 @dataclass(frozen=True, slots=True)
 class CollectionOutcome:
     installation_id: int
@@ -44,6 +47,31 @@ class CollectionOutcome:
     committed_revisions: int = 0
     revision_failures: int = 0
     unchecked_revisions: int = 0
+
+
+def _revision_batch_offset(eligible_count: int, generation: int) -> int:
+    """Rotate deterministic, bounded windows using the durable installation generation."""
+    windows = max(1, (eligible_count + REVISION_BATCH_SIZE - 1) // REVISION_BATCH_SIZE)
+    return ((generation - 1) % windows) * REVISION_BATCH_SIZE
+
+
+def _revision_targets(session: Session, *, installation_id: int, generation: int) -> tuple[int, list[int]]:
+    """Select only current authorized default branches, never a provider-wide list."""
+    authorized = (
+        select(SourceRepository.id)
+        .join(SourceRepositoryGrant, SourceRepositoryGrant.repository_id == SourceRepository.id)
+        .where(
+            SourceRepositoryGrant.installation_id == installation_id,
+            SourceRepositoryGrant.access_status == 'granted',
+            SourceRepositoryGrant.valid_until.is_(None),
+            SourceRepository.default_branch.is_not(None),
+            SourceRepository.default_branch != '',
+        )
+    )
+    eligible_count = int(session.scalar(select(func.count()).select_from(authorized.subquery())) or 0)
+    offset = _revision_batch_offset(eligible_count, generation)
+    target_ids = list(session.scalars(authorized.order_by(SourceRepository.id).offset(offset).limit(REVISION_BATCH_SIZE)))
+    return eligible_count, target_ids
 
 
 def synchronize_installation(session: Session, installation: SourceInstallation) -> CollectionOutcome:
@@ -71,23 +99,14 @@ def synchronize_installation(session: Session, installation: SourceInstallation)
     # Each branch observation is independently authoritative and best-effort.
     # Exact SHA collection never backdates or revokes an exhaustive repository
     # grant scan. Bound calls to avoid external API storms on large tenants.
-    authorized = (
-        select(SourceRepository.id)
-        .join(SourceRepositoryGrant, SourceRepositoryGrant.repository_id == SourceRepository.id)
-        .where(
-            SourceRepositoryGrant.installation_id == installation.id,
-            SourceRepositoryGrant.access_status == 'granted',
-            SourceRepositoryGrant.valid_until.is_(None),
-            SourceRepository.default_branch.is_not(None),
-        )
+    # Rotate the bounded window across successive durable generations instead of
+    # repeatedly checking the lowest IDs. Failed checks do not pin the window.
+    eligible_count, target_ids = _revision_targets(
+        session, installation_id=generation.installation_id, generation=generation.generation
     )
-    # Count every eligible ref, not just the 20-item API budget. Otherwise
-    # a 200-repository organization would report only one evidence gap.
-    eligible_count = int(session.scalar(select(func.count()).select_from(authorized.subquery())) or 0)
-    target_ids = list(session.scalars(authorized.order_by(SourceRepository.id).limit(20)))
     committed_revisions = 0
     revision_failures = 0
-    for repository_id in target_ids[:20]:
+    for repository_id in target_ids[:REVISION_BATCH_SIZE]:
         try:
             branch = collect_default_branch_revision(
                 session,
