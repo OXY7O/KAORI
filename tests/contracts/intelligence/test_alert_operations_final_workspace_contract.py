@@ -67,7 +67,8 @@ def test_routing_workspace_is_table_led_and_crud_uses_modal() -> None:
     assert 'Identity & Cadence' in editor
     assert 'Match Scope & Channels' in editor
     assert 'bg-kaori-soft text-kaori-primary' in editor
-    assert 'Matcher tip:' in editor
+    assert 'Matcher tip:' not in editor
+    assert 'How to match' in editor
     assert 'Policy Checklist' in editor
     assert '{% import "components/action_button.html" as action_button %}' in editor
     assert "action_button.classes('critical')" in editor
@@ -533,3 +534,25 @@ def test_alert_registry_header_labels_follow_canonical_order() -> None:
         assert title_row.count("variant='guide'") == 1
         assert title_row.index(result) < title_row.index('info_tip.render(')
         assert source.count(result) == 1
+
+
+def test_routing_editor_compact_summary_and_bounded_channel_choices() -> None:
+    from jinja2 import Environment
+
+    editor = read('app/templates/intelligence/partials/_alert_ops_routing_editor_modal.html')
+    Environment().parse(editor)
+    rail = editor.split('data-kaori-routing-status-rail', 1)[1].split('</dl>', 1)[0]
+    assert 'Editor Context' in rail and 'Channel Candidates' in rail
+    assert 'available.count' in rail
+    assert 'Based on initial policy scope' in rail
+    assert 'Routing lifecycle' not in rail and 'Durable Alert Cases' not in rail
+    assert 'max-h-64 divide-y divide-outline-subtle overflow-y-auto' in editor
+    assert 'data-routing-channel-options' in editor
+    assert 'name="channel_ids"' in editor
+    assert 'if not channel_available' in editor
+    assert 'channel.registry_eligible' in editor
+    assert 'aria-describedby="routing-matcher-help"' in editor
+    assert 'name="matchers" rows="3"' in editor
+    assert 'data-routing-matchers' in editor
+    assert '<details class="group border-t' in editor
+    assert 'Policy Checklist' in editor

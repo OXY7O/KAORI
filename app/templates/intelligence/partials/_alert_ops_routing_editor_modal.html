@@ -2,6 +2,13 @@
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/action_button.html" as action_button %}
 {% set can_manage = current_user.has_permission('integrations.manage') %}
+{% set registry_route = ('registry' in selected_policy.domains) if selected_policy else payload.domain == 'registry' %}
+{% set available = namespace(count=0) %}
+{% for channel in payload.channel_options %}
+    {% if channel.eligible and (not registry_route or channel.registry_eligible) %}
+        {% set available.count = available.count + 1 %}
+    {% endif %}
+{% endfor %}
 <div data-kaori-detail-variant="modal"
      data-kaori-routing-modal-layout="recommendation-inspired"
      class="min-w-0">
@@ -23,7 +30,6 @@
                         <p class="mt-1 max-w-5xl text-sm leading-6 text-content-secondary">Define a focused route from durable KAORI Alert Cases to validated Notification Channels.</p>
                         <div class="mt-2 flex flex-wrap items-center gap-1.5">
                             {{ table_label.metadata_label('KAORI Recommendations', 'sparkles') }}
-                            {{ table_label.metadata_label(payload.domain_label, 'boxes') }}
                             {{ table_label.status_label('Edit Mode' if selected_policy else 'New Policy', 'info', size='compact') }}
                         </div>
                     </div>
@@ -33,26 +39,27 @@
         <div data-resource-detail-summary
              data-kaori-routing-status-rail
              class="mx-4 my-3 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card sm:mx-5">
-            <dl class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
-                {% for icon, label, value, helper in [
-                    ('settings-2', 'Mode', 'Edit Policy' if selected_policy else 'New Policy', 'Routing lifecycle'),
-                    ('sparkles', 'Alert Source', 'KAORI Recommendations', 'Durable Alert Cases'),
-                    ('boxes', 'Context', payload.domain_label, payload.selected_asset_name),
-                    ('send', 'Eligible Channels', payload.notification.eligible, 'Validated destinations')
-                    ] %}
-                    <div class="min-w-0 px-4 py-3.5 sm:px-5">
-                        <dt class="flex items-center gap-2 text-xs font-medium leading-5 text-content-muted">
-                            <i data-lucide="{{ icon }}"
-                               class="h-3.5 w-3.5 shrink-0 text-kaori-primary"
-                               aria-hidden="true"></i>{{ label }}
-                        </dt>
-                        <dd class="mt-1 truncate text-sm font-semibold leading-5 text-content-primary"
-                            title="{{ value }}">
-                            {{ value }}
-                        </dd>
-                        <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ helper }}</p>
+            <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2">
+                <div class="flex min-w-0 items-start gap-3 bg-surface-card px-4 py-3">
+                    <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                        <i data-lucide="boxes" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <dt class="text-xs font-medium leading-5 text-content-muted">Editor Context</dt>
+                        <dd class="truncate text-sm font-semibold leading-5 text-content-primary" title="{{ payload.domain_label }}">{{ payload.domain_label }}</dd>
+                        <p class="truncate text-xs leading-5 text-content-muted" title="{{ payload.selected_asset_name }}">{{ payload.selected_asset_name }} · starting scope</p>
                     </div>
-                {% endfor %}
+                </div>
+                <div class="flex min-w-0 items-start gap-3 bg-surface-card px-4 py-3">
+                    <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                        <i data-lucide="send" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <dt class="text-xs font-medium leading-5 text-content-muted">Channel Candidates</dt>
+                        <dd class="text-sm font-semibold leading-5 text-content-primary tabular-nums">{{ available.count }} of {{ payload.channel_options|length }} eligible</dd>
+                        <p class="text-xs leading-5 text-content-muted">Based on initial policy scope</p>
+                    </div>
+                </div>
             </dl>
         </div>
         <div class="min-w-0 bg-surface-elevated/40 p-4 sm:p-5">
@@ -165,73 +172,92 @@
                                     </div>
                                 </fieldset>
                             </div>
-                            <fieldset>
+                            <fieldset class="min-w-0">
                                 <legend class="text-xs font-semibold text-content-secondary">Notification Channels</legend>
-                                <div class="mt-3 max-h-64 space-y-2 overflow-y-auto pr-1">
-                                    {% set registry_route = ('registry' in selected_policy.domains) if selected_policy else payload.domain == 'registry' %}
-                                    {% for channel in payload.channel_options %}
-                                        {% set channel_available = channel.eligible and (not registry_route or channel.registry_eligible) %}
-                                        <label class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-elevated p-3 {{ 'opacity-60' if not channel_available else '' }}">
-                                            <input type="checkbox"
-                                                   name="channel_ids"
-                                                   value="{{ channel.id }}"
-                                                   {% if not channel_available %}disabled{% endif %}
-                                                   {% if selected_policy and channel.id in selected_policy.channels|map(attribute='id')|list %}checked{% endif %}
-                                                   class="mt-0.5">
-                                            <span class="min-w-0 flex-1">
-                                                <span class="flex items-center justify-between gap-2">
-                                                    <span class="truncate text-sm font-semibold text-content-primary">{{ channel.name }}</span>
-                                                    {{ table_label.status_label(channel.status, 'normal' if channel.eligible else 'warning', size='compact') }}
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Select validated destinations. Registry requires a dedicated route and eligible channel.</p>
+                                <div class="mt-3 overflow-hidden rounded-lg border border-outline-subtle">
+                                    <div class="flex items-center justify-between gap-2 border-b border-outline-subtle bg-surface-hover px-3 py-2">
+                                        <span class="text-xs font-semibold text-content-secondary">Channel / Provider</span>
+                                        <span class="text-xs font-semibold text-content-secondary">Status</span>
+                                    </div>
+                                    <div class="max-h-64 divide-y divide-outline-subtle overflow-y-auto overscroll-contain"
+                                         data-routing-channel-options>
+                                        {% for channel in payload.channel_options %}
+                                            {% set channel_available = channel.eligible and (not registry_route or channel.registry_eligible) %}
+                                            <label class="flex min-w-0 items-center gap-3 bg-surface-card px-3 py-2.5 {{ 'opacity-60' if not channel_available else '' }}">
+                                                <input type="checkbox"
+                                                       name="channel_ids"
+                                                       value="{{ channel.id }}"
+                                                       {% if not channel_available %}disabled{% endif %}
+                                                       {% if selected_policy and channel.id in selected_policy.channels|map(attribute='id')|list %}checked{% endif %}
+                                                       class="shrink-0">
+                                                <span class="min-w-0 flex-1">
+                                                    <span class="block truncate text-sm font-semibold leading-5 text-content-primary" title="{{ channel.name }}">{{ channel.name }}</span>
+                                                    <span class="block truncate text-xs leading-5 text-content-muted" title="{{ channel.provider }} · {{ channel.destination }}">{{ channel.provider }} · {{ channel.destination }}</span>
                                                 </span>
-                                                <span class="mt-1 block truncate text-xs text-content-muted">{{ channel.provider }} · {{ channel.destination }}</span>
-                                            </span>
-                                        </label>
-                                    {% else %}
-                                        <p class="text-sm text-content-muted">Configure and validate a Notification Channel first.</p>
-                                    {% endfor %}
+                                                <span class="shrink-0">
+                                                    {{ table_label.status_label(channel.status, 'normal' if channel.eligible else 'warning', size='compact') }}
+                                                    {% if channel.eligible and not channel_available %}
+                                                        <span class="mt-1 block text-right text-xs text-content-muted">Scope mismatch</span>
+                                                    {% endif %}
+                                                </span>
+                                            </label>
+                                        {% else %}
+                                            <p class="px-3 py-4 text-sm text-content-muted">Configure and validate a Notification Channel first.</p>
+                                        {% endfor %}
+                                    </div>
                                 </div>
                             </fieldset>
                         </div>
                     </section>
-                    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-                        <div class="grid gap-0 xl:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.85fr)] xl:divide-x xl:divide-outline-subtle">
-                            <label class="block p-4">
-                                <span class="{{ table_ui.filter_label_classes() }}">Optional Label Matchers</span>
-                                <textarea name="matchers" rows="6" class="mt-2 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 font-mono text-xs text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft" placeholder="environment=production&#10;namespace=billing">{% if selected_policy %}{% for key, value in selected_policy.matchers.items() %}{{ key }}={{ value }}{% if not loop.last %}
+                    <section class="{{ table_ui.block_classes() }}" data-routing-matchers>
+                        <header class="{{ table_ui.block_header_classes() }}">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="tags" class="h-4 w-4"></i></span>
+                                <div class="min-w-0">
+                                    <h3 class="{{ table_ui.block_title_classes() }}">Label Matchers <span class="ml-1 text-xs font-normal text-content-muted">(Optional)</span></h3>
+                                    <p class="{{ table_ui.block_description_classes() }}">Narrow the route using exact alert labels.</p>
+                                </div>
+                            </div>
+                        </header>
+                        <div class="grid items-start gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.55fr)] lg:gap-5">
+                            <div class="min-w-0">
+                                <label for="routing-policy-matchers" class="{{ table_ui.filter_label_classes() }}">Match expressions</label>
+                                <textarea id="routing-policy-matchers" name="matchers" rows="3" aria-describedby="routing-matcher-help"
+                                          class="w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 font-mono text-xs leading-5 text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft" placeholder="environment=production&#10;namespace=billing">{% if selected_policy %}{% for key, value in selected_policy.matchers.items() %}{{ key }}={{ value }}{% if not loop.last %}
 {% endif %}{% endfor %}{% endif %}</textarea>
-                                <div class="mt-3 rounded-lg border border-kaori-primary/20 bg-kaori-soft px-3 py-2.5 text-xs leading-5 text-content-secondary">
-                                    <span class="font-semibold text-kaori-primary">Matcher tip:</span> Use one exact <code class="font-mono">key=value</code> matcher per line. Leave this empty to route every alert that matches the selected domain and severity.
-                                </div>
-                            </label>
-                            <aside class="p-4">
-                                <div class="flex items-start gap-3">
-                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                          aria-hidden="true"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
-                                    <div>
-                                        <p class="text-sm font-semibold leading-5 text-content-primary">Policy Checklist</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">Confirm these four routing decisions before saving.</p>
-                                    </div>
-                                </div>
-                                <div class="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-                                    {% for icon, title, copy in [
-                                        ('users-round', 'Ownership', 'Domains and severities match the receiving team.'),
-                                        ('timer-reset', 'Cadence', 'Repeat timing reflects urgency and ACK behavior.'),
-                                        ('badge-check', 'Recovery', 'Resolved delivery is enabled only when useful.'),
-                                        ('tags', 'Matchers', 'Extra labels are used only when scope is still broad.')
-                                        ] %}
-                                        <div class="flex items-start gap-2.5 border-b border-outline-subtle py-2.5 last:border-b-0">
-                                            <i data-lucide="{{ icon }}"
-                                               class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"
-                                               aria-hidden="true"></i>
-                                            <div class="min-w-0">
-                                                <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
-                                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ copy }}</p>
-                                            </div>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            </aside>
+                            </div>
+                            <div id="routing-matcher-help" class="min-w-0 space-y-2 text-xs leading-5 text-content-muted">
+                                <p class="font-semibold text-content-secondary">How to match</p>
+                                <p>Use one exact <code class="font-mono text-content-primary">key=value</code> per line. All expressions must match.</p>
+                                <p>Leave empty to use only the selected domains and severities.</p>
+                            </div>
                         </div>
+                        <details class="group border-t border-outline-subtle">
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-content-primary hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus">
+                                <span class="inline-flex items-center gap-2">
+                                    <i data-lucide="list-checks" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                    Policy Checklist
+                                </span>
+                                <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180" aria-hidden="true"></i>
+                            </summary>
+                            <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle sm:grid-cols-2">
+                                {% for icon, title, copy in [
+                                    ('users-round', 'Ownership', 'Domains and severities match the receiving team.'),
+                                    ('timer-reset', 'Cadence', 'Repeat timing reflects urgency and ACK behavior.'),
+                                    ('badge-check', 'Recovery', 'Resolved delivery is enabled only when useful.'),
+                                    ('tags', 'Matchers', 'Extra labels are used only when scope is still broad.')
+                                    ] %}
+                                    <div class="flex min-w-0 items-start gap-2.5 bg-surface-card px-4 py-3">
+                                        <i data-lucide="{{ icon }}" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
+                                            <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ copy }}</p>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </details>
                     </section>
                     <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
                         {% if selected_policy %}
