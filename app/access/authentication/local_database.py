@@ -7,6 +7,7 @@ from app.access.authentication.results import (
     INVALID_LOGIN_MESSAGE,
     USER_INACTIVE_MESSAGE,
     AuthResult,
+    LocalCredentialProof,
 )
 from app.extensions.db import db
 from app.models import User
@@ -36,4 +37,13 @@ class DatabaseAuthProvider:
             )
         if not user.is_active:
             return AuthResult(False, 'user_inactive', source=self.source, user=user, message=USER_INACTIVE_MESSAGE)
-        return AuthResult(True, 'success', source=self.source, user=user)
+        return AuthResult(
+            True,
+            'success',
+            source=self.source,
+            user=user,
+            local_credential_proof=LocalCredentialProof(
+                password_hash=user.password_hash,
+                generation=user.auth_session_version,
+            ),
+        )

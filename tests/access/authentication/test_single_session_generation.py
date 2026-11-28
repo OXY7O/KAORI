@@ -11,13 +11,15 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.authentication import audit, services
 from app.access.authentication import session as auth_session
+from app.access.authentication.results import LocalCredentialProof
 from app.models import User
 
 
 class GenerationStore:
-    def __init__(self, *, issued: int | None = 2, fail: bool = False) -> None:
+    def __init__(self, *, issued: int | None = 2, fail: bool = False, current_hash: str = 'test-hash') -> None:
         self.issued = issued
         self.fail = fail
+        self.current_hash = current_hash
         self.statements: list[Any] = []
         self.commits = 0
         self.rollbacks = 0
@@ -28,7 +30,8 @@ class GenerationStore:
         self.statements.append(statement)
         if self.fail:
             raise SQLAlchemyError('simulated commit boundary failure')
-        return SimpleNamespace(scalar_one_or_none=lambda: self.issued)
+        value = self.current_hash if str(statement).lower().startswith('select users.password_hash') else self.issued
+        return SimpleNamespace(scalar_one_or_none=lambda: value)
 
     def commit(self) -> None:
         self.commits += 1
@@ -46,12 +49,15 @@ def test_login_generation_is_atomic_database_update_with_exact_returning(
     monkeypatch.setattr(services.db, 'session', store)
     actor = User(id=41, auth_source='database', auth_session_version=7)
 
-    issued = services.record_successful_authentication(actor, source='database', client_ip='192.0.2.8')
+    issued = services.record_successful_authentication(
+        actor, source='database', client_ip='192.0.2.8', local_credential_proof=LocalCredentialProof('test-hash', 7)
+    )
 
     assert issued == 8
     assert store.commits == 1 and store.rollbacks == 0
-    assert store.events == ['execute', 'commit']
-    statement = str(store.statements[0]).lower()
+    assert store.events == ['execute', 'execute', 'commit']
+    assert 'for update' in str(store.statements[0]).lower()
+    statement = str(store.statements[1]).lower()
     assert statement.startswith('update users')
     assert 'coalesce(' in statement and 'auth_session_version' in statement
     assert 'returning users.auth_session_version' in statement
@@ -80,7 +86,8 @@ def test_database_failure_rolls_back_generation_issuance(
 
     with pytest.raises(SQLAlchemyError):
         services.record_successful_authentication(
-            User(id=43, auth_source='database'), source='database', client_ip=None
+            User(id=43, auth_source='database'), source='database', client_ip=None,
+            local_credential_proof=LocalCredentialProof('test-hash', 7),
         )
     assert store.commits == 0
     assert store.rollbacks == 1
@@ -219,3 +226,36 @@ def test_authentication_audit_correlates_only_actual_authenticated_sessions(
         )
         assert committed[-1].actor_key == 'unauthenticated'
         assert committed[-1].metadata_json['session_reference'] is None
+
+
+def test_stale_local_proof_cannot_issue_a_generation(monkeypatch: pytest.MonkeyPatch) -> None:
+    store = GenerationStore(current_hash='rotated-hash')
+    monkeypatch.setattr(services.db, 'session', store)
+    actor = User(id=42, auth_source='database', auth_session_version=9)
+    proof = LocalCredentialProof('test-hash', 7)
+    assert 'test-hash' not in repr(proof)
+    with pytest.raises(auth_session.AuthSessionError):
+        services.record_successful_authentication(actor, source='database', client_ip=None, local_credential_proof=proof)
+    assert store.events == ['execute', 'rollback']
+    assert store.commits == 0
+
+
+@pytest.mark.parametrize('source', ('database', 'ldap', 'google'))
+def test_pending_mfa_issuance_guards_original_generation(monkeypatch: pytest.MonkeyPatch, source: str) -> None:
+    store = GenerationStore(issued=None)
+    monkeypatch.setattr(services.db, 'session', store)
+    actor = User(id=42, auth_source=source, auth_session_version=9)
+    with pytest.raises(auth_session.AuthSessionError):
+        services.record_successful_authentication(actor, source=source, client_ip=None, pending_generation=7)
+    assert store.events == ['execute', 'rollback']
+    statement = store.statements[0]
+    assert 'users.auth_session_version =' in str(statement).lower()
+    assert 7 in statement.compile().params.values()
+
+
+def test_missing_local_proof_fails_before_database_mutation(monkeypatch: pytest.MonkeyPatch) -> None:
+    store = GenerationStore()
+    monkeypatch.setattr(services.db, 'session', store)
+    with pytest.raises(auth_session.AuthSessionError):
+        services.record_successful_authentication(User(id=42), source='database', client_ip=None)
+    assert store.events == ['rollback']

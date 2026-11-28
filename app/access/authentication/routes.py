@@ -98,10 +98,19 @@ def _complete_successful_login(
     remember_requested: bool = False,
     next_url: object = None,
     mfa_verified: bool = False,
+    pending_generation: int | None = None,
 ):
     user = result.user
     if user is None:
         raise RuntimeError('Successful authentication result is missing its user.')
+
+    proof = result.local_credential_proof
+    if mfa_verified:
+        if type(pending_generation) is not int or pending_generation < 1:
+            raise AuthSessionError('Pending authentication generation is missing.')
+    elif result.source == 'database' and proof is None:
+        raise AuthSessionError('Verified local credential proof is missing.')
+    primary_generation = proof.generation if proof is not None else user.auth_session_version
 
     # A primary-credential-only result may NOT invalidate the previous login.
     # Every required factor must be verified before generation issuance (#3121).
@@ -112,7 +121,7 @@ def _complete_successful_login(
             session[MFA_PENDING_SESSION_KEY] = {
                 'user_id': user.id,
                 'source': result.source,
-                'version': user.auth_session_version,
+                'version': primary_generation,
                 'remember': bool(remember_requested),
                 'next_url': safe_next_url(next_url),
                 'expires_at': datetime.now(UTC).timestamp() + MFA_CHALLENGE_TTL_SECONDS,
@@ -120,7 +129,13 @@ def _complete_successful_login(
             }
             return redirect(url_for('auth.mfa_challenge'))
     remember_requested = bool(remember_requested and read_session_policy().regular_remember)
-    issued_session_version = record_successful_authentication(user, source=result.source, client_ip=_client_ip())
+    issued_session_version = record_successful_authentication(
+        user,
+        source=result.source,
+        client_ip=_client_ip(),
+        local_credential_proof=proof,
+        pending_generation=pending_generation if mfa_verified else None,
+    )
 
     establish_authenticated_session(
         user,
@@ -523,6 +538,8 @@ def _pending_mfa_session_valid(pending: dict) -> bool:
     expires_at = pending.get('expires_at')
     return not (
         type(pending.get('user_id')) is not int
+        or type(pending.get('version')) is not int
+        or pending.get('version', 0) < 1
         or type(expires_at) not in (int, float)
         or cast(float, expires_at) <= datetime.now(UTC).timestamp()
         or type(pending.get('attempts')) is not int
@@ -588,6 +605,7 @@ def mfa_challenge():
                         remember_requested=bool(pending.get('remember')),
                         next_url=pending.get('next_url'),
                         mfa_verified=True,
+                        pending_generation=pending['version'],
                     )
                 except (SQLAlchemyError, AuthSessionError):
                     session.pop(MFA_PENDING_SESSION_KEY, None)
@@ -637,6 +655,7 @@ def mfa_challenge():
                     remember_requested=bool(pending.get('remember')),
                     next_url=pending.get('next_url'),
                     mfa_verified=True,
+                    pending_generation=pending['version'],
                 )
             except (SQLAlchemyError, AuthSessionError):
                 session.pop(MFA_PENDING_SESSION_KEY, None)
