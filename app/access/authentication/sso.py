@@ -8,8 +8,15 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.access.authentication.identity_provider.browser import SsoIdentity
 from app.access.authentication.identity_provider.catalog import AuthProviderFamily, provider_definition
+from app.access.authentication.identity_provider.proof import lock_provider_revision
 from app.access.authentication.identity_provider.registry import registered_browser_sso_adapter_keys
-from app.access.authentication.results import DATABASE_UNAVAILABLE_MESSAGE, USER_INACTIVE_MESSAGE, AuthResult
+from app.access.authentication.results import (
+    DATABASE_UNAVAILABLE_MESSAGE,
+    USER_INACTIVE_MESSAGE,
+    AuthResult,
+    ExternalCredentialProof,
+)
+from app.access.authentication.session import AuthSessionError
 from app.access.rbac.policy import role_is_access_admin_level
 from app.extensions.db import db
 from app.models import ExternalIdentityLink, IdentityProvider, Role, User
@@ -56,10 +63,14 @@ def _browser_configuration_ready(provider: IdentityProvider) -> bool:
     return bool(configuration.get('client_id') and secret_env and os.getenv(secret_env))
 
 
-def resolve_sso_identity(provider: IdentityProvider, identity: SsoIdentity) -> AuthResult:
+def resolve_sso_identity(provider: IdentityProvider, identity: SsoIdentity, *, expected_revision: int) -> AuthResult:
     source = provider.provider_key
     try:
+        provider = lock_provider_revision(provider.id, expected_revision, source=source)
         link = ExternalIdentityLink.query.filter_by(provider_id=provider.id, subject=identity.subject).first()
+    except AuthSessionError:
+        db.session.rollback()
+        return AuthResult(False, 'provider_unavailable', source=source)
     except SQLAlchemyError:
         db.session.rollback()
         return AuthResult(False, 'database_unavailable', source=source, message=DATABASE_UNAVAILABLE_MESSAGE)
@@ -67,18 +78,21 @@ def resolve_sso_identity(provider: IdentityProvider, identity: SsoIdentity) -> A
     if link is not None:
         user = link.user
         if not user.is_active:
+            db.session.rollback()
             return AuthResult(False, 'user_inactive', source=source, user=user, message=USER_INACTIVE_MESSAGE)
         try:
             _sync_link(link, identity)
+            proof = ExternalCredentialProof(provider.id, expected_revision, link.id)
             db.session.commit()
         except SQLAlchemyError:
             db.session.rollback()
             return AuthResult(
                 False, 'database_unavailable', source=source, user=user, message=DATABASE_UNAVAILABLE_MESSAGE
             )
-        return AuthResult(True, 'success', source=source, user=user)
+        return AuthResult(True, 'success', source=source, user=user, external_credential_proof=proof)
 
     if not provider.jit_enabled:
+        db.session.rollback()
         return AuthResult(
             False,
             'identity_not_provisioned',
@@ -88,6 +102,8 @@ def resolve_sso_identity(provider: IdentityProvider, identity: SsoIdentity) -> A
 
     try:
         user = _jit_project(provider, identity)
+        link = ExternalIdentityLink.query.filter_by(provider_id=provider.id, user_id=user.id).one()
+        proof = ExternalCredentialProof(provider.id, expected_revision, link.id)
         db.session.commit()
     except SsoAdmissionError as exc:
         db.session.rollback()
@@ -103,7 +119,7 @@ def resolve_sso_identity(provider: IdentityProvider, identity: SsoIdentity) -> A
     except SQLAlchemyError:
         db.session.rollback()
         return AuthResult(False, 'database_unavailable', source=source, message=DATABASE_UNAVAILABLE_MESSAGE)
-    return AuthResult(True, 'success', source=source, user=user)
+    return AuthResult(True, 'success', source=source, user=user, external_credential_proof=proof)
 
 
 def validate_jit_configuration(provider: IdentityProvider) -> None:

@@ -759,6 +759,13 @@ Feature: Personal and required MFA enrollment safety
     And the committed reference correlates only the issued generation
     And database admission does not assert delivery of the browser cookie
 
+  Scenario: Reject in-flight external proof after provider registry revision changes
+    Given LDAP primary proof or an SSO authorization flow is bound to provider instance P and revision R
+    When that provider is disabled or updated before final issuance
+    Then the old proof cannot issue a session or mutate a pending MFA setup
+    And re-enabling the provider cannot revive revision R
+    And Local Database admission is unaffected
+
   Scenario: Do not cache or restore one-time MFA material through HTMX history
     Given an authorized enrollment or recovery response contains one-time material
     When the response is returned
@@ -767,7 +774,7 @@ Feature: Personal and required MFA enrollment safety
     And the user must not receive those values again by a normal GET
 ```
 
-Source-level scenario/test mapping: #5340, #5342, #5346, #5351, #5357 and #5361. Actual browser Back/Forward/cache behavior, PostgreSQL concurrent factor transition and provider-specific UAT remain NOT RUN.
+Source-level scenario/test mapping: #5340, #5342, #5346, #5351, #5357, #5361 and #5365. Actual browser Back/Forward/cache behavior, PostgreSQL concurrent factor transition and provider-specific UAT remain NOT RUN.
 
 ### SET-VIS-01 — Deterministic responsive/theme/three-tab visual contract
 
@@ -834,7 +841,7 @@ session and independent browser-failure trace were not archived.
 | SET-ACC-02 | `tests/contracts/settings/test_account_settings_redesign_contract.py` (activity/layout); same Playwright browser test (mocked empty state) | Latest-five and Viewer deny/authorized audit: Human PASS; separate HTTP 403 header pending |
 | SET-ACC-03 | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_external_credentials_are_rejected_before_validation_or_password_access`; `tests/contracts/settings/test_account_credential_security_contract.py` | Local/LDAP credential ownership: Human PASS; contract-level external mutation rejection |
 | SET-ACC-04 | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_password_rejections_preserve_credential_and_session_state`; `tests/contracts/settings/test_account_credential_security_contract.py`; `tests/access/authentication/test_single_session_generation.py::test_stale_local_proof_cannot_issue_a_generation`, `::test_pending_mfa_issuance_guards_original_generation`, `::test_login_generation_is_atomic_database_update_with_exact_returning` | Historical password rejection and rotation accepted; revised proof/replay/concurrency scenarios (#5333) source-mapped, NOT RUN; real PostgreSQL/browser evidence and independent CSRF trace pending |
-| SET-ACC-05 | `tests/access/authentication/test_mfa_pending_enrollment.py`; `tests/access/authentication/test_mfa_pending_admission.py`; `tests/access/authentication/test_mfa_replacement.py`; `tests/migrations/test_mfa_replacement.py`; `tests/access/authentication/test_mfa_recent_assurance.py`; `tests/access/authentication/test_mfa_enrollment_ownership.py`; `tests/migrations/test_mfa_enrollment_ownership.py`; `tests/access/authentication/test_mfa_atomic_recovery.py`; `tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py`; `tests/contracts/settings/test_account_mfa_enrollment_feedback_contract.py` | Source-mapped; executable and actual browser/PostgreSQL qualification NOT RUN |
+| SET-ACC-05 | `tests/access/authentication/test_mfa_pending_enrollment.py`; `tests/access/authentication/test_external_provider_proof.py`; `tests/migrations/test_provider_auth_revision.py`; `tests/access/authentication/test_mfa_pending_admission.py`; `tests/access/authentication/test_mfa_replacement.py`; `tests/migrations/test_mfa_replacement.py`; `tests/access/authentication/test_mfa_recent_assurance.py`; `tests/access/authentication/test_mfa_enrollment_ownership.py`; `tests/migrations/test_mfa_enrollment_ownership.py`; `tests/access/authentication/test_mfa_atomic_recovery.py`; `tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py`; `tests/contracts/settings/test_account_mfa_enrollment_feedback_contract.py` | Source-mapped; executable and actual browser/PostgreSQL qualification NOT RUN |
 | SET-VIS-01 | `tests/ui/test_representative_interactions.py::test_settings_account_profile_activity_credentials_visual_qa`; `tests/ui/test_visual_audit_contract.py` | 6/6 browser parameterizations PASS; exact same-run SHA not recorded |
 | SET-OPS-01 | Shared HTMX tab contract in `tests/contracts/settings/test_account_settings_redesign_contract.py`; read-only browser navigation in the visual QA test | Account history, keyboard, HTMX and offline recovery: Human PASS; full AT audit not claimed |
 

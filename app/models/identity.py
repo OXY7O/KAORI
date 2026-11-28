@@ -32,6 +32,7 @@ class IdentityProvider(db.Model):
     provider_key: Mapped[str] = mapped_column(db.String(80), nullable=False, index=True)
     adapter_key: Mapped[str] = mapped_column(db.String(80), nullable=False, index=True)
     enabled: Mapped[bool] = mapped_column(db.Boolean, default=False, nullable=False, index=True)
+    authentication_revision: Mapped[int] = mapped_column(db.BigInteger, nullable=False, default=1, server_default=db.text('1'))
     jit_enabled: Mapped[bool] = mapped_column(db.Boolean, default=False, nullable=False)
     default_role_id: Mapped[int | None] = mapped_column(
         db.ForeignKey('roles.id', ondelete='SET NULL'), nullable=True, index=True

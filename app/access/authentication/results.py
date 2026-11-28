@@ -32,6 +32,15 @@ class LocalCredentialProof:
 
 
 @dataclass(frozen=True)
+class ExternalCredentialProof:
+    """Non-secret exact provider instance, revision and provisioned identity binding."""
+
+    provider_id: int
+    revision: int
+    link_id: int
+
+
+@dataclass(frozen=True)
 class AuthResult:
     success: bool
     reason: AuthReason
@@ -39,6 +48,7 @@ class AuthResult:
     user: User | None = None
     message: str | None = None
     local_credential_proof: LocalCredentialProof | None = field(default=None, repr=False, compare=False)
+    external_credential_proof: ExternalCredentialProof | None = field(default=None, repr=False, compare=False)
 
 
 INVALID_LOGIN_MESSAGE = 'Invalid username or password.'

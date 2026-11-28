@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.authentication.admission import enforce_login_admission
 from app.access.authentication.identity_provider.registry import build_credential_provider_registry
+from app.access.authentication.identity_provider.proof import lock_external_credential_proof
 from app.access.authentication.results import (
     DATABASE_UNAVAILABLE_MESSAGE,
     INVALID_LOGIN_MESSAGE,
@@ -14,6 +15,7 @@ from app.access.authentication.results import (
     USER_INACTIVE_MESSAGE,
     AuthReason,
     AuthResult,
+    ExternalCredentialProof,
     LocalCredentialProof,
 )
 from app.access.authentication.session import AuthSessionError
@@ -57,6 +59,7 @@ def stage_successful_authentication(
     client_ip: str | None,
     local_credential_proof: LocalCredentialProof | None = None,
     pending_generation: int | None = None,
+    external_credential_proof: ExternalCredentialProof | None = None,
 ) -> int:
     """Stage the one current login generation; the caller owns commit/rollback.
 
@@ -64,8 +67,9 @@ def stage_successful_authentication(
     captures *this login's* generation; re-reading the ORM object after commit
     could instead capture a newer concurrent login and admit both browsers.
     """
-    issued_at = datetime.now(UTC)
     normalized_source = source.strip().lower()
+    if normalized_source != 'database':
+        lock_external_credential_proof(user.id, normalized_source, external_credential_proof)
     if pending_generation is None and normalized_source == 'database':
         if local_credential_proof is None or not local_credential_proof.password_hash:
             raise AuthSessionError('Verified local credential proof is missing.')
@@ -91,6 +95,7 @@ def stage_successful_authentication(
         if type(pending_generation) is not int or pending_generation < 1:
             raise AuthSessionError('Pending authentication generation is invalid.')
         conditions.append(User.auth_session_version == pending_generation)
+    issued_at = datetime.now(UTC)
     issued_version = db.session.execute(
         update(User)
         .where(*conditions)
@@ -116,11 +121,16 @@ def record_successful_authentication(
     source: str,
     client_ip: str | None,
     local_credential_proof: LocalCredentialProof | None = None,
+    external_credential_proof: ExternalCredentialProof | None = None,
 ) -> int:
     """Commit a primary-only admitted login; pending MFA has its own transaction owner."""
     try:
         issued_version = stage_successful_authentication(
-            user, source=source, client_ip=client_ip, local_credential_proof=local_credential_proof
+            user,
+            source=source,
+            client_ip=client_ip,
+            local_credential_proof=local_credential_proof,
+            external_credential_proof=external_credential_proof,
         )
         db.session.commit()
     except (SQLAlchemyError, AuthSessionError):

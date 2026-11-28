@@ -10,6 +10,7 @@ from app.access.authentication.results import (
     PROVIDER_UNAVAILABLE_MESSAGE,
     USER_INACTIVE_MESSAGE,
     AuthResult,
+    ExternalCredentialProof,
 )
 from app.extensions.db import db
 from app.models import ExternalIdentityLink, IdentityProvider, User
@@ -61,13 +62,14 @@ class LdapCredentialAdapter:
                 inactive_user = inactive_user or user
                 continue
             active_link_seen = True
+            proof = ExternalCredentialProof(provider.id, provider.authentication_revision, link.id)
             try:
                 authenticated = LdapDirectoryClient(provider).authenticate(link.distinguished_name or '', password)
             except ExternalProviderError:
                 provider_unavailable = True
                 continue
             if authenticated:
-                return AuthResult(True, 'success', source=provider.provider_key, user=user)
+                return AuthResult(True, 'success', source=matched_source, user=user, external_credential_proof=proof)
 
         if inactive_user is not None and not active_link_seen:
             return AuthResult(

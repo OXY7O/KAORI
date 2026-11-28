@@ -25,6 +25,7 @@ from app.access.authentication.identity_provider.browser import (
 )
 from app.access.authentication.identity_provider.catalog import provider_definition
 from app.access.authentication.identity_provider.registry import get_browser_sso_adapter
+from app.access.authentication.identity_provider.proof import parse_external_credential_proof
 from app.access.authentication.mfa.policy import MfaGate, MfaPolicyError
 from app.access.authentication.mfa.service import (
     MFA_CHALLENGE_TTL_SECONDS,
@@ -109,6 +110,9 @@ def _complete_successful_login(
     proof = result.local_credential_proof
     if result.source == 'database' and proof is None:
         raise AuthSessionError('Verified local credential proof is missing.')
+    external_proof = result.external_credential_proof
+    if result.source != 'database' and external_proof is None:
+        raise AuthSessionError('Verified external credential proof is missing.')
     primary_generation = proof.generation if proof is not None else user.auth_session_version
 
     # A primary-credential-only result may NOT invalidate the previous login.
@@ -116,7 +120,7 @@ def _complete_successful_login(
     decision = mfa_decision(user)
     if decision.gate in (MfaGate.CHALLENGE, MfaGate.ENROLLMENT_REQUIRED):
         session.clear()
-        session[MFA_PENDING_SESSION_KEY] = {
+        pending_context = {
             'user_id': user.id,
             'source': result.source,
             'version': primary_generation,
@@ -125,6 +129,13 @@ def _complete_successful_login(
             'expires_at': datetime.now(UTC).timestamp() + MFA_CHALLENGE_TTL_SECONDS,
             'attempts': 0,
         }
+        if external_proof is not None:
+            pending_context.update({
+                'provider_id': external_proof.provider_id,
+                'provider_revision': external_proof.revision,
+                'provider_link_id': external_proof.link_id,
+            })
+        session[MFA_PENDING_SESSION_KEY] = pending_context
         return redirect(url_for('auth.mfa_challenge'))
     remember_requested = bool(remember_requested and read_session_policy().regular_remember)
     issued_session_version = record_successful_authentication(
@@ -132,6 +143,7 @@ def _complete_successful_login(
         source=result.source,
         client_ip=_client_ip(),
         local_credential_proof=proof,
+        external_credential_proof=external_proof,
     )
 
     establish_authenticated_session(
@@ -356,6 +368,7 @@ def sso_start(provider_key: str):
     redirect_uri = url_for('auth.sso_callback', provider_key=provider.key, _external=True)
     session[SSO_SESSION_KEY] = {
         'provider_id': provider.id,
+        'provider_revision': provider.authentication_revision,
         'state_hash': state_fingerprint(state),
         'nonce': nonce,
         'started_at': datetime.now(UTC).timestamp(),
@@ -445,7 +458,8 @@ def sso_callback(provider_key: str):
         if age < 0 or age > flow_ttl_seconds:
             return redirect(url_for('auth.login'))
 
-    if not sso_flow_is_valid(
+    revision = flow.get('provider_revision')
+    if type(revision) is not int or revision != provider.authentication_revision or not sso_flow_is_valid(
         flow,
         provider_id=provider.id,
         supplied_state=supplied_state,
@@ -491,7 +505,7 @@ def sso_callback(provider_key: str):
             redirect_uri=redirect_uri,
             expected_nonce=flow.get('nonce'),
         )
-        result = enforce_login_admission(resolve_sso_identity(provider, identity))
+        result = enforce_login_admission(resolve_sso_identity(provider, identity, expected_revision=revision))
     except SsoProviderError:
         current_app.logger.warning('SSO callback failed for provider %s.', provider.key, exc_info=True)
         result = AuthResult(False, 'provider_unavailable', source=provider.provider_key)
@@ -566,6 +580,10 @@ def mfa_challenge():
         session.pop(MFA_PENDING_SESSION_KEY, None)
         return redirect(url_for('auth.login'))
 
+    external_proof = parse_external_credential_proof(pending)
+    if pending.get('source') != 'database' and external_proof is None:
+        session.pop(MFA_PENDING_SESSION_KEY, None)
+        return redirect(url_for('auth.login'))
     user = load_pending_mfa_user(pending['user_id'])
     if (
         user is None
@@ -597,9 +615,19 @@ def mfa_challenge():
             try:
                 validate_csrf(request.form.get('csrf_token'))
                 if action == 'begin':
-                    setup_secret = begin_mfa_enrollment(user, expected_generation=pending['version'], authenticated=False)
+                    setup_secret = begin_mfa_enrollment(
+                        user,
+                        expected_generation=pending['version'],
+                        authenticated=False,
+                        external_credential_proof=external_proof,
+                    )
                 elif action == 'cancel':
-                    cancel_mfa_enrollment(user, expected_generation=pending['version'], authenticated=False)
+                    cancel_mfa_enrollment(
+                        user,
+                        expected_generation=pending['version'],
+                        authenticated=False,
+                        external_credential_proof=external_proof,
+                    )
                     session.pop(MFA_PENDING_SESSION_KEY, None)
                     return redirect(url_for('auth.login'))
                 elif action == 'confirm' and form.validate_on_submit():
@@ -612,6 +640,7 @@ def mfa_challenge():
                         enrollment=True,
                         remember_requested=bool(pending.get('remember')),
                         client_ip=_client_ip(),
+                        external_credential_proof=external_proof,
                     )
                 else:
                     raise MfaVerificationError('Invalid enrollment request.')
@@ -668,6 +697,7 @@ def mfa_challenge():
                 enrollment=False,
                 remember_requested=bool(pending.get('remember')),
                 client_ip=_client_ip(),
+                external_credential_proof=external_proof,
             )
         except MfaVerificationError:
             error = 'The verification code was not accepted.'

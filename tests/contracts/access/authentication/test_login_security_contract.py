@@ -25,7 +25,7 @@ def test_session_admission_is_shared_by_credentials_sso_and_existing_sessions() 
     assert 'if role is None or not role.is_active:' in admission
 
     assert 'enforce_login_admission(result)' in services
-    assert 'enforce_login_admission(resolve_sso_identity(provider, identity))' in routes
+    assert 'enforce_login_admission(resolve_sso_identity(provider, identity, expected_revision=revision))' in routes
     assert 'session_admission_reason(user, source=source)' in login_extension
 
 

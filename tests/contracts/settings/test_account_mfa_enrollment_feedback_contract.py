@@ -78,7 +78,9 @@ def test_required_enrollment_cancellation_does_not_admit_primary_only_login() ->
     routes = (root / 'app/access/authentication/routes.py').read_text(encoding='utf-8')
     template = (root / 'app/templates/access/authentication/mfa_enrollment.html').read_text(encoding='utf-8')
     branch = routes.split("elif action == 'cancel':", 1)[1].split("elif action == 'confirm'", 1)[0]
-    assert "expected_generation=pending['version'], authenticated=False" in branch
+    assert "expected_generation=pending['version']" in branch
+    assert 'authenticated=False' in branch
+    assert 'external_credential_proof=external_proof' in branch
     assert 'session.pop(MFA_PENDING_SESSION_KEY, None)' in branch
     assert "return redirect(url_for('auth.login'))" in branch
     assert 'complete_pending_mfa_login' not in branch

@@ -23,9 +23,11 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.access.authentication.admission import session_admission_reason
 from app.access.authentication.audit import record_authentication_activity
+from app.access.authentication.identity_provider.proof import lock_external_credential_proof
 from app.access.authentication.mfa.audit import stage_authentication_security_event
 from app.access.authentication.mfa.policy import MfaGate, MfaPolicyDecision, MfaPolicyError, evaluate_mfa_policy
 from app.access.authentication.password_policy import LOCAL_PASSWORD_MAX_LENGTH
+from app.access.authentication.results import ExternalCredentialProof
 from app.access.authentication.services import stage_successful_authentication
 from app.access.authentication.session import AuthSessionError
 from app.access.authentication.session_lifecycle import SessionDeadlines, read_session_policy, session_deadlines
@@ -197,9 +199,12 @@ def begin_mfa_enrollment(
     expected_generation: int,
     authenticated: bool = True,
     current_password: str | None = None,
+    external_credential_proof: ExternalCredentialProof | None = None,
 ) -> str:
     """Create an expiring encrypted factor under the authoritative account lock."""
     try:
+        if not authenticated and user.auth_source != 'database':
+            lock_external_credential_proof(user.id, user.auth_source, external_credential_proof)
         user = _lock_mfa_user(user, expected_generation, authenticated=authenticated)
         if authenticated:
             require_personal_factor_assurance(user, current_password, now=datetime.now(UTC))
@@ -226,7 +231,7 @@ def begin_mfa_enrollment(
             )
         )
         db.session.commit()
-    except (SQLAlchemyError, CredentialEncryptionError, MfaVerificationError):
+    except (SQLAlchemyError, CredentialEncryptionError, MfaVerificationError, AuthSessionError):
         db.session.rollback()
         raise
     return secret
@@ -288,9 +293,17 @@ def confirm_mfa_enrollment(
     return recovery
 
 
-def cancel_mfa_enrollment(user: User, *, expected_generation: int, authenticated: bool = True) -> None:
+def cancel_mfa_enrollment(
+    user: User,
+    *,
+    expected_generation: int,
+    authenticated: bool = True,
+    external_credential_proof: ExternalCredentialProof | None = None,
+) -> None:
     """Delete only an inactive setup owned by the presented context, with its audit."""
     try:
+        if not authenticated and user.auth_source != 'database':
+            lock_external_credential_proof(user.id, user.auth_source, external_credential_proof)
         user = _lock_mfa_user(user, expected_generation, authenticated=authenticated)
         factor = _locked_factor(user.id)
         if factor is None or not _owns_pending_setup(factor, expected_generation, authenticated=authenticated):
@@ -302,7 +315,7 @@ def cancel_mfa_enrollment(user: User, *, expected_generation: int, authenticated
             )
         )
         db.session.commit()
-    except (SQLAlchemyError, CredentialEncryptionError, MfaVerificationError):
+    except (SQLAlchemyError, CredentialEncryptionError, MfaVerificationError, AuthSessionError):
         db.session.rollback()
         raise
 
@@ -356,6 +369,7 @@ def complete_pending_mfa_login(
     enrollment: bool,
     remember_requested: bool,
     client_ip: str | None,
+    external_credential_proof: ExternalCredentialProof | None = None,
 ) -> PendingMfaAdmission:
     """Commit factor proof, exact-generation admission and login audit once.
 
@@ -365,6 +379,9 @@ def complete_pending_mfa_login(
     try:
         if not _pending_deadline_valid(expires_at):
             raise MfaVerificationError('Pending authentication expired.')
+        # Match provider administration's provider -> user -> factor lock order.
+        if source != 'database':
+            lock_external_credential_proof(user.id, source, external_credential_proof)
         user = _lock_mfa_user(user, expected_generation, authenticated=False)
         if user.auth_source != source:
             raise AuthSessionError('Pending authentication source changed.')
@@ -390,7 +407,11 @@ def complete_pending_mfa_login(
         remember = bool(remember_requested and read_session_policy().regular_remember and not user.is_admin_level)
         reference = secrets.token_hex(16)
         generation = stage_successful_authentication(
-            user, source=source, client_ip=client_ip, pending_generation=expected_generation
+            user,
+            source=source,
+            client_ip=client_ip,
+            pending_generation=expected_generation,
+            external_credential_proof=external_credential_proof,
         )
         record_authentication_activity(
             action='login',

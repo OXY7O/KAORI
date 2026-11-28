@@ -11,7 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.authentication import audit, services
 from app.access.authentication import session as auth_session
-from app.access.authentication.results import LocalCredentialProof
+from app.access.authentication.results import ExternalCredentialProof, LocalCredentialProof
 from app.models import User
 
 
@@ -72,8 +72,12 @@ def test_failed_or_stale_login_admission_never_commits_generation(
     store = GenerationStore(issued=None)
     monkeypatch.setattr(services.db, 'session', store)
 
+    monkeypatch.setattr(services, 'lock_external_credential_proof', lambda *_args: None)
     with pytest.raises(auth_session.AuthSessionError):
-        services.record_successful_authentication(User(id=42, auth_source='ldap'), source='ldap', client_ip=None)
+        services.record_successful_authentication(
+            User(id=42, auth_source='ldap'), source='ldap', client_ip=None,
+            external_credential_proof=ExternalCredentialProof(1, 1, 1),
+        )
     assert store.commits == 0
     assert store.rollbacks == 1
 
@@ -265,8 +269,12 @@ def test_pending_mfa_issuance_guards_original_generation(monkeypatch: pytest.Mon
     store = GenerationStore(issued=None)
     monkeypatch.setattr(services.db, 'session', store)
     actor = User(id=42, auth_source=source, auth_session_version=9)
+    monkeypatch.setattr(services, 'lock_external_credential_proof', lambda *_args: None)
     with pytest.raises(auth_session.AuthSessionError):
-        services.stage_successful_authentication(actor, source=source, client_ip=None, pending_generation=7)
+        services.stage_successful_authentication(
+            actor, source=source, client_ip=None, pending_generation=7,
+            external_credential_proof=ExternalCredentialProof(1, 1, 1) if source != 'database' else None,
+        )
     assert store.events == ['execute']
     statement = store.statements[0]
     assert 'users.auth_session_version =' in str(statement).lower()
