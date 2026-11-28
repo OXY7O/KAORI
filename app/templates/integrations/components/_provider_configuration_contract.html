@@ -80,11 +80,9 @@
                                     {{ label }}
                                 </dt>
                                 <dd class="mt-2">
-                                    {% if label in compact_evidence_labels and value|string|length > 16 %}
-                                        <div class="flex min-w-0 items-center gap-1.5" data-kaori-compact-evidence-value>
-                                            <span class="truncate font-mono text-xs font-semibold leading-6 text-content-primary" title="{{ value }}">{{ (value|string)[:12] }}…</span>
-                                            {{ info_tip.render(provider_label|lower|replace(' ', '-') ~ '-evidence-' ~ loop.index, label, value|string, placement='right') }}
-                                        </div>
+                                    {% if label in compact_evidence_labels %}
+                                        <p class="min-w-0 max-w-full truncate font-mono text-xs font-semibold leading-6 text-content-primary"
+                                           data-kaori-compact-evidence-value>{{ value }}</p>
                                     {% else %}
                                         <p class="break-words text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere] {{ 'font-mono text-xs break-all' if label in monospace_evidence_labels else '' }}">{{ value }}</p>
                                     {% endif %}
