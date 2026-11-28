@@ -13,6 +13,18 @@ def index_response() -> ResponseReturnValue:
     payload = get_alert_intelligence_payload(request.args)
     if request.headers.get('HX-Request') == 'true':
         target = str(request.headers.get('HX-Target') or '').strip()
+        if target == 'alert-channel-readiness-registry':
+            if payload.get('tab') != 'routing' or payload.get('provider_case_mode') or payload.get('channel_readiness') is None:
+                response = make_response('', 200)
+                response.headers['HX-Redirect'] = url_for(
+                    'alert_intelligence.index',
+                    tab='routing',
+                    domain=payload['domain'],
+                    asset=payload.get('selected_asset_key') or '',
+                    provider=payload.get('selected_provider') or '',
+                )
+                return response
+            return render_template('intelligence/partials/_alert_channel_readiness_registry.html', payload=payload)
         # Scoped registry fragments may disappear when a grant is revoked or
         # evidence fails. Replace the whole document rather than leaving old
         # case rows, summary or action controls in the browser.
