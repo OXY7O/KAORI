@@ -10,14 +10,13 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from hashlib import sha256
 from ipaddress import IPv4Address, IPv4Network
 from typing import Any
 from uuid import UUID
 
+from app.infrastructure_automation.kubernetes.inventory_document import digest
 from app.infrastructure_automation.kubernetes.kubespray_preflight import KUBESPRAY_KUBERNETES_MINOR
 from app.integrations.kernel.registry import get_integration
-from app.integrations.secrets_management.secrets_pki.providers.credential_version_proof import canonical_statement
 from app.models.kubernetes import KubernetesConnection
 
 _TIMEOUT = (5, 10)
@@ -191,10 +190,10 @@ def _node_identity(nodes: Any, expected: dict[str, ExpectedPilotNode]) -> str:
         identities.append({'asset_id': target.asset_id, 'node_uid': uid, 'role': target.role})
     if seen != set(expected) or len({item['node_uid'] for item in identities}) != 3:
         raise _deny()
-    return sha256(canonical_statement({
+    return digest({
         'schema': 'kaori.kubespray.native_node_identity.v1',
         'nodes': sorted(identities, key=lambda item: item['asset_id']),
-    })).hexdigest()
+    })
 
 
 def _namespace_uid(core: Any) -> str:
@@ -273,17 +272,23 @@ def observe_independent_pilot_api(
         or connection.cluster.environment not in ('development', 'testing', 'laboratory', 'sandbox')
         or connection.verify_ssl is not True
         or connection.allow_weak_tls is not False
+        or not isinstance(connection.server, str)
+        or not connection.server.startswith('https://')
     ):
         raise _deny()
+    clients: list[Any] = []
     try:
         client = get_integration('container_orchestrator').execute('client.build', connection)
-        core, apps, version = client.core_api(), client.apps_api(), client.version_api()
+        core = client.core_api()
+        clients.append(core.api_client)
+        apps = client.apps_api()
+        clients.append(apps.api_client)
+        version = client.version_api()
+        clients.append(version.api_client)
         for api in (core, apps, version):
             config = api.api_client.configuration
-            if config.verify_ssl is not True or not isinstance(config.host, str) or not config.host.startswith('https://'):
+            if config.verify_ssl is not True or config.host != connection.server:
                 raise _deny()
-        if len({api.api_client.configuration.host for api in (core, apps, version)}) != 1:
-            raise _deny()
         uid = _namespace_uid(core)
         if uid != intent.namespace_uid:
             raise _deny()
@@ -304,12 +309,15 @@ def observe_independent_pilot_api(
             raise _deny()
         _require_ready_endpoint(core.api_client, '/readyz')
         _require_ready_endpoint(core.api_client, '/readyz/etcd')
-        cluster_fingerprint = sha256(canonical_statement({
+        cluster_fingerprint = digest({
             'schema': 'kaori.kubespray.native_cluster_identity.v1',
             'cluster_id': connection.cluster_id,
             'namespace_uid': uid,
-        })).hexdigest()
+        })
         return PilotReadback(cluster_fingerprint, nodes, intent.plan_fingerprint, datetime.now(UTC))
     except Exception:
         # Provider exceptions may include sensitive endpoint, body or credentials.
         raise _deny() from None
+    finally:
+        for api_client in clients:
+            api_client.close()
