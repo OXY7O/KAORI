@@ -10,7 +10,7 @@
     <section data-browser-callback
              class="{{ operational_section_card.shell_classes() }}"
              {% if not selected_definition or selected_definition.flow.value != 'browser' %}hidden{% endif %}>
-        <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
+        <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-card px-5 py-4">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="route" class="h-5 w-5"></i></span>
             <div class="min-w-0">
                 <h2 class="text-base font-semibold leading-6 text-content-primary">Exact Callback URL</h2>
@@ -23,7 +23,7 @@
     </section>
     <section class="{{ operational_section_card.shell_classes() }}"
              aria-label="Identity Provider Technical Runbook">
-        <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
+        <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-card px-5 py-4">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="book-open-text" class="h-5 w-5"></i></span>
             <div>
                 <h2 class="text-base font-semibold leading-6 text-content-primary">Technical Runbook</h2>
