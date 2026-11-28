@@ -169,8 +169,11 @@ The Rule Catalog Summary title carries the existing `table_label.metadata_label(
 Keep Cross-Domain Alert Coverage on demand in the Overview Operational
 Readiness footer as **Alert Coverage**, alongside Notification Channels and
 Data Lifecycle. All three use shared table action button styling
-(`action_classes(size='header')`) and wrap responsively. Keep the Guide in the
-workspace title. The provider Lifecycle Readiness and blocked Overview
+(`action_classes(size='header')`). Group them under **Quick Actions** in
+a single-column, full-width stack with aligned left icons and labels, equal
+minimum heights and consistent spacing at every viewport width. Do not use
+free wrapping that leaves an orphan action. Keep the Guide in the workspace
+title. The provider Lifecycle Readiness and blocked Overview
 surfaces retain the same coverage button without adding new navigation links.
 Reuse the shared native-dialog controller (the informational pattern accepted
 in #3348). A single responsive
