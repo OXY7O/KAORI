@@ -15,6 +15,7 @@ from app.extensions.db import db
 from app.infrastructure_automation.host_access_reference import assess_bound_host_access_references
 from app.infrastructure_automation.host_enrollment import get_scoped_host_assignment
 from app.infrastructure_automation.kubernetes.source_policy import PROFILE_KEY, SOURCE_CANDIDATE_SHA
+from app.infrastructure_automation.remote_preflight_source import REMOTE_CANDIDATE_SHA, REMOTE_PLAYBOOK
 from app.integrations.secrets_management.secrets_pki.providers.openbao.inventory_scope import (
     local_inventory_deployment_ref,
 )
@@ -97,14 +98,29 @@ def exact_credential_target_current(
     Missing, changed or unqualified records return false; database errors
     propagate to the transaction owner for rollback, never to an execution path.
     """
+    if target.source_revision != SOURCE_CANDIDATE_SHA or target.operation_key != READ_ONLY_FACTS_OPERATION:
+        return False
+    return _exact_reference_current(policy, target, now=now)
+
+
+def exact_remote_credential_draft_current(
+    policy: ScopeAccessPolicy, target: AutomationCredentialScopeTarget, *, now: datetime
+) -> bool:
+    """Candidate-only remote selector; never accepted by the active grant evaluator."""
+    if target.source_revision != REMOTE_CANDIDATE_SHA or target.operation_key != REMOTE_PLAYBOOK:
+        return False
+    return _exact_reference_current(policy, target, now=now)
+
+
+def _exact_reference_current(
+    policy: ScopeAccessPolicy, target: AutomationCredentialScopeTarget, *, now: datetime
+) -> bool:
     if (
         now.utcoffset() is None
         or policy.id != target.policy_id
         or policy.scope_level != 'automation_credential'
         or policy.permission_key != CREDENTIAL_USE_PERMISSION
         or target.profile_key != PROFILE_KEY
-        or target.source_revision != SOURCE_CANDIDATE_SHA
-        or target.operation_key != READ_ONLY_FACTS_OPERATION
     ):
         return False
     connection = db.session.get(
