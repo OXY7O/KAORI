@@ -15,6 +15,7 @@ from sqlalchemy import select
 
 from app.extensions.db import db
 from app.infrastructure_automation.host_registry import preview_inventory_intent
+from app.infrastructure_automation.kubernetes.inventory_document import is_source_only_inventory_preparation
 from app.infrastructure_automation.kubernetes.inventory_receipt import committed_inventory_receipt_review
 from app.infrastructure_automation.kubernetes.source_policy import committed_source_state
 from app.infrastructure_automation.remote_access_evidence import review_remote_access_evidence
@@ -49,12 +50,14 @@ def review_remote_preflight_target(
 
 
 def diagnose_remote_preflight_target(
-    *, actor_id: int, connection_id: int, now: datetime
+    *, actor_id: int, connection_id: int, now: datetime, allow_source_only_diagnostics: bool = False
 ) -> tuple[str, RemoteTargetReview | None]:
     """Evaluate the existing gates in order; return a bounded first blocker.
 
     Internal caller owns the transaction and authenticated operation. This
     review of committed records is not runtime/source/target admission.
+    The explicit source-only diagnostic never returns a target, even when
+    every historical prerequisite is qualified.
     """
     if (
         type(actor_id) is not int
@@ -66,9 +69,12 @@ def diagnose_remote_preflight_target(
     ):
         return 'invalid_scope', None
     connection = db.session.get(IntegrationInstance, connection_id, populate_existing=True, with_for_update=True)
+    if connection is None:
+        return 'connection_unqualified', None
+    source_only = allow_source_only_diagnostics is True and is_source_only_inventory_preparation(connection)
     if (
-        connection is None
-        or not connection.enabled
+        (allow_source_only_diagnostics is True and not source_only)
+        or (connection.enabled is not True and not source_only)
         or connection.integration_type != 'configuration_automation'
         or connection.provider_key != 'ansible'
         or connection.lifecycle_status != 'active'
@@ -118,6 +124,8 @@ def diagnose_remote_preflight_target(
         members.append({'assignment_id': assignment.id, 'fingerprint': access.fingerprint})
         targets.append(RemoteFactsTarget(f'kaori-{assignment.id}', assignment.host_id, assignment.role))
         expiries.append(access.expires_at)
+    if source_only:
+        return 'runtime_activation_required', None
     fingerprint = sha256(canonical_statement({
         'schema': 'kaori.automation.remote_preflight_target.v1',
         'connection_id': connection_id,
