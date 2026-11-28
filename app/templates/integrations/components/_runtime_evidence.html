@@ -1,0 +1,54 @@
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% macro render(title_id, marker, description, facts, diagnostics, status, status_label, empty_message, boundary) -%}
+    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+             aria-labelledby="{{ title_id }}"
+             data-kaori-runtime-evidence-workspace {{ marker }}>
+        <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+            <div class="flex min-w-0 items-start gap-3">
+                {{ integration_ui.palette_icon('stethoscope', 'brand', size='md') }}
+                <div class="min-w-0">
+                    <h3 id="{{ title_id }}" class="text-base font-semibold leading-6 text-content-primary">Runtime Evidence</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p>
+                </div>
+            </div>
+            {{ integration_status(status, status_label, display='indicator') }}
+        </header>
+        <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4" data-kaori-runtime-lifecycle-contract>
+            {% for label, value, helper in facts %}
+                <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
+                    <p class="text-xs font-medium text-content-muted">{{ label }}</p>
+                    <p class="mt-1 text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="divide-y divide-outline-subtle border-t border-outline-subtle" data-kaori-runtime-diagnostic-list>
+            {% for step in diagnostics %}
+                {% set step_tone = 'ready' if step.status == 'success' else ('degraded' if step.status in ['warning', 'pending'] else ('blocked' if step.status == 'failed' else 'not_observed')) %}
+                <article class="grid gap-2 px-4 py-3.5 sm:px-5 md:grid-cols-12 md:items-center md:gap-4" data-kaori-runtime-diagnostic-row>
+                    <div class="md:col-span-3">
+                        <p class="text-sm font-semibold text-content-primary">{{ step.label }}</p>
+                        <p class="mt-0.5 text-xs text-content-muted">{{ step.category_label }}</p>
+                    </div>
+                    <p class="min-w-0 text-xs leading-5 text-content-secondary [overflow-wrap:anywhere] md:col-span-7">{{ step.summary }}</p>
+                    <div class="md:col-span-2 md:flex md:justify-end">{{ integration_status(step_tone, step.status_label, display='indicator') }}</div>
+                </article>
+            {% else %}
+                <div class="px-4 py-8 text-center sm:px-5">
+                    <p class="text-sm font-semibold text-content-primary">No Diagnostic Evidence Yet</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ empty_message }}</p>
+                </div>
+            {% endfor %}
+        </div>
+        <footer class="border-t border-outline-subtle bg-surface-subtle px-4 py-3.5 sm:px-5">
+            <div class="flex items-start gap-3">
+                {{ integration_ui.palette_icon('layers-3', 'brand', size='sm') }}
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold text-content-primary">Observation Boundary</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ boundary }}</p>
+                </div>
+            </div>
+        </footer>
+    </section>
+{%- endmacro %}

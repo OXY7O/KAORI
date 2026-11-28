@@ -11,8 +11,11 @@ from sqlalchemy import and_, or_
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.common.pagination import paginate_query
+from app.integrations.runtime.presentation import runtime_history_view, runtime_observation_state_view
+from app.integrations.runtime.repository import paginate_runtime_history, runtime_history_query
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
 from app.models.job import JobExecution
+from app.models.runtime import IntegrationRuntimeObservation
 from app.models.source_control import SourceInstallation, SourceWebhookDelivery
 
 
@@ -155,29 +158,7 @@ def _runtime_context(installation: SourceInstallation) -> dict:
         per_page=request.args.get('delivery_per_page', 5, type=int),
     )
 
-    last_refresh = (
-        JobExecution.query.filter(
-            _installation_job_predicate(
-                integration_instance_id=installation.integration_instance_id,
-                installation_id=installation.id,
-            ),
-            JobExecution.job_type == 'integration_operation',
-            JobExecution.operation == 'runtime_refresh',
-        )
-        .order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
-        .first()
-    )
-    canonical = installation.integration_instance
-    runtime_observed = (
-        last_refresh is not None
-        and last_refresh.status == 'succeeded'
-        and canonical.last_checked_at is not None
-    )
-    runtime_health = (canonical.health_status or 'not_observed') if runtime_observed else 'not_observed'
     return {
-        'runtime_observed': runtime_observed,
-        'runtime_health': runtime_health,
-        'runtime_health_label': runtime_health.replace('_', ' ').title(),
         'jobs': jobs,
         'job_pagination': job_pagination,
         'job_status': job_status,
@@ -190,6 +171,45 @@ def _runtime_context(installation: SourceInstallation) -> dict:
         'delivery_search': delivery_search,
         'delivery_event': delivery_event,
         'delivery_event_options': delivery_event_options,
-        'last_runtime_refresh': last_refresh,
         'runtime_refresh_job': _validation_job_for(installation.integration_instance, operation='runtime_refresh'),
+    }
+
+
+def _runtime_observation_context(installation: SourceInstallation) -> dict:
+    """Read only exact-installation, immutable provider observations from KAORI."""
+    canonical = installation.integration_instance
+    scope = {
+        'integration_instance_id': installation.integration_instance_id,
+        'provider_key': 'github',
+        'adapter_key': 'github_rest_v3',
+    }
+    # The operation is not present on historical observations. Never derive it
+    # from job timestamps or reuse Full Validation as a runtime health check.
+    latest = (
+        runtime_history_query('source_control', str(installation.id), **scope)
+        .filter(IntegrationRuntimeObservation.capability_snapshot['operation'].as_string() == 'runtime_refresh')
+        .order_by(IntegrationRuntimeObservation.observed_at.desc(), IntegrationRuntimeObservation.id.desc())
+        .first()
+    )
+    state = runtime_observation_state_view(
+        latest,
+        fallback_readiness=canonical.readiness_status or 'validation_required',
+    )
+    rows, pagination = paginate_runtime_history(
+        'source_control',
+        str(installation.id),
+        page=request.args.get('page', 1, type=int) or 1,
+        per_page=request.args.get('per_page', 5, type=int) or 5,
+        trigger_type=request.args.get('history_trigger', ''),
+        health_status=request.args.get('history_health', ''),
+        readiness=request.args.get('history_readiness', ''),
+        **scope,
+    )
+    return {
+        'runtime_state': state,
+        'runtime_observed': latest is not None,
+        'runtime_health': state['health_status'],
+        'runtime_health_label': state['health_status_label'],
+        'runtime_observation_job_id': (latest.capability_snapshot or {}).get('job_execution_id') if latest else None,
+        'runtime_history': runtime_history_view(rows, pagination=pagination),
     }

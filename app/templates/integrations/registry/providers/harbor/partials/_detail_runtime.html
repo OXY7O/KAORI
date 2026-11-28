@@ -5,6 +5,7 @@
 {% import "integrations/components/_provider_job_status.html" as provider_job_status %}
 {% import "integrations/components/_validation_poller.html" as validation_poller %}
 {% import "integrations/components/_runtime_decision.html" as runtime_decision %}
+{% import "integrations/components/_runtime_evidence.html" as runtime_evidence %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set runtime_observed = runtime_state.has_observation|default(runtime_state.observed_at is not none) %}
@@ -100,62 +101,21 @@
         runtime_next_action,
         "Runtime Refresh owns current Harbor health. Full Validation remains the authority for version compatibility, required read capabilities, and Registry provider readiness."
         ) }}
-        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
-                 aria-labelledby="harbor-runtime-evidence-title"
-                 data-kaori-harbor-runtime-evidence>
-            <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-start sm:justify-between sm:px-5">
-                <div class="flex min-w-0 items-start gap-3">
-                    {{ integration_ui.palette_icon("stethoscope", "brand", size="md") }}
-                    <div class="min-w-0">
-                        <h3 id="harbor-runtime-evidence-title"
-                            class="text-base font-semibold leading-6 text-content-primary">Runtime Evidence</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Concise persisted health evidence remains separate from Full Validation and future Registry inventory domains.</p>
-                    </div>
-                </div>
-                {{ integration_status(runtime_state.readiness, runtime_state.readiness_label, display="indicator") }}
-            </header>
-            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-                {% for label, value, helper in [
-                    ("Detected Version", instance.detected_version or "Not Validated", "Version evidence from Full Validation"),
-                    ("Compatibility Profile", runtime_state.compatibility_profile or instance.compatibility_profile or "Validation Required", "Provider compatibility contract"),
-                    ("Authentication", instance.auth_type|replace("_", " ")|title, "Configured API access mode"),
-                    ("API Contract", "Harbor API v2.0", "Runtime and validation provider contract")
-                    ] %}
-                    <div class="bg-surface-card px-4 py-3.5 sm:px-5">
-                        <p class="text-xs font-medium text-content-muted">{{ label }}</p>
-                        <p class="mt-1 text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
-                    </div>
-                {% endfor %}
-            </div>
-            <div class="border-t border-outline-subtle">
-                {% for step in runtime_state.diagnostics %}
-                    {% set step_tone = "ready" if step.status == "success" else ("degraded" if step.status == "warning" else ("blocked" if step.status == "failed" else "validation_required")) %}
-                    <article class="grid gap-3 border-b border-outline-subtle px-4 py-4 last:border-b-0 sm:px-5 lg:grid-cols-12 lg:items-center">
-                        <div class="lg:col-span-3">
-                            <p class="text-sm font-semibold text-content-primary">{{ step.label }}</p>
-                            <p class="mt-0.5 text-xs text-content-muted">{{ step.category_label }}</p>
-                        </div>
-                        <p class="text-xs leading-5 text-content-secondary [overflow-wrap:anywhere] lg:col-span-7">{{ step.summary }}</p>
-                        <div class="lg:col-span-2 lg:text-right">{{ integration_status(step_tone, step.status_label, display="indicator") }}</div>
-                    </article>
-                {% else %}
-                    <div class="px-5 py-8 text-center">
-                        <p class="text-sm font-semibold text-content-primary">No Diagnostic Evidence Yet</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Run Runtime Refresh to establish Harbor provider health evidence.</p>
-                    </div>
-                {% endfor %}
-            </div>
-            <footer class="border-t border-outline-subtle bg-surface-hover px-4 py-3.5 sm:px-5">
-                <div class="flex items-start gap-3">
-                    {{ integration_ui.palette_icon("layers-3", "brand", size="sm") }}
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold text-content-primary">Observation Boundary</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime Refresh owns reachability and current Harbor health. Full Validation owns identity, compatibility, capabilities, and readiness. Artifact inventory and mutation remain outside this foundation.</p>
-                    </div>
-                </div>
-            </footer>
-        </section>
+        {% set provider_facts = [
+            ('Detected Version', instance.detected_version or 'Not Validated', 'Version evidence from Full Validation'),
+            ('Compatibility Profile', runtime_state.compatibility_profile or instance.compatibility_profile or 'Validation Required', 'Provider compatibility contract'),
+            ('Authentication', instance.auth_type|replace('_', ' ')|title, 'Configured API access mode'),
+            ('API Contract', 'Harbor API v2.0', 'Runtime and validation provider contract')
+        ] %}
+        {{ runtime_evidence.render('harbor-runtime-evidence-title',
+                'data-kaori-harbor-runtime-evidence',
+                'Concise persisted health evidence remains separate from Full Validation and future Registry inventory domains.',
+                provider_facts,
+                runtime_state.diagnostics,
+                runtime_state.readiness,
+                runtime_state.readiness_label,
+                'Run Runtime Refresh to establish Harbor provider health evidence.',
+                'Runtime Refresh owns reachability and current Harbor health. Full Validation owns identity, compatibility, capabilities, and readiness. Artifact inventory and mutation remain outside this foundation.') }}
     </div>
 </article>
 {% if runtime_history_oob|default(false) %}

@@ -46,6 +46,9 @@
                                                     ('Latency', row.latency_display),
                                                     ('Capabilities', row.capability_count_display)
                                                 ] %}
+                        {% if row.operation_label|default(none) %}
+                            {% set context_rows = context_rows + [('Operation', row.operation_label), ('Job Execution', '#' ~ row.job_execution_id if row.job_execution_id else 'Not Recorded')] %}
+                        {% endif %}
                         {% for label, value in context_rows %}
                             <div class="min-w-0 bg-surface-card px-4 py-3">
                                 <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>

@@ -945,6 +945,8 @@ app/templates/integrations/partials/_runtime_history.html
 
 Provider-local presentation wrappers are prohibited.
 
+**GitHub canonical Runtime & History (#5403).** GitHub uses the shared immutable observation history, exact canonical installation/provider/adapter scope, and the shared Runtime Evidence surface (`integrations/components/_runtime_evidence.html`, also reused by Harbor). The current runtime badge and diagnostics use only committed observations explicitly marked `runtime_refresh`; Full Validation and older unclassified observations remain historical records and never imply a recent health refresh. New GitHub worker snapshots carry operation and available JobExecution ID; do not backfill historical provenance. Existing provider scoring and authorization remain unchanged. A new Runtime Refresh may be required before current posture is observed. The shared history supports five-row default, filters, View More and permission-gated lifecycle action. Signed Webhook Deliveries and explicitly selected Execution References are separate scoped transport/worker evidence, not runtime history or inventory. Runtime Refresh HTMX updates the history out of band without replacing the transport registry.
+
 Full-page pagination must preserve route path arguments and open the owning workspace tab. HTMX pagination must call the partial endpoint and replace only the runtime-history region.
 
 ## Binding Contract

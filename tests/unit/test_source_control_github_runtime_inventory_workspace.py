@@ -182,7 +182,7 @@ def test_github_runtime_history_is_one_accessible_two_tab_registry():
     assert "hx_target='#github-runtime-evidence-registry'" in runtime
     assert "hx_select='#github-runtime-evidence-registry'" in runtime
     assert "hx_push_url='true'" in runtime
-    assert "('jobs', 'Recent Jobs', 'history'" in runtime
+    assert "('jobs', 'Execution References', 'history'" in runtime
     assert "('deliveries', 'Signed Webhook Deliveries', 'webhook'" in runtime
     for page, kind in ((jobs, 'jobs'), (deliveries, 'deliveries')):
         assert f'data-kaori-runtime-registry-view="{kind}"' in page
@@ -442,10 +442,10 @@ def test_github_detail_tab_badges_follow_runtime_and_unfiltered_committed_invent
 
     assert "('runtime', 'Runtime & History', 'activity', runtime_health_label)" in detail
     assert 'Jobs & Deliveries' not in detail
-    assert "'runtime_observed': runtime_observed" in projection
-    assert "last_refresh.status == 'succeeded'" in projection
-    assert 'canonical.last_checked_at is not None' in projection
-    assert "'runtime_health_label': runtime_health.replace('_', ' ').title()" in projection
+    assert "'runtime_observed': latest is not None" in projection
+    assert "capability_snapshot['operation'].as_string() == 'runtime_refresh'" in projection
+    assert 'runtime_observation_state_view(' in projection
+    assert "'runtime_health_label': state['health_status_label']" in projection
     assert '{% set health = runtime_health %}' in runtime
     assert "framed_tabs.badge_oob('github', 'runtime', runtime_health_label)" in runtime
     count = "table_label.count_text(inventory.total, 'Repository', 'Repositories') if inventory.total is not none else 'Unknown'"
@@ -465,3 +465,24 @@ def test_github_inventory_tab_count_preserves_zero_singular_plural_and_unknown()
     )
     for total, label in ((None, 'Unknown'), (0, '0 Repositories'), (1, '1 Repository'), (2, '2 Repositories')):
         assert template.render(total=total) == label
+
+
+def test_github_runtime_uses_canonical_history_and_shared_evidence():
+    runtime = _read(GITHUB / 'partials/_detail_runtime.html')
+    routes = _read(ROUTES)
+    projection = _read(RUNTIME_PRESENTATION)
+    harbor = _read(ROOT / 'app/templates/integrations/registry/providers/harbor/partials/_detail_runtime.html')
+    for source in (runtime, harbor):
+        assert 'runtime_evidence.render(' in source
+        assert 'integrations/partials/_runtime_history.html' in source
+    assert "def runtime_history(installation_id: int)" in routes
+    assert "runtime_history_oob=True" in routes
+    assert "runtime_refresh_partial=True" in routes
+    assert "runtime_history_query('source_control', str(installation.id), **scope)" in projection
+    assert "'integration_instance_id': installation.integration_instance_id" in projection
+    assert "'provider_key': 'github'" in projection
+    assert "'adapter_key': 'github_rest_v3'" in projection
+    assert "paginate_runtime_history(" in projection
+    assert "runtime_history_view(rows, pagination=pagination)" in projection
+    assert "runtime_view = 'jobs' if request.args.get('runtime_view') == 'jobs' else 'deliveries'" in runtime
+    assert 'runtime_state.diagnostics' in runtime
