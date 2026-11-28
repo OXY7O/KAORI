@@ -161,12 +161,19 @@ all seven active claims, current explicit permissions, original maker and no
 child JobExecution of the Plan. It retains released records and appends
 mandatory audit. No timer, retry, cancellation or generic stale-job
 recovery removes claims. The migration starts empty and refuses downgrade
-when reservation history exists. The canonical JobExecution retention domain excludes Plans referenced by
-any target claim, including released history, from archive selection and
-rechecks the exclusion under ordered JobExecution row locks before cleanup.
-If a claim appears after archive selection, cleanup preserves the Plan and
-the existing partial-cleanup reporting remains authoritative. The restrictive
+when reservation history exists. The canonical JobExecution retention domain
+excludes Plans referenced by any target claim, including released history,
+and their direct child JobExecutions from archive selection and cleanup.
+Otherwise deleting the child could make an attempted Run appear to be a
+never-dispatched Plan to the review release service. Cleanup locks both
+candidate rows and their parent rows in ID order, then rechecks claims in
+a separate statement under READ COMMITTED. Lock-only parents are not
+added to the verified archive deletion set. If a claim appears after
+archive selection, cleanup preserves the Plan and its child history; the
+existing partial-cleanup reporting remains authoritative. The restrictive
 Plan FK stays as a final database safeguard; no claim is removed by retention.
+Future Run admission must retain immutable parent correlation and lock the
+Plan before creating the child; terminal status alone never permits release.
 The review-lane regression uses synthetic SQLite data; native PostgreSQL
 concurrency and migration validation remain pending.
 

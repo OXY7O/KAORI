@@ -18,9 +18,14 @@ TERMINAL_STATUSES = ('succeeded', 'partially_succeeded', 'failed', 'canceled', '
 
 
 def _without_target_claims():
-    # Released claims are also immutable history with a restrictive Plan FK.
+    # Preserve both the claimed Plan and its direct child execution history.
+    # Otherwise retention could erase a child and make a prior attempt look
+    # like a never-dispatched Plan to the review reservation release service.
     return ~select(AutomationRunTargetClaim.id).where(
-        AutomationRunTargetClaim.plan_job_id == JobExecution.id
+        or_(
+            AutomationRunTargetClaim.plan_job_id == JobExecution.id,
+            AutomationRunTargetClaim.plan_job_id == JobExecution.parent_job_id,
+        )
     ).exists()
 
 
@@ -139,22 +144,23 @@ class JobExecutionArchiveDomain:
     def _delete_id_batch(record_ids: list[int]) -> int:
         # Database FKs preserve child-job history by setting parent_job_id to NULL,
         # while subscribers are deleted with the archived execution record.
-        # Serialize cleanup against the reservation writer, which locks the
-        # same Plan JobExecution before inserting its claims. Recheck in a
-        # separate statement after acquiring the row locks (READ COMMITTED).
+        # Lock candidates AND their parents in canonical order. The reservation
+        # writer locks the Plan row before inserting claims. A second statement
+        # sees late claims under READ COMMITTED, including on a child's parent.
+        candidate = JobExecution.__table__.alias('cleanup_candidate')
+        parent_ids = select(candidate.c.parent_job_id).where(
+            candidate.c.id.in_(record_ids), candidate.c.parent_job_id.is_not(None)
+        )
         locked_ids = db.session.execute(
             select(JobExecution.id)
-            .where(
-                JobExecution.id.in_(record_ids),
-                JobExecution.status.in_(TERMINAL_STATUSES),
-                JobExecution.active_deduplication_key.is_(None),
-                _without_target_claims(),
-            )
+            .where(or_(JobExecution.id.in_(record_ids), JobExecution.id.in_(parent_ids)))
             .order_by(JobExecution.id)
             .with_for_update(of=JobExecution)
         ).scalars().all()
+        # Lock-only parents are never added to the verified archive cleanup set.
+        deletable_ids = sorted(set(locked_ids).intersection(record_ids))
         deleted = db.session.query(JobExecution).filter(
-            JobExecution.id.in_(locked_ids),
+            JobExecution.id.in_(deletable_ids),
             JobExecution.status.in_(TERMINAL_STATUSES),
             JobExecution.active_deduplication_key.is_(None),
             _without_target_claims(),
