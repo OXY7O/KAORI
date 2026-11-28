@@ -12,6 +12,7 @@ DOMAIN_OPTIONS = [
     {'value': 'server', 'label': 'Server'},
     {'value': 'hci', 'label': 'HCI'},
     {'value': 'secrets_pki', 'label': 'Secrets & PKI'},
+    {'value': 'authentication', 'label': 'Authentication'},
 ]
 PROVIDER_OPTIONS = [
     {'value': '', 'label': 'All Provider Coverage'},
@@ -58,6 +59,7 @@ SOURCE_KIND_OPTIONS = [
     {'value': 'datastore', 'label': 'Datastore'},
     {'value': 'hci_cluster', 'label': 'HCI Cluster'},
     {'value': 'pki_certificate_population', 'label': 'PKI Certificate Population'},
+    {'value': 'authentication_deployment', 'label': 'Authentication Deployment'},
 ]
 LOGIC_TYPE_OPTIONS = [
     {'value': '', 'label': 'All Logic Types'},
@@ -81,6 +83,7 @@ SIGNAL_SOURCE_OPTIONS = [
     {'value': 'server_inventory', 'label': 'Server Node Exporter'},
     {'value': 'hci_provider_api', 'label': 'HCI API'},
     {'value': 'secrets_pki_committed_evidence', 'label': 'Secrets & PKI Committed Evidence'},
+    {'value': 'authentication_committed_evidence', 'label': 'Authentication Committed Evidence'},
 ]
 
 
@@ -131,6 +134,7 @@ def signal_label(value: str) -> str:
         'server_inventory': 'Server Node Exporter',
         'hci_provider_api': 'HCI API',
         'secrets_pki_committed_evidence': 'Secrets & PKI Committed Evidence',
+        'authentication_committed_evidence': 'Authentication Committed Evidence',
     }.get(value, format_label(value))
 
 

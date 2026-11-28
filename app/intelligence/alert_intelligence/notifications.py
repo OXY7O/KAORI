@@ -66,6 +66,7 @@ def dispatch_case_notifications() -> dict[str, int]:
             AlertCase.query.filter(
                 AlertCase.id > last_id,
                 AlertCase.source_type == 'recommendation',
+                AlertCase.domain != 'authentication',
                 or_(
                     and_(AlertCase.source_state == 'firing', AlertCase.workflow_state != 'closed'),
                     and_(
@@ -128,7 +129,7 @@ def case_delivery_rows(case: AlertCase, *, limit: int = 20) -> list[dict[str, An
 
 def _dispatch_firing(case: AlertCase) -> dict[str, int]:
     stats = {'firing': 0, 'resolved': 0, 'failed': 0, 'skipped': 0}
-    if case.source_type != 'recommendation':
+    if case.domain == 'authentication' or case.source_type != 'recommendation':
         stats['skipped'] += 1
         return stats
     now = datetime.now(UTC)
@@ -215,7 +216,7 @@ def _pending_resolved_channel_ids(
 
 def _dispatch_resolved(case: AlertCase) -> dict[str, int]:
     stats = {'firing': 0, 'resolved': 0, 'failed': 0, 'skipped': 0}
-    if case.source_type != 'recommendation':
+    if case.domain == 'authentication' or case.source_type != 'recommendation':
         stats['skipped'] += 1
         return stats
     if case.domain == 'registry' and not registry_case_route_eligible(case):
@@ -276,7 +277,7 @@ def _deliver_case_event(
     route: FiringRoute | None = None,
 ) -> dict[str, Any]:
     # Guard the transport seam even when a caller bypasses worker selection.
-    if case.source_type != 'recommendation':
+    if case.domain == 'authentication' or case.source_type != 'recommendation':
         return {'successful': 0, 'failed': 0, 'skipped': 1}
     channel = db.session.get(NotificationChannel, channel_id)
     if channel is None:

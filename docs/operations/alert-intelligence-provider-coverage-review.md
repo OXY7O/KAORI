@@ -75,3 +75,8 @@ generic replay does not mutate or resend its manual-only delivery journal.
 Review-only code is not production availability. The external recovery
 producer, independent destination authority, actual provider test and
 PostgreSQL concurrency UAT remain prerequisites.
+
+
+## Authentication (AL-05B, #5423)
+
+Domain-owned committed authentication evidence is separate from provider integrations. AL-05 supplies an opt-in bounded aggregate signal; AL-05B reserves one central Rule Catalog definition and validates the candidate source contract. The coverage dialog lists Authentication / Domain-owned / Not admitted, not an external provider or an available instance. No active recommendation, native case, workflow mutation, firing/resolved delivery, or automatic remediation is admitted. Source, rule-owner, scoped access and lifecycle/delivery qualification remain open. No claim of a healthy zero.

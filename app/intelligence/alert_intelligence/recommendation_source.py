@@ -882,6 +882,10 @@ def _source_evidence_posture(
     normalized_domain = str(domain or '').strip().lower()
     normalized_asset = str(asset_key or '').strip()
     signal = str(signal_source or '').strip().lower()
+    # No scoped authentication AlertCase admission or recovery authority yet.
+    # Never use missing findings as recovery even for a malformed empty scope.
+    if normalized_domain == 'authentication':
+        return False, 'source_unavailable'
     if not normalized_asset:
         return True, ''
     # A missing recommendation can imply recovery only after a successful,

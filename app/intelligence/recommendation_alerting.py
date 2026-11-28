@@ -43,6 +43,10 @@ def effective_alert_policy(
     if rule is None:
         return _disabled_policy(rule_key)
     default = _definition_policy(rule)
+    # Authentication case admission has not been scoped or qualified. A stored
+    # override cannot enable an otherwise reserved security rule.
+    if rule.get('domain') == 'authentication':
+        return _apply_observed_severity({**default, 'eligible': False, 'source': 'definition'}, observed_severity)
     row = override
     if row is None and not override_loaded:
         row = RecommendationAlertPolicy.query.filter_by(rule_key=rule_key).first()
@@ -158,6 +162,8 @@ def upsert_recommendation_alert_policy(
     rule = catalog_rule(rule_key)
     if rule is None:
         raise ValueError('The selected Intelligence rule does not exist.')
+    if rule.get('domain') == 'authentication':
+        raise ValueError('Authentication alert admission is not qualified.')
     if str(rule.get('status') or '') != 'available':
         raise ValueError('Only available KAORI recommendation rules can be promoted into Alert Operations.')
     normalized_mode = str(mode or '').strip().lower()
