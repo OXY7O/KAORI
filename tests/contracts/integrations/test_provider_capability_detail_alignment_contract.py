@@ -51,11 +51,18 @@ def test_github_capability_modal_uses_compact_shared_presentation():
     assert 'presentation="github"' in github.read_text()
     assert "presentation == 'github'" in shared
     assert 'Validation evidence, ownership, impact, and remediation.' in shared
-    assert 'data-kaori-github-capability-evidence-impact' in shared
-    assert 'data-kaori-github-capability-success-criteria' in shared
-    assert 'border-status-normal-border bg-status-normal-soft' in shared
-    assert 'border-status-info-border bg-status-info-soft' in shared
-    assert "'circle-check' if row.available else 'list-checks'" in shared
-    assert 'lg:grid-cols-2 lg:items-start' in shared
     assert "presentation == 'metrics_source'" in shared
-    assert 'row.success_criteria' in shared
+    panel = shared.split('data-kaori-github-capability-evidence-impact>', 1)[0].rsplit(
+        '{% if compact_github %}', 1
+    )[1]
+    rows = shared.split('data-kaori-github-capability-evidence-impact>', 1)[1].split('{% else %}', 1)[0]
+    assert 'divide-y divide-outline-subtle rounded-xl border border-outline-default bg-surface-card' in panel
+    assert rows.count('sm:grid-cols-[12rem_minmax(0,1fr)]') == 2
+    assert rows.count('data-kaori-provider-capability-evidence') == 1
+    assert rows.count('data-kaori-provider-capability-impact') == 1
+    assert rows.index('Validation Evidence') < rows.index('Success Criteria:') < rows.index('Operational Impact')
+    for field in ('row.evidence', 'row.success_criteria', 'row.impact'):
+        assert rows.count(field) == 1
+    assert 'bg-status-' not in rows and 'border-status-' not in rows
+    assert 'rounded-lg' not in rows and 'lg:grid-cols-2' not in rows
+    assert 'data-kaori-github-capability-success-criteria' in rows
