@@ -33,7 +33,7 @@
     {% endcall %}
 {%- endmacro %}
 {% macro stream_header(icon, title, description) -%}
-    <header class="flex flex-wrap items-start justify-between gap-2 border-b border-outline-subtle px-4 py-3.5">
+    <header class="flex min-w-0 flex-wrap items-start justify-between gap-2 border-b border-outline-subtle px-4 py-3.5 xl:col-start-1 xl:row-start-1">
         <div class="flex min-w-0 flex-1 items-start gap-2.5">
             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                   aria-hidden="true">
@@ -48,7 +48,7 @@
     </header>
 {%- endmacro %}
 {% macro earlier_history(label, count) -%}
-    <details class="group mt-auto border-t border-outline-subtle">
+    <details class="group border-t border-outline-subtle">
         <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-semibold text-kaori-primary hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus">
             <span class="inline-flex min-w-0 items-center gap-2">
                 <i data-lucide="chevron-down"
@@ -63,31 +63,31 @@
         </div>
     </details>
 {%- endmacro %}
-<section class="border-b border-outline-subtle px-4 py-4 sm:px-5">
-    <div class="flex items-start gap-3">
-        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-              aria-hidden="true">
-            <i data-lucide="list-tree" class="h-4 w-4"></i>
-        </span>
-        <div class="min-w-0">
-            <h4 class="text-sm font-semibold leading-5 text-content-primary">Activity & Delivery Evidence</h4>
-            <p class="mt-0.5 text-xs leading-5 text-content-muted">Review recent lifecycle events and delivery outcomes. Expand earlier records when needed.</p>
-        </div>
-    </div>
-    {# The recent lists contain at most five records. Share intrinsic row
-       tracks only for equal nonempty lists, without creating fake events or
-       implying correspondence between the two independent streams. #}
-    {% set recent_count = case.timeline_recent|length %}
-    {% set aligned = not case.timeline_unavailable and case.provider_delivery_qualified is not sameas false and recent_count in [1, 2, 3, 4, 5] and recent_count == case.deliveries_recent|length %}
-    {% set panel_spans = {1: 'xl:row-span-3', 2: 'xl:row-span-4', 3: 'xl:row-span-5', 4: 'xl:row-span-6', 5: 'xl:row-span-7'} %}
-    {% set recent_spans = {1: 'xl:row-span-1', 2: 'xl:row-span-2', 3: 'xl:row-span-3', 4: 'xl:row-span-4', 5: 'xl:row-span-5'} %}
-    {% set panel_tracks = ('xl:grid xl:grid-rows-subgrid xl:gap-y-0 ' ~ panel_spans[recent_count]) if aligned else '' %}
-    {% set recent_tracks = ('xl:grid xl:grid-rows-subgrid xl:gap-y-0 ' ~ recent_spans[recent_count]) if aligned else '' %}
-    <div class="mt-4 grid gap-4 xl:grid-cols-2 {{ 'xl:gap-y-0' if aligned else 'xl:items-start' }}"
-         data-alert-evidence-streams
-         data-alert-evidence-aligned="{{ 'true' if aligned else 'false' }}">
-        <article class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-card {{ panel_tracks }}"
-                 data-alert-evidence-panel="timeline">
+{% macro stream_history(kind) -%}
+    {% if kind == 'timeline' %}
+        {% if case.timeline_older %}
+            {% call earlier_history('Earlier Timeline Events', case.timeline_older|length) %}
+                {% for event in case.timeline_older|sort(reverse=true, attribute='created_at') %}
+                    {{ timeline_row(event) }}
+                {% endfor %}
+            {% endcall %}
+        {% endif %}
+        {% if case.timeline_truncated %}
+            <p class="border-t border-outline-subtle px-4 py-3 text-xs text-content-muted">Showing the latest bounded event history, not a complete audit export.</p>
+        {% endif %}
+    {% elif case.provider_delivery_qualified is not sameas false and case.deliveries_older %}
+        {% call earlier_history('Earlier Delivery Attempts', case.deliveries_older|length) %}
+            {% for delivery in case.deliveries_older %}
+                {{ delivery_row(delivery) }}
+            {% endfor %}
+        {% endcall %}
+    {% endif %}
+{%- endmacro %}
+{% macro evidence_panel(kind, aligned, panel_tracks, recent_tracks, history_tracks, column_tracks) -%}
+    {% set has_history = (case.timeline_older or case.timeline_truncated) if kind == 'timeline' else (case.provider_delivery_qualified is not sameas false and case.deliveries_older) %}
+    <article class="flex min-w-0 flex-col overflow-hidden border border-outline-subtle bg-surface-card {{ 'rounded-t-xl border-b-0' if aligned and has_history else 'rounded-xl' }} {{ panel_tracks }} {{ column_tracks }} {{ 'mt-4 xl:mt-0' if aligned and kind == 'delivery' else '' }}"
+             data-alert-evidence-panel="{{ kind }}">
+        {% if kind == 'timeline' %}
             {% call stream_header('history', 'Incident Timeline', 'Recent events · newest first.') %}
                 {% if case.timeline_unavailable %}
                     {{ table_label.status_label('Evidence Unavailable', 'unknown', size='compact') }}
@@ -103,21 +103,7 @@
                     <p class="px-4 py-5 text-sm text-content-muted">{{ 'Unable to qualify the bounded event history.' if case.timeline_unavailable else 'No timeline evidence recorded yet.' }}</p>
                 {% endfor %}
             </div>
-            <div data-alert-evidence-history>
-                {% if case.timeline_older %}
-                    {% call earlier_history('Earlier Timeline Events', case.timeline_older|length) %}
-                        {% for event in case.timeline_older|sort(reverse=true, attribute='created_at') %}
-                            {{ timeline_row(event) }}
-                        {% endfor %}
-                    {% endcall %}
-                {% endif %}
-                {% if case.timeline_truncated %}
-                    <p class="border-t border-outline-subtle px-4 py-3 text-xs text-content-muted">Showing the latest bounded event history, not a complete audit export.</p>
-                {% endif %}
-            </div>
-        </article>
-        <article class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-card {{ panel_tracks }}"
-                 data-alert-evidence-panel="delivery">
+        {% else %}
             {% call stream_header('send-horizontal', 'Notification Delivery Ledger', 'Recent delivery records and outcomes.') %}
                 {% if case.provider_delivery_qualified is sameas false %}
                     {{ table_label.status_label('No Claim Recorded' if case.provider_delivery_state == 'no_claim' else 'Not Qualified', 'unknown', size='compact') }}
@@ -139,15 +125,45 @@
                     {% endfor %}
                 </div>
             {% endif %}
-            <div data-alert-evidence-history>
-                {% if case.provider_delivery_qualified is not sameas false and case.deliveries_older %}
-                    {% call earlier_history('Earlier Delivery Attempts', case.deliveries_older|length) %}
-                        {% for delivery in case.deliveries_older %}
-                            {{ delivery_row(delivery) }}
-                        {% endfor %}
-                    {% endcall %}
-                {% endif %}
-            </div>
-        </article>
+        {% endif %}
+        {% if not aligned and has_history %}
+            <div data-alert-evidence-history="{{ kind }}"
+                 data-alert-history-placement="inline">{{ stream_history(kind) }}</div>
+        {% endif %}
+    </article>
+    {% if aligned and has_history %}
+        {# Keep the expandable body outside the recent subgrid. The footer
+           occupies its own parent row; expansion cannot resize recent rows. #}
+        <div class="min-w-0 self-start overflow-hidden rounded-b-xl border border-t-0 border-outline-subtle bg-surface-card {{ history_tracks }} {{ column_tracks }}"
+             data-alert-evidence-history="{{ kind }}"
+             data-alert-history-placement="independent">
+            {{ stream_history(kind) }}
+        </div>
+    {% endif %}
+{%- endmacro %}
+<section class="border-b border-outline-subtle px-4 py-4 sm:px-5">
+    <div class="flex items-start gap-3">
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+              aria-hidden="true">
+            <i data-lucide="list-tree" class="h-4 w-4"></i>
+        </span>
+        <div class="min-w-0">
+            <h4 class="text-sm font-semibold leading-5 text-content-primary">Activity & Delivery Evidence</h4>
+            <p class="mt-0.5 text-xs leading-5 text-content-muted">Review recent lifecycle events and delivery outcomes. Expand earlier records when needed.</p>
+        </div>
+    </div>
+    {% set recent_count = case.timeline_recent|length %}
+    {% set aligned = not case.timeline_unavailable and case.provider_delivery_qualified is not sameas false and recent_count in [1, 2, 3, 4, 5] and recent_count == case.deliveries_recent|length %}
+    {% set panel_spans = {1: 'xl:row-span-2', 2: 'xl:row-span-3', 3: 'xl:row-span-4', 4: 'xl:row-span-5', 5: 'xl:row-span-6'} %}
+    {% set recent_spans = {1: 'xl:row-span-1', 2: 'xl:row-span-2', 3: 'xl:row-span-3', 4: 'xl:row-span-4', 5: 'xl:row-span-5'} %}
+    {% set history_starts = {1: 'xl:row-start-3', 2: 'xl:row-start-4', 3: 'xl:row-start-5', 4: 'xl:row-start-6', 5: 'xl:row-start-7'} %}
+    {% set panel_tracks = ('xl:grid xl:grid-cols-1 xl:grid-rows-subgrid xl:row-start-1 xl:gap-y-0 ' ~ panel_spans[recent_count]) if aligned else '' %}
+    {% set recent_tracks = ('xl:grid xl:grid-cols-1 xl:grid-rows-subgrid xl:col-start-1 xl:row-start-2 xl:gap-y-0 ' ~ recent_spans[recent_count]) if aligned else '' %}
+    {% set history_tracks = history_starts[recent_count] if aligned else '' %}
+    <div class="mt-4 grid gap-x-4 xl:grid-cols-2 {{ 'gap-y-0 xl:auto-rows-max xl:content-start' if aligned else 'gap-y-4 xl:items-start' }}"
+         data-alert-evidence-streams
+         data-alert-evidence-aligned="{{ 'true' if aligned else 'false' }}">
+        {{ evidence_panel('timeline', aligned, panel_tracks, recent_tracks, history_tracks, 'xl:col-start-1' if aligned else '') }}
+        {{ evidence_panel('delivery', aligned, panel_tracks, recent_tracks, history_tracks, 'xl:col-start-2' if aligned else '') }}
     </div>
 </section>
