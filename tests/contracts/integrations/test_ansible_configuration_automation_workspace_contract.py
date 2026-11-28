@@ -148,7 +148,19 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
     for character in ('a', 'b'):
         assert character * 12 + '…' in allowed_configuration
         assert character * 40 in allowed_configuration
-        assert f'<code x-ref="script">{character * 40}</code>' in allowed_configuration
+    assert allowed_configuration.count('Copy Evidence') >= 1
+    assert f'Git Commit SHA: {"a" * 40}' in allowed_configuration
+    assert f'Git Tree SHA: {"b" * 40}' in allowed_configuration
+    assert 'data-kaori-dialog-integrated-navigation' in allowed_configuration
+    assert 'id="ansible-setup-tab-source"' in allowed_configuration
+    assert 'id="ansible-setup-tab-execution"' in allowed_configuration
+    assert 'aria-controls="ansible-setup-panel-source"' in allowed_configuration
+    assert 'aria-controls="ansible-setup-panel-execution"' in allowed_configuration
+    guide = allowed_configuration.split('id="ansible-minimum-validation-setup-dialog"', 1)[1].split('</dialog>', 1)[0]
+    assert guide.count('data-kaori-provider-capability-technical-check') == 1
+    assert guide.count('Registered Source Evidence') == 1
+    assert "x-show=\"activeTab === 'source'\"" in guide
+    assert "x-show=\"activeTab === 'execution'\"" in guide
     hero = detail.split('data-kaori-ansible-framed-detail', 1)[0]
     assert 'data-kaori-provider-detail-posture' in hero
     assert 'data-kaori-hero-header-accessory="status"' in hero
