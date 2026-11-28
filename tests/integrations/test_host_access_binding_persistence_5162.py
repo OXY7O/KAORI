@@ -28,6 +28,7 @@ from app.infrastructure_automation.credential_scope_target import (
 )
 from app.infrastructure_automation.host_enrollment import host_revision
 from app.infrastructure_automation.kubernetes.committed_host_access import committed_pilot_access_fingerprint
+from app.infrastructure_automation.remote_access_evidence import review_remote_access_evidence
 from app.infrastructure_automation.kubernetes.kubespray_preflight import KUBESPRAY_RELEASE
 from app.infrastructure_automation.kubernetes.source_policy import (
     ANSIBLE_CORE_VERSION,
@@ -888,7 +889,9 @@ def test_signed_console_activation_and_revocation(activation_store, monkeypatch)
     key = Ed25519PrivateKey.generate().public_key()
     public_key = key.public_bytes(serialization.Encoding.OpenSSH, serialization.PublicFormat.OpenSSH).decode('ascii')
     digest = 'sha256:' + sha256(base64.b64decode(public_key.split(' ')[1])).hexdigest()
-    actor, maker, checker, policy_id, _ = _activation_draft((actor, maker, replace(intent, host_key_digest=digest)))
+    actor, maker, checker, policy_id, validity = _activation_draft(
+        (actor, maker, replace(intent, host_key_digest=digest))
+    )
     target = db.session.get(AutomationCredentialScopeTarget, policy_id)
     assignment = db.session.get(AutomationInventoryAssignment, target.assignment_id)
     binding = db.session.get(AutomationHostAccessBinding, assignment.id)
@@ -920,12 +923,42 @@ def test_signed_console_activation_and_revocation(activation_store, monkeypatch)
         ssh_trust_lifecycle.activate_host_console_trust(
             policy_id=policy_id, requester_id=maker, verifier_id=actor, expected_revision=0
         )
+    original = ssh_trust_lifecycle.stage_operational_activity
+
+    def fail_after_stage(**kwargs):
+        original(**kwargs)
+        db.session.flush()
+        raise RuntimeError('injected trust audit failure')
+
+    monkeypatch.setattr(ssh_trust_lifecycle, 'stage_operational_activity', fail_after_stage)
+    with pytest.raises(RuntimeError):
+        ssh_trust_lifecycle.activate_host_console_trust(
+            policy_id=policy_id, requester_id=maker, verifier_id=checker, expected_revision=0
+        )
+    assert AutomationHostTrustRevision.query.count() == 0
+    assert Notification.query.filter_by(event_type='automation_host_trust_activated').count() == 0
+    db.session.rollback()
+    monkeypatch.setattr(ssh_trust_lifecycle, 'stage_operational_activity', original)
     assert ssh_trust_lifecycle.activate_host_console_trust(
         policy_id=policy_id, requester_id=maker, verifier_id=checker, expected_revision=0
     ) == 1
     policy = db.session.get(ScopeAccessPolicy, policy_id)
     target = db.session.get(AutomationCredentialScopeTarget, policy_id)
     assert ssh_trust_lifecycle.review_current_console_trust(policy, target, now=datetime.now(UTC)) is not None
+    access_args = {
+        'actor_user_id': actor, 'connection_id': selected.connection_id, 'assignment_id': selected.assignment_id,
+    }
+    assert review_remote_access_evidence(**access_args, now=datetime.now(UTC)) is None
+    db.session.rollback()
+    proof = TypedCredentialEvidence('a' * 64, now - timedelta(seconds=1), validity.effective_until)
+    monkeypatch.setattr(credential_grants, 'resolve_current_credential_evidence', lambda *args, **kwargs: proof)
+    assert credential_grants.approve_automation_credential_grant(
+        policy_id=policy_id, approver_user_id=checker, expected_revision=1
+    ) == 2
+    combined = review_remote_access_evidence(**access_args, now=datetime.now(UTC))
+    assert combined is not None
+    assert combined.execution_authorized is False
+    assert len(combined.fingerprint) == 64
     db.session.rollback()
     with pytest.raises(ssh_trust_lifecycle.SSHTrustTransitionDenied):
         ssh_trust_lifecycle.activate_host_console_trust(
@@ -938,4 +971,5 @@ def test_signed_console_activation_and_revocation(activation_store, monkeypatch)
     policy = db.session.get(ScopeAccessPolicy, policy_id)
     target = db.session.get(AutomationCredentialScopeTarget, policy_id)
     assert ssh_trust_lifecycle.review_current_console_trust(policy, target, now=datetime.now(UTC)) is None
+    assert review_remote_access_evidence(**access_args, now=datetime.now(UTC)) is None
     assert Notification.query.filter_by(event_type='automation_host_trust_activated').count() == 1
