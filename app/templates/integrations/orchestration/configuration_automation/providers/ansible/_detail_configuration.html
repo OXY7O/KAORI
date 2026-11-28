@@ -1,18 +1,18 @@
 {% import "integrations/components/_provider_configuration_contract.html" as provider_configuration_contract %}
 {% set readiness = connection.readiness_status or "validation_required" %}
 {% set summary_items = [
-    ("Canonical Identity", "#" ~ connection.id ~ " · " ~ connection.name, "Stable KAORI connection and Activity Audit identity."),
-    ("Environment", connection.environment|replace("_", " ")|title, "Approved non-production scope, not execution admission."),
-    ("Ansible Core / Runner", (source.ansible_core_version or "Unknown") ~ " / " ~ (source.ansible_runner_version or "Unknown"), "Candidate toolchain versions; no worker installation is verified."),
-    ("Kubespray Release", source.kubespray_release or "Unknown", "Reviewed Kubernetes Lifecycle release; not a provisioned cluster.")
+    ("Canonical Identity", "#" ~ connection.id ~ " · " ~ connection.name, "Stable connection and audit identity."),
+    ("Environment", connection.environment|replace("_", " ")|title, "Non-production scope; not execution admission."),
+    ("Ansible Core / Runner", (source.ansible_core_version or "Unknown") ~ " / " ~ (source.ansible_runner_version or "Unknown"), "Candidate pins; worker not verified."),
+    ("Kubespray Release", source.kubespray_release or "Unknown", "Reviewed release; not a provisioned cluster.")
 ] %}
 {% set evidence_items = [
-    ("git-branch", "brand", "Git Repository", source.source_repository or "Not Registered", "Approved Git source identity; no live repository read during rendering."),
-    ("git-commit", "brand", "Git Commit SHA", source.source_sha or "Not Registered", "Pinned commit; a different revision requires a newly reviewed profile."),
-    ("git-merge", "info", "Git Tree SHA", evidence.tree_sha or "Not Checked", "Committed source-validation evidence; not a live worker observation."),
-    ("container", "warning", "Execution Environment", source.execution_environment_digest or "Not Provided", "Optional digest reference only; image, worker and inventory admission remain separate.")
+    ("git-branch", "brand", "Git Repository", source.source_repository or "Not Registered", "Approved source; no live Git read."),
+    ("git-commit", "brand", "Git Commit SHA", source.source_sha or "Not Registered", "Pinned revision; changes need profile review."),
+    ("git-merge", "info", "Git Tree SHA", evidence.tree_sha or "Not Checked", "Committed source proof; not worker evidence."),
+    ("container", "warning", "Execution Environment", source.execution_environment_digest or "Not Provided", "Reference only; image, worker and inventory require admission.")
 ] %}
-{% set flow_items = [('Register', 'Record an immutable reviewed Git source and candidate automation toolchain.', 'git-commit'), ('Validate', 'Check source objects and profile versions; this does not prove runtime readiness.', 'shield-check'), ('Admit', 'Approve execution image, trusted inventory and worker before any run; currently blocked.', 'lock-keyhole'), ('Observe', 'Correlate committed jobs and inventory only after separately governed authorization.', 'activity')] %}
+{% set flow_items = [('Register', 'Register reviewed Git source and toolchain pins.', 'git-commit'), ('Validate', 'Check Git objects and versions, not runtime.', 'shield-check'), ('Admit', 'Qualify image, inventory and worker; execution blocked.', 'lock-keyhole'), ('Observe', 'Correlate jobs and inventory after authorization.', 'activity')] %}
 {% set operational_metadata = [
     "Profile · Kubernetes Lifecycle / Kubespray",
     "Worker Queue · automation",
@@ -24,13 +24,13 @@
 readiness,
 summary_items,
 evidence_items,
-"Git defines the reviewed source; Ansible owns execution. KAORI commits evidence and governance. Source validation does not authorize SSH or Kubernetes mutation.",
+"Git defines; Ansible executes; KAORI governs evidence. Source validation does not authorize SSH or Kubernetes mutation.",
 flow_items,
-"Source and version changes require a new reviewed profile and independent Execution Environment qualification. This connection is not admitted for host or Kubernetes operations.",
+"Source changes need profile review; execution environment qualification is independent. Host and Kubernetes operations are not admitted.",
 none,
 operational_metadata=operational_metadata,
-contract_description="Read-only source identity, pinned Git revision and candidate toolchain. No credentials or raw inventory are stored.",
-evidence_description="Committed Git identity, immutable source proof and reference-only execution image. No live Git or worker request is needed.",
+contract_description="Review immutable identity and toolchain pins. No credentials or raw inventory stored.",
+evidence_description="Committed Git proof and image reference; no live provider request.",
 guide_description="Inspect registered source and execution boundaries without inferring runtime readiness.",
 guide_items=[
 "Source Checked confirms reviewed Git objects and version policy only.",
