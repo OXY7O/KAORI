@@ -75,3 +75,15 @@ def require_local_inventory_source(
 ) -> None:
     if _source_scope(identity, scope.instance_id, scope.mount, lock=lock) != scope:
         raise ValueError('OpenBao deployment or local mount scope changed.')
+
+
+def current_local_inventory_source(
+    identity: IntegrationInstance | None, *, namespace: str, mount: str, lock: bool
+) -> LocalOpenBaoInventoryScope | None:
+    """Requalify the independently configured local scope without provider I/O or credentials."""
+    if identity is None or namespace != '' or identity.readiness_status != 'ready':
+        return None
+    try:
+        return _source_scope(identity, identity.id, mount, lock=lock)
+    except ValueError:
+        return None
