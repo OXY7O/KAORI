@@ -235,7 +235,8 @@ def record_host_access_reference(*, actor_id: int, intent: HostAccessBindingInte
         deployment_ref = None
         if policy.scope_level == 'openbao_mount':
             deployment_ref = local_inventory_deployment_ref(
-                provider, namespace=representation.provider_namespace, mount=representation.mount, lock=True
+                provider, namespace=representation.provider_namespace, mount=representation.mount,
+                environment=connection.environment, lock=True
             )
             if deployment_ref is None:
                 raise _deny()
