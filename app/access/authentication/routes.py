@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from typing import cast
 
-from flask import Blueprint, current_app, redirect, render_template, request, session, url_for
+from flask import Blueprint, abort, current_app, g, jsonify, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, logout_user
 from flask_wtf.csrf import validate_csrf
 from sqlalchemy.exc import SQLAlchemyError
@@ -47,7 +47,16 @@ from app.access.authentication.session import (
     AuthSessionError,
     clear_authenticated_session,
     establish_authenticated_session,
+    parse_authenticated_user_identifier,
     safe_next_url,
+)
+from app.access.authentication.session_lifecycle import (
+    SessionDeadlines,
+    SessionPolicy,
+    read_session_policy,
+    refresh_activity,
+    revoke_generation,
+    session_deadlines,
 )
 from app.access.authentication.sso import (
     SsoProviderStoreError,
@@ -55,6 +64,7 @@ from app.access.authentication.sso import (
     find_enabled_sso_provider,
     resolve_sso_identity,
 )
+from app.extensions.db import db
 from app.extensions.limiter import limiter
 from app.models import User
 from app.platform_operations.notifications.service import queue_transient_feedback
@@ -109,6 +119,7 @@ def _complete_successful_login(
                 'attempts': 0,
             }
             return redirect(url_for('auth.mfa_challenge'))
+    remember_requested = bool(remember_requested and read_session_policy().regular_remember)
     issued_session_version = record_successful_authentication(user, source=result.source, client_ip=_client_ip())
 
     establish_authenticated_session(
@@ -636,19 +647,88 @@ def mfa_challenge():
     return render_template('access/authentication/mfa_challenge.html', form=form, error=error)
 
 
+def _session_lifecycle_payload(deadlines: SessionDeadlines, policy: SessionPolicy):
+    return jsonify(deadlines.payload(datetime.now(UTC), policy)), 200, {'Cache-Control': 'no-store'}
+
+
+@auth_bp.get('/session/status')
+@login_required
+def session_status():
+    """A passive read; polling and visibility checks never refresh the session."""
+    deadlines = getattr(g, 'kaori_session_deadlines', None)
+    policy = getattr(g, 'kaori_session_policy', None)
+    if not isinstance(deadlines, SessionDeadlines) or not isinstance(policy, SessionPolicy):
+        return jsonify({'status': 'reauthentication_required'}), 401, {'Cache-Control': 'no-store'}
+    return _session_lifecycle_payload(deadlines, policy)
+
+
+@auth_bp.post('/session/activity')
+@login_required
+def session_activity():
+    """Record a deliberate authenticated interaction, not a periodic heartbeat."""
+    try:
+        validate_csrf(request.headers.get('X-CSRFToken') or request.form.get('csrf_token'))
+    except ValidationError:
+        abort(400)
+
+    user = cast(User, current_user._get_current_object())
+    policy = getattr(g, 'kaori_session_policy', None)
+    try:
+        user_id, generation = parse_authenticated_user_identifier(session.get('_user_id'))
+        if generation is None or user_id != user.id or not isinstance(policy, SessionPolicy):
+            abort(401)
+        if not refresh_activity(user, generation, policy, datetime.now(UTC)):
+            abort(401)
+        if user.auth_session_version != generation:
+            abort(401)
+        deadlines = session_deadlines(user, policy, datetime.now(UTC))
+        if not isinstance(deadlines, SessionDeadlines):
+            abort(401)
+        return _session_lifecycle_payload(deadlines, policy)
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify({'status': 'authentication_unavailable'}), 503, {'Cache-Control': 'no-store'}
+    except (TypeError, ValueError):
+        abort(401)
+
+
 @auth_bp.route('/logout', methods=['POST'])
 @login_required
 def logout():
+    try:
+        validate_csrf(request.form.get('csrf_token'))
+    except ValidationError:
+        abort(400)
     user = cast(User, current_user._get_current_object())
     source = str(session.get('auth_source') or user.last_auth_source or user.auth_source or 'database')
-    record_authentication_activity(
-        action='logout',
-        username=user.username,
-        source=source,
-        result='success',
-        reason='user_initiated',
-        user=user,
-    )
+    try:
+        user_id, generation = parse_authenticated_user_identifier(session.get('_user_id'))
+        if generation is None or user_id != user.id:
+            abort(401)
+        if revoke_generation(user_id, generation):
+            record_authentication_activity(
+                action='logout',
+                username=user.username,
+                source=source,
+                result='success',
+                reason='user_initiated',
+                user=user,
+                commit=False,
+            )
+            db.session.commit()
+        else:
+            # Another successful login already revoked this browser. Do not
+            # advance the newer generation or claim to have ended it.
+            db.session.rollback()
+    except SQLAlchemyError:
+        db.session.rollback()
+        logout_user()
+        clear_authenticated_session()
+        return (
+            'Local session cleared; server-side revocation could not be confirmed.',
+            503,
+            {'Cache-Control': 'no-store'},
+        )
     logout_user()
     clear_authenticated_session()
     session.pop(SSO_SESSION_KEY, None)

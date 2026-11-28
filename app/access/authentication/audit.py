@@ -12,7 +12,7 @@ from app.access.authentication.user_agent import parse_user_agent
 from app.extensions.db import db
 from app.models.notification import Notification
 from app.models.user import User
-from app.platform_operations.notifications.actors import actor_snapshot_for_user, unauthenticated_actor_snapshot
+from app.platform_operations.notifications.actors import actor_snapshot_for_user, system_actor_snapshot, unauthenticated_actor_snapshot
 from app.platform_operations.notifications.event_catalog import event_category_key
 from app.platform_operations.notifications.metadata import redact_operational_metadata, redact_operational_text
 
@@ -68,6 +68,7 @@ def record_authentication_activity(
     result: AuthenticationResult,
     reason: str,
     user: User | None = None,
+    commit: bool = True,
 ) -> None:
     """Persist one login or logout event in the unified Activity Audit Log.
 
@@ -164,6 +165,11 @@ def record_authentication_activity(
     # the personal notification center.
     activity.read_at = created_at
 
+    if not commit:
+        # The session-revocation caller owns the same transaction.
+        db.session.add(activity)
+        return
+
     try:
         db.session.add(activity)
         db.session.commit()
@@ -173,3 +179,31 @@ def record_authentication_activity(
             'Authentication activity could not be persisted.',
             exc_info=True,
         )
+
+
+def stage_session_expiry(user: User, *, reason: str) -> Notification:
+    """System-owned expiry evidence; caller commits with exact-generation revocation."""
+    actor = system_actor_snapshot()
+    now = datetime.now(UTC)
+    event = Notification()
+    event.user_id = user.id
+    event.event_type = AUTHENTICATION_EVENT_TYPE
+    event.category_key = event_category_key(AUTHENTICATION_EVENT_TYPE)
+    event.actor_key = actor.key
+    event.actor_label = actor.label
+    event.actor_snapshot_json = actor.as_json()
+    event.status = 'warning'
+    event.title = 'Session expired'
+    event.message = 'KAORI rejected and revoked an expired authentication generation.'
+    event.detail = 'Server-side session admission requires a new authenticated login.'
+    event.metadata_json = redact_operational_metadata({
+        'audit_schema': AUTHENTICATION_AUDIT_SCHEMA,
+        'access_action': 'session_expired',
+        'reason_code': reason,
+        'target_user_id': user.id,
+        'session_reference': _audit_session_reference(),
+    })
+    event.deck_visible = False
+    event.read_at = now
+    event.created_at = now
+    return event

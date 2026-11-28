@@ -3,7 +3,7 @@ from __future__ import annotations
 from secrets import token_hex
 from urllib.parse import urlsplit
 
-from flask import current_app, session
+from flask import session
 from flask_login import login_user
 
 from app.models.user import User
@@ -40,9 +40,8 @@ def safe_next_url(value: object) -> str | None:
 def parse_authenticated_user_identifier(value: object) -> tuple[int, int | None]:
     """Parse Flask-Login's user identifier and optional credential generation.
 
-    Legacy ``<user_id>`` identifiers are accepted only so sessions issued before
-    the session-generation migration can be upgraded while the user remains on
-    generation 1. New identifiers always use ``<user_id>:<generation>``.
+    Legacy ``<user_id>`` identifiers parse without a generation so admission
+    can reject them explicitly. New identifiers use ``<user_id>:<generation>``.
     """
 
     normalized = str(value or '').strip()
@@ -75,13 +74,12 @@ def establish_authenticated_session(
 ) -> bool:
     """Rotate the Flask session and establish an authenticated user session.
 
-    Super-admin sessions do not become persistent unless an operator explicitly
-    enables that behavior. This keeps the local recovery account suitable for
-    break-glass use without changing the normal-user login experience.
+    Privileged human accounts never receive a persistent remember cookie.
+    The login route applies the committed ordinary-account Remember Me policy;
+    server-side deadlines also govern any remembered re-admission.
     """
 
-    allow_super_admin_remember = bool(current_app.config.get('AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME', False))
-    remember = bool(remember_requested and (not user.is_super_admin or allow_super_admin_remember))
+    remember = bool(remember_requested and not user.is_admin_level)
 
     session.clear()
     established = login_user(user, remember=remember, fresh=True)
@@ -96,6 +94,8 @@ def establish_authenticated_session(
         # may have expired and reloaded a later concurrent login's generation.
         # Flask-Login's remember-cookie hook reads this exact _user_id.
         session['_user_id'] = f'{user.id}:{issued_session_version}'
+    if not remember:
+        session['_remember'] = 'clear'
     session['auth_source'] = source
     # Audit correlation only. This opaque value is never an authentication
     # credential and cannot be used to look up or authorize a session.

@@ -25,6 +25,24 @@ class AuthenticationSecurityPolicy(db.Model):
     bot_secret_key: Mapped[str | None] = mapped_column(EncryptedText(), nullable=True)
     bot_hostname: Mapped[str | None] = mapped_column(db.String(253), nullable=True)
     bot_tested_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
+    session_privileged_idle_minutes: Mapped[int] = mapped_column(
+        db.Integer, nullable=False, default=15, server_default=db.text('15')
+    )
+    session_privileged_absolute_hours: Mapped[int] = mapped_column(
+        db.Integer, nullable=False, default=4, server_default=db.text('4')
+    )
+    session_regular_idle_minutes: Mapped[int] = mapped_column(
+        db.Integer, nullable=False, default=30, server_default=db.text('30')
+    )
+    session_regular_absolute_hours: Mapped[int] = mapped_column(
+        db.Integer, nullable=False, default=8, server_default=db.text('8')
+    )
+    session_warning_minutes: Mapped[int] = mapped_column(
+        db.Integer, nullable=False, default=2, server_default=db.text('2')
+    )
+    session_regular_remember: Mapped[bool] = mapped_column(
+        db.Boolean, nullable=False, default=True, server_default=db.true()
+    )
     updated_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow
     )

@@ -74,6 +74,8 @@ def record_successful_authentication(
             )
             .values(
                 auth_session_version=func.coalesce(User.auth_session_version, 1) + 1,
+                auth_session_issued_at=issued_at,
+                auth_session_activity_at=issued_at,
                 last_login_at=issued_at,
                 last_login_ip=client_ip,
                 last_auth_source=source,

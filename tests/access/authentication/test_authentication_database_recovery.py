@@ -2,19 +2,23 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import pytest
 from flask import Flask, g, session
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.access.authentication.session_lifecycle import SessionPolicy
 from app.extensions import login as login_extension
 
 
 @pytest.fixture()
-def app() -> Flask:
+def app(monkeypatch: pytest.MonkeyPatch) -> Flask:
     app = Flask(__name__)
     app.secret_key = 'authentication-recovery-test-only'
+    monkeypatch.setattr(login_extension, 'db', SimpleNamespace(session=SimpleNamespace(rollback=lambda: None)))
+    monkeypatch.setattr(login_extension, 'read_session_policy', SessionPolicy)
     return app
 
 
@@ -78,6 +82,9 @@ def test_valid_identity_can_be_loaded_after_transient_database_recovery(
 ) -> None:
     actor = SimpleNamespace(
         auth_session_version=2,
+        auth_session_issued_at=datetime.now(UTC),
+        auth_session_activity_at=datetime.now(UTC),
+        is_admin_level=False,
         last_auth_source='database',
         auth_source='database',
     )

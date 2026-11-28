@@ -59,7 +59,8 @@ The canonical suite is `tests/access/authentication/`.
 - The non-secret login-specific `auth_session_ref` is safe in success/login and logout Activity Audit only. A failed login may name a target user but cannot inherit authenticated actor or active-session correlation from other sessions.
 - Multiple browser tabs sharing the same copied signed cookie are out of scope for the one-login-generation guarantee; test that distinction rather than describing the feature as one physical device.
 - Guided two-browser UAT verifies Browser A login then Browser B login as the same user, A rejected, B allowed, optional remember-me old cookie rejected, independent user unaffected and clean audit correlation; also exercise two parallel login requests and provider-disable/password-change regressions.
-- Super-admin remember-me is denied unless explicitly enabled.
+- Privileged Admin/Super Admin Remember Me is denied; ordinary Remember Me may only restore the still-valid generation within both server deadlines. Legacy cookies without issuance/activity timestamps must sign in again.
+- Test idle at and immediately before the deadline, passive polling/status with no activity, explicit CSRF activity touch, continuous activity crossing absolute expiry, and exact-generation concurrent touch/logout/new login. Reopening a browser with or without restore or Remember Me cannot exceed the server deadlines. Confirm expiry audit is system-owned and secret-free, logout replay fails, policy no-op retains sessions and a policy change invalidates existing generations, and DB failure denies without claiming successful revocation. Qualification requires actual browser, database and multi-instance evidence.
 - Logout clears auth and step-up state.
 - Readiness requires every table touched by the login path.
 - Concrete SSO sources map to the SSO family.
