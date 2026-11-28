@@ -230,7 +230,11 @@ entire row, two share it, three use a balanced responsive layout, and four
 use four columns at wide viewports. Never leave colored empty grid cells.
 Activity & Delivery Evidence uses matching flexible panel headers, shared
 row geometry for current and expanded records, wrap-safe text, aligned
-history disclosures, and bounded internal scrolling. Display timeline events
+history disclosures, and bounded internal scrolling. Match title-line
+minimum heights to semantic status labels. At the side-by-side breakpoint,
+equal nonempty recent lists share intrinsic CSS subgrid tracks for headers,
+every recent row, and the history boundary; independent unequal or unavailable
+streams use natural heights, never synthetic records or implied event pairing. Display timeline events
 newest first within their existing recent/older groups. Preserve delivery
 journal ordering, timestamps, qualification states and per-record attempt
 counts. Label generic bounded delivery totals as records, not attempts;
