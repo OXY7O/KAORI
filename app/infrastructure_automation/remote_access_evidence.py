@@ -11,7 +11,10 @@ from datetime import datetime
 from hashlib import sha256
 
 from app.extensions.db import db
-from app.infrastructure_automation.credential_grants import review_current_credential_grant
+from app.infrastructure_automation.credential_grants import (
+    review_current_credential_grant,
+    review_remote_credential_draft,
+)
 from app.infrastructure_automation.ssh_trust_lifecycle import review_current_console_trust
 from app.integrations.secrets_management.secrets_pki.providers.credential_version_proof import canonical_statement
 from app.models.scope_access import AutomationCredentialScopeTarget, ScopeAccessPolicy
@@ -35,6 +38,16 @@ def review_remote_access_evidence(
     )
     if grant is None:
         return None
+    draft = review_remote_credential_draft(
+        actor_user_id=actor_user_id, connection_id=connection_id, assignment_id=assignment_id, now=now
+    )
+    if (
+        draft is None
+        or draft.execution_authorized is not False
+        or draft.policy_id == grant.policy_id
+        or draft.evidence != grant.evidence
+    ):
+        return None
     policy = db.session.get(ScopeAccessPolicy, grant.policy_id, populate_existing=True, with_for_update=True)
     target = db.session.get(
         AutomationCredentialScopeTarget, grant.policy_id, populate_existing=True, with_for_update=True
@@ -50,17 +63,19 @@ def review_remote_access_evidence(
     trust = review_current_console_trust(policy, target, now=now)
     if trust is None:
         return None
-    expires_at = min(grant.expires_at, grant.evidence.expires_at, trust.expires_at)
+    expires_at = min(grant.expires_at, draft.expires_at, grant.evidence.expires_at, trust.expires_at)
     if expires_at <= now:
         return None
     fingerprint = sha256(
         canonical_statement({
-            'schema': 'kaori.automation.remote_access_evidence.v1',
+            'schema': 'kaori.automation.remote_access_evidence.v2',
             'actor_id': actor_user_id,
             'connection_id': connection_id,
             'assignment_id': assignment_id,
             'policy_id': grant.policy_id,
             'policy_revision': grant.revision,
+            'remote_draft_policy_id': draft.policy_id,
+            'remote_draft_revision': draft.revision,
             'credential_evidence_ref': grant.evidence.evidence_ref,
             'host_revision': target.host_revision,
             'reference_fingerprint': target.reference_fingerprint,
