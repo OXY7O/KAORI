@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from celery import shared_task
+from flask import current_app
+
+from app.intelligence.alert_signals.authentication import refresh_authentication_abuse_signal
 
 from app.intelligence.alert_signals.service import refresh_all_kubernetes_runtime_signals
 from app.intelligence.alert_signals.vault_jobs import run_vault_alert_observation_job
@@ -14,7 +17,10 @@ from app.intelligence.alert_signals.vault_jobs import run_vault_alert_observatio
 def refresh_alert_signals() -> dict[str, object]:
     """Refresh compact operational signals used by fast Alert Intelligence rules."""
 
-    return {'kubernetes_runtime_health': refresh_all_kubernetes_runtime_signals()}
+    result = {'kubernetes_runtime_health': refresh_all_kubernetes_runtime_signals()}
+    if current_app.config.get('AUTH_ABUSE_SIGNAL_ENABLED'):
+        result['authentication_abuse'] = refresh_authentication_abuse_signal()
+    return result
 
 
 @shared_task(
