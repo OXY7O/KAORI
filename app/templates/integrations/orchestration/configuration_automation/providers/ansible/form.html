@@ -220,9 +220,9 @@
                 required_title="Source Validation Required",
                 verified_title="Source Validated",
                 required_description="Validate Source before saving this connection.",
-                verified_description="The exact submitted source is eligible for registration.",
+                verified_description="The exact proposed revision is eligible for update." if configure_mode else "The exact submitted source is eligible for registration.",
                 disabled_title="Validate Source before saving",
-                enabled_title="Save this source-validated connection") }}
+                enabled_title="Save the validated configuration revision" if configure_mode else "Save this source-validated connection") }}
                 {% endif %}
             </section>
             <aside class="{{ form_context.rail_classes() }}"

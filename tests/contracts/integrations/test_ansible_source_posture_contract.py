@@ -252,7 +252,7 @@ def test_superseded_source_and_toolchain_evidence_are_blocked_together():
     posture = source_validation_posture(connection)
     assert posture['source_state'] == 'blocked'
     assert posture['checked_files'] == 0
-    assert 'replacement connection' in posture['source_description']
+    assert 'fresh source validation' in posture['source_description']
     assert not posture['runtime_authorized']
     assert not posture['mutation_authorized']
     assert committed_preflight.build_kubespray_preflight(connection).gates[0].state == 'blocked'
