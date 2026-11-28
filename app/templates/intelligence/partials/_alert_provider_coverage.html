@@ -1,0 +1,38 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_primitives.html" as table_ui %}
+<section data-alert-provider-coverage class="{{ table_ui.block_classes() }}">
+    <header class="{{ table_ui.block_header_classes() }}">
+        <div class="min-w-0">
+            <h3 class="{{ table_ui.block_title_classes() }}">Cross-Domain Alert Coverage</h3>
+            <p class="{{ table_ui.block_description_classes() }}">Implemented case paths and reserved provider contracts. This matrix does not represent live provider health, connected instances, permission or UAT acceptance.</p>
+        </div>
+        {{ table_label.metadata_label('Source contract review', 'shield-check') }}
+    </header>
+    <div class="overflow-x-auto">
+        <table class="w-full min-w-[44rem] text-left text-sm">
+            <caption class="sr-only">Central Alert Intelligence implementation coverage by domain and provider</caption>
+            <thead class="border-b border-outline-subtle bg-surface-elevated text-xs font-semibold uppercase tracking-wide text-content-muted">
+                <tr>
+                    <th scope="col" class="px-5 py-3">Domain / Provider</th>
+                    <th scope="col" class="px-5 py-3">AlertCase origin</th>
+                    <th scope="col" class="px-5 py-3">Implementation</th>
+                    <th scope="col" class="px-5 py-3">Evidence boundary</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-outline-subtle">
+                {% for item in payload.provider_coverage %}
+                    <tr>
+                        <th scope="row" class="px-5 py-3 align-top">
+                            <span class="block font-semibold text-content-primary">{{ item.domain }}</span>
+                            <span class="mt-0.5 block text-xs font-normal text-content-muted">{{ item.provider }}</span>
+                        </th>
+                        <td class="px-5 py-3 align-top text-content-secondary">{{ item.origin }}</td>
+                        <td class="px-5 py-3 align-top">{{ table_label.status_label(item.status, item.tone, size='compact') }}</td>
+                        <td class="px-5 py-3 align-top text-xs leading-5 text-content-muted">{{ item.limitation }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="border-t border-outline-subtle px-5 py-3 text-xs leading-5 text-content-muted">Provider-origin admission, recovery and delivery are independent capabilities. Unqualified sources cannot be selected or treated as zero-alert evidence.</p>
+</section>
