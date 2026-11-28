@@ -192,8 +192,9 @@ def main() -> int:
         and delivery_template.count('id="notification-delivery-registry"') == 1
         and delivery_template.index('id="notification-delivery-registry"')
         < delivery_template.index('operational_section_card.render(')
-        and 'All retained hot records' in delivery_template
-        and 'Filtered hot records' in delivery_template,
+        and 'All retained hot records' not in delivery_template
+        and 'Filtered hot records' not in delivery_template
+        and 'across all pages' in delivery_template,
         'desktop-fit Channel Inventory and deletion guidance': "table_ui.table_classes('w-full min-w-[860px] table-fixed lg:min-w-0')"
         in channels_template
         and "channel.lifecycle_state == 'active' and can_manage" in channels_template

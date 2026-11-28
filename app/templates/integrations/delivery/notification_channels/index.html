@@ -340,12 +340,6 @@
                                 {% endfor %}
                             </dl>
                         </div>
-                        <div class="flex flex-wrap items-center justify-between gap-2 border-t border-outline-subtle px-4 py-3 sm:px-5">
-                            <p class="text-xs text-content-muted">
-                                {{ 'Filtered hot records' if payload.delivery_filters_active else 'All retained hot records' }} · All pages
-                            </p>
-                            <p class="text-xs text-content-muted">Provider acceptance is not receipt or readership by a person.</p>
-                        </div>
                     {% endcall %}
                     {{ section_intro.render('Delivery Journal',
                                             'Review hot committed attempts and retry evidence. Verified archive bundles are governed separately in Data Lifecycle.',
@@ -385,11 +379,11 @@
                                                  'Delivery Records',
                                                  'Distinguish transport acceptance from recipient receipt and separate audit evidence.',
                                                  items=[
-                                                 'Provider acceptance proves transport acknowledgement, not that a person received or read the message.',
+                                                 'Provider acceptance confirms transport acknowledgement, not receipt or readership by a person.',
                                                  'Notification Delivery Journal records committed attempts, provider results, retries and deduplication.',
                                                  'Activity Audit records governed actions separately; notification delivery alone does not create an audit event.',
                                                  'Hot delivery records and verified Data Lifecycle archive bundles have distinct evidence scopes.',
-                                                 'Statistics count all matching retained journal records, not individual transport attempts. Success Rate is Delivered divided by Delivered plus Failed; no resolved outcomes means unavailable.',
+                                                 'Statistics count all matching retained journal records, not individual transport attempts, across all pages. Success Rate is Delivered divided by Delivered plus Failed; no resolved outcomes means unavailable.',
                                                  'Retried overlaps outcome totals and counts records with more than one attempt. Active Providers counts distinct provider keys on active channels represented by matching records, not live health.'
                                                  ],
                                                  placement='right',
