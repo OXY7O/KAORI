@@ -1,10 +1,11 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/details/_expandable_row.html" as expandable %}
 <section id="identity-provider-registry"
-         class="{{ '' if embedded|default(false) else table_ui.block_classes() }}">
+         class="{{ '' if embedded|default(false) else table_ui.block_classes(allow_overflow=true) }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex min-w-0 items-start gap-3">
@@ -15,6 +16,17 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="{{ table_ui.block_title_classes() }}">Provider Registry</h2>
                         {{ table_label.result_count(summary.matching) }}
+                        {{ info_tip.render('identity-provider-registry-guide',
+                                                'Provider Registry',
+                                                'Read committed provider configuration, eligibility, projection, and authorization boundaries.',
+                                                items=[
+                                                'Configured means stored adapter setup is complete, not that the upstream provider is reachable.',
+                                                'Enabled controls authentication eligibility; Identity Links counts committed KAORI account projections.',
+                                                'External providers retain identity and credentials; KAORI owns roles, account lifecycle and access.',
+                                                'Directory provisioning requires delegated permission; enabled sources and source-owned identity are not proof of live provider health.'
+                                                ],
+                                                placement='right',
+                                                variant='guide') }}
                     </div>
                     <p class="{{ table_ui.block_description_classes() }}">Review configuration, enablement, identity links, and provider-owned actions.</p>
                 </div>

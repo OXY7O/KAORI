@@ -1,5 +1,6 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% set can_provision = current_user.has_permission('identity_providers.provision') %}
 <section class="min-w-0"
          aria-label="Directory Provisioning overview"
@@ -13,6 +14,16 @@
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="{{ table_ui.block_title_classes() }}">Directory Provisioning</h2>
+                        {{ info_tip.render('identity-provider-directory-guide',
+                                                'Directory Provisioning',
+                                                'Review committed directory projection and delegated provisioning boundaries.',
+                                                items=[
+                                                'Directory provisioning requires delegated permission; enabled sources and source-owned identity are not proof of live provider health.',
+                                                'Identity Links counts committed KAORI account projections.',
+                                                'External providers retain identity and credentials; KAORI owns roles, account lifecycle and access.'
+                                                ],
+                                                placement='right',
+                                                variant='guide') }}
                     </div>
                     <p class="{{ table_ui.block_description_classes() }}">
                         Review directory projection evidence and launch the controlled provisioning workflow.
