@@ -14,7 +14,7 @@ from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
-from app.common.job_execution_contract import job_operation_label
+from app.common.job_execution_contract import KUBESPRAY_APPLY_OPERATION, job_operation_label
 from app.extensions.db import db
 from app.models.audit import AuditEvent
 from app.models.job import JobExecution, JobExecutionSubscriber
@@ -30,6 +30,21 @@ class JobQuotaExceeded(RuntimeError):
 
 class JobCancellationNotAllowed(RuntimeError):
     pass
+
+
+class JobDomainReconciliationRequired(RuntimeError):
+    """A mutation operation must use its owning domain's lifecycle writer."""
+
+
+def _requires_domain_reconciliation(job: JobExecution) -> bool:
+    # Operation identity, not a caller flag or mutable payload, controls the
+    # boundary. The protected pilot has no admitted lifecycle writer yet.
+    return getattr(job, 'operation', None) == KUBESPRAY_APPLY_OPERATION
+
+
+def _require_generic_lifecycle(job: JobExecution) -> None:
+    if _requires_domain_reconciliation(job):
+        raise JobDomainReconciliationRequired('Infrastructure mutation requires domain-owned lifecycle reconciliation.')
 
 
 def _now() -> datetime:
@@ -382,6 +397,7 @@ def mark_job_running(
     job = _lock_job_by_task_id(task_id)
     if job is None:
         return None
+    _require_generic_lifecycle(job)
     if job.is_terminal or job.status == 'cancel_requested':
         return job
     now = _now()
@@ -470,6 +486,7 @@ def mark_job_succeeded(
     job = _lock_job_by_task_id(task_id)
     if job is None:
         return None
+    _require_generic_lifecycle(job)
     if job.is_terminal:
         return job
     if job.status == 'cancel_requested':
@@ -495,6 +512,7 @@ def mark_job_failed(task_id: str, *, error: Exception | str, error_code: str | N
     job = _lock_job_by_task_id(task_id)
     if job is None:
         return None
+    _require_generic_lifecycle(job)
     if job.is_terminal:
         return job
     if job.status == 'cancel_requested':
@@ -528,6 +546,8 @@ def mark_job_failed(task_id: str, *, error: Exception | str, error_code: str | N
 
 
 def request_job_cancel(job: JobExecution) -> JobExecution:
+    if _requires_domain_reconciliation(job):
+        raise JobCancellationNotAllowed('Infrastructure mutation requires domain-owned cancellation and reconciliation.')
     if not job.is_active:
         return job
     job.status = 'cancel_requested'
@@ -543,6 +563,7 @@ def mark_job_retrying(task_id: str, *, message: str, error: Exception | str | No
     job = _lock_job_by_task_id(task_id)
     if job is None:
         return None
+    _require_generic_lifecycle(job)
     if job.is_terminal or job.status == 'cancel_requested':
         return job
     job.status = 'retrying'
@@ -560,6 +581,7 @@ def mark_job_canceled(task_id: str, *, message: str = 'Canceled') -> JobExecutio
     job = _lock_job_by_task_id(task_id)
     if job is None:
         return None
+    _require_generic_lifecycle(job)
     if job.is_terminal:
         return job
     _terminalize(job, 'canceled')
@@ -571,6 +593,8 @@ def mark_job_canceled(task_id: str, *, message: str = 'Canceled') -> JobExecutio
 
 
 def job_can_cancel(job: JobExecution) -> bool:
+    if _requires_domain_reconciliation(job):
+        return False
     return bool(
         job.status == 'queued'
         or (job.status in {'running', 'retrying'} and job.workload_class in HEAVY_WORKLOAD_CLASSES)
@@ -578,6 +602,8 @@ def job_can_cancel(job: JobExecution) -> bool:
 
 
 def cancel_job_execution(job: JobExecution, *, terminate: bool = False) -> JobExecution:
+    if _requires_domain_reconciliation(job):
+        raise JobCancellationNotAllowed('Infrastructure mutation requires domain-owned cancellation and reconciliation.')
     if not job_can_cancel(job):
         raise JobCancellationNotAllowed(
             'Only queued jobs or cooperative analytics and forecasting jobs can be canceled.'
@@ -666,6 +692,10 @@ def recover_stale_jobs() -> dict[str, int]:
     expired = 0
     canceled = 0
     for job in candidates:
+        # Heartbeat loss or broker revoke is not proof that external mutation
+        # stopped. Keep the record and active slot until domain reconciliation.
+        if _requires_domain_reconciliation(job):
+            continue
         if (
             job.status == 'cancel_requested'
             and job.cancel_requested_at is not None

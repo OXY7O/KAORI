@@ -13,6 +13,7 @@ ARTIFACT_REGISTRY_ANALYTICS_MATERIALIZE_OPERATION = 'materialize_artifact_regist
 OBJECT_STORAGE_ANALYTICS_MATERIALIZE_OPERATION = 'materialize_object_storage_analytics'
 OBJECT_STORAGE_FORECAST_MATERIALIZE_OPERATION = 'materialize_object_storage_forecast'
 SYNC_ALL_INVENTORY_ACTION = 'sync_all_inventory'
+KUBESPRAY_APPLY_OPERATION = 'automation_kubespray_apply'
 
 
 def _registered_operation_labels() -> dict[str, str]:
