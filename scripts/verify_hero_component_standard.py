@@ -1413,6 +1413,10 @@ def _verify_hero_context_semantics() -> None:
 
 def _verify_migrated_integration_navigation() -> None:
     """Keep the first domain batch on the shared exact-destination contract."""
+    permission_guard = (
+        "integration_permitted=current_user.is_authenticated and "
+        "current_user.has_permission('integrations.manage')"
+    )
     consumers = {
         'storage/object_storage/dashboard/partials/_hero.html': 'integrations.storage',
         'storage/object_storage/inventory/overview/partials/_hero.html': 'integrations.storage',
@@ -1427,12 +1431,16 @@ def _verify_migrated_integration_navigation() -> None:
             source,
             (
                 f"integration_endpoint='{endpoint}'",
-                "integration_permitted=current_user.is_authenticated and current_user.has_permission('integrations.manage')",
+                permission_guard,
             ),
             relative,
         )
-        for retired in ('Manage Storage', 'Open Object Storage Integrations', 'Manage GitHub Integrations',
-                        'Manage Source Control Integrations'):
+        for retired in (
+            'Manage Storage',
+            'Open Object Storage Integrations',
+            'Manage GitHub Integrations',
+            'Manage Source Control Integrations',
+        ):
             if retired in source:
                 raise AssertionError(f'{relative}: retired Integration CTA {retired}')
     storage_analytics = _read(TEMPLATES / 'storage/object_storage/analytics/partials/_hero_posture.html')
@@ -1442,8 +1450,11 @@ def _verify_migrated_integration_navigation() -> None:
             "'Open Storage Inventory'",
             "url_for('object_storage_inventory.overview')",
             "integration_endpoint=alert_action_endpoint",
-            "'integrations.alertmanager' if alert_source.resolved_source == 'alertmanager' else 'integrations.metrics_sources'",
-            "integration_permitted=current_user.is_authenticated and current_user.has_permission('integrations.manage')",
+            (
+                "'integrations.alertmanager' if alert_source.resolved_source == 'alertmanager' "
+                "else 'integrations.metrics_sources'"
+            ),
+            permission_guard,
         ),
         'Storage Analytics Hero destination ownership',
     )
