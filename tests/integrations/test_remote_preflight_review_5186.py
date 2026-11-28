@@ -10,6 +10,7 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from app.infrastructure_automation import remote_preflight_source, remote_worker_review
+from app.infrastructure_automation.kubernetes.source_policy import SOURCE_CANDIDATE_SHA
 from app.infrastructure_automation.remote_preflight_facts import RemoteFactsTarget, normalize_remote_facts
 from app.infrastructure_automation.remote_preflight_target import RemoteTargetReview
 from app.infrastructure_automation.source import AutomationPilotDenied
@@ -173,7 +174,7 @@ def test_unsupported_or_small_host_is_reported_not_promoted():
 def worker_store(monkeypatch):
     source = remote_preflight_source.RemoteSourceReview(remote_preflight_source.REMOTE_CANDIDATE_SHA, 'a' * 64)
     target = RemoteTargetReview(
-        1, 2, 'b' * 40, 'sha256:' + 'c' * 64, 'd' * 64, 'e' * 64, 'f' * 64,
+        1, 2, SOURCE_CANDIDATE_SHA, 'sha256:' + 'c' * 64, 'd' * 64, 'e' * 64, 'f' * 64,
         _TARGETS, _NOW + timedelta(minutes=15),
     )
     selector = remote_worker_review.worker_review_selector(source, target, worker_identity='automation@fixture')
@@ -235,6 +236,7 @@ def test_worker_receipt_cannot_transfer_to_changed_target_or_worker(worker_store
     source, target, files, name, _, _ = worker_store
     for changed, worker in (
         (replace(target, actor_id=9), 'automation@fixture'),
+        (replace(target, source_sha='b' * 40), 'automation@fixture'),
         (replace(target, ee_digest='sha256:' + '9' * 64), 'automation@fixture'),
         (replace(target, access_fingerprint='9' * 64), 'automation@fixture'),
         (target, 'automation@other'),
