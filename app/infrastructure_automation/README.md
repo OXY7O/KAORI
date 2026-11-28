@@ -136,3 +136,22 @@ The permission-scoped Infrastructure Automation → Kubernetes Lifecycle detail 
 **Dev Container verification sequence:** use an independently authorized disposable non-production Ansible connection and three registered lab hosts; keep the exact approved Vault/OpenBao KV v2 mount and provider-specific TLS/cluster constraints; run an explicit `--publish` once, then a separate `--check-ansible` readback using a bounded transient non-root token, and refresh the Infrastructure Automation page with `inventory.view`. Confirm historical-aligned evidence, then change one source/host/network/provider origin in a disposable fixture and confirm denial. Revalidate the actual external provider, authorization, audit delivery and independent human acceptance before treating any evidence as admissible. Source-only, no-provider, sealed, wrong-cluster or expired-token scenarios must report blocked/pending, not PASS.
 
 This is independent review evidence only. It does **not** feed an executable Plan approval or grant worker access; #5162/#4799/#5066, maker/checker, approved change window, #4801 genuine non-production provisioning, Kubernetes API verification and final #5172 Human Acceptance remain mandatory. The review branch is a temporary UAT holding lane under #2227, not official staging, main, RC or release authority.
+
+
+### Local OpenBao metadata-bound host access (#5204)
+
+The canonical Access grant lifecycle accepts an isolated `openbao_mount` metadata-read
+scope for the independently selected local development provider and exact KV v2 mount.
+It does not inherit or reinterpret `vault_mount` policies. Request and independent
+approval remain required; no defaults or credential-use grant activation are added.
+Set `KAORI_LOCAL_OPENBAO_INVENTORY_PROVIDER_ID`, `KAORI_LOCAL_OPENBAO_INVENTORY_MOUNT`
+and `KAORI_LOCAL_OPENBAO_AUTOMATION_ENVIRONMENT` to the independently approved local
+provider, mount and exact non-production Ansible environment before recording a
+candidate. A successful OpenBao validation stays degraded pending independent
+credential authority; only its connected metadata reference is eligible, with
+fresh complete inventory and exact version checks. OpenBao reference fingerprints
+include the deployment identity, ownership, endpoint, cluster, mount and environment;
+legacy Vault fingerprints retain schema v1. Changes to the selected source or
+environment invalidate currentness. No key retrieval, issuer proof, SSH admission,
+credential activation, execution or new HTTP action is enabled by this slice.
+Migration and independent review are required before broader admission.
