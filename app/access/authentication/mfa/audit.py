@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Literal
 
-from flask import request, session
+from flask import has_request_context, request, session
 
 from app.access.authentication.results import ExternalCredentialProof
 from app.models.notification import Notification
@@ -74,9 +74,10 @@ def stage_authentication_security_event(
         'target_user_id': user.id,
         'previous_policy_mode': previous_mode,
         'new_policy_mode': next_mode,
-        'request_method': request.method,
-        'request_path': request.path[:200],
-        'session_reference': session.get('auth_session_ref') if authenticated else None,
+        'request_method': request.method if has_request_context() else None,
+        'request_path': request.path[:200] if has_request_context() else None,
+        'session_reference': session.get('auth_session_ref') if authenticated and has_request_context() else None,
+        'trigger_type': 'web' if has_request_context() else 'cli',
     }
     if primary_assurance is not None:
         event.metadata_json['primary_assurance'] = primary_assurance
