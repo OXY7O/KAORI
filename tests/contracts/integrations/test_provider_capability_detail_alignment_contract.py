@@ -43,3 +43,19 @@ def test_provider_capability_modals_follow_kubernetes_information_architecture()
     assert 'data-kaori-provider-capability-evidence-boundary' in shared
     assert 'provider_capability_detail.content(' in PROMETHEUS.read_text()
     assert 'provider_capability_detail.content(' in ALERTMANAGER.read_text()
+
+
+def test_github_capability_modal_uses_compact_shared_presentation():
+    shared = DETAIL.read_text()
+    github = ROOT / 'app/templates/integrations/source_control/github/partials/_capability_registry.html'
+    assert 'presentation="github"' in github.read_text()
+    assert "presentation == 'github'" in shared
+    assert 'Validation evidence, ownership, impact, and remediation.' in shared
+    assert 'data-kaori-github-capability-evidence-impact' in shared
+    assert 'data-kaori-github-capability-success-criteria' in shared
+    assert 'border-status-normal-border bg-status-normal-soft' in shared
+    assert 'border-status-info-border bg-status-info-soft' in shared
+    assert "'circle-check' if row.available else 'list-checks'" in shared
+    assert 'lg:grid-cols-2 lg:items-start' in shared
+    assert "presentation == 'metrics_source'" in shared
+    assert 'row.success_criteria' in shared
