@@ -180,7 +180,7 @@ def _repository_sync_feedback(job: JobExecution | None) -> dict | None:
         'partially_succeeded': (
             'warning',
             'Repository Sync Partially Completed',
-            'Review committed inventory and revision evidence gaps in Jobs.',
+            'Some revision checks failed or were deferred by the collection budget. Review coverage and Jobs.',
         ),
         'failed': (
             'error',

@@ -20,6 +20,10 @@ def test_worker_is_id_only_and_does_not_log_provider_exception():
     assert 'db.session.rollback()' in source
     assert 'context.checkpoint(' in source
     assert 'context.succeed(' in source
+    assert "'revision_checks_attempted': revisions + revision_checks_failed" in source
+    assert "'revision_checks_failed': revision_checks_failed" in source
+    assert "'revision_checks_deferred': revision_checks_deferred" in source
+    assert "'revision_evidence_gaps': revision_gaps" in source
     assert 'except JobCancellationRequested:' in source
     assert 'except Exception:' in source
     assert 'logger.exception(' not in source

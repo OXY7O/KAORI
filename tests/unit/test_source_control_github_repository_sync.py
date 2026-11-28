@@ -182,3 +182,26 @@ def test_branch_collect_failure_remains_partial_not_repository_rollback(monkeypa
     assert result.revision_failures == 1
     assert result.observed_count == 3
     assert session.rollbacks == 1
+
+
+@pytest.mark.parametrize('count', [1, 19, 20, 21, 45, 100, 225, 4000])
+def test_rotating_windows_cover_stable_grants_within_one_cycle(count):
+    budget = repository_sync.REVISION_BATCH_SIZE
+    windows = (count + budget - 1) // budget
+    seen = set()
+    for generation in range(1, windows + 1):
+        offset = repository_sync._revision_batch_offset(count, generation)
+        batch = set(range(offset, min(offset + budget, count)))
+        assert len(batch) <= budget
+        assert not seen.intersection(batch)
+        seen.update(batch)
+    assert seen == set(range(count))
+    assert repository_sync._revision_batch_offset(count, windows + 1) == 0
+
+
+def test_rotation_uses_generation_not_successful_revision_count():
+    assert repository_sync._revision_batch_offset(100, 1) == 0
+    assert repository_sync._revision_batch_offset(100, 2) == 20
+    assert repository_sync._revision_batch_offset(100, 5) == 80
+    assert repository_sync._revision_batch_offset(100, 6) == 0
+    assert repository_sync._revision_batch_offset(0, 10) == 0

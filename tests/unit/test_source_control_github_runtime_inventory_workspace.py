@@ -681,3 +681,15 @@ def test_asset_owner_delete_confirmation_remains_shared_and_semantic():
     assert 'This action cannot be undone.' in modal
     assert 'x-bind:action="deleteUrl"' in modal and 'csrf_token()' in modal
     assert '{{ scope_label }}' in modal and '{{ consequence }}' in modal
+
+
+def test_repository_revision_coverage_is_independent_of_registry_filter_and_live_freshness():
+    inventory = _read(GITHUB / 'partials/_detail_inventory.html')
+    projection = _read(ROOT / 'app/integrations/source_control/repository_inventory.py')
+    assert 'data-kaori-source-revision-coverage' in inventory
+    for field in ('current_granted_count', 'revision_eligible_count', 'revision_observed_count', 'revision_missing_count'):
+        assert f'inventory.{field}' in inventory
+    assert 'Selected Repositories' in inventory and 'All Repositories' in inventory
+    assert 'not live freshness' in inventory
+    assert "SourceRepositoryGrant.access_status == 'granted'" in projection
+    assert projection.index('granted_count, eligible_count, observed_revisions =') < projection.index('    filters = []')

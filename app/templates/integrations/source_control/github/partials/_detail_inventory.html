@@ -68,7 +68,7 @@
         <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4"
              data-kaori-github-inventory-snapshot>
             {% for label, value, helper, icon, tone in [
-                ('Committed Grants', inventory.total if committed else 'Unknown', 'Grant relationships; unknown is not zero', 'git-branch', 'normal' if committed else 'unknown'),
+                ('Committed Grants', inventory.total if committed else 'Unknown', 'Retained grant relationships; includes access-lost history', 'git-branch', 'normal' if committed else 'unknown'),
                 ('Coverage', inventory.coverage|replace('_', ' ')|title, 'Latest committed collection scope' if committed else 'Not yet committed', 'scan-search', 'normal' if committed else 'unknown'),
                 ('Snapshot Freshness', inventory_datetime(inventory.collected_at, empty='Not Observed', include_seconds=true), 'Last successful committed collection', 'clock', 'info'),
                 ('Connection Lifecycle', 'Active' if canonical.enabled and canonical.lifecycle_status == 'active' else 'Inactive', 'Registration state; synchronization needs Full Validation', 'shield-check', 'normal' if canonical.enabled and canonical.lifecycle_status == 'active' else 'warning')
@@ -85,6 +85,33 @@
                 </article>
             {% endfor %}
         </div>
+        <section class="border-t border-outline-subtle bg-surface-card" data-kaori-source-revision-coverage>
+            <header class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
+                <div class="flex min-w-0 items-center gap-3">
+                    {{ ui.palette_icon('git-commit-horizontal', 'brand', size='sm') }}
+                    <div class="min-w-0">
+                        <h4 class="text-sm font-semibold text-content-primary">Repository & Revision Coverage</h4>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Retained exact default-branch evidence for current granted repositories; not live freshness.</p>
+                    </div>
+                </div>
+                {{ integration_status('not_observed' if not committed or not inventory.revision_eligible_count else ('degraded' if inventory.revision_missing_count else 'ready'),
+                    'Not Observed' if not committed else ('Evidence Gaps' if inventory.revision_missing_count else ('No Eligible Branches' if not inventory.revision_eligible_count else 'Evidence Retained')), display='text') }}
+            </header>
+            <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+                {% for label, value, helper in [
+                    ('Committed Selection', ('All Repositories' if inventory.selection_scope == 'all' else ('Selected Repositories' if inventory.selection_scope == 'selected' else 'Unknown')), 'GitHub App installation scope'),
+                    ('Current Granted', inventory.current_granted_count if committed else 'Unknown', 'Excludes access-lost relationships'),
+                    ('Exact SHA Observed', (inventory.revision_observed_count|string ~ ' / ' ~ inventory.revision_eligible_count|string) if committed else 'Unknown', 'Current granted repositories with a known default branch'),
+                    ('Missing Exact SHA', inventory.revision_missing_count if committed else 'Unknown', 'Rotating collection, up to 20 checks per sync')
+                ] %}
+                    <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
+                        <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
+                        <dd class="mt-1.5 break-words text-sm font-semibold text-content-primary">{{ value }}</dd>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
+                    </div>
+                {% endfor %}
+            </dl>
+        </section>
         <div class="grid gap-px bg-outline-subtle lg:grid-cols-2"
              data-kaori-inventory-lifecycle-boundary>
             <section class="bg-surface-card px-4 py-4 sm:px-5">

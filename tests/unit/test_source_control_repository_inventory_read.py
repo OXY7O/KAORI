@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import create_engine, select
@@ -111,6 +111,10 @@ def test_projection_uses_only_authorized_installation(read_db):
     session, installations = read_db
     one = read_installation_inventory(session, authorized_installation_id=installations[0])
     assert one.total == 1
+    assert one.current_granted_count == 1
+    assert one.revision_eligible_count == 1
+    assert one.revision_observed_count == 0
+    assert one.revision_missing_count == 1
     assert len(one.rows) == 1
     assert one.rows[0].full_name == 'org/private-repo'
     grant = session.execute(select(SourceRepositoryGrant)).scalar_one()
@@ -120,6 +124,7 @@ def test_projection_uses_only_authorized_installation(read_db):
     assert other.total is None
     assert other.rows == ()
     assert other.observed_count is None
+    assert other.revision_missing_count is None
 
 
 def test_missing_coverage_never_infers_empty_source_scope(read_db):
@@ -188,6 +193,8 @@ def test_exact_sha_is_a_committed_optional_projection_not_a_live_lookup(read_db)
 
     after = read_installation_inventory(session, authorized_installation_id=installations[0])
     assert after.rows[0].exact_default_branch_sha == 'a' * 40
+    assert after.revision_observed_count == 1
+    assert after.revision_missing_count == 0
     assert after.rows[0].revision_observed_at is not None
 
     # The other installation has never received a successful inventory generation.
@@ -218,6 +225,8 @@ def test_branch_change_does_not_fabricate_latest_sha_for_unobserved_ref(read_db)
     page = read_installation_inventory(session, authorized_installation_id=installations[0])
     assert page.rows[0].default_branch == 'main'
     assert page.rows[0].exact_default_branch_sha is None
+    assert page.revision_observed_count == 0
+    assert page.revision_missing_count == 1
 
 
 def test_committed_repository_filters_use_matching_counts_and_authorized_scope(read_db):
@@ -240,6 +249,8 @@ def test_committed_repository_filters_use_matching_counts_and_authorized_scope(r
     assert no_match.total == 1
     assert no_match.matching_total == 0
     assert no_match.rows == ()
+    assert no_match.revision_eligible_count == baseline.revision_eligible_count
+    assert no_match.revision_missing_count == baseline.revision_missing_count
     assert no_match.page == 1
 
     archived = read_installation_inventory(session, authorized_installation_id=installation_id, archived='archived')
@@ -272,3 +283,56 @@ def test_committed_repository_search_is_literal_and_pages_clamp(read_db):
     assert last.page == 1
     assert last.total == last.matching_total == 1
     assert len(last.rows) == 1
+
+
+def test_revision_targets_rotate_actual_scoped_grants_and_exclude_access_lost(read_db):
+    from app.integrations.source_control.source_control.providers.github.repository_sync import _revision_targets
+
+    session, installations = read_db
+    now = datetime.now(UTC)
+    first_id = session.execute(select(SourceRepository.id)).scalar_one()
+    eligible_ids = [first_id]
+    for index in range(1, 48):
+        repository = SourceRepository(
+            provider_key='github', host_key='github.com', native_repository_id=str(100 + index),
+            full_name=f'org/repo-{index}', default_branch=None if index == 46 else 'main',
+            provider_presence='observed',
+        )
+        session.add(repository)
+        session.flush()
+        installation_id = installations[1] if index == 45 else installations[0]
+        status = 'access_lost' if index == 44 else 'granted'
+        session.add(SourceRepositoryGrant(
+            installation_id=installation_id, repository_id=repository.id,
+            access_status=status, valid_from=now, last_observed_at=now,
+            valid_until=now + timedelta(seconds=1) if index == 47 else None,
+        ))
+        if index < 44:
+            eligible_ids.append(repository.id)
+    session.commit()
+    assert len(eligible_ids) == 44
+    for generation, start in ((1, 0), (2, 20), (3, 40), (4, 0)):
+        total, selected = _revision_targets(session, installation_id=installations[0], generation=generation)
+        assert total == len(eligible_ids)
+        assert selected == eligible_ids[start:start + 20]
+    page = read_installation_inventory(session, authorized_installation_id=installations[0])
+    assert page.current_granted_count == 45
+    assert page.revision_eligible_count == 44
+    assert page.revision_missing_count == 44
+    assert page.revision_observed_count == 0
+
+
+def test_complete_empty_collection_has_zero_revision_coverage(read_db):
+    session, installations = read_db
+    session.add(SourceRepositoryCollectionState(
+        installation_id=installations[1], next_generation=1, committed_generation=1,
+        status='committed', repository_scope='all', coverage='exhaustive_installation_grants',
+        observed_count=0, last_committed_at=datetime.now(UTC),
+    ))
+    session.commit()
+    page = read_installation_inventory(session, authorized_installation_id=installations[1])
+    assert page.selection_scope == 'all'
+    assert page.current_granted_count == 0
+    assert page.revision_eligible_count == 0
+    assert page.revision_observed_count == 0
+    assert page.revision_missing_count == 0

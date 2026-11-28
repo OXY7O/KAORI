@@ -64,6 +64,8 @@ def sync_source_repositories_task(
     repositories = 0
     revisions = 0
     revision_gaps = 0
+    revision_checks_failed = 0
+    revision_checks_deferred = 0
     try:
         for index, target in enumerate(targets, start=1):
             context.checkpoint(
@@ -81,6 +83,8 @@ def sync_source_repositories_task(
                 successes += 1
                 repositories += int(result.observed_count or 0)
                 revisions += int(result.committed_revisions)
+                revision_checks_failed += int(result.revision_failures)
+                revision_checks_deferred += int(result.unchecked_revisions)
                 revision_gaps += int(result.revision_failures + result.unchecked_revisions)
             except JobCancellationRequested:
                 db.session.rollback()
@@ -117,6 +121,9 @@ def sync_source_repositories_task(
             'observed_repositories': repositories,
             'observed_default_branch_shas': revisions,
             'revision_evidence_gaps': revision_gaps,
+            'revision_checks_attempted': revisions + revision_checks_failed,
+            'revision_checks_failed': revision_checks_failed,
+            'revision_checks_deferred': revision_checks_deferred,
         }
         if failures and not successes:
             context.fail(

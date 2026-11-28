@@ -55,6 +55,10 @@ class InventoryPage:
     page: int
     per_page: int
     matching_total: int | None = None
+    current_granted_count: int | None = None
+    revision_eligible_count: int | None = None
+    revision_observed_count: int | None = None
+    revision_missing_count: int | None = None
 
 
 def read_installation_inventory(
@@ -135,6 +139,27 @@ def read_installation_inventory(
             SourceRepositoryGrant.valid_until.is_(None),
         )
     )
+    # Coverage is unfiltered, and only current granted relationships count.
+    # Retained canonical ref evidence is not a live freshness or permission claim.
+    has_branch = and_(SourceRepository.default_branch.is_not(None), SourceRepository.default_branch != '')
+    has_revision = and_(
+        has_branch,
+        SourceReference.state == 'observed',
+        SourceReference.last_observed_at.is_not(None),
+        SourceRevision.commit_sha.is_not(None),
+    )
+    granted_count, eligible_count, observed_revisions = session.execute(
+        scoped.with_only_columns(
+            func.count(SourceRepositoryGrant.id),
+            func.count(SourceRepositoryGrant.id).filter(has_branch),
+            func.count(SourceRepositoryGrant.id).filter(has_revision),
+            maintain_column_froms=True,
+        ).where(SourceRepositoryGrant.access_status == 'granted')
+    ).one()
+    granted_count = int(granted_count)
+    eligible_count = int(eligible_count)
+    observed_revisions = int(observed_revisions)
+
     filters = []
     if search:
         filters.append(
@@ -209,6 +234,10 @@ def read_installation_inventory(
         page=effective_page,
         per_page=per_page,
         matching_total=matching_total,
+        current_granted_count=granted_count,
+        revision_eligible_count=eligible_count,
+        revision_observed_count=observed_revisions,
+        revision_missing_count=max(0, eligible_count - observed_revisions),
     )
 
 
