@@ -267,3 +267,55 @@ provider proof, signed synthetic console artifacts, revocation, rollback and
 combined readback. Native provider schema inspection, real independent console
 custody, migration execution, quality gates and operator acceptance remain
 pending on the exact review head.
+
+
+### Remote preflight source, target and worker evidence candidate (#5186)
+
+The accepted Kubernetes lifecycle profile remains pinned to its existing
+review-only source. The upstream remote facts candidate in
+OXY7O/kaori-operations#10 is still disabled and unaccepted. The new
+`review_remote_source_candidate` checks the exact candidate Git SHA,
+origin, clean checkout, fixed playbook/manifest/config/requirements blob
+hashes and disabled manifest shape. It does not repin the accepted profile
+or run Ansible.
+
+`review_remote_preflight_target` reads the exact current canonical connection,
+bounded 1-control-plane/2-worker inventory, historical provider KV v2
+readback and parser evidence, and combined current grant/console evidence
+for the same initiating actor on every member. It returns only correlation
+and internal fact-target aliases, capped by the shortest evidence window and
+15 minutes. Historical inventory readback is not live provider currentness;
+the future admitted worker must check the native exact document again.
+No material retrieval or dispatch occurs.
+
+Proposed external worker review artifact: separate root-owned read-only
+`/run/kaori/automation-worker-authority`, independent Ed25519 `root.pub`,
+and a `worker-<sha256>.json` artifact named by the hash of the canonical
+worker selector. Schema `kaori.automation.remote_worker_review.v1` binds
+the exact candidate SHA/blob fingerprint, committed profile SHA, EE digest,
+pinned Ansible versions, expected worker identity/automation queue, actor,
+connection, inventory and target review fingerprints. The signed envelope
+also binds independent provenance and target-ownership evidence digests,
+reviewer (distinct from initiating actor), UTC issuance and expiry.
+The reader verifies signature, exact selector and bounded expiry; the
+external authority must actually verify OCI signature/provenance and
+runtime identity. This does not measure runtime identity, authorize an
+operation, consume a one-time job permit, or replace source acceptance.
+No runtime permit is returned, and no task is registered.
+
+`normalize_remote_facts` is a candidate three-host facts adapter. It accepts
+only the exact aliases and one successful unchanged setup event per member,
+rejects mismatched recap, failed/unreachable/changed/unknown actions and
+unbounded events/mounts, and projects bounded OS/kernel/package manager,
+CPU/RAM/root disk and effective user ID. Unsupported OS or insufficient
+capacity is reported without promotion. It never treats effective UID,
+setup network or clock observations as proof of sudo, inter-host reachability,
+CIDR completeness, time synchronization or independent host identity.
+The separate facts-only result contract is deliberately not the existing
+canonical full Kubespray preflight result; no false Ready is introduced.
+
+Independent source acceptance, actual signed EE/native runtime attestation,
+separately approved disposable targets, ephemeral worker-only material,
+strict host-key transport, canonical JobExecution/audit admission, and
+native read-only UAT remain required. Regression cases are synthetic and
+do not establish actual provider/host behavior.
