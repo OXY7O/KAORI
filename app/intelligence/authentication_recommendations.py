@@ -21,6 +21,7 @@ from app.intelligence.alert_signals.authentication import (
     SOURCE_THRESHOLD,
     TARGET_THRESHOLD,
     WINDOW_MINUTES,
+    closed_window,
     read_authentication_abuse_signal,
 )
 
@@ -118,7 +119,7 @@ def qualified_abuse_evidence(snapshot: dict[str, Any], *, now: datetime) -> dict
         or start.utcoffset() != timedelta(0) or end.utcoffset() != timedelta(0)
         or end - start != timedelta(minutes=WINDOW_MINUTES)
         or end.second != 0 or end.microsecond != 0 or end.minute % WINDOW_MINUTES != 0
-        or not timedelta(minutes=2) <= now - end < timedelta(minutes=WINDOW_MINUTES + 7)
+        or (start, end) != closed_window(now)
     ):
         return None
     indicators = _indicators(counts)

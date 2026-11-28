@@ -24,10 +24,6 @@ class _CoverageSpec:
 
 _COVERAGE = (
     _CoverageSpec(
-        'authentication', 'Authentication', '', 'Domain-owned', 'Not admitted',
-        'Committed abuse signal exists; recommendation rule, scoped case lifecycle and routing are Reserved Plan.',
-    ),
-    _CoverageSpec(
         'kubernetes', 'Kubernetes', 'kubernetes', 'Kubernetes', 'Recommendation',
         'Committed evaluator findings only; native provider-origin case admission is not registered.',
     ),
@@ -54,6 +50,10 @@ _COVERAGE = (
     _CoverageSpec(
         'infrastructure_automation', 'Infrastructure Automation', 'ansible', 'Ansible', 'Not admitted',
         'No approved provider-origin AlertCase adapter or source evidence contract.',
+    ),
+    _CoverageSpec(
+        'authentication', 'Authentication', '', 'Domain-owned', 'Not admitted',
+        'Committed abuse signal exists; recommendation rule, scoped case lifecycle and routing are Reserved Plan.',
     ),
 )
 

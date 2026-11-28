@@ -33,7 +33,7 @@ def apply_case_mutation(
         return None
     # Provider-origin cases require independently qualified mutation capability.
     # Do not admit another provider by omitting a domain-specific deny rule.
-    if case.source_type != 'recommendation':
+    if case.domain == 'authentication' or case.source_type != 'recommendation':
         return None
     try:
         operation(case)
