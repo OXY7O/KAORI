@@ -749,21 +749,21 @@
             {% else %}
                 {{ assurance.render('session-security',
                                 'Session Security',
-                                'Committed login generation controls and recovery boundaries.',
-                                'Generation Active',
+                                'Committed session lifecycle policy and recovery boundaries.',
+                                'Policy Configured',
                                 'info',
                                 'monitor-check',
                                 [
-                                ('monitor-check', 'Concurrent Logins', 'Single Generation', 'Single active login generation per human account.', 'bg-status-normal-soft text-status-normal-text') ,
-                ('log-out', 'Provider Disablement', 'Revocation', 'Provider disablement revokes sessions.', 'bg-status-warning-soft text-status-warning-text'),
-                ('shield-check', 'Remember Me', 'Prior Rejected', 'Prior login generations cannot be reused.', 'bg-kaori-soft text-kaori-primary'),
-                ('clock', 'Idle & Absolute Timeouts', 'Not Qualified', 'Timeout enforcement is not qualified.', 'bg-status-unknown-soft text-status-unknown-text')
+                                ('monitor-check', 'Concurrent Logins', 'Single Generation', 'Single active login generation per human account.', 'bg-status-normal-soft text-status-normal-text'),
+                ('shield-check', 'Privileged Timeouts', session_policy.privileged_idle_minutes ~ 'm / ' ~ session_policy.privileged_absolute_hours ~ 'h', 'Idle / absolute for Admin accounts.', 'bg-status-warning-soft text-status-warning-text'),
+                ('clock', 'Regular Timeouts', session_policy.regular_idle_minutes ~ 'm / ' ~ session_policy.regular_absolute_hours ~ 'h', 'Idle / absolute for other accounts.', 'bg-kaori-soft text-kaori-primary'),
+                ('key-round', 'Remember Me', 'Regular Only' if session_policy.regular_remember else 'Disabled', 'Never bypasses server deadlines.', 'bg-status-info-soft text-status-info-text')
                 ],
                 [
-                ('shield-check', 'Admission Boundary', 'Server-Owned', 'Requests check committed generation.'),
-                ('link-2-off', 'Provider Lifecycle', 'Revocation', 'Disabling a provider rejects linked prior sessions.'),
-                ('history', 'Activity Evidence', 'Correlated', 'Auth events use non-secret session correlation.'),
-                ('shield-alert', 'Scope Limitation', 'No Inventory', 'This is not an active-device or person registry.')
+                ('shield-check', 'Admission Boundary', 'Server-Owned', 'Requests check committed deadlines.'),
+                ('link-2-off', 'Provider Lifecycle', 'Revocation', 'Provider disablement revokes sessions.'),
+                ('history', 'Activity Evidence', 'Correlated', 'Auth events use non-secret correlation.'),
+                ('shield-alert', 'Scope Limitation', 'No Inventory', 'This is not an active-device registry.')
                 ],
                 metadata=table_label.metadata_label('Single Generation', icon='monitor-check')
                 ) }}
@@ -771,129 +771,33 @@
                     <header class="space-y-1" data-auth-security-session-intro="above-card">
                         <h2 id="auth-security-session-controls-heading"
                             class="text-base font-semibold text-content-primary">Session Security Controls</h2>
-                        <p class="text-sm leading-6 text-content-secondary">Review login-generation enforcement and its documented boundaries.</p>
+                        <p class="text-sm leading-6 text-content-secondary">Govern authenticated session lifetime, revocation and recovery.</p>
                     </header>
                     <section class="overflow-visible rounded-2xl border border-outline-default bg-surface-card shadow-sm"
                              aria-labelledby="auth-security-session-controls-heading"
                              data-auth-security-session-hub="true">
                         {{ assurance.control_header('sessions',
-                                                'Session Enforcement',
-                                                'Generation-based access checks and unqualified capabilities.',
-                                                'Generation Active',
+                                                'Session Policy & Enforcement',
+                                                'Configure the server-owned lifecycle of human sessions.',
+                                                'Policy Configured',
                                                 'info',
                                                 'monitor-check',
                                                 guide=info_tip.render(
                                                 'session-security-guide',
                                                 'Session Security',
-                                                'KAORI enforces login generations without claiming an active device inventory.',
+                                                'KAORI enforces idle and absolute deadlines on the current login generation.',
                                                 [
-                                                'Single generation — a new successful sign-in revokes earlier generations.',
-                                                'Provider disablement — linked external-source sessions are invalidated.',
-                                                'Remember Me — older generations cannot restore access.',
-                                                'Idle/absolute timeouts and per-device inventories need separate qualification.'
+                                                'Idle timeout — deliberate activity may extend inactivity time, but passive polling does not.',
+                                                'Absolute timeout — continuous activity cannot extend maximum session age.',
+                                                'Remember Me — only an eligible ordinary account may restore a still-valid generation.',
+                                                'Sign-out, new login and provider disablement revoke affected prior generations.',
+                                                'Closing the browser does not guarantee logout. Device inventory and remote termination remain outside scope.'
                                                 ],
                                                 placement='right',
                                                 variant='guide'
                                                 )
                                                 ) }}
-                        <div class="grid gap-4 p-4 lg:grid-cols-2 lg:p-5"
-                             data-auth-session-boundaries="read-only"
-                             data-auth-session-layout="functional-posture">
-                            <article class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card"
-                                     aria-labelledby="auth-session-governed-heading">
-                                <header class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle p-4">
-                                    <div class="flex min-w-0 items-center gap-3">
-                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal-text"
-                                              aria-hidden="true">
-                                            <i data-lucide="shield-check" class="h-4 w-4"></i>
-                                        </span>
-                                        <div class="min-w-0">
-                                            <h4 id="auth-session-governed-heading"
-                                                class="text-sm font-semibold text-content-primary">Governed in Access</h4>
-                                            <p class="mt-0.5 text-xs text-content-muted">Committed admission and revocation.</p>
-                                        </div>
-                                    </div>
-                                    {{ table_label.status_indicator_label('Enforced', 'normal') }}
-                                </header>
-                                <div class="flex flex-1 flex-col divide-y divide-outline-subtle px-4"
-                                     data-auth-session-control-group="enforced">
-                                    <div class="flex min-w-0 flex-1 items-start gap-3 py-3">
-                                        <i data-lucide="check-circle-2"
-                                           class="mt-1 h-4 w-4 shrink-0 text-status-normal-text"
-                                           aria-hidden="true"></i>
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-semibold text-content-primary">Admission Gate</p>
-                                            <p class="mt-1 text-xs leading-5 text-content-secondary">Protected requests validate the committed login generation.</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex min-w-0 flex-1 items-start gap-3 py-3">
-                                        <i data-lucide="check-circle-2"
-                                           class="mt-1 h-4 w-4 shrink-0 text-status-normal-text"
-                                           aria-hidden="true"></i>
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-semibold text-content-primary">Session Revocation</p>
-                                            <p class="mt-1 text-xs leading-5 text-content-secondary">New logins and provider disablement revoke affected prior sessions.</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex min-w-0 flex-1 items-start gap-3 py-3">
-                                        <i data-lucide="check-circle-2"
-                                           class="mt-1 h-4 w-4 shrink-0 text-status-normal-text"
-                                           aria-hidden="true"></i>
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-semibold text-content-primary">Remember Me</p>
-                                            <p class="mt-1 text-xs leading-5 text-content-secondary">Remember Me cannot restore an invalidated generation.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </article>
-                            <article class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card"
-                                     aria-labelledby="auth-session-scope-heading">
-                                <header class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle p-4">
-                                    <div class="flex min-w-0 items-center gap-3">
-                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-status-unknown-soft text-status-unknown-text"
-                                              aria-hidden="true">
-                                            <i data-lucide="shield-alert" class="h-4 w-4"></i>
-                                        </span>
-                                        <div class="min-w-0">
-                                            <h4 id="auth-session-scope-heading"
-                                                class="text-sm font-semibold text-content-primary">Outside Current Scope</h4>
-                                            <p class="mt-0.5 text-xs text-content-muted">Timeout and inventory capabilities are not qualified.</p>
-                                        </div>
-                                    </div>
-                                    {{ table_label.status_indicator_label('Not Qualified', 'unknown') }}
-                                </header>
-                                <div class="flex flex-1 flex-col divide-y divide-outline-subtle px-4"
-                                     data-auth-session-control-group="unqualified">
-                                    <div class="flex min-w-0 flex-1 items-start gap-3 py-3">
-                                        <i data-lucide="circle-help"
-                                           class="mt-1 h-4 w-4 shrink-0 text-content-muted"
-                                           aria-hidden="true"></i>
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-semibold text-content-primary">Idle Timeout</p>
-                                            <p class="mt-1 text-xs leading-5 text-content-secondary">Idle and absolute session timeouts are not qualified as enforced controls.</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex min-w-0 flex-1 items-start gap-3 py-3">
-                                        <i data-lucide="circle-help"
-                                           class="mt-1 h-4 w-4 shrink-0 text-content-muted"
-                                           aria-hidden="true"></i>
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-semibold text-content-primary">Absolute Timeout</p>
-                                            <p class="mt-1 text-xs leading-5 text-content-secondary">Absolute-expiry enforcement has not been qualified.</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex min-w-0 flex-1 items-start gap-3 py-3">
-                                        <i data-lucide="circle-help"
-                                           class="mt-1 h-4 w-4 shrink-0 text-content-muted"
-                                           aria-hidden="true"></i>
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-semibold text-content-primary">Device / Remote Sessions</p>
-                                            <p class="mt-1 text-xs leading-5 text-content-secondary">No active-device inventory or remote session registry is claimed.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </article>
-                        </div>
+                        {% include "access/authentication_security/partials/_session_policy_controls.html" %}
                     </section>
                 </div>
             {% endif %}
