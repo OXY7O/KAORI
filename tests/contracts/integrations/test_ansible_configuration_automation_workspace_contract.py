@@ -129,6 +129,26 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
                 is_authenticated=True, has_permission=lambda permission: permission == 'integrations.manage'
             ),
         )
+        allowed_configuration = render_template(
+            DETAIL.replace('detail.html', '_detail_configuration.html'),
+            connection=connection,
+            source=connection.metadata_json,
+            evidence={'tree_sha': 'b' * 40},
+            source_posture=source_validation_posture(connection),
+            current_user=SimpleNamespace(
+                is_authenticated=True, has_permission=lambda permission: permission == 'integrations.manage'
+            ),
+        )
+    assert 'data-dialog-target="ansible-configure-connection-dialog"' in allowed_configuration
+    assert 'id="ansible-configure-connection-dialog"' in allowed_configuration
+    assert 'Register Replacement Connection' in allowed_configuration
+    assert 'data-dialog-target="ansible-minimum-validation-setup-dialog"' in allowed_configuration
+    assert 'id="ansible-minimum-validation-setup-dialog"' in allowed_configuration
+    assert allowed_configuration.count('data-kaori-compact-evidence-value') == 2
+    for character in ('a', 'b'):
+        assert character * 12 + '…' in allowed_configuration
+        assert character * 40 in allowed_configuration
+        assert f'<code x-ref="script">{character * 40}</code>' in allowed_configuration
     hero = detail.split('data-kaori-ansible-framed-detail', 1)[0]
     assert 'data-kaori-provider-detail-posture' in hero
     assert 'data-kaori-hero-header-accessory="status"' in hero
@@ -246,7 +266,13 @@ def test_frontpage_choose_form_and_four_tab_detail_render_with_violet_components
     assert 'Not Checked' in configuration  # Fixture has no committed tree evidence.
     assert 'Not Provided' in configuration  # No Execution Environment has been admitted.
     assert 'data-kaori-provider-immutable-connection' in configuration
-    assert 'Configure Connection' not in configuration
+    assert 'data-dialog-target="ansible-configure-connection-dialog"' not in configuration
+    assert 'id="ansible-configure-connection-dialog"' not in configuration
+    assert 'data-kaori-ansible-minimum-validation-setup' in configuration
+    assert 'Open Setup Guide' in configuration
+    assert configuration.index('data-kaori-provider-operational-context') < configuration.index(
+        'data-kaori-ansible-minimum-validation-setup'
+    ) < configuration.index('data-kaori-provider-immutable-connection')
     assert 'data-kaori-authority-boundary-metadata' in configuration
     assert 'Execution · Blocked' in configuration
     assert 'Source validation does not authorize SSH or Kubernetes mutation.' in configuration
