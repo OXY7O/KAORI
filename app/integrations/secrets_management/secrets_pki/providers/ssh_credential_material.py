@@ -20,7 +20,11 @@ from app.integrations.secrets_management.secrets_pki.providers.credential_versio
     provider_credential_version_statement,
 )
 from app.integrations.secrets_management.secrets_pki.providers.kv2_http import SecretProviderError
-from app.integrations.secrets_management.secrets_pki.providers.kv2_metadata import _safe_metadata, _safe_timestamp
+from app.integrations.secrets_management.secrets_pki.providers.kv2_metadata import (
+    KV2SecretEvidence,
+    _safe_metadata,
+    _safe_timestamp,
+)
 
 SCHEMA = 'kaori.secrets.kv2.ssh_private_key.v1'
 _USERNAME = re.compile(r'[a-z_][a-z0-9_-]{0,30}')
@@ -98,31 +102,9 @@ def qualify_exact_ssh_version(
         raise _deny()
     selected = selector.credential
     try:
-        # The shared inventory parser permits absent optional timestamps.
-        # Material use requires explicit native fields for the selected version.
-        for response in (metadata_before, metadata_after):
-            data = response.get('data')
-            if not isinstance(data, dict) or type(data.get('current_version')) is not int:
-                raise _deny()
-            rows = data.get('versions')
-            native_row = rows.get(str(selected.version)) if isinstance(rows, dict) else None
-            if (
-                not isinstance(native_row, dict)
-                or not {'created_time', 'deletion_time', 'destroyed'}.issubset(native_row)
-                or native_row['destroyed'] is not False
-            ):
-                raise _deny()
-        before = _safe_metadata(mount=selected.mount, path='', body=metadata_before)
-        after = _safe_metadata(mount=selected.mount, path='', body=metadata_after)
-        if before != after or before.current_version != selected.version:
-            raise _deny()
-        versions = [version for version in before.versions if version.version == selected.version]
-        if (
-            len(versions) != 1
-            or versions[0].created_time != selected.provider_created_time
-            or versions[0].deletion_time is not None
-            or versions[0].destroyed
-        ):
+        before = qualify_native_ssh_metadata(selector, metadata_before)
+        after = qualify_native_ssh_metadata(selector, metadata_after)
+        if before != after:
             raise _deny()
         envelope = data_response.get('data')
         if not isinstance(envelope, dict):
@@ -140,4 +122,36 @@ def qualify_exact_ssh_version(
             raise _deny()
         return qualify_ssh_credential_payload(envelope.get('data'))
     except (ValueError, TypeError, KeyError, OverflowError):
+        raise _deny() from None
+
+
+def qualify_native_ssh_metadata(
+    selector: ProviderCredentialVersionSelector, response: dict[str, Any]
+) -> KV2SecretEvidence:
+    """Reject stale/deleted/destroyed version before a worker data request."""
+    selected = selector.credential
+    try:
+        data = response.get('data')
+        if not isinstance(data, dict) or type(data.get('current_version')) is not int:
+            raise _deny()
+        rows = data.get('versions')
+        native_row = rows.get(str(selected.version)) if isinstance(rows, dict) else None
+        if (
+            not isinstance(native_row, dict)
+            or not {'created_time', 'deletion_time', 'destroyed'}.issubset(native_row)
+            or native_row['destroyed'] is not False
+        ):
+            raise _deny()
+        evidence = _safe_metadata(mount=selected.mount, path='', body=response)
+        versions = [version for version in evidence.versions if version.version == selected.version]
+        if (
+            evidence.current_version != selected.version
+            or len(versions) != 1
+            or versions[0].created_time != selected.provider_created_time
+            or versions[0].deletion_time is not None
+            or versions[0].destroyed
+        ):
+            raise _deny()
+        return evidence
+    except (ValueError, TypeError, KeyError, AttributeError, OverflowError):
         raise _deny() from None
