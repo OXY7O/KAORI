@@ -343,3 +343,17 @@ destination approval and local human acceptance.
   claim, stale receipt, role denial, generic recovery exclusion, no-JS GET
   fallback, pagination, light/dark and responsive review. Record actual
   provider receipt, audit and test output before acceptance.
+
+
+### Final scoped review regression checks
+
+- Revoke the selected instance grant while the Active, Resolved or Routing
+  registry is open; trigger a filter or pagination request. The complete
+  page must replace the previous case summary and controls with a blocked
+  state rather than leave stale rows in the browser.
+- Record an independently qualified definitive rejection. Only its original
+  maker may see the original policy/channel candidate after the due time;
+  other makers and other destinations cannot retry it. Recheck current
+  approval and transport authority on the server as before.
+- Verify the Active filter has a non-JavaScript submit fallback and that
+  successful recovery/closure returns to the resolved context.

@@ -126,7 +126,7 @@ def operator_action_response(public_id: str) -> ResponseReturnValue:
         domain='secrets_pki',
         provider='vault',
         asset=instance_id,
-        tab='active',
+        tab='resolved' if action in {'admit_recovery', 'verify_close'} and status == 'committed' else 'active',
     )
     if request.headers.get('HX-Request') == 'true':
         response = make_response('', 200)
