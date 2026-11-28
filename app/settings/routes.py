@@ -21,6 +21,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from wtforms.validators import ValidationError
 
 from app.access.authentication.forms import ChangePasswordForm
+from app.access.authentication.identity_provider.adapters.ldap.reauthentication import ldap_reauthentication_available
 from app.access.authentication.mfa.qr import build_totp_qr_data_uri
 from app.access.authentication.mfa.service import (
     MfaVerificationError,
@@ -49,6 +50,7 @@ from app.common.timezone import (
     normalize_timezone_name,
     timezone_choice_groups,
 )
+from app.extensions.limiter import limiter
 from app.models import User
 from app.platform_operations.notifications.feedback import (
     OperationalDeliveryPolicy,
@@ -269,7 +271,8 @@ def _process_account_mfa_action(
         if session_user_id != user.id or generation is None:
             raise MfaVerificationError('Sign in again before changing MFA.')
         # The factor service verifies the current local credential only after
-        # acquiring the exact-generation account lock. External passwords are never accepted here.
+        # acquiring the exact-generation account lock. LDAP credentials are accepted
+        # only for explicit provider-owned replacement reauthentication.
         password = str(request.form.get('current_password') or '') if user.auth_source == 'database' else None
         if action == 'begin':
             mfa_setup_secret = begin_mfa_enrollment(
@@ -295,7 +298,11 @@ def _process_account_mfa_action(
                 user,
                 str(request.form.get('replacement_existing_code') or ''),
                 expected_generation=generation,
-                current_password=str(request.form.get('replacement_password') or '') if password is not None else None,
+                current_password=(
+                    str(request.form.get('replacement_password') or '')
+                    if user.auth_source in {'database', 'ldap'}
+                    else None
+                ),
             )
             # A distinct account label avoids overwriting the still-active entry
             # in authenticator applications that identify entries by issuer/label.
@@ -363,6 +370,11 @@ def _process_account_mfa_action(
 
 @bp.route('/account', methods=['GET', 'POST'])
 @login_required
+@limiter.limit(
+    lambda: current_app.config.get('AUTH_LOGIN_RATE_LIMIT', '5 per minute'),
+    methods=['POST'],
+    exempt_when=lambda: request.args.get('tab') != 'mfa' or request.form.get('mfa_action') != 'replace_begin',
+)
 def account():
     user = cast(User, current_user._get_current_object())
     is_htmx = bool(request.headers.get('HX-Request'))
@@ -405,7 +417,15 @@ def account():
         mfa_factor, now=datetime.now(UTC), expected_generation=user.auth_session_version, authenticated=True
     )
     replacement_state = mfa_replacement_state(mfa_factor, generation=user.auth_session_version, now=datetime.now(UTC))
+    can_replace_authenticator = can_change_password or (
+        active_tab == 'mfa'
+        and enrollment_state == 'enrolled'
+        and auth_source == 'ldap'
+        and ldap_reauthentication_available(user.id, expected_subject=user.external_id)
+    )
     mfa_state = {
+        'can_replace_authenticator': can_replace_authenticator,
+        'replacement_password_label': 'Directory Password' if auth_source == 'ldap' else 'Current Password',
         'replacement_pending': replacement_state == 'pending',
         'replacement_expired': replacement_state == 'expired',
         'enrolled': enrollment_state == 'enrolled',

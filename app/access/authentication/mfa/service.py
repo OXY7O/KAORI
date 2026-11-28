@@ -23,6 +23,12 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.access.authentication.admission import session_admission_reason
 from app.access.authentication.audit import record_authentication_activity
+from app.access.authentication.identity_provider.adapters.ldap.reauthentication import (
+    LdapReauthenticationError,
+    LdapReauthenticationProof,
+    lock_ldap_reauthentication_proof,
+    reauthenticate_ldap_account,
+)
 from app.access.authentication.identity_provider.proof import lock_external_credential_proof
 from app.access.authentication.mfa.audit import stage_authentication_security_event
 from app.access.authentication.mfa.policy import MfaGate, MfaPolicyDecision, MfaPolicyError, evaluate_mfa_policy
@@ -436,6 +442,7 @@ def _clear_replacement(factor: AuthenticationMfaFactor) -> None:
     factor.replacement_totp_secret = None
     factor.replacement_generation = None
     factor.replacement_expires_at = None
+    factor.replacement_provider_proof = None
 
 
 def mfa_replacement_state(
@@ -455,26 +462,56 @@ def mfa_replacement_state(
 def begin_mfa_replacement(user: User, submitted: str, *, expected_generation: int, current_password: str | None) -> str:
     """Verify current primary and active factor; never replace the active seed here."""
     try:
+        source = user.auth_source
+        provider_proof = None
+        if source == 'ldap':
+            # No remote bind while holding database row locks.
+            if user.auth_session_version != expected_generation:
+                raise MfaVerificationError('Sign in again before changing MFA.')
+            provider_proof = reauthenticate_ldap_account(
+                user.id, current_password, expected_subject=user.external_id
+            )
+            lock_ldap_reauthentication_proof(user.id, provider_proof)
         user = _lock_mfa_user(user, expected_generation, authenticated=True)
-        require_personal_factor_assurance(user, current_password, now=datetime.now(UTC), strict_primary=True)
-        assurance_expires_at = datetime.now(UTC) + MFA_RECENT_ADMISSION_TTL
+        if user.auth_source != source:
+            raise MfaVerificationError('Sign in again before changing MFA.')
+        if source == 'ldap' and provider_proof is not None:
+            if user.external_id != provider_proof.subject:
+                raise MfaVerificationError('Verified provider reauthentication is required.')
+            assurance_expires_at = provider_proof.verified_at + MFA_RECENT_ADMISSION_TTL
+        else:
+            require_personal_factor_assurance(user, current_password, now=datetime.now(UTC), strict_primary=True)
+            assurance_expires_at = datetime.now(UTC) + MFA_RECENT_ADMISSION_TTL
         factor = _locked_factor(user.id)
         if factor is None or not factor.enabled:
             raise MfaVerificationError('MFA is not enrolled.')
         _consume_factor_proof(user, factor, submitted, authenticated=True)
         now = datetime.now(UTC)
-        if now >= assurance_expires_at or not isinstance(
-            session_deadlines(user, read_session_policy(), now), SessionDeadlines
+        if (
+            now >= assurance_expires_at
+            or (provider_proof is not None and provider_proof.verified_at > now)
+            or not isinstance(session_deadlines(user, read_session_policy(), now), SessionDeadlines)
         ):
             raise MfaVerificationError('Sign in again before changing MFA.')
         secret = base64.b32encode(secrets.token_bytes(20)).decode('ascii')
         factor.replacement_totp_secret = secret
         factor.replacement_generation = expected_generation
         factor.replacement_expires_at = assurance_expires_at
+        factor.replacement_provider_proof = provider_proof.to_record() if provider_proof is not None else None
         db.session.add(
-            stage_authentication_security_event(user, action='mfa_replacement_started', authenticated=True, success=True)
+            stage_authentication_security_event(
+                user,
+                action='mfa_replacement_started',
+                authenticated=True,
+                success=True,
+                primary_assurance='ldap_linked_user_bind' if provider_proof is not None else 'local_current_password',
+                external_proof=provider_proof.credential if provider_proof is not None else None,
+            )
         )
         db.session.commit()
+    except (LdapReauthenticationError, AuthSessionError) as exc:
+        db.session.rollback()
+        raise MfaVerificationError('Verified provider reauthentication is required.') from exc
     except (SQLAlchemyError, CredentialEncryptionError, MfaVerificationError):
         db.session.rollback()
         raise
@@ -484,8 +521,23 @@ def begin_mfa_replacement(user: User, submitted: str, *, expected_generation: in
 def confirm_mfa_replacement(user: User, code: str, *, expected_generation: int) -> tuple[list[str], int]:
     """Swap the factor and recovery codes, revoke the prior generation and audit atomically."""
     try:
+        source = user.auth_source
+        provider_proof = None
+        if source == 'ldap':
+            record = db.session.execute(
+                select(AuthenticationMfaFactor.replacement_provider_proof).where(
+                    AuthenticationMfaFactor.user_id == user.id,
+                    AuthenticationMfaFactor.replacement_generation == expected_generation,
+                )
+            ).scalar_one_or_none()
+            provider_proof = LdapReauthenticationProof.from_record(record)
+            if provider_proof is None:
+                raise MfaVerificationError('Verified provider reauthentication is required.')
+            lock_ldap_reauthentication_proof(user.id, provider_proof)
+        elif source != 'database':
+            raise MfaVerificationError('Verified provider reauthentication is required.')
         user = _lock_mfa_user(user, expected_generation, authenticated=True)
-        if user.auth_source != 'database':
+        if user.auth_source != source or (provider_proof is not None and user.external_id != provider_proof.subject):
             raise MfaVerificationError('Verified provider reauthentication is required.')
         factor = _locked_factor(user.id)
         now = datetime.now(UTC)
@@ -493,6 +545,7 @@ def confirm_mfa_replacement(user: User, code: str, *, expected_generation: int) 
             factor is None
             or mfa_replacement_state(factor, generation=expected_generation, now=now) != 'pending'
             or not factor.replacement_totp_secret
+            or factor.replacement_provider_proof != (provider_proof.to_record() if provider_proof is not None else None)
         ):
             raise MfaVerificationError('Start authenticator replacement again.')
         replacement_secret = factor.replacement_totp_secret
@@ -503,7 +556,10 @@ def confirm_mfa_replacement(user: User, code: str, *, expected_generation: int) 
         hashes = [generate_password_hash(value) for value in codes]
         # Slow proof/hash work must not outlive the original assurance or session deadline.
         now = datetime.now(UTC)
-        if mfa_replacement_state(factor, generation=expected_generation, now=now) != 'pending':
+        if mfa_replacement_state(factor, generation=expected_generation, now=now) != 'pending' or (
+            provider_proof is not None
+            and not provider_proof.verified_at <= now < provider_proof.verified_at + MFA_RECENT_ADMISSION_TTL
+        ):
             raise MfaVerificationError('Start authenticator replacement again.')
         if not isinstance(session_deadlines(user, read_session_policy(), now), SessionDeadlines):
             raise MfaVerificationError('Sign in again before changing MFA.')
@@ -516,10 +572,18 @@ def confirm_mfa_replacement(user: User, code: str, *, expected_generation: int) 
         user.auth_session_version = issued_generation
         db.session.add(
             stage_authentication_security_event(
-                user, action='mfa_replacement_confirmed', authenticated=True, success=True
+                user,
+                action='mfa_replacement_confirmed',
+                authenticated=True,
+                success=True,
+                primary_assurance='ldap_linked_user_bind' if provider_proof is not None else 'local_current_password',
+                external_proof=provider_proof.credential if provider_proof is not None else None,
             )
         )
         db.session.commit()
+    except (LdapReauthenticationError, AuthSessionError) as exc:
+        db.session.rollback()
+        raise MfaVerificationError('Verified provider reauthentication is required.') from exc
     except (SQLAlchemyError, CredentialEncryptionError, MfaVerificationError):
         db.session.rollback()
         raise
@@ -532,7 +596,7 @@ def cancel_mfa_replacement(user: User, *, expected_generation: int) -> None:
         user = _lock_mfa_user(user, expected_generation, authenticated=True)
         factor = _locked_factor(user.id)
         if (
-            user.auth_source != 'database'
+            user.auth_source not in {'database', 'ldap'}
             or factor is None
             or not factor.enabled
             or factor.replacement_generation != expected_generation

@@ -7,6 +7,7 @@ from typing import Literal
 
 from flask import request, session
 
+from app.access.authentication.results import ExternalCredentialProof
 from app.models.notification import Notification
 from app.models.user import User
 from app.platform_operations.notifications.actors import actor_snapshot_for_user, unauthenticated_actor_snapshot
@@ -41,6 +42,8 @@ def stage_authentication_security_event(
     next_mode: str | None = None,
     previous_policy: dict[str, int | bool] | None = None,
     next_policy: dict[str, int | bool] | None = None,
+    primary_assurance: Literal['local_current_password', 'ldap_linked_user_bind'] | None = None,
+    external_proof: ExternalCredentialProof | None = None,
 ) -> Notification:
     """Return an audit-only event; caller owns the transaction and commit.
 
@@ -71,6 +74,12 @@ def stage_authentication_security_event(
         'request_path': request.path[:200],
         'session_reference': session.get('auth_session_ref') if authenticated else None,
     }
+    if primary_assurance is not None:
+        event.metadata_json['primary_assurance'] = primary_assurance
+    if external_proof is not None:
+        event.metadata_json['provider_id'] = external_proof.provider_id
+        event.metadata_json['provider_revision'] = external_proof.revision
+        event.metadata_json['provider_link_id'] = external_proof.link_id
     if previous_policy is not None and next_policy is not None:
         event.metadata_json['previous_policy'] = previous_policy
         event.metadata_json['new_policy'] = next_policy

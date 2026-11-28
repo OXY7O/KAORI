@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -64,6 +65,7 @@ class AuthenticationMfaFactor(db.Model):
     replacement_totp_secret: Mapped[str | None] = mapped_column(EncryptedText(), nullable=True)
     replacement_generation: Mapped[int | None] = mapped_column(db.BigInteger, nullable=True)
     replacement_expires_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
+    replacement_provider_proof: Mapped[dict[str, Any] | None] = mapped_column(db.JSON(none_as_null=True), nullable=True)
     enrolled_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow

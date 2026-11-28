@@ -7,7 +7,10 @@ from unittest.mock import Mock
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.access.authentication.identity_provider.adapters.ldap.reauthentication import LdapReauthenticationProof
 from app.access.authentication.mfa import service
+from app.access.authentication.results import ExternalCredentialProof
+from app.access.authentication.session import AuthSessionError
 from app.access.authentication.session_lifecycle import SessionPolicy
 from app.models.authentication_security import AuthenticationMfaFactor
 from app.models.user import User
@@ -168,6 +171,58 @@ def test_invalid_existing_factor_cannot_start_replacement(
     with pytest.raises(service.MfaVerificationError):
         service.begin_mfa_replacement(user, '123456', expected_generation=7, current_password='fixture-password')
     assert factor.replacement_totp_secret is None
+    assert factor.totp_secret == 'existing-test-seed'
+    stage.assert_not_called()
+    store.commit.assert_not_called()
+    store.rollback.assert_called_once()
+
+
+def test_ldap_replacement_revalidates_bound_proof_and_rotates_generation(
+    replacement_fixture: ReplacementFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    user, factor, store, stage = replacement_fixture
+    user.auth_source = 'ldap'
+    user.external_id = 'stable'
+    proof = LdapReauthenticationProof(ExternalCredentialProof(7, 3, 11), 'stable', 'a' * 64, datetime.now(UTC))
+    bind = Mock(return_value=proof)
+    fence = Mock()
+    local = Mock(side_effect=AssertionError('LDAP must not compare a local password.'))
+    monkeypatch.setattr(service, 'reauthenticate_ldap_account', bind)
+    monkeypatch.setattr(service, 'lock_ldap_reauthentication_proof', fence)
+    monkeypatch.setattr(User, 'check_password', local)
+
+    seed = service.begin_mfa_replacement(user, '123456', expected_generation=7, current_password='directory-test')
+    assert factor.totp_secret == 'existing-test-seed'
+    assert factor.replacement_provider_proof == proof.to_record()
+    assert 'directory-test' not in repr(factor.replacement_provider_proof)
+    assert stage.call_args.kwargs['primary_assurance'] == 'ldap_linked_user_bind'
+    bind.assert_called_once_with(user.id, 'directory-test', expected_subject='stable')
+    fence.assert_called_once_with(user.id, proof)
+    store.execute.return_value.scalar_one_or_none.return_value = factor.replacement_provider_proof
+    codes, generation = service.confirm_mfa_replacement(user, '654321', expected_generation=7)
+    assert generation == 8 and len(codes) == 8
+    assert factor.totp_secret == seed and factor.replacement_provider_proof is None
+    assert fence.call_count == 2
+    assert store.commit.call_count == 2
+    local.assert_not_called()
+
+
+def test_stale_ldap_provider_fence_prevents_replacement_confirmation(
+    replacement_fixture: ReplacementFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    user, factor, store, stage = replacement_fixture
+    user.auth_source = 'ldap'
+    user.external_id = 'stable'
+    proof = LdapReauthenticationProof(ExternalCredentialProof(7, 3, 11), 'stable', 'a' * 64, datetime.now(UTC))
+    factor.replacement_totp_secret = 'new-test-seed'
+    factor.replacement_generation = 7
+    factor.replacement_expires_at = datetime.now(UTC) + timedelta(minutes=1)
+    factor.replacement_provider_proof = proof.to_record()
+    store.execute.return_value.scalar_one_or_none.return_value = proof.to_record()
+    monkeypatch.setattr(service, 'lock_ldap_reauthentication_proof', Mock(side_effect=AuthSessionError('stale')))
+    with pytest.raises(service.MfaVerificationError, match='Verified provider reauthentication'):
+        service.confirm_mfa_replacement(user, '654321', expected_generation=7)
+    assert user.auth_session_version == 7
     assert factor.totp_secret == 'existing-test-seed'
     stage.assert_not_called()
     store.commit.assert_not_called()
