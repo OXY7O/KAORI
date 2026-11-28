@@ -95,6 +95,10 @@ class AuthenticationAccountLockout(db.Model):
     __tablename__ = 'authentication_account_lockouts'
     __table_args__ = (
         db.CheckConstraint('policy_revision >= 1', name='ck_auth_lockout_policy_revision'),
+        db.CheckConstraint('json_array_length(failure_times) <= 10', name='ck_auth_lockout_failure_bound'),
+        db.CheckConstraint(
+            'cooldown_until IS NULL OR locked_until IS NULL', name='ck_auth_lockout_exclusive_deadline'
+        ),
     )
 
     user_id: Mapped[int] = mapped_column(db.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)

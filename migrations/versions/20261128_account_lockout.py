@@ -28,6 +28,10 @@ def upgrade() -> None:
         sa.Column('locked_until', sa.DateTime(timezone=True), nullable=True),
         sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
         sa.CheckConstraint('policy_revision >= 1', name='ck_auth_lockout_policy_revision'),
+        sa.CheckConstraint('json_array_length(failure_times) <= 10', name='ck_auth_lockout_failure_bound'),
+        sa.CheckConstraint(
+            'cooldown_until IS NULL OR locked_until IS NULL', name='ck_auth_lockout_exclusive_deadline'
+        ),
     )
 
 

@@ -79,6 +79,8 @@ def lock_account_state(user_id: int) -> LockedAccountState | None:
             .with_for_update()
             .execution_options(populate_existing=True)
         ).scalar_one_or_none()
+        if record is not None and record.policy_revision > revision:
+            raise ValueError('Account lockout state has a future policy revision.')
         if record is not None and record.policy_revision == revision:
             if not isinstance(record.failure_times, list) or any(
                 not isinstance(item, str) for item in record.failure_times
@@ -94,7 +96,13 @@ def lock_account_state(user_id: int) -> LockedAccountState | None:
 
 
 def _event(
-    context: LockedAccountState, *, action: str, now: datetime, count: int, system: bool = False
+    context: LockedAccountState,
+    *,
+    action: str,
+    now: datetime,
+    count: int,
+    system: bool = False,
+    password_valid: bool | None = None,
 ) -> Notification:
     actor = system_actor_snapshot() if system else unauthenticated_actor_snapshot()
     event = Notification()
@@ -116,6 +124,7 @@ def _event(
         'policy_revision': context.revision,
         'gate': context.decision.gate.value,
         'failure_count': count,
+        'password_outcome': 'verified' if password_valid is True else 'invalid' if password_valid is False else None,
     }
     event.deck_visible = False
     event.read_at = now
@@ -160,5 +169,7 @@ def stage_password_outcome(context: LockedAccountState, *, password_valid: bool 
             action = 'lockout_cooldown_started'
     else:
         return state
-    db.session.add(_event(context, action=action, now=now, count=len(state.failures)))
+    db.session.add(
+        _event(context, action=action, now=now, count=len(state.failures), password_valid=password_valid)
+    )
     return state
