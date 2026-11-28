@@ -1,13 +1,22 @@
 from __future__ import annotations
 
-from flask import g, redirect, request, session, url_for
+from datetime import UTC, datetime
+
+from flask import g, jsonify, redirect, request, session, url_for
 from flask_login import LoginManager
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.authentication.admission import session_admission_reason
 from app.access.authentication.readiness import check_authentication_database_readiness
 from app.access.authentication.session import parse_authenticated_user_identifier
+from app.access.authentication.session_lifecycle import (
+    SessionDeadlines,
+    expire_generation,
+    read_session_policy,
+    session_deadlines,
+)
 from app.common.flashes import flash_once
+from app.extensions.db import db
 from app.models.user import User
 
 login_manager = LoginManager()
@@ -40,15 +49,8 @@ def load_user(user_id: str):
             return None
 
         current_session_version = max(int(user.auth_session_version or 1), 1)
-        if issued_session_version is None:
-            # Legacy sessions issued before session generations existed are only
-            # admissible while the account remains on its initial generation.
-            # Once a password has changed, a missing generation fails closed.
-            if current_session_version != 1:
-                invalidate_session()
-                return None
-            session['_user_id'] = user.get_id()
-        elif issued_session_version != current_session_version:
+        # Pre-migration legacy cookies have no trustworthy issued/idle state.
+        if issued_session_version is None or issued_session_version != current_session_version:
             invalidate_session()
             return None
 
@@ -56,11 +58,39 @@ def load_user(user_id: str):
         if session_admission_reason(user, source=source) is not None:
             invalidate_session()
             return None
+
+        policy = read_session_policy()
+        # Flask-Login restores an identifier from a Remember Me cookie without
+        # the auth_source established by a full successful authentication.
+        # Never admit a privileged or policy-denied remembered-only session.
+        if not session.get('auth_source') and (user.is_admin_level or not policy.regular_remember):
+            invalidate_session()
+            return None
+
+        deadlines = session_deadlines(user, policy, datetime.now(UTC))
+        if not isinstance(deadlines, SessionDeadlines):
+            if not expire_generation(user, issued_session_version, deadlines):
+                # A concurrent admitted activity refresh may have won the CAS.
+                # Re-check the current generation and deadlines before denial.
+                db.session.refresh(user)
+                if user.auth_session_version == issued_session_version:
+                    deadlines = session_deadlines(user, policy, datetime.now(UTC))
+                    if isinstance(deadlines, SessionDeadlines) and session_admission_reason(user, source=source) is None:
+                        g.kaori_session_policy = policy
+                        g.kaori_session_deadlines = deadlines
+                        return user
+            g.kaori_session_expired = True
+            invalidate_session()
+            return None
+
+        g.kaori_session_policy = policy
+        g.kaori_session_deadlines = deadlines
         return user
     except (TypeError, ValueError):
         invalidate_session()
         return None
     except SQLAlchemyError:
+        db.session.rollback()
         # Database unavailability is not proof of a revoked identity. Fail closed
         # for this request but retain the signed session for a subsequent retry.
         g.authentication_database_unavailable = True
@@ -80,6 +110,9 @@ def handle_unauthorized():
             {'Cache-Control': 'no-store, max-age=0', 'Retry-After': '5'},
         )
 
+    if request.endpoint in ('auth.session_status', 'auth.session_activity'):
+        return jsonify({'status': 'reauthentication_required'}), 401, {'Cache-Control': 'no-store'}
+
     readiness = check_authentication_database_readiness()
     login_url = url_for('auth.login', next=request.full_path.rstrip('?'))
 
@@ -88,5 +121,10 @@ def handle_unauthorized():
     if not readiness.ready:
         return redirect(login_url)
 
-    flash_once('Please sign in to continue.', 'warning')
+    if getattr(g, 'kaori_session_expired', False):
+        flash_once('Your session expired. Sign in again to continue.', 'warning')
+        if request.headers.get('HX-Request') == 'true':
+            return '', 401, {'HX-Redirect': login_url, 'Cache-Control': 'no-store'}
+    else:
+        flash_once('Please sign in to continue.', 'warning')
     return redirect(login_url)

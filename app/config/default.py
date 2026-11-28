@@ -521,8 +521,8 @@ class Config:
     )
     REMEMBER_COOKIE_DURATION = timedelta(days=AUTH_REMEMBER_ME_DAYS)
 
-    # Persistent sessions are disabled for local super administrators by default.
-    # Enable only after the break-glass operating procedure explicitly permits it.
+    # Legacy environment setting retained for deployment compatibility only.
+    # The committed session policy now always denies privileged Remember Me.
     AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME = _env_bool(
         'AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME',
         False,
