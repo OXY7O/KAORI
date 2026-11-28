@@ -162,7 +162,7 @@
                         status_label=check.status_label,
                         status_tone=check.tone,
                         status_icon=check.icon,
-                        evidence=check.evidence,
+                        evidence=check.evidence if check.evidence != row.evidence else '',
                         observed_series=check.series_count_display,
                         observed_value=check.value_summary,
                         error_detail=check.error_detail) }}
