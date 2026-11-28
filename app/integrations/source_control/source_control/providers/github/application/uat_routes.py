@@ -526,6 +526,7 @@ def runtime_history(installation_id: int) -> ResponseReturnValue:
         runtime_history_detail_endpoint='github_source_uat.detail',
         runtime_history_tab='runtime',
         runtime_history_filters_enabled=True,
+        runtime_history_embedded=True,
         provider_label='GitHub',
         **_runtime_observation_context(installation),
     )
@@ -536,7 +537,7 @@ def runtime_history(installation_id: int) -> ResponseReturnValue:
 def runtime_deliveries(installation_id: int) -> ResponseReturnValue:
     installation = _installation_or_404(installation_id)
     if request.headers.get('HX-Request') != 'true':
-        return redirect(_detail_url(installation_id, tab='runtime'))
+        return redirect(_detail_url(installation_id, tab='runtime', runtime_view='deliveries'))
     return _response(
         'integrations/source_control/github/partials/_runtime_deliveries.html',
         installation=installation,
