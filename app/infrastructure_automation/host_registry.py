@@ -17,6 +17,12 @@ from typing import Any
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
+from app.infrastructure_automation.target_claims import (
+    connection_resource,
+    endpoint_resource,
+    has_active_target_claim,
+    host_resource,
+)
 from app.models.automation import AutomationHostAsset, AutomationInventoryAssignment
 from app.models.integration import IntegrationInstance
 
@@ -81,9 +87,17 @@ def require_ansible_connection(connection: IntegrationInstance, *, environment: 
         raise AutomationInventoryDenied('An active matching non-production Ansible connection is required.')
 
 
+def require_unreserved_inventory(*keys: str) -> None:
+    """Reject inventory edits while persistent pilot target exclusions exist."""
+    if has_active_target_claim(*keys):
+        db.session.rollback()
+        raise AutomationInventoryDenied('A pilot target reservation exists. Release it before changing inventory.')
+
+
 def register_host_asset(values: AutomationHostIntent) -> AutomationHostAsset:
     """Persist identity only; existence of a record never authorizes SSH."""
     intent = validate_host_intent(values)
+    require_unreserved_inventory(endpoint_resource(intent.address))
     record = AutomationHostAsset()
     record.name = intent.name
     record.environment = intent.environment
@@ -109,6 +123,14 @@ def assign_host_to_ansible(
     require_ansible_connection(connection, environment=host.environment)
     if role not in _ROLES or host.lifecycle_status != 'registered':
         raise AutomationInventoryDenied('Only active, supported host roles may be assigned.')
+    db.session.refresh(connection, with_for_update=True)
+    db.session.refresh(host, with_for_update=True)
+    require_ansible_connection(connection, environment=host.environment)
+    if host.lifecycle_status != 'registered':
+        raise AutomationInventoryDenied('Only active, supported host roles may be assigned.')
+    require_unreserved_inventory(
+        connection_resource(connection.id), host_resource(host.id), endpoint_resource(host.address)
+    )
     record = AutomationInventoryAssignment()
     record.integration_instance_id = connection.id
     record.host_id = host.id

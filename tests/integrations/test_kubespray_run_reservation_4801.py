@@ -116,3 +116,38 @@ def test_release_shape_cannot_clear_claim_without_timestamp(claims):
     engine, table = claims
     with pytest.raises(IntegrityError), engine.begin() as conn:
         conn.execute(insert(table), _claim(1, 'kubespray:host:fixture') | {'active_resource_key': None})
+
+
+def test_inventory_guard_rejects_active_claim_and_uses_same_resource_keys(monkeypatch):
+    from app.infrastructure_automation import host_registry, target_claims
+
+    member = _members()[0]
+    keys = (
+        target_claims.connection_resource(31),
+        target_claims.host_resource(member.host_id),
+        target_claims.endpoint_resource(member.host.address),
+    )
+    assert set(keys).issubset(service._resource_keys(31, _members()))
+    events = []
+    monkeypatch.setattr(host_registry, 'has_active_target_claim', lambda *args: events.append(args) or True)
+    monkeypatch.setattr(host_registry, 'db', SimpleNamespace(session=SimpleNamespace(
+        rollback=lambda: events.append('rollback')
+    )))
+    with pytest.raises(host_registry.AutomationInventoryDenied, match='pilot target reservation exists'):
+        host_registry.require_unreserved_inventory(*keys)
+    assert events == [keys, 'rollback']
+
+
+def test_active_claim_query_acquires_resource_locks_before_lookup(monkeypatch):
+    from app.infrastructure_automation import target_claims
+
+    events = []
+    monkeypatch.setattr(target_claims, 'acquire_resource_admission_locks', lambda *keys: events.append(keys))
+
+    def execute(statement):
+        events.append('query')
+        return SimpleNamespace(scalar_one_or_none=lambda: 1)
+
+    monkeypatch.setattr(target_claims, 'db', SimpleNamespace(session=SimpleNamespace(execute=execute)))
+    assert target_claims.has_active_target_claim('b', 'a', 'a')
+    assert events == [('a', 'b'), 'query']

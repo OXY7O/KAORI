@@ -164,13 +164,16 @@ recovery removes claims. The migration starts empty and refuses downgrade
 when reservation history exists. Job retention must account for the
 restrictive Plan FK; do not discard referenced Plan history.
 
-This service does not establish Run admission, freeze every inventory edit,
+This service does not establish Run admission, freeze every provider or connection change,
 start a worker or approve a mutation. Future admitted worker integration
 must revalidate inventory/source/access, atomically associate the exact
 claims with a one-attempt canonical Run, guard every competing infrastructure
 operation, and replace the review-release path with independently verified
-terminal/recovery reconciliation. Existing host/inventory writers and
-connection management are not yet integrated with the reservation guard.
+terminal/recovery reconciliation. Normal host registry/enrollment/assignment/edit/retirement writers now
+use the same resource keys and reject active claims before persistence.
+Connection management, credential/issuer revocation and future execution
+admission retain their own authorities; connection management is not yet
+integrated with the reservation guard.
 The new reservation is not an execution lease or a third approval channel.
 No default opt-in or route is added. Synthetic schema/uniqueness tests
 are not PostgreSQL concurrency or native host acceptance.

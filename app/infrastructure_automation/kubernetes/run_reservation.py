@@ -8,8 +8,6 @@ its own terminal reconciliation before dispatch can be enabled.
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from hashlib import sha256
-from ipaddress import IPv4Address
 from uuid import UUID, uuid4
 
 from sqlalchemy import select
@@ -21,6 +19,7 @@ from app.infrastructure_automation.host_registry import preview_inventory_intent
 from app.infrastructure_automation.kubernetes.plan_approval import review_current_plan_acknowledgement
 from app.infrastructure_automation.kubernetes.plan_review import PLAN_OPERATION
 from app.infrastructure_automation.security_review import begin_security_review_transaction
+from app.infrastructure_automation.target_claims import connection_resource, endpoint_resource, host_resource
 from app.models.audit import AuditEvent
 from app.models.automation import AutomationInventoryAssignment, AutomationRunTargetClaim
 from app.models.integration import IntegrationInstance
@@ -44,15 +43,14 @@ def _deny() -> TargetReservationDenied:
 def _resource_keys(connection_id: int, assignments: list[AutomationInventoryAssignment]) -> tuple[str, ...]:
     if len(assignments) != 3 or len({item.host_id for item in assignments}) != 3:
         raise _deny()
-    keys = [f'kubespray:connection:{connection_id}']
+    keys = [connection_resource(connection_id)]
     try:
         for item in assignments:
             if item.integration_instance_id != connection_id or not item.enabled or item.host is None:
                 raise _deny()
-            address = str(IPv4Address(item.host.address))
             keys.extend((
-                f'kubespray:host:{item.host_id}',
-                'kubespray:endpoint:' + sha256(address.encode('ascii')).hexdigest(),
+                host_resource(item.host_id),
+                endpoint_resource(item.host.address),
             ))
     except ValueError:
         raise _deny() from None
