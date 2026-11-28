@@ -47,6 +47,7 @@ def test_workspace_empty_state_renders_canonical_ui_without_provision_actions():
     with app.test_request_context('/platform-operations/infrastructure-automation/'):
         rendered = render_template(
             PARTIAL,
+            active_tab='connections',
             connections=[],
             pagination=pagination_payload(build_pagination_window(total_items=0)),
             selected_query='',
@@ -56,7 +57,7 @@ def test_workspace_empty_state_renders_canonical_ui_without_provision_actions():
             can_jobs=False,
             can_inventory=False,
         )
-    assert 'Kubernetes Lifecycle' in rendered
+    assert 'Ansible Connections' in rendered
     assert 'No Ansible Connections' in rendered
     assert 'data-kaori-canonical-registry-filter' in rendered
     assert 'data-kaori-canonical-registry-footer' in rendered
@@ -129,6 +130,7 @@ def test_filtered_connections_are_not_initial_setup():
     with app.test_request_context('/platform-operations/infrastructure-automation/?q=missing'):
         rendered = render_template(
             PARTIAL,
+            active_tab='connections',
             connections=[],
             pagination=pagination_payload(build_pagination_window(total_items=0)),
             selected_query='missing',
@@ -148,7 +150,7 @@ def test_filtered_connections_are_not_initial_setup():
 def test_lifecycle_workspace_uses_shared_hero_and_separate_operational_sections():
     hero = (ROOT / 'app/templates/infrastructure_automation/index.html').read_text()
     workspace = (ROOT / 'app/templates/infrastructure_automation/_lifecycle_workspace.html').read_text()
-    assert 'page_hero.context_card(' in hero
+    assert 'page_hero.context_header(' in hero
     assert 'data-kaori-automation-connection-registry' in workspace
     assert 'data-kaori-automation-lifecycle-posture' in workspace
     assert 'section_intro.render(' in workspace
@@ -186,6 +188,7 @@ def test_selected_source_only_connection_renders_lifecycle_and_host_onboarding()
     with app.test_request_context('/platform-operations/infrastructure-automation/'):
         rendered = render_template(
             PARTIAL,
+            active_tab='lifecycle',
             connections=[connection],
             pagination=pagination_payload(build_pagination_window(total_items=1)),
             selected_query='',
@@ -202,14 +205,12 @@ def test_selected_source_only_connection_renders_lifecycle_and_host_onboarding()
         '0/2',
         'Not Generated',
         'Cluster Mutation Not Admitted',
-        'No Registered Hosts',
-        'Register Host',
-        'No Cluster Associations',
-        'No Automation Executions',
-    ):
+     ):
         assert label in rendered
     assert 'No Ansible Connections' not in rendered
     assert 'Run Kubespray' not in rendered
+    assert 'No Registered Hosts' not in rendered
+    assert 'No Automation Executions' not in rendered
 
 
 def test_automation_hero_uses_compact_description_and_three_metadata_items():
@@ -218,3 +219,50 @@ def test_automation_hero_uses_compact_description_and_three_metadata_items():
     assert hero.count('page_hero.meta_label(') == 3
     assert "page_hero.meta_label('shield-check', 'Approval Required')" in hero
     assert 'page_hero.metadata_row_classes()' in hero
+
+
+def test_overview_has_no_connection_selector_or_scoped_details():
+    app = create_app('testing')
+    with app.test_request_context('/platform-operations/infrastructure-automation/'):
+        rendered = render_template(
+            PARTIAL,
+            active_tab='overview',
+            total_connections=2,
+            selected_connection_id=None,
+            details=None,
+            overview={'host_assignments': 6, 'cluster_bindings': 0, 'executions': None},
+        )
+    assert 'Automation Overview' in rendered
+    assert 'Host Assignments' in rendered
+    assert 'Restricted' in rendered
+    assert 'data-kaori-automation-selected-scope' not in rendered
+    assert 'data-kaori-canonical-registry-filter' not in rendered
+    assert 'data-kaori-automation-lifecycle-posture' not in rendered
+    assert 'data-kaori-tab-variant="framed-workspace-v2-server"' in rendered
+
+
+def test_tabs_preserve_scope_and_isolate_inventory_from_execution_history():
+    app = create_app('testing')
+    connection = SimpleNamespace(id=11, name='Kubespray Fixture', environment='development')
+    details = {
+        'connection': connection,
+        'repository': 'OXY7O/kaori-operations',
+        'can_inventory': True,
+        'assets': {'is_empty': True, 'state': 'blocked'},
+        'inventory_store': {'state': 'not_recorded', 'description': 'No provider receipt.', 'fingerprint': None},
+        'cluster_bindings': [],
+        'can_jobs': True,
+        'jobs': [],
+    }
+    with app.test_request_context('/platform-operations/infrastructure-automation/'):
+        context = dict(total_connections=1, selected_connection_id=11, details=details)
+        inventory = render_template(PARTIAL, active_tab='inventory', **context)
+        executions = render_template(PARTIAL, active_tab='executions', **context)
+    assert 'No Registered Hosts' in inventory
+    assert 'No Cluster Associations' in inventory
+    assert 'No Automation Executions' not in inventory
+    assert 'No Automation Executions' in executions
+    assert 'No Registered Hosts' not in executions
+    assert 'connection_id=11' in inventory
+    assert 'connection_id=11' in executions
+    assert 'Change Connection' in inventory

@@ -234,3 +234,43 @@ def automation_connection_count() -> int:
         integration_type=INTEGRATION_TYPE,
         provider_key=PROVIDER_KEY,
     ).count()
+
+
+def build_automation_overview(*, can_jobs: bool, can_inventory: bool) -> dict[str, Any]:
+    """Global committed counts only; never choose or hydrate a connection."""
+    connection_ids = select(IntegrationInstance.id).where(
+        IntegrationInstance.integration_type == INTEGRATION_TYPE,
+        IntegrationInstance.provider_key == PROVIDER_KEY,
+    )
+    host_assignments = (
+        AutomationInventoryAssignment.query.filter(
+            AutomationInventoryAssignment.integration_instance_id.in_(connection_ids),
+            AutomationInventoryAssignment.enabled.is_(True),
+        ).count()
+        if can_inventory else None
+    )
+    cluster_bindings = (
+        IntegrationBinding.query.filter(
+            IntegrationBinding.integration_instance_id.in_(connection_ids),
+            IntegrationBinding.asset_type == 'kubernetes_cluster',
+        ).count()
+        if can_inventory else None
+    )
+    executions = (
+        JobExecution.query.filter(
+            JobExecution.integration_instance_id.in_(connection_ids),
+            JobExecution.integration_type == INTEGRATION_TYPE,
+        ).count()
+        if can_jobs else None
+    )
+    return {
+        'total_connections': automation_connection_count(),
+        'selected_connection_id': None,
+        'details': None,
+        'overview': {
+            'host_assignments': host_assignments,
+            'cluster_bindings': cluster_bindings,
+            'executions': executions,
+        },
+        'execution_authorized': False,
+    }
