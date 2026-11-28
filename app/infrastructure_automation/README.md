@@ -319,3 +319,52 @@ separately approved disposable targets, ephemeral worker-only material,
 strict host-key transport, canonical JobExecution/audit admission, and
 native read-only UAT remain required. Regression cases are synthetic and
 do not establish actual provider/host behavior.
+
+
+### Exact SSH credential schema and transient worker preparation (#5204/#5186)
+
+The shared provider adapter now has a candidate native material validator, not
+a material retrieval API. The proposed dedicated KV v2 value is exactly
+`schema=kaori.secrets.kv2.ssh_private_key.v1`, `username` and `private_key`.
+Only a bounded canonical Linux account name (not the literal root account)
+and an unencrypted OpenSSH Ed25519 private key are accepted. No password,
+extra field, interactive authentication, PEM alternative or other key type
+is accepted. The provider-side credential owner must independently inspect
+the actual immutable version and issue the existing typed proof; schema
+validation is not proof of ownership, ACL, UID or privilege. The exact fields
+and algorithm choice are proposals requiring independent Secrets/Access review.
+
+`qualify_exact_ssh_version` compares metadata obtained before and after
+a native exact-version data read with the canonical selector, requiring
+identical current metadata, selected version, creation timestamp and explicit
+non-deleted/non-destroyed state. It validates the native response metadata
+and actual credential schema, returns an in-memory object with redacted repr,
+and raises only a generic denial for malformed input. It does not perform a
+request or establish provider identity: the future admitted worker must verify
+exact endpoint/cluster, path digest, provider ACL, short-lived token, current
+grant/issuer/console/target/job and mandatory audit before material retrieval.
+Do not use the integration metadata AppRole as worker material authority.
+
+`prepare_ephemeral_ssh` is an internal, non-dispatched context manager. It
+requires the exact three bounded private IPv4 endpoints and canonical aliases,
+independent console Ed25519 public keys matching their recorded digests, and
+separate qualified client credentials. It prepares only on the fixed Linux
+`/dev/shm` tmpfs mount in a non-root process, with a private mode-0700
+directory and exclusive mode-0600 key/config/known_hosts files; no disk fallback.
+Host entries include the actual port when non-default. Candidate SSH config
+uses strict key checking, fixed per-host identity, no agent/password/keyboard
+interactive fallback, no proxy for selected targets, no forwarding, no shared
+connection and a deny proxy for unknown aliases. The future worker must use
+only the generated config and fixed allowlisted aliases, sanitized environment,
+and never accept user-provided SSH arguments or inventory.
+
+Ordinary context exit, partial write and consumer failure remove the transient
+directory. This is not cryptographic zeroization of Python memory; tmpfs may
+swap unless the deployment prevents it. Actual worker admission must require
+a dedicated isolated tmpfs lifecycle, no swap or appropriate encrypted swap,
+no core dumps, no secret-bearing logs/artifacts, and cleanup on worker death,
+timeout and cancellation. No native SSH invocation, Runner integration,
+provider material read, canonical task registration, new route, or
+execution authorization is introduced. Synthetic regression tests exercise
+schema/metadata drift, strict configuration, file modes and cleanup, not a
+real provider or worker. Native UAT and independent review remain outstanding.
