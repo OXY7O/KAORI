@@ -93,6 +93,8 @@ Metadata roles remain stable across Normal / Blocked / Degraded. When evidence i
 
 ## Action role
 
+The canonical landing CTA labels and shared plug-zap icon follow the Integration navigation registry in `HERO.md`. Exact provider destinations retain provider-specific labels; the blocker owns registration/remediation and permission. Do not duplicate the same action in a blocked Hero.
+
 The primary provider-setup action routes to the canonical Integrations destination.
 
 Examples:
