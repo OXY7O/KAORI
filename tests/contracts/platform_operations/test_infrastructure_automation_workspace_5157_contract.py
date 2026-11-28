@@ -306,6 +306,11 @@ def test_automation_overview_reuses_tenant_estate_components():
 def test_primary_navigation_precedes_hero_and_covers_foundation_surfaces():
     workspace = (ROOT / 'app/templates/infrastructure_automation/_lifecycle_workspace.html').read_text()
     assert workspace.index('workspace_tabs.render_navigation(') < workspace.index('infrastructure_automation/_hero.html')
+    assert 'class="min-w-0 space-y-6"' in workspace
+    assert 'data-kaori-automation-navigation' in workspace
+    assert 'class="pointer-events-none absolute inset-x-0 top-full"' in workspace
+    assert workspace.index('data-kaori-automation-navigation') < workspace.index("loading_bar.render('infrastructure-automation-loading'")
+    assert workspace.index("loading_bar.render('infrastructure-automation-loading'") < workspace.index('infrastructure_automation/_hero.html')
     for label in ('Overview', 'Hosts & Inventories', 'Profiles', 'Patching', 'Plans',
                   'Runs & Evidence', 'Schedules', 'Compliance'):
         assert label in workspace
