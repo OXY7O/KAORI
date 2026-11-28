@@ -89,7 +89,7 @@
                 {% if case.provider_delivery_qualified is sameas false %}
                     {{ table_label.status_label('No Claim Recorded' if case.provider_delivery_state == 'no_claim' else 'Not Qualified', 'unknown', size='compact') }}
                 {% else %}
-                    {{ table_label.metadata_label(case.deliveries|length ~ ' Attempts', 'send') }}
+                    {{ table_label.metadata_label((case.deliveries[0].attempt_count if case.provider_delivery_qualified is sameas true else case.deliveries|length) ~ ' Attempts', 'send') }}
                 {% endif %}
             </header>
             {% if case.provider_delivery_qualified is sameas false %}

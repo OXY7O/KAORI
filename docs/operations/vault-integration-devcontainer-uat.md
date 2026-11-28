@@ -232,15 +232,18 @@ real notification destination or configure a production signer for this UAT.
    the exact case/binding/source/policy/channel revision and validity receipt.
    Mount its separate verification pin and receipt in the same fixed
    read-only authority directory; no private key in application containers.
-5. With a fresh open firing case, use Review Approval (no network call), then
-   only with explicit disposable-channel authorization select Send Approved
-   Firing. Confirm the redacted journal and audit, and a single accepted
+5. With a fresh open firing case, select the exact Routing Candidate from
+   the scoped selector. Use Review Approval (no network call), then only
+   with explicit disposable-channel authorization select Send Approved Firing. Confirm the redacted journal and audit, and a single accepted
    notification at the approved destination. Attempt duplicate submission,
    changed channel/receipt, revoked grant and acknowledged/unknown source:
    no new transport. A crash or ambiguous failure is review-required, never
    automatically retried. Only a definitive Slack 429 with valid Retry-After
    permits a new signed approval and explicit retry of the same transport
-   after its due time; generic recovery remains suppressed.
+   after its due time. Generic recovery excludes the manual-only scoped
+   journal without rewriting its status or attempt count. An earlier skipped
+   record qualifies for explicit retry only with matching definitive rejection
+   audit, due time, attempt budget and a new independent receipt.
 6. Review all views in light/dark/mobile and validate CSRF, permissions,
    independent approvals, source freshness, exact occurrence, PostgreSQL
    claim/lock concurrency and no leaked raw payloads or credentials. Record
@@ -319,3 +322,24 @@ Compare the journal with canonical audit and independently approved
 disposable provider receipt. No automatic recovery or retry is authorized
 by this display change; **actual outbound tests remain HOLD** until signed
 destination approval and local human acceptance.
+
+
+### Unified operator review checklist (#5229 / #5230 / #5253)
+
+- Overview shows committed open, critical, unknown and verification-pending
+  evidence for the selected authorized scope. Without a scope, counts are
+  unavailable; the seven-provider implementation matrix remains visible.
+- Choose domain, provider and instance; context changes clear prior tab-local
+  filters. Active and Resolved filters remain separate. Resolved supports
+  verification pending, closed, committed recovery and source conflict.
+- Use Active Alerts to review an occurrence and take only the currently
+  qualified action. Use Resolved to review recovery and independent closure.
+- Delivery review selects a single exact policy/channel candidate. No claim
+  in the current journal and audit is distinct from unavailable evidence.
+  Already accepted, unconfirmed, contradictory or not-yet-due outcomes
+  do not offer another transport action. Due rejection remains conditional
+  on the existing server-side requalification, not the selector or label.
+- Exercise malformed and cross-instance candidate submissions, duplicate
+  claim, stale receipt, role denial, generic recovery exclusion, no-JS GET
+  fallback, pagination, light/dark and responsive review. Record actual
+  provider receipt, audit and test output before acceptance.

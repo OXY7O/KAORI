@@ -3,6 +3,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import pytest
+from sqlalchemy import create_engine, select
 
 from app.integrations.delivery.notification_channels import config, service
 from app.integrations.delivery.notification_channels.contracts import NotificationMessage
@@ -145,6 +146,7 @@ def test_due_recovery_claims_a_row_before_replaying(monkeypatch: pytest.MonkeyPa
         id=Column(),
     )
     monkeypatch.setattr(service, 'NotificationDelivery', columns)
+    monkeypatch.setattr(service, '_generic_recovery_eligible', lambda: True)
     monkeypatch.setattr(service, 'or_', lambda *_: True)
     monkeypatch.setattr(service, '_replay_message', lambda *_: message())
     monkeypatch.setattr(service, '_channel_matches_event', lambda *_, **__: True)
@@ -173,3 +175,36 @@ def test_due_recovery_claims_a_row_before_replaying(monkeypatch: pytest.MonkeyPa
     else:
         assert result == {'claimed': 1, 'sent': 1, 'failed': 0, 'skipped': 0}
         assert calls == ['locked', 'committed-claim', 'provider', 'result-commit']
+
+
+def test_generic_recovery_excludes_only_manual_scoped_vault_journal() -> None:
+    table = service.NotificationDelivery.__table__
+    engine = create_engine('sqlite://')
+    try:
+        with engine.begin() as connection:
+            table.create(connection)
+            common = {
+                'channel_id': 1,
+                'event_type': 'alert_ops.firing',
+                'asset_type': 'vault_instance',
+                'asset_key': '42',
+                'domain': 'secrets_pki',
+                'severity': 'warning',
+                'status': 'failed',
+                'payload_json': {},
+                'attempt_count': 1,
+            }
+            connection.execute(
+                table.insert(),
+                [
+                    {**common, 'event_key': 'alert-case:CA-1:firing:scoped-v1'},
+                    {**common, 'event_key': 'alert-case:CA-2:firing'},
+                    {**common, 'event_key': 'alert-case:CA-3:firing:scoped-v1', 'domain': 'kubernetes'},
+                ],
+            )
+            eligible = connection.execute(
+                select(table.c.event_key).where(service._generic_recovery_eligible())
+            ).scalars().all()
+            assert set(eligible) == {'alert-case:CA-2:firing', 'alert-case:CA-3:firing:scoped-v1'}
+    finally:
+        engine.dispose()

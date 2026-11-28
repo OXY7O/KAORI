@@ -89,7 +89,7 @@ def _qualified_delivery_status(row: NotificationDelivery, outcome: str | None) -
     if outcome == 'sent':
         return 'sent' if row.status == 'sent' and rejected is False else None
     if outcome == 'rejected':
-        return 'failed' if row.status == 'failed' and rejected is True else None
+        return 'failed' if row.status in ('failed', 'skipped') and rejected is True else None
     if outcome == 'unconfirmed':
         return 'review required' if row.status == 'failed' and rejected is False else None
     if outcome is None and row.status in ('queued', 'failed', 'skipped'):

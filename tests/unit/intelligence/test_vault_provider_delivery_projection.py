@@ -31,6 +31,7 @@ def _row(*, status: str, rejected: bool):
     [
         ('sent', 'sent', False, 'sent'),
         ('failed', 'rejected', True, 'failed'),
+        ('skipped', 'rejected', True, 'failed'),
         ('failed', 'unconfirmed', False, 'review required'),
         ('queued', None, False, 'review required'),
         ('failed', None, False, 'review required'),
