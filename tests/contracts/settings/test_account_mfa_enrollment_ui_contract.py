@@ -155,8 +155,10 @@ def test_mfa_routes_preserve_reauth_and_no_store_secrets() -> None:
     assert "if active_tab == 'mfa' and request.method == 'POST':" in routes
     assert "validate_csrf(request.form.get('csrf_token'))" in routes
     assert 'if not login_fresh():' in routes
-    assert "if action in {'begin', 'regenerate'} and user.auth_source == 'database':" in routes
-    assert 'mfa_setup_secret = begin_mfa_enrollment(user, expected_generation=generation)' in routes
+    assert "if user.auth_source == 'database' else None" in routes
+    assert 'user.check_password(password)' not in routes
+    assert 'mfa_setup_secret = begin_mfa_enrollment(' in routes
+    assert 'expected_generation=generation, current_password=password' in routes
     assert 'mfa_recovery_codes = confirm_mfa_enrollment(' in routes
     assert 'mfa_recovery_codes = regenerate_mfa_recovery_codes(' in routes
     assert 'expected_generation=generation' in routes

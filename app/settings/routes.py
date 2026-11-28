@@ -219,6 +219,12 @@ def _mfa_account_error_message(error: MfaVerificationError) -> str:
         'Sign in again before changing MFA.': (
             'Your sign-in session is no longer fresh. Sign out and sign back in before trying again.'
         ),
+        'Recent sign-in required before changing MFA.': (
+            'Sign out and sign back in, then start this action within five minutes.'
+        ),
+        'Verified provider reauthentication is required.': (
+            'Your identity provider must verify recent credentials before this action is available.'
+        ),
         'Your current password was not accepted.': (
             'Current password was not accepted. Verify your password and try again.'
         ),
@@ -254,12 +260,13 @@ def _process_account_mfa_action(
             raise MfaVerificationError('Sign in again before changing MFA.') from exc
         if session_user_id != user.id or generation is None:
             raise MfaVerificationError('Sign in again before changing MFA.')
-        if action in {'begin', 'regenerate'} and user.auth_source == 'database':
-            password = str(request.form.get('current_password') or '')
-            if not password or not user.check_password(password):
-                raise MfaVerificationError('Your current password was not accepted.')
+        # The factor service verifies the current local credential only after
+        # acquiring the exact-generation account lock. External passwords are never accepted here.
+        password = str(request.form.get('current_password') or '') if user.auth_source == 'database' else None
         if action == 'begin':
-            mfa_setup_secret = begin_mfa_enrollment(user, expected_generation=generation)
+            mfa_setup_secret = begin_mfa_enrollment(
+                user, expected_generation=generation, current_password=password
+            )
             # QR contains the same one-time setup secret. Never persist it
             # or send it to a third-party QR endpoint.
             mfa_setup_qr_src = build_totp_qr_data_uri(mfa_setup_secret, account_label=user.username)
@@ -277,7 +284,10 @@ def _process_account_mfa_action(
             message = 'Save the recovery codes now. They will not be shown again.'
         elif action == 'regenerate':
             mfa_recovery_codes = regenerate_mfa_recovery_codes(
-                user, str(request.form.get('verification_code') or ''), expected_generation=generation
+                user,
+                str(request.form.get('verification_code') or ''),
+                expected_generation=generation,
+                current_password=password,
             )
             title = 'Recovery codes regenerated'
             message = 'Save the new codes now. Previously unused codes are invalid.'

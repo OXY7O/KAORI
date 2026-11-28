@@ -15,6 +15,8 @@ from app.settings.routes import _mfa_account_error_message
     [
         ('Sign in again before changing MFA.', 'Sign out and sign back in'),
         ('Your current password was not accepted.', 'Verify your password'),
+        ('Recent sign-in required before changing MFA.', 'within five minutes'),
+        ('Verified provider reauthentication is required.', 'identity provider must verify'),
         ('MFA is already enrolled.', 'recovery section'),
         ('Start MFA enrollment again.', 'Generate a new setup key'),
         ('MFA enrollment expired; start again.', 'Setup key expired'),
@@ -36,8 +38,10 @@ def test_existing_route_distinguishes_expired_form_and_service_errors() -> None:
     routes = (Path(__file__).resolve().parents[3] / 'app/settings/routes.py').read_text(encoding='utf-8')
     assert "validate_csrf(request.form.get('csrf_token'))" in routes
     assert 'if not login_fresh():' in routes
-    assert "if action in {'begin', 'regenerate'} and user.auth_source == 'database':" in routes
-    assert 'mfa_setup_secret = begin_mfa_enrollment(user, expected_generation=generation)' in routes
+    assert "if user.auth_source == 'database' else None" in routes
+    assert 'user.check_password(password)' not in routes
+    assert 'mfa_setup_secret = begin_mfa_enrollment(' in routes
+    assert 'expected_generation=generation, current_password=password' in routes
     assert 'except ValidationError:' in routes
     assert 'except MfaVerificationError as exc:' in routes
     rejection = routes.split('except MfaVerificationError as exc:', 1)[1].split(
