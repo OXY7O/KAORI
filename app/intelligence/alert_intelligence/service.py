@@ -10,6 +10,7 @@ from werkzeug.datastructures import MultiDict
 from app.common.alert_case_source_state import is_active_alert_case
 from app.common.pagination import paginate_query, paginate_sequence
 from app.integrations.delivery.notification_channels.service import notification_channel_summary
+from app.intelligence.alert_intelligence.delivery_mode import routing_mode_view
 from app.intelligence.alert_intelligence.lifecycle import active_delivery_silence
 from app.intelligence.alert_intelligence.notifications import case_delivery_rows
 from app.intelligence.alert_intelligence.routing import notification_channel_options, routing_policy_rows
@@ -290,6 +291,7 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
             'q': search,
         },
         'silence_filters': {'q': silence_search, 'severity': silence_severity},
+        'routing_mode': routing_mode_view() if tab == 'routing' else None,
         'routing_filters': {'q': routing_search, 'domain': routing_domain, 'status': routing_status},
         'active_cases': active_page,
         'active_pagination': active_pagination,

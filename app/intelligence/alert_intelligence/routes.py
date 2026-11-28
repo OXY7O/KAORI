@@ -19,6 +19,8 @@ from app.intelligence.alert_intelligence.case_state import (
     suppress_case_routing,
     withdraw_manual_alert,
 )
+from app.extensions.db import db
+from app.intelligence.alert_intelligence.delivery_mode import save_routing_mode
 from app.intelligence.alert_intelligence.lifecycle import (
     acknowledge_case,
     assign_case,
@@ -628,6 +630,38 @@ def delete_routing_policy(policy_id: int) -> ResponseReturnValue:
             else 'The selected policy no longer exists.',
             delivery_policy='audit_only' if changed else 'deck_on_failure',
             metadata={'policy_id': policy_id},
+        )
+    return _redirect(tab='routing')
+
+
+@alert_intelligence_bp.post('/routing/mode')
+@permission_required('intelligence.view')
+@permission_required('integrations.manage')
+def update_routing_mode() -> ResponseReturnValue:
+    try:
+        revision = _optional_positive_int(request.form.get('revision'))
+        if revision is None:
+            raise ValueError('Reload the current routing mode before saving.')
+        changed = save_routing_mode(
+            mode=str(request.form.get('mode') or ''),
+            revision=revision,
+            actor_user_id=_actor_user_id(),
+        )
+    except (ValueError, SQLAlchemyError):
+        db.session.rollback()
+        _queue_intelligence_activity(
+            event_type='alert_delivery_mode_update_failed',
+            status='error',
+            title='Routing mode not saved',
+            message='Invalid or stale routing configuration. Reload and try again.',
+            delivery_policy='deck_on_failure',
+        )
+    else:
+        _queue_intelligence_activity(
+            event_type='alert_delivery_mode_updated',
+            status='success',
+            title='Routing mode saved' if changed else 'Routing mode unchanged',
+            message='New recommendation alert delivery attempts use the effective routing mode.',
         )
     return _redirect(tab='routing')
 

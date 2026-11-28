@@ -1,0 +1,70 @@
+{% import "components/info_tip.html" as info_tip %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_primitives.html" as table_ui %}
+{% set mode = payload.get('routing_mode') or {'mode': 'delivery_disabled', 'available': false} %}
+{% set choices = [
+    ('channel_defaults', 'Channel Defaults', 'Use eligible channel defaults only when the domain has no policy.'),
+    ('policy_required', 'Policy Required', 'Require a matching enabled policy for every recommendation alert delivery.'),
+    ('delivery_disabled', 'Delivery Disabled', 'Keep collecting alert cases without outbound recommendation notifications.')
+] %}
+<section class="{{ table_ui.block_classes() }}" data-alert-delivery-mode>
+    <header class="{{ table_ui.block_header_classes() }}">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                <i data-lucide="route" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <h3 class="{{ table_ui.block_title_classes() }}">Routing Mode</h3>
+                    {{ table_label.metadata_label('All Recommendation Domains', 'globe', wrap=true) }}
+                    {{ info_tip.render('alert-delivery-mode-guide', 'Routing Mode',
+                        'Controls new recommendation-origin alert delivery attempts.',
+                        items=['Kubernetes, Object Storage and Artifact Registry share one committed mode.',
+                        'Registry always requires an explicit policy. Vault provider-origin delivery has separate qualification.',
+                        'Mode changes do not cancel an attempt already admitted for transport. Channel validation and template tests are separate operations.',
+                        'A policy must match domain, severity, labels and channel. Rejected recovery attempts remain in the delivery ledger.'], variant='guide') }}
+                </div>
+                <p class="{{ table_ui.block_description_classes() }}">Govern outbound recommendation alerts independently of case collection and channel configuration.</p>
+            </div>
+        </div>
+        {% for value, label, copy in choices if value == mode.mode %}
+            {{ table_label.status_label(label if mode.available else 'Unavailable · Blocked', 'warning' if not mode.available or value == 'delivery_disabled' else 'info' if value == 'channel_defaults' else 'normal', size='compact') }}
+        {% endfor %}
+    </header>
+    <div class="space-y-3 p-4">
+        {% if not mode.available %}
+            <p class="text-sm text-content-muted">Routing configuration is unavailable. Delivery is blocked until the committed configuration is restored.</p>
+        {% elif current_user.has_permission('integrations.manage') %}
+            <form method="post" action="{{ url_for('alert_intelligence.update_routing_mode') }}" class="space-y-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="domain" value="{{ payload.domain }}">
+                <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
+                <input type="hidden" name="revision" value="{{ mode.revision }}">
+                <fieldset class="grid gap-2 lg:grid-cols-3">
+                    <legend class="sr-only">Recommendation alert routing mode</legend>
+                    {% for value, label, copy in choices %}
+                        <label class="flex min-w-0 cursor-pointer items-start gap-2.5 rounded-lg border border-outline-subtle bg-surface-card p-3 hover:bg-surface-hover">
+                            <input type="radio" name="mode" value="{{ value }}" required
+                                   {% if value == mode.mode %}checked{% endif %} class="mt-1 shrink-0">
+                            <span class="min-w-0">
+                                <span class="block text-sm font-semibold text-content-primary">{{ label }}</span>
+                                <span class="mt-1 block text-xs leading-5 text-content-muted">{{ copy }}</span>
+                            </span>
+                        </label>
+                    {% endfor %}
+                </fieldset>
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-xs leading-5 text-content-muted">Applies across recommendation domains, not just the selected asset. Registry always requires a policy.</p>
+                    <button type="submit" class="{{ table_ui.action_classes(size='header') }}">
+                        <i data-lucide="save" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                        Save Routing Mode
+                    </button>
+                </div>
+            </form>
+        {% else %}
+            {% for value, label, copy in choices if value == mode.mode %}
+                <p class="text-sm text-content-secondary">{{ copy }}</p>
+            {% endfor %}
+        {% endif %}
+    </div>
+</section>
