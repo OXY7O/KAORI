@@ -4,7 +4,7 @@ from app.commands.admin import bootstrap_admin, reset_admin_password
 from app.commands.automation_inventory import automation_inventory_store
 from app.commands.integrations import refresh_integration_runtime_command
 from app.commands.internal_pki import import_internal_pki, prepare_internal_pki
-from app.commands.openbao import register_internal_openbao
+from app.commands.openbao import collect_openbao_inventory, register_internal_openbao
 from app.commands.rbac import seed_rbac
 from app.commands.reports import run_report_schedules
 from app.commands.retention import archive_retention
@@ -26,5 +26,6 @@ def register_commands(app: Flask) -> None:
     app.cli.add_command(bootstrap_secret_store)
     app.cli.add_command(qualify_openbao)
     app.cli.add_command(register_internal_openbao)
+    app.cli.add_command(collect_openbao_inventory)
     app.cli.add_command(automation_localhost_probe)
     app.cli.add_command(automation_inventory_store)

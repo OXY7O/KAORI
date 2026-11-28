@@ -12,6 +12,7 @@ from urllib.parse import quote
 
 from app.integrations.secrets_management.secrets_pki.providers.kv2_http import (
     KV2HTTPClient,
+    KV2HTTPTransport,
     SecretProviderError,
 )
 
@@ -183,10 +184,19 @@ def collect_kv2_metadata(
     sanitized error. The caller must **not** commit a partial/empty snapshot
     when an error is raised. Version 1 engines are not supported here.
     """
-    mount_parts = _segments(mount, required=True)
     if not 1 <= max_secrets <= MAX_SECRETS:
         raise SecretProviderError('Invalid KV v2 inventory scan bound.')
-    token = client.login()
+    _segments(mount, required=True)
+    return collect_kv2_metadata_with_token(client, mount=mount, token=client.login(), max_secrets=max_secrets)
+
+
+def collect_kv2_metadata_with_token(
+    client: KV2HTTPTransport, *, mount: str, token: str, max_secrets: int = MAX_SECRETS
+) -> KV2CollectionEvidence:
+    """Reuse bounded metadata traversal with an independently qualified transient token."""
+    mount_parts = _segments(mount, required=True)
+    if not 1 <= max_secrets <= MAX_SECRETS or not isinstance(token, str) or not token:
+        raise SecretProviderError('Invalid KV v2 inventory scan scope.')
     stack: list[tuple[tuple[str, ...], int]] = [((), 0)]
     records: list[KV2SecretEvidence] = []
     seen: set[tuple[str, ...]] = set()

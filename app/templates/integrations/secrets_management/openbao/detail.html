@@ -46,6 +46,23 @@
                 {% endfor %}
             </div>
         </section>
+        <section class="{{ table_ui.block_classes() }}" aria-label="OpenBao Secret Inventory">
+            <header class="{{ table_ui.block_header_classes() }}">
+                <div>
+                    <h2 class="{{ table_ui.block_title_classes() }}">KV v2 Secret Inventory</h2>
+                    <p class="{{ table_ui.block_description_classes() }}">Committed metadata for the independently scoped local mount; no secret values or credential authority.</p>
+                </div>
+            </header>
+            <dl class="grid gap-4 p-5 sm:grid-cols-3">
+                {% for label, value in [("Collection Status", inventory.status|replace('_', ' ')|title), ("Observed Secrets", inventory.observed_count if inventory.observed_count is not none else "Unknown"), ("Last Committed", inventory.last_committed_at|user_datetime if inventory.last_committed_at else "Not collected")] %}
+                    <div>
+                        <dt class="text-xs text-content-muted">{{ label }}</dt>
+                        <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value }}</dd>
+                    </div>
+                {% endfor %}
+            </dl>
+            <p class="px-5 pb-5 text-xs text-content-muted">Local operator: <code>flask collect-openbao-inventory --help</code>. Independent credential authority remains pending.</p>
+        </section>
         <section class="{{ table_ui.block_classes() }}" aria-label="OpenBao Runtime History">
             <header class="{{ table_ui.block_header_classes() }}">
                 <div>
