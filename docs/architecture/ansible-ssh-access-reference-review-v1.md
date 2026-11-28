@@ -417,3 +417,20 @@ the shortest evidence validity; older remote target/worker review
 fingerprints cannot be reused. New independent review receipts must be
 issued for the new fingerprint. No source acceptance, worker image
 attestation, token minting or SSH permission follows from these reviews.
+
+
+### Ephemeral remote inventory handoff (#5186/#5204)
+
+The existing worker-only SSH artifact candidate now generates the fixed
+`kaori_remote_pilot` inventory from the exact validated three aliases in
+the same private transient directory as config, known_hosts and keys.
+The inventory contains no host variables, addresses, usernames, keys or
+provider inputs; endpoint/user/key binding stays in the strict SSH config.
+The candidate bundle exposes explicit SSH arguments to replace (not append
+to) Ansible defaults, preventing control-master multiplexing. All six
+artifacts follow the existing private file and ordinary-exit cleanup
+boundary. The synthetic vertical regression uses mocked native Vault or
+OpenBao transport, generated fixture keys, a substituted tmpfs root and
+synthetic setup events to exercise the existing handoffs and rotation
+failure. It never invokes Runner, SSH, live provider or native tmpfs
+admission and does not prove full preflight or worker authorization.
