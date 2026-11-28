@@ -124,7 +124,7 @@ def _apply_authentication_event_context(
     auth_source: str | None,
 ) -> None:
     """Preserve Access event presentation for sign-in and security controls."""
-    if access_action and access_action.startswith(('mfa_', 'bot_')):
+    if access_action and access_action.startswith(('mfa_', 'bot_', 'session_')):
         # Authentication Security settings and factor evidence are not
         # sign-in events. Preserve the KAORI committed security-control
         # authority while retaining the existing Access audit category.
@@ -133,6 +133,8 @@ def _apply_authentication_event_context(
             if access_action.startswith('mfa_policy_')
             else 'MFA Factor'
             if access_action.startswith('mfa_')
+            else 'Session Security'
+            if access_action.startswith('session_')
             else 'Bot Protection'
         )
         context.update(
@@ -172,7 +174,7 @@ def _append_authentication_context_items(
             'label': 'Action',
             'value': (
                 _display_event_label(access_action.replace('_', ' '))
-                if access_action and access_action.startswith(('mfa_', 'bot_'))
+                if access_action and access_action.startswith(('mfa_', 'bot_', 'session_'))
                 else 'Sign out'
                 if access_action == 'logout'
                 else 'Sign in'
@@ -338,7 +340,7 @@ def build_event_context(
     if task_id:
         context['source_label'] = 'Background task'
         context['source_detail'] = f'Task {task_id}'
-    elif event_type == 'authentication' and not (access_action and access_action.startswith(('mfa_', 'bot_'))):
+    elif event_type == 'authentication' and not (access_action and access_action.startswith(('mfa_', 'bot_', 'session_'))):
         context['source_label'] = 'Authentication provider'
         context['source_detail'] = auth_source or 'Provider not recorded'
     elif event_type.endswith('_connection_test'):
