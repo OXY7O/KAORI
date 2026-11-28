@@ -46,6 +46,8 @@
                 'Open Registry Integrations',
                 url_for('integrations.registry'),
                 action_icon='plug-zap',
+            integration_endpoint='integrations.registry',
+            integration_permitted=current_user is defined and current_user.is_authenticated and current_user.has_permission('integrations.manage'),
                 blocked=analytics.setup.is_blocked,
                 blocked_info='Register and validate a Registry provider to materialize analytics evidence.'
                 ) }}
