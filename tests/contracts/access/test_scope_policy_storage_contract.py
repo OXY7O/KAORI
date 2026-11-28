@@ -31,7 +31,7 @@ def test_policy_identity_is_exact_and_existing_authorities_are_referenced():
     assert "mount NOT LIKE '%*%'" in checks['ck_access_scope_policy_exact_target']
     assert "scope_level = 'instance'" in checks['ck_access_scope_policy_exact_target']
     assert (
-        "scope_level IN ('vault_mount', 'automation_credential', 'credential_issuer')"
+        "scope_level IN ('vault_mount', 'openbao_mount', 'automation_credential', 'credential_issuer')"
         in checks['ck_access_scope_policy_exact_target']
     )
 
@@ -165,6 +165,11 @@ def test_issuer_scope_has_explicit_permission_and_deployment(level, permission, 
         ('instance', 'secrets_pki.view', '', None, False),
         ('instance', 'secrets_pki.view', None, 'kv', False),
         ('vault_mount', 'secrets_pki.view', '', 'kv', True),
+        ('openbao_mount', 'secrets_pki.view', '', 'kv', True),
+        ('openbao_mount', 'secrets_pki.view', 'ns', 'kv', False),
+        ('openbao_mount', 'secrets_pki.view', '', '+', False),
+        ('openbao_mount', 'secrets_pki.view', '', '*', False),
+        ('openbao_mount', 'secrets_pki.use_automation_credential', '', 'kv', False),
         ('vault_mount', 'secrets_pki.view', None, 'kv', False),
         ('vault_mount', 'secrets_pki.view', '', None, False),
         ('vault_mount', 'secrets_pki.view', '', '', False),
