@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import argparse
 import ast
 import html
+import json
 import re
 from pathlib import Path
 
@@ -1574,6 +1576,49 @@ def _verify_remaining_context_exceptions() -> None:
     )
 
 
+def _hero_context_census() -> list[dict[str, object]]:
+    """Discover source candidates, not active routes or evaluated permissions."""
+    records: list[dict[str, object]] = []
+    context_pattern = re.compile(
+        r'page_hero\.(shell_classes|operational_dashboard|context_card_body|context_card|'
+        r'blocked_context_body|context_header_status|context_header_action|context_header|'
+        r'context_status_badge|context_icon_box|context_icon_classes|context_action_icon_box|'
+        r'integration_navigation)\s*\('
+    )
+    wrapper_pattern = re.compile(
+        r'integrations/components/_provider_(?:frontpage|detail_posture|edit_hero|registration_hero)\.html'
+    )
+    destination_pattern = re.compile(
+        r"""url_for\(\s*['"]((?:integrations|vault|openbao|notification_channels)\.[a-z_]+)['"]"""
+    )
+    explicit_pattern = re.compile(r"""integration_endpoint\s*=\s*['"]([a-z_.]+)['"]""")
+    for path in sorted(TEMPLATES.rglob('*.html')):
+        if path == HERO:
+            continue
+        source = _read(path)
+        calls = [
+            {'macro': match.group(1), 'line': source.count('\n', 0, match.start()) + 1}
+            for match in context_pattern.finditer(source)
+        ]
+        wrappers = sorted(set(wrapper_pattern.findall(source)))
+        if not calls and not wrappers:
+            continue
+        explicit = sorted(set(explicit_pattern.findall(source)))
+        destinations = sorted(set(destination_pattern.findall(source)))
+        direct = [call for call in calls if call['macro'] == 'integration_navigation']
+        records.append({
+            'template': path.relative_to(ROOT).as_posix(),
+            'calls': calls,
+            'shared_wrappers': wrappers,
+            'integration_url_candidates': destinations,
+            'explicit_integration_endpoints': explicit,
+            'explicit_endpoint_expression': 'integration_endpoint=' in source,
+            'declared_permission_expression': 'integration_permitted=' in source or 'permitted=' in source,
+            'review_raw_or_indirect_destination': bool(destinations and not explicit and not direct),
+        })
+    return records
+
+
 def verify() -> None:
     hero = _read(HERO)
     standard = _read(STANDARD)
@@ -1771,4 +1816,10 @@ def verify() -> None:
 
 
 if __name__ == '__main__':
-    verify()
+    parser = argparse.ArgumentParser(description='Verify the canonical KAORI Hero standard.')
+    parser.add_argument('--context-census', action='store_true', help='Emit source candidates for context review.')
+    args = parser.parse_args()
+    if args.context_census:
+        print(json.dumps(_hero_context_census(), indent=2, ensure_ascii=False))
+    else:
+        verify()
