@@ -195,3 +195,15 @@ four existing committed metrics and status indicators, with no artificial
 spacer, fixed-height filler, or new evidence claims. Keep Quick Actions in the
 Operational Readiness footer. The Alert Operations Snapshot remains a separate
 four-indicator summary.
+
+
+### Alert Intelligence tab section introductions
+
+After the shared Alert Operations Summary, render one plain contextual title
+and concise description before the Alert Operations Workspace on every tab.
+Reuse `components/section_intro.html` (as in Recommendation Review and
+Intelligence Assessment), with the owning card title and Guide unchanged.
+The server-selected tab controls the introduction; it updates within the
+existing HTMX page boundary and remains present for blocked provider scopes.
+Do not add another card, Hero, status indicator, or unsupported capability
+claim to the introduction.

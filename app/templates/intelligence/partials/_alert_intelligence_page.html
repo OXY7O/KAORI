@@ -1,5 +1,6 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/workspace_tabs.html" as workspace_tabs %}
+{% import "components/section_intro.html" as section_intro %}
 {% set tab_query = {'domain': payload.domain, 'asset': payload.selected_asset_key} %}
 {% if payload.provider_case_mode %}
     {% set _ = tab_query.update({'provider': payload.selected_provider}) %}
@@ -66,7 +67,19 @@
         </div>
     </section>
     {% include 'intelligence/partials/_alert_intelligence_summary.html' %}
-    {% include 'intelligence/partials/_alert_intelligence_workspace.html' %}
+    {% set section_intros = {
+        'overview': ('Alert Overview', 'Review alert workload, lifecycle posture, and operational readiness.'),
+        'active': ('Active Alert Review', 'Prioritize active cases and review ownership, mitigation, and source evidence.'),
+        'routing': ('Routing & Channels', 'Review routing policies and notification channel readiness.'),
+        'templates': ('Notification Templates', 'Review governed message templates and their supported delivery events.'),
+        'silences': ('Delivery Silences', 'Review delivery suppression, scope, and expiry.'),
+        'resolved': ('Recovery & Closure', 'Review resolved cases, verification evidence, and operator closure.')
+    } %}
+    {% set active_intro = section_intros.get(payload.tab, section_intros['overview']) %}
+    <div class="space-y-3" data-alert-intelligence-tab-section="{{ payload.tab }}">
+        {{ section_intro.render(active_intro[0], active_intro[1], 'alert-intelligence-section-intro') }}
+        {% include 'intelligence/partials/_alert_intelligence_workspace.html' %}
+    </div>
     {% if payload.tab == 'overview' %}
         {% include 'intelligence/partials/_alert_provider_coverage.html' %}
     {% endif %}

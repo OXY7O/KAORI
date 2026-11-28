@@ -334,3 +334,25 @@ def test_lifecycle_control_balances_readiness_height_without_empty_card_space() 
     for field in ('acknowledged', 'silenced', 'resolved_today', 'routing_policies'):
         assert lifecycle.count(f'payload.summary.{field}') >= 1
     assert 'readiness_ui.readiness_actions()' in overview
+
+
+def test_each_alert_tab_uses_shared_section_intro_between_summary_and_workspace() -> None:
+    from jinja2 import Environment
+
+    page = read('app/templates/intelligence/partials/_alert_intelligence_page.html')
+    Environment().parse(page)
+    assert 'import "components/section_intro.html" as section_intro' in page
+    assert page.count('section_intro.render(') == 1
+    assert "section_intros.get(payload.tab, section_intros['overview'])" in page
+    assert page.index('_alert_intelligence_summary.html') < page.index('section_intro.render(')
+    assert page.index('section_intro.render(') < page.index('_alert_intelligence_workspace.html')
+    assert 'data-alert-intelligence-tab-section="{{ payload.tab }}"' in page
+    for tab, title in (
+        ('overview', 'Alert Overview'),
+        ('active', 'Active Alert Review'),
+        ('routing', 'Routing & Channels'),
+        ('templates', 'Notification Templates'),
+        ('silences', 'Delivery Silences'),
+        ('resolved', 'Recovery & Closure'),
+    ):
+        assert f"'{tab}': ('{title}', '" in page
