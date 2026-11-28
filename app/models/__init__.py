@@ -13,7 +13,11 @@ from app.models.alertmanager import AlertmanagerInstance
 from app.models.analytics import AnalyticsSnapshot
 from app.models.archive import ArchiveArtifact
 from app.models.audit import AuditEvent
-from app.models.authentication_security import AuthenticationMfaFactor, AuthenticationSecurityPolicy
+from app.models.authentication_security import (
+    AuthenticationAccountLockout,
+    AuthenticationMfaFactor,
+    AuthenticationSecurityPolicy,
+)
 from app.models.automation import (
     AutomationHostAccessBinding,
     AutomationHostAsset,
@@ -179,6 +183,7 @@ __all__ = [
     'AlertSignalSnapshot',
     'AnalyticsSnapshot',
     'ArchiveArtifact',
+    'AuthenticationAccountLockout',
     'AuthenticationMfaFactor',
     'AuthenticationSecurityPolicy',
     'AuditEvent',

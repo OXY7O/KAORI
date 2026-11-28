@@ -19,6 +19,20 @@ class AuthenticationSecurityPolicy(db.Model):
     __tablename__ = 'authentication_security_policies'
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
+    __table_args__ = (
+        db.CheckConstraint(
+            "lockout_mode IN ('disabled', 'monitor_only', 'enforced')",
+            name='ck_auth_security_lockout_mode',
+        ),
+        db.CheckConstraint('lockout_revision >= 1', name='ck_auth_security_lockout_revision'),
+    )
+
+    lockout_mode: Mapped[str] = mapped_column(
+        db.String(24), nullable=False, default='disabled', server_default='disabled'
+    )
+    lockout_revision: Mapped[int] = mapped_column(
+        db.BigInteger, nullable=False, default=1, server_default=db.text('1')
+    )
     mfa_mode: Mapped[str] = mapped_column(db.String(32), nullable=False, default='disabled')
     bot_mode: Mapped[str] = mapped_column(db.String(24), nullable=False, default='disabled')
     bot_provider_key: Mapped[str] = mapped_column(db.String(60), nullable=False, default='cloudflare_turnstile')
@@ -73,3 +87,25 @@ class AuthenticationMfaFactor(db.Model):
 
     def __repr__(self) -> str:
         return f'<AuthenticationMfaFactor user_id={self.user_id} enabled={self.enabled}>'
+
+
+class AuthenticationAccountLockout(db.Model):
+    """Bounded local-password observation; independent of account lifecycle."""
+
+    __tablename__ = 'authentication_account_lockouts'
+    __table_args__ = (
+        db.CheckConstraint('policy_revision >= 1', name='ck_auth_lockout_policy_revision'),
+        db.CheckConstraint('json_array_length(failure_times) <= 10', name='ck_auth_lockout_failure_bound'),
+        db.CheckConstraint(
+            'cooldown_until IS NULL OR locked_until IS NULL', name='ck_auth_lockout_exclusive_deadline'
+        ),
+    )
+
+    user_id: Mapped[int] = mapped_column(db.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
+    policy_revision: Mapped[int] = mapped_column(db.BigInteger, nullable=False)
+    failure_times: Mapped[list[str]] = mapped_column(db.JSON, nullable=False, default=list)
+    cooldown_until: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True))
+    locked_until: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow
+    )

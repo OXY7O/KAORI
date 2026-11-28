@@ -38,16 +38,14 @@
 
 ## Brute force and lockout
 
-The current endpoint limiter is the first layer. Production must use Redis-backed shared rate-limit storage for multi-instance deployments. The next account-security increment should add durable counters and `locked_until` without revealing whether a username exists.
+The current endpoint limiter remains the first layer. Production must use Redis-backed shared rate-limit storage for multi-instance deployments. #4015 approves Disabled, Monitor Only and Enforced modes; #5324 adds the persistence foundation only.
 
-Recommended policy baseline for design review:
-
-- per-IP and per-identity throttling;
-- escalating delay after repeated failures;
-- time-bound lockout rather than permanent automatic disable;
-- administrator unlock with Activity Log;
-- break-glass account alerts rather than easily triggered permanent lockout;
-- metrics for failure spikes without username leakage.
+- Existing authentication security singleton owns the mode (default Disabled) and monotonic lockout policy revision. Code-owned thresholds are 10 confirmed local password failures in a rolling 15-minute window, cooldown 5 seconds for failures 3–4 and 30 seconds for 5–9, and a 15-minute temporary lock at failure 10. An expired lock discards its old failure window. Rejected attempts never extend an active deadline.
+- One bounded state row per eligible known Local Database account contains at most 10 UTC failure timestamps, cooldown and lock deadlines, and policy revision. No username, password or factor value is stored. A changed revision invalidates prior observation state, including Monitor Only observations on later activation. Disabled does not create or update account state.
+- Account row lock precedes the shared policy-row lock and state row lock; all state transitions and audit-only Notification evidence are staged in the caller's transaction. Credential verification must occur under the same account lock, against a refreshed current credential; caller must roll back on any error and commit before treating the result as durable. The persistence primitive does not issue a session or accept HTTP input. A missing singleton is Disabled; AL-03 must serialize singleton initialization/activation and increment the revision on every actual mode change.
+- Monitor Only never blocks login; failed checks during a simulated active gate do not extend it, and a verified primary credential clears the simulated state. Enforced gate evaluation must precede verification; an active gate cannot be bypassed by a correct password. Expiry is evaluated on access, not by a scheduled task.
+- Unknown, inactive, external-source, credential-less and local Super Admin recovery accounts are excluded from durable password-lock mutation. Shared Redis request throttling, protected recovery throttling, generic responses, exact pending-MFA/session admission fencing, storage outage behavior and lifecycle transitions require AL-02 integration. Administrator policy activation, unlock, notifications and break-glass recovery governance require AL-03. No session revocation or lifecycle mutation follows from this foundation.
+- Additive migration and source contracts do not constitute executable checks, PostgreSQL concurrency qualification, deployed Redis readiness or hosted UAT. No default enforcement, schedule or production activation is authorized.
 
 ## Error handling
 
