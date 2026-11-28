@@ -20,7 +20,7 @@ from app.infrastructure_automation.remote_worker_review import resolve_remote_wo
 from app.infrastructure_automation.security_review import local_security_review_enabled
 from app.models.job import JobExecution
 from app.platform_operations.jobs.fingerprint import payload_fingerprint
-from app.platform_operations.jobs.service import mark_job_running, mark_job_succeeded
+from app.platform_operations.jobs.service import mark_job_failed, mark_job_running, mark_job_succeeded
 from app.platform_operations.notifications.service import stage_operational_activity
 
 REVIEW_OPERATION = 'automation_remote_preflight_review'
@@ -112,7 +112,8 @@ def _target_for_job(job: JobExecution, *, now: datetime) -> RemoteTargetReview:
     if not isinstance(payload, dict):
         raise _deny()
     actual = {key: value for key, value in payload.items() if key != '_progress'}
-    if actual != expected or job.parameter_fingerprint != payload_fingerprint(expected):
+    fingerprint = payload_fingerprint(expected)
+    if payload_fingerprint(actual) != fingerprint or job.parameter_fingerprint != fingerprint:
         raise _deny()
     if any(
         _HEX.fullmatch(value) is None
@@ -140,7 +141,6 @@ def run_remote_preflight_review(*, job_id: int, task_id: str, connection_id: int
         job = _job(job_id)
         if job is None or not matches_review_job(job, task_id=task_id, connection_id=connection_id, now=now, running=False):
             return {'status': 'blocked'}
-        _target_for_job(job, now=now)
         # The row is already locked; the canonical service commits the claim.
         # Redelivery sees running/attempt 1 and cannot claim it again.
         started = mark_job_running(task_id, message='Checking remote preflight review evidence', stage='review')
@@ -203,8 +203,6 @@ def run_remote_preflight_review(*, job_id: int, task_id: str, connection_id: int
     except Exception:
         db.session.rollback()
         if claimed:
-            from app.platform_operations.jobs.service import mark_job_failed
-
             mark_job_failed(task_id, error='Remote preflight review blocked.', error_code='remote_review_unqualified')
         return {'status': 'blocked'}
     finally:
