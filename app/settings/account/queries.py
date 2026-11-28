@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Literal
 
+from sqlalchemy.orm import load_only
+
 from app.models import Notification
 from app.models.authentication_security import AuthenticationMfaFactor
 
@@ -53,4 +55,14 @@ def authentication_activity_summary(events: list[Notification]) -> dict[str, int
 
 def account_mfa_factor(user_id: int) -> AuthenticationMfaFactor | None:
     """Read the current Account MFA presentation state below the HTTP layer."""
-    return AuthenticationMfaFactor.query.filter_by(user_id=user_id).first()
+    return (
+        AuthenticationMfaFactor.query.options(
+            load_only(
+                AuthenticationMfaFactor.enabled,
+                AuthenticationMfaFactor.enrollment_expires_at,
+                AuthenticationMfaFactor.recovery_hashes,
+            )
+        )
+        .filter_by(user_id=user_id)
+        .first()
+    )

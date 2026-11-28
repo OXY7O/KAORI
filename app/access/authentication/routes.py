@@ -583,7 +583,7 @@ def mfa_challenge():
             try:
                 validate_csrf(request.form.get('csrf_token'))
                 if action == 'begin':
-                    setup_secret = begin_mfa_enrollment(user, authenticated=False)
+                    setup_secret = begin_mfa_enrollment(user, expected_generation=pending['version'], authenticated=False)
                 elif action == 'confirm' and form.validate_on_submit():
                     codes = confirm_mfa_enrollment(user, str(form.verification_code.data or ''), authenticated=False)
                 else:
@@ -615,13 +615,21 @@ def mfa_challenge():
                     render_template('access/authentication/mfa_recovery_codes.html', codes=codes)
                 )
                 response.headers['Cache-Control'] = 'no-store'
+                response.headers['Pragma'] = 'no-cache'
+                response.headers['Referrer-Policy'] = 'no-referrer'
                 return response
-        return render_template(
-            'access/authentication/mfa_enrollment.html',
-            form=form,
-            setup_secret=setup_secret,
-            error=enrollment_error,
+        response = current_app.make_response(
+            render_template(
+                'access/authentication/mfa_enrollment.html',
+                form=form,
+                setup_secret=setup_secret,
+                error=enrollment_error,
+            )
         )
+        response.headers['Cache-Control'] = 'no-store'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Referrer-Policy'] = 'no-referrer'
+        return response
     error = None
     if form.validate_on_submit():
         # Failed attempts are bounded in the signed pending-auth cookie as

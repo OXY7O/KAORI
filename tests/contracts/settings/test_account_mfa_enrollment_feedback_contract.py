@@ -37,7 +37,7 @@ def test_existing_route_distinguishes_expired_form_and_service_errors() -> None:
     assert "validate_csrf(request.form.get('csrf_token'))" in routes
     assert 'if not login_fresh():' in routes
     assert "if action in {'begin', 'regenerate'} and user.auth_source == 'database':" in routes
-    assert 'mfa_setup_secret = begin_mfa_enrollment(user)' in routes
+    assert 'mfa_setup_secret = begin_mfa_enrollment(user, expected_generation=generation)' in routes
     assert 'except ValidationError:' in routes
     assert 'except MfaVerificationError as exc:' in routes
     rejection = routes.split('except MfaVerificationError as exc:', 1)[1].split(

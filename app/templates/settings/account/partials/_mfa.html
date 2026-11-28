@@ -2,6 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 <section class="rounded-2xl border border-outline-default bg-surface-card"
          aria-labelledby="account-mfa-heading"
+         hx-history="false"
          data-account-mfa-workspace="personal-enrollment">
     <header class="flex flex-col gap-4 border-b border-outline-default bg-surface-card px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex min-w-0 items-start gap-3">
@@ -27,7 +28,7 @@
                 <p class="mt-1 max-w-2xl text-sm leading-6 text-content-muted">Add an authenticator application to protect your KAORI account with an additional verification step.</p>
             </div>
         </div>
-        {{ table_label.status_indicator_label('Factor Enrolled' if mfa_state.enrolled else ('Setup Pending' if mfa_state.enrollment_pending else 'Not Enrolled') , 'normal' if mfa_state.enrolled else ('warning' if mfa_state.enrollment_pending else 'unknown')) }}
+        {{ table_label.status_indicator_label('Factor Enrolled' if mfa_state.enrolled else ('Setup Pending' if mfa_state.enrollment_pending else 'Setup Expired' if mfa_state.enrollment_expired else 'Not Enrolled') , 'normal' if mfa_state.enrolled else ('warning' if mfa_state.enrollment_pending or mfa_state.enrollment_expired else 'unknown')) }}
     </header>
     <div class="space-y-6 p-5 xl:p-6">
         <section aria-label="Account MFA security posture"
@@ -41,7 +42,7 @@
                     <div class="min-w-0">
                         <p class="text-xs font-semibold text-content-muted">Factor Status</p>
                         <p class="mt-1 text-base font-bold text-content-primary">
-                            {{ 'Authenticator Enrolled' if mfa_state.enrolled else ('Setup Pending' if mfa_state.enrollment_pending else 'Not Enrolled') }}
+                            {{ 'Authenticator Enrolled' if mfa_state.enrolled else ('Setup Pending' if mfa_state.enrollment_pending else 'Setup Expired' if mfa_state.enrollment_expired else 'Not Enrolled') }}
                         </p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Verified TOTP enrollment for this account.</p>
                     </div>
@@ -180,7 +181,9 @@
                                 <p class="text-xs font-semibold text-kaori-primary">STEP 01</p>
                                 <h3 id="account-mfa-step-one"
                                     class="mt-0.5 text-base font-bold text-content-primary">Generate Setup Key</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Generate a manual setup key; enrollment stays inactive until you confirm a code.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">
+                                    {{ 'The previous setup key expired. Generate a new key to restart.' if mfa_state.enrollment_expired else 'Generate a manual setup key; enrollment stays inactive until you confirm a code.' }}
+                                </p>
                             </div>
                         </div>
                         <form action="{{ url_for('settings.account', tab='mfa') }}"

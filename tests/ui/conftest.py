@@ -304,7 +304,6 @@ def kaori_authenticated_base_url() -> Iterator[str]:
             'app.settings.routes',
             recent_authentication_events=Mock(return_value=[]),
             account_mfa_factor=Mock(return_value=None),
-            mfa_enrolled=Mock(return_value=False),
             mfa_policy_mode=Mock(return_value='disabled'),
         ),
         patch.object(login_manager, '_user_callback', lambda _user_id: user),
