@@ -14,13 +14,16 @@ from uuid import UUID
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import load_only
 
-from app.access.scope_policy import evaluate_exact_vault_scope
+from app.access.scope_policy import evaluate_exact_openbao_scope, evaluate_exact_vault_scope
 from app.extensions.db import db
 from app.infrastructure_automation.host_access_reference import (
     HostAccessReferenceReview,
     assess_scoped_host_access_references,
 )
 from app.infrastructure_automation.host_enrollment import get_scoped_host_assignment, host_revision
+from app.integrations.secrets_management.secrets_pki.providers.openbao.inventory_scope import (
+    local_inventory_deployment_ref,
+)
 from app.models.automation import AutomationHostAccessBinding
 from app.models.integration import IntegrationInstance
 from app.models.scope_access import ScopeAccessPolicy
@@ -101,12 +104,13 @@ def _require_scope(actor_id: int, scope_ref: str, instant: datetime) -> ScopeAcc
         policy is None
         or policy.principal_user_id != actor_id
         or policy.permission_key != 'secrets_pki.view'
-        or policy.scope_level != 'vault_mount'
+        or policy.scope_level not in ('vault_mount', 'openbao_mount')
         or not isinstance(policy.provider_namespace, str)
         or not isinstance(policy.mount, str)
     ):
         raise _deny()
-    admission = evaluate_exact_vault_scope(
+    evaluator = evaluate_exact_openbao_scope if policy.scope_level == 'openbao_mount' else evaluate_exact_vault_scope
+    admission = evaluator(
         actor_user_id=actor_id,
         instance_id=policy.integration_instance_id,
         provider_namespace=policy.provider_namespace,
@@ -168,7 +172,7 @@ def _selected_representation(
             integration_instance_id=policy.integration_instance_id,
             provider_namespace=policy.provider_namespace,
             mount=policy.mount,
-            provider_key='vault',
+            provider_key='openbao' if policy.scope_level == 'openbao_mount' else 'vault',
             representation_role='material_authority',
             observation_status='observed',
         )
@@ -228,6 +232,17 @@ def record_host_access_reference(*, actor_id: int, intent: HostAccessBindingInte
         identity = db.session.get(SecretIdentity, representation.secret_identity_id, with_for_update=True)
         if identity is None:
             raise _deny()
+        deployment_ref = None
+        if policy.scope_level == 'openbao_mount':
+            deployment_ref = local_inventory_deployment_ref(
+                provider,
+                namespace=representation.provider_namespace,
+                mount=representation.mount,
+                environment=connection.environment,
+                lock=True,
+            )
+            if deployment_ref is None:
+                raise _deny()
         review = assess_scoped_host_access_references(
             connection=connection,
             assignment=assignment,
@@ -237,6 +252,7 @@ def record_host_access_reference(*, actor_id: int, intent: HostAccessBindingInte
             version=version,
             host_key_digest=intent.host_key_digest,
             now=instant,
+            provider_deployment_ref=deployment_ref,
         )
         if review.state != 'references_recorded' or review.fingerprint is None:
             raise _deny()

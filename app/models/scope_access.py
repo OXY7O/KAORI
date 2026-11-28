@@ -23,15 +23,20 @@ class ScopeAccessPolicy(db.Model):
     __tablename__ = 'access_scope_policies'
     __table_args__ = (
         CheckConstraint(
-            "scope_level IN ('instance', 'vault_mount', 'automation_credential', 'credential_issuer')",
+            "scope_level IN ('instance', 'vault_mount', 'openbao_mount', 'automation_credential', 'credential_issuer')",
             name='ck_access_scope_policy_level',
         ),
         CheckConstraint(
             "(scope_level = 'instance' AND provider_namespace IS NULL AND mount IS NULL)"
-            " OR (scope_level IN ('vault_mount', 'automation_credential', 'credential_issuer')"
+            " OR (scope_level IN ('vault_mount', 'openbao_mount', 'automation_credential', 'credential_issuer')"
             ' AND provider_namespace IS NOT NULL'
             " AND mount IS NOT NULL AND mount <> '' AND mount NOT LIKE '%*%')",
             name='ck_access_scope_policy_exact_target',
+        ),
+        CheckConstraint(
+            "scope_level <> 'openbao_mount' OR (permission_key = 'secrets_pki.view'"
+            " AND provider_namespace = '' AND mount NOT LIKE '%+%')",
+            name='ck_access_scope_policy_openbao_target',
         ),
         CheckConstraint(
             "(scope_level = 'automation_credential' AND permission_key = 'secrets_pki.use_automation_credential')"

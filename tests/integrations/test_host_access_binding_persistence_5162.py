@@ -7,7 +7,7 @@ from uuid import uuid4
 
 import pytest
 from cryptography.fernet import Fernet
-from flask import Flask
+from flask import Flask, current_app
 
 from app.access import scoped_grants
 from app.extensions.db import db
@@ -37,6 +37,7 @@ from app.models.automation import (
 from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationInstance
 from app.models.notification import Notification
+from app.models.openbao import OpenBaoInstance
 from app.models.rbac import Permission, Role, RolePermission
 from app.models.scope_access import AutomationCredentialScopeTarget, ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.secrets_pki import (
@@ -131,7 +132,7 @@ def _secret_records(provider, now):
     representation = SecretProviderRepresentation(
         secret_identity=identity,
         integration_instance_id=provider.id,
-        provider_key='vault',
+        provider_key=provider.provider_key,
         provider_namespace='',
         mount='kv',
         path='fixture/private/path',
@@ -182,6 +183,7 @@ def binding_store():
         ExternalIdentityLink.__table__,
         IntegrationInstance.__table__,
         VaultInstance.__table__,
+        OpenBaoInstance.__table__,
         ScopeAccessPolicy.__table__,
         ScopeAccessPolicyRevision.__table__,
         AutomationCredentialScopeTarget.__table__,
@@ -637,4 +639,79 @@ def test_revoke_host_trust_denial_leaves_history_unchanged(binding_store, monkey
             expected_revision=expected_revision,
         )
     assert AutomationHostTrustRevision.query.one().lifecycle_status == 'active'
+    assert Notification.query.count() == 1
+
+
+def test_local_openbao_binding_uses_exact_scope_and_deployment(binding_store, monkeypatch):
+    actor, checker, intent = binding_store
+    monkeypatch.setenv('APP_ENV', 'development')
+    monkeypatch.setitem(current_app.config, 'APP_ENV', 'development')
+    monkeypatch.setenv('KAORI_LOCAL_OPENBAO_AUTOMATION_ENVIRONMENT', 'laboratory')
+    monkeypatch.setenv('KAORI_LOCAL_OPENBAO_INVENTORY_MOUNT', 'kv')
+    now = datetime.now(UTC)
+    source = IntegrationInstance(
+        integration_type='secrets_pki',
+        provider_key='openbao',
+        adapter_key='openbao_http_v1',
+        name='Fixture OpenBao',
+        enabled=True,
+        lifecycle_status='active',
+        health_status='connected',
+        readiness_status='degraded',
+    )
+    db.session.add(source)
+    db.session.flush()
+    db.session.add(
+        OpenBaoInstance(
+            integration_instance_id=source.id,
+            ownership='external',
+            endpoint='https://bao.invalid',
+            cluster_id='4f6db34e-2042-4f0c-a385-a0d39582acb8',
+            auth_mount='approle',
+            role_id='fixture',
+            secret_id='test-only',
+        )
+    )
+    monkeypatch.setenv('KAORI_LOCAL_OPENBAO_INVENTORY_PROVIDER_ID', str(source.id))
+    identity = _secret_records(source, now)
+    policy = ScopeAccessPolicy(
+        principal_user_id=actor,
+        permission_key='secrets_pki.view',
+        integration_instance_id=source.id,
+        scope_level='openbao_mount',
+        provider_namespace='',
+        mount='kv',
+        current_revision=1,
+    )
+    db.session.add(policy)
+    db.session.flush()
+    db.session.add(
+        ScopeAccessPolicyRevision(
+            policy_id=policy.id,
+            revision_number=1,
+            lifecycle_status='active',
+            effective_from=now - timedelta(minutes=1),
+            effective_until=now + timedelta(minutes=30),
+            requested_by_user_id=actor,
+            approved_by_user_id=checker,
+            approved_at=now,
+            change_reason='fixture-only',
+        )
+    )
+    db.session.commit()
+    selected = replace(intent, scope_ref=policy.id, secret_identity_id=identity.id)
+    with pytest.raises(service.HostAccessBindingDenied):
+        service.record_host_access_reference(actor_id=actor, intent=replace(intent, scope_ref=policy.id))
+    monkeypatch.setenv('KAORI_LOCAL_OPENBAO_AUTOMATION_ENVIRONMENT', 'testing')
+    with pytest.raises(service.HostAccessBindingDenied):
+        service.record_host_access_reference(actor_id=actor, intent=selected)
+    _assert_no_writes()
+    monkeypatch.setenv('KAORI_LOCAL_OPENBAO_AUTOMATION_ENVIRONMENT', 'laboratory')
+    review = service.record_host_access_reference(actor_id=actor, intent=selected)
+    binding = AutomationHostAccessBinding.query.one()
+    representation = db.session.get(SecretProviderRepresentation, binding.secret_representation_id)
+    assert representation.provider_key == 'openbao'
+    assert review.execution_authorized is False
+    assert review.ssh_trust_verified is False
+    assert binding.reference_fingerprint == review.fingerprint
     assert Notification.query.count() == 1

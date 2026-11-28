@@ -26,7 +26,7 @@ def transaction(monkeypatch):
     events = []
     connection = SimpleNamespace(id=7)
     assignment = SimpleNamespace(id=17)
-    policy = SimpleNamespace(id=intent.scope_ref, integration_instance_id=31, current_revision=3)
+    policy = SimpleNamespace(id=intent.scope_ref, integration_instance_id=31, current_revision=3, scope_level='vault_mount')
     representation = SimpleNamespace(id=41, secret_identity_id=intent.secret_identity_id)
     review = HostAccessReferenceReview('references_recorded', 'REVIEW_ONLY', 'c' * 64, True, True)
 

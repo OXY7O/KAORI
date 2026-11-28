@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 from dataclasses import dataclass
 
@@ -75,3 +77,49 @@ def require_local_inventory_source(
 ) -> None:
     if _source_scope(identity, scope.instance_id, scope.mount, lock=lock) != scope:
         raise ValueError('OpenBao deployment or local mount scope changed.')
+
+
+def current_local_inventory_source(
+    identity: IntegrationInstance | None, *, namespace: str, mount: str, lock: bool
+) -> LocalOpenBaoInventoryScope | None:
+    """Requalify the independently configured local scope without provider I/O or credentials."""
+    # Runtime deliberately stays degraded until independent credential authority is admitted.
+    if (
+        identity is None
+        or namespace != ''
+        or identity.health_status != 'connected'
+        or identity.readiness_status not in ('degraded', 'ready')
+    ):
+        return None
+    try:
+        return _source_scope(identity, identity.id, mount, lock=lock)
+    except ValueError:
+        return None
+
+
+def local_inventory_deployment_ref(
+    identity: IntegrationInstance | None, *, namespace: str, mount: str, environment: str | None, lock: bool
+) -> str | None:
+    """Stable metadata-only fingerprint; not an issuer or credential authority proof."""
+    if (
+        identity is None
+        or environment not in (
+            'development', 'testing', 'staging', 'laboratory', 'sandbox', 'proof_of_concept', 'non_production'
+        )
+        or os.getenv('KAORI_LOCAL_OPENBAO_AUTOMATION_ENVIRONMENT') != environment
+        or identity.environment not in (None, environment)
+    ):
+        return None
+    scope = current_local_inventory_source(identity, namespace=namespace, mount=mount, lock=lock)
+    if scope is None:
+        return None
+    payload = {
+        'schema': 'kaori.openbao.local_inventory_source.v1',
+        'instance_id': scope.instance_id,
+        'endpoint': scope.endpoint,
+        'cluster_id': scope.cluster_id,
+        'ownership': scope.ownership,
+        'mount': scope.mount,
+        'environment': environment,
+    }
+    return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(',', ':')).encode()).hexdigest()

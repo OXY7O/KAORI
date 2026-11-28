@@ -380,3 +380,20 @@ denial, and service approval/revocation contention. External authority
 publication and native observation remain outside PostgreSQL's transaction;
 actual monotonic publication, revocation and deployment UAT are still
 mandatory and cannot be inferred from a successful database transaction.
+
+
+## Local OpenBao scope convergence (#5204)
+
+OpenBao uses a separate `openbao_mount` level in the existing Access scope-policy
+model, limited to `secrets_pki.view`, empty provider namespace, independently
+configured local KV v2 mount and separately approved effective policy revision.
+Legacy Vault grants are neither inherited nor converted. The selected OpenBao
+connection must be active, connected and validated; its runtime may remain
+degraded while credential authority is pending. Candidate recording additionally
+requires the independently selected non-production automation environment and a
+fresh complete canonical metadata generation. OpenBao schema-v2 reference
+fingerprints bind the exact deployment, cluster, endpoint, mount, environment
+and version; Vault schema-v1 bytes are preserved. The new local scope and
+migration are review-only pending independent Access review and admission.
+No activation of automation credential-use grants or worker dispatch is enabled
+by this change.

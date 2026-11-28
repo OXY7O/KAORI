@@ -11,6 +11,9 @@ from datetime import UTC, datetime
 
 from app.access.scope_policy import VAULT_CASE_OPERATOR_PERMISSION
 from app.extensions.db import db
+from app.integrations.secrets_management.secrets_pki.providers.openbao.inventory_scope import (
+    current_local_inventory_source,
+)
 from app.models.integration import IntegrationInstance
 from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.user import User
@@ -68,6 +71,17 @@ def _target(
     mount: str | None,
 ) -> tuple[str | None, str | None]:
     identity = db.session.get(IntegrationInstance, integration_instance_id)
+    if scope_level == 'openbao_mount':
+        identity = db.session.get(
+            IntegrationInstance, integration_instance_id, populate_existing=True, with_for_update=True
+        )
+        if (
+            provider_namespace != ''
+            or not isinstance(mount, str)
+            or current_local_inventory_source(identity, namespace=provider_namespace, mount=mount, lock=True) is None
+        ):
+            raise ScopedGrantRejected('Grant requires an exact approved scope.')
+        return provider_namespace, mount
     if (
         identity is None
         or not identity.enabled
