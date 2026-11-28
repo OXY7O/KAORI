@@ -62,6 +62,8 @@ def account_mfa_factor(user_id: int) -> AuthenticationMfaFactor | None:
                 AuthenticationMfaFactor.enrollment_expires_at,
                 AuthenticationMfaFactor.enrollment_generation,
                 AuthenticationMfaFactor.enrollment_authenticated,
+                AuthenticationMfaFactor.replacement_generation,
+                AuthenticationMfaFactor.replacement_expires_at,
                 AuthenticationMfaFactor.recovery_hashes,
             )
         )

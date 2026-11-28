@@ -329,6 +329,124 @@ def verify_mfa_challenge(
     return kind
 
 
+def _clear_replacement(factor: AuthenticationMfaFactor) -> None:
+    factor.replacement_totp_secret = None
+    factor.replacement_generation = None
+    factor.replacement_expires_at = None
+
+
+def mfa_replacement_state(
+    factor: AuthenticationMfaFactor | None, *, generation: int, now: datetime
+) -> Literal['not_started', 'pending', 'expired']:
+    """Read replacement ownership and expiry without loading the encrypted seed."""
+    if factor is None or not factor.enabled or factor.replacement_generation is None:
+        return 'not_started'
+    expires = factor.replacement_expires_at
+    if factor.replacement_generation != generation or expires is None:
+        return 'expired'
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=UTC)
+    return 'pending' if now < expires else 'expired'
+
+
+def begin_mfa_replacement(user: User, submitted: str, *, expected_generation: int, current_password: str | None) -> str:
+    """Verify current primary and active factor; never replace the active seed here."""
+    try:
+        user = _lock_mfa_user(user, expected_generation, authenticated=True)
+        require_personal_factor_assurance(user, current_password, now=datetime.now(UTC), strict_primary=True)
+        assurance_expires_at = datetime.now(UTC) + MFA_RECENT_ADMISSION_TTL
+        factor = _locked_factor(user.id)
+        if factor is None or not factor.enabled:
+            raise MfaVerificationError('MFA is not enrolled.')
+        _consume_factor_proof(user, factor, submitted, authenticated=True)
+        now = datetime.now(UTC)
+        if now >= assurance_expires_at or not isinstance(
+            session_deadlines(user, read_session_policy(), now), SessionDeadlines
+        ):
+            raise MfaVerificationError('Sign in again before changing MFA.')
+        secret = base64.b32encode(secrets.token_bytes(20)).decode('ascii')
+        factor.replacement_totp_secret = secret
+        factor.replacement_generation = expected_generation
+        factor.replacement_expires_at = assurance_expires_at
+        db.session.add(
+            stage_authentication_security_event(user, action='mfa_replacement_started', authenticated=True, success=True)
+        )
+        db.session.commit()
+    except (SQLAlchemyError, CredentialEncryptionError, MfaVerificationError):
+        db.session.rollback()
+        raise
+    return secret
+
+
+def confirm_mfa_replacement(user: User, code: str, *, expected_generation: int) -> tuple[list[str], int]:
+    """Swap the factor and recovery codes, revoke the prior generation and audit atomically."""
+    try:
+        user = _lock_mfa_user(user, expected_generation, authenticated=True)
+        if user.auth_source != 'database':
+            raise MfaVerificationError('Verified provider reauthentication is required.')
+        factor = _locked_factor(user.id)
+        now = datetime.now(UTC)
+        if (
+            factor is None
+            or mfa_replacement_state(factor, generation=expected_generation, now=now) != 'pending'
+            or not factor.replacement_totp_secret
+        ):
+            raise MfaVerificationError('Start authenticator replacement again.')
+        replacement_secret = factor.replacement_totp_secret
+        accepted = _accepted_step(replacement_secret, code, last_accepted_step=None, now=now)
+        if accepted is None:
+            raise MfaVerificationError('Verification code was not accepted.')
+        codes = [secrets.token_hex(8).upper() for _ in range(8)]
+        hashes = [generate_password_hash(value) for value in codes]
+        # Slow proof/hash work must not outlive the original assurance or session deadline.
+        now = datetime.now(UTC)
+        if mfa_replacement_state(factor, generation=expected_generation, now=now) != 'pending':
+            raise MfaVerificationError('Start authenticator replacement again.')
+        if not isinstance(session_deadlines(user, read_session_policy(), now), SessionDeadlines):
+            raise MfaVerificationError('Sign in again before changing MFA.')
+        factor.totp_secret = replacement_secret
+        factor.recovery_hashes = hashes
+        factor.last_accepted_step = accepted
+        factor.enrolled_at = now
+        _clear_replacement(factor)
+        issued_generation = expected_generation + 1
+        user.auth_session_version = issued_generation
+        db.session.add(
+            stage_authentication_security_event(
+                user, action='mfa_replacement_confirmed', authenticated=True, success=True
+            )
+        )
+        db.session.commit()
+    except (SQLAlchemyError, CredentialEncryptionError, MfaVerificationError):
+        db.session.rollback()
+        raise
+    return codes, issued_generation
+
+
+def cancel_mfa_replacement(user: User, *, expected_generation: int) -> None:
+    """Discard only the caller's pending replacement; leave the active factor intact."""
+    try:
+        user = _lock_mfa_user(user, expected_generation, authenticated=True)
+        factor = _locked_factor(user.id)
+        if (
+            user.auth_source != 'database'
+            or factor is None
+            or not factor.enabled
+            or factor.replacement_generation != expected_generation
+        ):
+            raise MfaVerificationError('Start authenticator replacement again.')
+        _clear_replacement(factor)
+        db.session.add(
+            stage_authentication_security_event(
+                user, action='mfa_replacement_cancelled', authenticated=True, success=True
+            )
+        )
+        db.session.commit()
+    except (SQLAlchemyError, CredentialEncryptionError, MfaVerificationError):
+        db.session.rollback()
+        raise
+
+
 def regenerate_mfa_recovery_codes(
     user: User, submitted: str, *, expected_generation: int, current_password: str | None = None
 ) -> list[str]:
@@ -342,6 +460,13 @@ def regenerate_mfa_recovery_codes(
         _consume_factor_proof(user, factor, submitted, authenticated=True)
         codes = [secrets.token_hex(8).upper() for _ in range(8)]
         factor.recovery_hashes = [generate_password_hash(value) for value in codes]
+        if factor.replacement_generation is not None:
+            _clear_replacement(factor)
+            db.session.add(
+                stage_authentication_security_event(
+                    user, action='mfa_replacement_cancelled', authenticated=True, success=True
+                )
+            )
         db.session.add(
             stage_authentication_security_event(user, action='mfa_recovery_regenerated', authenticated=True, success=True)
         )

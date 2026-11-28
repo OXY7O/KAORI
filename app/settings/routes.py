@@ -25,13 +25,20 @@ from app.access.authentication.mfa.qr import build_totp_qr_data_uri
 from app.access.authentication.mfa.service import (
     MfaVerificationError,
     begin_mfa_enrollment,
+    begin_mfa_replacement,
     cancel_mfa_enrollment,
+    cancel_mfa_replacement,
     confirm_mfa_enrollment,
+    confirm_mfa_replacement,
     mfa_enrollment_state,
     mfa_policy_mode,
+    mfa_replacement_state,
     regenerate_mfa_recovery_codes,
 )
-from app.access.authentication.session import parse_authenticated_user_identifier
+from app.access.authentication.session import (
+    parse_authenticated_user_identifier,
+    preserve_current_session_after_security_change,
+)
 from app.access.users.directory import build_user_identity_context
 from app.common.timezone import (
     format_user_datetime,
@@ -230,6 +237,7 @@ def _mfa_account_error_message(error: MfaVerificationError) -> str:
         ),
         'MFA is already enrolled.': 'MFA is already enrolled. Use the recovery section below.',
         'Start MFA enrollment again.': 'Generate a new setup key before verifying a code.',
+        'Start authenticator replacement again.': 'Start replacement again using your current password and active factor.',
         'MFA enrollment expired; start again.': 'Setup key expired. Generate a new setup key and retry.',
         'Verification code was not accepted.': (
             'Verification code was not accepted. Check your authenticator time and retry.'
@@ -282,6 +290,32 @@ def _process_account_mfa_action(
             )
             title = 'MFA enabled'
             message = 'Save the recovery codes now. They will not be shown again.'
+        elif action == 'replace_begin':
+            mfa_setup_secret = begin_mfa_replacement(
+                user,
+                str(request.form.get('replacement_existing_code') or ''),
+                expected_generation=generation,
+                current_password=str(request.form.get('replacement_password') or '') if password is not None else None,
+            )
+            # A distinct account label avoids overwriting the still-active entry
+            # in authenticator applications that identify entries by issuer/label.
+            replacement_label = f'{user.username[:210]} (replacement {generation})'
+            mfa_setup_qr_src = build_totp_qr_data_uri(mfa_setup_secret, account_label=replacement_label)
+            title = 'Authenticator replacement started'
+            message = 'Scan the new setup key. Your existing authenticator stays active until verification succeeds.'
+        elif action == 'replace_confirm':
+            mfa_recovery_codes, issued_generation = confirm_mfa_replacement(
+                user, str(request.form.get('replacement_new_code') or ''), expected_generation=generation
+            )
+            preserve_current_session_after_security_change(
+                user_id=session_user_id, issued_session_version=issued_generation
+            )
+            title = 'Authenticator replaced'
+            message = 'Save your new recovery codes. Your previous authenticator and remembered sign-ins are invalid.'
+        elif action == 'replace_cancel':
+            cancel_mfa_replacement(user, expected_generation=generation)
+            title = 'Authenticator replacement cancelled'
+            message = 'Your active authenticator remains unchanged.'
         elif action == 'regenerate':
             mfa_recovery_codes = regenerate_mfa_recovery_codes(
                 user,
@@ -370,7 +404,10 @@ def account():
     enrollment_state = mfa_enrollment_state(
         mfa_factor, now=datetime.now(UTC), expected_generation=user.auth_session_version, authenticated=True
     )
+    replacement_state = mfa_replacement_state(mfa_factor, generation=user.auth_session_version, now=datetime.now(UTC))
     mfa_state = {
+        'replacement_pending': replacement_state == 'pending',
+        'replacement_expired': replacement_state == 'expired',
         'enrolled': enrollment_state == 'enrolled',
         'enrollment_pending': enrollment_state == 'pending',
         'enrollment_expired': enrollment_state == 'expired',

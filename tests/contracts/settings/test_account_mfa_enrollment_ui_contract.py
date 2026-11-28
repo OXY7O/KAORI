@@ -102,7 +102,7 @@ def test_mfa_recovery_regeneration_has_symmetric_cards_and_inline_form() -> None
     assert recovery.index('id="mfa-regen-code"') < recovery.index('Regenerate Recovery Codes</span>')
     assert 'flex flex-1 flex-col divide-y divide-outline-subtle' in recovery
     assert 'Password and authenticator/recovery code required.' in recovery
-    assert 'Fresh sign-in and authenticator/recovery code required.' in recovery
+    assert 'KAORI sign-in within five minutes and authenticator/recovery code required.' in recovery
     assert 'Regeneration invalidates all unused recovery codes.' in recovery
     assert 'Save new codes now; KAORI cannot show them again.' in recovery
     assert 'whitespace-nowrap' not in recovery
