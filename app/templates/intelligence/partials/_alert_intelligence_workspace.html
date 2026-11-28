@@ -3,7 +3,7 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
-{% import "components/status_detail_dialog.html" as status_dialog %}
+{% import "intelligence/components/_alert_readiness_actions.html" as readiness_ui %}
 {% set guide_items = [
     "Ownership Boundary: Prometheus and Alertmanager own source evaluation, grouping, inhibition, and provider-native silences. KAORI owns operator workflow, governed channel delivery, evidence, history, and archive.",
     "Source recovery and operator closure are separate. Resolved Today does not prove case closure.",
@@ -18,9 +18,6 @@
     {% set guide_items = guide_items + ['Last Good Snapshot Active: The latest provider refresh is stale or failed. Existing alert cases remain available from committed KAORI evidence while workers retry collection.'] %}
 {% endif %}
 {% set workspace_guide %}
-    {% if payload.tab == 'overview' %}
-        {{ status_dialog.trigger('alert-provider-coverage-dialog', label='View Cross-Domain Alert Coverage', button_text='Alert Coverage') }}
-    {% endif %}
     {{ info_tip.render('alert-operations-guide', 'Alert Operations Guide',
         'Review committed alert evidence within the selected operational scope.',
         items=guide_items, variant='guide', placement='left') }}
@@ -121,6 +118,9 @@
                 {% set blocked_state_title = "Unable to Qualify Provider Cases" if payload.provider_case_status == 'unavailable' else "Select an Authorized Provider Instance" %}
                 {% set blocked_state_description = "Only exact approved instance grants can expose committed provider cases. Unavailable or missing evidence never proves source health." %}
                 {% include 'components/states/_blocked_state.html' %}
+                {% if payload.tab == 'overview' %}
+                    <div class="mt-4 flex flex-wrap items-center gap-2">{{ readiness_ui.coverage_button() }}</div>
+                {% endif %}
             </div>
         {% elif payload.provider_case_mode and payload.tab == 'overview' %}
             {% include 'intelligence/partials/_vault_provider_case_overview.html' %}
@@ -152,6 +152,9 @@
                 {% set blocked_state_description = "The requested Registry provider is unavailable, disabled, or no longer active. Select a valid provider to view its AlertCases; KAORI will not widen this scope." %}
                 {% set blocked_state_tone = "warning" %}
                 {% include 'components/states/_blocked_state.html' %}
+                {% if payload.tab == 'overview' %}
+                    <div class="mt-4 flex flex-wrap items-center gap-2">{{ readiness_ui.coverage_button() }}</div>
+                {% endif %}
             </div>
         {% elif payload.tab == 'active' %}
             {% include 'intelligence/partials/_alert_ops_active.html' %}
