@@ -95,41 +95,6 @@
             </div>
             {{ loading_bar.render('alert-operations-active-loading', label='Refreshing Active Alert Queue') }}
         </header>
-        {% if not payload.provider_case_mode %}
-            {% set quick_context = {'tab': 'active', 'domain': payload.domain, 'asset': payload.selected_asset_key, 'per_page': payload.active_pagination.per_page} %}
-            <div class="flex flex-col gap-2 border-b border-outline-subtle px-5 py-3 sm:flex-row sm:items-center sm:gap-4 sm:px-6"
-                 data-alert-quick-views>
-                <p class="shrink-0 text-xs font-semibold text-content-secondary" id="alert-quick-views-label">Quick Views</p>
-                <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap"
-                     role="group"
-                     aria-labelledby="alert-quick-views-label">
-                    {% for label, icon, query, selected in [
-                        ('All', 'list', {}, payload.filters.severity == 'all' and payload.filters.workflow == 'all' and payload.filters.source_state == 'all'),
-                        ('Critical', 'triangle-alert', {'severity': 'critical'}, payload.filters.severity == 'critical' and payload.filters.workflow == 'all' and payload.filters.source_state == 'all'),
-                        ('Acknowledged', 'user-check', {'workflow': 'acknowledged'}, payload.filters.workflow == 'acknowledged' and payload.filters.severity == 'all' and payload.filters.source_state == 'all'),
-                        ('Source Unknown', 'circle-help', {'source_state': 'unknown'}, payload.filters.source_state == 'unknown' and payload.filters.severity == 'all' and payload.filters.workflow == 'all')
-                        ] %}
-                        {% set selected = selected and not payload.filters.q and payload.filters.source == 'all' %}
-                        {% set quick_params = dict(quick_context) %}
-                        {% set _ = quick_params.update(query) %}
-                        {% set quick_url = url_for('alert_intelligence.index', **quick_params) %}
-                        <a href="{{ quick_url }}"
-                           hx-get="{{ quick_url }}"
-                           hx-target="#alert-operations-active-registry"
-                           hx-select="#alert-operations-active-registry"
-                           hx-swap="outerHTML"
-                           hx-push-url="true"
-                           hx-indicator="#alert-operations-active-loading"
-                           hx-sync="#alert-operations-active-registry:replace"
-                           {% if selected %}aria-current="true"{% endif %}
-                           class="{{ table_ui.action_classes() }}">
-                            <i data-lucide="{{ 'check' if selected else icon }}" class="h-3.5 w-3.5 shrink-0 {{ 'text-kaori-primary' if selected else '' }}" aria-hidden="true"></i>
-                            <span class="{{ 'font-semibold text-kaori-primary' if selected else '' }}">{{ label }}</span>
-                        </a>
-                    {% endfor %}
-                </div>
-            </div>
-        {% endif %}
         <div class="{{ table_ui.inventory_filter_bar_classes() }}">
             <form id="alert-operations-filter-form"
                   action="{{ url_for('alert_intelligence.index') }}"
