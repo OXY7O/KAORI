@@ -24,6 +24,7 @@ def _candidate(status='queued', operation=KUBESPRAY_APPLY_OPERATION):
 
 @pytest.mark.parametrize('method,kwargs', [
     ('mark_job_running', {}),
+    ('update_job_progress', {'current': 1, 'message': 'fixture'}),
     ('mark_job_succeeded', {'result_summary': {'runner_rc': 0}}),
     ('mark_job_failed', {'error': 'fixture'}),
     ('mark_job_retrying', {'message': 'fixture'}),

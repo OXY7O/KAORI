@@ -259,3 +259,23 @@ transactional start/terminal writer and an independently authorized
 recovery disposition; unresolved jobs and seven target claims remain
 held. No mutation execution, automatic retry, recovery release, or
 independent native verification is enabled by this change.
+
+
+### Committed recovery hold (#4801)
+
+The internal local-security-review recovery service records an unresolved
+adopted Run with a distinct currently permissioned recovery owner, using
+historical Plan and immutable payload correlation plus all seven retained
+claims. Plan expiry or source drift does not prevent recording recovery
+evidence for an already adopted Run. Staleness derives from the canonical
+configured queue, heartbeat or cancellation deadlines, not user input.
+A hold updates the canonical result summary and progress message and
+commits the mandatory sanitized Activity Audit in the same transaction.
+It never changes job status, attempt, heartbeat, active deduplication,
+immutable payload or target claims. Duplicate holds fail closed; no
+worker cessation, provisioning success, cancellation or release is inferred.
+Generic progress writes are also fenced for the fixed Apply operation
+because they modify the fingerprinted payload. The local review helper is
+not a worker start permit, terminal writer, public route, release service
+or substitute for independent provider reconciliation. No broker or
+provider is invoked.
