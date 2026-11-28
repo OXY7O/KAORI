@@ -206,7 +206,9 @@ def login():
         password = form.password.data or ''
         try:
             protection = check_login_request(username)
-            if protection.over_budget:
+            if protection.origin_over_budget:
+                record_identity_budget_observation(enforced=protection.blocked, origin=True)
+            elif protection.over_budget:
                 record_identity_budget_observation(enforced=protection.blocked)
             if protection.blocked:
                 result = AuthResult(False, 'rate_limited', source='credentials')

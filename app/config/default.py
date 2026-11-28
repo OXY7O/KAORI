@@ -494,6 +494,8 @@ class Config:
     AUTH_BREAK_GLASS_RECOVERY_ALLOWED = _env_bool('AUTH_BREAK_GLASS_RECOVERY_ALLOWED', False)
     # Observe-only authentication abuse correlation; requires hosted qualification.
     AUTH_ABUSE_SIGNAL_ENABLED = _env_bool('AUTH_ABUSE_SIGNAL_ENABLED', False)
+    # Opt-in uniform origin/identity budget; qualify while Login Protection is Disabled.
+    AUTH_LOGIN_ORIGIN_BUDGET_ENABLED = _env_bool('AUTH_LOGIN_ORIGIN_BUDGET_ENABLED', False)
 
     AUTH_LOGIN_RATE_LIMIT = _env_str(
         'AUTH_LOGIN_RATE_LIMIT',

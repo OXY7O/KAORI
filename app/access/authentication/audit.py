@@ -223,7 +223,7 @@ def stage_session_expiry(user: User, *, reason: str) -> Notification:
     return event
 
 
-def record_identity_budget_observation(*, enforced: bool) -> None:
+def record_identity_budget_observation(*, enforced: bool, origin: bool = False) -> None:
     """Commit anonymous, secret-free budget evidence without claiming failed credentials."""
     actor = unauthenticated_actor_snapshot()
     now = datetime.now(UTC)
@@ -240,6 +240,7 @@ def record_identity_budget_observation(*, enforced: bool) -> None:
     event.metadata_json = {
         'audit_schema': 'authentication.security.v1',
         'access_action': 'identity_budget_exceeded',
+        'budget_scope': 'origin_identity' if origin else 'identity',
         'policy_mode': 'enforced' if enforced else 'monitor_only',
         'result': 'rejected' if enforced else 'observed',
     }
