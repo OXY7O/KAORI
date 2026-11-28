@@ -199,3 +199,19 @@ admission must use the same resource guard; none is introduced here.
 The new reservation is not an execution lease or a third approval channel.
 No default opt-in or route is added. Synthetic schema/uniqueness tests
 are not PostgreSQL concurrency or native host acceptance.
+
+
+### Canonical transaction-owned job creation (#4801)
+
+The existing Jobs & Executions service now stages a canonical JobExecution
+and initial subscriber using the same deduplication, quota and resource
+admission implementation as the normal create-or-attach path. The new
+transaction-owned primitive flushes without committing or dispatching,
+so a future separately admitted Run writer can persist a child Plan
+correlation, exact claim adoption and mandatory Activity Audit atomically.
+It returns existing active jobs without attaching or committing; an
+exclusive Run writer must reject that outcome. The owning domain must lock
+the exact parent, revalidate operation-specific mutation authorization,
+source/EE, current Plan and seven claims, then commit before dispatch.
+No Run writer, broker dispatch, mutation authorization, or automatic
+reservation release is enabled by this generic persistence change.

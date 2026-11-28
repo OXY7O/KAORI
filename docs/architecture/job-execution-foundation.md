@@ -105,6 +105,21 @@ A user can still attach to an existing identical job even after reaching a quota
 
 Future analytics jobs must use `app.platform_operations.jobs.dispatcher.enqueue_canonical_job()` rather than calling `apply_async()` directly. Admission is serialized by PostgreSQL advisory locks across all KAORI web replicas.
 
+The canonical persistence service now exposes `JobCreationSpec` and
+`stage_job_execution()` as the caller-owned transaction boundary used by
+`create_or_attach_job()`. A new job and its initial subscriber are flushed
+in the same transaction, with the existing deduplication and quota locks.
+The staging primitive never commits, rolls back, attaches to an existing
+job or calls the broker. The normal create-or-attach wrapper still commits
+new jobs and retains existing subscriber-attachment behavior on duplicates.
+
+A separately admitted infrastructure mutation domain must hold its own
+parent and resource locks, reject an existing-job result, and persist
+mandatory audit and durable target adoption with the new canonical child
+before committing. The domain owns rollback and post-commit dispatch
+reconciliation; the staging primitive is not an execution permit or a
+generic mutation dispatcher. It does not enable Kubespray Run.
+
 ## Cancellation
 
 Queued jobs are revoked and immediately marked canceled, releasing their active deduplication slot. Running validation/runtime jobs are not force-terminated because an interrupted provider request may leave incomplete evidence. Long-running analytics and forecasting tasks use `JobExecutionContext.checkpoint()` between chunks or model phases. A checkpoint refreshes the heartbeat and raises `JobCancellationRequested` when an operator requests cancellation.

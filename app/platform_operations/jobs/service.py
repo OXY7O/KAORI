@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 from uuid import uuid4
@@ -161,6 +162,97 @@ def _enforce_quotas(
             raise JobQuotaExceeded('The target resource has reached its active job limit.')
 
 
+@dataclass(frozen=True, slots=True)
+class JobCreationSpec:
+    """Canonical persistence input; never domain execution authorization."""
+
+    job_type: str
+    operation: str
+    queue_name: str
+    workload_class: str
+    requested_by_user_id: int | None
+    integration_type: str | None = None
+    integration_instance_id: int | None = None
+    scope_type: str | None = None
+    scope_key: str | None = None
+    resource_group: str | None = None
+    parameters: dict[str, Any] | None = None
+    payload: dict[str, Any] | None = None
+    deduplication_key: str | None = None
+    priority: int | None = None
+    max_attempts: int = 3
+    celery_task_id: str | None = None
+    parent_job_id: int | None = None
+
+    def resolved_key(self) -> str:
+        return self.deduplication_key or build_deduplication_key(
+            self.job_type,
+            self.operation,
+            self.integration_type,
+            self.integration_instance_id,
+            self.scope_type,
+            self.scope_key,
+            fingerprint=payload_fingerprint(self.parameters),
+        )
+
+
+def stage_job_execution(spec: JobCreationSpec) -> tuple[JobExecution, bool]:
+    """Stage canonical job and initial subscriber without commit or dispatch.
+
+    The transaction owner must provide domain authorization and lock any
+    parent/resource invariants before calling. An existing active record
+    is returned unchanged; callers requiring exclusive creation must deny
+    that outcome. On any failure the caller must roll back, never dispatch.
+    """
+    key = spec.resolved_key()
+    _acquire_admission_locks(
+        f'job-dedup:{key}',
+        f'job-user:{spec.requested_by_user_id}' if spec.requested_by_user_id is not None else None,
+    )
+    acquire_resource_admission_locks(spec.resource_group)
+    existing = find_active_job(deduplication_key=key)
+    if existing is not None:
+        return existing, False
+
+    _enforce_quotas(
+        requested_by_user_id=spec.requested_by_user_id,
+        workload_class=spec.workload_class,
+        resource_group=spec.resource_group,
+    )
+    job = JobExecution()
+    job.job_type = spec.job_type
+    job.operation = spec.operation
+    job.workload_class = spec.workload_class
+    job.queue_name = spec.queue_name
+    job.priority = spec.priority if spec.priority is not None else DEFAULT_PRIORITIES.get(spec.workload_class, 5)
+    job.status = 'queued'
+    job.requested_by_user_id = spec.requested_by_user_id
+    job.integration_type = spec.integration_type
+    job.integration_instance_id = spec.integration_instance_id
+    job.scope_type = spec.scope_type
+    job.scope_key = spec.scope_key
+    job.resource_group = spec.resource_group
+    job.deduplication_key = key
+    job.active_deduplication_key = key
+    job.parameter_fingerprint = payload_fingerprint(spec.parameters)
+    job.payload_json = to_json_compatible(spec.payload or spec.parameters or {})
+    job.celery_task_id = spec.celery_task_id or str(uuid4())
+    job.parent_job_id = spec.parent_job_id
+    job.max_attempts = max(spec.max_attempts, 1)
+    job.queued_at = _now()
+    db.session.add(job)
+    db.session.flush()
+    if spec.requested_by_user_id is not None:
+        subscriber = JobExecutionSubscriber()
+        subscriber.job_execution_id = job.id
+        subscriber.user_id = spec.requested_by_user_id
+        subscriber.notify_on_completion = True
+        subscriber.last_seen_at = _now()
+        db.session.add(subscriber)
+        db.session.flush()
+    return job, True
+
+
 def create_or_attach_job(
     *,
     job_type: str,
@@ -181,64 +273,37 @@ def create_or_attach_job(
     celery_task_id: str | None = None,
     parent_job_id: int | None = None,
 ) -> tuple[JobExecution, bool]:
-    fingerprint = payload_fingerprint(parameters)
-    key = deduplication_key or build_deduplication_key(
-        job_type,
-        operation,
-        integration_type,
-        integration_instance_id,
-        scope_type,
-        scope_key,
-        fingerprint=fingerprint,
-    )
-    _acquire_admission_locks(
-        f'job-dedup:{key}',
-        f'job-user:{requested_by_user_id}' if requested_by_user_id is not None else None,
-    )
-    acquire_resource_admission_locks(resource_group)
-    existing = find_active_job(deduplication_key=key)
-    if existing is not None:
-        attach_job_subscriber(existing, requested_by_user_id)
-        return existing, False
-
-    _enforce_quotas(
-        requested_by_user_id=requested_by_user_id,
+    spec = JobCreationSpec(
+        job_type=job_type,
+        operation=operation,
+        queue_name=queue_name,
         workload_class=workload_class,
+        requested_by_user_id=requested_by_user_id,
+        integration_type=integration_type,
+        integration_instance_id=integration_instance_id,
+        scope_type=scope_type,
+        scope_key=scope_key,
         resource_group=resource_group,
+        parameters=parameters,
+        payload=payload,
+        deduplication_key=deduplication_key,
+        priority=priority,
+        max_attempts=max_attempts,
+        celery_task_id=celery_task_id,
+        parent_job_id=parent_job_id,
     )
-    job = JobExecution()
-    job.job_type = job_type
-    job.operation = operation
-    job.workload_class = workload_class
-    job.queue_name = queue_name
-    job.priority = priority if priority is not None else DEFAULT_PRIORITIES.get(workload_class, 5)
-    job.status = 'queued'
-    job.requested_by_user_id = requested_by_user_id
-    job.integration_type = integration_type
-    job.integration_instance_id = integration_instance_id
-    job.scope_type = scope_type
-    job.scope_key = scope_key
-    job.resource_group = resource_group
-    job.deduplication_key = key
-    job.active_deduplication_key = key
-    job.parameter_fingerprint = fingerprint
-    job.payload_json = to_json_compatible(payload or parameters or {})
-    job.celery_task_id = celery_task_id or str(uuid4())
-    job.parent_job_id = parent_job_id
-    job.max_attempts = max(max_attempts, 1)
-    job.queued_at = _now()
-    db.session.add(job)
     try:
-        db.session.commit()
+        job, created = stage_job_execution(spec)
+        if created:
+            db.session.commit()
+            return job, True
     except IntegrityError:
         db.session.rollback()
-        existing = find_active_job(deduplication_key=key)
-        if existing is None:
+        job = find_active_job(deduplication_key=spec.resolved_key())
+        if job is None:
             raise
-        attach_job_subscriber(existing, requested_by_user_id)
-        return existing, False
     attach_job_subscriber(job, requested_by_user_id)
-    return job, True
+    return job, False
 
 
 def get_job_by_public_id(public_id: str) -> JobExecution | None:
