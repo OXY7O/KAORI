@@ -224,3 +224,19 @@ def test_source_only_cli_cannot_request_worker_check(diagnostic):
     assert 'source_only_worker_check_not_allowed' in result.output
     assert 'execution_authorized=false' in result.output
     assert events == []
+
+
+def test_source_only_activation_intent_is_distinct_from_runtime_target(target_records):
+    connection, _assignments, _preview, _receipt, _access, now = target_records
+    connection.enabled = False
+    kwargs = {'actor_id': 7, 'connection_id': 31, 'now': now}
+    intent = target_service.review_source_only_activation_intent(**kwargs)
+    assert isinstance(intent, target_service.SourceOnlyActivationIntent)
+    assert not isinstance(intent, target_service.RemoteTargetReview)
+    assert intent.execution_authorized is False
+    assert target_service.review_remote_preflight_target(**kwargs) is None
+    assert target_service.diagnose_remote_preflight_target(
+        **kwargs, allow_source_only_diagnostics=True
+    ) == ('runtime_activation_required', None)
+    connection.enabled = True
+    assert target_service.review_source_only_activation_intent(**kwargs) is None

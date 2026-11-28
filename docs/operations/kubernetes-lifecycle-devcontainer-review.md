@@ -77,6 +77,7 @@ Run the existing security/worker/transaction regression batch as well:
 ```bash
 python -m pytest -q \
   tests/integrations/test_remote_review_diagnostics_5186.py \
+  tests/integrations/test_remote_activation_request_5466.py \
   tests/integrations/test_remote_preflight_review_5186.py \
   tests/integrations/test_remote_job_review_5186.py \
   tests/integrations/test_remote_review_posture_5186.py \
@@ -213,6 +214,24 @@ and externally signed receipt. It does not measure the worker image,
 open SSH, retrieve credentials or produce a signature. The stock
 Dev Container runServices do not start the dedicated automation worker;
 do not repurpose another queue or treat a web shell as worker attestation.
+
+### Runtime activation request boundary (#5466)
+
+The internal `request_remote_runtime_activation` service now records a
+permission-checked, bounded and immutable request in the canonical AuditEvent
+ledger. The request binds the exact source-only connection, initiating actor,
+profile and remote candidate revisions, EE reference, inventory and access
+fingerprints. It expires within 15 minutes or sooner if access evidence does.
+Readback requalifies current committed evidence; drift and expired requests
+do not qualify. Duplicate pending requests are rejected.
+
+This is a request, not an independent activation approval or runtime
+attestation. No public route or operator CLI is exposed; the eventual
+authenticated caller and independent activation transition require their
+own reviewed implementation. Neither a request nor a historical review
+may set the connection enabled flag. The upstream remote source remains
+disabled and an accepted source revision, signed measured EE, explicit
+target operation authority and current worker checks remain mandatory.
 
 ## 4. End-to-end acceptance boundary
 
