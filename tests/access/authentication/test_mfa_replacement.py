@@ -87,7 +87,7 @@ def test_confirmation_failures_do_not_commit(
     if failure == 'invalid':
         monkeypatch.setattr(service, '_accepted_step', Mock(return_value=None))
     if failure == 'external':
-        user.auth_source = 'ldap'
+        user.auth_source = 'ldap_directory'
     if failure == 'audit':
         stage.side_effect = SQLAlchemyError('simulated audit failure')
     if failure == 'commit':
@@ -115,7 +115,7 @@ def test_cancel_preserves_active_factor(replacement_fixture: ReplacementFixture)
     store.commit.assert_called_once()
 
 
-@pytest.mark.parametrize('source,password', [('database', 'wrong'), ('ldap', None), ('google', None), ('github', None)])
+@pytest.mark.parametrize('source,password', [('database', 'wrong'), ('ldap_directory', None), ('google', None), ('github', None)])
 def test_begin_denies_unverified_primary(
     source: str, password: str | None, replacement_fixture: ReplacementFixture
 ) -> None:
@@ -181,7 +181,7 @@ def test_ldap_replacement_revalidates_bound_proof_and_rotates_generation(
     replacement_fixture: ReplacementFixture, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     user, factor, store, stage = replacement_fixture
-    user.auth_source = 'ldap'
+    user.auth_source = 'ldap_directory'
     user.external_id = 'stable'
     proof = LdapReauthenticationProof(ExternalCredentialProof(7, 3, 11), 'stable', 'a' * 64, datetime.now(UTC))
     bind = Mock(return_value=proof)
@@ -211,7 +211,7 @@ def test_stale_ldap_provider_fence_prevents_replacement_confirmation(
     replacement_fixture: ReplacementFixture, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     user, factor, store, stage = replacement_fixture
-    user.auth_source = 'ldap'
+    user.auth_source = 'ldap_directory'
     user.external_id = 'stable'
     proof = LdapReauthenticationProof(ExternalCredentialProof(7, 3, 11), 'stable', 'a' * 64, datetime.now(UTC))
     factor.replacement_totp_secret = 'new-test-seed'
@@ -227,3 +227,55 @@ def test_stale_ldap_provider_fence_prevents_replacement_confirmation(
     stage.assert_not_called()
     store.commit.assert_not_called()
     store.rollback.assert_called_once()
+
+
+@pytest.mark.parametrize('source', ('google', 'github', 'ldap', 'unsupported'))
+@pytest.mark.parametrize('action', ('begin', 'confirm', 'cancel'))
+def test_unsupported_replacement_cannot_use_fresh_admission_or_direct_post(
+    source: str, action: str, replacement_fixture: ReplacementFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    user, factor, store, stage = replacement_fixture
+    user.auth_source = source
+    user.auth_session_issued_at = datetime.now(UTC)
+    factor.replacement_totp_secret = 'pending-test-seed'
+    factor.replacement_generation = 7
+    factor.replacement_expires_at = datetime.now(UTC) + timedelta(minutes=1)
+    account_lock = Mock()
+    factor_lock = Mock()
+    ldap_bind = Mock()
+    local_check = Mock()
+    monkeypatch.setattr(service, '_lock_mfa_user', account_lock)
+    monkeypatch.setattr(service, '_locked_factor', factor_lock)
+    monkeypatch.setattr(service, 'reauthenticate_ldap_account', ldap_bind)
+    monkeypatch.setattr(User, 'check_password', local_check)
+    with pytest.raises(service.MfaVerificationError, match='Verified provider reauthentication'):
+        if action == 'begin':
+            service.begin_mfa_replacement(user, '123456', expected_generation=7, current_password='forged-password')
+        elif action == 'confirm':
+            service.confirm_mfa_replacement(user, '123456', expected_generation=7)
+        else:
+            service.cancel_mfa_replacement(user, expected_generation=7)
+    account_lock.assert_not_called()
+    factor_lock.assert_not_called()
+    ldap_bind.assert_not_called()
+    local_check.assert_not_called()
+    stage.assert_not_called()
+    store.commit.assert_not_called()
+    store.rollback.assert_called_once()
+    assert factor.enabled
+    assert factor.totp_secret == 'existing-test-seed'
+    assert factor.recovery_hashes == ['old-test-hash']
+    assert factor.replacement_totp_secret == 'pending-test-seed'
+    assert user.auth_session_version == 7
+
+
+def test_replacement_source_boundary_uses_canonical_catalog_keys() -> None:
+    from app.access.authentication.identity_provider.catalog import provider_definitions
+
+    supported = {
+        definition.provider_key
+        for definition in provider_definitions()
+        if service.mfa_replacement_supports_source(definition.provider_key)
+    }
+    assert supported == {'database', 'ldap_directory'}
+    assert not service.mfa_replacement_supports_source('ldap')

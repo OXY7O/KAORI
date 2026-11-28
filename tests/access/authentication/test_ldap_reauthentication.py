@@ -54,7 +54,7 @@ def test_ambiguous_or_missing_binding_rejected(count: int, monkeypatch: pytest.M
 
 def test_proof_contains_no_password_and_revalidates_exact_binding(monkeypatch: pytest.MonkeyPatch) -> None:
     link = ExternalIdentityLink(id=11, provider_id=7, user_id=42, subject='stable', distinguished_name='cn=fixture')
-    provider = IdentityProvider(id=7, provider_key='ldap', adapter_key='ldap', enabled=True, authentication_revision=3)
+    provider = IdentityProvider(id=7, provider_key='ldap_directory', adapter_key='ldap', enabled=True, authentication_revision=3)
     store = Mock()
     store.execute.return_value.scalar_one_or_none.return_value = link
     monkeypatch.setattr(ldap, 'db', SimpleNamespace(session=store))
@@ -69,7 +69,7 @@ def test_proof_contains_no_password_and_revalidates_exact_binding(monkeypatch: p
     assert ldap.LdapReauthenticationProof.from_record(proof.to_record()) == proof
     store.rollback.assert_called_once()
     ldap.lock_ldap_reauthentication_proof(42, proof)
-    lock.assert_called_once_with(7, 3, source='ldap')
+    lock.assert_called_once_with(7, 3, source='ldap_directory')
     link.distinguished_name = 'cn=changed'
     with pytest.raises(ldap.LdapReauthenticationError):
         ldap.lock_ldap_reauthentication_proof(42, proof)
@@ -85,7 +85,7 @@ def test_missing_provider_record_is_rejected() -> None:
 
 def test_directory_subject_mismatch_is_rejected_before_network(monkeypatch: pytest.MonkeyPatch) -> None:
     link = ExternalIdentityLink(id=11, provider_id=7, user_id=42, subject='other', distinguished_name='cn=fixture')
-    provider = IdentityProvider(id=7, provider_key='ldap', adapter_key='ldap', enabled=True, authentication_revision=3)
+    provider = IdentityProvider(id=7, provider_key='ldap_directory', adapter_key='ldap', enabled=True, authentication_revision=3)
     monkeypatch.setattr(ldap, '_linked_directory', Mock(return_value=(link, provider)))
     client = Mock()
     monkeypatch.setattr(ldap, 'LdapDirectoryClient', client)
@@ -96,7 +96,7 @@ def test_directory_subject_mismatch_is_rejected_before_network(monkeypatch: pyte
 
 def test_invalid_directory_password_never_creates_proof(monkeypatch: pytest.MonkeyPatch) -> None:
     link = ExternalIdentityLink(id=11, provider_id=7, user_id=42, subject='stable', distinguished_name='cn=fixture')
-    provider = IdentityProvider(id=7, provider_key='ldap', adapter_key='ldap', enabled=True, authentication_revision=3)
+    provider = IdentityProvider(id=7, provider_key='ldap_directory', adapter_key='ldap', enabled=True, authentication_revision=3)
     store = Mock()
     monkeypatch.setattr(ldap, 'db', SimpleNamespace(session=store))
     monkeypatch.setattr(ldap, '_linked_directory', Mock(return_value=(link, provider)))
