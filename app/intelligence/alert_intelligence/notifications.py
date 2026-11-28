@@ -220,8 +220,11 @@ def _dispatch_resolved(case: AlertCase) -> dict[str, int]:
     if case.domain == 'authentication' or case.source_type != 'recommendation':
         stats['skipped'] += 1
         return stats
+    if case.domain == 'registry' and not registry_case_route_eligible(case):
+        stats['skipped'] += 1
+        return stats
     mode = effective_routing_mode()
-    if mode == DELIVERY_DISABLED or (case.domain == 'registry' and not registry_case_route_eligible(case)):
+    if mode == DELIVERY_DISABLED:
         stats['skipped'] += 1
         return stats
     firing_channels = _successful_firing_channels(case)

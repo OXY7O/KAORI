@@ -216,10 +216,10 @@ def firing_routes(case: AlertCase) -> list[FiringRoute]:
         return []
     if case.source_state != 'firing' or case.routing_state != 'enabled':
         return []
+    if case.domain == 'registry' and not registry_case_route_eligible(case):
+        return []
     mode = effective_routing_mode()
     if mode == DELIVERY_DISABLED:
-        return []
-    if case.domain == 'registry' and not registry_case_route_eligible(case):
         return []
     policies = matching_routing_policies(case)
     if policies:
@@ -287,6 +287,8 @@ def acknowledgement_timeout_for_case(case: AlertCase) -> int:
 
 def policy_allows_resolved(case: AlertCase, channel_id: int) -> bool:
     if case.domain == 'authentication' or case.source_type != KAORI_ALERT_SOURCE_TYPE:
+        return False
+    if case.domain == 'registry' and not registry_case_route_eligible(case):
         return False
     mode = effective_routing_mode()
     if mode == DELIVERY_DISABLED:
