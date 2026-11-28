@@ -195,6 +195,6 @@ The portable non-secret application controls below are documented in root `.env.
 | --- | --- | --- |
 | `AUTH_LOCKOUT_MONITOR_ALLOWED` | `false` | Explicit environment authorization for a qualified Monitor Only transition. |
 | `AUTH_LOCKOUT_ENFORCEMENT_ALLOWED` | `false` | Separate authorization for a qualified Enforced transition from Monitor Only. |
-| `AUTH_BREAK_GLASS_RECOVERY_ALLOWED` | `false` | Authorization for a single isolated interactive management CLI invocation; never enable in persistent runtime configuration. |
+| `AUTH_BREAK_GLASS_RECOVERY_ALLOWED` | `false` | Authorization for a single isolated interactive Bot Protection or Login Protection recovery CLI invocation; never enable in persistent runtime configuration. |
 
 The first two controls do not change committed policy by themselves or attest UAT. The third is not a login bypass or secret and is not a persistent deployment option. Production environment validation rejects a true persistent recovery flag; the approved operator supplies it only to a single already authorized management CLI process. See the [Break-Glass runbook](../authentication/BREAK_GLASS_RUNBOOK.md). No new runtime secret or environment credentials are introduced.

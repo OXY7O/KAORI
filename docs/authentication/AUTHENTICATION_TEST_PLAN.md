@@ -132,3 +132,13 @@ After applying migration `20261128_auth_session_expiry` to the Dev Container dat
 - [ ] User lockout visibility is permission-scoped; self, external, inactive, deleted, Super Admin and unauthorized privileged-target unlock attempts are rejected. Exact active deadline and revision required.
 - [ ] State, factor replay consumption and audit/Notification Deck evidence roll back together on write/commit failure; successful unlock preserves lifecycle, credentials and existing sessions.
 - [ ] Verify actual hosted Redis/DB concurrency, policy writer lock order, role revocation, UI/light/dark/responsive/accessibility, notification projection, and independent all-sessions-expired recovery with Turnstile/Redis unavailable (#4014). Production activation remains HOLD until acceptance.
+
+
+## AL-04 Login Protection resilience qualification (#5416)
+
+- [ ] With all administrator sessions expired, verify shared Redis failure denies new web admission, without fallback or changing committed mode; inspect independent per-IP limiter behavior across app instances.
+- [ ] Under isolated approved management access, verify default denial, interactive process authorization, local Super Admin password and unused TOTP, declared operator/incident evidence and explicit revision/impact acknowledgement.
+- [ ] In Monitor Only or Enforced, rollback commits Disabled and exactly one revision increment with MFA replay state and correlated audit/notification; no-op with fresh proof preserves revision. Stale revision, replay, missing evidence, wrong/expired account and HTTP use fail closed.
+- [ ] Inject audit/commit failure and concurrent policy writer/credential admission/rollback; verify atomic state, no false success, existing session and unrelated controls unchanged, and no Redis changes.
+- [ ] Validate targeted-spray behavior for known/unknown/local Super Admin, collisions, shared NAT/IP and independent infrastructure mitigation; verify no enumeration or remotely induced permanent account lock.
+- [ ] Restore Redis through approved infrastructure path; qualify actual CLI bootstrap during outage, normal admission and controlled Monitor Only → Enforced reactivation. Record exact-SHA evidence and Human Acceptance. Activation HOLD until all relevant qualification passes.

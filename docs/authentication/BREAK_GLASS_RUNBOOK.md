@@ -43,7 +43,7 @@ For an existing authorized, fresh Local Database administrator session with enro
 
 Do not set either activation authorization switch until the relevant approved hosted qualification, recovery drill, and operational acceptance are recorded. Monitor Only precedes Enforced. Re-enable only after Redis script, shared topology, proxy trust, capacity, provider/normal login, protected recovery, and concurrent state/audit checks are validated against the deployed candidate. The environment switch alone does not change the committed mode and must never be treated as emergency rollback.
 
-**Recovery dependency:** #4014 provides a scoped source implementation for Turnstile outage recovery below. It is not yet runtime-qualified. Redis outage and targeted-login-spray recovery remain separate scenarios; keep Login Protection activation HOLD until they are qualified.
+**Recovery dependency:** #4014 and #5416 provide separately scoped source implementations for Bot Protection and Login Protection rollback. Neither is runtime-qualified. Redis outage and targeted-login-spray recovery remain operational qualification scenarios; keep Login Protection activation HOLD until acceptance.
 
 
 ## Isolated Bot Protection recovery (BP-03, #4014)
@@ -76,3 +76,28 @@ Use this procedure only after exact-image hosted qualification and explicit inci
 ### Recovery limits and drill
 
 The command's domain transaction has no Redis, Turnstile or external IdP call. Full Flask application bootstrap and deployment management access are not yet qualified under dependency outage. Redis loss can still prevent normal browser admission through existing rate limits; this operation is not a Redis recovery or a bypass of those controls. Independently qualify all-sessions-expired recovery, concurrent attempts, rollback/replay, exact runtime startup and operator access, then repeat drills under the approved operational schedule. No production use before admission and Human Acceptance.
+
+
+## Isolated Login Protection rollback (AL-04, #5416)
+
+This operation is limited to rollback of the optional KAORI-owned Login Protection policy. It is not an emergency login or Redis repair tool. Use only after hosted qualification and explicit incident/change authorization, under the same independent management access and local Super Admin custody prerequisites as BP-03. It does not change the independent Flask-Limiter configuration or clear Redis keys.
+
+### Diagnose before changing policy
+
+- Redis unavailable/misconfigured: keep normal login fail closed; restore the shared Redis service, approved credentials, network/TLS and topology through the infrastructure authority. Do not switch to memory storage, disable rate limits, flush Redis, or edit PostgreSQL manually. Verify both per-IP limiter and identity-budget behavior across instances after recovery.
+- Targeted spray: correlate existing credential, lockout and anonymous budget audit with approved edge/network evidence; the identity bucket is pseudonymous and may collide, so do not infer the targeted user from a bucket or an anonymous budget event. Preserve evidence, mitigate malicious traffic at approved infrastructure boundaries, verify trusted-proxy settings and shared store health. Local Super Admin is excluded from durable lockout, not from shared request controls.
+- If an incident-approved rollback of the optional policy is necessary and the administrative UI is unavailable, use the scoped command below. Disabling this policy reduces protection for normal local accounts; obtain explicit approval and compensating controls. A rollback cannot restore browser admission while the independent limiter remains unavailable, and a targeted per-IP denial can still persist.
+
+### Governed command
+
+Using the approved interactive management terminal for the exact affected admitted image and correctly selected Compose project:
+
+```bash
+docker compose exec -e AUTH_BREAK_GLASS_RECOVERY_ALLOWED=true web flask --app run:app recover-login-protection
+```
+
+The authorization flag remains false in persistent configuration. This invocation reads the committed mode/revision, releases the read transaction, then requires the operator to confirm that revision, supply the named operator reference, incident/change reference and non-sensitive reason, acknowledge the rollback and enter current local Super Admin password and unused TOTP via hidden prompts. A competing policy revision change rejects the operation. No browser session is issued.
+
+On success verify the committed Disabled mode, revision, Activity Audit correlation and actor Notification Deck. The revision increases once for a real mode transition; old observation rows remain stored but are no longer authoritative. A fresh-proof repeat on the same current Disabled revision is recorded as unchanged; a stale repeat is rejected. If commit outcome is uncertain, inspect committed evidence before retrying. MFA enrollment, Bot Protection, user lifecycle, existing sessions, provider settings and independent limiter remain intact. No automatic re-enable or recovery CLI activation path is provided.
+
+After infrastructure and attack mitigation, restore the approved protection through the existing policy UI and qualification process: Disabled → Monitor Only → Enforced, with separate authorization, shared Redis probe, recovery evidence and Human Acceptance. Record the protection gap duration and verify ordinary and recovery accounts, Local/LDAP/SSO, existing sessions and generic denial behavior. Qualification requires real Redis outage, all-sessions-expired and targeted-spray drills, PostgreSQL races, audit failure, replay and hosted startup; no production use based on source merge alone.
