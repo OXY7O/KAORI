@@ -47,7 +47,7 @@
                  class="{{ integration_ui.section_shell_classes() }}"
                  data-kaori-ansible-framed-detail>
             {{ tabs.render([
-                        ("configuration", "Configuration", "settings-2", "Source & Versions") ,
+                        ("configuration", "Configuration", "settings-2", connection.environment|replace("_", " ")|title) ,
             ("validation", "Validation & Capabilities", "scan-search", "Required"),
             ("runtime", "Runtime & History", "activity", pagination.total_items),
             ("inventory", "Inventory & Lifecycle", "boxes", inventory_pagination.total_items)
