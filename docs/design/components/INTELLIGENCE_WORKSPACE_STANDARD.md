@@ -207,3 +207,17 @@ The server-selected tab controls the introduction; it updates within the
 existing HTMX page boundary and remains present for blocked provider scopes.
 Do not add another card, Hero, status indicator, or unsupported capability
 claim to the introduction.
+
+
+### Active Alert review layout
+
+Use a shared block header and single divided metric grid for Active Alert
+Triage. Place static triage guidance in the existing workspace Guide rather
+than a separate colored callout. Quick Views belong directly above the queue
+filters, inside the same HTMX registry boundary, with a selected state only
+when the current filters exactly match the preset. Preserve selected scope,
+rows per page, Review actions and existing provider qualification boundaries.
+The Alert identity cell uses wrapped title and asset/namespace context, a
+muted full Case ID, and no duplicate source origin (shown in the Source
+column). Long names and identifiers must wrap without losing content; narrow
+screens retain the table's horizontal scroll. No new alert data or controls.

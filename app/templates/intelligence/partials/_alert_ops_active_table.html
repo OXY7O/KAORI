@@ -29,7 +29,7 @@
                 <caption class="sr-only">{{ 'Committed provider recovery and closure history' if payload.provider_case_mode and payload.tab == 'resolved' else 'Active alert cases and operational review actions' }}</caption>
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Alert</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[38%]">Alert</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Severity</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Source</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Workflow</th>
@@ -45,20 +45,36 @@
                         <tr id="alert-case-row-{{ case.public_id }}"
                             class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }}">
-                                <div class="min-w-0">
-                                    <p class="max-w-lg break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ case.alert_name }}</p>
-                                    <p class="mt-1 max-w-lg truncate text-xs leading-5 text-content-muted">
-                                        {{ case.asset_name }}
-                                        {% if case.namespace != '-' %}· {{ case.namespace }}{% endif %}
-                                        · {{ case.source_type_label }}
-                                    </p>
-                                    <p class="mt-1 font-mono text-xs leading-5 text-content-muted">{{ case.public_id }}</p>
+                                <div class="flex min-w-0 max-w-lg items-start gap-3" data-alert-case-identity>
+                                    <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="siren" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0 flex-1 space-y-1">
+                                        <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ case.alert_name }}</p>
+                                        <p class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs leading-5 text-content-secondary">
+                                            <span class="inline-flex min-w-0 items-start gap-1">
+                                                <i data-lucide="boxes" class="mt-1 h-3 w-3 shrink-0 text-content-muted" aria-hidden="true"></i>
+                                                <span class="min-w-0 [overflow-wrap:anywhere]">{{ case.asset_name }}</span>
+                                            </span>
+                                            {% if case.namespace != '-' %}
+                                                <span class="inline-flex min-w-0 items-start gap-1">
+                                                    <i data-lucide="layers-3" class="mt-1 h-3 w-3 shrink-0 text-content-muted" aria-hidden="true"></i>
+                                                    <span class="min-w-0 [overflow-wrap:anywhere]">{{ case.namespace }}</span>
+                                                </span>
+                                            {% endif %}
+                                        </p>
+                                        <p class="flex min-w-0 items-baseline gap-1.5 text-xs leading-5 text-content-muted">
+                                            <span class="shrink-0 font-medium">Case ID</span>
+                                            <span class="min-w-0 break-all font-mono">{{ case.public_id }}</span>
+                                        </p>
+                                    </div>
                                 </div>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(case.severity_label, case.severity_tone, size='compact') }}</td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 {{ table_label.status_indicator_label(case.source_state_label, case.source_state_tone, size='compact') }}
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ case.source_type_label }}</p>
+                                <p class="mt-1 max-w-[10rem] break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ case.source_type_label }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(case.workflow_label, case.workflow_tone, size='compact') }}</td>
                             <td class="{{ table_ui.cell_classes() }}">{{ case.owner }}</td>
