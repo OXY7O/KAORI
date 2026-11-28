@@ -104,3 +104,17 @@ def test_provider_inventory_evidence_is_permission_scoped_and_non_executable():
         assert prohibited not in projection
     assert 'defer(OpenBaoInstance.secret_id)' in projection
     assert 'defer(VaultInstance.secret_id)' in projection
+
+
+def test_remote_review_posture_is_jobs_permission_scoped_and_non_authorizing():
+    workspace = (ROOT / 'app/infrastructure_automation/workspace.py').read_text()
+    projection = (ROOT / 'app/infrastructure_automation/remote_review_posture.py').read_text()
+    template = (ROOT / 'app/templates/infrastructure_automation/_lifecycle_workspace.html').read_text()
+    assert "'remote_review': committed_remote_review_posture(selected).presentation() if can_jobs else None" in workspace
+    assert '{% if details.can_jobs and details.remote_review %}' in template
+    assert 'data-kaori-remote-review-evidence' in template
+    assert 'Historical Review' in projection
+    assert 'execution_authorized: bool = False' in projection
+    assert '.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).first()' in projection
+    for prohibited in ('ansible_runner.run', '.apply_async(', 'review_remote_preflight_target(', 'resolve_remote_worker_review('):
+        assert prohibited not in projection

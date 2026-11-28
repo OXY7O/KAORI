@@ -434,3 +434,18 @@ OpenBao transport, generated fixture keys, a substituted tmpfs root and
 synthetic setup events to exercise the existing handoffs and rotation
 failure. It never invokes Runner, SSH, live provider or native tmpfs
 admission and does not prove full preflight or worker authorization.
+
+
+### Committed remote review posture (#5186)
+
+The existing Kubernetes Lifecycle execution history now includes the
+latest exact connection-scoped remote review receipt under jobs.view.
+The read model checks the canonical operation/queue/scope, payload
+fingerprint, fixed receipt schema, negative execution flags, time window
+and committed source/EE identity. A newer unsuccessful attempt supersedes
+older receipts; no credential/host trust resolution or provider call runs
+during rendering. Even a recorded unexpired receipt is labeled Historical
+Review, never Ready or current authorization. Source and EE alignment are
+not proof of present credential, host trust or worker currentness.
+No raw receipt data, fingerprints or secret material are projected. No
+remote dispatch, material read, SSH or mutation is enabled by this UI.
