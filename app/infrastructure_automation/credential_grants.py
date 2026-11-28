@@ -24,7 +24,10 @@ from app.access.scoped_grants import (
     require_scope_grant_principal,
 )
 from app.extensions.db import db
-from app.infrastructure_automation.credential_evidence import resolve_current_credential_evidence
+from app.infrastructure_automation.credential_evidence import (
+    resolve_current_credential_evidence,
+    resolve_remote_draft_credential_evidence,
+)
 from app.infrastructure_automation.credential_scope_target import (
     CREDENTIAL_USE_PERMISSION,
     READ_ONLY_FACTS_OPERATION,
@@ -449,3 +452,82 @@ def review_current_credential_grant(
     ):
         return None
     return CurrentCredentialGrant(policy.id, current.revision_number, evidence, current.effective_until)
+
+
+@dataclass(frozen=True, slots=True, repr=False)
+class RemoteCredentialDraftReview:
+    policy_id: str
+    revision: int
+    evidence: TypedCredentialEvidence
+    expires_at: datetime
+    execution_authorized: bool = False
+
+
+def review_remote_credential_draft(
+    *, actor_user_id: int, connection_id: int, assignment_id: int, now: datetime
+) -> RemoteCredentialDraftReview | None:
+    """Qualify one exact current remote draft without activating or using it.
+
+    The remote source is disabled. A local active grant remains necessary
+    for the existing review but cannot stand in for the remote draft.
+    """
+    if (
+        not local_security_review_enabled()
+        or not isinstance(now, datetime)
+        or now.utcoffset() is None
+        or any(type(value) is not int or value <= 0 for value in (actor_user_id, connection_id, assignment_id))
+        or not lock_explicit_permissions(
+            actor_user_id, {CREDENTIAL_USE_PERMISSION, 'secrets_pki.view', 'inventory.view', 'jobs.execute'}
+        )
+    ):
+        return None
+    policies = db.session.execute(
+        select(ScopeAccessPolicy)
+        .join(AutomationCredentialScopeTarget, AutomationCredentialScopeTarget.policy_id == ScopeAccessPolicy.id)
+        .where(
+            ScopeAccessPolicy.principal_user_id == actor_user_id,
+            ScopeAccessPolicy.permission_key == CREDENTIAL_USE_PERMISSION,
+            ScopeAccessPolicy.scope_level == 'automation_credential',
+            AutomationCredentialScopeTarget.ansible_connection_id == connection_id,
+            AutomationCredentialScopeTarget.assignment_id == assignment_id,
+            AutomationCredentialScopeTarget.source_revision == REMOTE_CANDIDATE_SHA,
+            AutomationCredentialScopeTarget.operation_key == REMOTE_PLAYBOOK,
+        )
+        .order_by(ScopeAccessPolicy.id)
+        .limit(33)
+        .with_for_update(of=ScopeAccessPolicy)
+        .execution_options(populate_existing=True)
+    ).scalars().all()
+    if len(policies) > 32:
+        return None
+    candidates = []
+    for policy in policies:
+        revision = _latest_revision(policy.id)
+        if revision is None or revision.revision_number != policy.current_revision:
+            return None
+        if revision.lifecycle_status == 'active':
+            # No remote activation is admitted in the current source.
+            return None
+        if revision.lifecycle_status != 'draft':
+            continue
+        if revision.effective_from.utcoffset() is None or revision.effective_until.utcoffset() is None:
+            return None
+        if revision.effective_from <= now < revision.effective_until:
+            candidates.append((policy, revision))
+    if len(candidates) != 1:
+        return None
+    policy, revision = candidates[0]
+    if (
+        revision.approved_by_user_id is not None
+        or revision.approved_at is not None
+        or revision.credential_evidence_ref is not None
+        or not lock_explicit_permissions(revision.requested_by_user_id, {'roles.manage', 'users.manage'})
+    ):
+        return None
+    target = db.session.get(AutomationCredentialScopeTarget, policy.id, populate_existing=True, with_for_update=True)
+    if target is None:
+        return None
+    evidence = resolve_remote_draft_credential_evidence(policy, target, now=now)
+    if evidence is None or not evidence.issued_at <= now < revision.effective_until <= evidence.expires_at:
+        return None
+    return RemoteCredentialDraftReview(policy.id, revision.revision_number, evidence, revision.effective_until)

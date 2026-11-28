@@ -13,7 +13,10 @@ from sqlalchemy.orm import load_only
 
 from app.access.scope_policy import CredentialIssuerScope
 from app.extensions.db import db
-from app.infrastructure_automation.credential_scope_target import exact_credential_target_current
+from app.infrastructure_automation.credential_scope_target import (
+    exact_credential_target_current,
+    exact_remote_credential_draft_current,
+)
 from app.integrations.secrets_management.secrets_pki.providers.credential_version_proof import (
     CredentialVersionSelector,
     ProviderCredentialVersionSelector,
@@ -48,6 +51,25 @@ def resolve_current_credential_evidence(
     """
     if not exact_credential_target_current(policy, target, now=now):
         return None
+    return _resolve_qualified_credential_evidence(policy, target, now=now)
+
+
+def resolve_remote_draft_credential_evidence(
+    policy: ScopeAccessPolicy, target: AutomationCredentialScopeTarget, *, now: datetime
+) -> TypedCredentialEvidence | None:
+    """Review exact disabled remote selector using the same typed provider proof.
+
+    This distinct entry point never widens the active grant evaluator. The
+    authenticated caller must qualify the latest draft revision independently.
+    """
+    if not exact_remote_credential_draft_current(policy, target, now=now):
+        return None
+    return _resolve_qualified_credential_evidence(policy, target, now=now)
+
+
+def _resolve_qualified_credential_evidence(
+    policy: ScopeAccessPolicy, target: AutomationCredentialScopeTarget, *, now: datetime
+) -> TypedCredentialEvidence | None:
     source = db.session.get(
         IntegrationInstance, policy.integration_instance_id, populate_existing=True, with_for_update=True
     )

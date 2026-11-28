@@ -397,3 +397,23 @@ and version; Vault schema-v1 bytes are preserved. The new local scope and
 migration are review-only pending independent Access review and admission.
 No activation of automation credential-use grants or worker dispatch is enabled
 by this change.
+
+
+### Exact remote draft evidence correlation (#5184/#5186)
+
+Remote source candidate `linux_remote_preflight.yml` remains disabled.
+The distinct remote draft reviewer checks the current exact policy
+revision, explicit principal and requester authority, validity and
+independently signed provider-qualified typed SSH version evidence.
+It reuses the same locked Vault/OpenBao proof resolver as local review,
+without modifying the active grant evaluator. Active remote rows,
+ambiguous current drafts, revoked/expired evidence and prior approval
+metadata are denied; no activation or material access is introduced.
+Remote access review now requires the distinct current remote draft in
+addition to the existing local grant and independently verified console
+trust. Both credential reviews must resolve the same typed evidence.
+The v2 access correlation fingerprint binds both policy revisions and
+the shortest evidence validity; older remote target/worker review
+fingerprints cannot be reused. New independent review receipts must be
+issued for the new fingerprint. No source acceptance, worker image
+attestation, token minting or SSH permission follows from these reviews.
