@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Literal
 
-from sqlalchemy import delete, or_, select, update
+from sqlalchemy import Delete, Update, delete, or_, select, update
 
 from app.access.authentication.identity_provider.adapters.ldap.reauthentication import (
     LdapReauthenticationProof,
@@ -68,7 +68,7 @@ def _provider_proof_valid(account: AccountMetadata, record: object, now: datetim
     if (
         proof is None
         or proof.subject != account.subject
-        or not proof.verified_at <= now < proof.verified_at + MFA_RECENT_ADMISSION_TTL
+        or not timedelta(0) <= now - proof.verified_at < MFA_RECENT_ADMISSION_TTL
     ):
         return False
     # A metadata-only read, never acquire provider/link locks after the user lock.
@@ -114,12 +114,14 @@ def invalid_pending_material(
         if _expired(factor.enrollment_expires_at, now):
             return 'enrollment', 'expired'
         return None
-    if not any((
-        factor.replacement_seed_present,
-        factor.replacement_generation is not None,
-        factor.replacement_expires_at is not None,
-        factor.replacement_provider_proof is not None,
-    )):
+    if not any(
+        (
+            factor.replacement_seed_present,
+            factor.replacement_generation is not None,
+            factor.replacement_expires_at is not None,
+            factor.replacement_provider_proof is not None,
+        )
+    ):
         return None
     if not account.active or account.deleted_at is not None:
         return 'replacement', 'account_inactive'
@@ -166,6 +168,7 @@ def _factor_metadata(factor_id: int, user_id: int, *, lock: bool) -> PendingMeta
 
 def _apply_cleanup(factor: PendingMetadata, kind: CleanupKind, *, now: datetime) -> None:
     model = AuthenticationMfaFactor
+    statement: Delete | Update
     if kind == 'enrollment':
         statement = delete(model).where(model.id == factor.id, model.user_id == factor.user_id, model.enabled.is_(False))
     else:
@@ -192,7 +195,6 @@ def cleanup_pending_mfa(*, execute: bool = False, limit: int = 100, after_id: in
     if type(limit) is not int or not 1 <= limit <= MAX_BATCH or type(after_id) is not int or after_id < 0:
         raise ValueError('Invalid maintenance page boundary.')
     model = AuthenticationMfaFactor
-    now = datetime.now(UTC)
     try:
         candidates = db.session.execute(
             select(model.id, model.user_id)
@@ -229,6 +231,9 @@ def cleanup_pending_mfa(*, execute: bool = False, limit: int = 100, after_id: in
             if account is None or factor is None:
                 skipped += 1
                 continue
+            # Evaluate after acquiring locks: a replacement started after the
+            # page selection must not look like a future-dated proof.
+            now = datetime.now(UTC)
             decision = invalid_pending_material(account, factor, now=now)
             if decision is None:
                 continue
