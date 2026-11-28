@@ -45,6 +45,7 @@ class GenerationStore:
 def test_login_generation_is_atomic_database_update_with_exact_returning(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr(services, 'require_local_login_gate', lambda _user_id: None)
     store = GenerationStore(issued=8)
     monkeypatch.setattr(services.db, 'session', store)
     actor = User(id=41, auth_source='database', auth_session_version=7)

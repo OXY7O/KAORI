@@ -32,6 +32,8 @@ def _finalize_result(result: AuthResult) -> AuthResult:
 def authenticate(
     username: str, password: str, *, protection: LoginRequestProtection | None = None
 ) -> AuthResult:
+    if protection is not None and protection.blocked:
+        return AuthResult(False, 'rate_limited', source='credentials')
     registry = build_credential_provider_registry()
     if protection is None:
         local_result = registry.local.authenticate(username=username, password=password)

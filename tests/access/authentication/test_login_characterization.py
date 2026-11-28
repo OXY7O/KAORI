@@ -8,6 +8,8 @@ from flask import url_for
 from app import create_app
 from app.access.authentication import routes as auth_routes
 from app.access.authentication.bot_protection.service import BotPolicyMode, BotPolicyState
+from app.access.authentication.lockout_policy import LockoutMode
+from app.access.authentication.login_protection import LoginRequestProtection
 from app.access.authentication.results import AuthResult
 from app.bootstrap import presentation as bootstrap_presentation
 
@@ -28,6 +30,9 @@ def app(monkeypatch: pytest.MonkeyPatch):
         lambda: SimpleNamespace(ready=True, setup_required=False, missing_tables=()),
     )
     monkeypatch.setattr(auth_routes, 'enabled_sso_providers', lambda: [])
+    monkeypatch.setattr(
+        auth_routes, 'check_login_request', lambda _username: LoginRequestProtection(LockoutMode.DISABLED, 1)
+    )
     monkeypatch.setattr(
         auth_routes,
         'bot_policy_state',
@@ -61,7 +66,7 @@ def test_invalid_credentials_return_generic_failure_without_account_disclosure(
     monkeypatch.setattr(
         auth_routes,
         'authenticate',
-        lambda _username, _password: AuthResult(False, 'invalid_credentials', source='database'),
+        lambda _username, _password, **_kwargs: AuthResult(False, 'invalid_credentials', source='database'),
     )
     monkeypatch.setattr(
         auth_routes,

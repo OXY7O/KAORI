@@ -5,11 +5,16 @@ from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import check_password_hash
 
 from app.access.authentication.lockout_state import lock_account_state, stage_password_outcome
-from app.access.authentication.login_protection import LoginRequestProtection
+from app.access.authentication.login_protection import (
+    LoginProtectionUnavailable,
+    LoginRequestProtection,
+    read_login_policy,
+)
 from app.access.authentication.results import (
     DATABASE_UNAVAILABLE_MESSAGE,
     INVALID_LOGIN_MESSAGE,
     USER_INACTIVE_MESSAGE,
+    AuthReason,
     AuthResult,
     LocalCredentialProof,
 )
@@ -31,6 +36,8 @@ class DatabaseAuthProvider:
     def authenticate(
         self, username: str, password: str, *, protection: LoginRequestProtection | None = None
     ) -> AuthResult:
+        if protection is not None and protection.blocked:
+            return AuthResult(False, 'rate_limited', source=self.source, message=INVALID_LOGIN_MESSAGE)
         normalized = username.strip()
         if not normalized or not password:
             return AuthResult(False, 'invalid_credentials', source=self.source, message=INVALID_LOGIN_MESSAGE)
@@ -55,15 +62,17 @@ class DatabaseAuthProvider:
                 return AuthResult(False, 'access_not_permitted', source=self.source, message=INVALID_LOGIN_MESSAGE)
             if not user.is_active or not user.password_hash:
                 _dummy_check(password)
-                reason = 'user_inactive' if not user.is_active else 'invalid_credentials'
+                reason: AuthReason = 'user_inactive' if not user.is_active else 'invalid_credentials'
                 db.session.rollback()
                 return AuthResult(False, reason, source=self.source, user=user, message=USER_INACTIVE_MESSAGE)
             context = lock_account_state(user.id)
             if context is None and not user.is_super_admin:
                 raise ValueError('Local lockout account fence changed.')
-            if context is not None and protection is not None and (
-                protection.revision != context.revision or protection.mode != context.decision.mode
-            ):
+            if context is None:
+                mode, revision = read_login_policy(lock=True)
+            else:
+                mode, revision = context.decision.mode, context.revision
+            if protection is not None and (protection.revision != revision or protection.mode != mode):
                 # Do not let an in-flight Disabled request skip the newly
                 # activated shared request budget or reuse an obsolete mode.
                 raise ValueError('Login protection policy changed.')
@@ -80,7 +89,7 @@ class DatabaseAuthProvider:
             # Commit observation/reset before returning a primary result, even
             # when MFA or authorization later rejects session admission.
             db.session.commit()
-        except (SQLAlchemyError, ValueError, TypeError):
+        except (SQLAlchemyError, ValueError, TypeError, LoginProtectionUnavailable):
             db.session.rollback()
             return AuthResult(False, 'database_unavailable', source=self.source, message=DATABASE_UNAVAILABLE_MESSAGE)
         if not verified:

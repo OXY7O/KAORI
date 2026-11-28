@@ -57,7 +57,8 @@ def identity_bucket(username: str, secret: str | bytes) -> str:
     key = secret.encode() if isinstance(secret, str) else secret
     digest = hmac.digest(key, b'kaori:login-identity:v1:' + username.strip().casefold().encode(), hashlib.sha256)
     bucket = int.from_bytes(digest[:4], 'big') % BUCKET_COUNT
-    return f'kaori:login-identity:v1:{bucket:05x}'
+    namespace = hmac.digest(key, b'kaori:login-identity:namespace:v1', hashlib.sha256).hex()[:24]
+    return f'kaori:login-identity:v1:{namespace}:{bucket:05x}'
 
 
 def shared_identity_budget(username: str) -> bool:
@@ -87,16 +88,23 @@ def shared_identity_budget(username: str) -> bool:
         raise LoginProtectionUnavailable('Shared login protection is unavailable.') from exc
 
 
-def check_login_request(username: str) -> LoginRequestProtection:
-    """Read only the mode/revision before any identity lookup or provider call."""
-    row = db.session.execute(
-        select(AuthenticationSecurityPolicy.lockout_mode, AuthenticationSecurityPolicy.lockout_revision)
-        .where(AuthenticationSecurityPolicy.id == 1)
-    ).one_or_none()
+def read_login_policy(*, lock: bool = False) -> tuple[LockoutMode, int]:
+    statement = select(
+        AuthenticationSecurityPolicy.lockout_mode, AuthenticationSecurityPolicy.lockout_revision
+    ).where(AuthenticationSecurityPolicy.id == 1)
+    if lock:
+        statement = statement.with_for_update(read=True, of=AuthenticationSecurityPolicy)
+    row = db.session.execute(statement).one_or_none()
     mode = LockoutMode(row[0]) if row is not None else LockoutMode.DISABLED
     revision = int(row[1]) if row is not None else 1
     if revision < 1:
         raise LoginProtectionUnavailable('Invalid login protection policy.')
+    return mode, revision
+
+
+def check_login_request(username: str) -> LoginRequestProtection:
+    """Read only the mode/revision before any identity lookup or provider call."""
+    mode, revision = read_login_policy()
     # No new request budget is activated implicitly in Disabled.
     return LoginRequestProtection(
         mode, revision, shared_identity_budget(username) if mode != LockoutMode.DISABLED else False
