@@ -16,6 +16,7 @@ from app.common.pagination import paginate_query, paginate_sequence
 from app.extensions.db import db
 from app.infrastructure_automation.host_registry import preview_inventory_intent
 from app.infrastructure_automation.kubernetes.committed_preflight import committed_kubespray_preflight
+from app.infrastructure_automation.kubernetes.inventory_receipt import committed_inventory_receipt_review
 from app.infrastructure_automation.kubernetes.plan_currentness import committed_kubespray_plan_currentness
 from app.infrastructure_automation.kubernetes.source_policy import committed_source_state
 from app.models.automation import AutomationInventoryAssignment
@@ -204,6 +205,7 @@ def build_automation_workspace(
             'assets': _committed_host_assets(selected, page=asset_page, per_page=asset_per_page)
             if can_inventory
             else None,
+            'inventory_store': committed_inventory_receipt_review(selected).presentation() if can_inventory else None,
             'can_jobs': can_jobs,
             'can_inventory': can_inventory,
             'execution_authorized': False,

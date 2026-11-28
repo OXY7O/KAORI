@@ -88,3 +88,19 @@ def test_workspace_does_not_trust_unbounded_or_unqualified_input():
 
     assert _bounded_query('  kubespray  ') == 'kubespray'
     assert _bounded_query('a' * 150) == 'a' * 80
+
+
+def test_provider_inventory_evidence_is_permission_scoped_and_non_executable():
+    workspace = (ROOT / 'app/infrastructure_automation/workspace.py').read_text()
+    projection = (ROOT / 'app/infrastructure_automation/kubernetes/inventory_receipt.py').read_text()
+    template = (ROOT / 'app/templates/infrastructure_automation/_lifecycle_workspace.html').read_text()
+    assert "'inventory_store': committed_inventory_receipt_review(selected).presentation() if can_inventory else None" in workspace
+    assert 'data-kaori-inventory-store-evidence' in template
+    assert '{% if not details.can_inventory %}' in template
+    assert 'Historical Source Aligned' in template
+    assert 'Run Kubespray' not in template
+    assert "'execution_authorized': False" not in projection or 'execution_authorized: bool = False' in projection
+    for prohibited in ('requests.get(', 'ansible_runner.run', 'subprocess.run(', 'secret_id.data'):
+        assert prohibited not in projection
+    assert 'defer(OpenBaoInstance.secret_id)' in projection
+    assert 'defer(VaultInstance.secret_id)' in projection

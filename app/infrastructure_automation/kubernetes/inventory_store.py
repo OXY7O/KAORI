@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -18,6 +19,7 @@ from app.infrastructure_automation.kubernetes.inventory_kv import (
     verify_or_publish,
 )
 from app.infrastructure_automation.kubernetes.inventory_parser import verify_ansible_inventory
+from app.infrastructure_automation.kubernetes.source_policy import ANSIBLE_CORE_VERSION
 from app.integrations.secrets_management.secrets_pki.providers.kv2_http import KV2HTTPTransport, SecretProviderError
 from app.integrations.secrets_management.secrets_pki.providers.kv2_transport import validate_auth_mount
 from app.integrations.secrets_management.secrets_pki.providers.openbao.client import OpenBaoClient, _verify_inspection_authority
@@ -148,6 +150,12 @@ def _commit_receipt(
     if _reference(intent, provider_key, current) != reference or transport.endpoint != endpoint:
         raise SecretProviderError('Source or provider changed during readback; no receipt was committed.')
     receipt = {
+        'schema_version': 1,
+        'provider_origin_sha256': hashlib.sha256(endpoint.encode('utf-8')).hexdigest(),
+        'source_repository': current['source_repository'],
+        'source_sha': current['source_sha'],
+        'pod_cidr': current['config']['pod_cidr'],
+        'service_cidr': current['config']['service_cidr'],
         'provider_id': reference.provider_id,
         'provider_key': reference.provider_key,
         'cluster_id': reference.cluster_id,
@@ -158,6 +166,7 @@ def _commit_receipt(
         'observed_at': datetime.now(UTC).isoformat(),
         'execution_authorized': False,
         'ansible_inventory_parser': 'verified' if parser_verified else 'not_checked',
+        'ansible_core_version': ANSIBLE_CORE_VERSION if parser_verified else None,
     }
     # This is historical readback evidence, not a lease or currentness grant.
     connection.metadata_json = {**(connection.metadata_json or {}), 'local_inventory_store_receipt': receipt}
