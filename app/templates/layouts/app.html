@@ -87,6 +87,8 @@
             </div>
         </div>
         {% if current_user.is_authenticated %}
+            {% include "access/authentication/partials/_session_expiry_dialog.html" %}
+            <script defer src="{{ url_for('static', filename='js/session_lifecycle.js') }}"></script>
             <div id="kaori-user-timezone-sync"
                  class="hidden"
                  data-mode="{{ current_timezone_mode }}"
