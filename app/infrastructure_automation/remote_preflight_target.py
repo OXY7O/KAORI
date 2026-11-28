@@ -41,6 +41,21 @@ class RemoteTargetReview:
     execution_authorized: bool = False
 
 
+@dataclass(frozen=True, slots=True, repr=False)
+class SourceOnlyActivationIntent:
+    """Redacted prerequisite identity; deliberately not a RemoteTargetReview."""
+
+    connection_id: int
+    actor_id: int
+    source_sha: str
+    ee_digest: str
+    inventory_fingerprint: str
+    host_registry_fingerprint: str
+    access_fingerprint: str
+    expires_at: datetime
+    execution_authorized: bool = False
+
+
 def review_remote_preflight_target(
     *, actor_id: int, connection_id: int, now: datetime
 ) -> RemoteTargetReview | None:
@@ -52,13 +67,28 @@ def review_remote_preflight_target(
 def diagnose_remote_preflight_target(
     *, actor_id: int, connection_id: int, now: datetime, allow_source_only_diagnostics: bool = False
 ) -> tuple[str, RemoteTargetReview | None]:
-    """Evaluate the existing gates in order; return a bounded first blocker.
+    """Return a runtime review target only on the original enabled path."""
+    state, evidence = _evaluate_remote_preflight_target(
+        actor_id=actor_id, connection_id=connection_id, now=now,
+        allow_source_only_diagnostics=allow_source_only_diagnostics,
+    )
+    return state, evidence if isinstance(evidence, RemoteTargetReview) else None
 
-    Internal caller owns the transaction and authenticated operation. This
-    review of committed records is not runtime/source/target admission.
-    The explicit source-only diagnostic never returns a target, even when
-    every historical prerequisite is qualified.
-    """
+
+def review_source_only_activation_intent(
+    *, actor_id: int, connection_id: int, now: datetime
+) -> SourceOnlyActivationIntent | None:
+    """Resolve only committed prerequisite identity inside the caller's transaction."""
+    _, evidence = _evaluate_remote_preflight_target(
+        actor_id=actor_id, connection_id=connection_id, now=now, allow_source_only_diagnostics=True,
+    )
+    return evidence if isinstance(evidence, SourceOnlyActivationIntent) else None
+
+
+def _evaluate_remote_preflight_target(
+    *, actor_id: int, connection_id: int, now: datetime, allow_source_only_diagnostics: bool
+) -> tuple[str, RemoteTargetReview | SourceOnlyActivationIntent | None]:
+    """Evaluate shared locked evidence without granting runtime or execution admission."""
     if (
         type(actor_id) is not int
         or actor_id <= 0
@@ -124,10 +154,12 @@ def diagnose_remote_preflight_target(
         members.append({'assignment_id': assignment.id, 'fingerprint': access.fingerprint})
         targets.append(RemoteFactsTarget(f'kaori-{assignment.id}', assignment.host_id, assignment.role))
         expiries.append(access.expires_at)
-    if source_only:
-        return 'runtime_activation_required', None
+    schema = (
+        'kaori.automation.source_only_activation_intent.v1'
+        if source_only else 'kaori.automation.remote_preflight_target.v1'
+    )
     fingerprint = sha256(canonical_statement({
-        'schema': 'kaori.automation.remote_preflight_target.v1',
+        'schema': schema,
         'connection_id': connection_id,
         'actor_id': actor_id,
         'source_sha': source_sha,
@@ -136,6 +168,17 @@ def diagnose_remote_preflight_target(
         'host_registry_fingerprint': preview.inventory_fingerprint,
         'members': members,
     })).hexdigest()
+    if source_only:
+        return 'runtime_activation_required', SourceOnlyActivationIntent(
+            connection_id=connection_id,
+            actor_id=actor_id,
+            source_sha=source_sha,
+            ee_digest=ee_digest,
+            inventory_fingerprint=receipt.fingerprint,
+            host_registry_fingerprint=preview.inventory_fingerprint,
+            access_fingerprint=fingerprint,
+            expires_at=min(expiries),
+        )
     return 'historical_target_qualified', RemoteTargetReview(
         connection_id=connection_id,
         actor_id=actor_id,
