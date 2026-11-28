@@ -317,3 +317,20 @@ def test_alert_lifecycle_navigation_is_above_hero_and_scope_preserving() -> None
     assert 'name="tab"' in workspace
     assert 'value="{{ payload.tab }}"' in workspace
     assert 'lifecycle navigation above' in summary
+
+
+def test_lifecycle_control_balances_readiness_height_without_empty_card_space() -> None:
+    from jinja2 import Environment
+
+    overview = read('app/templates/intelligence/partials/_alert_ops_overview.html')
+    Environment().parse(overview)
+    lifecycle = overview.split('>Lifecycle Control</h3>', 1)[1].split('</section>', 1)[0]
+    assert 'grid items-stretch gap-4 xl:grid-cols-' in overview
+    assert 'flex min-w-0 flex-col overflow-hidden' in overview
+    assert 'data-alert-lifecycle-metrics' in lifecycle
+    assert 'grid flex-1 auto-rows-fr grid-cols-1 gap-px bg-outline-subtle sm:grid-cols-2' in lifecycle
+    assert 'xl:grid-cols-4' not in lifecycle
+    assert 'flex min-w-0 flex-col justify-center bg-surface-card' in lifecycle
+    for field in ('acknowledged', 'silenced', 'resolved_today', 'routing_policies'):
+        assert lifecycle.count(f'payload.summary.{field}') >= 1
+    assert 'readiness_ui.readiness_actions()' in overview

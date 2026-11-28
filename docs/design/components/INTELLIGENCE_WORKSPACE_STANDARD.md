@@ -183,3 +183,15 @@ repeat the dialog in provider-specific/blocked scope content. Coverage describes
 implementation paths only, not connected instances, health, permissions or
 runtime acceptance. Preserve the existing Notification Channels and Data
 Lifecycle navigation.
+
+
+### Alert Intelligence Overview balance
+
+The recommendation-origin Lifecycle Control and Operational Readiness panels
+share the wide-screen grid row. Lifecycle Control uses a flex-column shell
+with a two-by-two, equal-row metric grid that fills the available panel body;
+small screens use one column and the outer panels stack naturally. Retain the
+four existing committed metrics and status indicators, with no artificial
+spacer, fixed-height filler, or new evidence claims. Keep Quick Actions in the
+Operational Readiness footer. The Alert Operations Snapshot remains a separate
+four-indicator summary.
