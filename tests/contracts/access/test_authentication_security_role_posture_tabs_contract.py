@@ -206,3 +206,33 @@ def test_posture_values_are_factual_without_fake_inventory_or_provider_health() 
     assert 'Total enrolled users' not in mfa
     assert "'Healthy' if" not in bot
     assert 'Active device count' not in session
+
+
+def test_login_protection_recovery_panel_groups_existing_policy_boundaries() -> None:
+    partial = read(AUTH.parent / '_login_protection_controls.html')
+    Environment().parse(partial)
+    configuration, recovery = partial.split('aria-labelledby="login-protection-recovery-heading"', 1)
+    assert 'xl:col-span-3' in configuration
+    assert 'xl:col-span-2' in configuration
+    assert 'grid items-stretch gap-4 p-4 lg:p-5 xl:grid-cols-5' in configuration
+    assert 'data-auth-login-recovery-layout="grouped"' in recovery
+    for heading in ('Threshold Summary', 'Applies To', 'Recovery Boundary'):
+        assert recovery.count(heading) == 1
+    for detail in (
+        '5 seconds cooldown',
+        '30 seconds cooldown',
+        '15-minute lock',
+        'Monitor Only observes; Enforced applies these gates.',
+        'Super Admin is excluded from durable lockout, not request limits.',
+        'Existing authenticated sessions are preserved.',
+        'LDAP and SSO retain upstream credential authority.',
+        'Automatic unlock at expiry; rejected attempts do not extend the lock.',
+        'Authorized unlock is governed in Access → Users.',
+        'Independent recovery must be qualified before activation.',
+    ):
+        assert detail in recovery
+    assert '<form' not in recovery
+    assert '<button' not in recovery
+    assert 'hx-history="false"' in configuration
+    assert 'name="lockout_revision"' in configuration
+    assert '_lockout_assurance_fields.html' in configuration

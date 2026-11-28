@@ -69,21 +69,70 @@
                       aria-hidden="true"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
                     <h4 id="login-protection-recovery-heading" class="text-sm font-semibold text-content-primary">Enforcement &amp; Recovery</h4>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Fixed thresholds and recovery boundaries.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Fixed thresholds and governed recovery boundaries.</p>
                 </div>
             </div>
-            <dl class="mt-3 divide-y divide-outline-subtle">
-                {% for label, value in [('3–4 Failures', '5 seconds cooldown'),
-                    ('5–9 Failures', '30 seconds cooldown'), ('10 Failures', '15-minute lock'),
-                    ('Recovery', 'Automatic / authorized unlock')] %}
-                    <div class="flex flex-wrap items-baseline justify-between gap-2 py-2.5">
-                        <dt class="text-xs text-content-muted">{{ label }}</dt>
-                        <dd class="text-sm font-semibold text-content-primary">{{ value }}</dd>
+            <div class="mt-4 flex flex-1 flex-col gap-3" data-auth-login-recovery-layout="grouped">
+                <section class="flex flex-1 flex-col rounded-xl border border-outline-subtle bg-surface-subtle p-3.5"
+                         aria-labelledby="login-threshold-summary-heading">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="timer" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                        <h5 id="login-threshold-summary-heading" class="text-xs font-semibold text-content-primary">Threshold Summary</h5>
                     </div>
-                {% endfor %}
-            </dl>
-            <p class="mt-3 text-xs leading-5 text-content-secondary">Local accounts only. Existing sessions are preserved; LDAP and SSO retain upstream authority.</p>
-            <p class="mt-3 text-xs leading-5 text-content-muted">Authorized unlock is governed in Access → Users. Independent recovery must be qualified before activation.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Qualifying password failures within 15 minutes.</p>
+                    <dl class="mt-2 divide-y divide-outline-subtle">
+                        {% for label, value, tone in [
+                            ('3–4 Failures', '5 seconds cooldown', 'text-content-primary'),
+                            ('5–9 Failures', '30 seconds cooldown', 'text-status-warning-text'),
+                            ('10 Failures', '15-minute lock', 'text-status-warning-text')
+                            ] %}
+                            <div class="flex flex-wrap items-baseline justify-between gap-2 py-2">
+                                <dt class="text-xs text-content-secondary">{{ label }}</dt>
+                                <dd class="text-xs font-semibold {{ tone }}">{{ value }}</dd>
+                            </div>
+                        {% endfor %}
+                    </dl>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Monitor Only observes; Enforced applies these gates.</p>
+                </section>
+                <section class="flex flex-1 flex-col rounded-xl border border-outline-subtle bg-surface-subtle p-3.5"
+                         aria-labelledby="login-protection-scope-heading">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="users-round" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                        <h5 id="login-protection-scope-heading" class="text-xs font-semibold text-content-primary">Applies To</h5>
+                    </div>
+                    <ul class="mt-2 space-y-2 text-xs leading-5 text-content-secondary">
+                        {% for icon, detail in [
+                            ('user-check', 'Local accounts; Super Admin is excluded from durable lockout, not request limits.'),
+                            ('monitor-check', 'Existing authenticated sessions are preserved.'),
+                            ('fingerprint', 'LDAP and SSO retain upstream credential authority.')
+                            ] %}
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="{{ icon }}" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                <span class="min-w-0">{{ detail }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+                <section class="flex flex-1 flex-col rounded-xl border border-outline-subtle bg-surface-subtle p-3.5"
+                         aria-labelledby="login-recovery-boundary-heading">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="lock-open" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                        <h5 id="login-recovery-boundary-heading" class="text-xs font-semibold text-content-primary">Recovery Boundary</h5>
+                    </div>
+                    <ul class="mt-2 space-y-2 text-xs leading-5 text-content-secondary">
+                        {% for icon, detail in [
+                            ('clock', 'Automatic unlock at expiry; rejected attempts do not extend the lock.'),
+                            ('user-cog', 'Authorized unlock is governed in Access → Users.'),
+                            ('shield-alert', 'Independent recovery must be qualified before activation.')
+                            ] %}
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="{{ icon }}" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                <span class="min-w-0">{{ detail }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+            </div>
         </section>
     </div>
 </section>
