@@ -1,5 +1,4 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
-{% import "components/table_primitives.html" as table_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
@@ -46,75 +45,6 @@
     'warning' if payload.provider_case_mode or payload.summary.active else 'normal',
     title_extra=workspace_guide
     ) %}
-    <div class="border-b border-outline-subtle bg-surface-card px-4 py-4 sm:px-5">
-        <div class="space-y-3">
-            <div class="min-w-0">
-                <h3 class="{{ table_ui.block_title_classes() }}">Operational Context</h3>
-                <p class="{{ table_ui.block_description_classes() }}">{{ 'Select the domain and asset to review.' if payload.tab == 'active' and not payload.provider_case_mode else 'Choose the managed domain, provider and authorized asset scope.' }}</p>
-            </div>
-            <form id="alert-intelligence-context-form"
-                  action="{{ url_for('alert_intelligence.index') }}"
-                  method="get"
-                  hx-get="{{ url_for('alert_intelligence.index') }}"
-                  hx-trigger="change"
-                  hx-target="#alert-intelligence-page-content"
-                  hx-select="#alert-intelligence-page-content"
-                  hx-swap="outerHTML show:none focus-scroll:false"
-                  hx-push-url="true"
-                  hx-indicator="#alert-intelligence-context-loading"
-                  hx-sync="this:replace"
-                  hx-disinherit="hx-indicator"
-                  class="{{ table_ui.filter_layout_classes() }}">
-                <input class="alert-intelligence-context-persistent"
-                       type="hidden"
-                       name="tab"
-                       value="{{ payload.tab }}">
-                <label class="min-w-0">
-                    <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
-                    <select id="alert-intelligence-domain-select"
-                            name="domain"
-                            class="{{ table_ui.filter_select_classes() }}">
-                        {% for option in payload.domain_options %}
-                            <option value="{{ option.value }}"
-                                    {% if payload.domain == option.value %}selected{% endif %}>
-                                {{ option.label }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </label>
-                {% if payload.provider_case_mode %}
-                    <label class="min-w-0">
-                        <span class="{{ table_ui.filter_label_classes() }}">Provider</span>
-                        <select name="provider" class="{{ table_ui.filter_select_classes() }}">
-                            <option value="">Select Qualified Provider</option>
-                            {% for option in payload.provider_options %}
-                                <option value="{{ option.value }}"
-                                        {% if payload.selected_provider == option.value %}selected{% endif %}>{{ option.label }}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-                {% endif %}
-                <label class="min-w-0">
-                    <span class="{{ table_ui.filter_label_classes() }}">{{ 'Instance' if payload.provider_case_mode else 'Asset Scope' }}</span>
-                    <select id="alert-intelligence-asset-select"
-                            name="asset"
-                            class="{{ table_ui.filter_select_classes() }}">
-                        {% for option in payload.assets %}
-                            <option value="{{ option.value }}"
-                                    {% if payload.selected_asset_key == option.value %}selected{% endif %}>
-                                {{ option.label }}
-                                {% if option.environment != 'Fleet scope' and option.environment != '-' %}· {{ option.environment }}{% endif %}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <noscript>
-                    <button type="submit" class="{{ table_ui.action_classes() }}">Apply Context</button>
-                </noscript>
-            </form>
-            {{ loading_bar.render('alert-intelligence-context-loading', label='Refreshing Operational Context') }}
-        </div>
-    </div>
     <div data-alert-intelligence-active-section="{{ payload.tab }}"
          class="bg-surface-card">
         {% if payload.provider_case_mode and payload.provider_case_status != 'ready' %}

@@ -36,11 +36,13 @@ def test_active_alert_filters_are_tab_local_auto_refresh_and_keep_clear_filters(
     workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
     active = read('app/templates/intelligence/partials/_alert_ops_active.html')
 
-    assert 'Operational Context' in workspace
-    assert 'id="alert-intelligence-context-form"' in workspace
-    assert 'id="alert-intelligence-domain-select"' in workspace
-    assert 'id="alert-intelligence-asset-select"' in workspace
-    context_form = workspace.split('id="alert-intelligence-context-form"', 1)[1].split('</form>', 1)[0]
+    context = read('app/templates/intelligence/partials/_alert_intelligence_context.html')
+    assert 'Operational Context' in context
+    assert 'id="alert-intelligence-context-form"' not in workspace
+    assert 'id="alert-intelligence-context-form"' in context
+    assert 'id="alert-intelligence-domain-select"' in context
+    assert 'id="alert-intelligence-asset-select"' in context
+    context_form = context.split('id="alert-intelligence-context-form"', 1)[1].split('</form>', 1)[0]
     assert 'hx-get="{{ url_for(\'alert_intelligence.index\') }}"' in context_form
     assert 'hx-trigger="change"' in context_form
     assert 'name="domain"' in context_form

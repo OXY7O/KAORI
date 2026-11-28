@@ -265,3 +265,20 @@ requests swap only the registry and never push the parent URL. No credentials,
 destination values or management mutations are rendered in the modal. Keep
 Manage Channels as the link to Integrations, and keep Policy Registry visible.
 Provider-origin routing retains its separately authorized candidate registry.
+
+
+### Global Alert Intelligence operational context
+
+Render one compact, page-level Operational Context bar between lifecycle tab
+navigation and the Hero, inside the existing full-page HTMX boundary. Do not
+repeat selectors inside the tab workspace. Overview, Active Alerts, Silences
+and Resolved retain editable domain and asset scope. Recommendation routing
+retains domain selection and a read-only current alert scope; Registry routing
+retains its editable asset selector. Recommendation templates are global
+provider/event resources, not per-asset templates; show this distinction and
+retain the current alert summary scope as read-only context. The read-only
+scope carries the exact existing asset parameter and links to Overview for
+scope changes. Provider-origin tabs and invalid Registry scope always retain
+all applicable editable selectors for recovery and authorization. Domain
+selection remains available on every tab. Do not change backend scope
+admission, tab navigation, mutation authority or evidence counts.

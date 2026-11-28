@@ -1,0 +1,98 @@
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% set global_templates = payload.tab == 'templates' and not payload.provider_case_mode %}
+{% set show_asset = payload.provider_case_mode or payload.scope_invalid or payload.tab in ['overview', 'active', 'silences', 'resolved'] or (payload.tab == 'routing' and payload.domain == 'registry') %}
+<section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+         aria-labelledby="alert-operational-context-title"
+         data-alert-operational-context>
+    <div class="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:gap-5">
+        <div class="flex shrink-0 items-center gap-2.5 lg:max-w-[15rem]">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0">
+                <h2 id="alert-operational-context-title" class="{{ table_ui.block_title_classes() }}">Operational Context</h2>
+                <p class="text-xs leading-5 text-content-muted">{{ 'Global notification templates' if global_templates else 'Authorized provider scope' if payload.provider_case_mode else 'Selected alert scope' }}</p>
+            </div>
+        </div>
+        <form id="alert-intelligence-context-form"
+              action="{{ url_for('alert_intelligence.index') }}"
+              method="get"
+              hx-get="{{ url_for('alert_intelligence.index') }}"
+              hx-trigger="change"
+              hx-target="#alert-intelligence-page-content"
+              hx-select="#alert-intelligence-page-content"
+              hx-swap="outerHTML show:none focus-scroll:false"
+              hx-push-url="true"
+              hx-indicator="#alert-intelligence-context-loading"
+              hx-sync="this:replace"
+              hx-disinherit="hx-indicator"
+              class="{{ table_ui.filter_layout_classes() }} flex-1">
+            <input class="alert-intelligence-context-persistent"
+                   type="hidden"
+                   name="tab"
+                   value="{{ payload.tab }}">
+            <label class="min-w-0">
+                <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
+                <select id="alert-intelligence-domain-select"
+                        name="domain"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for option in payload.domain_options %}
+                        <option value="{{ option.value }}"
+                                {% if payload.domain == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            {% if payload.provider_case_mode %}
+                <label class="min-w-0">
+                    <span class="{{ table_ui.filter_label_classes() }}">Provider</span>
+                    <select name="provider" class="{{ table_ui.filter_select_classes() }}">
+                        <option value="">Select Qualified Provider</option>
+                        {% for option in payload.provider_options %}
+                            <option value="{{ option.value }}"
+                                    {% if payload.selected_provider == option.value %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            {% endif %}
+            {% if show_asset %}
+                <label class="min-w-0">
+                    <span class="{{ table_ui.filter_label_classes() }}">{{ 'Instance' if payload.provider_case_mode else 'Asset Scope' }}</span>
+                    <select id="alert-intelligence-asset-select"
+                            name="asset"
+                            class="{{ table_ui.filter_select_classes() }}">
+                        {% for option in payload.assets %}
+                            <option value="{{ option.value }}"
+                                    {% if payload.selected_asset_key == option.value %}selected{% endif %}>
+                                {{ option.label }}
+                                {% if option.environment != 'Fleet scope' and option.environment != '-' %}· {{ option.environment }}{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </label>
+            {% else %}
+                <input type="hidden" name="asset" value="{{ payload.selected_asset_key }}">
+                <div class="min-w-0" data-alert-retained-scope>
+                    <p class="{{ table_ui.filter_label_classes() }}">{{ 'Alert Summary Scope' if global_templates else 'Current Alert Scope' }}</p>
+                    <div class="flex min-h-10 min-w-0 items-center justify-between gap-3 rounded-md border border-outline-subtle bg-surface-hover px-3 py-2">
+                        <p class="min-w-0 break-words text-sm text-content-secondary [overflow-wrap:anywhere]">{{ payload.selected_asset_name }}</p>
+                        {% set overview_url = url_for('alert_intelligence.index', tab='overview', domain=payload.domain, asset=payload.selected_asset_key) %}
+                        <a href="{{ overview_url }}"
+                           hx-get="{{ overview_url }}"
+                           hx-target="#alert-intelligence-page-content"
+                           hx-select="#alert-intelligence-page-content"
+                           hx-swap="outerHTML show:none focus-scroll:false"
+                           hx-push-url="true"
+                           hx-sync="#alert-intelligence-page-content:replace"
+                           class="shrink-0 text-xs font-semibold text-kaori-primary hover:underline">Change Scope</a>
+                    </div>
+                </div>
+            {% endif %}
+            <noscript>
+                <button type="submit" class="{{ table_ui.action_classes() }}">Apply Context</button>
+            </noscript>
+        </form>
+    </div>
+    {{ loading_bar.render('alert-intelligence-context-loading', label='Refreshing Operational Context') }}
+</section>
