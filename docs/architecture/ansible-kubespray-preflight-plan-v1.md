@@ -78,3 +78,36 @@ Plan summary and fingerprint include the registry and host-access digests. Dispa
 The #5180 SQLite fixture is reused to record the actual three governed metadata bindings and audit events. Repeated readback must produce the same order-independent digest; changes to host revision, pinned version, destroyed version, missing binding or disabled source block, and a new collection generation changes the digest. ORM reads refresh previously loaded records, and the worker refreshes its request and source records after the canonical progress checkpoint. This is readback freshness, not a transaction-wide execution lock or proof of remote SSH; the independent execution boundary still must take a bounded target lock and revalidate. PostgreSQL concurrency/UAT remain separate.
 
 The currentness projection retains the existing eight-plus-two gate presentation and identifies inventory/access drift or source/EE drift as a sanitized blocker, rather than misrepresenting it as a successful preflight or exposing Secret metadata. Plan target projection and the repeated dispatch qualification use named, shared validation boundaries within the existing Code Health limits; no debt allowance is changed.
+
+
+### Governed Plan acknowledgement candidate (#4800/#4801)
+
+The local review-lane acknowledgement service follows the existing canonical
+AuditEvent approval pattern used by Kubernetes Tenant release handoff. It
+does not duplicate the immutable Plan JobExecution or create a separate
+permission system. It requires an explicitly enabled local security review
+transaction, exact current latest Plan, actual canonical connection and
+three registered hosts, and distinct Plan requester/checker with current
+explicit integrations.manage, inventory.view and jobs.execute permissions.
+This permission combination is a proposal for review, not mutation authority.
+
+The acknowledgement pins the Plan job ID, Plan fingerprint, source/EE,
+inventory/registry/access digests, maker/checker, bounded UTC maintenance
+window (candidate maximum two hours), opaque change reference and expiry
+(the earlier of Plan expiry and window end). The window must begin before
+the Plan expires; execution admission remains blocked. The writer takes the
+existing canonical transaction-scoped job resource locks for the exact
+connection and all three host identities and refreshes the locked records
+before appending mandatory AuditEvent. It rejects duplicate acknowledgement,
+a live overlapping acknowledgement for the connection and same-Plan
+reactivation after revocation. Latest acknowledgement readback requalifies
+the Plan, actors, active window and exact record. Revocation appends an audit
+event without requiring stale source/preflight to become healthy again.
+
+No public writer, mutation job, long-lived Run lease or Kubernetes execution
+is introduced. A separate independently admitted runtime must establish
+cross-connection conflicting Run prevention for the entire worker lifetime,
+fresh signed source/EE, operation-specific credentials, native preflight and
+actual target mutation authorization. The last two preflight governance gates
+remain blocked; do not mark either ready from this candidate acknowledgement.
+Native PostgreSQL concurrency, independent Access review and UAT remain open.
