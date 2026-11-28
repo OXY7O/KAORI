@@ -35,3 +35,23 @@ def test_coverage_output_cannot_mutate_authoritative_registry():
     first = provider_coverage_rows()
     first[3]['status'] = 'Qualified in production'
     assert provider_coverage_rows()[3]['status'] == 'Scoped read registered'
+
+
+def test_coverage_is_on_demand_in_shared_overview_not_inline_panels():
+    from pathlib import Path
+
+    root = Path('app/templates/intelligence/partials')
+    include = "include 'intelligence/partials/_alert_provider_coverage.html'"
+    page = (root / '_alert_intelligence_page.html').read_text(encoding='utf-8')
+    workspace = (root / '_alert_intelligence_workspace.html').read_text(encoding='utf-8')
+    assert page.count(include) == 1
+    assert "payload.tab == 'overview'" in page
+    assert "status_dialog.trigger('alert-provider-coverage-dialog'" in workspace
+    for name in ('_alert_ops_overview.html', '_vault_provider_case_overview.html', '_alert_intelligence_workspace.html'):
+        assert include not in (root / name).read_text(encoding='utf-8')
+    dialog = (root / '_alert_provider_coverage.html').read_text(encoding='utf-8')
+    assert 'data-kaori-native-dialog' in dialog
+    assert dialog.count('data-kaori-dialog-close') == 2
+    assert 'aria-labelledby="alert-provider-coverage-title"' in dialog
+    assert all(f'item.{field}' in dialog for field in ('domain', 'provider', 'origin', 'status', 'tone', 'limitation'))
+    assert '<table' not in dialog
