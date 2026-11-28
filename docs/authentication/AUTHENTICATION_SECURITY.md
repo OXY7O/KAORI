@@ -11,6 +11,7 @@
 ## Credential handling
 
 - Local passwords are stored only as adaptive password hashes through Werkzeug's configured secure method.
+- New Local Database passwords use the existing 12–1024-character shared validator, a case-insensitive bounded default/common-password blocklist (including values meeting minimum length), and canonical length guidance on Account, user creation, and reset. The list is not a comprehensive breach corpus; no credential is sent to an external service. Existing hashes are not invalidated by the blocklist. A minimum-length change or compromised-password screening requires separate policy review and qualification across local provisioning, reset and break-glass.
 - Plaintext credentials exist only for the request duration and are never copied to logs, audit metadata, exceptions, task queues, or notifications.
 - LDAP bind secrets, OIDC client secrets, SAML keys, tokens, codes, assertions, and provider payloads follow the same rule.
 - Password comparison and provider failures return normalized reason codes and generic messages.

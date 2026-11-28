@@ -202,7 +202,7 @@ def test_credential_workspace_keeps_action_left_and_security_context_right() -> 
     assert 'Current Password' in credentials
     assert 'New Password' in credentials
     assert 'Confirm New Password' in credentials
-    assert 'Minimum 12 characters' in credentials
+    assert 'password_form.new_password.flags.minlength' in credentials
     assert 'Password reuse is blocked' in credentials
     assert 'grid gap-4 md:grid-cols-2' in credentials
     assert 'lg:grid-cols-3' not in credentials

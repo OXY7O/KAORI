@@ -22,9 +22,9 @@ def test_local_database_password_policy_is_shared_and_matches_settings_copy() ->
     assert 'LocalPasswordPolicy()' in auth_forms
     assert user_forms.count('LocalPasswordPolicy()') >= 2
     assert 'local_password_policy_error(normalized)' in admin_command
-    assert 'Minimum 12 characters' in settings_template
-    assert 'Minimum 12 characters' in user_template
-    assert 'Minimum 12 characters' in reset_template
+    assert 'password_form.new_password.flags.minlength' in settings_template
+    assert 'form.password.flags.minlength' in user_template
+    assert 'form.password.flags.minlength' in reset_template
     assert 'Minimum 8 characters' not in settings_template
     assert 'Minimum eight characters' not in user_template
 
@@ -69,7 +69,8 @@ def test_credential_workspace_explains_session_effect_without_reopening_external
     credential_information = read('app/templates/settings/account/partials/_credential_information.html')
     hero = read('app/templates/settings/account/partials/_hero.html')
 
-    assert 'Minimum 12 characters' in change_password
+    assert 'password_form.new_password.flags.minlength' in change_password
+    assert 'password_form.new_password.flags.minlength' in credential_information
     assert 'Password reuse is blocked' in change_password
     assert 'Password, sessions, and audit.' in credential_information
     assert 'Provider ownership, KAORI access, and audit boundary.' in credential_information

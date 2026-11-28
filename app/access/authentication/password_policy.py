@@ -12,6 +12,21 @@ BLOCKED_LOCAL_PASSWORDS = frozenset(
         'password',
         'password123',
         'kaori',
+        '123456789012',
+        '123456789012345',
+        '111111111111',
+        '000000000000',
+        'administrator',
+        'adminadminadmin',
+        'changeme12345',
+        'password1234',
+        'password12345',
+        'password123456',
+        'passwordpassword',
+        'qwertyuiop12',
+        'qwerty123456',
+        'letmein123456',
+        'kaoriadmin123',
     }
 )
 
@@ -30,7 +45,9 @@ def local_password_policy_error(value: object) -> str | None:
 
 
 class LocalPasswordPolicy:
-    """WTForms validator for KAORI-owned Local Database credentials."""
+    '''WTForms validator for KAORI-owned Local Database credentials.'''
+
+    field_flags = {'minlength': LOCAL_PASSWORD_MIN_LENGTH, 'maxlength': LOCAL_PASSWORD_MAX_LENGTH}
 
     def __call__(self, form, field) -> None:  # noqa: ANN001
         error = local_password_policy_error(field.data)
