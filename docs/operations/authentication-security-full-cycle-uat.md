@@ -699,3 +699,8 @@ The [Break-Glass runbook](../authentication/BREAK_GLASS_RUNBOOK.md) and [authent
 ## AL-05 committed authentication abuse observation (#5420)
 
 Use the exact candidate in authorized UAT with observation disabled by default. Qualify the existing fast-signal worker and PostgreSQL time-window query under load, then separately authorize observation. Inject controlled committed audit outcomes for ordinary/unknown identities, recovery-principal rejection, multi-source/target patterns, identity-budget pressure, monitor/enforced thresholds, CAPTCHA/MFA/provider and endpoint limits. Validate aggregate-only snapshot, fixed observation windows, bounded sample and recipients, deduplication with concurrent retries, atomic audit/notification failure and stale/partial/missed-window posture. Check the existing Notification Deck only for eligible recipients; verify no external delivery, no new public route or login enforcement change, and existing Kubernetes runtime signal regression. These tests are not yet executed. Native recommendation/AlertCase routing and stronger throttling remain separate scope.
+
+
+## Account integrated handoff (#5323)
+
+Use the Settings General/Account Dev Container UAT matrix for personal Profile, Activity, Credentials and MFA on the exact holding SHA. Validate effective policy projection against the same privileged/ordinary session and MFA kernels, no browser-factor/device claim, exact personal history, and four-tab visual matrix. Account source completion is not runtime acceptance. All prior source-only authentication/security checkpoints remain unqualified until executable evidence is recorded. Keep optional login protection/abuse controls disabled until separately approved; native authentication AlertCase remains Reserved Plan.

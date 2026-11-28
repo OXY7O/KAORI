@@ -84,7 +84,7 @@ def test_credential_workspace_explains_session_effect_without_reopening_external
     assert 'Other Active Sessions' not in credential_information
     assert 'Remembered Sign-Ins' not in credential_information
     assert 'Provider-managed recovery' in hero
-    assert 'Other sessions are revoked; secrets stay out of audit.' in hero
+    assert 'Other issued logins and remembered sign-ins are revoked; absolute session age is preserved.' in hero
 
 
 def test_administrative_reset_now_revokes_target_sessions_and_no_longer_claims_they_remain_active() -> None:

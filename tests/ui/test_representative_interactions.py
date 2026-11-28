@@ -800,13 +800,14 @@ def test_settings_account_profile_activity_credentials_visual_qa(
         'profile': '[data-account-profile-workspace="full-width"]',
         'activity': '[data-authentication-activity-layout="full-width"]',
         'credentials': '[data-credential-workspace-layout="natural-columns"]',
+        'mfa': '[data-account-mfa-workspace="personal-enrollment"]',
     }
     for theme in ('light', 'dark'):
         _load_persisted_visual_theme(page, theme)
         for tab, selector in workspaces.items():
             scenario = f'settings-account-{tab}-{theme}'
             with _browser_evidence(page, scenario, viewport_name):
-                # Full GET first, then real shared HTMX navigation for the two other tabs.
+                # Full GET first, then real shared HTMX navigation for the remaining tabs.
                 if tab == 'profile':
                     response = page.goto(
                         f'{kaori_authenticated_base_url}{account_path}?tab=profile',
@@ -831,8 +832,14 @@ def test_settings_account_profile_activity_credentials_visual_qa(
                     expect(page.locator('input[name="current_password"]')).to_have_count(1)
                     expect(page.locator('input[name="new_password"]')).to_have_count(1)
                     # Do not submit or modify real credentials from a visual suite.
+                elif tab == 'mfa':
+                    expect(page.get_by_role('heading', name='Multi-Factor Authentication')).to_be_visible()
+                    expect(page.locator('[data-account-mfa-posture="cards"]')).to_be_visible()
                 else:
                     expect(page.get_by_role('heading', name='Account Profile & Access')).to_be_visible()
+                    expect(page.get_by_role('heading', name='Personal Security Posture')).to_be_visible()
+                    expect(page.locator('[data-account-security-posture="effective"]')).to_contain_text('15 min idle')
+                    expect(page.locator('[data-account-security-posture="effective"]')).to_contain_text('Not Permitted')
 
                 _assert_query_tab_strip_has_no_vertical_overflow(
                     page, expect_horizontal_scroll=viewport_name in {'mobile', 'small-mobile'}

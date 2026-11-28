@@ -2,21 +2,27 @@ from __future__ import annotations
 
 import os
 from collections.abc import Iterator
+from datetime import UTC, datetime, timedelta
 from threading import Thread
 from unittest.mock import Mock, patch
 
 import pytest
+from flask import g
 from playwright.sync_api import Page
 from werkzeug.serving import make_server
 
 from app import create_app
 from app.access.authentication.bot_protection.service import BotPolicyMode, BotPolicyState
+from app.access.authentication.lockout_policy import LockoutMode
+from app.access.authentication.login_protection import LoginRequestProtection
 from app.access.authentication.mfa.policy import MfaGate, MfaPolicyDecision, MfaPolicyMode
 from app.access.authentication.readiness import AuthenticationDatabaseReadiness
 from app.access.authentication.results import AuthResult, LocalCredentialProof
+from app.access.authentication.session_lifecycle import SessionDeadlines, SessionPolicy
 from app.common.pagination import build_pagination_window, pagination_payload
 from app.extensions import login_manager
 from app.models import User
+from app.settings.account.queries import build_personal_security_posture
 
 CANONICAL_VIEWPORTS = {
     'large-desktop': (1440, 900),
@@ -280,6 +286,13 @@ def kaori_authenticated_base_url() -> Iterator[str]:
         True, 'success', source='database', user=user,
         local_credential_proof=LocalCredentialProof('browser-fixture-only', 1),
     )
+    def load_browser_user(_user_id: str) -> User:
+        # Deterministic read-only browser fixture, not real admission evidence.
+        now = datetime.now(UTC)
+        g.kaori_session_policy = SessionPolicy()
+        g.kaori_session_deadlines = SessionDeadlines(now + timedelta(minutes=15), now + timedelta(hours=4))
+        return user
+
     # This browser-only fixture has no MFA persistence tables. Account GET still
     # runs its real view and templates against deterministic unenrolled state.
 
@@ -295,9 +308,13 @@ def kaori_authenticated_base_url() -> Iterator[str]:
                 return_value=BotPolicyState(BotPolicyMode.DISABLED, 'cloudflare_turnstile', None, None, False),
             ),
             mfa_decision=Mock(return_value=MfaPolicyDecision(MfaPolicyMode.DISABLED, MfaGate.ALLOW, False)),
+            check_login_request=Mock(return_value=LoginRequestProtection(LockoutMode.DISABLED, 1)),
+            read_session_policy=Mock(return_value=SessionPolicy()),
+            refresh_activity=Mock(return_value=True),
+            session_deadlines=Mock(side_effect=lambda *_args: g.kaori_session_deadlines),
         ),
         patch('app.access.authentication.routes.authenticate', return_value=auth_result),
-        patch('app.access.authentication.routes.record_successful_authentication', return_value=None),
+        patch('app.access.authentication.routes.record_successful_authentication', return_value=1),
         patch('app.access.authentication.routes._record_result', return_value=None),
         # Deterministic Account view: no live audit/history DB query.
         patch.multiple(
@@ -305,8 +322,11 @@ def kaori_authenticated_base_url() -> Iterator[str]:
             recent_authentication_events=Mock(return_value=[]),
             account_mfa_factor=Mock(return_value=None),
             mfa_policy_mode=Mock(return_value='disabled'),
+            read_personal_security_posture=Mock(return_value=build_personal_security_posture(
+                mode='disabled', enrolled=False, privileged=True, session_policy=SessionPolicy(),
+            )),
         ),
-        patch.object(login_manager, '_user_callback', lambda _user_id: user),
+        patch.object(login_manager, '_user_callback', load_browser_user),
         patch.multiple(
             'app.bootstrap.presentation',
             get_navigation_notification_context=Mock(return_value=EMPTY_NAVIGATION_NOTIFICATIONS),

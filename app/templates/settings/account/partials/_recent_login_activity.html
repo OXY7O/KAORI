@@ -13,7 +13,7 @@
                     <h2 class="text-base font-bold text-content-primary">Recent Authentication Activity</h2>
                     {{ info_tip.render('account-recent-authentication-guide',
                                         'Recent authentication evidence',
-                                        'This personal view summarizes up to five latest recorded authentication events, not full history.',
+                                        'This personal view summarizes up to five latest recorded authentication and personal security events, not full history.',
                                         [
                                         'Summary counts describe only the displayed sample.',
                                         'Recorded source and context describe authentication evidence, not active sessions.',
@@ -22,7 +22,7 @@
                                         placement='right',
                                         variant='guide') }}
                 </div>
-                <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">A focused view of recent sign-ins, sign-outs and session expiry.</p>
+                <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">A focused view of recent sign-ins, sign-outs, session expiry and personal security events.</p>
             </div>
         </div>
         {% if current_user.has_permission('activity_audit.view') %}
@@ -93,7 +93,7 @@
             </div>
         </dl>
         {% if activity_summary.unknown %}
-            <p class="mt-2 text-xs text-content-muted">Other or unclassified events: {{ activity_summary.unknown }}</p>
+            <p class="mt-2 text-xs text-content-muted">Security or unclassified events: {{ activity_summary.unknown }}</p>
         {% endif %}
     </section>
     <div class="flex flex-wrap items-center justify-between gap-2 border-b border-outline-subtle px-5 py-3.5 sm:px-6"
@@ -121,7 +121,8 @@
                     {% for event in recent_login_events %}
                         {% set metadata = event.metadata_json or {} %}
                         {% set kind = authentication_event_kind(event) %}
-                        {% set provider_value = 'KAORI' if kind == 'expired' else metadata.get('authentication_provider') or metadata.get('auth_source') or '-' %}
+                        {% set security_label = personal_security_event_label(event) %}
+                        {% set provider_value = 'KAORI' if kind == 'expired' or security_label else metadata.get('authentication_provider') or metadata.get('auth_source') or '-' %}
                         {% set is_logout = kind == 'sign_out' %}
                         {% set is_success = kind == 'success' %}
                         <tr class="{{ table_ui.row_classes() }} align-middle">
@@ -132,7 +133,7 @@
                                            class="h-4 w-4"></i>
                                     </span>
                                     <div class="min-w-0">
-                                        <p class="text-sm font-bold text-content-primary">{{ 'Sign Out' if is_logout else 'Session Expired' if kind == 'expired' else 'Authentication Event' if kind == 'unknown' else 'Sign In' }}</p>
+                                        <p class="text-sm font-bold text-content-primary">{{ 'Sign Out' if is_logout else 'Session Expired' if kind == 'expired' else (security_label or 'Authentication Event') if kind == 'unknown' else 'Sign In' }}</p>
                                         <p class="mt-0.5 whitespace-nowrap text-xs text-content-muted">{{ event.created_at|user_datetime(include_seconds=true) }}</p>
                                     </div>
                                 </div>
@@ -143,7 +144,7 @@
                                 </p>
                                 <p class="mt-1 inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-content-muted">
                                     <i data-lucide="network" class="h-3.5 w-3.5 text-content-disabled"></i>
-                                    <span>Recorded IP: {{ metadata.get("ip_address") or 'Unavailable' }}</span>
+                                    <span>Recorded IP: {{ (metadata.get("ip_address") or 'Unavailable') if not security_label else 'Not displayed' }}</span>
                                 </p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }} min-w-56">
@@ -161,11 +162,14 @@
                                     <p class="mt-0.5 text-xs text-content-muted">
                                         {{ 'Idle timeout' if metadata.get('reason_code') == 'idle_timeout' else 'Absolute timeout' if metadata.get('reason_code') == 'absolute_timeout' else 'Session admission expired' }}
                                     </p>
+                                {% elif security_label %}
+                                    <p class="text-sm font-semibold text-content-secondary">Personal Security Evidence</p>
+                                    <p class="mt-0.5 text-xs text-content-muted">Recorded control outcome, not a sign-in</p>
                                 {% else %}
                                     <p class="text-sm font-semibold text-content-secondary">Recorded Event</p>
                                     <p class="mt-0.5 text-xs text-content-muted">Outcome not classified as a sign-in</p>
                                 {% endif %}
-                                {% if metadata.get('browser') or metadata.get('device_type') %}
+                                {% if not security_label and (metadata.get('browser') or metadata.get('device_type')) %}
                                     <p class="mt-1 inline-flex items-center gap-1.5 text-xs text-content-muted">
                                         <i data-lucide="monitor-smartphone"
                                            class="h-3.5 w-3.5 shrink-0 text-content-disabled"
@@ -185,6 +189,10 @@
                                     {{ table_label.status_indicator_label('Failed', 'critical') }}
                                 {% elif kind == 'expired' %}
                                     {{ table_label.status_indicator_label('Expired', 'warning') }}
+                                {% elif security_label and event.status == 'success' %}
+                                    {{ table_label.status_indicator_label('Success', 'normal') }}
+                                {% elif security_label and event.status in ('warning', 'error') %}
+                                    {{ table_label.status_indicator_label('Review', 'warning') }}
                                 {% else %}
                                     {{ table_label.metadata_label('Recorded', 'history') }}
                                 {% endif %}
