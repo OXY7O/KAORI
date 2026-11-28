@@ -126,6 +126,17 @@ Queued jobs are revoked and immediately marked canceled, releasing their active 
 
 Provider validation may not always be interruptible during one remote API call. The Job Execution UI therefore exposes cancellation only for queued work and active cooperative heavy workloads.
 
+The fixed `automation_kubespray_apply` candidate is excluded from generic
+start, success, failure, retry, canceled, operator cancellation and
+automatic stale-job recovery. This operation-level fence cannot be
+relaxed by a payload or workload class. An overdue heartbeat or broker
+revoke cannot prove an infrastructure mutation stopped. Generic recovery
+leaves the job state and active deduplication slot untouched; the owning
+domain must independently reconcile the outcome and retain persistent
+target claims until an authorized disposition. Normal validation and
+analytics job behavior is unchanged. No admitted mutation lifecycle
+writer is introduced by this fence.
+
 ## Large query planning
 
 Large-range Metrics Source execution is intentionally not preimplemented. The first Analytics worker that requires historical chunking must introduce its query-plan contract, provider concurrency guard, persistence model, and functional tests in the same domain change. KAORI must not carry dormant worker infrastructure that is not invoked by a production task.

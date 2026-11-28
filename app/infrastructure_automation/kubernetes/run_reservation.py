@@ -14,6 +14,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 
 from app.access.scope_policy import lock_explicit_permissions
+from app.common.job_execution_contract import KUBESPRAY_APPLY_OPERATION
 from app.extensions.db import db
 from app.infrastructure_automation.host_registry import preview_inventory_intent
 from app.infrastructure_automation.kubernetes.plan_approval import review_current_plan_acknowledgement
@@ -36,7 +37,7 @@ _TARGET = 'automation_kubespray_target_reservation'
 _RESERVED = 'automation.kubespray.targets_reserved'
 _RELEASED = 'automation.kubespray.targets_released'
 _ADOPTED = 'automation.kubespray.reservation_adopted'
-RUN_OPERATION = 'automation_kubespray_apply'
+RUN_OPERATION = KUBESPRAY_APPLY_OPERATION
 
 
 class TargetReservationDenied(ValueError):

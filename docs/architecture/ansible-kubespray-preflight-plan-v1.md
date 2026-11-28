@@ -242,3 +242,20 @@ safeguard. No automatic terminal release or recovery retry is introduced.
 Recovery still requires independent provider reconciliation, an explicitly
 authorized disposition and durable audit; retain claims when outcome is
 unknown. Migration begins empty and downgrade refuses populated history.
+
+
+### Domain-owned mutation lifecycle fence (#4801)
+
+The canonical operation identity `automation_kubespray_apply` is shared
+with Jobs & Executions. Generic job start, terminal success/failure,
+retry and cancellation services reject it; generic cancellation capability
+is false even while queued. The stale-job reconciler excludes it before
+any broker revoke, status change, or active deduplication slot release.
+A lost heartbeat, cancellation timeout, runner rc or generic job error
+cannot prove a remote mutation stopped or that the cluster is safe.
+Existing non-mutation jobs retain their canonical lifecycle behavior.
+The future admitted automation worker must supply a domain-owned
+transactional start/terminal writer and an independently authorized
+recovery disposition; unresolved jobs and seven target claims remain
+held. No mutation execution, automatic retry, recovery release, or
+independent native verification is enabled by this change.
