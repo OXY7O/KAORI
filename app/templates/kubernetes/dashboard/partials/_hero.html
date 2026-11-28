@@ -17,5 +17,7 @@ url_for('integrations.kubernetes'),
 'Committed Snapshots',
 dashboard_state,
 'Cluster Setup Required',
-'Add a Kubernetes cluster to activate operational signals.'
+'Add a Kubernetes cluster to activate operational signals.',
+integration_endpoint='integrations.kubernetes',
+integration_permitted=current_user.is_authenticated and current_user.has_permission('integrations.manage')
 ) }}
