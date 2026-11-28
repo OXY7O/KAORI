@@ -542,7 +542,7 @@ def test_vault_capability_modal_parity_with_kubernetes_without_invented_checks()
         'Verification Command',
     ):
         assert title in modal + shared
-    for macro in ('contract', 'grouped_section', 'field', 'boundary'):
+    for macro in ('contract', 'grouped_section', 'field', 'boundary', 'verification_panel'):
         assert f'capability_detail.{macro}(' in modal
 
     # Three evidence dimensions explain real adapter facts, not three
@@ -627,12 +627,9 @@ def test_vault_view_more_copy_line_budgets_cover_all_capabilities_and_statuses()
     assert contract_copy is not None
     assert len(contract_copy.group(1)) <= 64
 
-    verification_headers = re.findall(
-        r'<p class="mt-1 text-xs leading-5 text-content-secondary lg:line-clamp-1">([^<]+)</p>',
-        modal,
-    )
-    assert len(verification_headers) == 2  # CLI example and AppRole safe fallback
-    assert all(len(line) <= 64 for line in verification_headers)
+    assert 'capability_detail.verification_panel(' in modal
+    assert 'Read-only CLI check; not proof of the KAORI AppRole.' in modal
+    assert 'AppRole login is verified securely by the KAORI worker.' in modal
     assert 'No copyable login command or SecretID is provided.' in modal
 
     Environment().parse(modal)

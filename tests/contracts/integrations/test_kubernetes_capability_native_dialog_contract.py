@@ -87,6 +87,7 @@ def test_capability_dialog_uses_compact_professional_decision_layout() -> None:
     assert 'capability_detail.grouped_section(' in capability
     assert 'capability_detail.field(' in capability
     assert 'capability_detail.boundary(' in capability
+    assert 'capability_detail.verification_panel(' in capability
     assert 'data-kaori-capability-validation-scope' not in capability
     assert 'data-kaori-capability-operational-guidance' not in capability
     assert 'data-kaori-capability-verification-script' not in capability

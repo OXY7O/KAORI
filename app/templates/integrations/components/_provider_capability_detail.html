@@ -1,4 +1,4 @@
-{% import "components/technical_check.html" as technical_check %}
+{% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% macro contract(facts, status_tone, status_label, icon_tone, decision_title='', decision_message='', icon='box', decision_marker='', snapshot_marker='') -%}
@@ -74,6 +74,53 @@
         </div>
     </section>
 {%- endmacro %}
+{% macro verification_panel(title, description, value='', copy_label='Copy', metadata=(), status_label='', status_tone='info', status_icon=none, evidence='', observed_series='', observed_value='', error_detail='', unavailable='', legacy_marker='', unavailable_marker='') -%}
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
+             data-kaori-provider-capability-technical-check{% if legacy_marker %} {{ legacy_marker }}{% endif %}{% if unavailable_marker and unavailable %} {{ unavailable_marker }}{% endif %}{% if value %} x-data="{ copied: false }"{% endif %}>
+        <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                {{ integration_ui.palette_icon('terminal-square', 'neutral' if unavailable else 'info', size='md') }}
+                <div class="min-w-0">
+                    <h3 class="text-sm font-semibold text-content-primary">{{ title }}</h3>
+                    {% if description %}<p class="mt-1 text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ description }}</p>{% endif %}
+                </div>
+            </div>
+            {% if value %}
+                <button type="button"
+                        @click="navigator.clipboard.writeText($refs.script.textContent.trim()).then(() => { copied = true; setTimeout(() => copied = false, 1600) })"
+                        class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-surface-subtle hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                    <i data-lucide="copy" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                    <span x-text='copied ? "Copied" : {{ copy_label|tojson }}'>{{ copy_label }}</span>
+                </button>
+            {% endif %}
+        </header>
+        {% if metadata or status_label %}
+            <div class="flex flex-wrap items-center gap-2 border-b border-outline-subtle bg-surface-subtle px-5 py-3">
+                {% for item in metadata %}
+                    {{ table_label.metadata_label(item) }}
+                {% endfor %}
+                {% if status_label %}
+                    {{ table_label.status_label(status_label, status_tone, status_icon) }}
+                {% endif %}
+            </div>
+        {% endif %}
+        {% if evidence or observed_series or observed_value or error_detail %}
+            <div class="space-y-2 border-b border-outline-subtle px-5 py-3 text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">
+                {% if evidence %}<p>{{ evidence }}</p>{% endif %}
+                {% if observed_series %}<p><span class="font-semibold text-content-primary">Observed Series:</span> {{ observed_series }}</p>{% endif %}
+                {% if observed_value %}<p><span class="font-semibold text-content-primary">Observed Value:</span> {{ observed_value }}</p>{% endif %}
+                {% if error_detail %}<p><span class="font-semibold text-status-critical-text">Provider Error:</span> {{ error_detail }}</p>{% endif %}
+            </div>
+        {% endif %}
+        {% if value %}
+            <pre class="max-h-64 overflow-auto whitespace-pre-wrap break-words bg-surface-card px-5 py-4 text-xs leading-5 text-content-secondary"><code x-ref="script">{{ value }}</code></pre>
+        {% elif unavailable %}
+            <div class="bg-surface-subtle px-5 py-4">
+                <p class="text-xs leading-5 text-content-secondary">{{ unavailable }}</p>
+            </div>
+        {% endif %}
+    </section>
+{%- endmacro %}
 {% macro content(row, provider_label, evidence_owner, query_label, evidence_boundary) -%}
     {% set status_tone = 'ready' if row.available else ('validation_required' if row.status_key == 'unverified' else ('blocked' if row.required else 'degraded')) %}
     {% set icon_tone = 'normal' if row.available else ('info' if row.status_key == 'unverified' else ('critical' if row.required else 'warning')) %}
@@ -107,23 +154,25 @@
                 {% endif %}
             {% endcall %}
         {% endcall %}
-        {% if row.technical_checks %}
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
-                     data-kaori-provider-capability-technical-check>
-                <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-subtle p-4 sm:p-5">
-                    {{ integration_ui.palette_icon('terminal-square', 'info', size='md') }}
-                    <div class="min-w-0">
-                        <h3 class="text-sm font-semibold text-content-primary">Technical Verification</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Inspect the exact registered provider request only when deeper verification is required.</p>
-                    </div>
-                </header>
-                <div class="space-y-3 p-3 sm:p-4">
-                    {% for check in row.technical_checks %}
-                        {{ technical_check.render(check, query_label=query_label) }}
-                    {% endfor %}
-                </div>
-            </section>
-        {% endif %}
+        {% for check in row.technical_checks %}
+            {{ verification_panel('Technical Verification',
+                        check.query_help or 'Inspect the registered technical evidence; this is not a live provider request.',
+                        value=check.query,
+                        metadata=[check.label, query_label] if check.query else [check.label],
+                        status_label=check.status_label,
+                        status_tone=check.tone,
+                        status_icon=check.icon,
+                        evidence=check.evidence if check.evidence != row.evidence else '',
+                        observed_series=check.series_count_display,
+                        observed_value=check.value_summary,
+                        error_detail=check.error_detail) }}
+            {% if check.registered_query and check.registered_query != check.query %}
+                {{ verification_panel('Registered Analytics Query',
+                            'Registered expression; distinct from the observed technical evidence.',
+                            value=check.registered_query,
+                            metadata=[check.label]) }}
+            {% endif %}
+        {% endfor %}
         {{ boundary(evidence_boundary) }}
     </div>
 {%- endmacro %}

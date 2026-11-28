@@ -44,7 +44,7 @@ def test_all_capability_registries_share_grouped_presentation():
         'secrets_management/vault/partials/_capability_detail_content.html',
     ):
         source = (ROOT / 'app/templates/integrations' / path).read_text()
-        for macro in ('contract', 'grouped_section', 'field', 'boundary'):
+        for macro in ('contract', 'grouped_section', 'field', 'boundary', 'verification_panel'):
             assert f'capability_detail.{macro}(' in source
         assert 'data-kaori-capability-verification-unavailable' in source
     assert 'presentation=' not in shared
@@ -53,6 +53,10 @@ def test_all_capability_registries_share_grouped_presentation():
     assert 'divide-y divide-outline-subtle' in shared
     assert 'sm:border-l' not in shared
     assert 'bg-status-' not in shared
+    assert '<details' not in shared and '<summary' not in shared
+    assert 'technical_check.render(' not in shared
+    assert 'verification_panel(' in shared
+    assert 'x-ref="script"' in shared
     for title in (
         'Capability Contract',
         'Validation Evidence',
@@ -97,3 +101,67 @@ def test_shared_capability_modal_renders_decision_fields_and_remediation():
             assert ('Controlled remediation step' in html) == (not available)
             assert 'Provider boundary' in html
             assert html.index('Validation Evidence') < html.index('Operational Decision') < html.index('Evidence Boundary')
+
+
+def test_shared_verification_panel_preserves_visible_evidence_and_copy_boundaries():
+    environment = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
+    panel = environment.get_template('integrations/components/_provider_capability_detail.html').module.verification_panel
+    html = str(panel(
+        'Technical Verification',
+        'Registered technical evidence',
+        value='actions: read, metadata: read',
+        metadata=['App Read Permission Contract'],
+        status_label='Permission Verified',
+        status_tone='ready',
+        evidence='Committed observation',
+        observed_series='7',
+        observed_value='42',
+        error_detail='Example provider error',
+    ))
+    for text in (
+        'actions: read, metadata: read', 'App Read Permission Contract', 'Permission Verified',
+        'Committed observation', 'Observed Series:', 'Observed Value:', 'Example provider error',
+        'x-ref="script"', 'navigator.clipboard.writeText',
+    ):
+        assert text in html
+    assert '<details' not in html and '<summary' not in html
+    unavailable = str(panel('Verification Command', 'No command', unavailable='Run Full Validation'))
+    assert 'Run Full Validation' in unavailable
+    assert 'navigator.clipboard' not in unavailable and '<pre' not in unavailable
+    script = str(panel('Verification Command', 'Operator guidance', value='example\ncommand', copy_label='Copy Script'))
+    assert 'example\ncommand' in script
+    assert 'Copy Script' in script
+
+
+def test_shared_capability_content_keeps_distinct_registered_queries_visible():
+    environment = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
+    render = environment.get_template('integrations/components/_provider_capability_detail.html').module.content
+    row = {
+        'available': True,
+        'required': True,
+        'status_key': 'ready',
+        'status_label': 'Verified',
+        'category': 'inventory',
+        'evidence': 'Committed observation text',
+        'success_criteria': 'Expected evidence',
+        'impact': 'Operational impact',
+        'next_action': 'Next operator action',
+        'remediation': [],
+        'technical_checks': [{
+            'label': 'Technical check',
+            'status_label': 'Verified',
+            'tone': 'normal',
+            'icon': 'circle-check',
+            'evidence': 'Committed observation text',
+            'query': 'observed_expression',
+            'registered_query': 'registered_expression',
+        }],
+    }
+    for provider in ('GitHub', 'Metrics Source', 'Alertmanager', 'Harbor', 'MinIO'):
+        html = str(render(row, provider, 'Owner', 'Technical evidence', 'Provider boundary'))
+        assert '<details' not in html
+        assert html.count('x-ref="script"') == 2
+        assert 'observed_expression' in html
+        assert 'registered_expression' in html
+        assert html.count('Committed observation text') == 1
+        assert html.index('Technical Verification') < html.index('Evidence Boundary')

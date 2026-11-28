@@ -384,56 +384,19 @@
                 {% endcall %}
             {% endcall %}
             {% if has_selected_contract %}
-                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
-                         data-kaori-capability-verification-command
-                         x-data="{ copied: false }">
-                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-                        <div class="flex min-w-0 items-start gap-3">
-                            {{ integration_ui.palette_icon('terminal-square', 'info', size='md') }}
-                            <div class="min-w-0">
-                                <h3 class="text-sm font-semibold text-content-primary">Verification Command</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Optional operator-side verification using the same cluster identity and selected API contract.</p>
-                            </div>
-                        </div>
-                        <button type="button"
-                                @click="navigator.clipboard.writeText($refs.script.textContent.trim()).then(() => { copied = true; setTimeout(() => copied = false, 1600) })"
-                                class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-surface-subtle hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                            <i data-lucide="copy" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                            <span x-text="copied ? 'Copied' : 'Copy Script'">Copy Script</span>
-                        </button>
-                    </header>
-                    <div class="border-b border-outline-subtle bg-surface-subtle px-5 py-3">
-                        <div class="flex flex-wrap gap-2">
-                            {{ table_label.metadata_label('Scope · ' ~ authorization_scope) }}
-                            {{ table_label.metadata_label('Stability · ' ~ row.stability|title ~ ' API') }}
-                            {{ table_label.metadata_label("Identity · Registered Kubernetes Connection") }}
-                        </div>
-                    </div>
-                    <pre class="max-h-64 overflow-auto whitespace-pre-wrap break-words bg-surface-card px-5 py-4 text-xs leading-5 text-content-secondary"><code x-ref="script">{{ runnable_script }}</code></pre>
-                </section>
+                {{ capability_detail.verification_panel('Verification Command',
+                            'Optional operator-side verification using the same cluster identity and selected API contract.',
+                            value=runnable_script,
+                            copy_label='Copy Script',
+                            metadata=['Scope · ' ~ authorization_scope, 'Stability · ' ~ row.stability|title ~ ' API', 'Identity · Registered Kubernetes Connection'],
+                            legacy_marker='data-kaori-capability-verification-command') }}
             {% else %}
-                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
-                         data-kaori-capability-verification-command
-                         data-kaori-capability-verification-unavailable>
-                    <header class="border-b border-outline-subtle px-5 py-4">
-                        <div class="flex min-w-0 items-start gap-3">
-                            {{ integration_ui.palette_icon('terminal-square', 'neutral', size='md') }}
-                            <div class="min-w-0">
-                                <h3 class="text-sm font-semibold text-content-primary">Verification Command</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">No executable command is generated without a selected API/resource contract.</p>
-                            </div>
-                        </div>
-                    </header>
-                    <div class="bg-surface-subtle px-5 py-4">
-                        <p class="text-xs leading-5 text-content-secondary">
-                            {% if row.required %}
-                                Full Validation did not select an API/resource contract. Resolve API serving or RBAC evidence, then rerun Full Validation before operator-side verification.
-                            {% else %}
-                                No API/resource contract was selected. Enable the approved workflow, then rerun Full Validation.
-                            {% endif %}
-                        </p>
-                    </div>
-                </section>
+                {% set unavailable_message = 'Full Validation did not select an API/resource contract. Resolve API serving or RBAC evidence, then rerun Full Validation before operator-side verification.' if row.required else 'No API/resource contract was selected. Enable the approved workflow, then rerun Full Validation.' %}
+                {{ capability_detail.verification_panel('Verification Command',
+                            'No executable command is generated without a selected API/resource contract.',
+                            unavailable=unavailable_message,
+                            legacy_marker='data-kaori-capability-verification-command',
+                            unavailable_marker='data-kaori-capability-verification-unavailable') }}
             {% endif %}
             {{ capability_detail.boundary(scope_label ~ '. Full Validation owns API/RBAC readiness; runtime and inventory remain separate.',
                         legacy_marker='data-kaori-capability-governance-boundary') }}
