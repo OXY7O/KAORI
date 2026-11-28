@@ -7,7 +7,11 @@ from unittest.mock import Mock
 import pytest
 
 from app.access.authentication.identity_provider.adapters.ldap import reauthentication as ldap
-from app.access.authentication.identity_provider.adapters.ldap.client import ExternalProviderError, LdapDirectoryClient, LdapTransport
+from app.access.authentication.identity_provider.adapters.ldap.client import (
+    ExternalProviderError,
+    LdapDirectoryClient,
+    LdapTransport,
+)
 from app.access.authentication.results import ExternalCredentialProof
 from app.models.identity import ExternalIdentityLink, IdentityProvider
 
@@ -59,7 +63,7 @@ def test_proof_contains_no_password_and_revalidates_exact_binding(monkeypatch: p
     monkeypatch.setattr(ldap, 'LdapDirectoryClient', Mock(return_value=SimpleNamespace(reauthenticate_linked_identity=bind)))
     lock = Mock(return_value=provider)
     monkeypatch.setattr(ldap, 'lock_provider_revision', lock)
-    proof = ldap.reauthenticate_ldap_account(42, 'test-only-password')
+    proof = ldap.reauthenticate_ldap_account(42, 'test-only-password', expected_subject='stable')
     assert proof.credential == ExternalCredentialProof(7, 3, 11)
     assert 'test-only-password' not in repr(proof.to_record())
     assert ldap.LdapReauthenticationProof.from_record(proof.to_record()) == proof
@@ -77,3 +81,27 @@ def test_missing_provider_record_is_rejected() -> None:
     record = proof.to_record()
     record['verified_at'] = '2026-11-28'
     assert ldap.LdapReauthenticationProof.from_record(record) is None
+
+
+def test_directory_subject_mismatch_is_rejected_before_network(monkeypatch: pytest.MonkeyPatch) -> None:
+    link = ExternalIdentityLink(id=11, provider_id=7, user_id=42, subject='other', distinguished_name='cn=fixture')
+    provider = IdentityProvider(id=7, provider_key='ldap', adapter_key='ldap', enabled=True, authentication_revision=3)
+    monkeypatch.setattr(ldap, '_linked_directory', Mock(return_value=(link, provider)))
+    client = Mock()
+    monkeypatch.setattr(ldap, 'LdapDirectoryClient', client)
+    with pytest.raises(ldap.LdapReauthenticationError):
+        ldap.reauthenticate_ldap_account(42, 'test-only-password', expected_subject='stable')
+    client.assert_not_called()
+
+
+def test_invalid_directory_password_never_creates_proof(monkeypatch: pytest.MonkeyPatch) -> None:
+    link = ExternalIdentityLink(id=11, provider_id=7, user_id=42, subject='stable', distinguished_name='cn=fixture')
+    provider = IdentityProvider(id=7, provider_key='ldap', adapter_key='ldap', enabled=True, authentication_revision=3)
+    store = Mock()
+    monkeypatch.setattr(ldap, 'db', SimpleNamespace(session=store))
+    monkeypatch.setattr(ldap, '_linked_directory', Mock(return_value=(link, provider)))
+    bind = Mock(return_value=False)
+    monkeypatch.setattr(ldap, 'LdapDirectoryClient', Mock(return_value=SimpleNamespace(reauthenticate_linked_identity=bind)))
+    with pytest.raises(ldap.LdapReauthenticationError):
+        ldap.reauthenticate_ldap_account(42, 'wrong', expected_subject='stable')
+    store.rollback.assert_called_once()

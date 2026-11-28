@@ -75,6 +75,7 @@ def _linked_directory(user_id: int) -> tuple[ExternalIdentityLink, IdentityProvi
         .join(IdentityProvider, IdentityProvider.id == ExternalIdentityLink.provider_id)
         .where(ExternalIdentityLink.user_id == user_id, IdentityProvider.provider_key == 'ldap')
         .limit(2)
+        .execution_options(populate_existing=True)
     ).all()
     if len(rows) != 1:
         raise LdapReauthenticationError('Directory identity binding is unavailable.')
@@ -84,10 +85,12 @@ def _linked_directory(user_id: int) -> tuple[ExternalIdentityLink, IdentityProvi
     return link, provider
 
 
-def ldap_reauthentication_available(user_id: int) -> bool:
+def ldap_reauthentication_available(user_id: int, *, expected_subject: str | None) -> bool:
     """Read configuration only; never perform a remote authentication on GET."""
     try:
-        _, provider = _linked_directory(user_id)
+        link, provider = _linked_directory(user_id)
+        if not expected_subject or link.subject != expected_subject:
+            return False
         LdapDirectoryClient(provider, allow_plaintext=False)
     except (LdapReauthenticationError, ExternalProviderError):
         return False
@@ -97,11 +100,15 @@ def ldap_reauthentication_available(user_id: int) -> bool:
     return True
 
 
-def reauthenticate_ldap_account(user_id: int, password: str | None) -> LdapReauthenticationProof:
-    if not password or len(password) > LOCAL_PASSWORD_MAX_LENGTH:
+def reauthenticate_ldap_account(
+    user_id: int, password: str | None, *, expected_subject: str | None
+) -> LdapReauthenticationProof:
+    if not expected_subject or not password or len(password) > LOCAL_PASSWORD_MAX_LENGTH:
         raise LdapReauthenticationError('Directory credential was not accepted.')
     try:
         link, provider = _linked_directory(user_id)
+        if link.subject != expected_subject:
+            raise LdapReauthenticationError('Directory identity binding changed.')
         credential = ExternalCredentialProof(provider.id, provider.authentication_revision, link.id)
         subject = link.subject
         dn = link.distinguished_name

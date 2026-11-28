@@ -2,12 +2,13 @@
 
 import importlib
 
+import pytest
 import sqlalchemy as sa
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 
 
-def test_ldap_replacement_proof_migration(monkeypatch) -> None:
+def test_ldap_replacement_proof_migration(monkeypatch: pytest.MonkeyPatch) -> None:
     migration = importlib.import_module('migrations.versions.20261128_ldap_replacement_proof')
     engine = sa.create_engine('sqlite+pysqlite:///:memory:')
     with engine.begin() as connection:

@@ -466,7 +466,11 @@ def begin_mfa_replacement(user: User, submitted: str, *, expected_generation: in
         provider_proof = None
         if source == 'ldap':
             # No remote bind while holding database row locks.
-            provider_proof = reauthenticate_ldap_account(user.id, current_password)
+            if user.auth_session_version != expected_generation:
+                raise MfaVerificationError('Sign in again before changing MFA.')
+            provider_proof = reauthenticate_ldap_account(
+                user.id, current_password, expected_subject=user.external_id
+            )
             lock_ldap_reauthentication_proof(user.id, provider_proof)
         user = _lock_mfa_user(user, expected_generation, authenticated=True)
         if user.auth_source != source:
@@ -483,8 +487,10 @@ def begin_mfa_replacement(user: User, submitted: str, *, expected_generation: in
             raise MfaVerificationError('MFA is not enrolled.')
         _consume_factor_proof(user, factor, submitted, authenticated=True)
         now = datetime.now(UTC)
-        if now >= assurance_expires_at or not isinstance(
-            session_deadlines(user, read_session_policy(), now), SessionDeadlines
+        if (
+            now >= assurance_expires_at
+            or (provider_proof is not None and provider_proof.verified_at > now)
+            or not isinstance(session_deadlines(user, read_session_policy(), now), SessionDeadlines)
         ):
             raise MfaVerificationError('Sign in again before changing MFA.')
         secret = base64.b32encode(secrets.token_bytes(20)).decode('ascii')
@@ -493,7 +499,14 @@ def begin_mfa_replacement(user: User, submitted: str, *, expected_generation: in
         factor.replacement_expires_at = assurance_expires_at
         factor.replacement_provider_proof = provider_proof.to_record() if provider_proof is not None else None
         db.session.add(
-            stage_authentication_security_event(user, action='mfa_replacement_started', authenticated=True, success=True)
+            stage_authentication_security_event(
+                user,
+                action='mfa_replacement_started',
+                authenticated=True,
+                success=True,
+                primary_assurance='ldap_linked_user_bind' if provider_proof is not None else 'local_current_password',
+                external_proof=provider_proof.credential if provider_proof is not None else None,
+            )
         )
         db.session.commit()
     except (LdapReauthenticationError, AuthSessionError) as exc:
@@ -544,7 +557,8 @@ def confirm_mfa_replacement(user: User, code: str, *, expected_generation: int) 
         # Slow proof/hash work must not outlive the original assurance or session deadline.
         now = datetime.now(UTC)
         if mfa_replacement_state(factor, generation=expected_generation, now=now) != 'pending' or (
-            provider_proof is not None and not provider_proof.verified_at <= now < provider_proof.verified_at + MFA_RECENT_ADMISSION_TTL
+            provider_proof is not None
+            and not provider_proof.verified_at <= now < provider_proof.verified_at + MFA_RECENT_ADMISSION_TTL
         ):
             raise MfaVerificationError('Start authenticator replacement again.')
         if not isinstance(session_deadlines(user, read_session_policy(), now), SessionDeadlines):
@@ -558,7 +572,12 @@ def confirm_mfa_replacement(user: User, code: str, *, expected_generation: int) 
         user.auth_session_version = issued_generation
         db.session.add(
             stage_authentication_security_event(
-                user, action='mfa_replacement_confirmed', authenticated=True, success=True
+                user,
+                action='mfa_replacement_confirmed',
+                authenticated=True,
+                success=True,
+                primary_assurance='ldap_linked_user_bind' if provider_proof is not None else 'local_current_password',
+                external_proof=provider_proof.credential if provider_proof is not None else None,
             )
         )
         db.session.commit()

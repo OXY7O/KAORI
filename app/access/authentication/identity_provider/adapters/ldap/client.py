@@ -250,7 +250,10 @@ class LdapDirectoryClient:
         if not distinguished_name or not password or not subject:
             return False
         attribute = self._text('stable_id_attribute', 'objectGUID') or 'objectGUID'
-        connection = self._new_connection(user=distinguished_name, password=password)
+        try:
+            connection = self._new_connection(user=distinguished_name, password=password)
+        except LDAPException as exc:
+            raise ExternalProviderError('LDAP reauthentication is unavailable.') from exc
         # Never follow an LDAP referral to a different credential authority.
         connection.auto_referrals = False
         try:

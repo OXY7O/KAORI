@@ -300,7 +300,8 @@ def _process_account_mfa_action(
                 expected_generation=generation,
                 current_password=(
                     str(request.form.get('replacement_password') or '')
-                    if user.auth_source in {'database', 'ldap'} else None
+                    if user.auth_source in {'database', 'ldap'}
+                    else None
                 ),
             )
             # A distinct account label avoids overwriting the still-active entry
@@ -417,8 +418,10 @@ def account():
     )
     replacement_state = mfa_replacement_state(mfa_factor, generation=user.auth_session_version, now=datetime.now(UTC))
     can_replace_authenticator = can_change_password or (
-        active_tab == 'mfa' and enrollment_state == 'enrolled' and auth_source == 'ldap'
-        and ldap_reauthentication_available(user.id)
+        active_tab == 'mfa'
+        and enrollment_state == 'enrolled'
+        and auth_source == 'ldap'
+        and ldap_reauthentication_available(user.id, expected_subject=user.external_id)
     )
     mfa_state = {
         'can_replace_authenticator': can_replace_authenticator,
