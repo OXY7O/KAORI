@@ -167,9 +167,8 @@ def _render_runtime_content(
     canonical = installation.integration_instance
     if canonical is None:
         abort(409)
-    context = _runtime_context(installation)
-    if runtime_refresh_job is not None:
-        context['runtime_refresh_job'] = runtime_refresh_job
+    if runtime_refresh_job is None:
+        runtime_refresh_job = _validation_job_for(canonical, operation='runtime_refresh')
     return _response(
         'integrations/source_control/github/partials/_detail_runtime.html',
         installation=installation,
@@ -178,8 +177,8 @@ def _render_runtime_content(
         runtime_feedback=runtime_feedback,
         runtime_history_oob=True,
         runtime_refresh_partial=True,
+        runtime_refresh_job=runtime_refresh_job,
         **_runtime_observation_context(installation),
-        **context,
     )
 
 
@@ -532,30 +531,15 @@ def runtime_history(installation_id: int) -> ResponseReturnValue:
     )
 
 
-@github_uat_bp.get('/installations/<int:installation_id>/runtime/jobs')
-@permission_required('integrations.manage')
-def runtime_jobs(installation_id: int) -> ResponseReturnValue:
-    installation = _installation_or_404(installation_id)
-    if request.headers.get('HX-Request') != 'true':
-        return redirect(_detail_url(installation_id, tab='runtime', runtime_view='jobs'))
-    return _response(
-        'integrations/source_control/github/partials/_runtime_jobs.html',
-        installation=installation,
-        runtime_table_embedded=True,
-        **_runtime_context(installation),
-    )
-
-
 @github_uat_bp.get('/installations/<int:installation_id>/runtime/deliveries')
 @permission_required('integrations.manage')
 def runtime_deliveries(installation_id: int) -> ResponseReturnValue:
     installation = _installation_or_404(installation_id)
     if request.headers.get('HX-Request') != 'true':
-        return redirect(_detail_url(installation_id, tab='runtime', runtime_view='deliveries'))
+        return redirect(_detail_url(installation_id, tab='runtime'))
     return _response(
         'integrations/source_control/github/partials/_runtime_deliveries.html',
         installation=installation,
-        runtime_table_embedded=True,
         **_runtime_context(installation),
     )
 

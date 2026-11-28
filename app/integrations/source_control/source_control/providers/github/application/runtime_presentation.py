@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import TypedDict
 
 from flask import request
+from flask_login import current_user
 from sqlalchemy import and_, or_
 from sqlalchemy.sql.elements import ColumnElement
 
@@ -62,71 +63,14 @@ def _installation_job_predicate(*, integration_instance_id: int, installation_id
 
 
 def _runtime_context(installation: SourceInstallation) -> dict:
-    """Server-filtered, installation-scoped committed jobs and webhook receipts."""
-    job_status = request.args.get('job_status', '').strip()
-    job_search = request.args.get('job_search', '').strip()[:80]
-    job_queue = request.args.get('job_queue', '').strip()[:80]
+    """Server-filtered, installation-scoped signed webhook receipts."""
     delivery_state = request.args.get('delivery_state', '').strip()
     delivery_search = request.args.get('delivery_search', '').strip()[:80]
     delivery_event = request.args.get('delivery_event', '').strip()[:64]
 
-    allowed_jobs = {
-        'queued',
-        'running',
-        'retrying',
-        'cancel_requested',
-        'succeeded',
-        'partially_succeeded',
-        'failed',
-        'canceled',
-        'expired',
-    }
     allowed_delivery = {'received', 'queued', 'processing', 'processed', 'completed', 'failed', 'ignored'}
-    if job_status not in allowed_jobs:
-        job_status = ''
     if delivery_state not in allowed_delivery:
         delivery_state = ''
-
-    # Both option registries are derived from the authorised installation scope,
-    # never the provider or unrestricted tenant-wide JobExecution history.
-    scoped_jobs = JobExecution.query.filter(
-        _installation_job_predicate(
-            integration_instance_id=installation.integration_instance_id,
-            installation_id=installation.id,
-        )
-    )
-    job_queue_options = [
-        value
-        for (value,) in (
-            scoped_jobs.with_entities(JobExecution.queue_name)
-            .distinct()
-            .order_by(JobExecution.queue_name)
-            .limit(50)
-            .all()
-        )
-        if value
-    ]
-    if job_queue not in job_queue_options:
-        job_queue = ''
-
-    jobs_query = scoped_jobs
-    if job_status:
-        jobs_query = jobs_query.filter(JobExecution.status == job_status)
-    if job_queue:
-        jobs_query = jobs_query.filter(JobExecution.queue_name == job_queue)
-    if job_search:
-        job_search_checks: list[ColumnElement[bool]] = [
-            JobExecution.operation.ilike(_runtime_search_pattern(job_search), escape='\\')
-        ]
-        numeric_job_id = job_search.removeprefix('#')
-        if numeric_job_id.isascii() and numeric_job_id.isdecimal() and len(numeric_job_id) <= 18:
-            job_search_checks.append(JobExecution.id == int(numeric_job_id))
-        jobs_query = jobs_query.filter(or_(*job_search_checks))
-    jobs, job_pagination = paginate_query(
-        jobs_query.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()),
-        page=request.args.get('job_page', 1, type=int),
-        per_page=request.args.get('job_per_page', 5, type=int),
-    )
 
     scoped_deliveries = SourceWebhookDelivery.query.filter_by(installation_id=installation.id)
     delivery_event_options = [
@@ -162,12 +106,6 @@ def _runtime_context(installation: SourceInstallation) -> dict:
     )
 
     return {
-        'jobs': jobs,
-        'job_pagination': job_pagination,
-        'job_status': job_status,
-        'job_search': job_search,
-        'job_queue': job_queue,
-        'job_queue_options': job_queue_options,
         'deliveries': deliveries,
         'delivery_pagination': delivery_pagination,
         'delivery_state': delivery_state,
@@ -175,6 +113,37 @@ def _runtime_context(installation: SourceInstallation) -> dict:
         'delivery_event': delivery_event,
         'delivery_event_options': delivery_event_options,
         'runtime_refresh_job': _validation_job_for(installation.integration_instance, operation='runtime_refresh'),
+    }
+
+
+def _observation_job_public_ids(
+    installation: SourceInstallation, rows: list[IntegrationRuntimeObservation]
+) -> dict[int, str]:
+    """Resolve only the persisted, in-scope job references for the visible history page."""
+    candidates: dict[int, str] = {}
+    for row in rows:
+        snapshot = row.capability_snapshot or {}
+        job_id = snapshot.get('job_execution_id')
+        operation = snapshot.get('operation')
+        if type(job_id) is int and job_id > 0 and operation in {'full_validation', 'runtime_refresh'}:
+            candidates[job_id] = operation
+    if not candidates or not current_user.is_authenticated or not current_user.has_permission('jobs.view'):
+        return {}
+    matches = (
+        JobExecution.query.with_entities(JobExecution.id, JobExecution.public_id, JobExecution.operation)
+        .filter(
+            _installation_job_predicate(
+                integration_instance_id=installation.integration_instance_id,
+                installation_id=installation.id,
+            ),
+            JobExecution.id.in_(candidates),
+        )
+        .all()
+    )
+    return {
+        job_id: public_id
+        for job_id, public_id, operation in matches
+        if public_id and candidates.get(job_id) == operation
     }
 
 
@@ -233,5 +202,7 @@ def _runtime_observation_context(installation: SourceInstallation) -> dict:
         'runtime_health': state['health_status'],
         'runtime_health_label': state['health_status_label'],
         'runtime_observation_job_id': (latest.capability_snapshot or {}).get('job_execution_id') if latest else None,
-        'runtime_history': runtime_history_view(rows, pagination=pagination),
+        'runtime_history': runtime_history_view(
+            rows, pagination=pagination, job_public_ids=_observation_job_public_ids(installation, rows)
+        ),
     }
