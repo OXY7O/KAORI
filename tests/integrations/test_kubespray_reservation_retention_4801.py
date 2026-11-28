@@ -26,9 +26,10 @@ def retention_session(monkeypatch):
             connection.exec_driver_sql('PRAGMA foreign_keys=ON')
             metadata.create_all(connection)
             connection.execute(insert(metadata.tables['users']), {'id': 7})
-            for job_id in range(1, 5):
+            for job_id in range(1, 9):
                 connection.execute(insert(jobs), {
                     'id': job_id,
+                    'parent_job_id': job_id - 4 if job_id > 4 else None,
                     'job_type': 'fixture',
                     'operation': 'fixture',
                     'queue_name': 'fixture',
@@ -75,10 +76,17 @@ def test_retention_preserves_active_released_and_late_claims(retention_session):
     domain = retention.JobExecutionArchiveDomain()
     eligible = domain._eligible_filter(policy, now=datetime.now(UTC))
     selected = list(session.scalars(select(JobExecution.id).where(eligible).order_by(JobExecution.id)))
-    assert selected == [3, 4]
+    assert selected == [3, 4, 7, 8]
 
-    # A reservation committed after archive selection must survive cleanup too.
+    # A reservation committed after archive selection protects both rows.
     _reserve(session, claims, 3)
-    assert domain.cleanup_records([1, 2, *selected], policy) == 1
-    assert list(session.scalars(select(JobExecution.id).order_by(JobExecution.id))) == [1, 2, 3]
+    assert domain.cleanup_records([1, 2, 5, 6, *selected], policy) == 2
+    assert list(session.scalars(select(JobExecution.id).order_by(JobExecution.id))) == [1, 2, 3, 5, 6, 7]
     assert list(session.scalars(select(claims.c.plan_job_id).order_by(claims.c.plan_job_id))) == [1, 2, 3]
+
+
+def test_child_only_cleanup_does_not_delete_lock_only_parent(retention_session):
+    session, _ = retention_session
+    assert retention.JobExecutionArchiveDomain._delete_id_batch([8]) == 1
+    assert session.get(JobExecution, 4) is not None
+    assert session.get(JobExecution, 8) is None
