@@ -94,6 +94,15 @@ def _independent_record(row: SecretCredentialIssuerRevision) -> bool:
     )
 
 
+def _issuer_source_shape_ready(source: IntegrationInstance) -> bool:
+    """A candidate shape only; exact deployment/custody is checked by the writer."""
+    return source.readiness_status == 'ready' or (
+        source.provider_key == 'openbao'
+        and source.readiness_status == 'degraded'
+        and source.health_status == 'connected'
+    )
+
+
 def _matching_source(
     source: IntegrationInstance, row: SecretCredentialIssuerRevision, target: IssuerResolutionTarget
 ) -> bool:
@@ -103,7 +112,7 @@ def _matching_source(
         and source.provider_key == target.provider_key == row.provider_key
         and source.enabled is True
         and source.lifecycle_status == 'active'
-        and source.readiness_status == 'ready'
+        and _issuer_source_shape_ready(source)
         and row.provider_namespace == target.provider_namespace
         and row.mount == target.mount
         and row.deployment_ref == target.deployment_ref
@@ -310,7 +319,7 @@ def issuer_transition_shape_qualified(
         return False
     state = candidate.lifecycle_status
     if state != 'revoked' and (
-        source.enabled is not True or source.lifecycle_status != 'active' or source.readiness_status != 'ready'
+        source.enabled is not True or source.lifecycle_status != 'active' or not _issuer_source_shape_ready(source)
     ):
         return False
     if state == 'draft':
