@@ -248,3 +248,53 @@ real notification destination or configure a production signer for this UAT.
    automatic repeats and provider-specific postmortem editing remain
    unqualified. Do not run official admission or deploy an RC until local
    validation and human approval are complete.
+
+
+### Local authority mount and bounded readiness
+
+For an approved disposable source/checker deployment, extend the existing
+ignored `secrets/devcontainer/compose.host-overrides.yml` (merge with its
+current mappings; do not replace unrelated configuration). The following is
+a template only. Substitute the actual absolute host directory populated
+by the independent authorities, not a repository directory or generated
+sample receipt:
+
+```yaml
+services:
+  workspace:
+    volumes:
+      - type: bind
+        source: /absolute/path/to/approved-vault-alert-authority
+        target: /run/kaori/vault-alert-authority
+        read_only: true
+        bind:
+          create_host_path: false
+  inventory-worker:
+    volumes:
+      - type: bind
+        source: /absolute/path/to/approved-vault-alert-authority
+        target: /run/kaori/vault-alert-authority
+        read_only: true
+        bind:
+          create_host_path: false
+```
+
+Only public verification pins and independently signed receipts belong in
+this directory. The directory and files must be root-owned, not group/world
+writable; do not mount signing keys. Use the existing Dev Container
+recreation procedure for changed mounts and preserve PostgreSQL volumes.
+Verify the read-only mount in both services before opting into local
+recovery. The stable correlation HMAC secret remains separately injected
+only into the authorized inventory worker. Do not copy or print it.
+
+The source snapshot now uses schema v2. A previously committed v1 snapshot
+or a changed binding/source revision is intentionally unavailable until a
+new observation is committed; no migration, manual database edit or reset
+is required. Recovery history and closure counters are populated only from
+qualified admitted records, and source conflicts are counted separately.
+
+This template does not provision an exporter, signer, channel, key or
+receipt. In the absence of those external authorities, review firing,
+acknowledgement, ownership, mitigation, scoped routing candidates and
+negative/blocked recovery and delivery states only. Do not claim successful
+positive recovery or provider delivery based on code availability.

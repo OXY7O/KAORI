@@ -1,5 +1,6 @@
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/table_registry.html" as table_registry %}
 {% import "analytics/components/_record_pagination.html" as record_pagination %}
 {% set pagination_query = {
     'tab': payload.tab if payload.provider_case_mode else 'active',
@@ -25,7 +26,7 @@
     {% else %}
         <div class="overflow-x-auto">
             <table class="{{ table_ui.table_classes('min-w-[1080px]') }}">
-                <caption class="sr-only">Active alert cases and operational review actions</caption>
+                <caption class="sr-only">{{ 'Committed provider recovery and closure history' if payload.provider_case_mode and payload.tab == 'resolved' else 'Active alert cases and operational review actions' }}</caption>
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">Alert</th>
@@ -96,7 +97,15 @@
                 </tbody>
             </table>
         </div>
-        {{ record_pagination.render(payload.active_pagination, 'page', 'per_page', 'alert-operations-active-registry', 'alert-operations-filter-form', 'alert-operations-active-loading', 'alert_intelligence.index', 'alert_intelligence.index', pagination_query, 'Alert Cases', embedded=true) }}
+        {% if payload.provider_case_mode and payload.tab == 'resolved' %}
+            {{ table_registry.footer('alert_intelligence.index',
+                'alert-operations-provider-history', 'alert-operations-provider-history-loading',
+                payload.active_pagination, pagination_query, payload.active_pagination.allowed_per_page,
+                resource_label='Resolved Cases', rows_aria_label='Resolved cases per page',
+                control_name='provider-resolved-cases') }}
+        {% else %}
+            {{ record_pagination.render(payload.active_pagination, 'page', 'per_page', 'alert-operations-active-registry', 'alert-operations-filter-form', 'alert-operations-active-loading', 'alert_intelligence.index', 'alert_intelligence.index', pagination_query, 'Alert Cases', embedded=true) }}
+        {% endif %}
     {% endif %}
 </div>
 {% if request.headers.get('HX-Request') == 'true' %}

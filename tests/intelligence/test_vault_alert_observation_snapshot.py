@@ -13,6 +13,7 @@ from app.intelligence.alert_signals.vault_source import (
     commit_vault_alert_observations,
     fail_vault_alert_observations,
     read_vault_alert_observations,
+    source_revision,
 )
 from app.models.alert_signal import AlertSignalSnapshot
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -455,3 +456,43 @@ def test_newer_failure_fences_replayed_success(accepted_source):
     assert result['state'] == 'replayed'
     assert read_vault_alert_observations(binding_id=binding.id, now=failed_at)['state'] == 'unavailable'
     assert AlertSignalSnapshot.query.one().payload_json is None
+
+
+@pytest.mark.parametrize('changed', ['binding', 'source'])
+def test_inflight_observation_cannot_cross_source_revision(accepted_source, changed):
+    vault, source, binding = accepted_source
+    original = source_revision(binding, source)
+    assert original is not None
+    assert _commit(binding.id, [_alert(vault.id)])['state'] == 'qualified'
+    row = binding if changed == 'binding' else source
+    row.updated_at = row.updated_at + timedelta(seconds=1)
+    db.session.commit()
+    later = AT + timedelta(seconds=30)
+    assert read_vault_alert_observations(binding_id=binding.id, now=later)['state'] == 'unavailable'
+    assert commit_vault_alert_observations(
+        binding_id=binding.id, alerts=[_alert(vault.id)], hmac_key=KEY,
+        now=later, expected_revision=original,
+    ) == {'state': 'blocked', 'observed_rows': None}
+    assert not fail_vault_alert_observations(
+        binding_id=binding.id, observed_at=later, expected_revision=original
+    )
+    assert commit_vault_alert_observations(
+        binding_id=binding.id, alerts=[_alert(vault.id)], hmac_key=KEY,
+        now=later, expected_revision=source_revision(binding, source),
+    )['state'] == 'qualified'
+    assert read_vault_alert_observations(binding_id=binding.id, now=later)['state'] == 'fresh'
+
+
+def test_legacy_snapshot_requires_fresh_observation(accepted_source):
+    vault, _source, binding = accepted_source
+    assert _commit(binding.id, [_alert(vault.id)])['state'] == 'qualified'
+    snapshot = AlertSignalSnapshot.query.one()
+    payload = dict(snapshot.payload_json)
+    payload['schema_version'] = 1
+    payload.pop('binding_revision')
+    payload.pop('source_revision')
+    snapshot.payload_json = payload
+    db.session.commit()
+    assert read_vault_alert_observations(binding_id=binding.id, now=AT) == {
+        'state': 'unavailable', 'entries': None,
+    }

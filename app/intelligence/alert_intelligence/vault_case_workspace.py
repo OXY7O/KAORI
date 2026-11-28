@@ -200,6 +200,10 @@ def _read_cases(
                 'active': len(active_rows),
                 'critical': sum(row['severity'] == 'critical' for row in active_rows),
                 'source_unknown': sum(row['source_state'] == 'unknown' for row in active_rows),
+                'resolved_total': len(history_rows),
+                'verification_pending': sum(row['workflow_state'] == 'verification_pending' for row in history_rows),
+                'closed': sum(row['workflow_state'] == 'closed' for row in history_rows),
+                'source_conflicts': sum(row['source_state'] == 'conflict' for row in history_rows),
             }
             selected_rows = history_rows if filters.get('history') == '1' else active_rows
             filtered = [row for row in selected_rows if _matches_read_filters(row, filters)]

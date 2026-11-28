@@ -30,7 +30,7 @@ def read_case_delivery_evidence(case: AlertCase) -> dict[str, Any]:
     if not _qualified(case, row, claim):
         return _unavailable()
     outcome = audited_outcome(case, row)
-    if row.status == 'sent' and outcome != 'sent':
+    if (row.status == 'sent') != (outcome == 'sent'):
         return _unavailable()
     status = {'sent': 'sent', 'rejected': 'failed', 'unconfirmed': 'failed'}.get(outcome or '', 'queued')
     projected = {

@@ -20,6 +20,22 @@
             {{ intelligence_ui.posture_metric('circle-help', 'Source Unknown', payload.summary.source_unknown, 'Current firing is not verified') }}
         </div>
     {% endcall %}
+    {% call intelligence_ui.posture_panel(
+        'Recovery & Verification',
+        'Admitted resolution history and independent operator closure are distinct.',
+        icon='badge-check',
+        badge_text='Committed history',
+        badge_tone='info',
+        footer_text='A source conflict is not a new recovery; review the exact occurrence before taking further action.',
+        actions=[('history', 'Review Resolved', history_url)]
+        ) %}
+        <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+            {{ intelligence_ui.posture_metric('history', 'Resolved Records', payload.summary.resolved_total, 'Admitted positive recovery') }}
+            {{ intelligence_ui.posture_metric('shield-check', 'Verification Pending', payload.summary.verification_pending, 'Independent operator required') }}
+            {{ intelligence_ui.posture_metric('circle-check', 'Closed', payload.summary.closed, 'Verified closure recorded') }}
+            {{ intelligence_ui.posture_metric('triangle-alert', 'Source Conflicts', payload.summary.source_conflicts, 'Same occurrence observed again') }}
+        </div>
+    {% endcall %}
     <section class="{{ table_ui.block_classes() }}">
         <header class="{{ table_ui.block_header_classes() }}">
             <div>

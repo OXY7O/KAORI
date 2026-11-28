@@ -172,7 +172,7 @@ def _case_record(row: dict[str, Any], scope: dict[str, Any]) -> dict[str, Any]:
                           'verification_pending': 'warning', 'closed': 'normal'}[row['workflow_state']],
         'owner': row['owner_label'],
         'duration': '—',
-        'delivery_label': 'Suppressed',
+        'delivery_label': 'Explicit only',
         'delivery_tone': 'unknown',
     }
 
@@ -244,6 +244,10 @@ def build_provider_case_payload(args: MultiDict[str, str], *, domain_options: li
             'active': summary.get('active'),
             'critical': summary.get('critical'),
             'source_unknown': summary.get('source_unknown'),
+            'resolved_total': summary.get('resolved_total'),
+            'verification_pending': summary.get('verification_pending'),
+            'closed': summary.get('closed'),
+            'source_conflicts': summary.get('source_conflicts'),
         },
         'filters': filters,
         'active_cases': records,

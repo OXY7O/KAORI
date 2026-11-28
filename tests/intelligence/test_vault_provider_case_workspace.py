@@ -485,7 +485,10 @@ def test_central_registry_reuses_safe_projection_and_audited_read(store, monkeyp
     monkeypatch.setattr(workspace, 'stage_operational_activity', lambda **kw: audits.append(kw))
     payload = provider_case_scope.build_provider_case_payload(_central_args(ids), domain_options=_DOMAIN_OPTIONS)
     assert payload['provider_case_status'] == 'ready'
-    assert payload['summary'] == {'active': 1, 'critical': 0, 'source_unknown': 1}
+    assert payload['summary'] == {
+        'active': 1, 'critical': 0, 'source_unknown': 1, 'resolved_total': 0,
+        'verification_pending': 0, 'closed': 0, 'source_conflicts': 0,
+    }
     assert payload['snapshot']['available'] is False
     assert payload['selected_case'] is None
     assert payload['active_pagination']['per_page'] == 5
