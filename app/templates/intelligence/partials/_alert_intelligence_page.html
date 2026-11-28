@@ -82,5 +82,7 @@
     </div>
     {% if payload.tab == 'overview' %}
         {% include 'intelligence/partials/_alert_provider_coverage.html' %}
+    {% elif payload.tab == 'routing' and not payload.provider_case_mode and not payload.scope_invalid and payload.channel_readiness %}
+        {% include 'intelligence/partials/_alert_channel_readiness_dialog.html' %}
     {% endif %}
 </div>

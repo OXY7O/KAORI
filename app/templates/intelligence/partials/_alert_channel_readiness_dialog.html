@@ -1,0 +1,33 @@
+{% import "components/table_primitives.html" as table_ui %}
+<dialog id="alert-channel-readiness-dialog"
+        data-kaori-native-dialog
+        aria-labelledby="alert-channel-readiness-title"
+        aria-describedby="alert-channel-readiness-description"
+        class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-4xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-3rem)]">
+    <div class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden">
+        <header class="flex shrink-0 items-start justify-between gap-4 border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                    <i data-lucide="plug-zap" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold text-kaori-primary">Alert Intelligence</p>
+                    <h2 id="alert-channel-readiness-title" class="mt-1 text-lg font-semibold text-content-primary">Channel Readiness</h2>
+                    <p id="alert-channel-readiness-description" class="mt-1 text-xs leading-5 text-content-muted">Read-only routing candidates for {{ payload.domain_label }}. Configuration and validation remain in Integrations.</p>
+                </div>
+            </div>
+            <button type="button" data-kaori-dialog-close
+                    aria-label="Close Channel Readiness"
+                    class="{{ table_ui.action_classes(size='header') }}">
+                <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+            </button>
+        </header>
+        <div class="min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-5">
+            {% include 'intelligence/partials/_alert_channel_readiness_registry.html' %}
+        </div>
+        <footer class="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-outline-subtle px-5 py-3 sm:px-6">
+            <p class="min-w-0 flex-1 text-xs leading-5 text-content-muted">Eligibility is not evidence of successful delivery or permission to send.</p>
+            <button type="button" data-kaori-dialog-close class="{{ table_ui.action_classes(size='header') }}">Close</button>
+        </footer>
+    </div>
+</dialog>
