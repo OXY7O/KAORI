@@ -1,12 +1,12 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/workspace_tabs.html" as workspace_tabs %}
 {% import "components/section_intro.html" as section_intro %}
-{% set tab_query = {'domain': payload.domain, 'asset': payload.selected_asset_key} %}
+{% set tab_query = {} if payload.global_overview else {'domain': payload.domain, 'asset': payload.selected_asset_key} %}
 {% if payload.provider_case_mode %}
     {% set _ = tab_query.update({'provider': payload.selected_provider}) %}
 {% endif %}
 {% set navigation_tabs = [
-    ('overview', 'Overview', 'layout-dashboard', none, url_for('alert_intelligence.index', tab='overview', **tab_query)),
+    ('overview', 'Overview', 'layout-dashboard', none, url_for('alert_intelligence.index', tab='overview')),
     ('active', 'Active Alerts', 'siren', none, url_for('alert_intelligence.index', tab='active', **tab_query)),
     ('routing', 'Routing & Channels', 'route', none, url_for('alert_intelligence.index', tab='routing', **tab_query)),
     ('templates', 'Templates', 'file-code-2', none, url_for('alert_intelligence.index', tab='templates', **tab_query)),
@@ -21,7 +21,6 @@
                 aria_label='Alert Operations Sections',
                 hx_target='#alert-intelligence-page-content') }}
     </div>
-    {% include 'intelligence/partials/_alert_intelligence_context.html' %}
     {% set hero_metrics = [
             ('bell-ring', 'Active Cases', payload.summary.active, 'Operator-managed alert cases'),
             ('shield-check', 'Verification Pending', payload.summary.verification_pending, 'Resolved source awaiting closure evidence')

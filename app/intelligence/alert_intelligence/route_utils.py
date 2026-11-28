@@ -6,13 +6,16 @@ from flask import make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
-from app.intelligence.alert_intelligence.service import get_alert_intelligence_payload
+from app.intelligence.alert_intelligence.service import get_alert_intelligence_payload, get_alert_overview_payload
 
 
 def index_response() -> ResponseReturnValue:
-    payload = get_alert_intelligence_payload(request.args)
+    target = str(request.headers.get('HX-Target') or '').strip()
+    is_overview = request.args.get('tab', 'overview') == 'overview' and target in (
+        '', 'alert-intelligence-page-content'
+    )
+    payload = get_alert_overview_payload() if is_overview else get_alert_intelligence_payload(request.args)
     if request.headers.get('HX-Request') == 'true':
-        target = str(request.headers.get('HX-Target') or '').strip()
         if target == 'alert-channel-readiness-registry':
             if (
                 payload.get('tab') != 'routing'

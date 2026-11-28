@@ -9,8 +9,8 @@
                 <h3 class="{{ table_ui.block_title_classes() }}">Alert Operations Snapshot</h3>
                 <p class="{{ table_ui.block_description_classes() }}">Current operator workload across alert lifecycle, delivery, verification, and postmortem governance.</p>
             </div>
-            {{ table_label.status_label('Attention Required' if payload.summary.active or payload.summary.delivery_failures or payload.summary.postmortem_required else 'No Open Cases Observed' if payload.snapshot.available else 'Evidence Review Required',
-                        'warning' if payload.summary.active or payload.summary.delivery_failures or payload.summary.postmortem_required or not payload.snapshot.available else 'info',
+            {{ table_label.status_label('Attention Required' if payload.summary.active or payload.summary.delivery_failures or payload.summary.postmortem_required else 'No Open Cases Recorded' if payload.global_overview else 'No Open Cases Observed' if payload.snapshot.available else 'Evidence Review Required',
+                        'warning' if payload.summary.active or payload.summary.delivery_failures or payload.summary.postmortem_required or (not payload.global_overview and not payload.snapshot.available) else 'info',
                         size='compact') }}
         </header>
         {% set open_case_tone = 'critical' if payload.summary.critical else 'warning' if payload.summary.active else 'normal' %}

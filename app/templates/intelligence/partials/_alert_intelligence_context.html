@@ -2,7 +2,7 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% set global_templates = payload.tab == 'templates' and not payload.provider_case_mode %}
 {% set show_asset = payload.provider_case_mode or payload.scope_invalid or payload.tab in ['overview', 'active', 'silences', 'resolved'] or (payload.tab == 'routing' and payload.domain == 'registry') %}
-<section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+<section class="border-b border-outline-subtle bg-surface-card"
          aria-labelledby="alert-operational-context-title"
          data-alert-operational-context>
     <div class="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:gap-5">
@@ -77,9 +77,9 @@
                     <p class="{{ table_ui.filter_label_classes() }}">{{ 'Alert Summary Scope' if global_templates else 'Current Alert Scope' }}</p>
                     <div class="flex min-h-10 min-w-0 items-center justify-between gap-3 rounded-md border border-outline-subtle bg-surface-hover px-3 py-2">
                         <p class="min-w-0 break-words text-sm text-content-secondary [overflow-wrap:anywhere]">{{ payload.selected_asset_name }}</p>
-                        {% set overview_url = url_for('alert_intelligence.index', tab='overview', domain=payload.domain, asset=payload.selected_asset_key) %}
-                        <a href="{{ overview_url }}"
-                           hx-get="{{ overview_url }}"
+                        {% set scope_url = url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key) %}
+                        <a href="{{ scope_url }}"
+                           hx-get="{{ scope_url }}"
                            hx-target="#alert-intelligence-page-content"
                            hx-select="#alert-intelligence-page-content"
                            hx-swap="outerHTML show:none focus-scroll:false"
