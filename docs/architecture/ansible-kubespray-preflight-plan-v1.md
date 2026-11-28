@@ -215,3 +215,30 @@ the exact parent, revalidate operation-specific mutation authorization,
 source/EE, current Plan and seven claims, then commit before dispatch.
 No Run writer, broker dispatch, mutation authorization, or automatic
 reservation release is enabled by this generic persistence change.
+
+
+### Durable reservation adoption correlation (#4801)
+
+A single canonical association records one reservation, one Plan and one
+child Run; unique constraints independently prohibit reuse of each identity,
+and restrictive foreign keys preserve both JobExecution records. Adoption
+does not release or replace any of the seven claims. The internal locking
+helper resolves the exact current acknowledgement and seven active claims
+under the existing canonical Plan/resource locks. The staging helper
+requires the exact queued, one-attempt canonical child and fingerprinted
+reservation/Plan payload, denies competing children or a prior adoption,
+and flushes the association and mandatory AuditEvent without a commit.
+The fixed candidate Run operation is `automation_kubespray_apply`.
+The future domain writer must independently authorize the actual operation,
+lock the reservation before staging a new child, and commit the child,
+subscriber, adoption and audit atomically before any broker dispatch.
+Review acknowledgement remains non-authorizing; no caller, task, broker
+or operation permission is enabled by this change.
+
+Review release locks the Plan before the claims and refuses any adoption
+or child, even if terminal. Generic retention excludes adopted Runs even
+if the parent reference is missing, and the restrictive FK is a final
+safeguard. No automatic terminal release or recovery retry is introduced.
+Recovery still requires independent provider reconciliation, an explicitly
+authorized disposition and durable audit; retain claims when outcome is
+unknown. Migration begins empty and downgrade refuses populated history.

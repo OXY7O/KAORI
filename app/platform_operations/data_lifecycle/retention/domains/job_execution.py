@@ -8,7 +8,7 @@ from flask import current_app
 from sqlalchemy import and_, func, or_, select
 
 from app.extensions.db import db
-from app.models.automation import AutomationRunTargetClaim
+from app.models.automation import AutomationRunReservationAdoption, AutomationRunTargetClaim
 from app.models.job import JobExecution, JobExecutionSubscriber
 from app.models.user import User
 from app.platform_operations.data_lifecycle.retention.policy_service import resolve_policy
@@ -21,12 +21,20 @@ def _without_target_claims():
     # Preserve both the claimed Plan and its direct child execution history.
     # Otherwise retention could erase a child and make a prior attempt look
     # like a never-dispatched Plan to the review reservation release service.
-    return ~select(AutomationRunTargetClaim.id).where(
-        or_(
-            AutomationRunTargetClaim.plan_job_id == JobExecution.id,
-            AutomationRunTargetClaim.plan_job_id == JobExecution.parent_job_id,
-        )
-    ).exists()
+    return and_(
+        ~select(AutomationRunTargetClaim.id).where(
+            or_(
+                AutomationRunTargetClaim.plan_job_id == JobExecution.id,
+                AutomationRunTargetClaim.plan_job_id == JobExecution.parent_job_id,
+            )
+        ).exists(),
+        ~select(AutomationRunReservationAdoption.id).where(
+            or_(
+                AutomationRunReservationAdoption.plan_job_id == JobExecution.id,
+                AutomationRunReservationAdoption.run_job_id == JobExecution.id,
+            )
+        ).exists(),
+    )
 
 
 class JobExecutionArchiveDomain:
