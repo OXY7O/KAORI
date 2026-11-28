@@ -128,7 +128,7 @@ def test_notification_templates_have_posture_and_guidance_before_registry() -> N
 
 
 def test_context_loading_is_isolated_from_tab_and_registry_loading() -> None:
-    workspace = read('app/templates/intelligence/partials/_alert_intelligence_context.html')
+    workspace = read('app/templates/intelligence/partials/_alert_scope_form.html')
 
     context_form = workspace.split('id="alert-intelligence-context-form"', 1)[1].split('</form>', 1)[0]
     assert 'hx-indicator="#alert-intelligence-context-loading"' in context_form
@@ -216,7 +216,7 @@ def test_modal_case_mutations_refresh_visible_registry_via_htmx_event() -> None:
 
 
 def test_context_filter_owns_only_context_loading_lifecycle() -> None:
-    workspace = read('app/templates/intelligence/partials/_alert_intelligence_context.html')
+    workspace = read('app/templates/intelligence/partials/_alert_scope_form.html')
     context_form = workspace.split('id="alert-intelligence-context-form"', 1)[1].split('</form>', 1)[0]
 
     assert 'hx-indicator="#alert-intelligence-context-loading"' in context_form
@@ -318,9 +318,9 @@ def test_alert_lifecycle_navigation_is_above_hero_and_scope_preserving() -> None
     for tab in ('overview', 'active', 'routing', 'templates', 'silences', 'resolved'):
         assert f"tab='{tab}', **tab_query" in page
     assert 'content_tabs.render_links' not in workspace
-    context = read('app/templates/intelligence/partials/_alert_intelligence_context.html')
+    context = read('app/templates/intelligence/partials/_alert_scope_form.html')
     assert 'name="tab"' in context
-    assert 'value="{{ payload.tab }}"' in context
+    assert 'value="{{ scope.tab }}"' in context
     assert 'id="alert-intelligence-context-form"' not in workspace
     assert 'lifecycle navigation above' in summary
 
