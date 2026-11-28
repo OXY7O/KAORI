@@ -497,6 +497,7 @@ def test_github_runtime_observations_are_exact_scope_and_never_inferred_from_job
     from types import SimpleNamespace
 
     from flask import Flask
+    from flask_login import LoginManager
     from sqlalchemy import insert
 
     from app.extensions.db import db
@@ -508,6 +509,9 @@ def test_github_runtime_observations_are_exact_scope_and_never_inferred_from_job
 
     app = Flask(__name__)
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite+pysqlite:///:memory:'
+    app.config['SECRET_KEY'] = 'runtime-observation-test'
+    login_manager = LoginManager(app)
+    login_manager.user_loader(lambda _user_id: None)
     db.init_app(app)
     now = datetime.now(UTC)
     with app.test_request_context('/?per_page=5'):
