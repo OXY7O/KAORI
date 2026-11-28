@@ -427,9 +427,10 @@ def test_notification_delivery_journal_filters_use_committed_sql_and_canonical_t
     assert "normalized_delivery_domain in {item['value'] for item in domain_options()}" in service
     assert 'normalized_delivery_severity in _SEVERITY_RANK' in service
     assert "normalized_delivery_status in {'queued', 'sent', 'failed', 'skipped'}" in service
-    assert service.index('if status:', service.index('def _delivery_registry_page(')) < service.index(
-        'rows, pagination = paginate_query(', service.index('def _delivery_registry_page(')
-    )
+    scope = service.split('def _filter_delivery_query(', 1)[1].split('def _delivery_statistics(', 1)[0]
+    registry = service.split('def _delivery_registry_page(', 1)[1].split('def _report_id_for_delivery(', 1)[0]
+    assert 'if status:' in scope
+    assert registry.index('_filter_delivery_query(') < registry.index('rows, pagination = paginate_query(')
     assert "'delivery_filters_active': any(" in service
     assert 'if payload.delivery_filters_active' in page
     assert 'result_count=payload.delivery_pagination.total_items' in page
@@ -477,13 +478,11 @@ def test_notification_refinement_reuses_header_info_tip_and_trailing_clear_filte
     assert 'Activity Audit:' in channels
     assert '<section class="grid gap-4 lg:grid-cols-3">' not in channels
     assert 'operational_section_card.render(' in index
-    assert index.count('integration_ui.interpretation_panel(') == 1
-    assert "'Provider Accepted ≠ Recipient Read'" in index
+    assert "'Delivery Statistics'" in index
     assert 'not receipt or readership by a person.' in index
-    assert 'sm:divide-x sm:divide-outline-subtle' in index
-    assert 'Committed Delivery Journal' in index
-    assert 'Independent Activity Audit' in index
-    assert 'sending a notification does not create an audit event.' in index
+    assert 'Notification Delivery Journal records committed attempts' in index
+    assert 'Activity Audit records governed actions separately' in index
+    assert 'notification delivery alone does not create an audit event.' in index
     assert "variant='guide'" in channels
     assert channels.index('info_tip.render(') < channels.index("variant='guide'")
     assert (
@@ -543,7 +542,8 @@ def test_notification_registry_headers_follow_kubernetes_inventory_clear_filter_
     assert "page_param='delivery_page'" in delivery
     assert "'tab': 'channels'" in channels
     assert "'tab': 'delivery'" in delivery
-    assert delivery.count('integration_ui.interpretation_panel(') == 1
+    assert 'integration_ui.interpretation_panel(' not in delivery
+    assert "'Delivery Statistics'" in delivery
     assert 'md:grid-cols-3' not in delivery
 
 
@@ -1193,25 +1193,27 @@ def test_channel_registry_guide_and_primary_action_follow_shared_kaori_contract(
     assert "table_label.metadata_label('Guided Setup', icon='book-open-check')" in modal
 
 
-def test_delivery_evidence_boundary_guide_retains_persistent_delivery_truth() -> None:
+def test_delivery_statistics_and_guide_retain_delivery_truth() -> None:
     page = read('app/templates/integrations/delivery/notification_channels/index.html')
     shared = read('app/templates/components/operational_section_card.html')
     Environment().parse(page)
     delivery = page.split("{% elif active_tab == 'delivery' %}", 1)[1]
 
-    assert delivery.count("info_tip.render('notification-delivery-evidence-boundary-guide'") == 1
+    assert delivery.count("info_tip.render('notification-delivery-records-guide'") == 1
     assert "variant='guide'" in delivery
     assert "placement='right'" in delivery
-    assert 'header_badge=delivery_evidence_boundary_guide' in delivery
-    assert delivery.index('delivery_evidence_boundary_guide') < delivery.index(
+    assert "header_badge=table_label.metadata_label('Committed Records', icon='database')" in delivery
+    assert delivery.index('id="notification-delivery-registry"') < delivery.index(
         '{% call operational_section_card.render('
+    ) < delivery.index("section_intro.render('Delivery Journal'") < delivery.index(
+        'table_block.inventory_block_header('
     )
     assert '{% if header_badge %}{{ header_badge }}{% endif %}' in shared
-    assert 'Provider Accepted ≠ Recipient Read' in delivery
     assert 'not receipt or readership by a person.' in delivery
-    assert 'Independent Activity Audit' in delivery
-    assert 'sending a notification does not create an audit event.' in delivery
+    assert 'Activity Audit records governed actions separately' in delivery
+    assert 'notification delivery alone does not create an audit event.' in delivery
     assert 'Hot delivery records and verified Data Lifecycle archive bundles' in delivery
+    assert 'all matching retained journal records, not individual transport attempts' in delivery
 
 
 def test_channel_details_drawer_uses_compact_inspection_without_nested_outcome_cards() -> None:
@@ -1326,7 +1328,7 @@ def test_notification_workspaces_use_posture_metadata_and_results_before_guides(
 
     assert "table_label.count_text(payload.summary.total, 'Active Channel')" in overview
     assert "table_label.count_text(payload.providers|length, 'Provider')" in channels
-    assert "table_label.metadata_label('Committed Evidence', icon='database')" in delivery
+    assert "table_label.metadata_label('Committed Records', icon='database')" in delivery
     assert 'notification-delivery-overview-guide' not in overview
     assert 'notification-channel-registry-guide' not in channels
     assert 'notification-delivery-evidence-boundary-guide' not in delivery
@@ -1345,3 +1347,40 @@ def test_notification_workspaces_use_posture_metadata_and_results_before_guides(
     assert overview.count("variant='guide'") == 1
     assert channels.count("variant='guide'") == 1
     assert delivery.count("variant='guide'") == 1
+
+
+def test_delivery_statistics_share_filtered_read_scope_and_htmx_registry() -> None:
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    routes = read('app/integrations/delivery/notification_channels/routes.py')
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    delivery = page.split("{% elif active_tab == 'delivery' %}", 1)[1]
+    aggregate = service.split('def _delivery_statistics(', 1)[1].split('def _delivery_registry_page(', 1)[0]
+
+    assert "include_delivery_statistics=active_tab == 'delivery'" in routes
+    assert "'delivery_statistics': delivery_statistics" in service
+    assert service.count('_filter_delivery_query(') == 3
+    assert 'if include_delivery_statistics' in service
+    assert 'NotificationDelivery.attempt_count > 1' in aggregate
+    assert "NotificationChannel.lifecycle_state == 'active'" in aggregate
+    assert 'func.distinct(' in aggregate
+    assert 'round(sent * 100 / resolved, 1) if resolved else None' in aggregate
+    assert '.limit(' not in aggregate and '.offset(' not in aggregate
+    assert '.all(' not in aggregate
+    assert delivery.count('id="notification-delivery-registry"') == 1
+    for label, key in (
+        ('Total Deliveries', 'total'),
+        ('Delivered', 'sent'),
+        ('Failed', 'failed'),
+        ('Success Rate', 'success_rate'),
+        ('Queued', 'queued'),
+        ('Skipped', 'skipped'),
+        ('Retried', 'retried'),
+        ('Active Providers', 'active_providers'),
+    ):
+        assert f"'{label}'" in delivery
+        assert f'statistics.{key}' in delivery
+    assert "if statistics.success_rate is not none else '—'" in delivery
+    assert 'Filtered hot records' in delivery and 'All retained hot records' in delivery
+    assert 'All pages' in delivery
+    assert 'result_count=payload.delivery_pagination.total_items' in delivery
+    assert delivery.count("'notification-delivery-registry'") == 3

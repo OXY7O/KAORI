@@ -258,6 +258,40 @@ remain immediately above the canonical Delivery Records table card.
 The design preserves external provider authority, existing table filters,
 loading/pagination, RBAC, security boundary and committed evidence.
 
+## Notification Delivery Statistics — approved Visual UAT (#5314, 2026-11-28)
+
+This supersedes the standalone Delivery Evidence Boundary presentation
+described in #2680, #2685, #2692 and #5308. Delivery Activity presents a single
+shared operational section with ordinary **Committed Records** metadata,
+four main metrics and four compact secondary metrics. Delivery Overview
+and Channels remain unchanged. The Delivery Records Guide retains the
+provider-acceptance versus recipient-read distinction, the independent
+Activity Audit boundary and the separation between hot and archived
+evidence. A compact persistent footer repeats the receipt limitation.
+
+Statistics are a read-only SQL aggregate over all matching retained hot
+journal records using the same normalized event key, provider, domain,
+severity and status predicates as Delivery Records, before pagination.
+Total Deliveries counts distinct journal rows (one channel/event identity
+per row); Delivered, Failed, Queued and Skipped describe the current
+committed outcome. Success Rate is sent/(sent+failed), rounded to one
+decimal percent, and unavailable when the denominator is zero. Retried
+counts records with more than one attempt, overlapping outcome totals.
+Active Providers counts distinct provider keys on active-lifecycle channels
+represented by matching records, regardless of health or eligibility; it
+excludes retired channels, which remain part of outcome totals. No archive
+read, live provider query, credentials projection or mutation is added.
+
+Only Delivery Activity requests the aggregate. Statistics and journal
+share the existing notification-delivery-registry HTMX swap boundary;
+filter changes, clear, Rows and pagination refresh both. Retain the
+canonical loading and Results-before-Guide header, default page size five,
+permission-scoped links, semantic colors and responsive wrapping. The
+aggregate and journal are separate database reads; concurrent delivery
+updates may change observations between reads. No atomic point-in-time
+snapshot is claimed. Runtime query performance and browser/HTMX UAT require
+qualification before official admission.
+
 ## Notification Channel Table Controls and Evidence Density (#2692, 2026-10-22)
 
 Kubernetes Pod and Namespace Inventory table cards are the directly adopted
