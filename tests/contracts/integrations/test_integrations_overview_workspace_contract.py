@@ -108,7 +108,7 @@ def test_portfolio_and_domain_coverage_use_neutral_card_semantics() -> None:
 
     for label in ('Configured Targets', 'Ready for Use', 'Readiness Review', 'Not Configured'):
         assert label in overview
-    assert 'Connection and Authority Boundary' in overview
+    assert 'Connection and Authority Boundary' not in overview
     assert 'Integration Portfolio Overview' not in overview
     assert 'Integration Domain Coverage' in overview
     assert 'Available Domains' in overview
@@ -116,7 +116,8 @@ def test_portfolio_and_domain_coverage_use_neutral_card_semantics() -> None:
     assert 'Provider Workspaces' in overview
     assert 'Ready Coverage' in overview
     assert 'Planned Provider Ownership' in overview
-    assert 'Coverage Boundary' in overview
+    assert 'Coverage Boundary' not in overview
+    assert "info_tip.render('integration-domain-coverage-guide'," in overview
     assert "coverage|selectattr('lifecycle', 'equalto', 'available')|list" in overview
     assert 'No targets registered' in overview
     assert 'integration_status(item.posture_state, item.posture_label' in overview

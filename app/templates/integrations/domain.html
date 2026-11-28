@@ -147,15 +147,5 @@
             domain.label ~ " providers and connections") }}
             {% include "integrations/partials/_domain_workspace.html" %}
         </div>
-        <div class="rounded-xl border border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6"
-             data-kaori-domain-operating-boundary>
-            <div class="flex items-start gap-3">
-                {{ integration_ui.palette_icon("shield-check", "brand", size="sm") }}
-                <div class="min-w-0">
-                    <p class="text-sm font-semibold text-content-primary">Domain Operating Boundary</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ "External engines own runtime state; KAORI governs connections, validation, and bindings." if domain.key == "orchestration" else "External systems remain authoritative for native configuration and runtime state. KAORI owns provider registration, compatibility and Core Validation, asset-centric bindings, binding-specific consumer evidence, and consumer eligibility." }}</p>
-                </div>
-            </div>
-        </div>
     </div>
 {% endblock dashboard_content %}
