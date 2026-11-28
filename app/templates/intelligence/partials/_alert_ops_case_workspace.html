@@ -390,9 +390,11 @@
                         {% endfor %}
                     </dl>
                     {% if case.evidence_facts %}
-                        <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+                        {% set fact_count = case.evidence_facts|length %}
+                        <div class="grid grid-cols-1 gap-px border-t border-outline-subtle bg-outline-subtle {{ 'sm:grid-cols-2' if fact_count > 1 else '' }} {{ 'xl:grid-cols-3' if fact_count == 3 else 'xl:grid-cols-4' if fact_count >= 4 else '' }}"
+                             data-alert-evidence-facts>
                             {% for fact in case.evidence_facts %}
-                                <div class="bg-surface-elevated px-3 py-2.5">
+                                <div class="min-w-0 bg-surface-card px-4 py-3 {{ 'sm:col-span-2 xl:col-span-1' if fact_count == 3 and loop.last else '' }}">
                                     <div class="flex items-center gap-2 text-xs font-medium leading-5 text-content-muted"><i data-lucide="{{ fact.icon }}" class="h-3.5 w-3.5 text-kaori-primary"></i>{{ fact.label }}</div>
                                     <p class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ fact.value }}</p>
                                 </div>
