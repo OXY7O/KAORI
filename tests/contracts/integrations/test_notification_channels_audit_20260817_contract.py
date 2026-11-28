@@ -1316,7 +1316,8 @@ def test_notification_workspaces_use_posture_metadata_and_results_before_guides(
     page = read('app/templates/integrations/delivery/notification_channels/index.html')
     channels = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split(
-        "{% elif active_tab == 'channels' %}", 1
+        "{% elif active_tab == 'channels' %}",
+        1,
     )[0]
     delivery = page.split("{% elif active_tab == 'delivery' %}", 1)[1]
 

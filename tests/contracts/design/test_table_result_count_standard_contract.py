@@ -35,7 +35,9 @@ def test_shared_block_header_accepts_count_without_replacing_info_tip_or_actions
     assert 'class="flex min-h-6 flex-wrap items-center gap-1.5"' in content
     assert 'data-kaori-table-header-actions' in content
     assert "result_count=none, guide=''" in content
-    assert content.index('table_label.result_count(result_count)') < content.index('{% if guide %}{{ guide }}{% endif %}')
+    assert content.index('table_label.result_count(result_count)') < content.index(
+        '{% if guide %}{{ guide }}{% endif %}'
+    )
 
 
 def test_inventory_and_tenant_results_use_filtered_total_not_visible_rows() -> None:
@@ -183,10 +185,11 @@ def test_special_registry_headers_share_one_result_badge() -> None:
 
 
 def test_inventory_header_renders_metadata_results_guide_and_actions_in_order() -> None:
-    template = Environment(loader=FileSystemLoader(str(TEMPLATES)), autoescape=True).get_template(
-        'components/table.html'
-    )
-    render = template.module.inventory_block_header
+    environment = Environment(loader=FileSystemLoader(str(TEMPLATES)), autoescape=True)
+    # Unrelated table macros reference this application filter; this isolated
+    # header render does not call it.
+    environment.filters['environment_name'] = lambda value, **_kwargs: value
+    render = environment.get_template('components/table.html').module.inventory_block_header
     html = str(
         render(
             'send',

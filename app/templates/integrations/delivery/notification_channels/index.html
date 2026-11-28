@@ -356,16 +356,16 @@
                                                 header_actions=delivery_clear_action,
                                                 result_count=payload.delivery_pagination.total_items,
                                                  guide=info_tip.render('notification-delivery-records-guide',
-                                        'Delivery Records',
-                                        'Distinguish transport acceptance from recipient receipt and separate audit evidence.',
-                                        items=[
-                                        'Provider acceptance proves transport acknowledgement, not that a person received or read the message.',
-                                        'Notification Delivery Journal records committed attempts, provider results, retries and deduplication.',
-                                        'Activity Audit records governed actions separately; notification delivery alone does not create an audit event.',
-                                        'Hot delivery records and verified Data Lifecycle archive bundles have distinct evidence scopes.'
-                                        ],
-                                        placement='right',
-                                        variant='guide')) }}
+                                                 'Delivery Records',
+                                                 'Distinguish transport acceptance from recipient receipt and separate audit evidence.',
+                                                 items=[
+                                                 'Provider acceptance proves transport acknowledgement, not that a person received or read the message.',
+                                                 'Notification Delivery Journal records committed attempts, provider results, retries and deduplication.',
+                                                 'Activity Audit records governed actions separately; notification delivery alone does not create an audit event.',
+                                                 'Hot delivery records and verified Data Lifecycle archive bundles have distinct evidence scopes.'
+                                                 ],
+                                                 placement='right',
+                                                 variant='guide')) }}
                         <div class="{{ table_block.inventory_filter_bar_classes() }}">
                             {% call table_registry.filter_form('notification_channels.index',
                                 'notification-delivery-registry',

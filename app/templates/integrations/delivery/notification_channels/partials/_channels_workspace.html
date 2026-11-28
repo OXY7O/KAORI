@@ -151,6 +151,7 @@
                         'Loading Notification Channels',
                         none,
                         header_actions=channel_clear_action,
+                        result_count=payload.channel_pagination.total_items,
                         guide=info_tip.render(
                         'notification-channel-inventory-guide',
                         'Channel Inventory Guidance',
@@ -166,8 +167,7 @@
                         'Consumers select eligible channels; KAORI owns credentials, delivery policy enforcement and committed evidence.'
                         ],
                         placement='right',
-                        variant='guide'),
-                        result_count=payload.channel_pagination.total_items) }}
+                        variant='guide')) }}
             <div class="{{ table_block.inventory_filter_bar_classes() }}">
                 {% call table_registry.filter_form('notification_channels.index',
                     'notification-channel-registry',
