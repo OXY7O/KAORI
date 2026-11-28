@@ -44,29 +44,27 @@
                         {% set review_url = url_for('alert_intelligence.case_details', public_id=case.public_id, tab=payload.tab if payload.provider_case_mode else 'active', domain=payload.domain, asset=payload.selected_asset_key, provider=payload.selected_provider if payload.provider_case_mode else none, severity=payload.filters.severity, workflow=payload.filters.workflow, source=payload.filters.source, source_state=payload.filters.source_state, q=payload.filters.q, page=payload.active_pagination.page, per_page=payload.active_pagination.per_page) %}
                         <tr id="alert-case-row-{{ case.public_id }}"
                             class="{{ table_ui.row_classes() }}">
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <div class="flex min-w-0 max-w-lg items-start gap-3" data-alert-case-identity>
+                            <td class="{{ table_ui.cell_classes() }} w-[38%] max-w-0">
+                                <div class="flex min-w-0 w-full items-start gap-3" data-alert-case-identity>
                                     <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
                                           aria-hidden="true">
                                         <i data-lucide="siren" class="h-4 w-4"></i>
                                     </span>
                                     <div class="min-w-0 flex-1 space-y-1">
-                                        <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ case.alert_name }}</p>
-                                        <p class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs leading-5 text-content-secondary">
-                                            <span class="inline-flex min-w-0 items-start gap-1">
-                                                <i data-lucide="boxes" class="mt-1 h-3 w-3 shrink-0 text-content-muted" aria-hidden="true"></i>
-                                                <span class="min-w-0 [overflow-wrap:anywhere]">{{ case.asset_name }}</span>
-                                            </span>
+                                        <p class="truncate text-sm font-semibold leading-5 text-content-primary"
+                                           title="{{ case.alert_name }}">{{ case.alert_name }}</p>
+                                        <p class="truncate text-xs leading-5 text-content-secondary"
+                                           title="{{ case.asset_name }}{% if case.namespace != '-' %} · {{ case.namespace }}{% endif %}">
+                                            <i data-lucide="boxes" class="inline-block h-3 w-3 align-middle text-content-muted" aria-hidden="true"></i>
+                                            {{ case.asset_name }}
                                             {% if case.namespace != '-' %}
-                                                <span class="inline-flex min-w-0 items-start gap-1">
-                                                    <i data-lucide="layers-3" class="mt-1 h-3 w-3 shrink-0 text-content-muted" aria-hidden="true"></i>
-                                                    <span class="min-w-0 [overflow-wrap:anywhere]">{{ case.namespace }}</span>
-                                                </span>
+                                                <i data-lucide="layers-3" class="ml-1 inline-block h-3 w-3 align-middle text-content-muted" aria-hidden="true"></i>
+                                                {{ case.namespace }}
                                             {% endif %}
                                         </p>
-                                        <p class="flex min-w-0 items-baseline gap-1.5 text-xs leading-5 text-content-muted">
-                                            <span class="shrink-0 font-medium">Case ID</span>
-                                            <span class="min-w-0 break-all font-mono">{{ case.public_id }}</span>
+                                        <p class="truncate text-xs leading-5 text-content-muted" title="Case ID · {{ case.public_id }}">
+                                            <span class="font-medium">Case ID</span>
+                                            <span class="font-mono">{{ case.public_id }}</span>
                                         </p>
                                     </div>
                                 </div>

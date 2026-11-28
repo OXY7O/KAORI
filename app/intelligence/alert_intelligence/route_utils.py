@@ -16,12 +16,8 @@ from app.intelligence.alert_intelligence.service import (
 
 def index_response() -> ResponseReturnValue:
     target = str(request.headers.get('HX-Target') or '').strip()
-    if request.headers.get('HX-Request') == 'true' and target == 'alert-intelligence-context-form':
-        return render_template(
-            'intelligence/partials/_alert_scope_form.html', scope=get_alert_scope_draft(request.args)
-        )
-    # A draft whose dependent choices failed to refresh cannot silently widen
-    # an applied scope. Recheck current option membership before the real read.
+    # Validate the inline asset selection against current option membership.
+    # Domain/provider changes omit the dependent selection to avoid stale scope.
     if request.args.get('apply_scope') == '1':
         draft = get_alert_scope_draft(request.args)
         if (
@@ -38,7 +34,7 @@ def index_response() -> ResponseReturnValue:
             )
         ):
             return ('Select a current authorized scope and try again.', 400)
-        # Keep draft-only fields out of the canonical URL and page filters.
+        # Keep selection guard fields out of the canonical URL and page filters.
         values = {
             'tab': draft['tab'],
             'domain': draft['domain'],
