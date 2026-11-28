@@ -1,6 +1,6 @@
 {% import "components/table.html" as table_ui %}
 <section id="identity-provider-workspace"
-         class="{{ table_ui.block_classes() }}"
+         class="{{ table_ui.block_classes(allow_overflow=true) }}"
          aria-label="Identity Provider Records"
          data-kaori-idp-records-workspace>
     {% include "access/identity_providers/partials/_tabs.html" %}
