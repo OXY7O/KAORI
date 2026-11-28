@@ -1,5 +1,6 @@
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "components/action_button.html" as action_button %}
+{% import "components/section_link_button.html" as section_link_button %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
@@ -8,7 +9,8 @@
          class="{{ integration_ui.section_shell_classes() }}"
          aria-label="Ansible inventory and lifecycle"
          data-kaori-ansible-inventory-registry>
-    {{ integration_ui.section_header('boxes', 'Inventory & Lifecycle', 'Correlate approved KAORI cluster identities through committed IntegrationBinding records. Kubernetes remains authoritative for native cluster state.') }}
+    {% set automation_action = section_link_button.render(url_for('platform_operations.infrastructure_automation.index', connection_id=connection.id), 'Open Infrastructure Automation', icon='arrow-right') if current_user.is_authenticated and current_user.has_permission('integrations.manage') else none %}
+    {{ integration_ui.section_header('boxes', 'Inventory & Lifecycle', 'Review committed cluster associations and governed lifecycle evidence.', action_html=automation_action) }}
     {{ loading_bar.render("ansible-inventory-loading", label="Loading Kubernetes target bindings") }}
     <div class="grid gap-4 border-b border-outline-subtle p-5 md:grid-cols-2">
         <article class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
@@ -20,8 +22,8 @@
             <p class="mt-2 text-xs leading-5 text-content-secondary">Source-only connection. A recorded asset binding is not proof of inventory reachability, SSH authority or Kubernetes operational readiness.</p>
             <a href="{{ url_for('integrations.kubernetes') }}"
                class="{{ action_button.classes('secondary') }} mt-4">
-                <i data-lucide="boxes" class="h-4 w-4" aria-hidden="true"></i>
-                View Kubernetes Integrations
+                <i data-lucide="plug-zap" class="h-4 w-4" aria-hidden="true"></i>
+                Open Cluster Integrations
             </a>
         </article>
         <article class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
