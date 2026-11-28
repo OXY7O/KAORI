@@ -154,7 +154,7 @@ def test_private_files_exact_host_keys_and_cleanup(targets, monkeypatch, tmp_pat
     with ephemeral_ssh.prepare_ephemeral_ssh(targets) as files:
         root = files.config.parent
         assert S_IMODE(root.stat().st_mode) == 0o700
-        assert len(list(root.iterdir())) == 5
+        assert len(list(root.iterdir())) == 6
         assert all(S_IMODE(path.stat().st_mode) == 0o600 for path in root.iterdir())
         config = files.config.read_text()
         assert 'StrictHostKeyChecking yes' in config
@@ -166,6 +166,13 @@ def test_private_files_exact_host_keys_and_cleanup(targets, monkeypatch, tmp_pat
         expected = [f'10.0.0.1 {targets[0].host_key}', f'[10.0.0.2]:2222 {targets[1].host_key}',
                     f'10.0.0.3 {targets[2].host_key}']
         assert files.known_hosts.read_text().splitlines() == expected
+        assert files.inventory.read_text().splitlines() == [
+            '[kaori_remote_pilot]', 'kaori-1', 'kaori-2', 'kaori-3',
+        ]
+        assert 'ControlMaster=no' in files.ssh_args
+        assert 'ControlPath=none' in files.ssh_args
+        assert 'ControlPersist=no' in files.ssh_args
+        assert str(files.config) in files.ssh_args
         assert files.execution_authorized is False
     assert not root.exists()
     assert list(tmp_path.iterdir()) == []

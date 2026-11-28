@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import re
+import shlex
 import stat
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -19,6 +20,7 @@ from tempfile import TemporaryDirectory
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
+from app.infrastructure_automation.remote_preflight_source import REMOTE_GROUP
 from app.infrastructure_automation.ssh_host_key import qualify_ed25519_host_key
 from app.integrations.secrets_management.secrets_pki.providers.ssh_credential_material import SSHCredentialMaterial
 
@@ -49,7 +51,18 @@ class EphemeralSSHFiles:
 
     config: Path
     known_hosts: Path
+    inventory: Path
     execution_authorized: bool = False
+
+    @property
+    def ssh_args(self) -> str:
+        """Explicit candidate SSH args; override Runner defaults, not append to them."""
+        return shlex.join((
+            '-F', str(self.config),
+            '-o', 'ControlMaster=no',
+            '-o', 'ControlPath=none',
+            '-o', 'ControlPersist=no',
+        ))
 
 
 def _deny() -> EphemeralSSHError:
@@ -137,6 +150,7 @@ def _write_private_file(path: Path, content: bytes) -> None:
 def _prepare(root: Path, targets: tuple[SSHMaterialTarget, ...]) -> EphemeralSSHFiles:
     known_hosts = root / 'known_hosts'
     config = root / 'ssh_config'
+    inventory = root / 'inventory.ini'
     known_lines = []
     configs = []
     for target in sorted(targets, key=lambda item: item.alias):
@@ -194,7 +208,11 @@ def _prepare(root: Path, targets: tuple[SSHMaterialTarget, ...]) -> EphemeralSSH
     ))
     _write_private_file(known_hosts, ('\n'.join(known_lines) + '\n').encode('ascii'))
     _write_private_file(config, ('\n'.join(configs) + '\n').encode('ascii'))
-    return EphemeralSSHFiles(config, known_hosts)
+    # No host/user/key variables or provider inputs are interpolated into
+    # Ansible inventory. Only validated aliases from this exact SSH bundle.
+    inventory_lines = [f'[{REMOTE_GROUP}]', *sorted(target.alias for target in targets)]
+    _write_private_file(inventory, ('\n'.join(inventory_lines) + '\n').encode('ascii'))
+    return EphemeralSSHFiles(config, known_hosts, inventory)
 
 
 @contextmanager

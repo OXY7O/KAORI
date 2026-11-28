@@ -1,5 +1,6 @@
 """Native exact version transport regression; no real token or provider."""
 
+import base64
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
@@ -9,7 +10,9 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from app.access.scope_policy import CredentialIssuerScope
+from app.infrastructure_automation import ephemeral_ssh
 from app.infrastructure_automation import native_credential_reader as service
+from app.infrastructure_automation.remote_preflight_facts import RemoteFactsTarget, normalize_remote_facts
 from app.integrations.secrets_management.secrets_pki.providers.credential_version_proof import (
     CredentialVersionSelector,
     ProviderCredentialVersionSelector,
@@ -168,3 +171,91 @@ def test_transport_rejects_non_exact_version_operation(monkeypatch, path, method
     )
     with pytest.raises(SecretProviderError):
         transport._request(path, method=method, token=_TOKEN, kv2_version=version)
+
+
+def _synthetic_target(index, material):
+    public = Ed25519PrivateKey.generate().public_key().public_bytes(
+        serialization.Encoding.OpenSSH, serialization.PublicFormat.OpenSSH
+    ).decode('ascii')
+    digest = 'sha256:' + sha256(base64.b64decode(public.split(' ')[1])).hexdigest()
+    return ephemeral_ssh.SSHMaterialTarget(
+        f'kaori-{index}', f'10.0.0.{index}', 22, public, digest, material
+    )
+
+
+def _synthetic_events(targets):
+    facts = {
+        'ansible_distribution': 'Ubuntu',
+        'ansible_distribution_version': '24.04',
+        'ansible_distribution_major_version': '24',
+        'ansible_kernel': '6.8.0-41-generic',
+        'ansible_architecture': 'x86_64',
+        'ansible_pkg_mgr': 'apt',
+        'ansible_python_version': '3.12.3',
+        'ansible_processor_vcpus': 4,
+        'ansible_memtotal_mb': 8192,
+        'ansible_effective_user_id': 1000,
+        'ansible_mounts': [{'mount': '/', 'size_total': 80 * 1024**3, 'size_available': 60 * 1024**3}],
+        'fixture_secret_not_observed': _TOKEN,
+    }
+    return [
+        {'event': 'runner_on_ok', 'event_data': {
+            'host': target.alias, 'task_action': 'ansible.builtin.setup',
+            'res': {'changed': False, 'ansible_facts': facts},
+        }}
+        for target in targets
+    ]
+
+
+@pytest.mark.parametrize('provider', ['openbao', 'vault'])
+def test_mock_provider_to_ephemeral_inventory_to_synthetic_facts(provider, monkeypatch, tmp_path):
+    # Exercise the actual adapter handoffs, but mock provider transport and
+    # mount qualification. Never call SSH, Runner, a real provider or broker.
+    monkeypatch.setattr(ephemeral_ssh, '_worker_tmpfs_root', lambda: tmp_path)
+    targets = []
+    for index in range(1, 4):
+        selection, deadline, transport = _setup(monkeypatch, provider)
+        material = service._read_exact_native_ssh_credential(selection, token=_TOKEN, deadline=deadline)
+        assert transport.metadata_reads == 2
+        targets.append(_synthetic_target(index, material))
+    facts_targets = tuple(
+        RemoteFactsTarget(target.alias, f'00000000-0000-4000-8000-{index:012d}',
+                          'control_plane' if index == 1 else 'worker')
+        for index, target in enumerate(targets, start=1)
+    )
+    with ephemeral_ssh.prepare_ephemeral_ssh(tuple(targets)) as files:
+        root = files.config.parent
+        assert files.inventory.read_text().splitlines() == [
+            '[kaori_remote_pilot]', *[target.alias for target in facts_targets],
+        ]
+        for target in targets:
+            loaded = serialization.load_ssh_private_key(
+                (root / (target.alias + '.key')).read_bytes(), password=None
+            )
+            assert loaded.public_key().public_bytes_raw() == target.credential.private_key.public_key().public_bytes_raw()
+        summary = normalize_remote_facts(
+            facts_targets, events=_synthetic_events(facts_targets),
+            stats={'ok': {target.alias: 1 for target in facts_targets}, 'changed': {}},
+        ).committed_summary()
+        assert len(summary['hosts']) == 3
+        assert summary['full_preflight_verified'] is False
+        assert summary['execution_authorized'] is False
+        assert _TOKEN not in str(summary)
+        assert str(root) not in str(summary)
+        assert '10.0.0.' not in str(summary)
+    assert not root.exists()
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_mock_provider_rotation_prevents_complete_bundle(monkeypatch, tmp_path):
+    monkeypatch.setattr(ephemeral_ssh, '_worker_tmpfs_root', lambda: pytest.fail('Incomplete bundle reached disk'))
+    targets = []
+    with pytest.raises(SecretProviderError):
+        for index in range(1, 4):
+            selection, deadline, _ = _setup(monkeypatch, 'openbao', 'rotated' if index == 2 else None)
+            material = service._read_exact_native_ssh_credential(selection, token=_TOKEN, deadline=deadline)
+            targets.append(_synthetic_target(index, material))
+        with ephemeral_ssh.prepare_ephemeral_ssh(tuple(targets)):
+            pytest.fail('Rotated credential must not yield a complete bundle')
+    assert len(targets) == 1
+    assert list(tmp_path.iterdir()) == []
