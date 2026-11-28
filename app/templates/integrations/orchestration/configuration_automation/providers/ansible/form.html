@@ -1,6 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "integrations/components/_provider_registration_hero.html" as registration_hero %}
-{% import "integrations/components/_provider_edit_hero.html" as edit_hero %}
+{% import "integrations/components/_provider_edit_hero.html" as provider_edit_hero %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "integrations/components/_provider_registration_context.html" as registration_context %}
 {% import "integrations/components/_provider_registration_actions.html" as registration_actions %}
@@ -15,7 +15,7 @@
     <div class="kaori-integration-semantic space-y-6"
          data-kaori-ansible-connection-form>
         {% if configure_mode %}
-            {{ edit_hero.render("workflow", "Configuration Automation", "boxes",
+            {{ provider_edit_hero.render("workflow", "Configuration Automation", "boxes",
                 "Configure Connection", "Review the registered Ansible source and compatibility references.",
                 "git-commit", "Pinned Public Git Source", "Connection", connection.name,
                 connection.environment|replace("_", " ")|title, connection.readiness_status,
@@ -81,7 +81,7 @@
                             {% for field in [form.name, form.environment] %}
                                 <div class="min-w-0">
                                     <label for="{{ field.id }}" class="block">{{ form_field.label_row(field.label.text) }}</label>
-                                    {{ field(class=form_field.select_classes() if field.name == 'environment' else form_field.input_classes(), disabled=configure_mode, aria_invalid="true" if field.errors else "false") }}
+                                    {{ field(class=form_field.select_classes() if field.name == 'environment' else form_field.input_classes(), disabled=configure_mode if field.name == 'environment' else false, readonly=configure_mode if field.name == 'name' else false, aria_invalid="true" if field.errors else "false") }}
                                     {% for error in field.errors %}
                                         <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                                     {% endfor %}
@@ -89,7 +89,7 @@
                             {% endfor %}
                             <div class="min-w-0 md:col-span-2">
                                 <label for="{{ form.description.id }}" class="block">{{ form_field.label_row(form.description.label.text) }}</label>
-                                {{ form.description(class=form_field.input_classes() ~ ' min-h-24 py-2.5', placeholder="Operational purpose and ownership context", disabled=configure_mode, aria_invalid="true" if form.description.errors else "false") }}
+                                {{ form.description(class=form_field.input_classes() ~ ' min-h-24 py-2.5', placeholder="Not Provided" if configure_mode else "Operational purpose and ownership context", readonly=configure_mode, aria_invalid="true" if form.description.errors else "false") }}
                                 {% for error in form.description.errors %}
                                     <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                                 {% endfor %}
@@ -132,7 +132,7 @@
                                 {% for field in [form.profile_key, form.repository] %}
                                     <div class="min-w-0">
                                         <label for="{{ field.id }}" class="block">{{ form_field.label_row(field.label.text) }}</label>
-                                        {{ field(class=form_field.select_classes() if field.name == 'profile_key' else form_field.input_classes(), disabled=configure_mode, aria_invalid="true" if field.errors else "false") }}
+                                        {{ field(class=form_field.select_classes() if field.name == 'profile_key' else form_field.input_classes(), disabled=configure_mode if field.name == 'profile_key' else false, readonly=configure_mode if field.name == 'repository' else false, aria_invalid="true" if field.errors else "false") }}
                                         {% for error in field.errors %}
                                             <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                                         {% endfor %}
@@ -140,7 +140,7 @@
                                 {% endfor %}
                                 <div class="min-w-0 md:col-span-2">
                                     <label for="{{ form.revision.id }}" class="block">{{ form_field.label_row(form.revision.label.text) }}</label>
-                                    {{ form.revision(class=form_field.input_classes() ~ ' font-mono', disabled=configure_mode, aria_invalid="true" if form.revision.errors else "false") }}
+                                    {{ form.revision(class=form_field.input_classes() ~ ' font-mono', readonly=configure_mode, aria_invalid="true" if form.revision.errors else "false") }}
                                     {% for error in form.revision.errors %}
                                         <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                                     {% endfor %}
@@ -183,7 +183,7 @@
                         </div>
                         <div class="mt-4 min-w-0">
                             <label for="{{ form.execution_environment_digest.id }}" class="block">{{ form_field.label_row(form.execution_environment_digest.label.text) }}</label>
-                            {{ form.execution_environment_digest(class=form_field.input_classes() ~ ' font-mono', placeholder="sha256:... (optional; not proof of image admission)", disabled=configure_mode, aria_invalid="true" if form.execution_environment_digest.errors else "false") }}
+                            {{ form.execution_environment_digest(class=form_field.input_classes() ~ ' font-mono', placeholder="Not Provided" if configure_mode else "sha256:... (optional; not proof of image admission)", readonly=configure_mode, aria_invalid="true" if form.execution_environment_digest.errors else "false") }}
                             {% for error in form.execution_environment_digest.errors %}
                                 <p class="mt-1.5 text-xs text-status-critical-text">{{ error }}</p>
                             {% endfor %}

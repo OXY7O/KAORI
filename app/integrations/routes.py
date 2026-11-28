@@ -350,27 +350,34 @@ def ansible_connection_configure(instance_id: int) -> ResponseReturnValue:
     if connection is None:
         abort(404)
     source = connection.metadata_json or {}
-    form = AnsibleSourceConnectionForm(data={
-        'name': connection.name,
-        'description': connection.description or '',
-        'environment': connection.environment,
-        'profile_key': source.get('profile_key') or '',
-        'repository': source.get('source_repository') or '',
-        'revision': source.get('source_sha') or '',
-        'ansible_core_version': source.get('ansible_core_version') or '',
-        'ansible_runner_version': source.get('ansible_runner_version') or '',
-        'kubespray_release': source.get('kubespray_release') or '',
-        'execution_environment_digest': source.get('execution_environment_digest') or '',
-    })
+    form = AnsibleSourceConnectionForm(
+        data={
+            'name': connection.name,
+            'description': connection.description or '',
+            'environment': connection.environment,
+            'profile_key': source.get('profile_key') or '',
+            'repository': source.get('source_repository') or '',
+            'revision': source.get('source_sha') or '',
+            'ansible_core_version': source.get('ansible_core_version') or '',
+            'ansible_runner_version': source.get('ansible_runner_version') or '',
+            'kubespray_release': source.get('kubespray_release') or '',
+            'execution_environment_digest': source.get('execution_environment_digest') or '',
+        }
+    )
     # Current registration choices may no longer include historical pins.
     # Keep the committed value visible, without widening the Add form policy.
     for field in (
-        form.environment, form.profile_key, form.ansible_core_version,
-        form.ansible_runner_version, form.kubespray_release,
+        form.environment,
+        form.profile_key,
+        form.ansible_core_version,
+        form.ansible_runner_version,
+        form.kubespray_release,
     ):
         value = str(field.data or '')
         label = next((label for key, label in field.choices or [] if key == value), value or 'Not Recorded')
         field.choices = [(value, label)]
+    for field in (form.name, form.repository, form.revision):
+        field.render_kw = {'placeholder': 'Not Recorded'}
     return render_template(
         'integrations/orchestration/configuration_automation/providers/ansible/form.html',
         form=form,

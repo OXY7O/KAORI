@@ -201,7 +201,10 @@ def test_choose_validate_save_manage_with_canonical_database(app):
     assert b'id="ansible-source-registration-form"' not in configuration.data
     assert b'id="ansible-proof-field"' not in configuration.data
     assert b'name="action" value="save"' not in configuration.data
-    assert re.search(rb'<input\b[^>]*\bid="revision"[^>]*\bvalue="' + SOURCE_CANDIDATE_SHA.encode() + rb'"', configuration.data)
+    revision_field = re.search(rb'<input\b[^>]*\bid="revision"[^>]*>', configuration.data)
+    assert revision_field is not None
+    assert b'value="' + SOURCE_CANDIDATE_SHA.encode() + b'"' in revision_field.group()
+    assert b'readonly' in revision_field.group()
     assert client.post(configure_url, data={'revision': 'f' * 40}).status_code == 405
     assert client.get('/integrations/ansible/connections/0/configure').status_code == 404
     with app.app_context():
@@ -304,7 +307,7 @@ def test_configure_preserves_superseded_version_choices(app):
         identity = row.id
     result = app.test_client().get(f'/integrations/ansible/connections/{identity}/configure')
     assert result.status_code == 200
-    assert b'<option selected value="2.19.3">2.19.3</option>' in result.data
+    assert re.search(rb'<option\b[^>]*\bselected\b[^>]*\bvalue="2\.19\.3"[^>]*>2\.19\.3</option>', result.data)
     assert b'a' * 40 in result.data
     with app.app_context():
         row = db.session.get(IntegrationInstance, identity)
