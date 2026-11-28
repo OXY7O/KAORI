@@ -10,10 +10,12 @@ import base64
 import binascii
 import secrets
 from datetime import UTC, datetime, timedelta
+from typing import Literal
 
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.twofactor import InvalidToken
 from cryptography.hazmat.primitives.twofactor.totp import TOTP
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -71,33 +73,68 @@ def _accepted_step(secret: str, code: str, *, last_accepted_step: int | None, no
     return None
 
 
-def begin_mfa_enrollment(user: User, *, authenticated: bool = True) -> str:
-    """Create expiring encrypted factor; return seed ONLY to this POST response."""
-    if mfa_enrolled(user.id):
-        raise MfaVerificationError('MFA is already enrolled.')
-    existing = AuthenticationMfaFactor.query.filter_by(user_id=user.id).with_for_update().first()
-    secret = base64.b32encode(secrets.token_bytes(20)).decode('ascii')
-    factor = existing if existing is not None else AuthenticationMfaFactor()
-    if existing is None:
-        factor.user_id = user.id
-    factor.totp_secret = secret
-    factor.enabled = False
-    factor.last_accepted_step = None
-    factor.recovery_hashes = []
-    factor.enrollment_expires_at = datetime.now(UTC) + ENROLLMENT_TTL
-    if existing is None:
-        db.session.add(factor)
-    db.session.add(
-        stage_authentication_security_event(
-            user,
-            action='mfa_enrollment_started',
-            authenticated=authenticated,
-            success=True,
-        )
-    )
+def mfa_enrollment_state(
+    factor: AuthenticationMfaFactor | None, *, now: datetime
+) -> Literal['enrolled', 'pending', 'expired', 'not_enrolled']:
+    """Project effective enrollment state, never infer a valid pending seed from a row alone."""
+    if factor is None:
+        return 'not_enrolled'
+    if factor.enabled:
+        return 'enrolled'
+    expires = factor.enrollment_expires_at
+    if expires is None:
+        return 'expired'
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=UTC)
+    return 'pending' if expires > now else 'expired'
+
+
+def begin_mfa_enrollment(user: User, *, expected_generation: int, authenticated: bool = True) -> str:
+    """Create an expiring encrypted factor under the authoritative account lock."""
     try:
+        # Serialize absent-factor creation and credential/generation changes.
+        admitted_user_id = db.session.execute(
+            select(User.id)
+            .where(
+                User.id == user.id,
+                User.auth_session_version == expected_generation,
+                User.auth_source == user.auth_source,
+                User.account_is_active.is_(True),
+                User.deleted_at.is_(None),
+            )
+            .with_for_update()
+        ).scalar_one_or_none()
+        if admitted_user_id is None:
+            raise MfaVerificationError('Sign in again before changing MFA.')
+
+        existing = (
+            AuthenticationMfaFactor.query.filter_by(user_id=user.id).with_for_update().populate_existing().first()
+        )
+        # This check MUST follow the factor lock. A concurrent confirmation
+        # may have activated the factor after the caller read its posture.
+        if existing is not None and existing.enabled:
+            raise MfaVerificationError('MFA is already enrolled.')
+        secret = base64.b32encode(secrets.token_bytes(20)).decode('ascii')
+        factor = existing if existing is not None else AuthenticationMfaFactor()
+        if existing is None:
+            factor.user_id = user.id
+        factor.totp_secret = secret
+        factor.enabled = False
+        factor.last_accepted_step = None
+        factor.recovery_hashes = []
+        factor.enrollment_expires_at = datetime.now(UTC) + ENROLLMENT_TTL
+        if existing is None:
+            db.session.add(factor)
+        db.session.add(
+            stage_authentication_security_event(
+                user,
+                action='mfa_enrollment_started',
+                authenticated=authenticated,
+                success=True,
+            )
+        )
         db.session.commit()
-    except SQLAlchemyError:
+    except (SQLAlchemyError, MfaVerificationError):
         db.session.rollback()
         raise
     return secret

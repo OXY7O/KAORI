@@ -12,6 +12,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    session,
     url_for,
 )
 from flask_login import current_user, login_fresh, login_required
@@ -25,11 +26,12 @@ from app.access.authentication.mfa.service import (
     MfaVerificationError,
     begin_mfa_enrollment,
     confirm_mfa_enrollment,
-    mfa_enrolled,
+    mfa_enrollment_state,
     mfa_policy_mode,
     regenerate_mfa_recovery_codes,
     verify_mfa_challenge,
 )
+from app.access.authentication.session import parse_authenticated_user_identifier
 from app.access.users.directory import build_user_identity_context
 from app.common.timezone import (
     format_user_datetime,
@@ -251,7 +253,13 @@ def _process_account_mfa_action(
             if not password or not user.check_password(password):
                 raise MfaVerificationError('Your current password was not accepted.')
         if action == 'begin':
-            mfa_setup_secret = begin_mfa_enrollment(user)
+            try:
+                session_user_id, generation = parse_authenticated_user_identifier(session.get('_user_id'))
+            except ValueError as exc:
+                raise MfaVerificationError('Sign in again before changing MFA.') from exc
+            if session_user_id != user.id or generation is None:
+                raise MfaVerificationError('Sign in again before changing MFA.')
+            mfa_setup_secret = begin_mfa_enrollment(user, expected_generation=generation)
             # QR contains the same one-time setup secret. Never persist it
             # or send it to a third-party QR endpoint.
             mfa_setup_qr_src = build_totp_qr_data_uri(mfa_setup_secret, account_label=user.username)
@@ -342,9 +350,11 @@ def account():
         )
 
     mfa_factor = account_mfa_factor(user.id)
+    enrollment_state = mfa_enrollment_state(mfa_factor, now=datetime.now(UTC))
     mfa_state = {
-        'enrolled': mfa_enrolled(user.id),
-        'enrollment_pending': bool(mfa_factor is not None and not mfa_factor.enabled),
+        'enrolled': enrollment_state == 'enrolled',
+        'enrollment_pending': enrollment_state == 'pending',
+        'enrollment_expired': enrollment_state == 'expired',
         'policy_mode': mfa_policy_mode(),
         'recovery_count': len(mfa_factor.recovery_hashes or []) if mfa_factor is not None and mfa_factor.enabled else 0,
     }
