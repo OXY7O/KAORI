@@ -152,3 +152,11 @@ After applying migration `20261128_auth_session_expiry` to the Dev Container dat
 - [ ] Concurrent worker retries produce one snapshot/window and bounded operator notifications atomically; rollback on notification or commit failure, stale/missing evidence cannot be read as healthy.
 - [ ] Verify PostgreSQL query plan/load at abusive event volume, receipt/permission boundaries, no raw identity/credential output, partial/recipient cap evidence, existing Kubernetes signal regression, no public/login-path or external channel mutation.
 - [ ] Review initial observation thresholds with security owner. Native AlertCase recommendation/routing, external delivery and stronger recovery-account throttling are separate scope. Record exact-SHA hosted evidence and Human Acceptance.
+
+
+## AL-05B reserved central source contract (#5423)
+
+- [ ] Verify Rule Catalog and coverage dialog show Reserved Plan / Not admitted, domain-owned rather than provider instance; no active finding or case while reserved.
+- [ ] Verify candidate validation rejects missing, disabled, stale, partial, malformed, previous-window and inconsistent indicators/counts; allowlist aggregate values only, no individual identifiers. Quiet evidence is not verified recovery.
+- [ ] Verify current local Super Admin and Intelligence permission, no worker/no-request/unauthorized source access, no direct promotion or override activation, no direct case mutation/read or firing/resolved delivery for the unadmitted domain.
+- [ ] Qualify AL-05 committed worker evidence, query load, late commits, privacy and actual source freshness; security owner approves rule before Available. Separate scoped case authorization, lifecycle, routing and external delivery qualification before case admission.
