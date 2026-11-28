@@ -9,6 +9,7 @@ import pytest
 from app.infrastructure_automation.kubernetes.inventory_document import digest
 from app.infrastructure_automation.kubernetes.inventory_kv import InventoryStoreReference, stored_document
 from app.infrastructure_automation.kubernetes.inventory_receipt import review_inventory_receipt
+from app.infrastructure_automation.kubernetes.source_policy import ANSIBLE_CORE_VERSION
 
 NOW = datetime(2026, 11, 28, 2, 0, tzinfo=UTC)
 ENDPOINT = 'https://secret-store:8200'
@@ -43,6 +44,7 @@ def _evidence(provider_key: str = 'openbao', *, parser: str = 'verified'):
         'observed_at': (NOW - timedelta(minutes=5)).isoformat(),
         'execution_authorized': False,
         'ansible_inventory_parser': parser,
+        'ansible_core_version': ANSIBLE_CORE_VERSION if parser == 'verified' else None,
     }
     return receipt, inventory
 
@@ -137,3 +139,15 @@ def test_vault_is_supported_without_cross_provider_fallback():
     receipt, inventory = _evidence('vault')
     assert _review(receipt, inventory, provider_key='vault').state == 'historical_aligned'
     assert _review(receipt, inventory, provider_key='openbao').state == 'provider_changed'
+
+
+def test_native_parser_version_drift_requires_fresh_readback():
+    receipt, inventory = _evidence()
+    receipt['ansible_core_version'] = '2.19.0'
+    assert _review(receipt, inventory).state == 'unqualified'
+
+
+def test_malformed_network_config_fails_closed_without_type_errors():
+    receipt, inventory = _evidence()
+    inventory['config'] = None
+    assert _review(receipt, inventory).state == 'source_changed'
