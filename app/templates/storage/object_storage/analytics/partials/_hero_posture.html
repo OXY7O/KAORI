@@ -8,7 +8,7 @@
         ('database', 'Inventory', 'Committed', 'System-bound committed asset observations') ,
     ('activity', 'Metrics', 'Not Collected', 'No usable analytics snapshot for this window')
     ],
-    'Review Inventory',
+    'Open Storage Inventory',
     url_for('object_storage_inventory.overview'),
     'database'
     ) }}
@@ -22,7 +22,7 @@
     ('gauge', 'Capacity Use', metrics.utilization_display|default('N/A'), 'Current physical utilization'),
     ('circle-alert', 'Error Ratio', metrics.error_ratio_display|default('N/A'), 'Current request error ratio')
     ],
-    'Manage Object Storage',
+    'Open Storage Inventory',
     url_for('object_storage_inventory.overview'),
     'database'
     ) }}
@@ -36,7 +36,7 @@
     ('gauge', 'Utilization', metrics.utilization_display|default('N/A'), 'Physical capacity utilization'),
     ('circle-gauge', 'Headroom', metrics.capacity_free_display|default('N/A'), 'Remaining physical capacity')
     ],
-    'Manage Object Storage',
+    'Open Storage Inventory',
     url_for('object_storage_inventory.overview'),
     'database'
     ) }}
@@ -51,7 +51,7 @@
     ('circle-alert', 'Error Ratio', performance.error_ratio_display|default('N/A'), 'Current request reliability signal'),
     ('activity', 'Request Rate', performance.request_rate_display|default('N/A'), 'Current S3 request demand')
     ],
-    'Manage Object Storage',
+    'Open Storage Inventory',
     url_for('object_storage_inventory.overview'),
     'database'
     ) }}
@@ -81,7 +81,7 @@
     ('layers-3', 'Largest Share', consumer.top_usage_share_display|default('N/A'), 'Largest bucket share of known usage'),
     ('container', 'Buckets', consumer.bucket_count|default(0), 'Buckets evaluated in current scope')
     ],
-    'Manage Object Storage',
+    'Open Storage Inventory',
     url_for('object_storage_inventory.overview'),
     'database'
     ) }}
@@ -96,9 +96,10 @@
     ('shield-alert', 'Critical', alerts.critical|default(0), 'Critical alerts from the resolved alert source'),
     ('bell-ring', 'Firing', alerts.firing|default(0), 'Currently firing alert records')
     ],
-    'Review Alert Source',
-    url_for(alert_action_endpoint),
-    'radio-tower'
+    none,
+    none,
+    integration_endpoint=alert_action_endpoint,
+    integration_permitted=current_user.is_authenticated and current_user.has_permission('integrations.manage')
     ) }}
 {% else %}
     {{ page_hero.context_card_body('Operational Posture',
@@ -109,7 +110,7 @@
         ('activity', 'Metrics Source', metrics_source.provider_label) ,
     ('database', 'Inventory', 'Collected' if inventory_observed_at else 'Not Collected')
     ],
-    'Manage Object Storage',
+    'Open Storage Inventory',
     url_for('object_storage_inventory.overview'),
     'database'
     ) }}
