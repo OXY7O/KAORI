@@ -5,15 +5,23 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from flask import current_app
-from sqlalchemy import and_, func, or_
+from sqlalchemy import and_, func, or_, select
 
 from app.extensions.db import db
+from app.models.automation import AutomationRunTargetClaim
 from app.models.job import JobExecution, JobExecutionSubscriber
 from app.models.user import User
 from app.platform_operations.data_lifecycle.retention.policy_service import resolve_policy
 from app.platform_operations.data_lifecycle.retention.types import ArchiveBoundary, PartialCleanupError, RetentionPolicy
 
 TERMINAL_STATUSES = ('succeeded', 'partially_succeeded', 'failed', 'canceled', 'expired')
+
+
+def _without_target_claims():
+    # Released claims are also immutable history with a restrictive Plan FK.
+    return ~select(AutomationRunTargetClaim.id).where(
+        AutomationRunTargetClaim.plan_job_id == JobExecution.id
+    ).exists()
 
 
 class JobExecutionArchiveDomain:
@@ -131,10 +139,25 @@ class JobExecutionArchiveDomain:
     def _delete_id_batch(record_ids: list[int]) -> int:
         # Database FKs preserve child-job history by setting parent_job_id to NULL,
         # while subscribers are deleted with the archived execution record.
-        deleted = JobExecution.query.filter(
-            JobExecution.id.in_(record_ids),
+        # Serialize cleanup against the reservation writer, which locks the
+        # same Plan JobExecution before inserting its claims. Recheck in a
+        # separate statement after acquiring the row locks (READ COMMITTED).
+        locked_ids = db.session.execute(
+            select(JobExecution.id)
+            .where(
+                JobExecution.id.in_(record_ids),
+                JobExecution.status.in_(TERMINAL_STATUSES),
+                JobExecution.active_deduplication_key.is_(None),
+                _without_target_claims(),
+            )
+            .order_by(JobExecution.id)
+            .with_for_update(of=JobExecution)
+        ).scalars().all()
+        deleted = db.session.query(JobExecution).filter(
+            JobExecution.id.in_(locked_ids),
             JobExecution.status.in_(TERMINAL_STATUSES),
             JobExecution.active_deduplication_key.is_(None),
+            _without_target_claims(),
         ).delete(synchronize_session=False)
         db.session.commit()
         return int(deleted or 0)
@@ -162,6 +185,7 @@ class JobExecutionArchiveDomain:
             JobExecution.status.in_(TERMINAL_STATUSES),
             JobExecution.completed_at.is_not(None),
             JobExecution.active_deduplication_key.is_(None),
+            _without_target_claims(),
             or_(
                 and_(JobExecution.status == 'failed', JobExecution.completed_at < now - timedelta(days=failed_days)),
                 and_(JobExecution.status != 'failed', or_(*retention_clauses)),
