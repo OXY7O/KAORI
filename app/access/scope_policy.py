@@ -22,6 +22,9 @@ from app.models.rbac import Permission, Role, RolePermission
 from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.user import User
 from app.models.vault import VaultInstance
+from app.integrations.secrets_management.secrets_pki.providers.openbao.inventory_scope import (
+    current_local_inventory_source,
+)
 
 _SENSITIVE_PERMISSION = 'secrets_pki.view'
 VAULT_CASE_OPERATOR_PERMISSION = 'intelligence.decisions.create'
@@ -118,6 +121,44 @@ def evaluate_exact_vault_scope(
     now: datetime | None = None,
     lock_for_read: bool = False,
 ) -> ScopeAdmission:
+    """Preserve the existing exact Vault mount admission contract."""
+    return _evaluate_exact_metadata_scope(
+        actor_user_id=actor_user_id, instance_id=instance_id, provider_namespace=provider_namespace,
+        mount=mount, permission_key=permission_key, now=now, lock_for_read=lock_for_read,
+        scope_level='vault_mount',
+    )
+
+
+def evaluate_exact_openbao_scope(
+    *,
+    actor_user_id: int,
+    instance_id: int,
+    provider_namespace: str,
+    mount: str,
+    now: datetime | None = None,
+    lock_for_read: bool = False,
+) -> ScopeAdmission:
+    """Exact local OpenBao metadata scope; never a material-use permit."""
+    if provider_namespace != '' or not isinstance(mount, str) or '+' in mount:
+        return ScopeAdmission('deny', 'invalid_scope')
+    return _evaluate_exact_metadata_scope(
+        actor_user_id=actor_user_id, instance_id=instance_id, provider_namespace=provider_namespace,
+        mount=mount, permission_key=_SENSITIVE_PERMISSION, now=now, lock_for_read=lock_for_read,
+        scope_level='openbao_mount',
+    )
+
+
+def _evaluate_exact_metadata_scope(
+    *,
+    actor_user_id: int,
+    instance_id: int,
+    provider_namespace: str,
+    mount: str,
+    permission_key: str,
+    now: datetime | None,
+    lock_for_read: bool,
+    scope_level: Literal['vault_mount', 'openbao_mount'],
+) -> ScopeAdmission:
     """Check persisted latest policy; lock the policy row for audited sensitive reads.
 
     No default inheritance from the instance to the namespace/mount.
@@ -135,10 +176,15 @@ def evaluate_exact_vault_scope(
             # Do not inherit the local super-admin's global permission shortcut.
             return ScopeAdmission('deny', 'permission_required')
         source = db.session.get(IntegrationInstance, instance_id)
-        if not _ready_vault_mount_source(source):
-            return ScopeAdmission('deny', 'source_unqualified')
-        vault = VaultInstance.query.filter_by(integration_instance_id=instance_id).first()
-        if vault is None or (vault.namespace or '') != provider_namespace or mount not in (vault.kv2_mounts or ()):
+        if scope_level == 'vault_mount':
+            if not _ready_vault_mount_source(source):
+                return ScopeAdmission('deny', 'source_unqualified')
+            vault = VaultInstance.query.filter_by(integration_instance_id=instance_id).first()
+            if vault is None or (vault.namespace or '') != provider_namespace or mount not in (vault.kv2_mounts or ()):
+                return ScopeAdmission('deny', 'source_unqualified')
+        elif current_local_inventory_source(
+            source, namespace=provider_namespace, mount=mount, lock=lock_for_read
+        ) is None:
             return ScopeAdmission('deny', 'source_unqualified')
 
         query = (
@@ -146,7 +192,7 @@ def evaluate_exact_vault_scope(
                 ScopeAccessPolicy.principal_user_id == actor_user_id,
                 ScopeAccessPolicy.permission_key == permission_key,
                 ScopeAccessPolicy.integration_instance_id == instance_id,
-                ScopeAccessPolicy.scope_level == 'vault_mount',
+                ScopeAccessPolicy.scope_level == scope_level,
                 ScopeAccessPolicy.provider_namespace == provider_namespace,
                 ScopeAccessPolicy.mount == mount,
             )
