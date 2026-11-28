@@ -5,6 +5,7 @@ from typing import Any
 from flask import make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
+from werkzeug.datastructures import MultiDict
 
 from app.intelligence.alert_intelligence.service import (
     get_alert_intelligence_payload,
@@ -48,8 +49,10 @@ def index_response() -> ResponseReturnValue:
         canonical_url = url_for('alert_intelligence.index', **values)
         if request.headers.get('HX-Request') != 'true':
             return redirect(canonical_url)
-        payload = get_alert_intelligence_payload(request.args)
-        response = make_response(render_template('intelligence/partials/_alert_intelligence_page.html', payload=payload))
+        payload = get_alert_intelligence_payload(MultiDict(values))
+        response = make_response(
+            render_template('intelligence/partials/_alert_intelligence_page.html', payload=payload)
+        )
         response.headers['HX-Push-Url'] = canonical_url
         return response
     operational_tabs = {'active', 'routing', 'templates', 'silences', 'resolved', 'history'}

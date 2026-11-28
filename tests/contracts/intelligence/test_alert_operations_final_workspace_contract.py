@@ -136,7 +136,7 @@ def test_context_loading_is_isolated_from_tab_and_registry_loading() -> None:
     assert "loading_bar.render('alert-intelligence-context-loading'" in workspace
     assert "indicator_id='alert-intelligence-loading'" not in workspace
     assert "hx_indicator='#alert-intelligence-loading'" not in workspace
-    assert 'table_ui.filter_layout_classes()' in context_form
+    assert 'hx-trigger="submit"' in context_form
 
 
 def test_resolved_case_review_uses_dedicated_modal_content_and_modal_refresh_contract() -> None:
@@ -216,12 +216,12 @@ def test_modal_case_mutations_refresh_visible_registry_via_htmx_event() -> None:
 
 
 def test_context_filter_owns_only_context_loading_lifecycle() -> None:
-    workspace = read('app/templates/intelligence/partials/_alert_intelligence_context.html')
+    workspace = read('app/templates/intelligence/partials/_alert_scope_form.html')
     context_form = workspace.split('id="alert-intelligence-context-form"', 1)[1].split('</form>', 1)[0]
 
     assert 'hx-indicator="#alert-intelligence-context-loading"' in context_form
     assert 'hx-sync="this:replace"' in context_form
-    assert 'hx-disinherit="hx-indicator"' in context_form
+    assert 'hx-disinherit="hx-indicator hx-select"' in context_form
     assert 'hx-select="#alert-intelligence-page-content"' in context_form
     assert '#alert-operations-active-loading' not in context_form
     assert '#alert-operations-silence-loading' not in context_form
@@ -318,9 +318,9 @@ def test_alert_lifecycle_navigation_is_above_hero_and_scope_preserving() -> None
     for tab in ('overview', 'active', 'routing', 'templates', 'silences', 'resolved'):
         assert f"tab='{tab}', **tab_query" in page
     assert 'content_tabs.render_links' not in workspace
-    context = read('app/templates/intelligence/partials/_alert_intelligence_context.html')
+    context = read('app/templates/intelligence/partials/_alert_scope_form.html')
     assert 'name="tab"' in context
-    assert 'value="{{ payload.tab }}"' in context
+    assert 'value="{{ scope.tab }}"' in context
     assert 'id="alert-intelligence-context-form"' not in workspace
     assert 'lifecycle navigation above' in summary
 
