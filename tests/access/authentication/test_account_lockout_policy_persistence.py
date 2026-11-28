@@ -77,8 +77,8 @@ def test_corrupt_state_fails_closed() -> None:
         inspect_state(LockoutMode.ENFORCED, LockoutState(locked_until=NOW), now=NOW)
 
 
-@pytest.mark.parametrize('audit_failure', (False, True))
-def test_state_and_audit_share_transaction(audit_failure: bool, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize('failure', ('none', 'audit_stage', 'audit_insert'))
+def test_state_and_audit_share_transaction(failure: str, monkeypatch: pytest.MonkeyPatch) -> None:
     engine = sa.create_engine('sqlite+pysqlite:///:memory:')
     with engine.begin() as connection:
         connection.execute(sa.text(
@@ -115,12 +115,27 @@ def test_state_and_audit_share_transaction(audit_failure: bool, monkeypatch: pyt
         store.commit()
         context = lockout_state.lock_account_state(1)
         assert context is not None
-        if audit_failure:
+        if failure == 'audit_stage':
             # Audit construction failure after the state was staged is not swallowed.
             with monkeypatch.context() as patch:
                 patch.setattr(lockout_state, '_event', Mock(side_effect=RuntimeError('audit failure')))
                 with pytest.raises(RuntimeError):
                     lockout_state.stage_password_outcome(context, password_valid=False)
+            store.rollback()
+            assert store.get(AuthenticationAccountLockout, 1) is None
+            assert store.execute(sa.select(sa.func.count()).select_from(Notification)).scalar_one() == 0
+        elif failure == 'audit_insert':
+            store.execute(sa.text(
+                "CREATE TRIGGER reject_lockout_audit BEFORE INSERT ON notifications "
+                "BEGIN SELECT RAISE(ABORT, 'audit unavailable'); END"
+            ))
+            lockout_state.stage_password_outcome(context, password_valid=False)
+            # Flush the pending account state independently to demonstrate
+            # that a later audit DML failure rolls back even executed writes.
+            pending = next(item for item in store.new if isinstance(item, AuthenticationAccountLockout))
+            store.flush([pending])
+            with pytest.raises(sa.exc.IntegrityError):
+                store.commit()
             store.rollback()
             assert store.get(AuthenticationAccountLockout, 1) is None
             assert store.execute(sa.select(sa.func.count()).select_from(Notification)).scalar_one() == 0
