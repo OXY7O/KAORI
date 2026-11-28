@@ -18,11 +18,15 @@ from app.extensions.db import db
 from app.infrastructure_automation.host_registry import preview_inventory_intent
 from app.infrastructure_automation.kubernetes.plan_currentness import committed_kubespray_plan_currentness
 from app.infrastructure_automation.kubernetes.plan_review import PLAN_OPERATION, PLAN_RESULT_TYPE
-from app.infrastructure_automation.security_review import begin_security_review_transaction, local_security_review_enabled
+from app.infrastructure_automation.security_review import (
+    begin_security_review_transaction,
+    local_security_review_enabled,
+)
 from app.models.audit import AuditEvent
 from app.models.automation import AutomationInventoryAssignment
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
+from app.platform_operations.jobs.fingerprint import payload_fingerprint
 from app.platform_operations.jobs.service import acquire_resource_admission_locks
 
 _TARGET = 'automation_kubespray_plan_approval'
@@ -178,6 +182,10 @@ def _current_plan(
         or summary.get('execution_status') != 'blocked'
         or summary.get('approval_status') != 'not_requested'
         or summary.get('expires_at') != expiry.isoformat()
+        or not isinstance(summary.get('source_sha'), str)
+        or re.fullmatch(r'[a-f0-9]{40}', summary['source_sha']) is None
+        or not isinstance(summary.get('execution_environment_digest'), str)
+        or re.fullmatch(r'sha256:[a-f0-9]{64}', summary['execution_environment_digest']) is None
         or any(
             not isinstance(summary.get(field), str) or _HEX.fullmatch(summary[field]) is None
             for field in ('inventory_fingerprint', 'host_access_fingerprint')
@@ -251,7 +259,9 @@ def acknowledge_kubespray_plan(
             if existing.get('plan_fingerprint') == plan_fingerprint:
                 # A revoked or acknowledged Plan must never be reactivated.
                 raise _deny()
-            if existing.get('status') not in ('acknowledged_pending_run_admission', 'revoked'):
+            if (previous.action, existing.get('status')) not in (
+                (_ACK, 'acknowledged_pending_run_admission'), (_REVOKE, 'revoked'),
+            ):
                 raise _deny()
             if existing['status'] == 'acknowledged_pending_run_admission':
                 previous_expiry = _time(existing.get('approval_expires_at'))
@@ -313,7 +323,7 @@ def review_current_plan_acknowledgement(
             window=PlanWindow(starts, ends, str(record.get('change_reference') or '')),
             now=approved, expiry=expiry,
         )
-        if rebuilt != record:
+        if payload_fingerprint(rebuilt) != payload_fingerprint(record):
             return None
         for actor_id in sorted((record['requested_by'], checker_id)):
             if not lock_explicit_permissions(actor_id, _PERMISSIONS):
