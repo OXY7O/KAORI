@@ -29,6 +29,7 @@ from app.access.authentication.mfa.service import (
     MFA_CHALLENGE_TTL_SECONDS,
     MfaVerificationError,
     begin_mfa_enrollment,
+    cancel_mfa_enrollment,
     confirm_mfa_enrollment,
     mfa_decision,
     verify_mfa_challenge,
@@ -584,6 +585,10 @@ def mfa_challenge():
                 validate_csrf(request.form.get('csrf_token'))
                 if action == 'begin':
                     setup_secret = begin_mfa_enrollment(user, expected_generation=pending['version'], authenticated=False)
+                elif action == 'cancel':
+                    cancel_mfa_enrollment(user, expected_generation=pending['version'], authenticated=False)
+                    session.pop(MFA_PENDING_SESSION_KEY, None)
+                    return redirect(url_for('auth.login'))
                 elif action == 'confirm' and form.validate_on_submit():
                     codes = confirm_mfa_enrollment(
                         user,

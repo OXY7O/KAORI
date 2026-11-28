@@ -112,9 +112,9 @@ def test_mfa_recovery_regeneration_has_symmetric_cards_and_inline_form() -> None
 
 def test_mfa_sensitive_mutations_keep_original_server_contracts() -> None:
     html = source()
-    assert html.count('name="csrf_token"') == 3
-    assert html.count("url_for('settings.account', tab='mfa')") == 3
-    for action in ('begin', 'confirm', 'regenerate'):
+    assert html.count('name="csrf_token"') == 4
+    assert html.count("url_for('settings.account', tab='mfa')") == 4
+    for action in ('begin', 'confirm', 'regenerate', 'cancel'):
         assert f'name="mfa_action" value="{action}"' in html
     assert html.count('name="current_password"') == 2
     assert html.count('name="verification_code"') == 2

@@ -699,6 +699,19 @@ Feature: Personal and required MFA enrollment safety
     Then the factor mutation is denied
     And no successful factor event or one-time response is returned
 
+  Scenario: Reject a pending setup from another generation or authentication context
+    Given an inactive MFA setup belongs to generation G and its originating authentication context
+    When another generation or context attempts confirmation
+    Then the old setup cannot be activated
+    And the user must generate a new setup key
+
+  Scenario: Cancel the originating pending setup without disabling an enrolled factor
+    Given an inactive setup belongs to the current admitted context
+    When the user cancels setup
+    Then the inactive setup and its secret are removed with committed audit evidence
+    And no active authenticator is disabled
+    And cancellation of required enrollment cannot issue an authenticated session
+
   Scenario: Rotate recovery codes and consume factor proof atomically
     Given an enrolled user has passed primary reauthentication and submits valid factor proof
     When the user regenerates recovery codes
@@ -714,7 +727,7 @@ Feature: Personal and required MFA enrollment safety
     And the user must not receive those values again by a normal GET
 ```
 
-Source-level scenario/test mapping: #5340 and #5342. Actual browser Back/Forward/cache behavior, PostgreSQL concurrent factor transition and provider-specific UAT remain NOT RUN.
+Source-level scenario/test mapping: #5340, #5342 and #5346. Actual browser Back/Forward/cache behavior, PostgreSQL concurrent factor transition and provider-specific UAT remain NOT RUN.
 
 ### SET-VIS-01 — Deterministic responsive/theme/three-tab visual contract
 
@@ -781,7 +794,7 @@ session and independent browser-failure trace were not archived.
 | SET-ACC-02 | `tests/contracts/settings/test_account_settings_redesign_contract.py` (activity/layout); same Playwright browser test (mocked empty state) | Latest-five and Viewer deny/authorized audit: Human PASS; separate HTTP 403 header pending |
 | SET-ACC-03 | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_external_credentials_are_rejected_before_validation_or_password_access`; `tests/contracts/settings/test_account_credential_security_contract.py` | Local/LDAP credential ownership: Human PASS; contract-level external mutation rejection |
 | SET-ACC-04 | `tests/contracts/settings/test_settings_uat_negative_boundaries.py::test_password_rejections_preserve_credential_and_session_state`; `tests/contracts/settings/test_account_credential_security_contract.py`; `tests/access/authentication/test_single_session_generation.py::test_stale_local_proof_cannot_issue_a_generation`, `::test_pending_mfa_issuance_guards_original_generation`, `::test_login_generation_is_atomic_database_update_with_exact_returning` | Historical password rejection and rotation accepted; revised proof/replay/concurrency scenarios (#5333) source-mapped, NOT RUN; real PostgreSQL/browser evidence and independent CSRF trace pending |
-| SET-ACC-05 | `tests/access/authentication/test_mfa_pending_enrollment.py`; `tests/access/authentication/test_mfa_atomic_recovery.py`; `tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py`; `tests/contracts/settings/test_account_mfa_enrollment_feedback_contract.py` | Source-mapped; executable and actual browser/PostgreSQL qualification NOT RUN |
+| SET-ACC-05 | `tests/access/authentication/test_mfa_pending_enrollment.py`; `tests/access/authentication/test_mfa_enrollment_ownership.py`; `tests/migrations/test_mfa_enrollment_ownership.py`; `tests/access/authentication/test_mfa_atomic_recovery.py`; `tests/contracts/settings/test_account_mfa_enrollment_ui_contract.py`; `tests/contracts/settings/test_account_mfa_enrollment_feedback_contract.py` | Source-mapped; executable and actual browser/PostgreSQL qualification NOT RUN |
 | SET-VIS-01 | `tests/ui/test_representative_interactions.py::test_settings_account_profile_activity_credentials_visual_qa`; `tests/ui/test_visual_audit_contract.py` | 6/6 browser parameterizations PASS; exact same-run SHA not recorded |
 | SET-OPS-01 | Shared HTMX tab contract in `tests/contracts/settings/test_account_settings_redesign_contract.py`; read-only browser navigation in the visual QA test | Account history, keyboard, HTMX and offline recovery: Human PASS; full AT audit not claimed |
 

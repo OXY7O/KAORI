@@ -25,12 +25,14 @@ NOW = datetime(2026, 11, 28, 0, 0, tzinfo=UTC)
     ],
 )
 def test_mfa_effective_pending_state(enabled: bool, expires: datetime | None, expected: str) -> None:
-    factor = AuthenticationMfaFactor(enabled=enabled, enrollment_expires_at=expires)
-    assert service.mfa_enrollment_state(factor, now=NOW) == expected
+    factor = AuthenticationMfaFactor(
+        enabled=enabled, enrollment_expires_at=expires, enrollment_generation=7, enrollment_authenticated=True
+    )
+    assert service.mfa_enrollment_state(factor, now=NOW, expected_generation=7, authenticated=True) == expected
 
 
 def test_no_mfa_factor_is_not_enrolled() -> None:
-    assert service.mfa_enrollment_state(None, now=NOW) == 'not_enrolled'
+    assert service.mfa_enrollment_state(None, now=NOW, expected_generation=7, authenticated=True) == 'not_enrolled'
 
 
 @pytest.mark.parametrize('admitted', (True, False))

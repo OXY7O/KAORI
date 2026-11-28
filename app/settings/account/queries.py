@@ -60,6 +60,8 @@ def account_mfa_factor(user_id: int) -> AuthenticationMfaFactor | None:
             load_only(
                 AuthenticationMfaFactor.enabled,
                 AuthenticationMfaFactor.enrollment_expires_at,
+                AuthenticationMfaFactor.enrollment_generation,
+                AuthenticationMfaFactor.enrollment_authenticated,
                 AuthenticationMfaFactor.recovery_hashes,
             )
         )
