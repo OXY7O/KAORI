@@ -5,7 +5,12 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from app.extensions.db import db
-from app.infrastructure_automation.remote_job_review import REVIEW_OPERATION, RemoteReviewDenied, review_enabled, review_parameters
+from app.infrastructure_automation.remote_job_review import (
+    REVIEW_OPERATION,
+    RemoteReviewDenied,
+    review_enabled,
+    review_parameters,
+)
 from app.infrastructure_automation.remote_preflight_target import review_remote_preflight_target
 from app.infrastructure_automation.tasks import AUTOMATION_QUEUE, materialize_remote_preflight_review
 from app.models.job import JobExecution
@@ -20,7 +25,13 @@ def dispatch_remote_preflight_review(*, actor_id: int, connection_id: int) -> tu
     evidence immediately before committing the review.
     """
     try:
-        if not review_enabled() or type(actor_id) is not int or actor_id <= 0 or type(connection_id) is not int or connection_id <= 0:
+        if (
+            not review_enabled()
+            or type(actor_id) is not int
+            or actor_id <= 0
+            or type(connection_id) is not int
+            or connection_id <= 0
+        ):
             raise RemoteReviewDenied('Remote preflight review is unavailable or unqualified.')
         target = review_remote_preflight_target(actor_id=actor_id, connection_id=connection_id, now=datetime.now(UTC))
         if target is None or target.execution_authorized is not False:
