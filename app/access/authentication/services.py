@@ -67,7 +67,6 @@ def stage_successful_authentication(
     captures *this login's* generation; re-reading the ORM object after commit
     could instead capture a newer concurrent login and admit both browsers.
     """
-    issued_at = datetime.now(UTC)
     normalized_source = source.strip().lower()
     if normalized_source != 'database':
         lock_external_credential_proof(user.id, normalized_source, external_credential_proof)
@@ -96,6 +95,7 @@ def stage_successful_authentication(
         if type(pending_generation) is not int or pending_generation < 1:
             raise AuthSessionError('Pending authentication generation is invalid.')
         conditions.append(User.auth_session_version == pending_generation)
+    issued_at = datetime.now(UTC)
     issued_version = db.session.execute(
         update(User)
         .where(*conditions)

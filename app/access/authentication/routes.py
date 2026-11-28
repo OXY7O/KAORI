@@ -120,7 +120,7 @@ def _complete_successful_login(
     decision = mfa_decision(user)
     if decision.gate in (MfaGate.CHALLENGE, MfaGate.ENROLLMENT_REQUIRED):
         session.clear()
-        session[MFA_PENDING_SESSION_KEY] = {
+        pending_context = {
             'user_id': user.id,
             'source': result.source,
             'version': primary_generation,
@@ -130,11 +130,12 @@ def _complete_successful_login(
             'attempts': 0,
         }
         if external_proof is not None:
-            session[MFA_PENDING_SESSION_KEY].update({
+            pending_context.update({
                 'provider_id': external_proof.provider_id,
                 'provider_revision': external_proof.revision,
                 'provider_link_id': external_proof.link_id,
             })
+        session[MFA_PENDING_SESSION_KEY] = pending_context
         return redirect(url_for('auth.mfa_challenge'))
     remember_requested = bool(remember_requested and read_session_policy().regular_remember)
     issued_session_version = record_successful_authentication(
@@ -614,9 +615,19 @@ def mfa_challenge():
             try:
                 validate_csrf(request.form.get('csrf_token'))
                 if action == 'begin':
-                    setup_secret = begin_mfa_enrollment(user, expected_generation=pending['version'], authenticated=False)
+                    setup_secret = begin_mfa_enrollment(
+                        user,
+                        expected_generation=pending['version'],
+                        authenticated=False,
+                        external_credential_proof=external_proof,
+                    )
                 elif action == 'cancel':
-                    cancel_mfa_enrollment(user, expected_generation=pending['version'], authenticated=False)
+                    cancel_mfa_enrollment(
+                        user,
+                        expected_generation=pending['version'],
+                        authenticated=False,
+                        external_credential_proof=external_proof,
+                    )
                     session.pop(MFA_PENDING_SESSION_KEY, None)
                     return redirect(url_for('auth.login'))
                 elif action == 'confirm' and form.validate_on_submit():

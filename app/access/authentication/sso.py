@@ -8,10 +8,13 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.access.authentication.identity_provider.browser import SsoIdentity
 from app.access.authentication.identity_provider.catalog import AuthProviderFamily, provider_definition
-from app.access.authentication.identity_provider.registry import registered_browser_sso_adapter_keys
 from app.access.authentication.identity_provider.proof import lock_provider_revision
+from app.access.authentication.identity_provider.registry import registered_browser_sso_adapter_keys
 from app.access.authentication.results import (
-    DATABASE_UNAVAILABLE_MESSAGE, USER_INACTIVE_MESSAGE, AuthResult, ExternalCredentialProof,
+    DATABASE_UNAVAILABLE_MESSAGE,
+    USER_INACTIVE_MESSAGE,
+    AuthResult,
+    ExternalCredentialProof,
 )
 from app.access.authentication.session import AuthSessionError
 from app.access.rbac.policy import role_is_access_admin_level

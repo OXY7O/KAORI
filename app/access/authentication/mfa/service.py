@@ -199,9 +199,12 @@ def begin_mfa_enrollment(
     expected_generation: int,
     authenticated: bool = True,
     current_password: str | None = None,
+    external_credential_proof: ExternalCredentialProof | None = None,
 ) -> str:
     """Create an expiring encrypted factor under the authoritative account lock."""
     try:
+        if not authenticated and user.auth_source != 'database':
+            lock_external_credential_proof(user.id, user.auth_source, external_credential_proof)
         user = _lock_mfa_user(user, expected_generation, authenticated=authenticated)
         if authenticated:
             require_personal_factor_assurance(user, current_password, now=datetime.now(UTC))
@@ -228,7 +231,7 @@ def begin_mfa_enrollment(
             )
         )
         db.session.commit()
-    except (SQLAlchemyError, CredentialEncryptionError, MfaVerificationError):
+    except (SQLAlchemyError, CredentialEncryptionError, MfaVerificationError, AuthSessionError):
         db.session.rollback()
         raise
     return secret
@@ -290,9 +293,17 @@ def confirm_mfa_enrollment(
     return recovery
 
 
-def cancel_mfa_enrollment(user: User, *, expected_generation: int, authenticated: bool = True) -> None:
+def cancel_mfa_enrollment(
+    user: User,
+    *,
+    expected_generation: int,
+    authenticated: bool = True,
+    external_credential_proof: ExternalCredentialProof | None = None,
+) -> None:
     """Delete only an inactive setup owned by the presented context, with its audit."""
     try:
+        if not authenticated and user.auth_source != 'database':
+            lock_external_credential_proof(user.id, user.auth_source, external_credential_proof)
         user = _lock_mfa_user(user, expected_generation, authenticated=authenticated)
         factor = _locked_factor(user.id)
         if factor is None or not _owns_pending_setup(factor, expected_generation, authenticated=authenticated):
@@ -304,7 +315,7 @@ def cancel_mfa_enrollment(user: User, *, expected_generation: int, authenticated
             )
         )
         db.session.commit()
-    except (SQLAlchemyError, CredentialEncryptionError, MfaVerificationError):
+    except (SQLAlchemyError, CredentialEncryptionError, MfaVerificationError, AuthSessionError):
         db.session.rollback()
         raise
 

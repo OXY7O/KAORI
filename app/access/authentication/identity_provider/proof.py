@@ -17,9 +17,15 @@ def parse_external_credential_proof(pending: Mapping[str, object]) -> ExternalCr
     revision = pending.get('provider_revision')
     link_id = pending.get('provider_link_id')
     if (
-        not isinstance(provider_id, int) or isinstance(provider_id, bool) or provider_id < 1
-        or not isinstance(revision, int) or isinstance(revision, bool) or revision < 1
-        or not isinstance(link_id, int) or isinstance(link_id, bool) or link_id < 1
+        not isinstance(provider_id, int)
+        or isinstance(provider_id, bool)
+        or provider_id < 1
+        or not isinstance(revision, int)
+        or isinstance(revision, bool)
+        or revision < 1
+        or not isinstance(link_id, int)
+        or isinstance(link_id, bool)
+        or link_id < 1
     ):
         return None
     return ExternalCredentialProof(provider_id, revision, link_id)
@@ -50,11 +56,13 @@ def lock_external_credential_proof(
         raise AuthSessionError('Verified external credential proof is missing.')
     lock_provider_revision(proof.provider_id, proof.revision, source=source)
     link_id = db.session.execute(
-        select(ExternalIdentityLink.id).where(
+        select(ExternalIdentityLink.id)
+        .where(
             ExternalIdentityLink.id == proof.link_id,
             ExternalIdentityLink.provider_id == proof.provider_id,
             ExternalIdentityLink.user_id == user_id,
         )
+        .with_for_update()
     ).scalar_one_or_none()
     if link_id is None:
         raise AuthSessionError('External identity binding changed.')
