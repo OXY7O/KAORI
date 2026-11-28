@@ -315,6 +315,13 @@ fields, not the editor context, define the policy. Use a single divided,
 bounded scrollable channel choice list with accessible checkboxes, full
 names/destination tooltips and existing eligibility/disabled rules. Channel
 candidate counts describe initial scope, not a live authorization decision.
+Align cadence inputs and checkbox controls by the grid bottom edge, using
+identical h-10 control heights rather than compensating top padding. Limit
+the channel body to 12rem, with the list header and conditional search
+(outside the scroll area) always visible. For more than three channels,
+filter existing rows with Alpine x-show; never remove or disable selections
+because of search. Provide a no-match state. Do not submit the search query
+or change routing eligibility. Small inventories retain natural height.
 Use a shared section header for optional exact label matchers, concise plain
 helper text beside the input, and a collapsed native Policy Checklist below.
 Retain existing form fields, CSRF, permission checks and save validation.
