@@ -58,8 +58,12 @@ def _require_scope(intent: LocalInventoryStoreIntent) -> None:
         raise SecretProviderError('Explicit independently approved local inventory store scope is required.')
 
 
-def _source(intent: LocalInventoryStoreIntent) -> tuple[IntegrationInstance, dict[str, Any]]:
-    connection = db.session.get(IntegrationInstance, intent.connection_id, populate_existing=True)
+def _source(
+    intent: LocalInventoryStoreIntent, *, lock: bool = False
+) -> tuple[IntegrationInstance, dict[str, Any]]:
+    connection = db.session.get(
+        IntegrationInstance, intent.connection_id, populate_existing=True, with_for_update=lock
+    )
     if connection is None:
         raise SecretProviderError('Ansible connection is unavailable.')
     assignments = (
@@ -70,7 +74,8 @@ def _source(intent: LocalInventoryStoreIntent) -> tuple[IntegrationInstance, dic
         .all()
     )
     return connection, build_inventory_document(
-        connection, assignments, pod_cidr=intent.pod_cidr, service_cidr=intent.service_cidr
+        connection, assignments, pod_cidr=intent.pod_cidr, service_cidr=intent.service_cidr,
+        allow_source_only_preparation=True,
     )
 
 
@@ -145,7 +150,8 @@ def _commit_receipt(
     parser_verified: bool = False
 ) -> dict[str, Any]:
     _require_scope(intent)
-    connection, current = _source(intent)
+    # Existing host enrollment/source writers serialize on the canonical connection row.
+    connection, current = _source(intent, lock=True)
     provider_key, transport = _provider(intent)
     if _reference(intent, provider_key, current) != reference or transport.endpoint != endpoint:
         raise SecretProviderError('Source or provider changed during readback; no receipt was committed.')

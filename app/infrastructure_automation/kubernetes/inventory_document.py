@@ -41,8 +41,23 @@ def build_inventory_document(
     *,
     pod_cidr: str,
     service_cidr: str,
+    allow_source_only_preparation: bool = False,
 ) -> dict[str, Any]:
-    if connection.environment not in ('development', 'testing', 'laboratory', 'sandbox') or not connection.enabled:
+    """Build non-executable inventory; only local preparation may opt in before runtime admission."""
+    metadata = connection.metadata_json
+    source_only = (
+        allow_source_only_preparation is True
+        and connection.enabled is False
+        and connection.lifecycle_status == 'active'
+        and connection.readiness_status == 'validation_required'
+        and isinstance(metadata, dict)
+        and metadata.get('execution_enabled') is False
+        and metadata.get('mutation_authorized') is False
+    )
+    if (
+        connection.environment not in ('development', 'testing', 'laboratory', 'sandbox')
+        or (connection.enabled is not True and not source_only)
+    ):
         raise ValueError('A disposable non-production Ansible connection is required.')
     if committed_source_state(connection.metadata_json) != 'checked':
         raise ValueError('The exact reviewed Kubespray source is required.')

@@ -183,7 +183,8 @@ def committed_inventory_receipt_review(connection: IntegrationInstance) -> Inven
             .all()
         )
         inventory = build_inventory_document(
-            connection, assignments, pod_cidr=receipt.get('pod_cidr'), service_cidr=receipt.get('service_cidr')
+            connection, assignments, pod_cidr=receipt.get('pod_cidr'), service_cidr=receipt.get('service_cidr'),
+            allow_source_only_preparation=True,
         )
     except (ValueError, TypeError, KeyError):
         inventory = None
