@@ -98,8 +98,8 @@ def test_capability_view_more_matches_kubernetes_capability_evidence_concept():
         'Capability Contract',
         'Validation Evidence',
         'Success Criteria',
-        'Operational Impact',
-        'Recommended Action',
+        'Operational Decision',
+        'Next Action',
         'Technical Verification',
         'Evidence Boundary',
     ):

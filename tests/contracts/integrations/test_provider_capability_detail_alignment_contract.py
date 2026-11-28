@@ -26,84 +26,74 @@ def test_provider_view_more_action_uses_shared_kaori_table_action():
     assert 'record_actions.view_more(' in ALERTMANAGER.read_text()
 
 
-def test_provider_capability_modals_follow_kubernetes_information_architecture():
+def test_all_capability_registries_share_grouped_presentation():
     shared = DETAIL.read_text()
-    for token in (
+    provider_paths = (
+        'source_control/github/partials/_capability_registry.html',
+        'observability/metrics_source/partials/_capability_registry.html',
+        'observability/alert_source/providers/alertmanager/partials/_capability_registry.html',
+        'registry/providers/harbor/partials/_capability_registry.html',
+        'storage/object_storage/providers/minio/partials/_capability_registry.html',
+    )
+    for path in provider_paths:
+        registry = (ROOT / 'app/templates/integrations' / path).read_text()
+        assert 'provider_capability_detail.content(' in registry
+        assert 'presentation=' not in registry
+    for path in (
+        'orchestration/container_orchestrator/providers/kubernetes/partials/_capability_registry.html',
+        'secrets_management/vault/partials/_capability_detail_content.html',
+    ):
+        source = (ROOT / 'app/templates/integrations' / path).read_text()
+        for macro in ('contract', 'grouped_section', 'field', 'boundary'):
+            assert f'capability_detail.{macro}(' in source
+        assert 'data-kaori-capability-verification-unavailable' in source
+    assert 'presentation=' not in shared
+    assert 'sm:w-36 sm:shrink-0' in shared
+    assert 'sm:flex-row sm:gap-4' in shared
+    assert 'divide-y divide-outline-subtle' in shared
+    assert 'sm:border-l' not in shared
+    assert 'bg-status-' not in shared
+    for title in (
         'Capability Contract',
         'Validation Evidence',
-        'Operational Impact',
-        'Recommended Action',
+        'Success Criteria',
+        'Operational Decision',
+        'Next Action',
         'Technical Verification',
         'Evidence Boundary',
     ):
-        assert token in shared
-    assert 'data-kaori-provider-capability-contract' in shared
-    assert 'data-kaori-provider-capability-evidence' in shared
-    assert 'data-kaori-provider-capability-impact' in shared
-    assert 'data-kaori-provider-capability-action' in shared
-    assert 'data-kaori-provider-capability-technical-check' in shared
-    assert 'data-kaori-provider-capability-evidence-boundary' in shared
-    assert 'provider_capability_detail.content(' in PROMETHEUS.read_text()
-    assert 'provider_capability_detail.content(' in ALERTMANAGER.read_text()
+        assert title in shared
 
 
-def test_github_capability_modal_uses_compact_shared_presentation():
-    shared = DETAIL.read_text()
-    github = ROOT / 'app/templates/integrations/source_control/github/partials/_capability_registry.html'
-    assert 'presentation="github"' in github.read_text()
-    assert "presentation == 'github'" in shared
-    assert 'Validation evidence, ownership, impact, and remediation.' in shared
-    assert "presentation == 'metrics_source'" in shared
-    rows = shared.rsplit('{% if compact_github %}', 1)[1].split('{% else %}', 1)[0]
-    assert rows.count('rounded-xl border border-outline-default bg-surface-card') == 2
-    assert rows.count('sm:w-36 sm:shrink-0') == 4
-    assert rows.count('sm:flex-row sm:gap-4') == 4
-    assert rows.count('data-kaori-provider-capability-evidence') == 1
-    assert rows.count('data-kaori-provider-capability-impact') == 1
-    assert rows.count('data-kaori-provider-capability-action') == 1
-    assert rows.index('Validation Evidence') < rows.index('Observation') < rows.index('Success Criteria')
-    assert rows.index('Operational Decision') < rows.index('Impact') < rows.index('Next Action')
-    for field in ('row.evidence', 'row.success_criteria', 'row.impact', 'row.next_action'):
-        assert rows.count(field) == 1
-    assert 'bg-status-' not in rows and 'border-status-' not in rows
-    assert 'sm:border-l' not in rows and 'grid-cols-[' not in rows
-    assert 'data-kaori-github-capability-success-criteria' in rows
-    assert '{% if not row.available and row.remediation %}' in rows
-    assert '{% for step in row.remediation %}' in rows
-
-
-def test_github_capability_modal_renders_decision_fields_and_remediation():
+def test_shared_capability_modal_renders_decision_fields_and_remediation():
     environment = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
     render = environment.get_template('integrations/components/_provider_capability_detail.html').module.content
-    for available, required, status_key, status_label in (
-        (True, True, 'ready', 'Permission Verified'),
-        (False, True, 'blocked', 'Required Gap'),
-        (False, False, 'optional_gap', 'Optional Gap'),
-        (False, True, 'unverified', 'Not Validated'),
-    ):
-        row = {
-            'available': available,
-            'required': required,
-            'status_key': status_key,
-            'status_label': status_label,
-            'category': 'inventory',
-            'evidence': 'Committed observation text',
-            'success_criteria': 'Expected permission text',
-            'impact': 'Operational effect text',
-            'next_action': 'Operator decision text',
-            'remediation': ['Controlled remediation step'],
-            'technical_checks': [],
-        }
-        html = str(render(row, 'GitHub', 'GitHub App Permissions', 'Assessment', 'Provider boundary', 'github'))
-        assert html.count('data-kaori-provider-capability-evidence>') == 1
-        assert html.count('data-kaori-provider-capability-impact>') == 1
-        assert html.count('data-kaori-provider-capability-action>') == 1
-        for field in ('evidence', 'success_criteria', 'impact', 'next_action'):
-            assert html.count(row[field]) == 1
-        assert status_label in html
-        assert ('Controlled remediation step' in html) == (not available)
-        assert 'Recommended Action</h3>' not in html
-        assert 'Provider boundary' in html
-        standard = str(render(row, 'Provider', 'Owner', 'Assessment', 'Provider boundary'))
-        assert 'data-kaori-github-capability-operational-decision' not in standard
-        assert 'Recommended Action</h3>' in standard
+    for provider in ('GitHub', 'Metrics Source', 'Alertmanager', 'Harbor', 'MinIO'):
+        for available, required, status_key, status_label in (
+            (True, True, 'ready', 'Verified'),
+            (False, True, 'blocked', 'Required Gap'),
+            (False, False, 'optional_gap', 'Optional Gap'),
+            (False, True, 'unverified', 'Not Validated'),
+        ):
+            row = {
+                'available': available,
+                'required': required,
+                'status_key': status_key,
+                'status_label': status_label,
+                'category': 'inventory',
+                'evidence': 'Committed observation text',
+                'success_criteria': 'Expected permission text',
+                'impact': 'Operational effect text',
+                'next_action': 'Operator decision text',
+                'remediation': ['Controlled remediation step'],
+                'technical_checks': [],
+            }
+            html = str(render(row, provider, 'Provider owner', 'Assessment', 'Provider boundary'))
+            for marker in ('evidence', 'impact', 'action', 'operational-decision', 'evidence-boundary'):
+                assert html.count(f'data-kaori-provider-capability-{marker}>') == 1
+            for field in ('evidence', 'success_criteria', 'impact', 'next_action'):
+                assert html.count(row[field]) == 1
+            assert status_label in html
+            assert ('Controlled remediation step' in html) == (not available)
+            assert 'Provider boundary' in html
+            assert html.index('Validation Evidence') < html.index('Operational Decision') < html.index('Evidence Boundary')

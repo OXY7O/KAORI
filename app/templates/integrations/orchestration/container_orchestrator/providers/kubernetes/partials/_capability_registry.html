@@ -5,6 +5,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
+{% import "integrations/components/_provider_capability_detail.html" as capability_detail %}
 {% import "integrations/components/_record_actions.html" as record_actions %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set registry = capability_registry %}
@@ -319,147 +320,69 @@
              data-kaori-capability-modal-content
              data-kaori-capability-modal-v2
              data-kaori-capability-modal-v3>
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
-                     data-kaori-capability-decision-summary>
-                <div class="p-5 sm:p-6">
-                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                        <div class="flex min-w-0 items-start gap-3.5">
-                            {{ integration_ui.palette_icon(check_icon, row_icon_tone, size='lg', rounded='xl') }}
-                            <div class="min-w-0">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Capability Decision</p>
-                                <h3 class="mt-1 text-lg font-semibold text-content-primary">{{ decision_title }}</h3>
-                                <p class="mt-2 max-w-3xl text-sm leading-6 text-content-secondary">{{ decision_message }}</p>
-                            </div>
-                        </div>
-                        <span class="shrink-0">{{ integration_status(tone, check_status, display='indicator') }}</span>
-                    </div>
-                </div>
-                <div class="border-t border-outline-subtle bg-surface-subtle px-5 py-4 sm:px-6"
-                     data-kaori-capability-contract-snapshot>
-                    <div class="flex items-center gap-2">
-                        {{ integration_ui.palette_icon('file-check-2', 'brand', size='sm') }}
-                        <p class="text-sm font-semibold text-content-primary">Contract Snapshot</p>
-                    </div>
-                    <dl class="mt-3 grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
-                        {% set context_rows = [
-                                                    ('Requirement', row.requirement_label),
-                                                    ('Selected API', row.api_version),
-                                                    ('API Resource', api_resource),
-                                                    ('Required Verbs', row.required_verbs_display)
-                                                ] %}
-                        {% for label, value in context_rows %}
-                            <div class="min-w-0 bg-surface-card px-4 py-3">
-                                <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
-                                <dd class="mt-1 break-words text-xs font-semibold text-content-primary [overflow-wrap:anywhere]">
-                                    {{ value }}
-                                </dd>
-                            </div>
-                        {% endfor %}
-                    </dl>
-                </div>
-            </section>
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
-                     data-kaori-capability-validation-evidence>
-                <header class="border-b border-outline-subtle px-5 py-4">
-                    <div class="flex items-start gap-3">
-                        {{ integration_ui.palette_icon('list-checks', 'info', size='md') }}
-                        <div>
-                            <h3 class="text-sm font-semibold text-content-primary">Validation Evidence</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Three checks determine whether KAORI can safely use this capability through the selected Kubernetes contract.</p>
-                        </div>
-                    </div>
-                </header>
-                <ol class="grid gap-px bg-outline-subtle lg:grid-cols-3">
-                    {% if not has_selected_contract %}
-                        {% set api_serving_description = "Full Validation did not select an API version for this capability; KAORI does not infer one." %}
-                        {% set resource_discovery_description = "Resource discovery remains unresolved until a supported API contract is selected." %}
-                        {% set authorization_description = 'Optional workflows must establish their own approved access boundary.' if not row.required else 'Required authorization remains unresolved until a valid API/resource contract is selected.' %}
+            {% set context_rows = [
+                                        ('Requirement', row.requirement_label, ''),
+                                        ('Selected API', row.api_version, ''),
+                                        ('API Resource', api_resource, ''),
+                                        ('Required Verbs', row.required_verbs_display, '')
+                                    ] %}
+            {{ capability_detail.contract(context_rows, tone, check_status, row_icon_tone,
+                        decision_title=decision_title,
+                        decision_message=decision_message,
+                        icon=check_icon,
+                        decision_marker='data-kaori-capability-decision-summary',
+                        snapshot_marker='data-kaori-capability-contract-snapshot') }}
+            {% if not has_selected_contract %}
+                {% set api_serving_description = "Full Validation did not select an API version for this capability; KAORI does not infer one." %}
+                {% set resource_discovery_description = "Resource discovery remains unresolved until a supported API contract is selected." %}
+                {% set authorization_description = 'Optional workflows must establish their own approved access boundary.' if not row.required else 'Required authorization remains unresolved until a valid API/resource contract is selected.' %}
+            {% else %}
+                {% set api_serving_description = "Selected API is served by the registered Kubernetes API." %}
+                {% set resource_discovery_description = "Expected resource is discoverable through the selected API contract." %}
+                {% set authorization_description = 'Required verbs are evaluated across all namespaces for this cluster-wide contract.' if row.required else ('Required verbs are evaluated against the cluster-scoped admission resource for this optional governance contract.' if is_cluster_scoped_optional else 'Required verbs are evaluated only in the approved namespace for this optional contract.') %}
+            {% endif %}
+            {% set validation_steps = [
+                                    ('01', 'API Serving', row.api_version, api_serving_description),
+                                    ('02', 'Resource Discovery', api_resource, resource_discovery_description),
+                                    ('03', 'Effective Authorization', row.required_verbs_display, authorization_description)
+                                ] %}
+            {% call capability_detail.grouped_section('Validation Evidence', 'file-check-2',
+                'data-kaori-provider-capability-evidence',
+                description='Three checks determine whether KAORI can safely use this capability through the selected Kubernetes contract.',
+                legacy_marker='data-kaori-capability-validation-evidence') %}
+                {% for number, title, evidence, description in validation_steps %}
+                    {% call capability_detail.field(number ~ ' · ' ~ title) %}
+                        <p class="font-semibold text-content-primary">{{ evidence }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                    {% endcall %}
+                {% endfor %}
+            {% endcall %}
+            {% call capability_detail.grouped_section('Operational Decision', 'workflow',
+                'data-kaori-provider-capability-operational-decision',
+                legacy_marker='data-kaori-capability-operational-decision') %}
+                {% call capability_detail.field('Impact', 'data-kaori-provider-capability-impact') %}
+                    {% if row.status == 'ready' %}
+                        KAORI can use this capability through the preferred stable API.
+                    {% elif row.status == 'legacy' %}
+                        The capability remains available, but upgrade planning is required before the fallback API is removed upstream.
+                    {% elif row.required %}
+                        Dependent inventory or operational features remain unavailable until API serving or RBAC access is corrected.
                     {% else %}
-                        {% set api_serving_description = "Selected API is served by the registered Kubernetes API." %}
-                        {% set resource_discovery_description = "Expected resource is discoverable through the selected API contract." %}
-                        {% set authorization_description = 'Required verbs are evaluated across all namespaces for this cluster-wide contract.' if row.required else ('Required verbs are evaluated against the cluster-scoped admission resource for this optional governance contract.' if is_cluster_scoped_optional else 'Required verbs are evaluated only in the approved namespace for this optional contract.') %}
+                        Core Kubernetes readiness remains available. Only the optional governed workflow stays unavailable.
                     {% endif %}
-                    {% set validation_steps = [
-                                            ('01', 'API Serving', row.api_version, api_serving_description),
-                                            ('02', 'Resource Discovery', api_resource, resource_discovery_description),
-                                            ('03', 'Effective Authorization', row.required_verbs_display, authorization_description)
-                                        ] %}
-                    {% for number, title, evidence, description in validation_steps %}
-                        <li class="min-w-0 bg-surface-card p-4 sm:p-5">
-                            <div class="flex items-start gap-3">
-                                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-xs font-semibold text-kaori-primary-dark dark:text-kaori-accent">{{ number }}</span>
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
-                                    <p class="mt-1 break-words text-xs font-semibold text-content-secondary [overflow-wrap:anywhere]">{{ evidence }}</p>
-                                </div>
-                            </div>
-                            <p class="mt-3 text-xs leading-5 text-content-muted">{{ description }}</p>
-                        </li>
-                    {% endfor %}
-                </ol>
-            </section>
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
-                     data-kaori-capability-operational-decision>
-                <header class="border-b border-outline-subtle px-5 py-4">
-                    <div class="flex items-start gap-3">
-                        {{ integration_ui.palette_icon('route', 'brand', size='md') }}
-                        <div>
-                            <h3 class="text-sm font-semibold text-content-primary">Operational Decision</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Interpret what this evidence means for KAORI and the next controlled operator action.</p>
-                        </div>
-                    </div>
-                </header>
-                <div class="grid gap-px bg-outline-subtle lg:grid-cols-2">
-                    <article class="bg-surface-card p-5">
-                        <div class="flex items-start gap-3">
-                            {{ integration_ui.palette_icon('activity', 'neutral', size='sm') }}
-                            <div class="min-w-0">
-                                <p class="text-xs font-semibold text-content-secondary">Operational Impact</p>
-                                <p class="mt-1.5 text-sm leading-6 text-content-primary">
-                                    {% if row.status == 'ready' %}
-                                        KAORI can use this capability through the preferred stable API.
-                                    {% elif row.status == 'legacy' %}
-                                        The capability remains available, but upgrade planning is required before the fallback API is removed upstream.
-                                    {% elif row.required %}
-                                        Dependent inventory or operational features remain unavailable until API serving or RBAC access is corrected.
-                                    {% else %}
-                                        Core Kubernetes readiness remains available. Only the optional governed workflow stays unavailable.
-                                    {% endif %}
-                                </p>
-                            </div>
-                        </div>
-                    </article>
-                    <article class="bg-surface-card p-5">
-                        <div class="flex items-start gap-3">
-                            {{ integration_ui.palette_icon('arrow-right-circle', 'brand', size='sm') }}
-                            <div class="min-w-0">
-                                <p class="text-xs font-semibold text-content-secondary">Recommended Action</p>
-                                <p class="mt-1.5 text-sm leading-6 text-content-primary">
-                                    {% if row.status == 'ready' %}
-                                        No corrective action is required. Revalidate after Kubernetes upgrades or RBAC changes.
-                                    {% elif row.status == 'legacy' %}
-                                        Upgrade the cluster or API extension so the stable API is served, then rerun Full Validation.
-                                    {% elif row.required %}
-                                        Serve the required API and grant only the required verbs. Do not use an older API to bypass missing authorization.
-                                    {% else %}
-                                        Grant only workflow-required access; do not broaden the baseline ClusterRole.
-                                    {% endif %}
-                                </p>
-                            </div>
-                        </div>
-                    </article>
-                </div>
-                <div class="border-t border-outline-subtle bg-surface-subtle px-5 py-4"
-                     data-kaori-capability-governance-boundary>
-                    <div class="flex items-start gap-3">
-                        {{ integration_ui.palette_icon('shield-check', 'neutral', size='sm') }}
-                        <div class="min-w-0">
-                            <p class="text-xs font-semibold text-content-primary">Governance Boundary</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ scope_label }}. Full Validation owns API/RBAC readiness; runtime and inventory remain separate.</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
+                {% endcall %}
+                {% call capability_detail.field('Next Action', 'data-kaori-provider-capability-action') %}
+                    {% if row.status == 'ready' %}
+                        No corrective action is required. Revalidate after Kubernetes upgrades or RBAC changes.
+                    {% elif row.status == 'legacy' %}
+                        Upgrade the cluster or API extension so the stable API is served, then rerun Full Validation.
+                    {% elif row.required %}
+                        Serve the required API and grant only the required verbs. Do not use an older API to bypass missing authorization.
+                    {% else %}
+                        Grant only workflow-required access; do not broaden the baseline ClusterRole.
+                    {% endif %}
+                {% endcall %}
+            {% endcall %}
             {% if has_selected_contract %}
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
                          data-kaori-capability-verification-command
@@ -512,6 +435,8 @@
                     </div>
                 </section>
             {% endif %}
+            {{ capability_detail.boundary(scope_label ~ '. Full Validation owns API/RBAC readiness; runtime and inventory remain separate.',
+                        legacy_marker='data-kaori-capability-governance-boundary') }}
         </div>
     {% endcall %}
 {% endfor %}

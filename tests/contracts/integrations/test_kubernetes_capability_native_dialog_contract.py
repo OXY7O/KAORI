@@ -68,23 +68,25 @@ def test_capability_dialog_uses_compact_professional_decision_layout() -> None:
     ):
         assert marker in capability
 
+    shared = read('app/templates/integrations/components/_provider_capability_detail.html')
     for label in (
-        'Capability Decision',
-        'Contract Snapshot',
+        'Capability Contract',
         'Validation Evidence',
         'Operational Decision',
-        'Operational Impact',
-        'Recommended Action',
-        'Governance Boundary',
+        'Impact',
+        'Next Action',
+        'Evidence Boundary',
         'Verification Command',
         'Copy Script',
     ):
-        assert label in capability
+        assert label in capability + shared
 
-    # The modal is a single reading flow, not a wall of nested evidence cards.
-    assert 'lg:grid-cols-4' in capability
-    assert 'lg:grid-cols-3' in capability
-    assert 'lg:grid-cols-2' in capability
+    # The modal shares its fact strip and grouped key-value rows with other providers.
+    assert 'lg:grid-cols-4' in shared
+    assert 'capability_detail.contract(' in capability
+    assert 'capability_detail.grouped_section(' in capability
+    assert 'capability_detail.field(' in capability
+    assert 'capability_detail.boundary(' in capability
     assert 'data-kaori-capability-validation-scope' not in capability
     assert 'data-kaori-capability-operational-guidance' not in capability
     assert 'data-kaori-capability-verification-script' not in capability
