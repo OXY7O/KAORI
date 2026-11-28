@@ -48,6 +48,7 @@ _TABS = (
     ('overview', 'Overview', 'layout-dashboard'),
     ('mfa', 'Multi-Factor Authentication', 'shield-check'),
     ('bot', 'Bot Protection', 'bot'),
+    ('login-protection', 'Login Protection', 'shield-alert'),
     ('sessions', 'Session Security', 'monitor-check'),
 )
 
@@ -448,7 +449,7 @@ def test_bot_provider():
 @permission_required('identity_providers.manage')
 @limiter.limit(lambda: current_app.config.get('AUTH_LOGIN_RATE_LIMIT', '5 per minute'))
 def save_lockout_policy():
-    destination = url_for('access.authentication_security.index', tab='bot', _anchor='login-protection-control')
+    destination = url_for('access.authentication_security.index', tab='login-protection', _anchor='login-protection-control')
     try:
         validate_csrf(request.form.get('csrf_token'))
         if request.form.get('acknowledge_lockout_impact') != 'yes':
