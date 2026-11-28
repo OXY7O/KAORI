@@ -585,7 +585,12 @@ def mfa_challenge():
                 if action == 'begin':
                     setup_secret = begin_mfa_enrollment(user, expected_generation=pending['version'], authenticated=False)
                 elif action == 'confirm' and form.validate_on_submit():
-                    codes = confirm_mfa_enrollment(user, str(form.verification_code.data or ''), authenticated=False)
+                    codes = confirm_mfa_enrollment(
+                        user,
+                        str(form.verification_code.data or ''),
+                        expected_generation=pending['version'],
+                        authenticated=False,
+                    )
                 else:
                     raise MfaVerificationError('Invalid enrollment request.')
             except (ValidationError, MfaVerificationError):
@@ -637,7 +642,9 @@ def mfa_challenge():
         pending['attempts'] += 1
         session[MFA_PENDING_SESSION_KEY] = pending
         try:
-            verify_mfa_challenge(user, str(form.verification_code.data or ''))
+            verify_mfa_challenge(
+                user, str(form.verification_code.data or ''), expected_generation=pending['version']
+            )
         except MfaVerificationError:
             error = 'The verification code was not accepted.'
             record_authentication_activity(
