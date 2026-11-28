@@ -8,6 +8,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.access.authentication.admission import enforce_login_admission
 from app.access.authentication.identity_provider.registry import build_credential_provider_registry
 from app.access.authentication.identity_provider.proof import lock_external_credential_proof
+from app.access.authentication.lockout_state import lock_account_state
+from app.access.authentication.login_protection import LoginRequestProtection
 from app.access.authentication.results import (
     DATABASE_UNAVAILABLE_MESSAGE,
     INVALID_LOGIN_MESSAGE,
@@ -27,16 +29,24 @@ def _finalize_result(result: AuthResult) -> AuthResult:
     return enforce_login_admission(result) if result.success else result
 
 
-def authenticate(username: str, password: str) -> AuthResult:
+def authenticate(
+    username: str, password: str, *, protection: LoginRequestProtection | None = None
+) -> AuthResult:
+    if protection is not None and protection.blocked:
+        return AuthResult(False, 'rate_limited', source='credentials')
     registry = build_credential_provider_registry()
-    local_result = registry.local.authenticate(username=username, password=password)
+    if protection is None:
+        local_result = registry.local.authenticate(username=username, password=password)
+    else:
+        local_result = registry.local.authenticate(username=username, password=password, protection=protection)
     # A provisioned directory user has a KAORI User row but no local password.
     # The Local Database probe must not claim that external identity; only
     # Local Database identities retain authority over a failed local login.
     local_user = local_result.user
     if (
         local_result.success
-        or local_result.reason in {'user_inactive', 'database_unavailable'}
+        or local_result.local_authoritative
+        or local_result.reason in {'user_inactive', 'database_unavailable', 'access_not_permitted', 'account_gate_rejected'}
         or (local_user is not None and local_user.auth_source == 'database')
     ):
         return _finalize_result(local_result)
@@ -50,6 +60,30 @@ def authenticate(username: str, password: str) -> AuthResult:
             unavailable_result = result
 
     return unavailable_result or local_result
+
+
+def require_local_login_gate(user_id: int) -> None:
+    """Recheck current lockout under the account lock, including pending MFA."""
+    account = db.session.execute(
+        select(User.is_super_admin, User.password_hash)
+        .where(
+            User.id == user_id,
+            User.auth_source == 'database',
+            User.account_is_active.is_(True),
+            User.deleted_at.is_(None),
+        )
+        .with_for_update(of=User)
+    ).one_or_none()
+    if account is None or not account[1]:
+        raise AuthSessionError('Local admission is no longer eligible.')
+    if account[0]:
+        return
+    try:
+        context = lock_account_state(user_id)
+    except (ValueError, TypeError) as exc:
+        raise AuthSessionError('Local admission protection is unavailable.') from exc
+    if context is None or context.decision.blocked:
+        raise AuthSessionError('Local admission protection rejected the request.')
 
 
 def stage_successful_authentication(
@@ -80,6 +114,9 @@ def stage_successful_authentication(
         ).scalar_one_or_none()
         if current_hash != local_credential_proof.password_hash:
             raise AuthSessionError('Verified local credential proof is stale.')
+
+    if normalized_source == 'database':
+        require_local_login_gate(user.id)
 
     conditions = [
         User.id == user.id,

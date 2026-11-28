@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 from flask import url_for
@@ -8,6 +9,8 @@ from flask import url_for
 from app import create_app
 from app.access.authentication import routes as auth_routes
 from app.access.authentication.bot_protection.service import BotPolicyMode, BotPolicyState
+from app.access.authentication.lockout_policy import LockoutMode
+from app.access.authentication.login_protection import LoginRequestProtection
 from app.access.authentication.results import AuthResult
 from app.bootstrap import presentation as bootstrap_presentation
 
@@ -28,6 +31,9 @@ def app(monkeypatch: pytest.MonkeyPatch):
         lambda: SimpleNamespace(ready=True, setup_required=False, missing_tables=()),
     )
     monkeypatch.setattr(auth_routes, 'enabled_sso_providers', lambda: [])
+    monkeypatch.setattr(
+        auth_routes, 'check_login_request', lambda _username: LoginRequestProtection(LockoutMode.DISABLED, 1)
+    )
     monkeypatch.setattr(
         auth_routes,
         'bot_policy_state',
@@ -61,7 +67,7 @@ def test_invalid_credentials_return_generic_failure_without_account_disclosure(
     monkeypatch.setattr(
         auth_routes,
         'authenticate',
-        lambda _username, _password: AuthResult(False, 'invalid_credentials', source='database'),
+        lambda _username, _password, **_kwargs: AuthResult(False, 'invalid_credentials', source='database'),
     )
     monkeypatch.setattr(
         auth_routes,
@@ -138,3 +144,37 @@ def test_login_page_omits_sso_region_when_no_browser_provider_is_enabled(app) ->
     assert response.status_code == 200
     assert 'data-kaori-sso-actions' not in html
     assert 'Or Continue With' not in html
+
+
+@pytest.mark.parametrize('mode', (LockoutMode.MONITOR_ONLY, LockoutMode.ENFORCED))
+def test_identity_budget_preserves_generic_response_and_monitor_semantics(
+    app, monkeypatch: pytest.MonkeyPatch, mode: LockoutMode
+) -> None:
+    protection = LoginRequestProtection(mode, 2, over_budget=True)
+    monkeypatch.setattr(auth_routes, 'check_login_request', lambda _username: protection)
+    evidence = Mock()
+    monkeypatch.setattr(auth_routes, 'record_identity_budget_observation', evidence)
+    authenticate = Mock(return_value=AuthResult(False, 'invalid_credentials'))
+    monkeypatch.setattr(auth_routes, 'authenticate', authenticate)
+    monkeypatch.setattr(auth_routes, '_record_result', Mock())
+    feedback = Mock()
+    monkeypatch.setattr(auth_routes, 'queue_transient_feedback', feedback)
+    response = app.test_client().post('/auth/login', data={'username': 'fixture', 'password': 'wrong-password'})
+    assert response.status_code == 200
+    evidence.assert_called_once_with(enforced=mode == LockoutMode.ENFORCED)
+    assert authenticate.call_count == int(mode == LockoutMode.MONITOR_ONLY)
+    assert feedback.call_args.kwargs['message'] == 'Invalid username or password.'
+
+
+def test_failed_captcha_never_enters_identity_budget_or_password_check(app, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(auth_routes, 'bot_token_verified', lambda *_args: False)
+    protection = Mock()
+    authenticate = Mock()
+    monkeypatch.setattr(auth_routes, 'check_login_request', protection)
+    monkeypatch.setattr(auth_routes, 'authenticate', authenticate)
+    monkeypatch.setattr(auth_routes, 'record_authentication_activity', Mock())
+    monkeypatch.setattr(auth_routes, 'queue_transient_feedback', Mock())
+    response = app.test_client().post('/auth/login', data={'username': 'fixture', 'password': 'wrong-password'})
+    assert response.status_code == 302
+    protection.assert_not_called()
+    authenticate.assert_not_called()

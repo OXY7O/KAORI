@@ -9,7 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from wtforms.validators import ValidationError
 
 from app.access.authentication.admission import enforce_login_admission
-from app.access.authentication.audit import record_authentication_activity
+from app.access.authentication.audit import record_authentication_activity, record_identity_budget_observation
 from app.access.authentication.bot_protection.service import (
     BotConfigurationError,
     bot_policy_state,
@@ -26,6 +26,7 @@ from app.access.authentication.identity_provider.browser import (
 from app.access.authentication.identity_provider.catalog import provider_definition
 from app.access.authentication.identity_provider.registry import get_browser_sso_adapter
 from app.access.authentication.identity_provider.proof import parse_external_credential_proof
+from app.access.authentication.login_protection import LoginProtectionUnavailable, check_login_request
 from app.access.authentication.mfa.policy import MfaGate, MfaPolicyError
 from app.access.authentication.mfa.service import (
     MFA_CHALLENGE_TTL_SECONDS,
@@ -203,7 +204,17 @@ def login():
             return redirect(url_for('auth.login'))
         username = form.username.data or ''
         password = form.password.data or ''
-        result = authenticate(username, password)
+        try:
+            protection = check_login_request(username)
+            if protection.over_budget:
+                record_identity_budget_observation(enforced=protection.blocked)
+            if protection.blocked:
+                result = AuthResult(False, 'rate_limited', source='credentials')
+            else:
+                result = authenticate(username, password, protection=protection)
+        except (SQLAlchemyError, ValueError, TypeError, LoginProtectionUnavailable):
+            db.session.rollback()
+            return DATABASE_UNAVAILABLE_MESSAGE, 503, {'Cache-Control': 'no-store'}
 
         if result.success and result.user:
             try:
@@ -213,6 +224,7 @@ def login():
                     next_url=form.next.data,
                 )
             except SQLAlchemyError:
+                db.session.rollback()
                 result = AuthResult(
                     False,
                     'database_unavailable',
@@ -221,6 +233,7 @@ def login():
                     message=DATABASE_UNAVAILABLE_MESSAGE,
                 )
             except AuthSessionError:
+                db.session.rollback()
                 result = AuthResult(
                     False,
                     'access_not_permitted',
@@ -235,7 +248,8 @@ def login():
                     _record_result(username, result)
                 return response
 
-        _record_result(username, result)
+        if not protection.blocked:
+            _record_result(username, result)
         message = credential_failure_message(result)
         queue_transient_feedback(
             status='error',

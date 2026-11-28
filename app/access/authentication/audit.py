@@ -46,6 +46,7 @@ def _reason_label(reason: str) -> str:
         'authorization_denied': 'The external sign-in request was cancelled or denied',
         'authorization_code_missing': 'The SSO callback did not include an authorization code',
         'rate_limited': 'The authentication request exceeded the configured rate limit',
+        'account_gate_rejected': 'The local password protection gate rejected the request',
         'user_initiated': 'The authenticated user ended the session',
     }
     normalized = (reason or '').strip().lower()
@@ -220,3 +221,30 @@ def stage_session_expiry(user: User, *, reason: str) -> Notification:
     event.read_at = now
     event.created_at = now
     return event
+
+
+def record_identity_budget_observation(*, enforced: bool) -> None:
+    """Commit anonymous, secret-free budget evidence without claiming failed credentials."""
+    actor = unauthenticated_actor_snapshot()
+    now = datetime.now(UTC)
+    event = Notification()
+    event.event_type = AUTHENTICATION_EVENT_TYPE
+    event.category_key = event_category_key(AUTHENTICATION_EVENT_TYPE)
+    event.actor_key = actor.key
+    event.actor_label = actor.label
+    event.actor_snapshot_json = actor.as_json()
+    event.status = 'warning' if enforced else 'info'
+    event.title = 'Login Identity Request Budget Exceeded'
+    event.message = 'Shared credential request budget exceeded.'
+    event.detail = 'Request rejected by policy.' if enforced else 'Monitor-only observation; no rejection asserted.'
+    event.metadata_json = {
+        'audit_schema': 'authentication.security.v1',
+        'access_action': 'identity_budget_exceeded',
+        'policy_mode': 'enforced' if enforced else 'monitor_only',
+        'result': 'rejected' if enforced else 'observed',
+    }
+    event.deck_visible = False
+    event.read_at = now
+    event.created_at = now
+    db.session.add(event)
+    db.session.commit()
