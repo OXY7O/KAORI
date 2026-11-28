@@ -24,6 +24,10 @@ class _CoverageSpec:
 
 _COVERAGE = (
     _CoverageSpec(
+        'authentication', 'Authentication', '', 'Domain-owned', 'Not admitted',
+        'Committed abuse signal exists; recommendation rule, scoped case lifecycle and routing are Reserved Plan.',
+    ),
+    _CoverageSpec(
         'kubernetes', 'Kubernetes', 'kubernetes', 'Kubernetes', 'Recommendation',
         'Committed evaluator findings only; native provider-origin case admission is not registered.',
     ),

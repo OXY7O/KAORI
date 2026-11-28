@@ -1647,3 +1647,30 @@ rules:
   visible_in:
   - Recommendations
   - Catalog
+- rule_key: authentication.security.login_abuse_review
+  title: Authentication Abuse Evidence Needs Review
+  domain: authentication
+  source_kind: authentication_deployment
+  category: governance
+  severity: warning
+  priority: P2
+  status: reserved
+  logic_type: recommendation
+  signal_source: authentication_committed_evidence
+  alert_escalation:
+    eligible: false
+    mode: manual
+    grouping_mode: finding
+  risk_exception:
+    enabled: false
+  catalog_summary: Reviews qualified committed login abuse indicators.
+  summary: A bounded committed authentication observation may warrant operator review after source qualification.
+  condition_summary: A fresh complete deployment-wide observation has one or more recognized abuse indicators.
+  recommended_action: Review authorized Activity Audit and infrastructure evidence, validate the pattern and apply approved incident controls.
+  impact: Supports investigation without claiming a confirmed attack, attacker identity or account compromise.
+  evidence_boundary: Reserved Plan until hosted source qualification and rule approval. No raw identity or source addresses, provider-native alert, case admission, delivery or automatic remediation.
+  supported_sources:
+  - KAORI committed authentication Activity Audit
+  - KAORI authentication.login_abuse signal
+  visible_in:
+  - Catalog

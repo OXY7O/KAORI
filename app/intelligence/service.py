@@ -12,6 +12,7 @@ from werkzeug.datastructures import MultiDict
 
 from app.common.registry_runtime_evidence import runtime_correlation_evidence_readiness
 from app.extensions.db import db
+from app.intelligence.authentication_recommendations import build_authentication_recommendation_findings
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
 from app.intelligence.finding_presentation import (
     build_affected_assets,
@@ -327,6 +328,9 @@ def _build_recommendation_findings(
         collect(
             'Secrets & PKI', lambda rules: build_secrets_pki_recommendation_findings(rules, readiness=pki_readiness)
         )
+
+    if any(key.startswith('authentication.') for key in rules):
+        collect('Authentication', build_authentication_recommendation_findings)
 
     return _finalize_recommendation_findings(findings)
 
@@ -775,6 +779,8 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
             domain == 'secrets_pki' and pki_status == 'not_configured'
         ):
             source_gaps.append('Secrets & PKI: Stored Certificate Coverage Incomplete')
+        if domain == 'authentication':
+            source_gaps.append('Authentication: rule and case admission remain Reserved Plan')
         state = classify_recommendation_readiness(
             total=total,
             recent=recent,
