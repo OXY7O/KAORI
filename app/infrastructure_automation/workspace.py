@@ -87,6 +87,7 @@ def project_host_assets(
     if len(assignments) > _ASSET_LIMIT:
         return {
             'state': 'blocked',
+            'is_empty': False,
             'reason': 'Inventory exceeds the approved review limit.',
             'fingerprint': None,
             'rows': empty_rows,
@@ -96,6 +97,7 @@ def project_host_assets(
     review = preview_inventory_intent(connection, assignments)
     if review.state != 'requires_trust_admission':
         return {
+            'is_empty': not assignments,
             'state': 'blocked',
             'reason': review.reason,
             'fingerprint': None,
@@ -118,6 +120,7 @@ def project_host_assets(
     ]
     rows, pagination = paginate_sequence(records, page=page, per_page=per_page)
     return {
+        'is_empty': False,
         'state': review.state,
         'reason': review.reason,
         'fingerprint': review.inventory_fingerprint,

@@ -61,7 +61,11 @@ def test_workspace_empty_state_renders_canonical_ui_without_provision_actions():
     assert 'data-kaori-canonical-registry-filter' in rendered
     assert 'data-kaori-canonical-registry-footer' in rendered
     assert 'data-kaori-info-tip-variant="guide"' in rendered
-    assert 'Cluster Mutation Not Admitted' in rendered
+    assert 'Setup Required' in rendered
+    assert 'Register Connection' in rendered
+    assert 'data-kaori-empty-state' in rendered
+    assert 'Cluster Mutation Not Admitted' not in rendered
+    assert 'data-kaori-infrastructure-automation-detail' not in rendered
     assert 'name="per_page"' in rendered
     assert 'value="5"' in rendered
     assert '<form method="POST"' not in rendered
@@ -118,3 +122,37 @@ def test_remote_review_posture_is_jobs_permission_scoped_and_non_authorizing():
     assert '.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).first()' in projection
     for prohibited in ('ansible_runner.run', '.apply_async(', 'review_remote_preflight_target(', 'resolve_remote_worker_review('):
         assert prohibited not in projection
+
+
+def test_filtered_connections_are_not_initial_setup():
+    app = create_app('testing')
+    with app.test_request_context('/platform-operations/infrastructure-automation/?q=missing'):
+        rendered = render_template(
+            PARTIAL,
+            connections=[],
+            pagination=pagination_payload(build_pagination_window(total_items=0)),
+            selected_query='missing',
+            selected_connection_id=None,
+            total_connections=2,
+            details=None,
+            can_jobs=False,
+            can_inventory=False,
+        )
+    assert 'No Matching Connections' in rendered
+    assert 'No Results' in rendered
+    assert 'Clear Filters' in rendered
+    assert 'No Ansible Connections' not in rendered
+    assert 'Cluster Mutation Not Admitted' not in rendered
+
+
+def test_lifecycle_workspace_uses_shared_hero_and_separate_operational_sections():
+    hero = (ROOT / 'app/templates/infrastructure_automation/index.html').read_text()
+    workspace = (ROOT / 'app/templates/infrastructure_automation/_lifecycle_workspace.html').read_text()
+    assert 'page_hero.context_card(' in hero
+    assert 'data-kaori-automation-connection-registry' in workspace
+    assert 'data-kaori-automation-lifecycle-posture' in workspace
+    assert 'section_intro.render(' in workspace
+    assert workspace.index('data-kaori-automation-lifecycle-posture') < workspace.index('data-kaori-remote-review-evidence')
+    assert workspace.index('data-kaori-remote-review-evidence') < workspace.index('id="infrastructure-automation-assets"')
+    assert 'components/states/_empty_state.html' in workspace
+    assert 'Run Kubespray' not in workspace

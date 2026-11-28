@@ -109,3 +109,28 @@ registration and recovery UAT remain blocked by independent authority,
 signed EE/worker admission and approved disposable target. External
 kaori-operations PR #10 is a disabled candidate. No review flag, source
 QA or diagnostic result enables native remote execution or provisioning.
+
+
+## Workspace visual review (#5157)
+
+The shared Violet Hero now uses its canonical context card, with truthful
+connection count, review mode and setup action. Connection selection is a
+separate registry from lifecycle posture, inventory and execution history.
+Source, technical/governance gate counts and review-only Plan occupy three
+ordered status cards; remote review sits next to those cards. The full-width
+host registry remains independently paginated. Provider inventory evidence
+and cluster associations are peers below it. No new execution controls.
+
+No Ansible connection is a normal onboarding state (Setup Required), not
+a workspace authorization failure. A filtered zero result instead shows
+No Matching Connections, retaining the canonical filter/footer. No
+selected lifecycle detail is rendered without a selected connection.
+The page remains permission-scoped, GET-only, and committed-state based.
+Review all states on desktop and mobile, Violet light/dark, keyboard and
+HTMX/no-JS; visual acceptance is pending.
+
+Observed preceding operator evidence: 181 tests passed and one encrypted
+OpenSSH fixture failed before reaching the credential qualifier because
+the test environment lacks the optional bcrypt dependency. This is not
+a passed encrypted-key negative regression; track the dependency
+separately from the requested visual redesign.
