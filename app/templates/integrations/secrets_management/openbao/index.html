@@ -6,7 +6,7 @@
 {% block title %}OpenBao Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div class="kaori-integration-semantic space-y-6">
-        {{ provider_front.hero("key-round", "shield-check", "OpenBao Integrations", "Review internal and external local connections. Connection evidence is independent of credential authority.", pagination.total_items, 0, 0, "Attention", url_for("openbao.new_instance"), register_label="Register External Connection") }}
+        {{ provider_front.hero("key-round", "shield-check", "OpenBao Integrations", "Review local OpenBao evidence without granting credential authority.", pagination.total_items, 0, 0, "Attention" if pagination.total_items else "Not Configured", url_for("openbao.new_instance"), register_label="Register External Connection") }}
         <section class="{{ table_ui.block_classes() }}" aria-label="OpenBao Connection Registry">
             <header class="{{ table_ui.block_header_classes() }}">
                 <div>

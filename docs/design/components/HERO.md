@@ -273,7 +273,7 @@ Choose by meaning, not by domain or visual preference.
 | Identity, scope or authority only, with no qualified overall state | Context Icon Box |
 | Distinct immediate action not duplicated by the footer | Action Icon Box with accessible label |
 
-Do not infer Ready from registration, record counts, or the presence of a connection. Avoid repeating the same status in the badge and metric; use the metric for explanatory evidence or a separate prerequisite. Preserve the normal operational-dashboard scope-only icon and existing blocked setup ownership. The three accessory renderers expose `data-kaori-hero-header-accessory` values `status`, `context`, and `action` for contract and browser inspection.
+Do not infer Ready from registration, record counts, or the presence of a connection. Scope-only examples include Welcome access scope, Settings presentation/release identity, recent account activity, credential ownership, and Jobs/Data Lifecycle control boundaries where no qualified overall status is supplied. Account overview lifecycle and Kubernetes Administration control status use the actual source status rather than an identity icon. OpenBao connection readiness is independent of credential authority. Avoid repeating the same status in the badge and metric; use the metric for explanatory evidence or a separate prerequisite. Preserve the normal operational-dashboard scope-only icon and existing blocked setup ownership. The three accessory renderers expose `data-kaori-hero-header-accessory` values `status`, `context`, and `action` for contract and browser inspection.
 
 ### Integration navigation CTA contract
 
