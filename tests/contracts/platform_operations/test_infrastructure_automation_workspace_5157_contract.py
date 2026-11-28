@@ -156,3 +156,57 @@ def test_lifecycle_workspace_uses_shared_hero_and_separate_operational_sections(
     assert workspace.index('data-kaori-remote-review-evidence') < workspace.index('id="infrastructure-automation-assets"')
     assert 'components/states/_empty_state.html' in workspace
     assert 'Run Kubespray' not in workspace
+
+
+def test_selected_source_only_connection_renders_lifecycle_and_host_onboarding():
+    app = create_app('testing')
+    connection = SimpleNamespace(id=11, name='Kubespray Fixture', environment='development')
+    details = {
+        'connection': connection,
+        'repository': 'OXY7O/kaori-operations',
+        'source_revision': 'a' * 40,
+        'source_state': 'not_checked',
+        'preflight': {
+            'state': 'blocked',
+            'review_verified_gates': 0,
+            'review_required_gates': 8,
+            'governance_verified_gates': 0,
+            'governance_required_gates': 2,
+            'next_review_requirement': 'Revalidate the exact approved source.',
+        },
+        'plan': {'state': 'not_generated', 'description': 'No review-only Plan.'},
+        'can_inventory': True,
+        'assets': {'is_empty': True, 'state': 'blocked'},
+        'inventory_store': {'state': 'not_recorded', 'description': 'No provider receipt.', 'fingerprint': None},
+        'cluster_bindings': [],
+        'can_jobs': True,
+        'remote_review': {'tone': 'unknown', 'label': 'Not Recorded', 'description': 'No review receipt.'},
+        'jobs': [],
+    }
+    with app.test_request_context('/platform-operations/infrastructure-automation/'):
+        rendered = render_template(
+            PARTIAL,
+            connections=[connection],
+            pagination=pagination_payload(build_pagination_window(total_items=1)),
+            selected_query='',
+            selected_connection_id=11,
+            total_connections=1,
+            details=details,
+            can_jobs=True,
+            can_inventory=True,
+        )
+    for label in (
+        'Kubespray Fixture',
+        'Validation Required',
+        '0/8',
+        '0/2',
+        'Not Generated',
+        'Cluster Mutation Not Admitted',
+        'No Registered Hosts',
+        'Register Host',
+        'No Cluster Associations',
+        'No Automation Executions',
+    ):
+        assert label in rendered
+    assert 'No Ansible Connections' not in rendered
+    assert 'Run Kubespray' not in rendered
