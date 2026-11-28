@@ -22,7 +22,7 @@
                     indicator='#alert-channel-readiness-loading', select='#alert-channel-readiness-registry',
                     push_url='false', sync='closest section:replace') }}
             {% endif %}
-            {{ table_label.metadata_label(table_ui.count_text(readiness.pagination.total_items, 'Channel'), 'send') }}
+            {{ table_label.metadata_label(table_label.count_text(readiness.pagination.total_items, 'Channel'), 'send') }}
         </div>
     </header>
     {{ loading_bar.render('alert-channel-readiness-loading', label='Refreshing Channel Readiness') }}

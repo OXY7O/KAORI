@@ -99,3 +99,26 @@ def test_modal_refresh_returns_fragment_or_fails_closed(monkeypatch) -> None:
         payload['channel_readiness'] = None
         response = route_utils.index_response()
         assert response.headers['HX-Redirect']
+
+
+def test_channel_readiness_registry_renders_zero_one_and_many_channels() -> None:
+    app = Flask(__name__, template_folder=str(ROOT / 'app/templates'))
+    app.add_url_rule('/intelligence/alert-intelligence', 'alert_intelligence.index', lambda: '')
+    template = app.jinja_env.get_template('intelligence/partials/_alert_channel_readiness_registry.html')
+
+    for count, expected_label in ((0, '0 Channels'), (1, '1 Channel'), (12, '12 Channels')):
+        readiness = build_channel_readiness(channel_options(count), MultiDict(), domain='kubernetes')
+        payload = {
+            'channel_readiness': readiness,
+            'domain': 'kubernetes',
+            'selected_asset_key': 'cluster-1',
+        }
+        with app.test_request_context('/intelligence/alert-intelligence?tab=routing'):
+            html = template.render(payload=payload)
+        assert expected_label in html
+        assert 'id="alert-channel-readiness-registry"' in html
+        assert 'name="channel_per_page"' in html
+        if count == 0:
+            assert 'No Notification Channels Configured' in html
+        elif count == 12:
+            assert 'channel_page=2' in html
