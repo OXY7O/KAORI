@@ -29,16 +29,18 @@ def _fingerprint(values: AnsibleConnectionInput) -> str:
     return hashlib.sha256(payload.encode('utf-8')).hexdigest()
 
 
-def issue_source_proof(values: AnsibleConnectionInput, evidence: PublicSourceEvidence, user_id: int) -> str:
+def issue_source_proof(
+    values: AnsibleConnectionInput, evidence: PublicSourceEvidence, user_id: int, *, scope: str = ''
+) -> str:
     if evidence.revision != values.revision or evidence.repository != values.repository:
         raise ValueError('Source proof does not match the submitted Git identity.')
     return _serializer().dumps(
-        {'uid': int(user_id), 'fingerprint': _fingerprint(values), 'evidence': evidence.as_dict()}
+        {'uid': int(user_id), 'fingerprint': _fingerprint(values), 'evidence': evidence.as_dict(), 'scope': scope}
     )
 
 
 def verified_source_proof(
-    token: str, values: AnsibleConnectionInput, user_id: int
+    token: str, values: AnsibleConnectionInput, user_id: int, *, scope: str = ''
 ) -> dict[str, str | int | bool] | None:
     if not token:
         return None
@@ -47,6 +49,8 @@ def verified_source_proof(
     except (BadSignature, SignatureExpired):
         return None
     if not isinstance(payload, dict) or payload.get('uid') != int(user_id):
+        return None
+    if payload.get('scope', '') != scope:
         return None
     if not hmac.compare_digest(str(payload.get('fingerprint') or ''), _fingerprint(values)):
         return None

@@ -24,7 +24,7 @@ from app.integrations.source_control.source_control.providers.github.public_auto
     SOURCE_CANDIDATE_SHA,
     PublicSourceEvidence,
 )
-from app.models.integration import IntegrationInstance
+from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.platform_operations.notifications.service import queue_transient_feedback
 
 pytestmark = pytest.mark.skipif(
@@ -196,16 +196,17 @@ def test_choose_validate_save_manage_with_canonical_database(app):
     configuration = client.get(configure_url)
     assert configuration.status_code == 200
     assert b'data-kaori-provider-edit-hero' in configuration.data
-    assert b'data-kaori-ansible-immutable-configuration' in configuration.data
-    assert b'Register Replacement Connection' in configuration.data
-    assert b'id="ansible-source-registration-form"' not in configuration.data
-    assert b'id="ansible-proof-field"' not in configuration.data
-    assert b'name="action" value="save"' not in configuration.data
+    assert b'Edit Connection' in configuration.data
+    assert b'Save Changes' in configuration.data
+    assert b'Validate Source' in configuration.data
+    assert b'id="ansible-source-registration-form"' in configuration.data
+    assert b'id="ansible-proof-field"' in configuration.data
+    assert b'Register Replacement Connection' not in configuration.data
     revision_field = re.search(rb'<input\b[^>]*\bid="revision"[^>]*>', configuration.data)
     assert revision_field is not None
     assert b'value="' + SOURCE_CANDIDATE_SHA.encode() + b'"' in revision_field.group()
-    assert b'readonly' in revision_field.group()
-    assert client.post(configure_url, data={'revision': 'f' * 40}).status_code == 405
+    assert b'readonly' not in revision_field.group()
+    assert client.post(configure_url, data={'revision': 'f' * 40}).status_code == 409
     assert client.get('/integrations/ansible/connections/0/configure').status_code == 404
     with app.app_context():
         current = db.session.get(IntegrationInstance, identity)
@@ -279,6 +280,7 @@ def test_route_permission_denial_preserves_registration_boundary(app, monkeypatc
     for route in ('/integrations/ansible', '/integrations/ansible/profiles', '/integrations/ansible/connections/new'):
         assert client.get(route).status_code == 403
     assert client.get('/integrations/ansible/connections/1/configure').status_code == 403
+    assert client.post('/integrations/ansible/connections/1/configure', data=_input()).status_code == 403
     assert client.post('/integrations/ansible/connections/new', data={**_input(), 'action': 'save'}).status_code == 403
 
 
@@ -307,9 +309,55 @@ def test_configure_preserves_superseded_version_choices(app):
         identity = row.id
     result = app.test_client().get(f'/integrations/ansible/connections/{identity}/configure')
     assert result.status_code == 200
-    assert re.search(rb'<option\b[^>]*\bselected\b[^>]*\bvalue="2\.19\.3"[^>]*>2\.19\.3</option>', result.data)
+    assert b'2.19.3 (historical)' in result.data
+    assert ANSIBLE_CORE_VERSION.encode() in result.data
     assert b'a' * 40 in result.data
     with app.app_context():
         row = db.session.get(IntegrationInstance, identity)
         assert row.metadata_json['ansible_core_version'] == '2.19.3'
         assert row.metadata_json['source_sha'] == 'a' * 40
+
+
+def test_update_superseded_source_preserves_identity_and_rejects_replay(app):
+    with app.app_context():
+        row = IntegrationInstance(
+            integration_type='configuration_automation', provider_key='ansible',
+            adapter_key='ansible_runner', name='Historical', environment='laboratory',
+            enabled=False, lifecycle_status='active', readiness_status='validation_required',
+            metadata_json={'source_sha': 'a' * 40, 'source_repository': REPOSITORY,
+                           'ansible_core_version': '2.19.3'},
+        )
+        db.session.add(row)
+        db.session.commit()
+        identity = row.id
+    client = app.test_client()
+    url = f'/integrations/ansible/connections/{identity}/configure'
+    page = client.get(url)
+    scope = re.search(rb'name="configuration_scope" value="([^"]+)"', page.data)
+    assert scope
+    data = {**_input(name='Updated'), 'configuration_scope': scope.group(1).decode()}
+    assert client.post(url, data={**data, 'action': 'save'}).status_code == 200
+    checked = client.post(url, data={**data, 'action': 'test'})
+    proof = re.search(rb'id="ansible-proof-field"[^>]*value="([^"]+)"', checked.data)
+    assert proof
+    save = {**data, 'action': 'save', 'source_test_proof': proof.group(1).decode()}
+    assert client.post('/integrations/ansible/connections/new', data=save).status_code == 200
+    assert client.post(url, data=save).status_code == 302
+    assert client.post(url, data=save).status_code == 409
+    with app.app_context():
+        row = db.session.get(IntegrationInstance, identity)
+        assert row.name == 'Updated'
+        assert row.metadata_json['source_sha'] == SOURCE_CANDIDATE_SHA
+        assert row.metadata_json['configuration_history'][0]['configuration']['source_sha'] == 'a' * 40
+        assert row.metadata_json['configuration_history'][0]['archived_by'] == 1
+        assert not row.enabled
+        assert row.metadata_json['mutation_authorized'] is False
+        assert IntegrationInstance.query.count() == 1
+        db.session.add(IntegrationBinding(integration_instance_id=identity, asset_type='kubernetes_cluster',
+                                          asset_key='historical-cluster'))
+        db.session.commit()
+    blocked = client.get(url)
+    assert b'data-kaori-ansible-immutable-configuration' in blocked.data
+    assert b'Register Replacement Connection' in blocked.data
+    assert b'Save Changes' not in blocked.data
+    assert client.post(url, data=save).status_code == 409
