@@ -309,8 +309,10 @@ def test_primary_navigation_precedes_hero_and_covers_foundation_surfaces():
     assert 'class="min-w-0 space-y-6"' in workspace
     assert 'data-kaori-automation-navigation' in workspace
     assert 'class="pointer-events-none absolute inset-x-0 top-full"' in workspace
-    assert workspace.index('data-kaori-automation-navigation') < workspace.index("loading_bar.render('infrastructure-automation-loading'")
-    assert workspace.index("loading_bar.render('infrastructure-automation-loading'") < workspace.index('infrastructure_automation/_hero.html')
+    navigation_index = workspace.index('data-kaori-automation-navigation')
+    loading_index = workspace.index("loading_bar.render('infrastructure-automation-loading'")
+    hero_index = workspace.index('infrastructure_automation/_hero.html')
+    assert navigation_index < loading_index < hero_index
     for label in ('Overview', 'Hosts & Inventories', 'Profiles', 'Patching', 'Plans',
                   'Runs & Evidence', 'Schedules', 'Compliance'):
         assert label in workspace
