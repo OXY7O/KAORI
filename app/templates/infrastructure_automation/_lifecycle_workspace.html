@@ -23,16 +23,20 @@
     ('compliance', 'Compliance', 'shield-check', none, url_for(endpoint, tab='compliance'))
 ] %}
 <section id="infrastructure-automation-results"
-         class="space-y-5"
+         class="min-w-0 space-y-6"
          aria-label="Infrastructure automation workspaces"
          data-kaori-infrastructure-automation-results>
-    {{ workspace_tabs.render_navigation(top_tabs, active_workspace,
-        prefix='infrastructure-automation',
-        aria_label='Infrastructure Automation Workspaces',
-        hx_target='#infrastructure-automation-results',
-        hx_select='#infrastructure-automation-results',
-        hx_indicator='#infrastructure-automation-loading') }}
-    {{ loading_bar.render('infrastructure-automation-loading', label='Loading committed automation evidence') }}
+    <div class="relative min-w-0" data-kaori-automation-navigation>
+        {{ workspace_tabs.render_navigation(top_tabs, active_workspace,
+            prefix='infrastructure-automation',
+            aria_label='Infrastructure Automation Workspaces',
+            hx_target='#infrastructure-automation-results',
+            hx_select='#infrastructure-automation-results',
+            hx_indicator='#infrastructure-automation-loading') }}
+        <div class="pointer-events-none absolute inset-x-0 top-full">
+            {{ loading_bar.render('infrastructure-automation-loading', label='Loading committed automation evidence') }}
+        </div>
+    </div>
     {% include "infrastructure_automation/_hero.html" %}
     <div class="space-y-5" data-kaori-automation-tab="{{ active_tab }}">
         {% if active_tab == 'connections' %}
