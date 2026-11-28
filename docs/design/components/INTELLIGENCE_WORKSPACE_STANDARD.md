@@ -279,16 +279,14 @@ are excluded rather than represented as zero or live provider health. Overview
 navigation does not carry an asset filter; operational tabs establish their own
 scope. Keep Alert Coverage accessible.
 
-Operational tabs use a compact visible filter toolbar immediately below the
-workspace header, without a separate context title, redundant scope badges,
-or modal. Use shared labeled selectors with bounded desktop widths and
-responsive stacking: Domain, Provider when applicable, and Asset Scope or
-Authorized Instance. Selecting a domain or provider refreshes the complete
-page and omits stale dependent asset parameters. Asset changes recheck current
-option membership and the committed parent selection before applying a
-canonical scope URL. Keep existing exact-instance authorization and page
-refresh boundaries. Template ownership and policy registry filters remain
-independent of alert scope. Overview remains selector-free.
+Operational tabs show compact committed scope metadata and a shared Change
+Scope action below the workspace header. Use the native scope dialog with
+Domain, Provider when applicable, and Asset Scope or Authorized Instance.
+Domain/provider changes refresh draft selector metadata only. Cancel leaves
+the committed scope unchanged; Apply rechecks exact option membership and
+refreshes Hero, Summary and workspace with the canonical scope URL. Preserve
+exact-instance authorization, independent policy filters and global template
+ownership. Overview remains selector-free, with no hidden scope dialog.
 
 Alert identity and resolved-case registry cells use one-line ellipsis for
 long titles and supporting metadata, with bounded column widths and full

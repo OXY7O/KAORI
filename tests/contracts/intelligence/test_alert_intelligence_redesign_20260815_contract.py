@@ -37,9 +37,9 @@ def test_active_alert_filters_are_tab_local_auto_refresh_and_keep_clear_filters(
     active = read('app/templates/intelligence/partials/_alert_ops_active.html')
 
     context = read('app/templates/intelligence/partials/_alert_intelligence_context.html')
-    context_form = context
-    assert 'data-kaori-native-dialog' not in context
-    assert 'Change Scope' not in context
+    context_form = read('app/templates/intelligence/partials/_alert_scope_form.html')
+    assert 'data-kaori-native-dialog' in context
+    assert 'Change Scope' in context
     assert 'id="alert-intelligence-context-form"' not in workspace
     assert 'id="alert-intelligence-context-form"' in context_form
     assert 'id="alert-intelligence-domain-select"' in context_form
@@ -47,6 +47,7 @@ def test_active_alert_filters_are_tab_local_auto_refresh_and_keep_clear_filters(
     assert 'hx-trigger="submit"' in context_form
     assert 'name="domain"' in context_form
     assert 'name="asset"' in context_form
+    assert 'Apply Scope' in context_form
     assert 'hx-trigger="change"' in context_form
     assert 'hx-params="tab,domain"' in context_form
     assert 'id="alert-operations-filter-form"' in active
