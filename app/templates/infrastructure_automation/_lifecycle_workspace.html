@@ -155,6 +155,37 @@
                     <p class="mt-1 text-xs text-content-muted">An immutable Plan is never an authorization to execute Kubespray.</p>
                 </article>
             </div>
+            <article class="rounded-xl border border-outline-subtle bg-surface-card p-4"
+                     data-kaori-inventory-store-evidence>
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <h4 class="text-sm font-semibold text-content-primary">Provider KV v2 Inventory Evidence</h4>
+                    {% if not details.can_inventory %}
+                        {{ integration_status("blocked", "Inventory Permission Required", display="text") }}
+                    {% elif details.inventory_store is not defined or not details.inventory_store %}
+                        {{ integration_status("blocked", "Not Recorded", display="text") }}
+                    {% else %}
+                        {{ integration_status("pending" if details.inventory_store.state == 'historical_aligned' else "blocked",
+                                            "Historical Source Aligned" if details.inventory_store.state == 'historical_aligned' else "Review Required",
+                                            display="text") }}
+                    {% endif %}
+                </div>
+                {% if not details.can_inventory %}
+                    <p class="mt-2 text-xs text-content-secondary">Inventory view permission is required to review provider evidence.</p>
+                {% elif details.inventory_store is defined and details.inventory_store %}
+                    <p class="mt-2 text-xs text-content-secondary">{{ details.inventory_store.description }}</p>
+                    {% if details.inventory_store.fingerprint %}
+                        <p class="mt-1 text-xs text-content-muted">
+                            {{ details.inventory_store.provider_label }} · Readback SHA256
+                            <span class="font-mono">{{ details.inventory_store.fingerprint[:12] }}…</span>
+                            · Ansible parser {{ 'verified' if details.inventory_store.parser_verified else 'not checked' }}
+                        </p>
+                        <p class="mt-1 text-xs text-content-muted">Observed {{ details.inventory_store.observed_at }} · Historical receipt only</p>
+                    {% endif %}
+                {% else %}
+                    <p class="mt-2 text-xs text-content-secondary">No independently qualified provider KV v2 readback is recorded.</p>
+                {% endif %}
+                <p class="mt-2 text-xs text-content-muted">Provider entries are not read on page load. This evidence does not establish credential access, SSH trust, Plan approval or a Kubernetes Run.</p>
+            </article>
             <div class="grid gap-4 xl:grid-cols-2">
                 <article id="infrastructure-automation-assets"
                          class="rounded-xl border border-outline-subtle bg-surface-card p-4">
