@@ -8,7 +8,7 @@ import pytest
 from sqlalchemy import Column, Integer, MetaData, Table, create_engine, insert, select
 from sqlalchemy.orm import Session
 
-from app.models.automation import AutomationRunTargetClaim
+from app.models.automation import AutomationRunReservationAdoption, AutomationRunTargetClaim
 from app.models.job import JobExecution
 from app.platform_operations.data_lifecycle.retention.domains import job_execution as retention
 
@@ -20,6 +20,7 @@ def retention_session(monkeypatch):
     Table('integration_instances', metadata, Column('id', Integer, primary_key=True))
     jobs = JobExecution.__table__.to_metadata(metadata)
     claims = AutomationRunTargetClaim.__table__.to_metadata(metadata)
+    AutomationRunReservationAdoption.__table__.to_metadata(metadata)
     engine = create_engine('sqlite://')
     try:
         with engine.begin() as connection:
@@ -90,3 +91,21 @@ def test_child_only_cleanup_does_not_delete_lock_only_parent(retention_session):
     assert retention.JobExecutionArchiveDomain._delete_id_batch([8]) == 1
     assert session.get(JobExecution, 4) is not None
     assert session.get(JobExecution, 8) is None
+
+
+def test_adoption_protects_run_even_if_parent_correlation_is_missing(retention_session):
+    session, claims = retention_session
+    _reserve(session, claims, 1)
+    session.execute(insert(AutomationRunReservationAdoption), {
+        'reservation_id': session.scalar(select(claims.c.reservation_id).where(claims.c.plan_job_id == 1)),
+        'plan_job_id': 1,
+        'run_job_id': 5,
+        'adopted_by_user_id': 7,
+        'adopted_at': datetime.now(UTC),
+    })
+    child = session.get(JobExecution, 5)
+    assert child is not None
+    child.parent_job_id = None
+    session.commit()
+    assert retention.JobExecutionArchiveDomain._delete_id_batch([1, 5]) == 0
+    assert session.get(JobExecution, 5) is not None

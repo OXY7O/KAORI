@@ -169,3 +169,22 @@ class AutomationRunTargetClaim(db.Model):
     reserved_by_user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='RESTRICT'), nullable=False)
     reserved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     released_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class AutomationRunReservationAdoption(db.Model):
+    """One durable association of a reservation with its canonical Run (#4801)."""
+
+    __tablename__ = 'automation_run_reservation_adoptions'
+    __table_args__ = (
+        UniqueConstraint('reservation_id', name='uq_auto_adoption_reservation'),
+        UniqueConstraint('plan_job_id', name='uq_auto_adoption_plan'),
+        UniqueConstraint('run_job_id', name='uq_auto_adoption_run'),
+        CheckConstraint('plan_job_id != run_job_id', name='ck_auto_adoption_distinct_jobs'),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    reservation_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    plan_job_id: Mapped[int] = mapped_column(ForeignKey('job_executions.id', ondelete='RESTRICT'), nullable=False)
+    run_job_id: Mapped[int] = mapped_column(ForeignKey('job_executions.id', ondelete='RESTRICT'), nullable=False)
+    adopted_by_user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='RESTRICT'), nullable=False)
+    adopted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
