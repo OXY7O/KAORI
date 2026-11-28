@@ -19,6 +19,7 @@ from uuid import uuid4
 import pytest
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
+from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from flask import Flask
 from sqlalchemy import create_engine, inspect, select, text
@@ -37,6 +38,7 @@ from app.integrations.secrets_management.secrets_pki.providers.issuer_transit im
 from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationInstance
 from app.models.notification import Notification
+from app.models.openbao import OpenBaoInstance
 from app.models.rbac import Permission, Role, RolePermission
 from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.secrets_pki import SecretCredentialIssuerChallenge, SecretCredentialIssuerRevision
@@ -66,6 +68,7 @@ def _setup(engine):
         IdentityProvider.__table__,
         ExternalIdentityLink.__table__,
         IntegrationInstance.__table__,
+        OpenBaoInstance.__table__,
         ScopeAccessPolicy.__table__,
         ScopeAccessPolicyRevision.__table__,
         SecretCredentialIssuerRevision.__table__,
@@ -108,11 +111,23 @@ def _setup(engine):
                 id=1,
                 integration_type='secrets_pki',
                 provider_key='openbao',
-                adapter_key='openbao',
+                adapter_key='openbao_http_v1',
                 name='issuer fixture',
                 enabled=True,
                 lifecycle_status='active',
-                readiness_status='ready',
+                health_status='connected',
+                readiness_status='degraded',
+            )
+        )
+        connection.execute(
+            OpenBaoInstance.__table__.insert().values(
+                integration_instance_id=1,
+                ownership='external',
+                endpoint='https://fixture.invalid',
+                cluster_id='4f6db34e-2042-4f0c-a385-a0d39582acb8',
+                auth_mount='approle',
+                role_id='fixture',
+                secret_id='fixture-only',
             )
         )
 
@@ -136,6 +151,8 @@ def issuer_store(monkeypatch):
             app = Flask(__name__)
             app.config.update(
                 TESTING=True,
+                APP_ENV='development',
+                INTEGRATION_CREDENTIAL_KEY=Fernet.generate_key().decode('ascii'),
                 SECRET_KEY='fixture-only',
                 SQLALCHEMY_DATABASE_URI=CI_DSN,
                 SQLALCHEMY_ENGINE_OPTIONS={
@@ -150,9 +167,13 @@ def issuer_store(monkeypatch):
                     with engine.connect() as connection:
                         assert connection.scalar(text('SELECT current_schema()')) == schema
                     _setup(engine)
+                    monkeypatch.setenv('APP_ENV', 'development')
+                    monkeypatch.setenv('KAORI_LOCAL_OPENBAO_INVENTORY_PROVIDER_ID', '1')
+                    monkeypatch.setenv('KAORI_LOCAL_OPENBAO_INVENTORY_MOUNT', 'kv')
                     now = datetime.now(UTC)
                     transit = TransitIssuerBinding(
-                        'openbao', 'https://fixture.invalid', 'fixture-cluster', '', 'transit', 'issuer', 1, _KEY
+                        'openbao', 'https://fixture.invalid', '4f6db34e-2042-4f0c-a385-a0d39582acb8',
+                        '', 'transit', 'issuer', 1, _KEY
                     )
                     scope = CredentialIssuerScope(1, 'openbao', '', 'kv', 'a' * 64)
                     scope = replace(scope, deployment_ref=issuer_authority.deployment_identity_ref(scope, transit))
@@ -442,3 +463,26 @@ def test_prior_caller_transaction_cannot_be_committed_with_issuer_grant(issuer_s
     with pytest.raises(issuer_lifecycle.IssuerLifecycleDenied):
         issuer_lifecycle.revoke_issuer_enrollment(actor_id=2, scope=scope, expected_revision=1)
     assert _state(issuer_store[1])[:2] == ([], [])
+
+
+@pytest.mark.parametrize('field', ['endpoint', 'cluster_id'])
+def test_openbao_source_drift_blocks_provider_before_issuer_enrollment(issuer_store, monkeypatch, field):
+    _grant(issuer_store, 1, _REQUEST)
+    row = OpenBaoInstance.query.one()
+    setattr(row, field, 'https://other.invalid' if field == 'endpoint' else '9f6db34e-2042-4f0c-a385-a0d39582acb8')
+    db.session.commit()
+    before = _state(issuer_store[1])
+
+    def unexpected(*args, **kwargs):
+        pytest.fail('Native provider must not be contacted after canonical source drift.')
+
+    monkeypatch.setattr(issuer_lifecycle, 'observe_transit_issuer', unexpected)
+    with pytest.raises(issuer_lifecycle.IssuerLifecycleDenied):
+        issuer_lifecycle.request_issuer_enrollment(
+            actor_id=1,
+            intent=issuer_lifecycle.IssuerEnrollmentIntent(
+                issuer_store[2], 0, datetime.now(UTC) + timedelta(minutes=10)
+            ),
+            inspection_token='fixture-only',
+        )
+    assert _state(issuer_store[1]) == before

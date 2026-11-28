@@ -25,6 +25,9 @@ from app.integrations.secrets_management.secrets_pki.providers.issuer_transit im
     decode_transit_signature,
     observe_transit_issuer,
 )
+from app.integrations.secrets_management.secrets_pki.providers.openbao.inventory_scope import (
+    current_local_inventory_source,
+)
 from app.models.integration import IntegrationInstance
 from app.models.secrets_pki import SecretCredentialIssuerChallenge, SecretCredentialIssuerRevision
 from app.models.vault import VaultInstance
@@ -112,7 +115,10 @@ def _scope_admission(actor: int, scope: CredentialIssuerScope, permission: str, 
     return decision
 
 
-def _source(scope: CredentialIssuerScope, deployment: DeploymentAuthority | None = None) -> IntegrationInstance:
+def require_issuer_source(
+    scope: CredentialIssuerScope, deployment: DeploymentAuthority | None = None
+) -> IntegrationInstance:
+    """Lock exact canonical source; revocation can omit deployment evidence."""
     source = db.session.get(IntegrationInstance, scope.instance_id, with_for_update=True, populate_existing=True)
     if source is None or source.integration_type != 'secrets_pki' or source.provider_key != scope.provider_key:
         raise _deny()
@@ -135,6 +141,17 @@ def _source(scope: CredentialIssuerScope, deployment: DeploymentAuthority | None
             or row.endpoint.rstrip('/') != deployment.transit.endpoint
             or (row.namespace or '') != scope.provider_namespace
             or scope.mount not in (row.kv2_mounts or ())
+        ):
+            raise _deny()
+    elif deployment is not None and source.provider_key == 'openbao':
+        local = current_local_inventory_source(
+            source, namespace=scope.provider_namespace, mount=scope.mount, lock=True
+        )
+        if (
+            local is None
+            or deployment.scope != scope
+            or local.endpoint != deployment.transit.endpoint
+            or local.cluster_id != deployment.transit.cluster_id
         ):
             raise _deny()
     return source
@@ -185,12 +202,13 @@ def _observe(
     try:
         begin_issuer_transaction()
         _scope_admission(actor, scope, permission, datetime.now(UTC))
+        authority = _current_deployment(scope, datetime.now(UTC))
+        expected_actor = authority.source_owner_id if permission == _REQUEST else authority.checker_id
+        if actor != expected_actor:
+            raise _deny()
+        require_issuer_source(scope, authority)
     finally:
         db.session.rollback()
-    authority = _current_deployment(scope, datetime.now(UTC))
-    expected_actor = authority.source_owner_id if permission == _REQUEST else authority.checker_id
-    if actor != expected_actor:
-        raise _deny()
     observation = observe_transit_issuer(authority.transit, token=token)
     return authority, observation
 
@@ -346,7 +364,7 @@ def request_issuer_enrollment(
         grant = _scope_admission(actor_id, intent.scope, _REQUEST, now)
         now = datetime.now(UTC)
         authority = _revalidate(authority, observation, now)
-        source = _source(intent.scope, authority)
+        source = require_issuer_source(intent.scope, authority)
         if (
             authority.source_owner_id != actor_id
             or type(intent.expected_revision) is not int
@@ -457,7 +475,7 @@ def approve_issuer_enrollment(*, actor_id: int, intent: IssuerApprovalIntent, in
         owner_grant = _scope_admission(authority.source_owner_id, intent.scope, _REQUEST, now)
         now = datetime.now(UTC)
         authority = _revalidate(authority, observation, now)
-        source = _source(intent.scope, authority)
+        source = require_issuer_source(intent.scope, authority)
         latest = _latest(intent.scope)
         if (
             latest is None
@@ -541,7 +559,7 @@ def revoke_issuer_enrollment(*, actor_id: int, scope: CredentialIssuerScope, exp
         begin_issuer_transaction()
         now = datetime.now(UTC)
         grant = _scope_admission(actor_id, scope, _REVOKE, now)
-        source = _source(scope)
+        source = require_issuer_source(scope)
         latest = _latest(scope)
         now = datetime.now(UTC)
         if (

@@ -400,11 +400,31 @@ def test_explicit_credential_use_role_still_cannot_use_metadata_scope(scope_stor
     assert result.policy_ref is None
 
 
-def _issuer_grant(ids, permission, *, provider='vault', state='active'):
+def _issuer_grant(ids, permission, *, provider='vault', state='active', monkeypatch=None):
     # Fixture-only rows: this is not a production grant writer.
     user = db.session.get(User, ids['viewer'])
     source = db.session.get(IntegrationInstance, ids['source'])
     source.provider_key = provider
+    if provider == 'openbao':
+        assert monkeypatch is not None
+        source.adapter_key = 'openbao_http_v1'
+        source.health_status = 'connected'
+        source.readiness_status = 'degraded'
+        monkeypatch.setenv('APP_ENV', 'development')
+        monkeypatch.setitem(current_app.config, 'APP_ENV', 'development')
+        monkeypatch.setenv('KAORI_LOCAL_OPENBAO_INVENTORY_PROVIDER_ID', str(source.id))
+        monkeypatch.setenv('KAORI_LOCAL_OPENBAO_INVENTORY_MOUNT', 'kv')
+        db.session.add(
+            OpenBaoInstance(
+                integration_instance_id=source.id,
+                ownership='external',
+                endpoint='https://bao.invalid',
+                cluster_id='4f6db34e-2042-4f0c-a385-a0d39582acb8',
+                auth_mount='approle',
+                role_id='fixture',
+                secret_id='test-only',
+            )
+        )
     role_permission = Permission(key=permission, module='secrets_pki', action=permission.split('.')[1])
     db.session.add(role_permission)
     db.session.flush()
@@ -436,10 +456,10 @@ def _issuer_grant(ids, permission, *, provider='vault', state='active'):
 
 @pytest.mark.parametrize('provider', ['vault', 'openbao'])
 @pytest.mark.parametrize('operation', ['request', 'approve', 'revoke'])
-def test_exact_issuer_scope_is_separate_from_metadata_and_worker_grants(scope_store, provider, operation):
+def test_exact_issuer_scope_is_separate_from_metadata_and_worker_grants(scope_store, provider, operation, monkeypatch):
     ids = scope_store
     permission = f'secrets_pki.{operation}_credential_issuer'
-    scope, policy = _issuer_grant(ids, permission, provider=provider)
+    scope, policy = _issuer_grant(ids, permission, provider=provider, monkeypatch=monkeypatch)
     result = scope_policy.evaluate_exact_issuer_scope(
         actor_user_id=ids['viewer'], scope=scope, permission_key=permission
     )
