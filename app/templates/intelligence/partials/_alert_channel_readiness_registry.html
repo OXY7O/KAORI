@@ -1,0 +1,97 @@
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_registry.html" as table_registry %}
+{% set readiness = payload.channel_readiness %}
+{% set scope_query = {'tab': 'routing', 'domain': payload.domain, 'asset': payload.selected_asset_key} %}
+{% set query = scope_query.copy() %}
+{% set _ = query.update(readiness.filters) %}
+<section id="alert-channel-readiness-registry" class="{{ table_ui.block_classes() }}">
+    <header class="{{ table_ui.block_header_classes() }}">
+        <div class="min-w-0">
+            <h3 class="{{ table_ui.block_title_classes() }}">Notification Channels</h3>
+            <p class="{{ table_ui.block_description_classes() }}">Review channel status and routing eligibility.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2" data-kaori-table-header-actions>
+            {% if readiness.filters.channel_q or readiness.filters.channel_readiness != 'all' %}
+                {% set clear_query = scope_query.copy() %}
+                {% set _ = clear_query.update({'channel_per_page': readiness.pagination.per_page}) %}
+                {% set clear_url = url_for('alert_intelligence.index', **clear_query) %}
+                {{ table_registry.clear_filters_action(clear_url, table_ui.action_classes(),
+                    hx_get=clear_url, target='#alert-channel-readiness-registry',
+                    indicator='#alert-channel-readiness-loading', select='#alert-channel-readiness-registry',
+                    push_url='false', sync='closest section:replace') }}
+            {% endif %}
+            {{ table_label.metadata_label(table_ui.count_text(readiness.pagination.total_items, 'Channel'), 'send') }}
+        </div>
+    </header>
+    {{ loading_bar.render('alert-channel-readiness-loading', label='Refreshing Channel Readiness') }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {% call table_registry.filter_form('alert_intelligence.index',
+            'alert-channel-readiness-registry', 'alert-channel-readiness-loading',
+            readiness.pagination.per_page, page_param='channel_page', per_page_param='channel_per_page',
+            aria_label='Filter notification channels', push_url='false') %}
+            {% for key, value in scope_query.items() %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endfor %}
+            <label>
+                <span class="{{ table_ui.filter_label_classes() }}">Search</span>
+                {{ table_ui.search_field('channel_q', readiness.filters.channel_q, 'Search channels') }}
+            </label>
+            <label>
+                <span class="{{ table_ui.filter_label_classes() }}">Readiness</span>
+                <select name="channel_readiness" class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in [('all', 'All Channels'), ('eligible', 'Eligible'), ('unavailable', 'Unavailable')] %}
+                        <option value="{{ value }}" {% if readiness.filters.channel_readiness == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        {% endcall %}
+    </div>
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[28rem]') }}">
+            <caption class="sr-only">Notification channel routing eligibility</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[50%]">Channel</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Status</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Readiness</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for channel in readiness.rows %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <div class="flex min-w-0 items-start gap-2.5">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                    <i data-lucide="{{ channel.icon }}" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ channel.name }}</p>
+                                    <p class="mt-0.5 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ channel.provider }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(channel.status, 'normal' if channel.status in ['Operational', 'Ready'] else 'unknown' if channel.status in ['Retired', 'Disabled'] else 'warning', size='compact') }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label('Eligible' if channel.eligible else 'Unavailable', 'normal' if channel.eligible else 'warning', size='compact') }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="3" class="p-0">
+                            {% set empty_state_icon = "send" %}
+                            {% set empty_state_label = "No Channels" %}
+                            {% set empty_state_title = "No Notification Channels Match" if readiness.total else "No Notification Channels Configured" %}
+                            {% set empty_state_description = "Adjust the readiness filter or search." if readiness.total else "Manage notification destinations in Integrations." %}
+                            {% set empty_state_min_height = "min-h-[180px]" %}
+                            {% include 'components/states/_empty_state.html' %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {{ table_registry.footer('alert_intelligence.index', 'alert-channel-readiness-registry',
+        'alert-channel-readiness-loading', readiness.pagination, query, readiness.pagination.allowed_per_page,
+        resource_label='Channels', rows_aria_label='Channels per page', control_name='alert-channel-readiness',
+        page_param='channel_page', per_page_param='channel_per_page', push_url='false') }}
+</section>

@@ -166,6 +166,9 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     )
     selected_policy = _selected_routing_policy(args.get('policy'), all_routing)
     channels = notification_channel_options()
+    channel_readiness = (
+        build_channel_readiness(channels, args, domain=domain) if tab == 'routing' and not scope_invalid else None
+    )
     templates = built_in_templates()
     active_silences = (
         []
@@ -220,6 +223,7 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
         'routing_pagination': routing_pagination,
         'selected_policy': selected_policy,
         'channel_options': channels,
+        'channel_readiness': channel_readiness,
         'notification': channel_summary,
         'templates': templates,
         'silences': silence_page,
@@ -232,6 +236,42 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
             'channels': 'Integrations → Notification Channels owns provider credentials and destination configuration.',
             'archive': 'Platform Operations → Data Lifecycle owns Local/S3 archive storage and verification.',
         },
+    }
+
+
+def build_channel_readiness(
+    channels: list[dict[str, Any]], args: MultiDict[str, str], *, domain: str
+) -> dict[str, Any]:
+    """Read-only projection of the existing recommendation routing options."""
+    search = str(args.get('channel_q') or '').strip()[:200]
+    readiness = _choice(args.get('channel_readiness'), {'all', 'eligible', 'unavailable'}, 'all')
+    rows = [
+        {
+            'name': channel['name'],
+            'provider': channel['provider'],
+            'icon': channel['icon'],
+            'status': channel['status'],
+            'eligible': bool(channel['eligible'] and (domain != 'registry' or channel['registry_eligible'])),
+        }
+        for channel in channels
+    ]
+    eligible = sum(row['eligible'] for row in rows)
+    filtered = [
+        row
+        for row in rows
+        if (readiness == 'all' or row['eligible'] == (readiness == 'eligible'))
+        and (not search or search.casefold() in f"{row['name']} {row['provider']}".casefold())
+    ]
+    page, pagination = paginate_sequence(
+        filtered, page=args.get('channel_page', 1), per_page=args.get('channel_per_page', 5)
+    )
+    return {
+        'total': len(rows),
+        'eligible': eligible,
+        'unavailable': len(rows) - eligible,
+        'rows': page,
+        'pagination': pagination,
+        'filters': {'channel_q': search, 'channel_readiness': readiness},
     }
 
 

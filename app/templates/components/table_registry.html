@@ -13,7 +13,7 @@
 
   Consumers own only endpoint, filter fields, table content, and optional polling.
 #}
-{% macro filter_form(endpoint, registry_id, loading_id, per_page, classes='', marker_name='', marker_value='true', page_param='page', per_page_param='per_page', form_id='', aria_label='', path_params=none) -%}
+{% macro filter_form(endpoint, registry_id, loading_id, per_page, classes='', marker_name='', marker_value='true', page_param='page', per_page_param='per_page', form_id='', aria_label='', path_params=none, push_url='true') -%}
     <form method="GET"
           {% if form_id %}id="{{ form_id }}"{% endif %}
           {% if aria_label %}aria-label="{{ aria_label }}"{% endif %}
@@ -23,7 +23,7 @@
           hx-target="#{{ registry_id }}"
           hx-select="#{{ registry_id }}"
           hx-swap="outerHTML"
-          hx-push-url="true"
+          hx-push-url="{{ push_url }}"
           hx-indicator="#{{ loading_id }}"
           hx-sync="closest section:replace"
           data-kaori-canonical-registry-filter="{{ registry_id }}"
@@ -70,7 +70,7 @@
         marker=registry_id,
         lead=lead) }}
 {%- endmacro %}
-{% macro footer(endpoint, registry_id, loading_id, pagination, query_params, per_page_options, resource_label='Records', rows_aria_label='Records per page', control_name='registry', page_param='page', per_page_param='per_page', path_params=none) -%}
+{% macro footer(endpoint, registry_id, loading_id, pagination, query_params, per_page_options, resource_label='Records', rows_aria_label='Records per page', control_name='registry', page_param='page', per_page_param='per_page', path_params=none, push_url='true') -%}
     {% set canonical_query = query_params.copy() if query_params else {} %}
     {% set _ = canonical_query.update({per_page_param: pagination.per_page}) %}
     <footer class="{{ pagination_ui.footer_classes() }}"
@@ -86,7 +86,7 @@
                   hx-target="#{{ registry_id }}"
                   hx-select="#{{ registry_id }}"
                   hx-swap="outerHTML"
-                  hx-push-url="true"
+                  hx-push-url="{{ push_url }}"
                   hx-indicator="#{{ loading_id }}"
                   hx-sync="closest section:replace"
                   class="{{ pagination_ui.rows_group_classes() }}"
@@ -111,7 +111,7 @@
         <nav class="{{ pagination_ui.navigation_group_classes() }}"
              aria-label="{{ resource_label }} Pagination"
              hx-select="#{{ registry_id }}"
-             hx-push-url="true"
+             hx-push-url="{{ push_url }}"
              hx-sync="closest section:replace"
              data-kaori-canonical-registry-pagination="{{ registry_id }}">
             {% set previous_query = canonical_query.copy() %}

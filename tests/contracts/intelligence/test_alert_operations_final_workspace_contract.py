@@ -56,11 +56,13 @@ def test_routing_workspace_is_table_led_and_crud_uses_modal() -> None:
     assert 'Policy Details' in routing
     assert 'data-resource-detail-toggle' in routing
     assert 'alert_intelligence.routing_policy_details' in routing
-    assert 'max-h-[30rem]' in routing
+    assert 'max-h-[30rem]' not in routing
+    assert 'data-alert-channel-readiness-summary' in routing
+    assert 'data-dialog-target="alert-channel-readiness-dialog"' in routing
     assert 'Channel Readiness' in routing
     assert 'Use Channel Defaults or Create a Governed Policy' in routing
     assert routing.index('Channel Readiness') < routing.index('Policy Registry')
-    assert routing.count('class="{{ table_ui.action_classes() }}"') >= 2
+    assert routing.count('class="{{ table_ui.action_classes(size=\'header\') }}"') >= 2
     assert 'data-kaori-detail-variant="modal"' in editor
     assert 'Identity & Cadence' in editor
     assert 'Match Scope & Channels' in editor
