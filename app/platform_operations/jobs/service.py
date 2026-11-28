@@ -430,7 +430,10 @@ def update_job_progress(
     target: str | None = None,
 ) -> JobExecution | None:
     job = _lock_job_by_task_id(task_id)
-    if job is None or job.is_terminal or job.status == 'cancel_requested':
+    if job is None:
+        return None
+    _require_generic_lifecycle(job)
+    if job.is_terminal or job.status == 'cancel_requested':
         return job
     if current is not None:
         job.progress_current = max(current, 0)

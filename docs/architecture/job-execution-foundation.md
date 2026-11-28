@@ -196,3 +196,12 @@ Provider and feature domains own their collectors, report builders, analytics pr
 ## Celery priority contract
 
 KAORI uses Redis-compatible Celery priorities from 0 through 9. Lower values are processed first: runtime `2`, validation `3`, standard `5`, analytics `6`, and forecasting `7`. Queue isolation remains the primary protection; priority only orders work inside one queue.
+
+
+The protected Apply operation also rejects generic progress writes: generic
+progress metadata mutates the fingerprinted payload. Its internal local
+review recovery hold records a distinct recovery owner and an unresolved
+outcome in the canonical result summary plus Activity Audit without
+changing lifecycle status, heartbeat or active slot. This does not
+establish worker cessation or release authority; independently admitted
+domain start and terminal writers are still required.
