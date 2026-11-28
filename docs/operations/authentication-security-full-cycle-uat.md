@@ -704,3 +704,8 @@ Use the exact candidate in authorized UAT with observation disabled by default. 
 ## Account integrated handoff (#5323)
 
 Use the Settings General/Account Dev Container UAT matrix for personal Profile, Activity, Credentials and MFA on the exact holding SHA. Validate effective policy projection against the same privileged/ordinary session and MFA kernels, no browser-factor/device claim, exact personal history, and four-tab visual matrix. Account source completion is not runtime acceptance. All prior source-only authentication/security checkpoints remain unqualified until executable evidence is recorded. Keep optional login protection/abuse controls disabled until separately approved; native authentication AlertCase remains Reserved Plan.
+
+
+## AL-05C uniform origin/identity recovery protection (#5442)
+
+Optional default-false flag; qualify separately on an isolated exact candidate with Login Protection initially Disabled. Verify matching process environment, effective trusted origin (direct and trusted proxy, invalid/mapped IPv6 and spoofed forwarding), existing independent limiter, shared Redis 3/60s candidate pair budget and 30/60s identity budget, mode semantics, TTL/nonextension and concurrent workers, generic outcomes across all identities, anonymous evidence, audit load and independent management recovery during saturation. Record NAT/collision and distributed spray limitations; no new lockout, provider password count or public recovery bypass. Security owner approval and actual measured Monitor Only evidence required before Enforced. All executable and hosted scenarios are NOT RUN by source authoring.
