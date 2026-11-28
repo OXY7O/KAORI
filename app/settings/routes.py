@@ -67,6 +67,8 @@ from app.settings.account.queries import (
     account_mfa_factor,
     authentication_activity_summary,
     authentication_event_kind,
+    personal_security_event_label,
+    read_personal_security_posture,
     recent_authentication_events,
 )
 from app.settings.general.actions import (
@@ -414,35 +416,38 @@ def account():
             user, is_htmx=is_htmx
         )
 
-    mfa_factor = account_mfa_factor(user.id)
-    enrollment_state = mfa_enrollment_state(
-        mfa_factor, now=datetime.now(UTC), expected_generation=user.auth_session_version, authenticated=True
-    )
-    replacement_state = mfa_replacement_state(mfa_factor, generation=user.auth_session_version, now=datetime.now(UTC))
-    can_replace_authenticator = mfa_replacement_supports_source(auth_source) and (
-        can_change_password
-        or (
-            active_tab == 'mfa'
-            and enrollment_state == 'enrolled'
-            and auth_source == 'ldap_directory'
-            and ldap_reauthentication_available(user.id, expected_subject=user.external_id)
+    mfa_state: dict[str, Any] = {}
+    if active_tab == 'mfa':
+        mfa_factor = account_mfa_factor(user.id)
+        enrollment_state = mfa_enrollment_state(
+            mfa_factor, now=datetime.now(UTC), expected_generation=user.auth_session_version, authenticated=True
         )
-    )
-    mfa_state = {
-        'can_replace_authenticator': can_replace_authenticator,
-        'replacement_browser_sso': is_browser_provider_key(auth_source),
-        'replacement_password_label': 'Directory Password' if auth_source == 'ldap_directory' else 'Current Password',
-        'replacement_pending': replacement_state == 'pending',
-        'replacement_expired': replacement_state == 'expired',
-        'enrolled': enrollment_state == 'enrolled',
-        'enrollment_pending': enrollment_state == 'pending',
-        'enrollment_expired': enrollment_state == 'expired',
-        'policy_mode': mfa_policy_mode(),
-        'recovery_count': len(mfa_factor.recovery_hashes or []) if mfa_factor is not None and mfa_factor.enabled else 0,
-    }
+        replacement_state = mfa_replacement_state(mfa_factor, generation=user.auth_session_version, now=datetime.now(UTC))
+        can_replace_authenticator = mfa_replacement_supports_source(auth_source) and (
+            can_change_password
+            or (
+                active_tab == 'mfa'
+                and enrollment_state == 'enrolled'
+                and auth_source == 'ldap_directory'
+                and ldap_reauthentication_available(user.id, expected_subject=user.external_id)
+            )
+        )
+        mfa_state = {
+            'can_replace_authenticator': can_replace_authenticator,
+            'replacement_browser_sso': is_browser_provider_key(auth_source),
+            'replacement_password_label': 'Directory Password' if auth_source == 'ldap_directory' else 'Current Password',
+            'replacement_pending': replacement_state == 'pending',
+            'replacement_expired': replacement_state == 'expired',
+            'enrolled': enrollment_state == 'enrolled',
+            'enrollment_pending': enrollment_state == 'pending',
+            'enrollment_expired': enrollment_state == 'expired',
+            'policy_mode': mfa_policy_mode(),
+            'recovery_count': len(mfa_factor.recovery_hashes or []) if mfa_factor is not None and mfa_factor.enabled else 0,
+        }
 
     identity_context = build_user_identity_context(user)
-    recent_login_events = recent_authentication_events(user.id)
+    personal_security_posture = read_personal_security_posture(user) if active_tab == 'profile' else None
+    recent_login_events = recent_authentication_events(user.id) if active_tab == 'activity' else []
     activity_summary = authentication_activity_summary(recent_login_events)
 
     context: dict[str, Any] = {
@@ -460,6 +465,8 @@ def account():
         'recent_login_events': recent_login_events,
         'activity_summary': activity_summary,
         'authentication_event_kind': authentication_event_kind,
+        'personal_security_event_label': personal_security_event_label,
+        'personal_security_posture': personal_security_posture,
         'page_title': 'Account & Authentication',
     }
     template_name = 'settings/account/partials/_page_content.html' if is_htmx else 'settings/account/index.html'
