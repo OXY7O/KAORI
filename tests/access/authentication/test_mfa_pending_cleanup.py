@@ -7,6 +7,7 @@ from unittest.mock import Mock
 
 import pytest
 import sqlalchemy as sa
+from flask import Flask
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -16,6 +17,7 @@ from app.access.authentication.identity_provider.adapters.ldap.reauthentication 
 )
 from app.access.authentication.mfa import cleanup
 from app.access.authentication.results import ExternalCredentialProof
+from app.commands import authentication as authentication_cli
 from app.models.notification import Notification
 from app.security import credentials
 
@@ -109,7 +111,7 @@ def test_bounded_page_rechecks_metadata_and_skips_contended_rows(
     store = Mock()
     store.execute.return_value.all.return_value = [(1, 42), (2, 43), (3, 44)]
     account = Mock(side_effect=[ACCOUNT, None])
-    factor = Mock(return_value=replace(PENDING, enrollment_expires_at=NOW))
+    factor = Mock(return_value=replace(PENDING, enrollment_expires_at=datetime.now(UTC) - timedelta(minutes=1)))
     apply = Mock()
     event = Mock(return_value=object())
     monkeypatch.setattr(cleanup, 'db', SimpleNamespace(session=store))
@@ -197,3 +199,21 @@ def test_database_cleanup_is_secret_free_atomic_and_idempotent(
             assert store.execute(sa.text('SELECT auth_session_version FROM users ORDER BY id')).scalars().all() == [7, 7, 7]
             decrypt.assert_not_called()
     engine.dispose()
+
+
+def test_cli_preview_default_and_explicit_execution(monkeypatch: pytest.MonkeyPatch) -> None:
+    app = Flask(__name__)
+    app.cli.add_command(authentication_cli.cleanup_pending_mfa_command)
+    cleanup_page = Mock(return_value={'examined': 0, 'next_after_id': None})
+    monkeypatch.setattr(authentication_cli, 'cleanup_pending_mfa', cleanup_page)
+    runner = app.test_cli_runner()
+    preview = runner.invoke(args=['mfa-pending-cleanup'])
+    assert preview.exit_code == 0
+    cleanup_page.assert_called_once_with(execute=False, limit=100, after_id=0)
+    cleanup_page.reset_mock()
+    execution = runner.invoke(args=['mfa-pending-cleanup', '--execute', '--limit', '2', '--after-id', '9'])
+    assert execution.exit_code == 0
+    cleanup_page.assert_called_once_with(execute=True, limit=2, after_id=9)
+    invalid = runner.invoke(args=['mfa-pending-cleanup', '--limit', '501'])
+    assert invalid.exit_code != 0
+    assert cleanup_page.call_count == 1
