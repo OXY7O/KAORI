@@ -210,3 +210,11 @@ def test_selected_source_only_connection_renders_lifecycle_and_host_onboarding()
         assert label in rendered
     assert 'No Ansible Connections' not in rendered
     assert 'Run Kubespray' not in rendered
+
+
+def test_automation_hero_uses_compact_description_and_three_metadata_items():
+    hero = (ROOT / 'app/templates/infrastructure_automation/index.html').read_text()
+    assert 'Review infrastructure lifecycle and execution evidence.' in hero
+    assert hero.count('page_hero.meta_label(') == 3
+    assert "page_hero.meta_label('shield-check', 'Approval Required')" in hero
+    assert 'page_hero.metadata_row_classes()' in hero
