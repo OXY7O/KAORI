@@ -216,12 +216,12 @@ def test_modal_case_mutations_refresh_visible_registry_via_htmx_event() -> None:
 
 
 def test_context_filter_owns_only_context_loading_lifecycle() -> None:
-    workspace = read('app/templates/intelligence/partials/_alert_scope_form.html')
+    workspace = read('app/templates/intelligence/partials/_alert_intelligence_context.html')
     context_form = workspace.split('id="alert-intelligence-context-form"', 1)[1].split('</form>', 1)[0]
 
     assert 'hx-indicator="#alert-intelligence-context-loading"' in context_form
     assert 'hx-sync="this:replace"' in context_form
-    assert 'hx-disinherit="hx-indicator hx-select"' in context_form
+    assert 'hx-disabled-elt="#alert-intelligence-context-form fieldset"' in context_form
     assert 'hx-select="#alert-intelligence-page-content"' in context_form
     assert '#alert-operations-active-loading' not in context_form
     assert '#alert-operations-silence-loading' not in context_form
@@ -318,9 +318,9 @@ def test_alert_lifecycle_navigation_is_above_hero_and_scope_preserving() -> None
     for tab in ('overview', 'active', 'routing', 'templates', 'silences', 'resolved'):
         assert f"tab='{tab}', **tab_query" in page
     assert 'content_tabs.render_links' not in workspace
-    context = read('app/templates/intelligence/partials/_alert_scope_form.html')
+    context = read('app/templates/intelligence/partials/_alert_intelligence_context.html')
     assert 'name="tab"' in context
-    assert 'value="{{ scope.tab }}"' in context
+    assert 'value="{{ payload.tab }}"' in context
     assert 'id="alert-intelligence-context-form"' not in workspace
     assert 'lifecycle navigation above' in summary
 
@@ -384,7 +384,10 @@ def test_active_alert_triage_and_filters_follow_registry_hierarchy() -> None:
     assert 'hx-sync="#alert-operations-active-registry:replace"' in active
     assert "table_ui.inventory_filter_bar_classes()" in active
     identity = table.split('data-alert-case-identity', 1)[1].split('</td>', 1)[0]
-    assert 'truncate' not in identity
+    assert identity.count('class="truncate ') == 3
+    assert 'title="{{ case.alert_name }}"' in identity
+    assert 'title="Case ID · {{ case.public_id }}"' in identity
+    assert 'w-[38%] max-w-0' in table
     assert 'Case ID' in identity
     for field in ('alert_name', 'asset_name', 'namespace', 'public_id'):
         assert f'case.{field}' in identity

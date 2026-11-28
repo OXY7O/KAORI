@@ -1,4 +1,4 @@
-"""Operational scope is a draft dialog, never an inline Overview selector."""
+"""Visible operational scope filters; Overview remains selector-free."""
 
 from pathlib import Path
 
@@ -44,7 +44,7 @@ def scope_for(domain='kubernetes', tab='active', asset='asset-123'):
     }
 
 
-def test_context_modal_render_preserves_scope_and_apply_boundary() -> None:
+def test_inline_context_render_preserves_scope_and_has_no_dialog() -> None:
     app = Flask(__name__, template_folder=str(TEMPLATES))
     app.add_url_rule('/alerts', 'alert_intelligence.index', lambda: '')
     app.jinja_env.undefined = StrictUndefined
@@ -54,35 +54,38 @@ def test_context_modal_render_preserves_scope_and_apply_boundary() -> None:
             for tab in TABS:
                 payload = scope_for(domain, tab)
                 html = template.render(payload=payload)
-                metadata, dialog = html.split('<dialog', 1)
-                assert '<select' not in metadata
-                assert 'Change Scope' in metadata
-                assert 'data-kaori-native-dialog' in dialog
+                assert '<dialog' not in html
+                assert 'Change Scope' not in html
                 assert html.count('id="alert-intelligence-context-form"') == 1
-                assert 'hx-trigger="submit"' in dialog
-                assert 'name="domain"' in dialog
-                assert f'name="tab" value="{tab}"' in dialog
-                assert 'name="asset" required' in dialog
-                assert 'value="asset-123" selected' in dialog
-                assert 'Apply Scope' in dialog and 'Cancel' in dialog
-                assert ('name="provider" required' in dialog) == (domain == 'secrets_pki')
-                assert 'hx-params="tab,domain"' in dialog
+                assert 'name="domain"' in html
+                assert f'name="tab" value="{tab}"' in html
+                assert 'name="asset"' in html
+                assert 'value="asset-123" selected' in html
+                assert ('name="provider"' in html) == (domain == 'secrets_pki')
+                assert 'hx-params="tab,domain"' in html
+                assert 'hx-target="#alert-intelligence-page-content"' in html
+                assert 'name="draft_domain"' in html
+                assert 'hx-trigger="change"' in html
 
         invalid = scope_for('registry', asset='__invalid_registry_scope__')
         html = template.render(payload=invalid)
         assert '<option value="__invalid_registry_scope__"' not in html
+        assert 'selected disabled>Select Active Asset' in html
 
 
-def test_draft_request_does_not_read_cases_or_update_page(monkeypatch):
+@pytest.mark.parametrize('query', ['tab=active&domain=registry', 'tab=active&domain=secrets_pki&provider=vault'])
+def test_scope_parent_change_refreshes_page_without_stale_asset(monkeypatch, query):
     app = Flask(__name__)
-    monkeypatch.setattr(route_utils, 'get_alert_scope_draft', lambda args: scope_for(args['domain']))
+    captured = []
     monkeypatch.setattr(
-        route_utils, 'get_alert_intelligence_payload', lambda args: pytest.fail('draft read cases')
+        route_utils, 'get_alert_intelligence_payload', lambda args: captured.append(dict(args)) or {}
     )
     monkeypatch.setattr(route_utils, 'render_template', lambda name, **kwargs: name)
-    headers = {'HX-Request': 'true', 'HX-Target': 'alert-intelligence-context-form'}
-    with app.test_request_context('/alerts?tab=active&domain=registry', headers=headers):
-        assert route_utils.index_response() == 'intelligence/partials/_alert_scope_form.html'
+    headers = {'HX-Request': 'true', 'HX-Target': 'alert-intelligence-page-content'}
+    with app.test_request_context('/alerts?' + query, headers=headers):
+        assert route_utils.index_response() == 'intelligence/partials/_alert_intelligence_page.html'
+    assert 'asset' not in captured[0]
+    assert 'apply_scope' not in captured[0]
 
 
 @pytest.mark.parametrize(

@@ -279,16 +279,20 @@ are excluded rather than represented as zero or live provider health. Overview
 navigation does not carry an asset filter; operational tabs establish their own
 scope. Keep Alert Coverage accessible.
 
-Operational tabs show only compact committed scope metadata and a shared
-Change Scope action immediately below the workspace header. Use the shared
-native dialog for Domain, Provider (when applicable), and Asset Scope or
-Authorized Instance, with explicit Apply Scope and Cancel. Domain/provider
-changes refresh only draft selector metadata through the existing HTMX route;
-do not read provider cases, mutate state, or push browser history on draft
-changes. Reopening reloads the committed selection. Recheck current exact
-option membership before Apply, reject stale/inconsistent draft selections,
-and update the Hero, Summary, and workspace together using a canonical URL.
-Keep template ownership global and routing policy filters independent; asset
-selection there controls the alert summary and editor context only. Provider
-case reads continue to enforce independently audited exact-instance admission.
-Overview remains selector-free, including no hidden scope dialog.
+Operational tabs use a compact visible filter toolbar immediately below the
+workspace header, without a separate context title, redundant scope badges,
+or modal. Use shared labeled selectors with bounded desktop widths and
+responsive stacking: Domain, Provider when applicable, and Asset Scope or
+Authorized Instance. Selecting a domain or provider refreshes the complete
+page and omits stale dependent asset parameters. Asset changes recheck current
+option membership and the committed parent selection before applying a
+canonical scope URL. Keep existing exact-instance authorization and page
+refresh boundaries. Template ownership and policy registry filters remain
+independent of alert scope. Overview remains selector-free.
+
+Alert identity and resolved-case registry cells use one-line ellipsis for
+long titles and supporting metadata, with bounded column widths and full
+values preserved in native title attributes and the existing Review details.
+Keep the case ID, asset, namespace and source evidence available; do not
+truncate the underlying data or detail modal. Each identity metadata line
+remains independently readable and does not increase row height when long.

@@ -23,7 +23,7 @@
             {% if payload.provider_case_mode %}
                 <input type="hidden" name="draft_provider" value="{{ payload.selected_provider }}">
             {% endif %}
-            <label class="block min-w-0 flex-1 sm:flex-none sm:w-52">
+            <label class="block min-w-0 w-full sm:w-52">
                 <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
                 <select id="alert-intelligence-domain-select" name="domain"
                         class="{{ table_ui.filter_select_classes() }}"
@@ -37,7 +37,7 @@
                 </select>
             </label>
             {% if payload.provider_case_mode %}
-                <label class="block min-w-0 flex-1 sm:flex-none sm:w-48">
+                <label class="block min-w-0 w-full sm:w-48">
                     <span class="{{ table_ui.filter_label_classes() }}">Provider</span>
                     <select name="provider"
                             class="{{ table_ui.filter_select_classes() }}"
@@ -59,7 +59,7 @@
                         hx-get="{{ url_for('alert_intelligence.index') }}"
                         hx-trigger="change"
                         hx-include="closest form">
-                    {% if not payload.selected_asset_key or payload.scope_invalid %}
+                    {% if not payload.selected_asset_key or payload.selected_asset_key == '__invalid_registry_scope__' %}
                         <option value="" selected disabled>{{ 'Select Authorized Instance' if payload.provider_case_mode else 'Select Active Asset' }}</option>
                     {% endif %}
                     {% for option in payload.assets if option.value and option.value != '__invalid_registry_scope__' %}
@@ -72,9 +72,7 @@
             {% if payload.tab == 'templates' and not payload.provider_case_mode %}
                 <span class="pb-2 text-xs text-content-muted">Global notification templates</span>
             {% endif %}
-            <noscript>
-                <button type="submit" class="{{ table_ui.action_classes(size='header') }}">Apply Scope</button>
-            </noscript>
+            <noscript><p class="text-xs text-content-muted">Enable JavaScript to change the operational scope.</p></noscript>
         </fieldset>
     </form>
     {{ loading_bar.render('alert-intelligence-context-loading', label='Refreshing Operational Scope') }}
