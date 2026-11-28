@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from cryptography.fernet import Fernet
-from flask import Flask
+from flask import Flask, current_app
 
 from app.access import scope_policy, scoped_grants
 from app.extensions.db import db
@@ -621,8 +621,6 @@ def test_operator_grant_approval_requires_independence_and_atomic_audit(scope_st
 
 
 def test_local_openbao_scope_is_independent_of_vault_and_material_use(scope_store, monkeypatch):
-    from flask import current_app
-
     ids = scope_store
     monkeypatch.setenv('APP_ENV', 'development')
     monkeypatch.setitem(current_app.config, 'APP_ENV', 'development')
