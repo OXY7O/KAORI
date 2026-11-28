@@ -167,7 +167,17 @@ def _runtime_context(installation: SourceInstallation) -> dict:
         .order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
         .first()
     )
+    canonical = installation.integration_instance
+    runtime_observed = (
+        last_refresh is not None
+        and last_refresh.status == 'succeeded'
+        and canonical.last_checked_at is not None
+    )
+    runtime_health = (canonical.health_status or 'not_observed') if runtime_observed else 'not_observed'
     return {
+        'runtime_observed': runtime_observed,
+        'runtime_health': runtime_health,
+        'runtime_health_label': runtime_health.replace('_', ' ').title(),
         'jobs': jobs,
         'job_pagination': job_pagination,
         'job_status': job_status,

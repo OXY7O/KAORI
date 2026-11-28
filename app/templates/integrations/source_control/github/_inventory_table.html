@@ -1,4 +1,6 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/framed_workspace_tabs.html" as framed_tabs %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/info_tip.html" as info_tip %}
@@ -263,3 +265,6 @@
         </nav>
     </footer>
 </section>
+{% if request.headers.get('HX-Request') == 'true' and request.endpoint == 'github_source_uat.inventory_table' %}
+    {{ framed_tabs.badge_oob('github', 'inventory', table_label.count_text(inventory.total, 'Repository', 'Repositories') if inventory.total is not none else 'Unknown') }}
+{% endif %}

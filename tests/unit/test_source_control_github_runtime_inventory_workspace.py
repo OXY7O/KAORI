@@ -432,3 +432,36 @@ def test_github_inventory_uses_lifecycle_deletion_and_sync_toast():
     assert "lifecycle_status='active'" in repository
     assert '_github_committed_connection_projection(' in provider_routes
     assert 'retire_github_connection(canonical)' in routes
+
+
+def test_github_detail_tab_badges_follow_runtime_and_unfiltered_committed_inventory():
+    detail = _read(GITHUB / 'uat_detail.html')
+    runtime = _read(GITHUB / 'partials/_detail_runtime.html')
+    registry = _read(GITHUB / '_inventory_table.html')
+    projection = _read(RUNTIME_PRESENTATION)
+
+    assert "('runtime', 'Runtime & History', 'activity', runtime_health_label)" in detail
+    assert 'Jobs & Deliveries' not in detail
+    assert "'runtime_observed': runtime_observed" in projection
+    assert "last_refresh.status == 'succeeded'" in projection
+    assert 'canonical.last_checked_at is not None' in projection
+    assert "'runtime_health_label': runtime_health.replace('_', ' ').title()" in projection
+    assert '{% set health = runtime_health %}' in runtime
+    assert "framed_tabs.badge_oob('github', 'runtime', runtime_health_label)" in runtime
+    count = "table_label.count_text(inventory.total, 'Repository', 'Repositories') if inventory.total is not none else 'Unknown'"
+    assert count in detail
+    assert count in registry
+    assert "request.endpoint == 'github_source_uat.inventory_table'" in registry
+    assert "framed_tabs.badge_oob('github', 'inventory'," in registry
+
+
+def test_github_inventory_tab_count_preserves_zero_singular_plural_and_unknown():
+    from jinja2 import Environment, FileSystemLoader
+
+    environment = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
+    template = environment.from_string(
+        "{% import 'components/table_label.html' as table_label %}"
+        "{{ table_label.count_text(total, 'Repository', 'Repositories') if total is not none else 'Unknown' }}"
+    )
+    for total, label in ((None, 'Unknown'), (0, '0 Repositories'), (1, '1 Repository'), (2, '2 Repositories')):
+        assert template.render(total=total) == label
