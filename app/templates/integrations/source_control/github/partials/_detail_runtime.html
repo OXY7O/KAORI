@@ -23,7 +23,7 @@
          data-kaori-provider-runtime-kubernetes-pattern>
     {{ validation_poller.render(runtime_refresh_job and runtime_refresh_job.is_active,
         url_for('github_source_uat.runtime_refresh_status', installation_id=installation.id, task_id=runtime_refresh_job.task_id) if runtime_refresh_job and runtime_refresh_job.is_active else '',
-    '#github-runtime-workspace') }}
+    '#github-runtime-workspace', include='#github-runtime-history [data-kaori-runtime-history-filters] form') }}
     {% call connection_validation_header.render(
         'Runtime Health & Diagnostics',
         'Review committed runtime health, installation diagnostics, jobs, and signed webhook transport evidence.',
@@ -44,6 +44,7 @@
               action="{{ url_for('github_source_uat.runtime_refresh', installation_id=installation.id) }}"
               hx-post="{{ url_for('github_source_uat.runtime_refresh', installation_id=installation.id) }}"
               hx-target="#github-runtime-workspace"
+              hx-include="#github-runtime-history [data-kaori-runtime-history-filters] form"
               hx-swap="outerHTML"
               hx-disabled-elt="button"
               hx-indicator="#github-runtime-loading">

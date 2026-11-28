@@ -487,6 +487,9 @@ def test_github_runtime_uses_canonical_history_and_shared_evidence():
     assert "runtime_history_view(rows, pagination=pagination)" in projection
     assert "runtime_view = 'jobs' if request.args.get('runtime_view') == 'jobs' else 'deliveries'" in runtime
     assert 'runtime_state.diagnostics' in runtime
+    assert 'hx-include="#github-runtime-history [data-kaori-runtime-history-filters] form"' in runtime
+    history = _read(ROOT / 'app/templates/integrations/partials/_runtime_history.html')
+    assert 'row.operation_label' in history
 
 
 def test_github_runtime_observations_are_exact_scope_and_never_inferred_from_jobs():

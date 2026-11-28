@@ -1,4 +1,4 @@
-{% macro render(active, status_url, target, delay="1500ms") -%}
+{% macro render(active, status_url, target, delay="1500ms", include='') -%}
     {% if active %}
         <span class="hidden"
               aria-hidden="true"
@@ -6,6 +6,7 @@
               hx-get="{{ status_url }}"
               hx-trigger="every {{ delay }}"
               hx-target="{{ target }}"
+              {% if include %}hx-include="{{ include }}"{% endif %}
               hx-swap="outerHTML"></span>
     {% endif %}
 {%- endmacro %}

@@ -220,11 +220,11 @@ def _runtime_observation_context(installation: SourceInstallation) -> dict:
     rows, pagination = paginate_runtime_history(
         'source_control',
         str(installation.id),
-        page=request.args.get('page', 1, type=int) or 1,
-        per_page=request.args.get('per_page', 5, type=int) or 5,
-        trigger_type=request.args.get('history_trigger', ''),
-        health_status=request.args.get('history_health', ''),
-        readiness=request.args.get('history_readiness', ''),
+        page=request.values.get('page', 1, type=int) or 1,
+        per_page=request.values.get('per_page', 5, type=int) or 5,
+        trigger_type=request.values.get('history_trigger', ''),
+        health_status=request.values.get('history_health', ''),
+        readiness=request.values.get('history_readiness', ''),
         **scope,
     )
     return {
