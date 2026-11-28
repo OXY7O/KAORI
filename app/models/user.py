@@ -64,6 +64,9 @@ class User(UserMixin, db.Model):
         server_default=db.text('1'),
     )
 
+    auth_session_issued_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
+    auth_session_activity_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
+
     role_id: Mapped[int | None] = mapped_column(
         db.ForeignKey('roles.id', ondelete='SET NULL'), nullable=True, index=True
     )
