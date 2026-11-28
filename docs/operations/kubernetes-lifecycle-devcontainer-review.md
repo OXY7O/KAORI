@@ -2,7 +2,9 @@
 
 Authority: #5186, #4801, #5172 and #2227. This is a non-release review
 workbench handover, not native host UAT or mutation admission. The existing
-Operations Center workspace reads committed state.
+Operations Center workspace reads committed state. #5172 is the single
+end-to-end acceptance gate; the individual sections below are qualification
+checkpoints, not invitations to accept partial delivery.
 
 ## 1. Prepare the existing local worktree
 
@@ -25,7 +27,51 @@ only after confirming the database is the intended disposable development
 database and taking any required backup. Do not migrate a production or
 shared database for this review.
 
-## 2. Test the source-only vertical path without real hosts
+## 2. Qualify the complete review candidate without real hosts
+
+Install the existing development requirements in the disposable Dev Container.
+`bcrypt==5.0.0` is development-only and permits creation of the encrypted
+OpenSSH negative-test fixture (#5456); do not skip the negative assertion or
+add password-authentication support. Do not install into a production worker.
+
+```bash
+python -m pip install -r requirements/dev.txt
+python -m pip check
+python -m pytest -q \
+  tests/contracts/integrations/test_ansible_configuration_automation_workspace_contract.py \
+  tests/contracts/integrations/test_ansible_source_posture_contract.py \
+  tests/contracts/platform_operations/test_automation_host_enrollment_5168_contract.py \
+  tests/integrations/test_ansible_public_git_source.py \
+  tests/integrations/test_ansible_kubespray_preflight.py \
+  tests/integrations/test_automation_host_identity_5161.py \
+  tests/integrations/test_automation_inventory_store_5257.py \
+  tests/integrations/test_automation_inventory_receipt_5257.py \
+  tests/integrations/test_kubespray_inventory_intent_5155.py \
+  tests/integrations/test_ssh_host_key_5185.py \
+  tests/integrations/test_ssh_trust_candidate_5185.py \
+  tests/integrations/test_kubespray_execution_compatibility_5156.py \
+  tests/integrations/test_kubespray_plan_approval_4800.py \
+  tests/integrations/test_kubespray_plan_currentness_contract.py \
+  tests/integrations/test_kubespray_plan_dispatch_contract.py \
+  tests/integrations/test_kubespray_plan_review_contract.py \
+  tests/integrations/test_kubespray_plan_worker_contract.py \
+  tests/integrations/test_kubespray_run_reservation_4801.py \
+  tests/integrations/test_kubespray_run_recovery_4801.py \
+  tests/integrations/test_kubespray_independent_verification_4801.py \
+  tests/integrations/test_ansible_cluster_binding_read_model.py
+```
+
+The existing registration HTTP regression additionally requires a dedicated
+**temporary** PostgreSQL `TEST_DATABASE_URL` (its fixture creates/drops schema).
+Never set this to the running Dev Container application database or a shared
+server database. Record skipped cases separately; a skipped database suite is
+not qualification.
+
+```bash
+python -m pytest -q tests/integrations/test_ansible_provider_registration_web.py
+```
+
+Run the existing security/worker/transaction regression batch as well:
 
 ```bash
 python -m pytest -q \
@@ -48,12 +94,31 @@ insert synthetic proofs into the running application database.
 
 ## 3. Inspect the real committed setup
 
-Open Operations Center → Infrastructure Automation → Kubernetes Lifecycle.
-Select an existing Ansible source connection. Check source, host registration
-and inventory receipt. Under Recent Automation Executions, the Remote
-Preflight Review block requires jobs.view and shows Not Recorded until
-a real canonical review receipt exists. Source-only or synthetic results
+Start at Integrations → Orchestration → Ansible. Register or update the
+existing eligible source-only connection using Validate Source and Save
+Changes. Approved repository and candidate pins are authoritative in
+`app/infrastructure_automation/kubernetes/source_policy.py`; do not use
+superseded versions or arbitrary source. An existing unused source-only
+connection can retain its ID under #5449; dependent configuration revisions
+remain blocked under #5453. No new connection is necessary solely to edit an
+eligible unused connection.
+
+Then open Operations Center → Infrastructure Automation → Profiles →
+Kubernetes Lifecycle and select the connection. Use Hosts & Inventories for
+existing-host roles and committed inventory receipt, Plans for readiness and
+Plan evidence, and Runs & Evidence for execution records. Remote Preflight
+Review under Plans requires jobs.view and shows Not Recorded until a real
+canonical historical review receipt exists. Source-only or synthetic results
 must never display Run readiness; Cluster Mutation Not Admitted remains.
+
+**Activation boundary:** current registration/update deliberately persists
+`enabled=false`, but `inventory_document.build_inventory_document`,
+`diagnose_remote_preflight_target` and `dispatch_kubespray_plan_review`
+require an enabled connection. This is an outstanding functional transition,
+not an operator command to flip a database flag. Do not manually set
+`enabled`, insert evidence, or use local review flags as execution authority.
+The activation contract must be reconciled under #4799/#5172 before the complete
+workflow can be offered as a single UAT.
 
 In the local workspace terminal (replace the IDs with actual canonical
 connection and actor IDs; do not use a production environment):
@@ -96,7 +161,26 @@ open SSH, retrieve credentials or produce a signature. The stock
 Dev Container runServices do not start the dedicated automation worker;
 do not repurpose another queue or treat a web shell as worker attestation.
 
-## 4. Evidence to return
+## 4. End-to-end acceptance boundary
+
+| Stage | Current review boundary | Required real UAT evidence |
+| --- | --- | --- |
+| Connection | Validated source registration / eligible same-ID edit | Fresh proof and stable canonical identity |
+| Inventory | Registered host roles and local KV v2 review | Authorized active connection, exact 1+2 host scope, parser-qualified receipt |
+| Access | Typed credential and SSH trust candidate | Independent provider authority, current version and host-key evidence |
+| Worker | Historical signed review, disabled external source candidate | Independently admitted signed EE/runtime and fixed remote facts result |
+| Preflight and Plan | Review-only committed gates | Current 8+2 gate evidence, immutable Plan, separate maker/checker approval |
+| Run | Reservation/adoption primitives; native mutation dispatch not admitted | Authorized disposable target, change window, lock and one canonical Run |
+| Verify and bind | Independent observer primitives | Real Kubernetes API, required health and canonical Cluster binding |
+| Completion | #5172 stays blocked until all stages pass | Human acceptance, exact-head Developer Check and Full Admission |
+
+Source-only and local historical review do not prove an actual remote run.
+Do not request operator acceptance for a partial stage as if it were the
+complete lifecycle. External source PR `OXY7O/kaori-operations#10` remains
+subject to independent review and admission; the review-only candidate does
+not grant a native execution caller.
+
+## 5. Evidence to return
 
 Capture the exact KAORI SHA, migration current/head, focused pytest
 summary, first diagnostic blocker, and screenshot of the selected
@@ -131,9 +215,9 @@ HTMX/no-JS; visual acceptance is pending.
 
 Observed preceding operator evidence: 181 tests passed and one encrypted
 OpenSSH fixture failed before reaching the credential qualifier because
-the test environment lacks the optional bcrypt dependency. This is not
-a passed encrypted-key negative regression; track the dependency
-separately from the requested visual redesign.
+the test environment lacked the optional bcrypt dependency. #5456 adds
+that dependency to the existing development manifests. The earlier run
+is still a failure, and must be repeated before claiming PASS.
 
 
 ## Tabbed workspace revision (#5157)

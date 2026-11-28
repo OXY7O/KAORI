@@ -1,5 +1,7 @@
 -r base.in
 
+# Encrypted OpenSSH negative-test fixture generation (not runtime auth).
+bcrypt==5.0.0
 debugpy>=1.8,<2
 djlint==1.39.4
 pip-tools>=7.5,<8
