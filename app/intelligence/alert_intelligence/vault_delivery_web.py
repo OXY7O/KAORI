@@ -11,6 +11,7 @@ from wtforms.validators import ValidationError
 from app.intelligence.alert_intelligence.vault_delivery_command import (
     DeliveryIntent,
     create_local_vault_policy,
+    disable_local_vault_policy,
     execute_local_vault_delivery,
 )
 from app.intelligence.alert_intelligence.vault_operator_service import resolve_operator_binding
@@ -55,17 +56,26 @@ def _redirect(destination: str) -> ResponseReturnValue:
 
 
 def local_policy_response() -> ResponseReturnValue:
-    actor, instance, binding = _validate({'csrf_token', 'instance_id', 'channel_id'})
-    policy = create_local_vault_policy(
-        instance_id=instance, binding_id=binding, actor_id=actor, channel_id=_positive('channel_id')
-    )
+    if 'policy_id' in request.form:
+        actor, instance, binding = _validate({'csrf_token', 'instance_id', 'policy_id'})
+        changed = disable_local_vault_policy(
+            instance_id=instance, binding_id=binding, actor_id=actor, policy_id=_positive('policy_id')
+        )
+        message = 'Candidate disabled; existing approval is no longer usable.' if changed else 'Candidate not changed.'
+    else:
+        actor, instance, binding = _validate({'csrf_token', 'instance_id', 'channel_id'})
+        policy = create_local_vault_policy(
+            instance_id=instance, binding_id=binding, actor_id=actor, channel_id=_positive('channel_id')
+        )
+        changed = policy is not None
+        message = (
+            f'Candidate policy {policy} available; independent destination approval required.'
+            if changed else 'No candidate available. Review exact scope and channel eligibility.'
+        )
     create_transient_feedback(
-        status='success' if policy is not None else 'warning',
+        status='success' if changed else 'warning',
         title='Scoped routing candidate',
-        message=(
-            f'Candidate policy {policy} created; independent destination approval required.'
-            if policy is not None else 'No candidate created. Review exact scope and channel eligibility.'
-        ),
+        message=message,
         queue_feedback=True,
     )
     return _redirect(

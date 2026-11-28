@@ -19,7 +19,8 @@ from app.intelligence.alert_intelligence.vault_case_workspace import (
     read_scoped_vault_cases,
     vault_case_details_response,
 )
-from app.intelligence.alert_intelligence.vault_operator_service import local_reconcile_available
+from app.intelligence.alert_intelligence.vault_delivery_command import read_local_vault_policies
+from app.intelligence.alert_intelligence.vault_operator_service import local_reconcile_available, resolve_operator_binding
 from app.models.integration import IntegrationInstance
 from app.models.scope_access import ScopeAccessPolicy
 
@@ -209,8 +210,18 @@ def build_provider_case_payload(args: MultiDict[str, str], *, domain_options: li
         and type(actor_id) is int
         and local_reconcile_available(actor_id=actor_id, instance_id=int(scope['selected_asset_key']))
     )
+    routing = None
+    if tab == 'routing' and status == 'ready' and type(actor_id) is int:
+        instance_id = int(scope['selected_asset_key'])
+        binding_id = resolve_operator_binding(instance_id)
+        if binding_id is not None:
+            routing = read_local_vault_policies(
+                instance_id=instance_id, binding_id=binding_id, actor_id=actor_id,
+                page=str(args.get('routing_page') or '1'), per_page=str(args.get('routing_per_page') or '5'),
+            )
     return {
         **scope,
+        'local_routing': routing,
         'local_case_reconcile': can_reconcile,
         'domain': domain,
         'domain_label': next(option['label'] for option in domain_options if option['value'] == domain),

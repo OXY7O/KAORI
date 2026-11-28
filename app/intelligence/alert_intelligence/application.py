@@ -8,7 +8,7 @@ from app.extensions.db import db
 from app.integrations.delivery.notification_channels.contracts import NotificationMessage
 from app.integrations.delivery.notification_channels.service import send_channel_preview_message
 from app.intelligence.alert_intelligence.lifecycle import get_case
-from app.intelligence.alert_intelligence.routing import RoutingPolicyConfig, upsert_routing_policy
+from app.intelligence.alert_intelligence.routing import RoutingPolicyConfig, is_provider_origin_policy, upsert_routing_policy
 from app.intelligence.alert_intelligence.templates import (
     render_template_preview,
     reset_template_override,
@@ -82,8 +82,9 @@ def save_routing_policy_command(
 
 
 def delete_routing_policy_command(*, policy_id: int, actor_user_id: int | None) -> bool:
-    row = AlertRoutingPolicy.query.filter_by(id=policy_id).first()
-    if row is None:
+    row = db.session.get(AlertRoutingPolicy, policy_id, populate_existing=True, with_for_update=True)
+    if row is None or is_provider_origin_policy(row):
+        db.session.rollback()
         return False
     try:
         target_id = str(row.id)

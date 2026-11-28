@@ -41,6 +41,11 @@ class FiringRoute:
         return f'policy-{self.policy_id}' if self.policy_id is not None else 'default'
 
 
+def is_provider_origin_policy(policy: AlertRoutingPolicy) -> bool:
+    """Provider policies require their own exact-scope authoring contract."""
+    return 'provider_alert' in (policy.source_types_json or []) or 'secrets_pki' in (policy.domains_json or [])
+
+
 def routing_policy_rows() -> list[dict[str, Any]]:
     channels = {row.id: row for row in NotificationChannel.query.all()}
     return [
@@ -66,6 +71,7 @@ def routing_policy_rows() -> list[dict[str, Any]]:
             ],
         }
         for policy in AlertRoutingPolicy.query.order_by(AlertRoutingPolicy.name.asc()).all()
+        if not is_provider_origin_policy(policy)
     ]
 
 
@@ -73,6 +79,8 @@ def notification_channel_options() -> list[dict[str, Any]]:
     rows = NotificationChannel.query.order_by(NotificationChannel.name.asc(), NotificationChannel.id.asc()).all()
     result: list[dict[str, Any]] = []
     for channel in rows:
+        if 'secrets_pki' in (channel.domains or []):
+            continue
         provider = get_notification_provider(channel.provider_key)
         result.append(
             {
@@ -100,6 +108,8 @@ def notification_channel_options() -> list[dict[str, Any]]:
 
 
 def _route_channel_eligible(channel: NotificationChannel, *, registry_scoped: bool) -> bool:
+    if 'secrets_pki' in (channel.domains or []):
+        return False
     if not (channel.enabled and channel.configured and channel.test_status == 'success'):
         return False
     if registry_scoped:
@@ -147,7 +157,9 @@ def upsert_routing_policy(
         raise ValueError('Select at least one validated Notification Channel.')
     interval = max(5, min(int(config.repeat_interval_minutes or 60), 1440))
     ack_timeout = max(5, min(int(config.acknowledgement_timeout_minutes or 60), 10080))
-    row = None if policy_id is None else AlertRoutingPolicy.query.filter_by(id=policy_id).first()
+    row = None if policy_id is None else db.session.get(AlertRoutingPolicy, policy_id, populate_existing=True, with_for_update=True)
+    if row is not None and is_provider_origin_policy(row):
+        raise ValueError('Provider routing requires its authorized instance workspace.')
     if row is None:
         row = AlertRoutingPolicy()
         row.created_by_user_id = actor_user_id

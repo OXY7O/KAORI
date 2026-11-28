@@ -1,0 +1,108 @@
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_registry.html" as table_registry %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% set routing = payload.local_routing %}
+<section id="alert-operations-vault-routing-registry" class="{{ table_ui.block_classes() }}">
+    <header class="{{ table_ui.block_header_classes() }}">
+        <div>
+            <h3 class="{{ table_ui.block_title_classes() }}">Scoped Firing Policies</h3>
+            <p class="{{ table_ui.block_description_classes() }}">Local review only. A candidate is not an approved destination; automatic routing remains disabled.</p>
+        </div>
+        {{ table_label.metadata_label(routing.pagination.total_items ~ ' Policies', 'route') }}
+    </header>
+    <div class="space-y-3 px-5 py-4">
+        <form method="post"
+              action="{{ url_for('alert_intelligence.vault_case_local_routing') }}"
+              hx-post="{{ url_for('alert_intelligence.vault_case_local_routing') }}"
+              hx-swap="none" hx-disabled-elt="find button"
+              class="flex flex-wrap items-end gap-2">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="instance_id" value="{{ payload.selected_asset_key }}">
+            <label>
+                <span class="{{ table_ui.filter_label_classes() }}">Channel ID</span>
+                <input name="channel_id" type="number" min="1" required class="{{ table_ui.filter_select_classes() }}">
+            </label>
+            <button type="submit" class="{{ table_ui.action_classes() }}">Create Routing Candidate</button>
+        </form>
+        <details>
+            <summary class="cursor-pointer text-xs font-semibold text-kaori-primary">Source approval context</summary>
+            <dl class="mt-2 grid gap-2 text-xs text-content-secondary sm:grid-cols-2">
+                <div><dt>Binding ID</dt><dd>{{ routing.binding_id }}</dd></div>
+                <div><dt>Source ID</dt><dd>{{ routing.source_id }}</dd></div>
+                <div><dt>Binding revision (UTC)</dt><dd class="break-all font-mono">{{ routing.binding_revision }}</dd></div>
+                <div><dt>Source revision (UTC)</dt><dd class="break-all font-mono">{{ routing.source_revision }}</dd></div>
+            </dl>
+        </details>
+    </div>
+    {{ loading_bar.render('alert-operations-vault-routing-loading', label='Refreshing Scoped Policies') }}
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[860px]') }}">
+            <caption class="sr-only">Exact source routing candidates</caption>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Policy</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Channel</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Status</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Approval Revision</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Action</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for policy in routing.rows %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">#{{ policy.id }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            #{{ policy.channel_id }}
+                            {{ table_label.status_label('Validated' if policy.channel_ready else 'Review Required', 'normal' if policy.channel_ready else 'warning', size='compact') }}
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label('Candidate' if policy.enabled else 'Disabled', 'info' if policy.enabled else 'unknown', size='compact') }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <details>
+                                <summary class="cursor-pointer text-xs font-semibold text-kaori-primary">Receipt fields</summary>
+                                <dl class="mt-2 space-y-1 text-xs">
+                                    <div><dt>Policy revision (UTC)</dt><dd class="break-all font-mono">{{ policy.revision or 'Unavailable' }}</dd></div>
+                                    <div><dt>Channel revision (UTC)</dt><dd class="break-all font-mono">{{ policy.channel_revision or 'Unavailable' }}</dd></div>
+                                    <div><dt>Channel tested at (UTC)</dt><dd class="break-all font-mono">{{ policy.channel_tested_at or 'Unavailable' }}</dd></div>
+                                </dl>
+                            </details>
+                        </td>
+                        <td class="{{ table_ui.cell_classes(true) }}">
+                            {% if policy.enabled %}
+                                <form method="post" action="{{ url_for('alert_intelligence.vault_case_local_routing') }}"
+                                      hx-post="{{ url_for('alert_intelligence.vault_case_local_routing') }}"
+                                      hx-swap="none" hx-disabled-elt="find button">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="instance_id" value="{{ payload.selected_asset_key }}">
+                                    <input type="hidden" name="policy_id" value="{{ policy.id }}">
+                                    <button type="submit" class="{{ table_ui.action_classes() }}">Disable</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="p-0">
+                            {% set empty_state_icon = "route-off" %}
+                            {% set empty_state_label = "No Scoped Policy" %}
+                            {% set empty_state_title = "Create an Exact Source Candidate" %}
+                            {% set empty_state_description = "No candidate is configured for this authorized binding. There is no default delivery." %}
+                            {% include 'components/states/_empty_state.html' %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {{ table_registry.footer('alert_intelligence.index',
+        'alert-operations-vault-routing-registry',
+        'alert-operations-vault-routing-loading',
+        routing.pagination,
+        {'tab': 'routing', 'domain': payload.domain, 'provider': payload.selected_provider, 'asset': payload.selected_asset_key},
+        routing.pagination.allowed_per_page,
+        resource_label='Policies',
+        rows_aria_label='Routing policies per page',
+        control_name='vault-scoped-routing-policies',
+        page_param='routing_page',
+        per_page_param='routing_per_page') }}
+</section>

@@ -216,16 +216,17 @@ real notification destination or configure a production signer for this UAT.
    action qualifies. Confirm source resolved and workflow verification
    pending, with separate source and operator evidence. No same-occurrence
    active/suppressed response or older resolution may be accepted.
-3. Run another observation after verification started. Signer evidence
-   must still qualify, then a different operator with independent exact
+3. Run another observation after verification started. A distinct newly issued signed provider receipt after verification started
+   must qualify, then a different operator with independent exact
    read and decision scope may choose **Verify and Close (Local UAT)**.
    Review Resolved history and the redacted timeline. Reject same actor,
    stale generation, missing/tampered receipt, revoked scope and replay.
 4. **Destination prerequisite.** Use a dedicated disposable Notification
    Channel configured only for Secrets & PKI / alert_ops.firing; validate
    it using canonical Test Delivery. The maker must also hold explicit
-   integrations.manage. Create the candidate on the exact Vault Routing tab
-   and obtain its canonical policy ID. A distinct checker with normalized
+   integrations.manage. Create the candidate on the exact Vault Routing tab.
+   The scoped table provides policy/channel IDs and exact UTC revision fields
+   for independent approval, with no credentials or destination values. A distinct checker with normalized
    roles.manage/users.manage/integrations.manage and an approved exact read
    grant reviews the actual disposable destination outside KAORI and signs
    the exact case/binding/source/policy/channel revision and validity receipt.

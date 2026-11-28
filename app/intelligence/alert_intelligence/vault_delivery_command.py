@@ -8,10 +8,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.scope_policy import evaluate_exact_vault_instance_operator_scope, lock_explicit_permissions
+from app.common.pagination import paginate_sequence
 from app.extensions.db import db
 from app.integrations.delivery.notification_channels.catalog import domain_event_allowed
 from app.integrations.delivery.notification_channels.config import notification_delivery_max_attempts
@@ -37,6 +39,7 @@ from app.intelligence.alert_signals.vault_source import (
     _persisted_utc,
     _validated_binding,
     read_vault_alert_observations,
+    source_revision,
 )
 from app.models.alert_ops import AlertCase, AlertRoutingPolicy
 from app.models.audit import AuditEvent
@@ -310,6 +313,14 @@ def create_local_vault_policy(*, instance_id: int, binding_id: int, actor_id: in
         channel = db.session.get(NotificationChannel, channel_id, populate_existing=True, with_for_update=True)
         if channel is None or not _channel_matches_candidate(channel, severity='critical', now=now):
             return None
+        existing = _scoped_policies(instance_id, binding_id)
+        if existing is None:
+            return None
+        candidates = [row for row in existing if row.enabled and row.channel_ids_json == [channel.id]]
+        if candidates:
+            return candidates[0].id if len(candidates) == 1 else None
+        if len(existing) >= _MAX_POLICIES:
+            return None
         policy = AlertRoutingPolicy()
         policy.name = 'Vault scoped firing candidate'
         policy.enabled = True
@@ -338,5 +349,116 @@ def create_local_vault_policy(*, instance_id: int, binding_id: int, actor_id: in
         return policy_id
     except (SQLAlchemyError, CredentialEncryptionError, ValueError, TypeError, AttributeError):
         return None
+    finally:
+        db.session.rollback()
+
+
+_MAX_POLICIES = 100
+
+
+def _scoped_policies(instance_id: int, binding_id: int) -> list[AlertRoutingPolicy] | None:
+    rows = (
+        AlertRoutingPolicy.query.filter(
+            AlertRoutingPolicy.matchers_json['vault_instance'].as_string() == str(instance_id),
+            AlertRoutingPolicy.matchers_json['source_binding_id'].as_string() == str(binding_id),
+        )
+        .order_by(AlertRoutingPolicy.id.desc())
+        .limit(_MAX_POLICIES + 1)
+        .populate_existing()
+        .all()
+    )
+    if len(rows) > _MAX_POLICIES:
+        return None
+    return [
+        row for row in rows
+        if row.domains_json == ['secrets_pki'] and row.source_types_json == ['provider_alert']
+        and row.matchers_json == {'vault_instance': str(instance_id), 'source_binding_id': str(binding_id)}
+        and isinstance(row.channel_ids_json, list) and len(row.channel_ids_json) == 1
+        and type(row.channel_ids_json[0]) is int and not row.send_resolved
+    ]
+
+
+def _policy_projection(policy: AlertRoutingPolicy) -> dict[str, Any]:
+    channel_id = policy.channel_ids_json[0]
+    # Do not load the credential-bearing channel entity for this display.
+    channel = db.session.query(
+        NotificationChannel.updated_at, NotificationChannel.last_tested_at,
+        NotificationChannel.enabled, NotificationChannel.lifecycle_state, NotificationChannel.test_status,
+    ).filter(NotificationChannel.id == channel_id).first()
+    revision = _persisted_utc(policy.updated_at)
+    channel_revision = _persisted_utc(channel.updated_at) if channel is not None else None
+    tested = _persisted_utc(channel.last_tested_at) if channel is not None else None
+    return {
+        'id': policy.id, 'channel_id': channel_id, 'enabled': policy.enabled,
+        'revision': revision.isoformat() if revision is not None else None,
+        'channel_revision': channel_revision.isoformat() if channel_revision is not None else None,
+        'channel_tested_at': tested.isoformat() if tested is not None else None,
+        'channel_ready': bool(channel is not None and channel.enabled and channel.lifecycle_state == 'active'
+                              and channel.test_status == 'success' and tested is not None),
+    }
+
+
+def read_local_vault_policies(
+    *, instance_id: int, binding_id: int, actor_id: int, page: str, per_page: str
+) -> dict[str, Any] | None:
+    """Audited exact-instance candidate registry; never destination approval."""
+    if not local_reconcile_enabled():
+        return None
+    try:
+        now = datetime.now(UTC)
+        eligible = _validated_binding(binding_id, now=now, lock=True)
+        if eligible is None or eligible[0].asset_key != str(instance_id) or not _scope(actor_id, instance_id, now=now):
+            return None
+        binding, source = eligible
+        revision = source_revision(binding, source)
+        rows = _scoped_policies(instance_id, binding_id)
+        if revision is None or rows is None:
+            return None
+        selected, pagination = paginate_sequence(rows, page=page, per_page=per_page)
+        result = {
+            'rows': [_policy_projection(row) for row in selected], 'pagination': pagination,
+            'binding_id': binding_id, 'source_id': source.id,
+            'binding_revision': revision.binding_revision.isoformat(),
+            'source_revision': revision.source_revision.isoformat(),
+        }
+        db.session.add(AuditEvent(
+            actor_user_id=actor_id, target_type='integration_instance', target_id=str(instance_id),
+            action='vault_provider_routing_candidates_read', summary='Scoped routing candidates reviewed.',
+            metadata_json={'instance_id': instance_id, 'binding_id': binding_id},
+        ))
+        db.session.commit()
+        return result
+    except (SQLAlchemyError, ValueError, TypeError, AttributeError):
+        return None
+    finally:
+        db.session.rollback()
+
+
+def disable_local_vault_policy(*, instance_id: int, binding_id: int, actor_id: int, policy_id: int) -> bool:
+    """Revoke a candidate without deleting history. Never re-enable an old approval."""
+    if not local_reconcile_enabled():
+        return False
+    try:
+        now = datetime.now(UTC)
+        eligible = _validated_binding(binding_id, now=now, lock=True)
+        if eligible is None or eligible[0].asset_key != str(instance_id) or not _scope(actor_id, instance_id, now=now):
+            return False
+        rows = _scoped_policies(instance_id, binding_id)
+        if rows is None or not any(row.id == policy_id for row in rows):
+            return False
+        policy = db.session.get(AlertRoutingPolicy, policy_id, populate_existing=True, with_for_update=True)
+        if policy is None or not policy.enabled:
+            return False
+        policy.enabled = False
+        policy.updated_by_user_id = actor_id
+        db.session.add(AuditEvent(
+            actor_user_id=actor_id, target_type='alert_routing_policy', target_id=str(policy_id),
+            action='vault_provider_routing_candidate_disabled', summary='Scoped routing candidate disabled.',
+            metadata_json={'instance_id': instance_id, 'binding_id': binding_id},
+        ))
+        db.session.commit()
+        return True
+    except (SQLAlchemyError, ValueError, TypeError, AttributeError):
+        return False
     finally:
         db.session.rollback()
