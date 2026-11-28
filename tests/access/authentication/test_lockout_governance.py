@@ -174,4 +174,17 @@ def test_ui_and_route_security_contract() -> None:
     overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split("{% elif active_tab == 'mfa' %}", 1)[0]
     assert '_login_protection_summary.html' in overview
     assert '_login_protection_controls.html' not in overview
-    assert '_login_protection_controls.html' in page.split("{% elif active_tab == 'bot' %}", 1)[1]
+    bot, login = page.split("{% elif active_tab == 'bot' %}", 1)[1].split(
+        "{% elif active_tab == 'login-protection' %}", 1
+    )
+    assert '_login_protection_controls.html' not in bot
+    assert '_login_protection_controls.html' in login
+    assert "tab='login-protection', _anchor='login-protection-control'" in security
+    summary = (root / 'app/templates/access/authentication_security/partials/_login_protection_summary.html').read_text()
+    assert "tab='login-protection'" in summary
+    controls = (root / 'app/templates/access/authentication_security/partials/_login_protection_controls.html').read_text()
+    assert 'hx-history="false"' in controls
+    assert 'name="csrf_token"' in controls
+    assert 'name="lockout_revision"' in controls
+    assert 'name="acknowledge_lockout_impact"' in controls
+    assert '_lockout_assurance_fields.html' in controls
