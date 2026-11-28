@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -148,6 +149,12 @@ def _commit_receipt(
     if _reference(intent, provider_key, current) != reference or transport.endpoint != endpoint:
         raise SecretProviderError('Source or provider changed during readback; no receipt was committed.')
     receipt = {
+        'schema_version': 1,
+        'provider_origin_sha256': hashlib.sha256(endpoint.encode('utf-8')).hexdigest(),
+        'source_repository': current['source_repository'],
+        'source_sha': current['source_sha'],
+        'pod_cidr': current['config']['pod_cidr'],
+        'service_cidr': current['config']['service_cidr'],
         'provider_id': reference.provider_id,
         'provider_key': reference.provider_key,
         'cluster_id': reference.cluster_id,
