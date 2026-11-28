@@ -22,6 +22,8 @@ MfaSecurityAction = Literal[
     'mfa_policy_unchanged',
     'bot_policy_changed',
     'bot_provider_verified',
+    'session_policy_changed',
+    'session_policy_unchanged',
 ]
 
 
@@ -33,6 +35,8 @@ def stage_authentication_security_event(
     success: bool,
     previous_mode: str | None = None,
     next_mode: str | None = None,
+    previous_policy: dict[str, int | bool] | None = None,
+    next_policy: dict[str, int | bool] | None = None,
 ) -> Notification:
     """Return an audit-only event; caller owns the transaction and commit.
 
@@ -63,6 +67,9 @@ def stage_authentication_security_event(
         'request_path': request.path[:200],
         'session_reference': session.get('auth_session_ref') if authenticated else None,
     }
+    if previous_policy is not None and next_policy is not None:
+        event.metadata_json['previous_policy'] = previous_policy
+        event.metadata_json['new_policy'] = next_policy
     event.deck_visible = False
     event.read_at = now
     event.created_at = now
