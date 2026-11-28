@@ -1,4 +1,4 @@
-"""The four Authentication Security tabs reuse KAORI Role Registry overview grammar (#3305)."""
+"""The five Authentication Security tabs reuse KAORI Role Registry overview grammar (#3305)."""
 
 from pathlib import Path
 
@@ -20,12 +20,14 @@ def tabs() -> dict[str, str]:
         "{% elif active_tab == 'mfa' %}", 1
     )
     mfa, remaining = remaining.split("{% elif active_tab == 'bot' %}", 1)
-    bot, session = remaining.split(
+    bot, remaining = remaining.split("{% elif active_tab == 'login-protection' %}", 1)
+    login, session = remaining.split(
         '{% else %}\n                {{ assurance.render(',
         1,
     )
     session = 'assurance.render(' + session
-    return {'overview': overview, 'mfa': mfa, 'bot': bot, 'sessions': session}
+    login += read(AUTH.parent / '_login_protection_controls.html')
+    return {'overview': overview, 'mfa': mfa, 'bot': bot, 'login-protection': login, 'sessions': session}
 
 
 def test_shared_assurance_summary_matches_role_registry_pattern() -> None:
@@ -44,7 +46,7 @@ def test_shared_assurance_summary_matches_role_registry_pattern() -> None:
     assert 'data-auth-assurance-metrics="four"' in component
     assert 'data-auth-assurance-boundaries="four"' in component
     assert 'data-auth-assurance-summary="{{ id }}"' in component
-    assert page.count('assurance.render(') == 4
+    assert page.count('assurance.render(') == 5
 
 
 def test_each_tab_starts_with_single_governed_summary() -> None:
@@ -53,6 +55,7 @@ def test_each_tab_starts_with_single_governed_summary() -> None:
         'overview': "'authentication-posture',",
         'mfa': "'mfa-policy',",
         'bot': "'bot-protection',",
+        'login-protection': "'login-protection-posture',",
         'sessions': "'session-security',",
     }
     for name, marker in expected.items():
@@ -93,8 +96,8 @@ def test_every_tab_has_shared_header_inside_single_accessible_control_hub() -> N
         assert 'overflow-visible rounded-2xl' in posture
     assert '{% if metadata %}{{ metadata }}{% endif %}' in shared
     assert '{% if guide %}{{ guide }}{% endif %}' in shared
-    assert source.count('assurance.render(') == 4
-    assert source.count('assurance.control_header(') == 4
+    assert source.count('assurance.render(') == 5
+    assert source.count('assurance.control_header(') == 4  # Login Protection header lives in its existing partial.
 
 
 def test_control_header_statuses_come_from_committed_security_state() -> None:
@@ -103,7 +106,7 @@ def test_control_header_statuses_come_from_committed_security_state() -> None:
     mfa = data['mfa']
     bot = data['bot']
     session = data['sessions']
-    assert "'Controls Enabled' if mfa_active or bot_active else 'Optional Controls Disabled'" in overview
+    assert "'Controls Enabled' if mfa_active or bot_active or lockout_mode == 'enforced'" in overview
     assert "'Policy Active' if mfa_policy_mode != 'disabled' else 'Disabled'" in mfa
     assert "'Enforced' if bot_mode == 'always' else 'Disabled'" in bot
     assert "'Policy Configured'" in session
