@@ -104,17 +104,13 @@ def establish_authenticated_session(
     return remember
 
 
-def preserve_current_session_after_password_change(user: User) -> None:
-    """Keep this browser authenticated while revoking older credential sessions.
+def preserve_current_session_after_password_change(*, user_id: int, issued_session_version: int) -> None:
+    """Bind only the authorized browser to the exact committed password generation.
 
-    ``User.set_password()`` advances ``auth_session_version``. Refreshing the
-    current Flask-Login identifier binds this browser to the new generation,
-    while other sessions keep their old identifier and fail closed on their next
-    request. Any remember cookie is intentionally cleared so remembered sign-ins
-    must authenticate again with the replacement password.
+    Never reload a newer concurrent login generation after the mutation commits.
+    Remembered sign-ins are cleared and server-owned deadlines remain unchanged.
     """
-
-    session['_user_id'] = user.get_id()
+    session['_user_id'] = f'{user_id}:{issued_session_version}'
     session['_fresh'] = True
     session['_remember'] = 'clear'
     session.modified = True

@@ -41,12 +41,13 @@ def test_password_change_advances_session_generation_and_preserves_only_current_
     assert 'self.auth_session_version = current_version + 1 if had_local_password else current_version' in model
     assert 'def parse_authenticated_user_identifier(' in session_source
     assert 'def preserve_current_session_after_password_change(' in session_source
-    assert "session['_user_id'] = user.get_id()" in session_source
+    assert "session['_user_id'] = f'{user_id}:{issued_session_version}'" in session_source
     assert "session['_remember'] = 'clear'" in session_source
     assert 'parse_authenticated_user_identifier(user_id)' in login_extension
     assert 'issued_session_version != current_session_version' in login_extension
-    assert 'current_session_version != 1' in login_extension
-    assert 'preserve_current_session_after_password_change(user)' in account_actions
+    assert 'issued_session_version is None' in login_extension
+    assert 'preserve_current_session_after_password_change(user_id=user_id, issued_session_version=issued_generation)' in account_actions
+    assert 'stage_operational_activity(' in account_actions
     assert "'session_effect': 'other_sessions_revoked'" in account_actions
     assert "'remembered_sign_ins': 'revoked'" in account_actions
     assert "revision = '20260809_auth_session_generation'" in migration
