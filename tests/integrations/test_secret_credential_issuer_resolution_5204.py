@@ -141,3 +141,12 @@ def test_latest_query_never_filters_to_old_active_revision(state):
             assert issuer_candidate_key(target=_TARGET, source=source, latest=latest, now=_NOW) is None
     finally:
         engine.dispose()
+
+
+def test_connected_degraded_openbao_is_only_a_candidate_not_custody_authority():
+    source = _source()
+    source.readiness_status = 'degraded'
+    source.health_status = 'connected'
+    assert issuer_candidate_key(target=_TARGET, source=source, latest=_record(), now=_NOW) is not None
+    source.health_status = 'disconnected'
+    assert issuer_candidate_key(target=_TARGET, source=source, latest=_record(), now=_NOW) is None
