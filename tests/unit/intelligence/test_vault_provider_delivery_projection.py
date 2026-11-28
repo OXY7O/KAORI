@@ -21,6 +21,7 @@ def _row(*, status: str, rejected: bool):
         attempt_count=1,
         created_at=now,
         sent_at=now if status == 'sent' else None,
+        next_retry_at=None,
         payload_json={CLAIM_KEY: {}, REJECTION_KEY: rejected},
     )
 

@@ -312,6 +312,8 @@ def vault_case_details_response(
         public_case.update(read_case_delivery_evidence(row))
         expected_event_id = _latest_event_id(row) if central else None
         db.session.commit()
+        from app.intelligence.alert_intelligence.vault_delivery_command import read_local_vault_policies
+        from app.intelligence.alert_intelligence.vault_operator_service import resolve_operator_binding
         from app.intelligence.alert_intelligence.vault_operator_web import operator_controls, recovery_controls
 
         controls = (
@@ -323,6 +325,20 @@ def vault_case_details_response(
             recovery_controls(instance_id=instance_id, public_id=public_id, expected_event_id=expected_event_id)
             if central and expected_event_id is not None else None
         )
+        delivery_controls = bool(
+            local_reconcile_enabled() and controls and controls['acknowledge']
+            and current_user.has_permission('integrations.manage')
+        )
+        delivery_options = []
+        if delivery_controls and public_case['provider_delivery_state'] in ('no_claim', 'rejected'):
+            actor_id = getattr(current_user, 'id', None)
+            binding_id = resolve_operator_binding(instance_id)
+            if type(actor_id) is int and binding_id is not None:
+                registry = read_local_vault_policies(
+                    instance_id=instance_id, binding_id=binding_id, actor_id=actor_id,
+                    page='1', per_page='5', include_options=True,
+                )
+                delivery_options = registry.get('options', []) if registry is not None else []
         return render_template(
             'intelligence/vault_provider_case_details.html',
             case=public_case,
@@ -330,10 +346,8 @@ def vault_case_details_response(
             instance_id=instance_id,
             central_provider_scope=central,
             operator_controls=controls,
-            local_delivery_available=bool(
-                local_reconcile_enabled() and controls and controls['acknowledge']
-                and current_user.has_permission('integrations.manage')
-            ),
+            local_delivery_available=delivery_controls,
+            local_delivery_options=delivery_options,
         )
     except SQLAlchemyError:
         db.session.rollback()

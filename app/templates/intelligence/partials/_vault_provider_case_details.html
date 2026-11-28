@@ -207,25 +207,47 @@
     {% if local_delivery_available %}
         <section class="mt-5 space-y-3 border-t border-outline-subtle pt-4"
                  aria-label="Scoped Notification Delivery">
-            <h3 class="text-sm font-semibold text-content-primary">Scoped Notification Delivery (Local UAT)</h3>
-            <p class="text-xs text-content-muted">A dedicated policy, validated channel and independent signed approval are mandatory. No default or automatic delivery. Retry only after explicit provider rejection and a new approval.</p>
-            <form method="post"
-                  action="{{ url_for('alert_intelligence.vault_case_local_delivery', public_id=case.public_id) }}"
-                  class="flex flex-wrap items-end gap-2">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="instance_id" value="{{ instance_id }}">
-                <label>
-                    <span class="{{ table_ui.filter_label_classes() }}">Policy ID</span>
-                    <input name="policy_id" type="number" min="1" required class="{{ table_ui.filter_select_classes() }}">
-                </label>
-                <label>
-                    <span class="{{ table_ui.filter_label_classes() }}">Channel ID</span>
-                    <input name="channel_id" type="number" min="1" required class="{{ table_ui.filter_select_classes() }}">
-                </label>
-                <button type="submit" name="action" value="review" class="{{ table_ui.action_classes() }}">Review Approval</button>
-                <button type="submit" name="action" value="send" class="{{ table_ui.action_classes() }}">Send Approved Firing</button>
-                <button type="submit" name="action" value="retry" class="{{ table_ui.action_classes() }}">Retry Explicit Rejection</button>
-            </form>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h3 class="text-sm font-semibold text-content-primary">Notification Delivery (Local UAT)</h3>
+                {{ table_label.status_label('Independent Approval Required', 'warning', size='compact') }}
+            </div>
+            {% if case.provider_delivery_state == 'sent' %}
+                <p class="text-xs text-content-muted">A committed accepted outcome already exists. No repeat or second destination is permitted.</p>
+            {% elif case.provider_delivery_state in ('review_required', 'unavailable') %}
+                <p class="text-xs text-content-muted">Review the committed delivery ledger. Unconfirmed or contradictory evidence cannot authorize another attempt.</p>
+            {% elif case.provider_delivery_state == 'rejected' and not case.provider_retry_due %}
+                <p class="text-xs text-content-muted">A rejection is recorded. Retry is not due or the attempt limit has been reached.</p>
+            {% elif not local_delivery_options %}
+                <p class="text-xs text-content-muted">No enabled scoped candidate with validated channel evidence is available. Configure a candidate before reviewing independent approval.</p>
+                <a href="{{ url_for('alert_intelligence.index', domain='secrets_pki', provider='vault', asset=instance_id, tab='routing') }}"
+                   class="{{ table_ui.action_classes() }}">Review Routing Candidates</a>
+            {% else %}
+                <p class="text-xs text-content-muted">Select one exact routing candidate. Channel validation is not approval; every attempt rechecks the independent signed receipt and current source.</p>
+                <form method="post"
+                      action="{{ url_for('alert_intelligence.vault_case_local_delivery', public_id=case.public_id) }}"
+                      hx-post="{{ url_for('alert_intelligence.vault_case_local_delivery', public_id=case.public_id) }}"
+                      hx-swap="none"
+                      hx-disabled-elt="find button"
+                      class="flex flex-wrap items-end gap-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="instance_id" value="{{ instance_id }}">
+                    <label>
+                        <span class="{{ table_ui.filter_label_classes() }}">Routing Candidate</span>
+                        <select name="candidate" required class="{{ table_ui.filter_select_classes() }}">
+                            <option value="">Select Candidate</option>
+                            {% for option in local_delivery_options %}
+                                <option value="{{ option.id }}:{{ option.channel_id }}">Policy #{{ option.id }} · Channel #{{ option.channel_id }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    {% if case.provider_delivery_state == 'no_claim' %}
+                        <button type="submit" name="action" value="review" class="{{ table_ui.action_classes() }}">Review Approval</button>
+                        <button type="submit" name="action" value="send" class="{{ table_ui.action_classes() }}">Send Approved Firing</button>
+                    {% else %}
+                        <button type="submit" name="action" value="retry" class="{{ table_ui.action_classes() }}">Retry Explicit Rejection</button>
+                    {% endif %}
+                </form>
+            {% endif %}
         </section>
     {% endif %}
     {% include 'intelligence/partials/_alert_ops_case_activity_streams.html' %}
