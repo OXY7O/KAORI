@@ -8,6 +8,7 @@ import pytest
 
 from app.infrastructure_automation import remote_job_review as service
 from app.infrastructure_automation import remote_review_dispatch as dispatch
+from app.infrastructure_automation import remote_review_posture as posture
 from app.infrastructure_automation.kubernetes.source_policy import SOURCE_CANDIDATE_SHA
 from app.infrastructure_automation.remote_preflight_source import REMOTE_CANDIDATE_SHA, RemoteSourceReview
 from app.infrastructure_automation.remote_preflight_target import RemoteTargetReview
@@ -158,3 +159,22 @@ def test_dispatch_only_passes_opaque_connection_and_canonical_actor(monkeypatch)
     monkeypatch.setattr(dispatch, 'enqueue_canonical_job', enqueue)
     job, created = dispatch.dispatch_remote_preflight_review(actor_id=7, connection_id=31)
     assert job.id == 51 and created
+
+
+def test_review_worker_result_projects_historical_not_execution_readiness(reviewed, monkeypatch):
+    job, target, _, _, events = reviewed
+    assert _run() == {'status': 'succeeded'}
+    committed = events[-1]
+    job.result_type = committed['result_type']
+    job.result_summary_json = committed['result_summary']
+    job.completed_at = datetime.now(UTC)
+    connection = SimpleNamespace(
+        id=31, integration_type='configuration_automation', provider_key='ansible', enabled=True,
+        metadata_json={'source_sha': target.source_sha, 'execution_environment_digest': target.ee_digest},
+    )
+    monkeypatch.setattr(posture, 'committed_source_state', lambda metadata: 'checked')
+    projected = posture.review_remote_job_posture(connection, job, now=datetime.now(UTC))
+    assert projected.state == 'historical'
+    assert projected.execution_authorized is False
+    job.status = 'failed'
+    assert posture.review_remote_job_posture(connection, job, now=datetime.now(UTC)).state == 'blocked'
