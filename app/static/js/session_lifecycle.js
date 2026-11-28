@@ -48,13 +48,14 @@
         description.textContent = absoluteSoon
             ? 'Your session is approaching its maximum authenticated age.'
             : 'Your session is approaching its inactivity deadline.'
-        message.textContent = unavailable
+        const notice = unavailable
             ? 'Unable to confirm session status. Retry or sign out.'
             : seconds === 0
               ? 'Checking the server deadline. Sign in again if the session has expired.'
               : absoluteSoon
                 ? 'Maximum session age cannot be extended. Sign in again after expiry.'
                 : 'Continuing can extend idle time only.'
+        if (message.textContent !== notice) message.textContent = notice
         continueButton.disabled = activityPending || absoluteSoon || seconds === 0
         if (!dialog.open && document.visibilityState === 'visible') {
             dialog.showModal()
