@@ -1,0 +1,27 @@
+{% import "components/operational_metric_card.html" as metric %}
+{% import "components/section_intro.html" as section_intro %}
+{% import "components/workspace_summary_card.html" as summary_card %}
+<div class="space-y-5" data-kaori-automation-overview>
+    {{ section_intro.render('Automation Overview', 'Committed inventory and execution totals across registered Ansible connections.') }}
+    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {{ metric.render('Connections', total_connections, 'Registered Ansible source connections', 'plug', source_label='Committed', compact=true) }}
+        {{ metric.render('Host Assignments', overview.host_assignments if overview.host_assignments is not none else 'Restricted',
+            'Enabled inventory assignments', 'server', source_label='Committed', compact=true) }}
+        {{ metric.render('Cluster Bindings', overview.cluster_bindings if overview.cluster_bindings is not none else 'Restricted',
+            'Recorded Kubernetes associations', 'boxes', source_label='Committed', compact=true) }}
+        {{ metric.render('Executions', overview.executions if overview.executions is not none else 'Restricted',
+            'Canonical JobExecution records', 'list-checks', source_label='Committed', compact=true) }}
+    </div>
+    {% if total_connections == 0 %}
+        {% with empty_state_icon='plug', empty_state_label='Setup Required',
+            empty_state_title='No Ansible Connections',
+            empty_state_description='Register an Ansible connection so KAORI can review lifecycle evidence.',
+            empty_state_action_url=url_for('integrations.ansible_new_connection'),
+            empty_state_action_label='Register Connection', empty_state_action_icon='plus',
+            empty_state_permission_granted=true, empty_state_variant='panel' %}
+            {% include "components/states/_empty_state.html" %}
+        {% endwith %}
+    {% else %}
+        {{ summary_card.render('Governed Execution', 'Ansible executes; KAORI orchestrates; Git defines; Evidence proves. Registered inventory and execution counts do not grant mutation authority.', 'shield-check') }}
+    {% endif %}
+</div>

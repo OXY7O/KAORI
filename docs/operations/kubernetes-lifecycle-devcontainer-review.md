@@ -134,3 +134,19 @@ OpenSSH fixture failed before reaching the credential qualifier because
 the test environment lacks the optional bcrypt dependency. This is not
 a passed encrypted-key negative regression; track the dependency
 separately from the requested visual redesign.
+
+
+## Tabbed workspace revision (#5157)
+
+The shared server-owned Framed Workspace Tabs separate Overview,
+Connections, Inventory, Lifecycle and Executions immediately below the
+Hero. Overview is global committed counts, with no selected connection
+or provider I/O; inventory and execution counts respect existing
+permissions. The selected scope is carried by URL across operational
+tabs and can be changed through the paginated Connections registry.
+Review opens Lifecycle; host enrollment/edit/retirement returns to
+Inventory. Only the selected tab renders; lifecycle retains technical
+gate details and remote review evidence. Mutation is still not admitted.
+No new execution workflow or migration. Validate empty/filtered
+connections, permission-restricted totals, back/forward and direct URL,
+tab selection, host pagination, responsive and dark-mode visual review.

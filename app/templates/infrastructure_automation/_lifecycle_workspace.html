@@ -6,154 +6,188 @@
 {% import "components/operational_section_card.html" as section_card %}
 {% import "components/section_intro.html" as section_intro %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% set active_tab = active_tab|default('overview') %}
+{% set scope_id = selected_connection_id if active_tab != 'overview' else none %}
+{% set endpoint = 'platform_operations.infrastructure_automation.index' %}
+{% set top_tabs = [
+    ('overview', 'Overview', 'layout-dashboard', url_for(endpoint, tab='overview')),
+    ('connections', 'Connections', 'plug', url_for(endpoint, tab='connections', connection_id=scope_id)),
+    ('inventory', 'Inventory', 'server', url_for(endpoint, tab='inventory', connection_id=scope_id)),
+    ('lifecycle', 'Lifecycle', 'workflow', url_for(endpoint, tab='lifecycle', connection_id=scope_id)),
+    ('executions', 'Executions', 'list-checks', url_for(endpoint, tab='executions', connection_id=scope_id))
+] %}
 <section id="infrastructure-automation-results"
-         class="space-y-5"
-         aria-label="Infrastructure automation lifecycle workspace"
+         class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+         aria-label="Infrastructure automation workspaces"
          data-kaori-infrastructure-automation-results>
-    <div class="{{ section_card.shell_classes() }}" data-kaori-automation-connection-registry>
-        <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle p-4 sm:p-5">
-            <div class="min-w-0">
-                <div class="flex items-center gap-2">
-                    <h2 class="text-base font-semibold text-content-primary">Kubernetes Lifecycle</h2>
-                    {{ info_tip.render('infrastructure-automation-kubespray-guide', 'Kubespray Lifecycle Ownership',
-                                    'Ansible executes the Git-defined operation; KAORI reviews and correlates committed evidence.',
-                                    [
-                                    'Integration registration validates an immutable Git source, but does not prove trusted SSH access.',
-                                    'The Kubernetes API owns actual Cluster and NodeInventory evidence after provisioning.',
-                                    'Immutable Plan review does not grant Run approval. Separate worker trust, maker/checker and a change window are required.'
-                                    ], variant='guide') }}
+    {{ framed_workspace_tabs.render_navigation(top_tabs, active_tab,
+        prefix='infrastructure-automation',
+        aria_label='Infrastructure Automation Workspaces',
+        hx_target='#infrastructure-automation-results',
+        hx_select='#infrastructure-automation-results') }}
+    {{ loading_bar.render('infrastructure-automation-loading', label='Loading committed automation evidence') }}
+    <div class="space-y-5 p-4 sm:p-5 lg:p-6" data-kaori-automation-tab="{{ active_tab }}">
+        {% if active_tab == 'overview' %}
+            {% include "infrastructure_automation/_overview.html" %}
+        {% elif active_tab == 'connections' %}
+            <div class="{{ section_card.shell_classes() }}" data-kaori-automation-connection-registry>
+                <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle p-4 sm:p-5">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-base font-semibold text-content-primary">Ansible Connections</h2>
+                            {{ info_tip.render('infrastructure-automation-kubespray-guide', 'Kubespray Lifecycle Ownership',
+                                            'Ansible executes the Git-defined operation; KAORI reviews and correlates committed evidence.',
+                                            [
+                                            'Integration registration validates an immutable Git source, but does not prove trusted SSH access.',
+                                            'The Kubernetes API owns actual Cluster and NodeInventory evidence after provisioning.',
+                                            'Immutable Plan review does not grant Run approval. Separate worker trust, maker/checker and a change window are required.'
+                                            ], variant='guide') }}
+                        </div>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                            Select an Ansible connection to review its Kubespray inventory, readiness and execution evidence.
+                        </p>
+                    </div>
+                    {% if total_connections == 0 %}
+                        {{ integration_status("warning", "Setup Required", display="text") }}
+                    {% else %}
+                        <a href="{{ url_for('integrations.ansible_new_connection') }}"
+                           class="{{ action_button.classes('secondary') }}">
+                            <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                            Add Connection
+                        </a>
+                    {% endif %}
+                </header>
+                <div class="border-b border-outline-subtle p-4 sm:p-5">
+                    {% call registry_ui.filter_form(
+                        'platform_operations.infrastructure_automation.index',
+                        'infrastructure-automation-results',
+                        'infrastructure-automation-loading',
+                        pagination.per_page,
+                        aria_label='Filter Ansible automation connections') %}
+                        <input type="hidden" name="tab" value="connections">
+                        {% if selected_connection_id %}
+                            <input type="hidden" name="connection_id" value="{{ selected_connection_id }}">
+                        {% endif %}
+                        <div class="min-w-0 flex-1">
+                            <label for="automation-connection-search"
+                                   class="{{ table_ui.filter_label_classes() }}">Search Connections</label>
+                            <input id="automation-connection-search"
+                                   type="search"
+                                   name="q"
+                                   value="{{ selected_query }}"
+                                   placeholder="Connection name"
+                                   class="{{ table_ui.filter_input_classes() }}"
+                                   autocomplete="off">
+                        </div>
+                        {% if selected_query %}
+                            {{ registry_ui.clear_filters_link('platform_operations.infrastructure_automation.index',
+                                            'infrastructure-automation-results',
+                                            'infrastructure-automation-loading',
+                                            pagination.per_page,
+                                            action_button.classes('secondary'), query_params={'tab': 'connections', 'connection_id': selected_connection_id}) }}
+                        {% endif %}
+                    {% endcall %}
                 </div>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">
-                    Select an Ansible connection to review its Kubespray inventory, readiness and execution evidence.
-                </p>
+                <div class="overflow-x-auto">
+                    {% if total_connections == 0 %}
+                        {% with empty_state_icon='plug', empty_state_label='Setup Required',
+                            empty_state_title='No Ansible Connections',
+                            empty_state_description='Register an Ansible connection so KAORI can review its source, inventory and lifecycle evidence.',
+                            empty_state_action_url=url_for('integrations.ansible_new_connection'),
+                            empty_state_action_label='Register Connection', empty_state_action_icon='plus',
+                            empty_state_permission_granted=true %}
+                            {% include "components/states/_empty_state.html" %}
+                        {% endwith %}
+                    {% else %}
+                        <table class="{{ table_ui.table_classes('min-w-[660px]') }}">
+                            <thead class="{{ table_ui.head_classes() }}">
+                                <tr>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Ansible Connection</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Environment</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Profile</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Runtime</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Review</th>
+                                </tr>
+                            </thead>
+                            <tbody class="{{ table_ui.body_classes() }}">
+                                {% for connection in connections %}
+                                    <tr class="{{ table_ui.row_classes() }} {{ 'bg-kaori-soft' if selected_connection_id == connection.id else '' }}">
+                                        <th scope="row" class="{{ table_ui.cell_classes() }}">
+                                            <span class="font-semibold text-content-primary">{{ connection.name }}</span>
+                                            <span class="mt-1 block text-xs text-content-muted">KAORI Connection · {{ connection.id }}</span>
+                                        </th>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ connection.environment|replace('_', ' ') |title if connection.environment else 'Unknown' }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">Kubernetes Lifecycle / Kubespray</td>
+                                        <td class="{{ table_ui.cell_classes() }}">
+                                            {{ integration_status("unknown", "Not Admitted", display="text") }}
+                                        </td>
+                                        <td class="{{ table_ui.cell_classes(true) }}">
+                                            {% set href = url_for('platform_operations.infrastructure_automation.index', tab='lifecycle', connection_id=connection.id, q=selected_query, page=pagination.page, per_page=pagination.per_page) %}
+                                            <a href="{{ href }}"
+                                               hx-get="{{ href }}"
+                                               hx-target="#infrastructure-automation-results"
+                                               hx-select="#infrastructure-automation-results"
+                                               hx-swap="outerHTML"
+                                               hx-push-url="true"
+                                               hx-indicator="#infrastructure-automation-loading"
+                                               class="{{ action_button.classes('soft') }}">
+                                                <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
+                                                Review
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="5" class="p-0">
+                                            {% with empty_state_icon='search', empty_state_label='No Results',
+                                                empty_state_title='No Matching Connections',
+                                                empty_state_description='Change or clear the connection search to find registered Ansible connections.' %}
+                                                {% include "components/states/_empty_state.html" %}
+                                            {% endwith %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+                </div>
+                {{ registry_ui.footer('platform_operations.infrastructure_automation.index',
+                    'infrastructure-automation-results',
+                    'infrastructure-automation-loading',
+                    pagination,
+                    {'tab': 'connections', 'q': selected_query, 'connection_id': selected_connection_id},
+                    pagination.allowed_per_page,
+                    resource_label='Ansible Connections',
+                    control_name='infrastructure-automation') }}
             </div>
-            {% if total_connections == 0 %}
-                {{ integration_status("warning", "Setup Required", display="text") }}
-            {% else %}
-                <a href="{{ url_for('integrations.ansible_new_connection') }}"
-                   class="{{ action_button.classes('secondary') }}">
-                    <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
-                    Add Connection
-                </a>
-            {% endif %}
-        </header>
-        {{ loading_bar.render('infrastructure-automation-loading', label='Loading committed automation evidence') }}
-        <div class="border-b border-outline-subtle p-4 sm:p-5">
-            {% call registry_ui.filter_form(
-                'platform_operations.infrastructure_automation.index',
-                'infrastructure-automation-results',
-                'infrastructure-automation-loading',
-                pagination.per_page,
-                aria_label='Filter Ansible automation connections') %}
-                <div class="min-w-0 flex-1">
-                    <label for="automation-connection-search"
-                           class="{{ table_ui.filter_label_classes() }}">Search Connections</label>
-                    <input id="automation-connection-search"
-                           type="search"
-                           name="q"
-                           value="{{ selected_query }}"
-                           placeholder="Connection name"
-                           class="{{ table_ui.filter_input_classes() }}"
-                           autocomplete="off">
-                </div>
-                {% if selected_query %}
-                    {{ registry_ui.clear_filters_link('platform_operations.infrastructure_automation.index',
-                                    'infrastructure-automation-results',
-                                    'infrastructure-automation-loading',
-                                    pagination.per_page,
-                                    action_button.classes('secondary') ) }}
-                {% endif %}
-            {% endcall %}
-        </div>
-        <div class="overflow-x-auto">
-            {% if total_connections == 0 %}
-                {% with empty_state_icon='plug', empty_state_label='Setup Required',
-                    empty_state_title='No Ansible Connections',
-                    empty_state_description='Register an Ansible connection so KAORI can review its source, inventory and lifecycle evidence.',
-                    empty_state_action_url=url_for('integrations.ansible_new_connection'),
-                    empty_state_action_label='Register Connection', empty_state_action_icon='plus',
-                    empty_state_permission_granted=true %}
-                    {% include "components/states/_empty_state.html" %}
-                {% endwith %}
-            {% else %}
-                <table class="{{ table_ui.table_classes('min-w-[660px]') }}">
-                    <thead class="{{ table_ui.head_classes() }}">
-                        <tr>
-                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Ansible Connection</th>
-                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Environment</th>
-                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Profile</th>
-                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Runtime</th>
-                            <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Review</th>
-                        </tr>
-                    </thead>
-                    <tbody class="{{ table_ui.body_classes() }}">
-                        {% for connection in connections %}
-                            <tr class="{{ table_ui.row_classes() }} {{ 'bg-kaori-soft' if selected_connection_id == connection.id else '' }}">
-                                <th scope="row" class="{{ table_ui.cell_classes() }}">
-                                    <span class="font-semibold text-content-primary">{{ connection.name }}</span>
-                                    <span class="mt-1 block text-xs text-content-muted">KAORI Connection · {{ connection.id }}</span>
-                                </th>
-                                <td class="{{ table_ui.cell_classes() }}">{{ connection.environment|replace('_', ' ') |title if connection.environment else 'Unknown' }}</td>
-                                <td class="{{ table_ui.cell_classes() }}">Kubernetes Lifecycle / Kubespray</td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    {{ integration_status("unknown", "Not Admitted", display="text") }}
-                                </td>
-                                <td class="{{ table_ui.cell_classes(true) }}">
-                                    {% set href = url_for('platform_operations.infrastructure_automation.index', connection_id=connection.id, q=selected_query, page=pagination.page, per_page=pagination.per_page) %}
-                                    <a href="{{ href }}"
-                                       hx-get="{{ href }}"
-                                       hx-target="#infrastructure-automation-results"
-                                       hx-select="#infrastructure-automation-results"
-                                       hx-swap="outerHTML"
-                                       hx-push-url="true"
-                                       hx-indicator="#infrastructure-automation-loading"
-                                       {% if selected_connection_id == connection.id %}aria-current="page"{% endif %}
-                                       class="{{ action_button.classes('soft') }}">
-                                        <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
-                                        {{ 'Selected' if selected_connection_id == connection.id else 'Review' }}
-                                    </a>
-                                </td>
-                            </tr>
-                        {% else %}
-                            <tr>
-                                <td colspan="5" class="p-0">
-                                    {% with empty_state_icon='search', empty_state_label='No Results',
-                                        empty_state_title='No Matching Connections',
-                                        empty_state_description='Change or clear the connection search to find registered Ansible connections.' %}
-                                        {% include "components/states/_empty_state.html" %}
-                                    {% endwith %}
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% endif %}
-        </div>
-        {{ registry_ui.footer('platform_operations.infrastructure_automation.index',
-            'infrastructure-automation-results',
-            'infrastructure-automation-loading',
-            pagination,
-            {'q': selected_query, 'connection_id': selected_connection_id},
-            pagination.allowed_per_page,
-            resource_label='Ansible Connections',
-            control_name='infrastructure-automation') }}
-    </div>
-    {% if details %}
-        <div class="space-y-4"
-             data-kaori-infrastructure-automation-detail>
-            {{ section_intro.render('Lifecycle Workspace', 'Committed evidence for the selected Ansible connection.') }}
-            <article class="{{ section_card.shell_classes() }}" data-kaori-automation-lifecycle-posture>
-                <header class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-5 py-4">
+        {% elif details %}
+            <div class="space-y-4" data-kaori-infrastructure-automation-detail>
+                <header class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-outline-subtle bg-surface-muted/40 p-4"
+                        data-kaori-automation-selected-scope>
                     <div class="flex min-w-0 items-center gap-3">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                              aria-hidden="true"><i data-lucide="workflow" class="h-5 w-5"></i></span>
+                              aria-hidden="true">
+                            <i data-lucide="server-cog" class="h-5 w-5"></i>
+                        </span>
                         <div class="min-w-0">
-                            <h3 class="text-base font-semibold text-content-primary">{{ details.connection.name }}</h3>
-                            <p class="mt-1 break-words text-xs text-content-secondary">Kubernetes Lifecycle / Kubespray · {{ details.repository or 'Source Not Provided' }}</p>
+                            <h2 class="text-base font-semibold text-content-primary">{{ details.connection.name }}</h2>
+                            <p class="mt-1 break-words text-xs text-content-secondary">Kubespray · {{ details.repository or 'Source Not Provided' }}</p>
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
-                        {{ integration_status("blocked", "Cluster Mutation Not Admitted", display="text") }}
+                        {% set scope_href = url_for(endpoint, tab='connections', connection_id=selected_connection_id) %}
+                        <a href="{{ scope_href }}"
+                           hx-get="{{ scope_href }}"
+                           hx-target="#infrastructure-automation-results"
+                           hx-select="#infrastructure-automation-results"
+                           hx-swap="outerHTML"
+                           hx-push-url="true"
+                           hx-indicator="#infrastructure-automation-loading"
+                           class="{{ action_button.classes('secondary') }}">
+                            <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                            Change Connection
+                        </a>
                         <a href="{{ url_for('integrations.ansible_connection_detail', instance_id=details.connection.id) }}#validation"
                            class="{{ action_button.classes('secondary') }}">
                             <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
@@ -161,243 +195,286 @@
                         </a>
                     </div>
                 </header>
-                <div class="p-4 sm:p-5">
-                    <div class="grid gap-3 md:grid-cols-3">
-                        <article class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                            <div class="flex flex-wrap items-center justify-between gap-2">
-                                <h4 class="text-sm font-semibold text-content-primary">01 · Source</h4>
-                                {{ integration_status("normal" if details.source_state == 'checked' else "warning",
-                                    "Source Checked" if details.source_state == 'checked' else "Validation Required", display="text") }}
+                {% if active_tab == 'lifecycle' %}
+                    <article class="{{ section_card.shell_classes() }}" data-kaori-automation-lifecycle-posture>
+                        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-5 py-4">
+                            <div>
+                                <h3 class="text-base font-semibold text-content-primary">Lifecycle Readiness</h3>
+                                <p class="mt-1 text-sm text-content-secondary">Source, technical preflight and immutable Plan.</p>
                             </div>
-                            <p class="mt-3 text-xs text-content-muted">Immutable Revision</p>
-                            <p class="mt-1 break-all font-mono text-sm text-content-primary">{{ details.source_revision or 'Not Recorded' }}</p>
-                            <p class="mt-2 text-xs leading-5 text-content-muted">Git validation is separate from worker and SSH admission.</p>
+                            {{ integration_status("blocked", "Cluster Mutation Not Admitted", display="text") }}
+                        </header>
+                        <div class="p-4 sm:p-5">
+                            <div class="grid gap-3 md:grid-cols-3">
+                                <article class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <h4 class="text-sm font-semibold text-content-primary">01 · Source</h4>
+                                        {{ integration_status("normal" if details.source_state == 'checked' else "warning",
+                                            "Source Checked" if details.source_state == 'checked' else "Validation Required", display="text") }}
+                                    </div>
+                                    <p class="mt-3 text-xs text-content-muted">Immutable Revision</p>
+                                    <p class="mt-1 break-all font-mono text-sm text-content-primary">{{ details.source_revision or 'Not Recorded' }}</p>
+                                    <p class="mt-2 text-xs leading-5 text-content-muted">Git validation is separate from worker and SSH admission.</p>
+                                </article>
+                                <article class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <h4 class="text-sm font-semibold text-content-primary">02 · Preflight</h4>
+                                        {{ integration_status("pending" if details.preflight.state == 'ready_for_review' else "warning",
+                                            "Ready for Review" if details.preflight.state == 'ready_for_review' else "Review Required", display="text") }}
+                                    </div>
+                                    <dl class="mt-3 grid grid-cols-2 gap-3">
+                                        <div>
+                                            <dt class="text-xs text-content-muted">Review Gates</dt>
+                                            <dd class="mt-1 text-xl font-semibold tabular-nums text-content-primary">{{ details.preflight.review_verified_gates }}/{{ details.preflight.review_required_gates }}</dd>
+                                        </div>
+                                        <div>
+                                            <dt class="text-xs text-content-muted">Execution Gates</dt>
+                                            <dd class="mt-1 text-xl font-semibold tabular-nums text-content-primary">{{ details.preflight.governance_verified_gates }}/{{ details.preflight.governance_required_gates }}</dd>
+                                        </div>
+                                    </dl>
+                                    {% if details.preflight.next_review_requirement %}
+                                        <p class="mt-1 text-xs text-content-muted">{{ details.preflight.next_review_requirement }}</p>
+                                    {% endif %}
+                                </article>
+                                <article class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <h4 class="text-sm font-semibold text-content-primary">03 · Plan</h4>
+                                        {{ integration_status("pending" if details.plan.state == 'current_for_review' else ("unknown" if details.plan.state == 'not_generated' else "warning"),
+                                            "Current for Review" if details.plan.state == 'current_for_review' else ("Not Generated" if details.plan.state == 'not_generated' else "Review Required"),
+                                            display="text") }}
+                                    </div>
+                                    <p class="mt-3 text-xs leading-5 text-content-secondary">{{ details.plan.description }}</p>
+                                    <p class="mt-2 text-xs leading-5 text-content-muted">A review-only Plan is not permission to execute Kubespray.</p>
+                                </article>
+                            </div>
+                            {% if details.preflight.gates %}
+                                <div class="mt-4 overflow-x-auto">
+                                    <table class="{{ table_ui.table_classes('min-w-[520px]') }}">
+                                        <thead class="{{ table_ui.head_classes() }}">
+                                            <tr>
+                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Readiness Gate</th>
+                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Status</th>
+                                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Evidence</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="{{ table_ui.body_classes() }}">
+                                            {% for gate in details.preflight.gates %}
+                                                <tr class="{{ table_ui.row_classes() }}">
+                                                    <th scope="row" class="{{ table_ui.cell_classes() }}">{{ gate.title }}</th>
+                                                    <td class="{{ table_ui.cell_classes() }}">{{ integration_status('normal' if gate.state == 'ready' else 'warning', gate.state|replace('_', ' ')|title, display='text') }}</td>
+                                                    <td class="{{ table_ui.cell_classes() }}">{{ gate.reason }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+                            {% if details.can_jobs and details.remote_review %}
+                                <div class="mt-3 rounded-lg border border-outline-subtle p-3"
+                                     data-kaori-remote-review-evidence>
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <p class="text-xs font-semibold text-content-primary">Remote Preflight Review</p>
+                                        <div class="flex items-center gap-2">
+                                            {{ integration_status(details.remote_review.tone, details.remote_review.label, display='text') }}
+                                            {{ info_tip.render('infrastructure-automation-remote-review-guide', 'Review Evidence Boundary',
+                                                    'Historical review evidence never authorizes remote execution or Kubernetes mutation.',
+                                                    ['Current credential grant, host trust and worker admission must be requalified independently.',
+                                                    'Actual SSH, native runtime attestation and full preflight are separate evidence.'],
+                                                    variant='guide') }}
+                                        </div>
+                                    </div>
+                                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ details.remote_review.description }}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </article>
+                {% elif active_tab == 'inventory' %}
+                    {{ section_intro.render('Inventory & Associations', 'Review registered hosts and their committed provider and cluster evidence.') }}
+                    <article id="infrastructure-automation-assets"
+                             class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <h4 class="text-sm font-semibold text-content-primary">Assets &amp; Inventories</h4>
+                            {% if details.can_inventory and not details.assets.is_empty %}
+                                <a href="{{ url_for('platform_operations.infrastructure_automation_hosts.new', connection_id=details.connection.id) }}"
+                                   class="{{ action_button.classes('secondary') }}">
+                                    <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                                    Register Host &amp; Role
+                                </a>
+                            {% endif %}
+                        </div>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                            Committed Linux host roles for this Ansible connection only. These are registration records,
+                            not confirmed SSH access, privileged identity or Kubespray execution readiness.
+                        </p>
+                        {% if not details.can_inventory %}
+                            <p class="mt-3 text-xs text-content-secondary">Inventory view permission is required to inspect host identities and endpoints.</p>
+                        {% elif details.assets.is_empty %}
+                            {% with empty_state_icon='server', empty_state_label='Setup Required',
+                                empty_state_title='No Registered Hosts',
+                                empty_state_description='Register existing non-production Linux hosts and assign the control-plane and worker roles.',
+                                empty_state_action_url=url_for('platform_operations.infrastructure_automation_hosts.new', connection_id=details.connection.id),
+                                empty_state_action_label='Register Host', empty_state_action_icon='plus' %}
+                                {% include "components/states/_empty_state.html" %}
+                            {% endwith %}
+                        {% elif details.assets.state == 'blocked' %}
+                            {{ integration_status("blocked", "Inventory Not Qualified", display="text") }}
+                            <p class="mt-2 text-xs text-content-secondary">{{ details.assets.reason }}</p>
+                        {% else %}
+                            {{ integration_status("pending", "SSH Trust Required", display="text") }}
+                            <p class="mt-2 text-xs text-content-secondary">
+                                {{ details.assets.pagination.total_items }} scoped host assignments ·
+                                Inventory correlation SHA256 {{ details.assets.fingerprint[:12] }}…
+                            </p>
+                            <div class="mt-3 overflow-x-auto">
+                                <table class="{{ table_ui.table_classes('min-w-[420px]') }}">
+                                    <thead class="{{ table_ui.head_classes() }}">
+                                        <tr>
+                                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Host</th>
+                                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Role</th>
+                                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Management Endpoint</th>
+                                            <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Manage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="{{ table_ui.body_classes() }}">
+                                        {% for host in details.assets.rows %}
+                                            <tr class="{{ table_ui.row_classes() }}">
+                                                <th scope="row" class="{{ table_ui.cell_classes() }}">{{ host.name }}</th>
+                                                <td class="{{ table_ui.cell_classes() }}">{{ host.role|replace('_', ' ') |title }}</td>
+                                                <td class="{{ table_ui.cell_classes() }}">
+                                                    <span class="font-mono text-xs">{{ host.address }}:{{ host.ssh_port }}</span>
+                                                </td>
+                                                <td class="{{ table_ui.cell_classes(true) }}">
+                                                    <a href="{{ url_for('platform_operations.infrastructure_automation_hosts.edit', connection_id=details.connection.id, host_id=host.id) }}"
+                                                       class="{{ action_button.classes('soft') }}">Edit</a>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {{ registry_ui.footer('platform_operations.infrastructure_automation.index',
+                                                    'infrastructure-automation-results',
+                                                    'infrastructure-automation-loading',
+                                                    details.assets.pagination,
+                                                    {'tab': 'inventory', 'q': selected_query, 'connection_id': selected_connection_id,
+                                                    'page': pagination.page, 'per_page': pagination.per_page},
+                                                    details.assets.pagination.allowed_per_page,
+                                                    resource_label='Hosts',
+                                                    rows_aria_label='Hosts per page',
+                                                    control_name='infrastructure-automation-assets',
+                                                    page_param='asset_page',
+                                                    per_page_param='asset_per_page') }}
+                        {% endif %}
+                        <p class="mt-2 text-xs text-content-muted">Registration, credential admission and remote host-key verification are separate gated capabilities. No executable inventory is generated here.</p>
+                    </article>
+                    <div class="grid gap-4 xl:grid-cols-2">
+                        <article class="rounded-xl border border-outline-subtle bg-surface-card p-4"
+                                 data-kaori-inventory-store-evidence>
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <h4 class="text-sm font-semibold text-content-primary">Provider KV v2 Inventory Evidence</h4>
+                                {% if not details.can_inventory %}
+                                    {{ integration_status("blocked", "Inventory Permission Required", display="text") }}
+                                {% elif details.inventory_store is not defined or not details.inventory_store %}
+                                    {{ integration_status("blocked", "Not Recorded", display="text") }}
+                                {% else %}
+                                    {{ integration_status("pending" if details.inventory_store.state == 'historical_aligned' else ("unknown" if details.inventory_store.state == 'not_recorded' else "warning"),
+                                                        "Historical Source Aligned" if details.inventory_store.state == 'historical_aligned' else ("Not Recorded" if details.inventory_store.state == 'not_recorded' else "Review Required"),
+                                                        display="text") }}
+                                {% endif %}
+                            </div>
+                            {% if not details.can_inventory %}
+                                <p class="mt-2 text-xs text-content-secondary">Inventory view permission is required to review provider evidence.</p>
+                            {% elif details.inventory_store is defined and details.inventory_store %}
+                                <p class="mt-2 text-xs text-content-secondary">{{ details.inventory_store.description }}</p>
+                                {% if details.inventory_store.fingerprint %}
+                                    <p class="mt-1 text-xs text-content-muted">
+                                        {{ details.inventory_store.provider_label }} · Readback SHA256
+                                        <span class="font-mono">{{ details.inventory_store.fingerprint[:12] }}…</span>
+                                        · Ansible parser {{ 'verified' if details.inventory_store.parser_verified else 'not checked' }}
+                                    </p>
+                                    <p class="mt-1 text-xs text-content-muted">Observed {{ details.inventory_store.observed_at }} · Historical receipt only</p>
+                                {% endif %}
+                            {% else %}
+                                <p class="mt-2 text-xs text-content-secondary">No independently qualified provider KV v2 readback is recorded.</p>
+                            {% endif %}
+                            <p class="mt-2 text-xs text-content-muted">Provider entries are not read on page load. This evidence does not establish credential access, SSH trust, Plan approval or a Kubernetes Run.</p>
                         </article>
                         <article class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                            <div class="flex flex-wrap items-center justify-between gap-2">
-                                <h4 class="text-sm font-semibold text-content-primary">02 · Preflight</h4>
-                                {{ integration_status("pending" if details.preflight.state == 'ready_for_review' else "warning",
-                                    "Ready for Review" if details.preflight.state == 'ready_for_review' else "Review Required", display="text") }}
-                            </div>
-                            <dl class="mt-3 grid grid-cols-2 gap-3">
-                                <div>
-                                    <dt class="text-xs text-content-muted">Review Gates</dt>
-                                    <dd class="mt-1 text-xl font-semibold tabular-nums text-content-primary">{{ details.preflight.review_verified_gates }}/{{ details.preflight.review_required_gates }}</dd>
-                                </div>
-                                <div>
-                                    <dt class="text-xs text-content-muted">Execution Gates</dt>
-                                    <dd class="mt-1 text-xl font-semibold tabular-nums text-content-primary">{{ details.preflight.governance_verified_gates }}/{{ details.preflight.governance_required_gates }}</dd>
-                                </div>
-                            </dl>
-                            {% if details.preflight.next_review_requirement %}
-                                <p class="mt-1 text-xs text-content-muted">{{ details.preflight.next_review_requirement }}</p>
+                            <h4 class="text-sm font-semibold text-content-primary">Kubernetes Cluster Associations</h4>
+                            {% if not details.can_inventory %}
+                                <p class="mt-2 text-xs text-content-secondary">Inventory view permission is required to read bound Kubernetes cluster identities.</p>
+                            {% elif details.cluster_bindings %}
+                                <ul class="mt-2 space-y-2">
+                                    {% for target in details.cluster_bindings %}
+                                        <li class="rounded-lg border border-outline-subtle p-3">
+                                            <p class="text-xs font-semibold text-content-primary">{{ target.cluster_name }}</p>
+                                            <p class="mt-1 text-xs text-content-secondary">Environment: {{ target.environment or 'Unknown' }} · Committed Nodes: {{ target.node_count if target.node_count is not none else 'Unknown' }}</p>
+                                            <p class="mt-1 text-xs text-content-muted">Binding {{ 'Recorded' if target.binding_enabled else 'Disabled' }} · Execution Blocked · Kubernetes API remains authoritative.</p>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                {% with empty_state_icon='boxes', empty_state_label='No Data',
+                                    empty_state_title='No Cluster Associations',
+                                    empty_state_description='Verified Kubernetes clusters appear here after canonical binding is recorded.',
+                                    empty_state_min_height='min-h-[180px]' %}
+                                    {% include "components/states/_empty_state.html" %}
+                                {% endwith %}
                             {% endif %}
                         </article>
-                        <article class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                            <div class="flex flex-wrap items-center justify-between gap-2">
-                                <h4 class="text-sm font-semibold text-content-primary">03 · Plan</h4>
-                                {{ integration_status("pending" if details.plan.state == 'current_for_review' else ("unknown" if details.plan.state == 'not_generated' else "warning"),
-                                    "Current for Review" if details.plan.state == 'current_for_review' else ("Not Generated" if details.plan.state == 'not_generated' else "Review Required"),
-                                    display="text") }}
-                            </div>
-                            <p class="mt-3 text-xs leading-5 text-content-secondary">{{ details.plan.description }}</p>
-                            <p class="mt-2 text-xs leading-5 text-content-muted">A review-only Plan is not permission to execute Kubespray.</p>
-                        </article>
                     </div>
-                    {% if details.can_jobs and details.remote_review %}
-                        <div class="mt-3 rounded-lg border border-outline-subtle p-3"
-                             data-kaori-remote-review-evidence>
-                            <div class="flex flex-wrap items-center justify-between gap-2">
-                                <p class="text-xs font-semibold text-content-primary">Remote Preflight Review</p>
-                                <div class="flex items-center gap-2">
-                                    {{ integration_status(details.remote_review.tone, details.remote_review.label, display='text') }}
-                                    {{ info_tip.render('infrastructure-automation-remote-review-guide', 'Review Evidence Boundary',
-                                            'Historical review evidence never authorizes remote execution or Kubernetes mutation.',
-                                            ['Current credential grant, host trust and worker admission must be requalified independently.',
-                                            'Actual SSH, native runtime attestation and full preflight are separate evidence.'],
-                                            variant='guide') }}
-                                </div>
-                            </div>
-                            <p class="mt-2 text-xs leading-5 text-content-secondary">{{ details.remote_review.description }}</p>
+                {% elif active_tab == 'executions' %}
+                    {{ section_intro.render('Execution History', 'Canonical JobExecution records for the selected connection.') }}
+                    <article class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <h4 class="text-sm font-semibold text-content-primary">Recent Automation Executions</h4>
+                            {% if details.can_jobs %}
+                                <a href="{{ url_for('jobs.executions') }}"
+                                   class="{{ action_button.classes('secondary') }}">View Jobs &amp; Executions</a>
+                            {% endif %}
                         </div>
-                    {% endif %}
-                </div>
-            </article>
-            {{ section_intro.render('Inventory & Associations', 'Review registered hosts and their committed provider and cluster evidence.') }}
-            <article id="infrastructure-automation-assets"
-                     class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <h4 class="text-sm font-semibold text-content-primary">Assets &amp; Inventories</h4>
-                    {% if details.can_inventory and not details.assets.is_empty %}
-                        <a href="{{ url_for('platform_operations.infrastructure_automation_hosts.new', connection_id=details.connection.id) }}"
-                           class="{{ action_button.classes('secondary') }}">
-                            <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
-                            Register Host &amp; Role
-                        </a>
-                    {% endif %}
-                </div>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">
-                    Committed Linux host roles for this Ansible connection only. These are registration records,
-                    not confirmed SSH access, privileged identity or Kubespray execution readiness.
-                </p>
-                {% if not details.can_inventory %}
-                    <p class="mt-3 text-xs text-content-secondary">Inventory view permission is required to inspect host identities and endpoints.</p>
-                {% elif details.assets.is_empty %}
-                    {% with empty_state_icon='server', empty_state_label='Setup Required',
-                        empty_state_title='No Registered Hosts',
-                        empty_state_description='Register existing non-production Linux hosts and assign the control-plane and worker roles.',
-                        empty_state_action_url=url_for('platform_operations.infrastructure_automation_hosts.new', connection_id=details.connection.id),
-                        empty_state_action_label='Register Host', empty_state_action_icon='plus' %}
-                        {% include "components/states/_empty_state.html" %}
-                    {% endwith %}
-                {% elif details.assets.state == 'blocked' %}
-                    {{ integration_status("blocked", "Inventory Not Qualified", display="text") }}
-                    <p class="mt-2 text-xs text-content-secondary">{{ details.assets.reason }}</p>
-                {% else %}
-                    {{ integration_status("pending", "SSH Trust Required", display="text") }}
-                    <p class="mt-2 text-xs text-content-secondary">
-                        {{ details.assets.pagination.total_items }} scoped host assignments ·
-                        Inventory correlation SHA256 {{ details.assets.fingerprint[:12] }}…
-                    </p>
-                    <div class="mt-3 overflow-x-auto">
-                        <table class="{{ table_ui.table_classes('min-w-[420px]') }}">
-                            <thead class="{{ table_ui.head_classes() }}">
-                                <tr>
-                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Host</th>
-                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Role</th>
-                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Management Endpoint</th>
-                                    <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Manage</th>
-                                </tr>
-                            </thead>
-                            <tbody class="{{ table_ui.body_classes() }}">
-                                {% for host in details.assets.rows %}
-                                    <tr class="{{ table_ui.row_classes() }}">
-                                        <th scope="row" class="{{ table_ui.cell_classes() }}">{{ host.name }}</th>
-                                        <td class="{{ table_ui.cell_classes() }}">{{ host.role|replace('_', ' ') |title }}</td>
-                                        <td class="{{ table_ui.cell_classes() }}">
-                                            <span class="font-mono text-xs">{{ host.address }}:{{ host.ssh_port }}</span>
-                                        </td>
-                                        <td class="{{ table_ui.cell_classes(true) }}">
-                                            <a href="{{ url_for('platform_operations.infrastructure_automation_hosts.edit', connection_id=details.connection.id, host_id=host.id) }}"
-                                               class="{{ action_button.classes('soft') }}">Edit</a>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {{ registry_ui.footer('platform_operations.infrastructure_automation.index',
-                                            'infrastructure-automation-assets',
-                                            'infrastructure-automation-loading',
-                                            details.assets.pagination,
-                                            {'q': selected_query, 'connection_id': selected_connection_id,
-                                            'page': pagination.page, 'per_page': pagination.per_page},
-                                            details.assets.pagination.allowed_per_page,
-                                            resource_label='Hosts',
-                                            rows_aria_label='Hosts per page',
-                                            control_name='infrastructure-automation-assets',
-                                            page_param='asset_page',
-                                            per_page_param='asset_per_page') }}
-                {% endif %}
-                <p class="mt-2 text-xs text-content-muted">Registration, credential admission and remote host-key verification are separate gated capabilities. No executable inventory is generated here.</p>
-            </article>
-            <div class="grid gap-4 xl:grid-cols-2">
-                <article class="rounded-xl border border-outline-subtle bg-surface-card p-4"
-                         data-kaori-inventory-store-evidence>
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <h4 class="text-sm font-semibold text-content-primary">Provider KV v2 Inventory Evidence</h4>
-                        {% if not details.can_inventory %}
-                            {{ integration_status("blocked", "Inventory Permission Required", display="text") }}
-                        {% elif details.inventory_store is not defined or not details.inventory_store %}
-                            {{ integration_status("blocked", "Not Recorded", display="text") }}
+                        {% if not details.can_jobs %}
+                            <p class="mt-2 text-xs text-content-secondary">Jobs view permission is required to read execution history.</p>
+                        {% elif details.jobs %}
+                            <p class="mt-2 text-xs text-content-secondary">{{ details.job_total }} scoped JobExecution records; showing the latest five.</p>
+                            <div class="mt-3 overflow-x-auto">
+                                <table class="{{ table_ui.table_classes('min-w-[500px]') }}">
+                                    <thead class="{{ table_ui.head_classes() }}">
+                                        <tr>
+                                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Operation</th>
+                                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Status</th>
+                                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Created</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="{{ table_ui.body_classes() }}">
+                                        {% for job in details.jobs %}
+                                            <tr class="{{ table_ui.row_classes() }}">
+                                                <td class="{{ table_ui.cell_classes() }}">{{ job.operation|replace('_', ' ') |title }}</td>
+                                                <td class="{{ table_ui.cell_classes() }}">{{ job.status|replace('_', ' ') |title }}</td>
+                                                <td class="{{ table_ui.cell_classes() }}">{{ job.created_at|user_datetime }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         {% else %}
-                            {{ integration_status("pending" if details.inventory_store.state == 'historical_aligned' else ("unknown" if details.inventory_store.state == 'not_recorded' else "warning"),
-                                                "Historical Source Aligned" if details.inventory_store.state == 'historical_aligned' else ("Not Recorded" if details.inventory_store.state == 'not_recorded' else "Review Required"),
-                                                display="text") }}
+                            {% with empty_state_icon='list-checks', empty_state_label='No Data',
+                                empty_state_title='No Automation Executions',
+                                empty_state_description='Committed execution records will appear here. Source validation does not create an execution.' %}
+                                {% include "components/states/_empty_state.html" %}
+                            {% endwith %}
                         {% endif %}
-                    </div>
-                    {% if not details.can_inventory %}
-                        <p class="mt-2 text-xs text-content-secondary">Inventory view permission is required to review provider evidence.</p>
-                    {% elif details.inventory_store is defined and details.inventory_store %}
-                        <p class="mt-2 text-xs text-content-secondary">{{ details.inventory_store.description }}</p>
-                        {% if details.inventory_store.fingerprint %}
-                            <p class="mt-1 text-xs text-content-muted">
-                                {{ details.inventory_store.provider_label }} · Readback SHA256
-                                <span class="font-mono">{{ details.inventory_store.fingerprint[:12] }}…</span>
-                                · Ansible parser {{ 'verified' if details.inventory_store.parser_verified else 'not checked' }}
-                            </p>
-                            <p class="mt-1 text-xs text-content-muted">Observed {{ details.inventory_store.observed_at }} · Historical receipt only</p>
-                        {% endif %}
-                    {% else %}
-                        <p class="mt-2 text-xs text-content-secondary">No independently qualified provider KV v2 readback is recorded.</p>
-                    {% endif %}
-                    <p class="mt-2 text-xs text-content-muted">Provider entries are not read on page load. This evidence does not establish credential access, SSH trust, Plan approval or a Kubernetes Run.</p>
-                </article>
-                <article class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                    <h4 class="text-sm font-semibold text-content-primary">Kubernetes Cluster Associations</h4>
-                    {% if not details.can_inventory %}
-                        <p class="mt-2 text-xs text-content-secondary">Inventory view permission is required to read bound Kubernetes cluster identities.</p>
-                    {% elif details.cluster_bindings %}
-                        <ul class="mt-2 space-y-2">
-                            {% for target in details.cluster_bindings %}
-                                <li class="rounded-lg border border-outline-subtle p-3">
-                                    <p class="text-xs font-semibold text-content-primary">{{ target.cluster_name }}</p>
-                                    <p class="mt-1 text-xs text-content-secondary">Environment: {{ target.environment or 'Unknown' }} · Committed Nodes: {{ target.node_count if target.node_count is not none else 'Unknown' }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">Binding {{ 'Recorded' if target.binding_enabled else 'Disabled' }} · Execution Blocked · Kubernetes API remains authoritative.</p>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        {% with empty_state_icon='boxes', empty_state_label='No Data',
-                            empty_state_title='No Cluster Associations',
-                            empty_state_description='Verified Kubernetes clusters appear here after canonical binding is recorded.',
-                            empty_state_min_height='min-h-[180px]' %}
-                            {% include "components/states/_empty_state.html" %}
-                        {% endwith %}
-                    {% endif %}
-                </article>
-            </div>
-            {{ section_intro.render('Execution History', 'Canonical JobExecution records for the selected connection.') }}
-            <article class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                    <h4 class="text-sm font-semibold text-content-primary">Recent Automation Executions</h4>
-                    {% if details.can_jobs %}
-                        <a href="{{ url_for('jobs.executions') }}"
-                           class="{{ action_button.classes('secondary') }}">View Jobs &amp; Executions</a>
-                    {% endif %}
-                </div>
-                {% if not details.can_jobs %}
-                    <p class="mt-2 text-xs text-content-secondary">Jobs view permission is required to read execution history.</p>
-                {% elif details.jobs %}
-                    <p class="mt-2 text-xs text-content-secondary">{{ details.job_total }} scoped JobExecution records; showing the latest five.</p>
-                    <div class="mt-3 overflow-x-auto">
-                        <table class="{{ table_ui.table_classes('min-w-[500px]') }}">
-                            <thead class="{{ table_ui.head_classes() }}">
-                                <tr>
-                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Operation</th>
-                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Status</th>
-                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Created</th>
-                                </tr>
-                            </thead>
-                            <tbody class="{{ table_ui.body_classes() }}">
-                                {% for job in details.jobs %}
-                                    <tr class="{{ table_ui.row_classes() }}">
-                                        <td class="{{ table_ui.cell_classes() }}">{{ job.operation|replace('_', ' ') |title }}</td>
-                                        <td class="{{ table_ui.cell_classes() }}">{{ job.status|replace('_', ' ') |title }}</td>
-                                        <td class="{{ table_ui.cell_classes() }}">{{ job.created_at|user_datetime }}</td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    {% with empty_state_icon='list-checks', empty_state_label='No Data',
-                        empty_state_title='No Automation Executions',
-                        empty_state_description='Committed execution records will appear here. Source validation does not create an execution.' %}
-                        {% include "components/states/_empty_state.html" %}
-                    {% endwith %}
+                    </article>
                 {% endif %}
-            </article>
-        </div>
-    {% endif %}
+            </div>
+        {% else %}
+            {% with empty_state_icon='plug', empty_state_label='Setup Required',
+                empty_state_title='No Connection Selected',
+                empty_state_description='Register or select an Ansible connection to open this workspace.',
+                empty_state_action_url=url_for(endpoint, tab='connections'),
+                empty_state_action_label='View Connections', empty_state_action_icon='plug' %}
+                {% include "components/states/_empty_state.html" %}
+            {% endwith %}
+        {% endif %}
+    </div>
 </section>

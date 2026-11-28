@@ -28,7 +28,7 @@
                     </p>
                 </div>
                 <a class="{{ action_button.classes('secondary') }}"
-                   href="{{ url_for('platform_operations.infrastructure_automation.index', connection_id=connection.id) }}">Back to Lifecycle</a>
+                   href="{{ url_for('platform_operations.infrastructure_automation.index', tab='inventory', connection_id=connection.id) }}">Back to Inventory</a>
             </div>
             {% if error %}
                 <p role="alert"
