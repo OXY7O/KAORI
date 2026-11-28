@@ -234,7 +234,7 @@
                             <div>
                                 <dt class="text-xs font-semibold text-content-muted">Authentication Source</dt>
                                 <dd class="mt-1 text-sm font-bold text-content-primary">
-                                    {{ identity_context.type_label if current_user.last_auth_source == 'database' else last_auth_label }}
+                                    {{ 'Local Database' if current_user.last_login_at and current_user.last_auth_source == 'database' else last_auth_label if current_user.last_login_at and last_auth_source else 'Not recorded' }}
                                 </dd>
                             </div>
                             <div>

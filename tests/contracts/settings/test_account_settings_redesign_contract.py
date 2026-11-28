@@ -123,14 +123,16 @@ def test_authentication_activity_is_full_width_with_inline_evidence_boundary() -
     assert 'Session Ended' in activity
     assert "metadata.get('result_reason')" not in activity
     assert "table_label.status_indicator_label('Success', 'normal')" in activity
-    assert 'is_logout and is_success' in activity
+    assert "kind == 'sign_out'" in activity
+    assert "authentication_event_kind(event)" in activity
+    assert "table_label.status_indicator_label('Expired', 'warning')" in activity
     assert "table_label.metadata_label('Recorded', 'check')" in activity
     assert 'data-authentication-summary="compact-strip"' in activity
     assert 'data-authentication-event-feed="primary"' in activity
     assert 'Event Summary' in activity
     assert 'Latest Events' in activity
     assert 'Based on {{ activity_summary.total }} latest events (max 5), not full history' in activity
-    assert 'sm:grid-cols-3 sm:divide-x sm:divide-y-0' in activity
+    assert 'sm:grid-cols-4 sm:divide-x sm:divide-y-0' in activity
     assert 'bg-status-normal-soft text-status-normal-text' in activity
     assert 'bg-status-critical-soft text-status-critical-text' in activity
     assert 'bg-kaori-soft/50' not in activity
