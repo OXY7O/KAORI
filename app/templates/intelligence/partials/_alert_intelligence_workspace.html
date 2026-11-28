@@ -62,22 +62,6 @@
                        type="hidden"
                        name="tab"
                        value="{{ payload.tab }}">
-                <input class="alert-intelligence-context-persistent"
-                       type="hidden"
-                       name="severity"
-                       value="{{ payload.filters.severity }}">
-                <input class="alert-intelligence-context-persistent"
-                       type="hidden"
-                       name="workflow"
-                       value="{{ payload.filters.workflow }}">
-                <input class="alert-intelligence-context-persistent"
-                       type="hidden"
-                       name="source"
-                       value="{{ payload.filters.source }}">
-                <input class="alert-intelligence-context-persistent"
-                       type="hidden"
-                       name="q"
-                       value="{{ payload.filters.q }}">
                 <label class="min-w-0">
                     <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
                     <select id="alert-intelligence-domain-select"
@@ -133,16 +117,14 @@
                 {% set blocked_state_title = "Unable to Qualify Provider Cases" if payload.provider_case_status == 'unavailable' else "Select an Authorized Provider Instance" %}
                 {% set blocked_state_description = "Only exact approved instance grants can expose committed provider cases. Unavailable or missing evidence never proves source health." %}
                 {% include 'components/states/_blocked_state.html' %}
+                {% if payload.tab == 'overview' %}
+                    {% include 'intelligence/partials/_alert_provider_coverage.html' %}
+                {% endif %}
             </div>
         {% elif payload.provider_case_mode and payload.tab == 'overview' %}
             {% include 'intelligence/partials/_vault_provider_case_overview.html' %}
         {% elif payload.provider_case_mode and payload.tab == 'resolved' %}
-            <section id="alert-operations-provider-history" class="space-y-3 p-4 sm:p-5">
-                <h3 class="text-sm font-semibold text-content-primary">Committed Provider Recovery & Closure</h3>
-                {{ loading_bar.render('alert-operations-provider-history-loading', label='Refreshing Recovery History') }}
-                <p class="text-xs text-content-muted">Only independently signed positive provider recovery and scoped verification records appear here. Missing alerts never establish recovery.</p>
-                {% include 'intelligence/partials/_alert_ops_active_table.html' %}
-            </section>
+            {% include 'intelligence/partials/_alert_provider_history.html' %}
         {% elif payload.provider_case_mode and payload.tab == 'routing' and payload.local_routing is not none %}
             {% include 'intelligence/partials/_vault_provider_routing.html' %}
         {% elif payload.provider_case_mode and payload.tab != 'active' %}
@@ -150,10 +132,12 @@
                 {% set blocked_state_icon = "shield-check" %}
                 {% set blocked_state_label = "Reserved Plan" %}
                 {% set blocked_state_title = "Provider Lifecycle Not Qualified" %}
-                {% if payload.tab == 'resolved' %}
-                    {% set blocked_state_description = "Positive recovery evidence is not qualified for this source. Missing, empty, expired or unavailable observations never establish resolution." %}
+                {% if payload.tab == 'routing' %}
+                    {% set blocked_state_description = "Scoped firing policies require local opt-in, an exact source binding and approved decision scope. No default delivery." %}
+                {% elif payload.tab == 'templates' %}
+                    {% set blocked_state_description = "Provider alerts use fixed redacted delivery content. Custom notification templates are not qualified for this source." %}
                 {% else %}
-                    {% set blocked_state_description = "Provider templates, delivery silences and automatic routing remain unqualified. Explicit local firing requires independently approved routing and destination." %}
+                    {% set blocked_state_description = "KAORI delivery silences and provider-native silence mutation are not qualified for this source. Use the approved provider workflow separately." %}
                 {% endif %}
                 {% set blocked_state_action_url = url_for('alert_intelligence.index', domain=payload.domain, provider=payload.selected_provider, asset=payload.selected_asset_key, tab='active') %}
                 {% set blocked_state_action_label = "Review Active Cases" %}

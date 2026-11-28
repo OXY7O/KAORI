@@ -30,7 +30,7 @@
                 {% call page_hero.intro('siren', 'Insights', 'shield-alert') %}
                     <h1 class="{{ page_hero.title_classes() }}">Alert Intelligence</h1>
                     <p class="mt-2 {{ page_hero.description_classes() }}">
-                        Manage alert routing, silences, recovery, and incident evidence.
+                        Triage alerts, take ownership, review delivery, and verify recovery.
                     </p>
                     <div class="{{ page_hero.metadata_row_classes() }}">
                         {{ page_hero.meta_label('boxes', payload.domain_label) }}
@@ -46,10 +46,10 @@
                                         'Provider Alert Evidence',
                                         [
                                         ('bell-ring', 'Committed Open Cases', payload.summary.active if payload.provider_case_status == 'ready' else '—', 'Exact authorized instance') ,
-                    ('shield-alert', 'Lifecycle', 'Read-only', 'Recovery and delivery not qualified')
+                    ('shield-check', 'Verification Pending', payload.summary.verification_pending if payload.provider_case_status == 'ready' else '—', 'Committed recovery awaiting closure')
                     ],
-                    'Committed evidence is not current provider health. Select an approved instance.',
-                    'Read-only' if payload.provider_case_status == 'ready' else 'Scope or Evidence Required') }}
+                    'Source evidence, operator controls and delivery approval are independently qualified.',
+                    ('Local Reconcile Available' if payload.local_case_reconcile else 'Scoped Evidence') if payload.provider_case_status == 'ready' else 'Scope or Evidence Required') }}
                 </aside>
             {% else %}
                 {{ page_hero.context_card('Alert Operations posture',

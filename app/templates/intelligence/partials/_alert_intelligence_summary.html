@@ -5,12 +5,15 @@
 {% endset %}
 {% call intelligence_ui.posture_panel(
     'Alert Operations Summary',
-    'Fleet-level operational posture. Use the lifecycle navigation above to investigate and manage cases.',
+    'Operational posture for the selected domain and asset scope. Use the lifecycle tabs to investigate and manage cases.',
     'activity',
     payload.snapshot.label,
     payload.snapshot.tone,
-    'Provider cases are read-only. Fresh matching source observations are distinct from admitted case history; recovery and delivery remain unqualified.' if payload.provider_case_mode else 'Committed AlertCase evidence remains available even when live providers are temporarily unavailable.',
-    actions=[] if payload.provider_case_mode else [
+    'Counts describe committed cases, not provider health. Recovery and delivery require independent evidence; operator actions are evaluated per case.' if payload.provider_case_mode else 'Committed AlertCase evidence remains available even when live providers are temporarily unavailable.',
+    actions=[
+    ('list-filter', 'Active Alerts', url_for('alert_intelligence.index', tab='active', domain=payload.domain, provider=payload.selected_provider, asset=payload.selected_asset_key)),
+    ('badge-check', 'Resolved Alerts', url_for('alert_intelligence.index', tab='resolved', domain=payload.domain, provider=payload.selected_provider, asset=payload.selected_asset_key))
+    ] if payload.provider_case_mode and payload.provider_case_status == 'ready' else [] if payload.provider_case_mode else [
     ('send', 'Notification Channels', url_for('notification_channels.index')),
     ('badge-check', 'Resolved Alerts', url_for('alert_intelligence.index', tab='resolved', domain=payload.domain, asset=payload.selected_asset_key))
     ],
@@ -21,7 +24,7 @@
             {{ intelligence_ui.posture_metric('siren', 'Committed Open Cases', payload.summary.active if payload.provider_case_status == 'ready' else '—', 'Durable admitted cases, not provider health') }}
             {{ intelligence_ui.posture_metric('triangle-alert', 'Critical Cases', payload.summary.critical if payload.provider_case_status == 'ready' else '—', 'Committed severity') }}
             {{ intelligence_ui.posture_metric('circle-help', 'Source Unknown', payload.summary.source_unknown if payload.provider_case_status == 'ready' else '—', 'No fresh matching firing evidence') }}
-            {{ intelligence_ui.posture_metric('badge-check', 'Resolved Today', '—', 'Recovery not qualified') }}
+            {{ intelligence_ui.posture_metric('badge-check', 'Verification Pending', payload.summary.verification_pending if payload.provider_case_status == 'ready' else '—', 'Independent closure evidence required') }}
         {% else %}
             {{ intelligence_ui.posture_metric('siren', 'Active Alerts', payload.summary.active, payload.summary.critical ~ ' critical') }}
             {{ intelligence_ui.posture_metric('user-check', 'Acknowledged', payload.summary.acknowledged, 'Operator ownership accepted') }}
