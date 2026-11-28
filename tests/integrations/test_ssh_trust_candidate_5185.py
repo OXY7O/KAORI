@@ -241,16 +241,17 @@ def test_console_trust_readback_requires_latest_revision_and_current_roles(conso
     )
     monkeypatch.setattr(ssh_trust_lifecycle, 'lock_explicit_permissions', lambda *args: True)
     # Service context is synthetic; no persisted or native trust is created.
-    result = ssh_trust_lifecycle.review_current_console_trust(ScopeAccessPolicy(), AutomationCredentialScopeTarget(), now=now)
+    policy, target = ScopeAccessPolicy(), AutomationCredentialScopeTarget()
+    result = ssh_trust_lifecycle.review_current_console_trust(policy, target, now=now)
     assert result is not None
     revision.lifecycle_status = 'revoked'
-    assert ssh_trust_lifecycle.review_current_console_trust(ScopeAccessPolicy(), AutomationCredentialScopeTarget(), now=now) is None
+    assert ssh_trust_lifecycle.review_current_console_trust(policy, target, now=now) is None
     revision.lifecycle_status = 'active'
     monkeypatch.setattr(ssh_trust_lifecycle, 'lock_explicit_permissions', lambda *args: False)
-    assert ssh_trust_lifecycle.review_current_console_trust(ScopeAccessPolicy(), AutomationCredentialScopeTarget(), now=now) is None
+    assert ssh_trust_lifecycle.review_current_console_trust(policy, target, now=now) is None
     monkeypatch.setattr(ssh_trust_lifecycle, 'lock_explicit_permissions', lambda *args: True)
     del files[name]
-    assert ssh_trust_lifecycle.review_current_console_trust(ScopeAccessPolicy(), AutomationCredentialScopeTarget(), now=now) is None
+    assert ssh_trust_lifecycle.review_current_console_trust(policy, target, now=now) is None
 
 
 def test_console_activation_review_requires_next_revision_and_independent_verifier(console_store, monkeypatch):
@@ -265,8 +266,12 @@ def test_console_activation_review_requires_next_revision_and_independent_verifi
 
     def review(requester, verifier, expected):
         return ssh_trust_lifecycle.review_console_trust_activation(
-            ScopeAccessPolicy(), AutomationCredentialScopeTarget(), requester_id=requester,
-            verifier_id=verifier, expected_revision=expected, now=now
+            ScopeAccessPolicy(),
+            AutomationCredentialScopeTarget(),
+            requester_id=requester,
+            verifier_id=verifier,
+            expected_revision=expected,
+            now=now,
         )
 
     assert review(3, 2, 1) is not None
@@ -275,3 +280,22 @@ def test_console_activation_review_requires_next_revision_and_independent_verifi
     assert review(3, binding.recorded_by_user_id, 1) is None
     revision.lifecycle_status = 'active'
     assert review(3, 2, 1) is None
+
+
+def test_host_cannot_sign_its_own_console_evidence(console_store):
+    now, _, _, _, target, files, name, payload, envelope = console_store
+    # RFC 8032 test-vector key corresponding to the synthetic public key above.
+    host_signer = Ed25519PrivateKey.from_private_bytes(
+        bytes.fromhex('9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60')
+    )
+    assert host_signer.public_key().public_bytes_raw() == _RAW
+    files['root.pub'] = _RAW.hex().encode('ascii')
+    files[name] = envelope(payload, host_signer)
+    assert ssh_trust_authority.resolve_console_evidence(target, now=now) is None
+
+
+def test_console_artifact_reader_rejects_writable_directory(monkeypatch, tmp_path):
+    monkeypatch.setattr(ssh_trust_authority, '_AUTHORITY_DIR', tmp_path)
+    (tmp_path / 'root.pub').write_text('a' * 64)
+    assert ssh_trust_authority._read_console_file('root.pub') is None
+    assert ssh_trust_authority._read_console_file('../root.pub') is None
