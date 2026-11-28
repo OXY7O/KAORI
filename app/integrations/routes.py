@@ -1,3 +1,5 @@
+from typing import Any
+
 from flask import abort, current_app, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
@@ -6,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import permission_required
+from app.models.integration import IntegrationInstance
 from app.common.http import htmx_target, is_htmx_request
 from app.infrastructure_automation.kubernetes.execution_compatibility import (
     assess_kubespray_execution_compatibility,
@@ -273,12 +276,18 @@ def _ansible_source_form(connection: IntegrationInstance | None = None) -> Respo
         data=_ansible_connection_form_values(connection) if connection is not None else None
     )
     if connection is not None:
-        for field in (form.environment, form.profile_key, form.ansible_core_version,
-                      form.ansible_runner_version, form.kubespray_release):
+        persisted = _ansible_connection_form_values(connection)
+        for field in (
+            form.environment,
+            form.profile_key,
+            form.ansible_core_version,
+            form.ansible_runner_version,
+            form.kubespray_release,
+        ):
             # Historical choice is visible, but require_registration_policy still rejects it.
-            old = str(_ansible_connection_form_values(connection).get(field.name) or '')
+            old = str(persisted.get(field.name) or '')
             if old and old not in {key for key, _ in field.choices or []}:
-                field.choices = [*field.choices, (old, old + ' (historical)')]
+                field.choices = [*(field.choices or []), (old, old + ' (historical)')]
     proof = ''
     if request.method == 'POST':
         action = str(request.form.get('action') or '').strip()

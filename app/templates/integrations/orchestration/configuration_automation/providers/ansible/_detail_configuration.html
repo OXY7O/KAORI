@@ -31,13 +31,13 @@ flow_items,
 url_for("integrations.ansible_connection_configure", instance_id=connection.id) if can_configure else none,
 operational_metadata=operational_metadata,
 setup_reference_template="integrations/orchestration/configuration_automation/providers/ansible/_minimum_validation_setup.html",
-contract_description="Review immutable identity and toolchain pins. No credentials or raw inventory stored.",
+contract_description="Review registered identity and toolchain pins. No credentials or raw inventory stored.",
 evidence_description="Committed Git proof and image reference; no live provider request.",
 guide_description="Inspect registered source and execution boundaries without inferring runtime readiness.",
 guide_items=[
 "Source Checked confirms reviewed Git objects and version policy only.",
 "Runtime access requires independently qualified image provenance, worker, inventory and approvals.",
-"Configure Connection guides replacement registration; the existing source is immutable."
+"Configure Connection supports validated updates for unused source-only records; dependent evidence requires governed migration."
 ],
 read_only_label="Immutable Source",
 compact_evidence_labels=("Git Commit SHA", "Git Tree SHA", "Execution Environment"),
