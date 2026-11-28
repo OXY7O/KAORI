@@ -92,6 +92,8 @@ def _validate_actor(actor: User | None, *, generation: int, permission: str) -> 
 def _step_up(actor: User, password: str, code: str) -> None:
     require_personal_factor_assurance(actor, password, now=datetime.now(UTC), strict_primary=True)
     stage_admin_totp_assurance(actor, code)
+    if not isinstance(session_deadlines(actor, read_session_policy(), datetime.now(UTC)), SessionDeadlines):
+        raise LockoutGovernanceDenied('Administrator assurance expired.')
 
 
 def _event(
@@ -115,7 +117,7 @@ def _event(
     event.status = 'success' if changed else 'info'
     event.title = action.replace('_', ' ').title()
     event.message = 'Governed login protection change recorded.' if changed else 'Login protection was unchanged.'
-    event.detail = 'No password, MFA factor, lifecycle status or session generation was changed.'
+    event.detail = 'No password, MFA enrollment, lifecycle status or session generation was changed. Fresh authenticator replay state was consumed.'
     event.metadata_json = redact_operational_metadata({
         'audit_schema': 'authentication.security.v1',
         'access_action': action,
@@ -222,6 +224,8 @@ def stage_manual_unlock(
     ):
         raise LockoutGovernanceDenied('The committed lock changed; refresh and try again.')
     _step_up(actor, password, code)
+    if context.decision.state.locked_until <= datetime.now(UTC):
+        raise LockoutGovernanceDenied('The lock expired; refresh and try again.')
     record = context.record
     record.failure_times = []
     record.cooldown_until = None

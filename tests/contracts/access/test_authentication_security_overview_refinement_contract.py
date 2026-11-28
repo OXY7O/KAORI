@@ -61,6 +61,8 @@ def test_overview_reuses_existing_access_tab_routes_and_never_mutates_policy() -
     overview = _overview()
     for tab in ('mfa', 'bot', 'sessions'):
         assert f"url_for('access.authentication_security.index', tab='{tab}')" in overview
+    assert '_login_protection_summary.html' in overview
+    assert '_login_protection_controls.html' not in overview
     assert '<form' not in overview
     assert 'hx-post=' not in overview
     assert 'secret_key' not in overview

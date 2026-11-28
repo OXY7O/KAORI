@@ -313,7 +313,7 @@
                         </section>
                     </section>
                 </div>
-                {% include "access/authentication_security/partials/_login_protection_controls.html" %}
+                {% include "access/authentication_security/partials/_login_protection_summary.html" %}
             {% elif active_tab == 'mfa' %}
                 {% set current_mfa_label = {
                                     'disabled': 'Disabled',
@@ -747,6 +747,7 @@
                         </div>
                     </section>
                 </div>
+                {% include "access/authentication_security/partials/_login_protection_controls.html" %}
             {% else %}
                 {{ assurance.render('session-security',
                                 'Session Security',

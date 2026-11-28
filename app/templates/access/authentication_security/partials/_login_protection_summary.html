@@ -1,0 +1,19 @@
+{% import "components/table_label.html" as table_label %}
+{% import "access/authentication_security/partials/_assurance_summary.html" as assurance %}
+{% set protection_label = {'disabled': 'Disabled', 'monitor_only': 'Monitor Only', 'enforced': 'Enforced'}.get(lockout_mode|default('disabled'), 'Unknown') %}
+<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+         aria-labelledby="login-protection-summary-control-heading">
+    {{ assurance.control_header('login-protection-summary', 'Login Protection',
+        'Committed local password protection; external providers retain authority.',
+        protection_label, 'warning' if lockout_mode == 'enforced' else 'info', 'shield-alert') }}
+    <div class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="min-w-0 text-sm leading-6 text-content-secondary">
+            10 qualifying failures in 15 minutes trigger a 15-minute temporary lock when enforced.
+        </div>
+        <a href="{{ url_for('access.authentication_security.index', tab='bot', _anchor='login-protection-control') }}"
+           class="inline-flex min-h-10 shrink-0 items-center justify-between gap-3 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-kaori-primary transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+            Review Login Protection
+            <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
+        </a>
+    </div>
+</section>
