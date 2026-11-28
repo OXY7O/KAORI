@@ -15,9 +15,9 @@
                 <aside class="{{ page_hero.aside_classes() }}"
                        aria-label="Analytics snapshot preparation">
                     <div class="{{ page_hero.context_panel_classes() }}">
-                        {{ page_hero.context_header('Shared Analytics Snapshot', 'Background Preparation', 'database-zap') }}
+                        {{ page_hero.context_header_status('Shared Analytics Snapshot', 'Background Preparation', 'Preparing', 'info') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                            {{ page_hero.context_metric('server-cog', 'Cluster', materialization_cluster.name if materialization_cluster else 'Not Selected', 'Metrics Source source scope') }}
+                            {{ page_hero.context_metric('server-cog', 'Cluster', materialization_cluster.name if materialization_cluster else 'Not Selected', 'Metrics Source scope') }}
                             {{ page_hero.context_metric('cpu', 'Execution', 'Worker', 'No heavy web request') }}
                         </div>
                     </div>

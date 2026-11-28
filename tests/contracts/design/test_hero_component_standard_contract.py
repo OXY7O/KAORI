@@ -648,3 +648,30 @@ def test_integration_provider_detail_oob_uses_same_hero_badge() -> None:
     assert 'hx-swap-oob="innerHTML"' in rendered
     assert 'data-kaori-hero-header-accessory="status"' in rendered
     assert 'kaori-hero-status-normal' in rendered
+
+
+def test_context_census_distinguishes_source_candidates_and_explicit_navigation(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    verifier = runpy.run_path(str(ROOT / 'scripts/verify_hero_component_standard.py'))
+    census = verifier['_hero_context_census']
+    templates = tmp_path / 'templates'
+    templates.mkdir()
+    (templates / 'local.html').write_text(
+        "{{ page_hero.context_header('Scope', 'Inventory', 'server') }}\n"
+        "{{ url_for('integrations.storage') }}",
+        encoding='utf-8',
+    )
+    (templates / 'shared.html').write_text(
+        "{{ page_hero.context_card('Scope', 'Readiness', 'Evidence', 'Ready', 'normal', [], none, none, "
+        "integration_endpoint='integrations.storage', integration_permitted=can_manage) }}",
+        encoding='utf-8',
+    )
+    (templates / 'unrelated.html').write_text('<p>Not a Hero</p>', encoding='utf-8')
+    monkeypatch.setitem(census.__globals__, 'ROOT', tmp_path)
+    monkeypatch.setitem(census.__globals__, 'TEMPLATES', templates)
+    records = {record['template']: record for record in census()}
+    assert set(records) == {'templates/local.html', 'templates/shared.html'}
+    assert records['templates/local.html']['review_raw_or_indirect_destination'] is True
+    assert records['templates/shared.html']['explicit_integration_endpoints'] == ['integrations.storage']
+    assert records['templates/shared.html']['declared_permission_expression'] is True
