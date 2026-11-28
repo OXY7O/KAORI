@@ -9,7 +9,9 @@ from __future__ import annotations
 import base64
 import binascii
 import secrets
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from math import isfinite
 from typing import Literal
 
 from cryptography.hazmat.primitives import hashes
@@ -20,9 +22,12 @@ from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.access.authentication.admission import session_admission_reason
+from app.access.authentication.audit import record_authentication_activity
 from app.access.authentication.mfa.audit import stage_authentication_security_event
-from app.access.authentication.mfa.policy import MfaPolicyDecision, evaluate_mfa_policy
+from app.access.authentication.mfa.policy import MfaGate, MfaPolicyDecision, MfaPolicyError, evaluate_mfa_policy
 from app.access.authentication.password_policy import LOCAL_PASSWORD_MAX_LENGTH
+from app.access.authentication.services import stage_successful_authentication
+from app.access.authentication.session import AuthSessionError
 from app.access.authentication.session_lifecycle import SessionDeadlines, read_session_policy, session_deadlines
 from app.extensions.db import db
 from app.models.authentication_security import AuthenticationMfaFactor, AuthenticationSecurityPolicy
@@ -227,37 +232,54 @@ def begin_mfa_enrollment(
     return secret
 
 
+def _stage_enrollment_confirmation(
+    user: User,
+    factor: AuthenticationMfaFactor | None,
+    code: str,
+    *,
+    expected_generation: int,
+    authenticated: bool,
+) -> list[str]:
+    """Stage activation and recovery issuance under locks; never commit independently."""
+    now = datetime.now(UTC)
+    if factor is None or factor.enabled or factor.enrollment_expires_at is None:
+        raise MfaVerificationError('Start MFA enrollment again.')
+    if not _owns_pending_setup(factor, expected_generation, authenticated=authenticated):
+        raise MfaVerificationError('Start MFA enrollment again.')
+    if mfa_enrollment_state(
+        factor, now=now, expected_generation=expected_generation, authenticated=authenticated
+    ) != 'pending':
+        raise MfaVerificationError('MFA enrollment expired; start again.')
+    accepted = _accepted_step(factor.totp_secret, code, last_accepted_step=None, now=now)
+    if accepted is None:
+        raise MfaVerificationError('Verification code was not accepted.')
+    recovery = [secrets.token_hex(8).upper() for _ in range(8)]
+    factor.recovery_hashes = [generate_password_hash(value) for value in recovery]
+    factor.last_accepted_step = accepted
+    factor.enabled = True
+    factor.enrolled_at = now
+    factor.enrollment_expires_at = None
+    factor.enrollment_generation = None
+    factor.enrollment_authenticated = None
+    db.session.add(
+        stage_authentication_security_event(
+            user, action='mfa_enrollment_confirmed', authenticated=authenticated, success=True
+        )
+    )
+    return recovery
+
+
 def confirm_mfa_enrollment(
     user: User, code: str, *, expected_generation: int, authenticated: bool = True
 ) -> list[str]:
-    """Activate only after OTP proof under the original admitted generation."""
+    """Personal enrollment owns its own transaction; login uses staged activation."""
     try:
-        user = _lock_mfa_user(user, expected_generation, authenticated=authenticated)
+        if not authenticated:
+            raise MfaVerificationError('Pending enrollment requires final session admission.')
+        user = _lock_mfa_user(user, expected_generation, authenticated=True)
         factor = _locked_factor(user.id)
-        now = datetime.now(UTC)
-        if factor is None or factor.enabled or factor.enrollment_expires_at is None:
-            raise MfaVerificationError('Start MFA enrollment again.')
-        if not _owns_pending_setup(factor, expected_generation, authenticated=authenticated):
-            raise MfaVerificationError('Start MFA enrollment again.')
-        if mfa_enrollment_state(
-            factor, now=now, expected_generation=expected_generation, authenticated=authenticated
-        ) != 'pending':
-            raise MfaVerificationError('MFA enrollment expired; start again.')
-        accepted = _accepted_step(factor.totp_secret, code, last_accepted_step=None, now=now)
-        if accepted is None:
-            raise MfaVerificationError('Verification code was not accepted.')
-        recovery = [secrets.token_hex(8).upper() for _ in range(8)]
-        factor.recovery_hashes = [generate_password_hash(value) for value in recovery]
-        factor.last_accepted_step = accepted
-        factor.enabled = True
-        factor.enrolled_at = now
-        factor.enrollment_expires_at = None
-        factor.enrollment_generation = None
-        factor.enrollment_authenticated = None
-        db.session.add(
-            stage_authentication_security_event(
-                user, action='mfa_enrollment_confirmed', authenticated=authenticated, success=True
-            )
+        recovery = _stage_enrollment_confirmation(
+            user, factor, code, expected_generation=expected_generation, authenticated=True
         )
         db.session.commit()
     except (SQLAlchemyError, CredentialEncryptionError, MfaVerificationError):
@@ -312,21 +334,79 @@ def _consume_factor_proof(user: User, factor: AuthenticationMfaFactor, submitted
     return kind
 
 
-def verify_mfa_challenge(
-    user: User, submitted: str, *, expected_generation: int, authenticated: bool = False
-) -> str:
-    """Consume one factor proof under the presented generation and factor locks."""
+@dataclass(frozen=True)
+class PendingMfaAdmission:
+    generation: int
+    session_reference: str
+    remember_requested: bool
+    recovery_codes: list[str] | None = field(default=None, repr=False)
+
+
+def _pending_deadline_valid(expires_at: float) -> bool:
+    return type(expires_at) in (int, float) and isfinite(expires_at) and datetime.now(UTC).timestamp() < expires_at
+
+
+def complete_pending_mfa_login(
+    user: User,
+    submitted: str,
+    *,
+    source: str,
+    expected_generation: int,
+    expires_at: float,
+    enrollment: bool,
+    remember_requested: bool,
+    client_ip: str | None,
+) -> PendingMfaAdmission:
+    """Commit factor proof, exact-generation admission and login audit once.
+
+    The route may establish a browser session only after this returns. The
+    transaction records server admission, not delivery of an HTTP cookie.
+    """
     try:
-        user = _lock_mfa_user(user, expected_generation, authenticated=authenticated)
+        if not _pending_deadline_valid(expires_at):
+            raise MfaVerificationError('Pending authentication expired.')
+        user = _lock_mfa_user(user, expected_generation, authenticated=False)
+        if user.auth_source != source:
+            raise AuthSessionError('Pending authentication source changed.')
         factor = _locked_factor(user.id)
-        if factor is None or not factor.enabled:
-            raise MfaVerificationError('MFA enrollment is unavailable.')
-        kind = _consume_factor_proof(user, factor, submitted, authenticated=authenticated)
+        # Re-evaluate the current policy and factor after acquiring account/factor locks.
+        policy = db.session.get(AuthenticationSecurityPolicy, 1, populate_existing=True)
+        decision = evaluate_mfa_policy(
+            policy.mfa_mode if policy is not None else 'disabled',
+            privileged=bool(user.is_admin_level),
+            enrolled=bool(factor is not None and factor.enabled),
+        )
+        recovery = None
+        if enrollment and decision.gate == MfaGate.ENROLLMENT_REQUIRED:
+            recovery = _stage_enrollment_confirmation(
+                user, factor, submitted, expected_generation=expected_generation, authenticated=False
+            )
+        elif not enrollment and decision.gate == MfaGate.CHALLENGE and factor is not None and factor.enabled:
+            _consume_factor_proof(user, factor, submitted, authenticated=False)
+        else:
+            raise MfaVerificationError('MFA admission changed; sign in again.')
+        if not _pending_deadline_valid(expires_at):
+            raise MfaVerificationError('Pending authentication expired.')
+        remember = bool(remember_requested and read_session_policy().regular_remember and not user.is_admin_level)
+        reference = secrets.token_hex(16)
+        generation = stage_successful_authentication(
+            user, source=source, client_ip=client_ip, pending_generation=expected_generation
+        )
+        record_authentication_activity(
+            action='login',
+            username=user.username,
+            source=source,
+            result='success',
+            reason='success',
+            user=user,
+            commit=False,
+            issued_session_reference=reference,
+        )
         db.session.commit()
-    except (SQLAlchemyError, CredentialEncryptionError, MfaVerificationError):
+    except (SQLAlchemyError, CredentialEncryptionError, MfaVerificationError, AuthSessionError, MfaPolicyError):
         db.session.rollback()
         raise
-    return kind
+    return PendingMfaAdmission(generation, reference, remember, recovery)
 
 
 def _clear_replacement(factor: AuthenticationMfaFactor) -> None:

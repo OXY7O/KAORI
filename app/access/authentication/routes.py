@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from math import isfinite
 from typing import cast
 
 from flask import Blueprint, abort, current_app, g, jsonify, redirect, render_template, request, session, url_for
@@ -24,16 +25,16 @@ from app.access.authentication.identity_provider.browser import (
 )
 from app.access.authentication.identity_provider.catalog import provider_definition
 from app.access.authentication.identity_provider.registry import get_browser_sso_adapter
-from app.access.authentication.mfa.policy import MfaGate
+from app.access.authentication.mfa.policy import MfaGate, MfaPolicyError
 from app.access.authentication.mfa.service import (
     MFA_CHALLENGE_TTL_SECONDS,
     MfaVerificationError,
+    PendingMfaAdmission,
     begin_mfa_enrollment,
     cancel_mfa_enrollment,
-    confirm_mfa_enrollment,
+    complete_pending_mfa_login,
     has_owned_pending_setup,
     mfa_decision,
-    verify_mfa_challenge,
 )
 from app.access.authentication.readiness import check_authentication_database_readiness
 from app.access.authentication.results import ACCESS_NOT_PERMITTED_MESSAGE, AuthResult
@@ -70,6 +71,7 @@ from app.extensions.db import db
 from app.extensions.limiter import limiter
 from app.models import User
 from app.platform_operations.notifications.service import queue_transient_feedback
+from app.security.credentials import CredentialEncryptionError
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -99,44 +101,37 @@ def _complete_successful_login(
     *,
     remember_requested: bool = False,
     next_url: object = None,
-    mfa_verified: bool = False,
-    pending_generation: int | None = None,
 ):
     user = result.user
     if user is None:
         raise RuntimeError('Successful authentication result is missing its user.')
 
     proof = result.local_credential_proof
-    if mfa_verified:
-        if type(pending_generation) is not int or pending_generation < 1:
-            raise AuthSessionError('Pending authentication generation is missing.')
-    elif result.source == 'database' and proof is None:
+    if result.source == 'database' and proof is None:
         raise AuthSessionError('Verified local credential proof is missing.')
     primary_generation = proof.generation if proof is not None else user.auth_session_version
 
     # A primary-credential-only result may NOT invalidate the previous login.
     # Every required factor must be verified before generation issuance (#3121).
-    if not mfa_verified:
-        decision = mfa_decision(user)
-        if decision.gate in (MfaGate.CHALLENGE, MfaGate.ENROLLMENT_REQUIRED):
-            session.clear()
-            session[MFA_PENDING_SESSION_KEY] = {
-                'user_id': user.id,
-                'source': result.source,
-                'version': primary_generation,
-                'remember': bool(remember_requested),
-                'next_url': safe_next_url(next_url),
-                'expires_at': datetime.now(UTC).timestamp() + MFA_CHALLENGE_TTL_SECONDS,
-                'attempts': 0,
-            }
-            return redirect(url_for('auth.mfa_challenge'))
+    decision = mfa_decision(user)
+    if decision.gate in (MfaGate.CHALLENGE, MfaGate.ENROLLMENT_REQUIRED):
+        session.clear()
+        session[MFA_PENDING_SESSION_KEY] = {
+            'user_id': user.id,
+            'source': result.source,
+            'version': primary_generation,
+            'remember': bool(remember_requested),
+            'next_url': safe_next_url(next_url),
+            'expires_at': datetime.now(UTC).timestamp() + MFA_CHALLENGE_TTL_SECONDS,
+            'attempts': 0,
+        }
+        return redirect(url_for('auth.mfa_challenge'))
     remember_requested = bool(remember_requested and read_session_policy().regular_remember)
     issued_session_version = record_successful_authentication(
         user,
         source=result.source,
         client_ip=_client_ip(),
         local_credential_proof=proof,
-        pending_generation=pending_generation if mfa_verified else None,
     )
 
     establish_authenticated_session(
@@ -543,9 +538,21 @@ def _pending_mfa_session_valid(pending: dict) -> bool:
         or type(pending.get('version')) is not int
         or pending.get('version', 0) < 1
         or type(expires_at) not in (int, float)
+        or not isfinite(cast(float, expires_at))
         or cast(float, expires_at) <= datetime.now(UTC).timestamp()
         or type(pending.get('attempts')) is not int
-        or pending.get('attempts', 0) >= 5
+        or not 0 <= pending.get('attempts', 0) < 5
+    )
+
+
+def _establish_pending_mfa_session(user: User, admission: PendingMfaAdmission, *, source: str) -> None:
+    """Publish only the generation and audit reference returned by the committed transaction."""
+    establish_authenticated_session(
+        user,
+        source=source,
+        remember_requested=admission.remember_requested,
+        issued_session_version=admission.generation,
+        issued_session_reference=admission.session_reference,
     )
 
 
@@ -576,7 +583,7 @@ def mfa_challenge():
     form = MfaChallengeForm()
     if decision.gate == MfaGate.ENROLLMENT_REQUIRED:
         setup_secret = None
-        codes = None
+        admission: PendingMfaAdmission | None = None
         enrollment_error = None
         if request.method == 'POST':
             pending['attempts'] += 1
@@ -591,39 +598,30 @@ def mfa_challenge():
                     session.pop(MFA_PENDING_SESSION_KEY, None)
                     return redirect(url_for('auth.login'))
                 elif action == 'confirm' and form.validate_on_submit():
-                    codes = confirm_mfa_enrollment(
+                    admission = complete_pending_mfa_login(
                         user,
                         str(form.verification_code.data or ''),
+                        source=str(pending['source']),
                         expected_generation=pending['version'],
-                        authenticated=False,
+                        expires_at=pending['expires_at'],
+                        enrollment=True,
+                        remember_requested=bool(pending.get('remember')),
+                        client_ip=_client_ip(),
                     )
                 else:
                     raise MfaVerificationError('Invalid enrollment request.')
             except (ValidationError, MfaVerificationError):
                 enrollment_error = 'Enrollment could not be verified. Check your code or start again.'
-            except SQLAlchemyError:
+            except (SQLAlchemyError, CredentialEncryptionError, AuthSessionError, MfaPolicyError):
                 enrollment_error = 'Authentication is temporarily unavailable.'
-            if codes is not None:
-                # Proof has become active. Revalidate the account and create
-                # the ONLY authenticated session for this completed flow.
-                result = enforce_login_admission(AuthResult(True, 'success', source=str(pending['source']), user=user))
-                if not result.success:
-                    session.pop(MFA_PENDING_SESSION_KEY, None)
-                    return redirect(url_for('auth.login'))
+            if admission is not None:
                 try:
-                    _complete_successful_login(
-                        result,
-                        remember_requested=bool(pending.get('remember')),
-                        next_url=pending.get('next_url'),
-                        mfa_verified=True,
-                        pending_generation=pending['version'],
-                    )
+                    _establish_pending_mfa_session(user, admission, source=str(pending['source']))
                 except (SQLAlchemyError, AuthSessionError):
-                    session.pop(MFA_PENDING_SESSION_KEY, None)
+                    clear_authenticated_session()
                     return redirect(url_for('auth.login'))
-                _record_result(user.username, result)
                 response = current_app.make_response(
-                    render_template('access/authentication/mfa_recovery_codes.html', codes=codes)
+                    render_template('access/authentication/mfa_recovery_codes.html', codes=admission.recovery_codes)
                 )
                 response.headers['Cache-Control'] = 'no-store'
                 response.headers['Pragma'] = 'no-cache'
@@ -656,8 +654,15 @@ def mfa_challenge():
         pending['attempts'] += 1
         session[MFA_PENDING_SESSION_KEY] = pending
         try:
-            verify_mfa_challenge(
-                user, str(form.verification_code.data or ''), expected_generation=pending['version']
+            admission = complete_pending_mfa_login(
+                user,
+                str(form.verification_code.data or ''),
+                source=str(pending['source']),
+                expected_generation=pending['version'],
+                expires_at=pending['expires_at'],
+                enrollment=False,
+                remember_requested=bool(pending.get('remember')),
+                client_ip=_client_ip(),
             )
         except MfaVerificationError:
             error = 'The verification code was not accepted.'
@@ -669,28 +674,15 @@ def mfa_challenge():
                 reason='mfa_challenge_failed',
                 user=user,
             )
-        except SQLAlchemyError:
+        except (SQLAlchemyError, CredentialEncryptionError, AuthSessionError, MfaPolicyError):
             error = 'Authentication is temporarily unavailable.'
         else:
-            # Recheck current source and account state after consuming one-time
-            # proof. This is the only point that issues an authenticated cookie.
-            result = enforce_login_admission(AuthResult(True, 'success', source=str(pending['source']), user=user))
-            if not result.success:
-                session.pop(MFA_PENDING_SESSION_KEY, None)
-                return redirect(url_for('auth.login'))
             try:
-                response = _complete_successful_login(
-                    result,
-                    remember_requested=bool(pending.get('remember')),
-                    next_url=pending.get('next_url'),
-                    mfa_verified=True,
-                    pending_generation=pending['version'],
-                )
+                _establish_pending_mfa_session(user, admission, source=str(pending['source']))
             except (SQLAlchemyError, AuthSessionError):
-                session.pop(MFA_PENDING_SESSION_KEY, None)
+                clear_authenticated_session()
                 return redirect(url_for('auth.login'))
-            _record_result(user.username, result)
-            return response
+            return redirect(safe_next_url(pending.get('next_url')) or url_for('welcome.index'))
 
     return render_template('access/authentication/mfa_challenge.html', form=form, error=error)
 

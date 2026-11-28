@@ -248,8 +248,8 @@ def test_pending_mfa_issuance_guards_original_generation(monkeypatch: pytest.Mon
     monkeypatch.setattr(services.db, 'session', store)
     actor = User(id=42, auth_source=source, auth_session_version=9)
     with pytest.raises(auth_session.AuthSessionError):
-        services.record_successful_authentication(actor, source=source, client_ip=None, pending_generation=7)
-    assert store.events == ['execute', 'rollback']
+        services.stage_successful_authentication(actor, source=source, client_ip=None, pending_generation=7)
+    assert store.events == ['execute']
     statement = store.statements[0]
     assert 'users.auth_session_version =' in str(statement).lower()
     assert 7 in statement.compile().params.values()

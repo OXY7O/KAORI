@@ -81,6 +81,6 @@ def test_required_enrollment_cancellation_does_not_admit_primary_only_login() ->
     assert "expected_generation=pending['version'], authenticated=False" in branch
     assert 'session.pop(MFA_PENDING_SESSION_KEY, None)' in branch
     assert "return redirect(url_for('auth.login'))" in branch
-    assert '_complete_successful_login' not in branch
+    assert 'complete_pending_mfa_login' not in branch
     assert '{% if pending_setup_owned %}' in template
     assert 'name="mfa_action" value="cancel"' in template
