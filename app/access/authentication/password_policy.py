@@ -45,7 +45,7 @@ def local_password_policy_error(value: object) -> str | None:
 
 
 class LocalPasswordPolicy:
-    '''WTForms validator for KAORI-owned Local Database credentials.'''
+    """WTForms validator for KAORI-owned Local Database credentials."""
 
     field_flags = {'minlength': LOCAL_PASSWORD_MIN_LENGTH, 'maxlength': LOCAL_PASSWORD_MAX_LENGTH}
 
