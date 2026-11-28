@@ -198,3 +198,37 @@ canonical JobExecution cursor/generation and human-approved execution,
 dual-write/cutover fences, snapshot retry, testing on real PostgreSQL, and
 concurrency verification are required before actual operational use.
 `cleanup_supported=False` remains unchanged. This workstream is still OPEN.
+
+
+## Explicit recommendation Alert Intelligence routing mode (#5450)
+
+The committed singleton `alert_delivery_modes` governs outbound recommendation
+alert events for Kubernetes, Object Storage and Artifact Registry, not provider
+qualification or all Notification Channels event producers. Migration
+`20261128_alert_delivery_mode` seeds Channel Defaults to preserve existing
+no-policy compatibility; do not infer production approval from that seed.
+
+- **Channel Defaults:** enabled matching policies take precedence. Unowned
+  Kubernetes/Object Storage domains may use validated channel defaults.
+  Registry always requires explicit policy. Legacy direct alert dispatch
+  cannot bypass governed domain ownership.
+- **Policy Required:** no unowned fallback or legacy direct alert broadcast.
+  Current case identity, explicit matching policy/channel, and current source
+  workflow are checked for firing. Resolved also requires prior successful
+  firing evidence and current resolved-policy permission.
+- **Delivery Disabled:** deny new outbound recommendation alert attempts,
+  including generic replay. AlertCase collection and operator workflow remain
+  independent. Other event producers, channel validation and template tests
+  remain separate. Vault exact-instance delivery is separately governed.
+
+The existing generic Notification Channels transport/recovery seams recheck
+mode before committing an attempt. A replay denied by current mode is marked
+skipped with a reason, retaining delivery history rather than implicitly
+reopening it. Changing mode does not cancel a previously admitted/in-flight
+transport, or automatically replay skipped historical events. A missing or
+invalid singleton fails closed. Database failures propagate rather than
+granting fallback. The audit event and revision change commit together under
+a row lock; stale revisions are rejected.
+
+See `docs/operations/alert-delivery-routing-mode.md` for migration, validation,
+rollback and operating procedure.

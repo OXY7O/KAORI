@@ -610,6 +610,14 @@ def dispatch_alert_notification(
                 db.session.rollback()
                 continue
             message = original
+        if domain in DOMAINS and not recommendation_event_allowed(
+            domain=domain, event_type='alert_intelligence.active_alert', asset_type=asset_type,
+            asset_key=str(asset_key), event_key=event_key, channel_id=channel.id, payload={},
+        ):
+            _set_replay_status(delivery, status='skipped', reason='Delivery blocked by current alert routing mode.')
+            db.session.commit()
+            stats['skipped'] += 1
+            continue
         if delivery.attempt_count:
             stats['retried'] += 1
         _begin_delivery_attempt(delivery, channel, message)
@@ -823,6 +831,19 @@ def dispatch_notification_event(*, channel_ids: list[int], event: NotificationEv
                 )
                 continue
             message = original
+        if event.domain in DOMAINS and event.event_type in EVENTS and not recommendation_event_allowed(
+            domain=event.domain, event_type=event.event_type, asset_type=event.asset_type,
+            asset_key=str(event.asset_key), event_key=event.event_key, channel_id=channel_id,
+            payload=dict(event.payload or {}),
+        ):
+            _set_replay_status(delivery, status='skipped', reason='Delivery blocked by current alert routing mode.')
+            db.session.commit()
+            stats['skipped'] += 1
+            stats['results'].append({
+                'channel_id': channel_id, 'channel': channel.name, 'provider': _provider_label(channel.provider_key),
+                'status': 'skipped', 'message': 'Delivery blocked by current alert routing mode.',
+            })
+            continue
         _begin_delivery_attempt(delivery, channel, message)
         result = _deliver(channel, message)
         _record_delivery_outcome(delivery, channel, result)
@@ -1007,16 +1028,6 @@ def recover_notification_deliveries(*, limit: int = 25) -> dict[str, int]:
             db.session.commit()
             totals['skipped'] += 1
             continue
-        if delivery.domain in DOMAINS and delivery.event_type in EVENTS and not recommendation_event_allowed(
-            domain=delivery.domain, event_type=delivery.event_type,
-            asset_type=delivery.asset_type, asset_key=str(delivery.asset_key),
-            event_key=delivery.event_key, channel_id=delivery.channel_id,
-            payload=dict(delivery.payload_json or {}),
-        ):
-            _set_replay_status(delivery, status='skipped', reason='Replay blocked by current alert routing mode.')
-            db.session.commit()
-            totals['skipped'] += 1
-            continue
         channel = delivery.channel
         if delivery.attempt_count >= max_attempts:
             _set_replay_status(
@@ -1034,6 +1045,16 @@ def recover_notification_deliveries(*, limit: int = 25) -> dict[str, int]:
                 status='skipped',
                 reason='Replay unavailable: source snapshot missing, invalid, or channel policy/transport changed.',
             )
+            db.session.commit()
+            totals['skipped'] += 1
+            continue
+        if delivery.domain in DOMAINS and delivery.event_type in EVENTS and not recommendation_event_allowed(
+            domain=delivery.domain, event_type=delivery.event_type,
+            asset_type=delivery.asset_type, asset_key=str(delivery.asset_key),
+            event_key=delivery.event_key, channel_id=delivery.channel_id,
+            payload=dict(delivery.payload_json or {}),
+        ):
+            _set_replay_status(delivery, status='skipped', reason='Replay blocked by current alert routing mode.')
             db.session.commit()
             totals['skipped'] += 1
             continue
